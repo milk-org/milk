@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "libmilkdata/milkdata.h"
+#include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "mc_ast.h"
 #include "mc_plan.h"
@@ -442,13 +443,9 @@ static void emit_scalar_result(const mc_val_t *result, int is_assign_op, const c
 
 static int emit_image_result(imageID im_id, int is_assign, int is_multi, const char *lhs_name)
 {
-    if (is_multi)
+    if (is_multi || mcalc_out_mode == MCALC_OUT_BIND)
     {
-        if (mcalc_out_mode == MCALC_OUT_BIND)
-        {
-            printf("\n");
-            fflush(stdout);
-        }
+        (void) (mcalc_out_mode == MCALC_OUT_BIND && (printf("\n"), fflush(stdout), 1));
         return 0;
     }
     if (mcalc_out_mode == MCALC_OUT_PIXELS)
@@ -459,75 +456,80 @@ static int emit_image_result(imageID im_id, int is_assign, int is_multi, const c
             snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "pixel format error");
             return -1;
         }
-        printf("%s\n", pixels);
-        fflush(stdout);
-        free(pixels);
-        return 0;
-    }
-    if (mcalc_out_mode == MCALC_OUT_BIND)
-    {
-        printf("\n");
-        fflush(stdout);
+        printf("%s\n", pixels), fflush(stdout), free(pixels);
         return 0;
     }
     if (mcalc_out_mode == MCALC_OUT_REPL)
     {
         char summary[256] = "";
         mc_format_image_summary(im_id, is_assign ? lhs_name : NULL, summary, sizeof(summary));
-        printf("%s\n", summary);
-        fflush(stdout);
+        printf("%s\n", summary), fflush(stdout);
         return 0;
     }
     if (!is_assign && im_id >= 0 && milk_data.image != NULL && milk_data.image[im_id].used)
     {
         const char *nm = milk_data.image[im_id].name;
-        if (g_calc_out != NULL)
-        {
-            snprintf(g_calc_out, g_calc_sz, "%s", nm);
-        }
-        else
-        {
-            printf("%s\n", nm);
-            fflush(stdout);
-        }
+        (void) ((g_calc_out != NULL) ? snprintf(g_calc_out, g_calc_sz, "%s", nm)
+                                     : (printf("%s\n", nm), fflush(stdout), 0));
     }
     return 0;
 }
 
+static int expr_has_shadowed_var(const mc_expr_t *e)
+{
+    int r = (e != NULL) &&
+            ((e->kind == MC_EXPR_IDENT && e->u.ident.id_kind == MC_ID_VAR &&
+              image_ID(e->u.ident.bare, milk_data.image, milk_data.NB_MAX_IMAGE) >= 0) ||
+             (e->kind == MC_EXPR_UNARY && expr_has_shadowed_var(e->u.unary.operand)) ||
+             (e->kind == MC_EXPR_BINARY && (expr_has_shadowed_var(e->u.binary.left) ||
+                                            expr_has_shadowed_var(e->u.binary.right))) ||
+             (e->kind == MC_EXPR_TERNARY && (expr_has_shadowed_var(e->u.ternary.cond) ||
+                                             expr_has_shadowed_var(e->u.ternary.t_expr) ||
+                                             expr_has_shadowed_var(e->u.ternary.f_expr))) ||
+             (e->kind == MC_EXPR_ASSIGN && expr_has_shadowed_var(e->u.assign.rhs)));
+    for (int i = 0; e && e->kind == MC_EXPR_CALL && i < e->u.call.nargs && !r; i++)
+    {
+        r = expr_has_shadowed_var(e->u.call.args[i]);
+    }
+    return r || (e && e->kind == MC_EXPR_CALL && expr_has_shadowed_var(e->u.call.udef_body));
+}
+
 static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
 {
-    for (int i = 0; i < p->nslots; i++)
+    for (const mc_stmt_t *st = same_gen ? NULL : p->ast_head; st != NULL; st = st->next)
     {
-        mc_slot_t *s   = &p->slots[i];
-        long       vid = same_gen ? -1 : variable_ID(s->bare);
-        if (vid >= 0 && milk_data.variable[vid].type != 3)
+        if (st->kind == MC_STMT_EXPR && expr_has_shadowed_var(st->u.expr))
         {
             return 0;
         }
-        imageID id =
+    }
+    for (int i = 0; i < p->nslots; i++)
+    {
+        mc_slot_t *s = &p->slots[i];
+        imageID    id =
             (s->im_id >= 0 && s->im_id < milk_data.NB_MAX_IMAGE && milk_data.image[s->im_id].used &&
              (same_gen || strcmp(milk_data.image[s->im_id].name, s->bare) == 0))
                 ? s->im_id
                 : mc_resolve_or_autoconnect_image(s->name);
+        long vid = (same_gen || id >= 0) ? -1 : variable_ID(s->bare);
+        if (vid >= 0 && milk_data.variable[vid].type != 3)
+        {
+            return 0;
+        }
         if ((id >= 0) != (s->existed_at_plan != 0))
         {
             return 0;
         }
         if (s->existed_at_plan)
         {
-            if (id < 0 || milk_data.image[id].md[0].datatype != s->orig_dt)
+            const IMAGE_METADATA *md = (id >= 0) ? &milk_data.image[id].md[0] : NULL;
+            uint32_t sz[3] = { md ? md->size[0] : 0, (md && md->naxis >= 2) ? md->size[1] : 1,
+                               (md && md->naxis >= 3) ? md->size[2] : 1 };
+            if (!md || md->datatype != s->orig_dt ||
+                (s->plan_naxis > 0 &&
+                 (md->naxis != s->plan_naxis || memcmp(sz, s->plan_size, sizeof(sz)) != 0)))
             {
                 return 0;
-            }
-            if (s->plan_naxis > 0)
-            {
-                const IMAGE_METADATA *md    = &milk_data.image[id].md[0];
-                uint32_t              sz[3] = { md->size[0], (md->naxis >= 2) ? md->size[1] : 1,
-                                                (md->naxis >= 3) ? md->size[2] : 1 };
-                if (md->naxis != s->plan_naxis || memcmp(sz, s->plan_size, sizeof(sz)) != 0)
-                {
-                    return 0;
-                }
             }
         }
         s->im_id = id;
@@ -815,7 +817,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     {
         int truthy = (result.type == MC_VAL_LONG) ? (result.lval != 0)
                      : (result.type == MC_VAL_DOUBLE)
-                         ? (result.dval != 0.0 && !isnan(result.dval))
+                         ? (result.dval != 0.0 && !mc_isnan(result.dval))
                          : (result.type == MC_VAL_STRING && result.sval[0] != '\0' &&
                             strcmp(result.sval, "0") != 0);
         mc_stmt_free(s);

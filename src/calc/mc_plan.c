@@ -68,7 +68,9 @@ static int is_ctor_call(const mc_expr_t *e)
                : ((e != NULL && e->kind == MC_EXPR_VEC_LIT) || is_ctor_fn(fn) ||
                   is_prestage_stencil_fn(fn) ||
                   (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
-                  (fn != NULL && fn->kind == MC_FN_REDUCE_D && e->res_kind == MC_RES_IMAGE));
+                  (fn != NULL && e->res_kind == MC_RES_IMAGE &&
+                   (fn->kind == MC_FN_REDUCE_D ||
+                    (fn->kind == MC_FN_PROG && strcmp(fn->name, "ema") == 0))));
 }
 
 static int expr_uses_def_param(const mc_expr_t *e)
@@ -138,7 +140,7 @@ static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
     }
     const mc_fn_kind_t fk =
         (e->u.call.ext_id < 0 && e->u.call.fn) ? e->u.call.fn->kind : (mc_fn_kind_t) -1;
-    return (e->u.call.ext_id >= 0 || (fk >= 0 && fk != MC_FN_PROG))
+    return (e->u.call.ext_id >= 0 || fk >= 0)
                ? 0
                : plan_err(err, errsz, "not implemented in the new engine");
 }
@@ -669,6 +671,7 @@ static void merge_passes_and_elide_locals(mcalc_prog_t *prog)
     {
         if (w > 0 && prog->steps[w - 1].kind == MC_STEP_PASS &&
             prog->steps[r].kind == MC_STEP_PASS &&
+            prog->steps[w - 1].is_hist_step == prog->steps[r].is_hist_step &&
             mc_can_merge_passes(&prog->steps[w - 1].pass, &prog->steps[r].pass))
         {
             mc_pass_t *pa = &prog->steps[w - 1].pass, *pb = &prog->steps[r].pass;
@@ -732,6 +735,7 @@ static mc_step_t *alloc_step(mcalc_prog_t *p, mc_step_kind_t kind, int stmt_idx)
 
 int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
 {
+    (void) has_vars;
     int idx = 0;
     for (mc_stmt_t *s = p->ast_head; s != NULL; s = s->next, idx++)
     {
@@ -739,10 +743,8 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         {
             continue;
         }
-        int bad_s = (s->kind == MC_STMT_SKIP ||
-                     ((s->kind == MC_STMT_IF || s->kind == MC_STMT_FOR) && has_vars) ||
-                     (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs != s->u.multi.nlhs &&
-                      !(s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2)));
+        int bad_s = (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs != s->u.multi.nlhs &&
+                     !(s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2));
         if (bad_s || (s->kind == MC_STMT_EXPR && check_expr_supported(s->u.expr, err, errsz) != 0))
         {
             return bad_s ? plan_err(err, errsz, "not implemented in the new engine") : -1;
@@ -776,18 +778,12 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         }
 
         if (!s->needs_image || s->kind == MC_STMT_IF || s->kind == MC_STMT_FOR ||
+            s->kind == MC_STMT_SKIP ||
             (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2) ||
             (s->kind == MC_STMT_EXPR && s->u.expr->res_kind != MC_RES_IMAGE &&
              !(s->u.expr->kind == MC_EXPR_ASSIGN &&
                s->u.expr->u.assign.target->res_kind == MC_RES_IMAGE)))
         {
-            (void) (s->kind == MC_STMT_EXPR && s->u.expr->kind == MC_EXPR_ASSIGN &&
-                    s->u.expr->u.assign.target->kind == MC_EXPR_IDENT &&
-                    (mark_assigned_var(p, s->u.expr->u.assign.target->u.ident.bare), 1));
-            for (int j = 0; s->kind == MC_STMT_MULTI_ASSIGN && j < s->u.multi.nlhs; j++)
-            {
-                mark_assigned_var(p, s->u.multi.lhs[j]->u.ident.bare);
-            }
             alloc_step(p, MC_STEP_SCALAR, idx)->scalar_stmt = s;
             continue;
         }
@@ -804,10 +800,10 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                  (target == NULL || target->kind == MC_EXPR_IDENT)) ||
                 mc_is_blas_or_linalg_ctor(rhs, target, aop))
             {
-                mc_step_t  *st  = alloc_step(p, MC_STEP_CTOR, idx);
-                int         tid = (target != NULL);
-                const char *br  = tid ? target->u.ident.bare : "_tmpcalc0";
-                (void) (tid && (mark_assigned_var(p, br), 1));
+                mc_step_t  *st    = alloc_step(p, MC_STEP_CTOR, idx);
+                int         tid   = (target != NULL);
+                const char *br    = tid ? target->u.ident.bare : "_tmpcalc0";
+                st->is_hist_step  = s->is_hist_stmt;
                 st->ctor.slot_idx = find_or_add_slot(p, tid ? target->u.ident.name : "_tmpcalc0",
                                                      br, tid ? target->u.ident.loc : 'L', loc_fl,
                                                      tid ? target->u.ident.im_id : -1, rhs->res_dt,
@@ -816,7 +812,7 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                 st->ctor.rhs_expr = rhs;
                 continue;
             }
-            alloc_step(p, MC_STEP_PASS, idx);
+            alloc_step(p, MC_STEP_PASS, idx)->is_hist_step = s->is_hist_stmt;
             if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, loc_fl, 0, aop, target, rhs,
                              err, errsz) != 0)
             {

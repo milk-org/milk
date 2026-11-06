@@ -583,13 +583,27 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
     if (cur_tok(ctx)->type == MC_TOK_COLON)
     {
         advance_tok(ctx);
+        mc_tok_type_t nt = cur_tok(ctx)->type;
+        if (nt == MC_TOK_EOF || nt == MC_TOK_SEMI || nt == MC_TOK_NEWLINE || nt == MC_TOK_RBRACE)
+        {
+            parse_err(ctx, cur_tok(ctx), "empty statement after 'if ...:'");
+            mc_expr_free(cond);
+            return s;
+        }
         s->u.if_stmt.branches[0].cond = cond;
         s->u.if_stmt.branches[0].body = parse_stmt_one(ctx);
         s->u.if_stmt.nbranches        = 1;
         return s;
     }
 
-    int braced                    = (cur_tok(ctx)->type == MC_TOK_LBRACE);
+    mc_tok_type_t bt = cur_tok(ctx)->type;
+    if (bt != MC_TOK_LBRACE && bt != MC_TOK_NEWLINE && bt != MC_TOK_SEMI)
+    {
+        parse_err(ctx, cur_tok(ctx), "if without ':'");
+        mc_expr_free(cond);
+        return s;
+    }
+    int braced                    = (bt == MC_TOK_LBRACE);
     s->u.if_stmt.branches[0].cond = cond;
     s->u.if_stmt.branches[0].body = parse_block_body(ctx, braced);
     s->u.if_stmt.nbranches        = 1;

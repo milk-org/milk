@@ -1,5 +1,4 @@
 // SPDX-FileCopyrightText: 2026 Olivier Guyon et al
-//
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <ctype.h>
@@ -16,6 +15,24 @@
 #include "COREMOD_memory/read_shmim.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "mc_plan.h"
+
+static _Thread_local int g_prog_skip       = 0;
+static _Thread_local int g_prog_unit_depth = 0;
+
+void mc_prog_set_skip(int on)
+{
+    g_prog_skip = on;
+}
+
+int mc_prog_skip_active(void)
+{
+    return g_prog_skip;
+}
+
+int mc_prog_in_unit(void)
+{
+    return g_prog_unit_depth > 0;
+}
 
 void mcalc_prog_attach(void)
 {
@@ -151,17 +168,21 @@ static int mark_assigned_name(mcalc_prog_t *p, const char *name, char *err, size
     {
         return 0;
     }
-    if (p->vars != NULL && is_readonly_unit_var(name))
+    char nbuf[256], bare[256];
+    snprintf(nbuf, sizeof(nbuf), "%s", name);
+    mc_parse_ident_streamname(nbuf, bare, NULL);
+    const char *key = (bare[0] != '\0') ? bare : name;
+    if (p->vars != NULL && is_readonly_unit_var(key))
     {
         if (err != NULL && errsz > 0)
         {
-            snprintf(err, errsz, "cannot assign to read-only variable '%s'", name);
+            snprintf(err, errsz, "cannot assign to read-only variable '%s'", key);
         }
         return -1;
     }
     for (int i = 0; i < p->nvars; i++)
     {
-        if (strcmp(p->vars[i].name, name) == 0 && p->vars[i].type != FPTYPE_STREAMNAME)
+        if (strcmp(p->vars[i].name, key) == 0 && p->vars[i].type != FPTYPE_STREAMNAME)
         {
             p->assigned[i] = 1;
         }
@@ -378,14 +399,22 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         return NULL;
     }
 
+    int   nhist = 0;
+    char *rt    = mc_rewrite_history(text, &nhist, err, errsz);
+    if (rt == NULL)
+    {
+        mcalc_prog_free(p);
+        return NULL;
+    }
     mc_tok_list_t *tl = calloc(1, sizeof(*tl));
-    if (tl == NULL || mc_lex(text, tl) != 0)
+    if (tl == NULL || mc_lex(rt, tl) != 0)
     {
         if (tl != NULL && err != NULL && errsz > 0)
         {
             snprintf(err, errsz, "%s", tl->errmsg[0] != '\0' ? tl->errmsg : "syntax error");
         }
         free(tl);
+        free(rt);
         mcalc_prog_free(p);
         return NULL;
     }
@@ -393,6 +422,7 @@ mcalc_prog *mcalc_prog_new(const char          *text,
     free(tl);
     if (p->ast_head == NULL && err != NULL && err[0] != '\0')
     {
+        free(rt);
         mcalc_prog_free(p);
         return NULL;
     }
@@ -400,11 +430,22 @@ mcalc_prog *mcalc_prog_new(const char          *text,
     {
         p->nstmts++;
     }
+    if (p->nstmts - nhist > 128)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "more than 128 statements");
+        }
+        free(rt);
+        mcalc_prog_free(p);
+        return NULL;
+    }
     if (p->nstmts > 0)
     {
         p->stmt_to_step = malloc((size_t) p->nstmts * sizeof(int));
         if (p->stmt_to_step == NULL)
         {
+            free(rt);
             mcalc_prog_free(p);
             return NULL;
         }
@@ -412,27 +453,65 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         {
             p->stmt_to_step[i] = -1;
         }
-        split_stmt_texts(p, text);
+        split_stmt_texts(p, rt);
         int idx = 0;
         for (mc_stmt_t *s = p->ast_head; s != NULL; s = s->next, idx++)
         {
+            s->is_hist_stmt = (idx >= p->nstmts - nhist);
+            s->needs_image  = -1;
             if (s->kind == MC_STMT_DEF && (p->stmt_texts == NULL || p->stmt_texts[idx] == NULL ||
                                            mcalc_udef_try_parse(p->stmt_texts[idx]) <= 0))
             {
                 (void) (err != NULL && errsz > 0 && snprintf(err, errsz, "invalid def syntax"));
+                free(rt);
                 mcalc_prog_free(p);
                 return NULL;
             }
         }
     }
-    if (mc_resolve_prog(p->ast_head, err, errsz) != 0 ||
-        scan_assigned_stmts(p, p->ast_head, err, errsz) != 0 ||
-        mc_plan_build(p, vars != NULL, err, errsz) != 0)
+    free(rt);
+    if (scan_assigned_stmts(p, p->ast_head, err, errsz) != 0)
+    {
+        mcalc_prog_free(p);
+        return NULL;
+    }
+    if (mc_resolve_prog_ex(p->ast_head, vars != NULL, err, errsz) != 0)
+    {
+        if (vars != NULL && err != NULL && err[0] != '\0' && strstr(err, " in '") == NULL &&
+            p->stmt_texts != NULL)
+        {
+            int fail_idx = -1, idx = 0;
+            for (mc_stmt_t *s = p->ast_head; s != NULL; s = s->next, idx++)
+            {
+                if (s->needs_image != -1)
+                {
+                    fail_idx = idx;
+                }
+            }
+            if (fail_idx >= 0 && fail_idx < p->nstmts && p->stmt_texts[fail_idx] != NULL)
+            {
+                size_t el = strlen(err);
+                snprintf(err + el, errsz - el, " in '%s'", p->stmt_texts[fail_idx]);
+            }
+        }
+        mcalc_prog_free(p);
+        return NULL;
+    }
+    if (mc_plan_build(p, vars != NULL, err, errsz) != 0)
     {
         mcalc_prog_free(p);
         return NULL;
     }
     return p;
+}
+
+void mcalc_sub_prog_free(struct mcalc_prog *p)
+{
+    if (p != NULL)
+    {
+        p->ast_head = NULL;
+        mcalc_prog_free(p);
+    }
 }
 
 void mcalc_prog_free(mcalc_prog *p)
@@ -486,21 +565,16 @@ void mcalc_prog_set_processinfo(mcalc_prog *p, void *processinfo)
     }
 }
 
-int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
+static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
 {
-    if (p == NULL)
-    {
-        return -1;
-    }
-    int in_unit    = (p->vars != NULL || p->processinfo != NULL);
-    int rc         = 0;
-    p->last_was_im = 0;
-    p->last_im_id  = -1;
-    mc_prog_load_vars(p);
-    mc_post_defer(1);
+    int rc = 0;
     for (int i = 0; i < p->nsteps && rc == 0; i++)
     {
         mc_step_t *st = &p->steps[i];
+        if (g_prog_skip && !st->is_hist_step)
+        {
+            continue;
+        }
         if (st->kind == MC_STEP_SCALAR)
         {
             rc             = mc_scalar_exec_stmt(st->scalar_stmt, &p->last_scalar, err, errsz);
@@ -525,7 +599,92 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
                 }
             }
         }
+        if (rc != 0 && in_unit && err != NULL && err[0] != '\0' && strstr(err, " in '") == NULL &&
+            p->stmt_texts != NULL && st->first_stmt_idx >= 0 && st->first_stmt_idx < p->nstmts &&
+            p->stmt_texts[st->first_stmt_idx] != NULL)
+        {
+            size_t el = strlen(err);
+            snprintf(err + el, errsz - el, " in '%s'", p->stmt_texts[st->first_stmt_idx]);
+        }
     }
+    return rc;
+}
+
+int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, size_t errsz)
+{
+    if (head == NULL)
+    {
+        return 0;
+    }
+    int           in_unit = mc_prog_in_unit();
+    mcalc_prog_t *sub     = (io_prog != NULL) ? *io_prog : NULL;
+    if (sub == NULL)
+    {
+        int nstmts = 0;
+        for (mc_stmt_t *s = head; s != NULL; s = s->next)
+        {
+            nstmts++;
+        }
+        sub = calloc(1, sizeof(*sub));
+        if (sub == NULL)
+        {
+            return -1;
+        }
+        sub->ast_head     = head;
+        sub->nstmts       = nstmts;
+        sub->last_im_id   = -1;
+        sub->stmt_to_step = calloc((size_t) nstmts, sizeof(int));
+        if (sub->stmt_to_step == NULL)
+        {
+            mcalc_sub_prog_free(sub);
+            return -1;
+        }
+        for (int i = 0; i < nstmts; i++)
+        {
+            sub->stmt_to_step[i] = -1;
+        }
+        if (mc_resolve_prog_ex(head, in_unit, err, errsz) != 0 ||
+            mc_plan_build(sub, in_unit, err, errsz) != 0)
+        {
+            mcalc_sub_prog_free(sub);
+            return -1;
+        }
+        if (io_prog != NULL)
+        {
+            *io_prog = sub;
+        }
+    }
+    int rc = run_prog_steps(sub, in_unit, err, errsz);
+    if (io_prog == NULL)
+    {
+        mcalc_sub_prog_free(sub);
+    }
+    return rc;
+}
+
+int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
+{
+    if (p == NULL)
+    {
+        return -1;
+    }
+    int in_unit    = (p->vars != NULL || p->processinfo != NULL);
+    p->last_was_im = 0;
+    p->last_im_id  = -1;
+    mc_prog_load_vars(p);
+    mc_post_defer(1);
+    int saved_skip = g_prog_skip;
+    g_prog_skip    = 0;
+    if (in_unit)
+    {
+        g_prog_unit_depth++;
+    }
+    int rc = run_prog_steps(p, in_unit, err, errsz);
+    if (in_unit)
+    {
+        g_prog_unit_depth--;
+    }
+    g_prog_skip = saved_skip;
     mc_post_flush(p->processinfo);
     if (rc == 0)
     {
@@ -536,46 +695,7 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
 
 int mc_exec_stmt_list(mc_stmt_t *head, char *err, size_t errsz)
 {
-    if (head == NULL)
-    {
-        return 0;
-    }
-    int nstmts = 0;
-    for (mc_stmt_t *s = head; s != NULL; s = s->next)
-    {
-        nstmts++;
-    }
-    mcalc_prog_t p = { .ast_head = head, .nstmts = nstmts, .last_im_id = -1 };
-    p.stmt_to_step = calloc((size_t) nstmts, sizeof(int));
-    if (p.stmt_to_step == NULL)
-    {
-        return -1;
-    }
-    for (int i = 0; i < nstmts; i++)
-    {
-        p.stmt_to_step[i] = -1;
-    }
-    int rc = (mc_resolve_prog(head, err, errsz) == 0 && mc_plan_build(&p, 0, err, errsz) == 0 &&
-              mcalc_prog_run(&p, err, errsz) == 0)
-                 ? 0
-                 : -1;
-    for (int i = 0; i < p.nsteps; i++)
-    {
-        if (p.steps[i].kind == MC_STEP_CTOR)
-        {
-            mc_ctor_step_free(&p.steps[i].ctor);
-        }
-        else if (p.steps[i].kind == MC_STEP_PASS)
-        {
-            free(p.steps[i].pass.ops);
-            free(p.steps[i].pass.outs);
-            free(p.steps[i].pass.c_src);
-        }
-    }
-    free(p.steps);
-    free(p.slots);
-    free(p.stmt_to_step);
-    return rc;
+    return mc_exec_sub_prog(NULL, head, err, errsz);
 }
 
 int mcalc_prog_exec_once(const char          *text,
@@ -597,156 +717,4 @@ int mcalc_prog_exec_once(const char          *text,
     }
     mcalc_prog_free(p);
     return rc;
-}
-
-static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
-{
-    if (e == NULL)
-    {
-        return;
-    }
-    if (e->kind == MC_EXPR_ASSIGN)
-    {
-        count_scalar_ops_reds(e->u.assign.rhs, ops, reds);
-        return;
-    }
-    if (e->kind == MC_EXPR_CALL)
-    {
-        const mc_func_t *fn = e->u.call.fn;
-        if (fn != NULL && (fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L ||
-                           fn->kind == MC_FN_DOT || fn->kind == MC_FN_EAGER_RED ||
-                           fn->kind == MC_FN_ISTATS || fn->kind == MC_FN_ICENTROID))
-        {
-            (*reds)++;
-            (*ops)++;
-            return;
-        }
-        (*ops)++;
-        for (int i = 0; i < e->u.call.nargs; i++)
-        {
-            count_scalar_ops_reds(e->u.call.args[i], ops, reds);
-        }
-        return;
-    }
-    if (e->kind == MC_EXPR_UNARY)
-    {
-        (*ops)++;
-        count_scalar_ops_reds(e->u.unary.operand, ops, reds);
-    }
-    else if (e->kind == MC_EXPR_BINARY)
-    {
-        (*ops)++;
-        count_scalar_ops_reds(e->u.binary.left, ops, reds);
-        count_scalar_ops_reds(e->u.binary.right, ops, reds);
-    }
-    else if (e->kind == MC_EXPR_TERNARY)
-    {
-        (*ops)++;
-        count_scalar_ops_reds(e->u.ternary.cond, ops, reds);
-        count_scalar_ops_reds(e->u.ternary.t_expr, ops, reds);
-        count_scalar_ops_reds(e->u.ternary.f_expr, ops, reds);
-    }
-    else if (e->kind == MC_EXPR_CHAIN)
-    {
-        (*ops) += e->u.chain.nops;
-        for (int i = 0; i <= e->u.chain.nops; i++)
-        {
-            count_scalar_ops_reds(e->u.chain.operands[i], ops, reds);
-        }
-    }
-}
-
-int mcalc_prog_explain(const char *text, FILE *out)
-{
-    char        err[512] = "";
-    mcalc_prog *p        = mcalc_prog_new(text, NULL, 0, err, sizeof(err));
-    if (p == NULL || mcalc_prog_run(p, err, sizeof(err)) != 0)
-    {
-        if (out != NULL)
-        {
-            fprintf(out, "milk.calc: %s\n", err[0] != '\0' ? err : "compilation error");
-        }
-        mcalc_prog_free(p);
-        return 1;
-    }
-    int nkept = 0;
-    for (int i = 0; i < p->nstmts; i++)
-    {
-        const char *st_txt =
-            (p->stmt_texts != NULL && p->stmt_texts[i] != NULL) ? p->stmt_texts[i] : "";
-        int  sidx = (p->stmt_to_step != NULL) ? p->stmt_to_step[i] : -1;
-        char how[512];
-        if (sidx < 0)
-        {
-            snprintf(how, sizeof(how), "def, inlined where it is called");
-        }
-        else
-        {
-            const mc_step_t *st = &p->steps[sidx];
-            nkept++;
-            if (st->kind == MC_STEP_PASS)
-            {
-                const char *wtype =
-                    st->pass.is_complex
-                        ? (st->pass.work_double ? "complex double" : "complex float32")
-                        : (st->pass.work_double ? "double" : "float32");
-                if (i > st->first_stmt_idx)
-                {
-                    snprintf(how, sizeof(how),
-                             "kept, merged into the fused pass of statement %d (%s)",
-                             st->first_stmt_idx + 1, wtype);
-                }
-                else
-                {
-                    char ps_buf[64] = "";
-                    if (st->pass.prestage_cnt > 0)
-                    {
-                        snprintf(ps_buf, sizeof(ps_buf), ", %d pre-stage%s", st->pass.prestage_cnt,
-                                 (st->pass.prestage_cnt == 1) ? "" : "s");
-                    }
-                    snprintf(how, sizeof(how),
-                             "kept: compiled C pass (%s, %s, %d operand%s, %d output%s%s)", wtype,
-                             st->pass.is_1d_contig ? "1D" : "ND", st->pass.nops,
-                             (st->pass.nops == 1) ? "" : "s", st->pass.nouts,
-                             (st->pass.nouts == 1) ? "" : "s", ps_buf);
-                }
-            }
-            else if (st->kind == MC_STEP_CTOR)
-            {
-                snprintf(how, sizeof(how), "kept: constructor/shape step");
-            }
-            else
-            {
-                int nops = 0, nreds = 0;
-                if (st->scalar_stmt != NULL && st->scalar_stmt->kind == MC_STMT_EXPR)
-                {
-                    count_scalar_ops_reds(st->scalar_stmt->u.expr, &nops, &nreds);
-                }
-                else if (st->scalar_stmt != NULL && st->scalar_stmt->kind == MC_STMT_MULTI_ASSIGN)
-                {
-                    for (int j = 0; j < st->scalar_stmt->u.multi.nrhs; j++)
-                    {
-                        count_scalar_ops_reds(st->scalar_stmt->u.multi.rhs[j], &nops, &nreds);
-                    }
-                }
-                if (nops == 0)
-                {
-                    nops = 1;
-                }
-                snprintf(how, sizeof(how),
-                         "kept: scalar tape: %d op%s, %d reduction%s, 0 pre-stages", nops,
-                         (nops == 1) ? "" : "s", nreds, (nreds == 1) ? "" : "s");
-            }
-        }
-        if (out != NULL)
-        {
-            fprintf(out, "%3d  %s\n       %s\n", i + 1, st_txt, how);
-        }
-    }
-    if (out != NULL)
-    {
-        fprintf(out, "%d statement%s kept, 0 evaluated as text\n", nkept, (nkept == 1) ? "" : "s");
-    }
-    mcalc_prog_free(p);
-    return 0;
 }

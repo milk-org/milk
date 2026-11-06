@@ -255,7 +255,7 @@ install(TARGETS milkbash DESTINATION lib)
 
 # Compute units without C code (milk.calc, milk.script): fpsexec binaries that run calculator statements or
 # a bash snippet on each frame; the calculator and milk.bash come from libmilkscript.
-foreach(_unit calc script)
+foreach(_unit script)
   add_executable(milk-fpsexec-milk-${_unit} units/milk_unit_${_unit}.c)
   target_compile_definitions(milk-fpsexec-milk-${_unit} PRIVATE MILK_NO_CLI)
   milk_configure_fpsexec(milk-fpsexec-milk-${_unit} PREFIX milk)

@@ -139,6 +139,8 @@ typedef struct
     size_t           scratch_cap;
     void            *ext_state;
     void (*ext_state_free)(void *);
+    int     ema_init;
+    imageID ema_im_id;
 } mc_ctor_step_t;
 
 /* Execution step in a planned program. */
@@ -147,9 +149,10 @@ typedef struct
     mc_step_kind_t kind;
     int            first_stmt_idx;
     int            last_stmt_idx;
-    mc_stmt_t     *scalar_stmt; /* for MC_STEP_SCALAR */
-    mc_pass_t      pass;        /* for MC_STEP_PASS */
-    mc_ctor_step_t ctor;        /* for MC_STEP_CTOR */
+    int            is_hist_step; /* 1 if appended by hist() ring rewriter */
+    mc_stmt_t     *scalar_stmt;  /* for MC_STEP_SCALAR */
+    mc_pass_t      pass;         /* for MC_STEP_PASS */
+    mc_ctor_step_t ctor;         /* for MC_STEP_CTOR */
 } mc_step_t;
 
 /* Planned program object (`mcalc_prog_t`). */

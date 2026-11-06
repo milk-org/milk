@@ -121,3 +121,34 @@ def test_guard_is_kept_and_cheap(tmp_path):
     assert int(value(res.stdout, "rate") or 0) > 100000, res.stdout + res.stderr
     # with the guard false nothing is written, so the self-trigger stops (a few late posts at most)
     assert int(value(res.stdout, "off") or 999) < 5, res.stdout + res.stderr
+
+
+def test_ema_and_frame0_auto_zero_accumulators(tmp_path):
+    """ema(expr, alpha) maintains persistent exponential moving average state across ticks (reset on
+    _n == 0), and self-referential accumulators (acc = acc + cam, k = k + 1) auto-zero at frame 0.
+    """
+    (tmp_path / "prog.calc").write_text(
+        "acc = acc + cam\n"
+        "k = k + 1\n"
+        "sm = ema(cam, 0.5)\n"
+        "sm_s = ema(imean(cam), 0.5)\n"
+        "k_out = k\n"
+        "s_out = sm_s\n"
+    )
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n em1 -t cam -p "k_out:int=0 s_out:float=0" -f prog.calc fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n em1 run >run.log 2>&1 & pid=$!\n"
+        "sleep 0.6\n"
+        'for v in 3 7 15; do @calc "cam = $v"; sleep 0.15; done; sleep 0.3\n'
+        '@calc -v a,m "acc[0,0]; sm[0,0]"; echo "res=$a,$m,$(@get f.em1.k_out),$(@get f.em1.s_out)"\n'
+        'echo "error=[$(@get f.em1.unit.error)]"; stop $pid',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "error") == "[]", out
+    # tick 0 (cam=1): acc=1, k=1, sm=1
+    # tick 1 (cam=3): acc=4, k=2, sm=2
+    # tick 2 (cam=7): acc=11, k=3, sm=4.5
+    # tick 3 (cam=15): acc=26, k=4, sm=9.75
+    assert value(res.stdout, "res") == "26,9.75,4,9.75", out

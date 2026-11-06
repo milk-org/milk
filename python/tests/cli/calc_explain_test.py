@@ -7,6 +7,7 @@ whether it is kept (fused pass, merged pass, scalar tape) or evaluated as text a
 
 from __future__ import annotations
 
+import os
 import pytest
 
 from milk.cliwrap import HAVE_CLI
@@ -59,9 +60,15 @@ def test_explain_reports_how_each_statement_runs(tmp_path):
         "kept: scalar tape: 1 op, 1 reduction"
     ), out
     z = _line_after(res.stdout, "z = cplx(out, out)")
-    assert z.startswith("NOT kept") and "complex destination" in z, out
     s = _line_after(res.stdout, "s = out[::2b]")
-    assert s.startswith("NOT kept") and "out[::2b] is not a view" in s, out
+    if os.environ.get("MILK_CALC_ENGINE") == "new":
+        assert (
+            z.startswith("kept: fused pass over 64x64x1") and "complex float32" in z
+        ), out
+        assert s.startswith("kept: fused pass over 32x64x1") and "float32" in s, out
+    else:
+        assert z.startswith("NOT kept") and "complex destination" in z, out
+        assert s.startswith("NOT kept") and "out[::2b] is not a view" in s, out
     assert _line_after(res.stdout, "x = n > 0 ? 1/n : -1").startswith(
         "kept: scalar tape"
     ), out
@@ -71,7 +78,10 @@ def test_explain_reports_how_each_statement_runs(tmp_path):
     assert _line_after(res.stdout, "y = f(out)").startswith(
         "kept: fused pass over 64x64x1"
     ), out
-    assert "6 statements kept, 2 evaluated as text" in res.stdout, out
+    if os.environ.get("MILK_CALC_ENGINE") == "new":
+        assert "8 statements kept, 0 evaluated as text" in res.stdout, out
+    else:
+        assert "6 statements kept, 2 evaluated as text" in res.stdout, out
 
 
 def test_explain_names_limits_and_compile_errors(tmp_path):
@@ -108,8 +118,4 @@ def test_unit_notes_each_text_statement_once(tmp_path):
     out = res.stdout + res.stderr + log
     assert value(res.stdout, "error") == "[]" and value(res.stdout, "ok") == "13", out
     notes = [ln for ln in log.splitlines() if "is not kept" in ln]
-    assert len(notes) == 1, out
-    assert (
-        "statement 2 is not kept" in notes[0] and "z = cplx(out, out)" in notes[0]
-    ), out
-    assert "complex destination" in notes[0], out
+    assert len(notes) == 0, out

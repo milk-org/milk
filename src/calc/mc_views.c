@@ -478,10 +478,38 @@ void mc_elide_unused_locals(mcalc_prog_t *prog)
             }
             for (int st2 = 0; st2 < prog->nsteps && !used_later; st2++)
             {
-                used_later |= (st2 != st && prog->steps[st2].kind != MC_STEP_PASS);
-                for (int k = 0; st2 != st && !used_later && k < prog->steps[st2].pass.nops; k++)
+                const mc_step_t *os = &prog->steps[st2];
+                if (st2 == st)
                 {
-                    used_later |= (prog->steps[st2].pass.ops[k].slot_idx == sidx);
+                    continue;
+                }
+                if (os->kind == MC_STEP_PASS)
+                {
+                    for (int k = 0; !used_later && k < os->pass.nops; k++)
+                    {
+                        used_later |= (os->pass.ops[k].slot_idx == sidx);
+                    }
+                }
+                else if (os->kind == MC_STEP_CTOR)
+                {
+                    used_later |= (os->ctor.slot_idx == sidx || os->ctor.multi_stmt != NULL ||
+                                   mc_expr_mentions_self(os->ctor.rhs_expr, slot->bare, NULL));
+                }
+                else if (os->scalar_stmt != NULL && os->scalar_stmt->kind == MC_STMT_EXPR)
+                {
+                    used_later |= mc_expr_mentions_self(os->scalar_stmt->u.expr, slot->bare, NULL);
+                }
+                else if (os->scalar_stmt != NULL && os->scalar_stmt->kind == MC_STMT_MULTI_ASSIGN)
+                {
+                    for (int k = 0; !used_later && k < os->scalar_stmt->u.multi.nrhs; k++)
+                    {
+                        used_later |= mc_expr_mentions_self(os->scalar_stmt->u.multi.rhs[k],
+                                                            slot->bare, NULL);
+                    }
+                }
+                else
+                {
+                    used_later = 1;
                 }
             }
             (void) (!used_later && ((pa->outs[i].is_elided = 1), (slot->is_elided = 1)));

@@ -20,6 +20,7 @@ set(SOURCEFILES
     mc_emit.c
     mc_exec.c
     mc_prog.c
+    mc_hist.c
     mc_eval.c
     linalg/mc_linalg_blas.c
     linalg/mc_linalg_lapack.c
@@ -101,3 +102,10 @@ install(
 install(FILES ${INCLUDEFILES} DESTINATION include/milkcalc)
 install(FILES ${INCLUDEFILES} DESTINATION include)
 install(FILES milk_calc_ext.h DESTINATION include/milkscript)
+
+add_executable(milk-fpsexec-milk-calc units/milk_unit_calc.c)
+target_compile_definitions(milk-fpsexec-milk-calc PRIVATE MILK_NO_CLI)
+target_include_directories(
+  milk-fpsexec-milk-calc PRIVATE $<TARGET_PROPERTY:${LIBNAME},INCLUDE_DIRECTORIES>)
+milk_configure_fpsexec(milk-fpsexec-milk-calc PREFIX milk)
+target_link_libraries(milk-fpsexec-milk-calc PUBLIC ${LIBNAME})

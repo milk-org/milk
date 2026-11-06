@@ -15,6 +15,7 @@
 #include "COREMOD_arith/arith_team.h"
 #include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_arith/image_stats.h"
+#include "COREMOD_memory/variable_ID.h"
 #include "linalg/mc_linalg.h"
 #include "mc_plan.h"
 
@@ -248,6 +249,50 @@ int mc_exec_prestage(mcalc_prog_t    *prog,
             ? _DATATYPE_DOUBLE
             : _DATATYPE_FLOAT;
     uint8_t out_dt = select_out_dt(slot, pref_dt);
+
+    if (strcmp(fn, "ema") == 0)
+    {
+        double alpha = 0.0;
+        if (mc_eval_scalar_d(rhs->u.call.args[1], call_site, &alpha, err, errsz) != 0)
+        {
+            mc_release_red_src(&s1);
+            return -1;
+        }
+        imageID oid = mc_out_prepare(slot, s1.naxis, s1.ishape, out_dt, in_unit, err, errsz);
+        if (oid < 0)
+        {
+            mc_release_red_src(&s1);
+            return -1;
+        }
+        size_t need = (size_t) s1.nel * sizeof(double);
+        if (cs->scratch_cap < need)
+        {
+            double *nb = realloc(cs->scratch_buf, need);
+            if (nb == NULL)
+            {
+                mc_release_red_src(&s1);
+                return -1;
+            }
+            cs->scratch_buf = nb, cs->scratch_cap = need, cs->ema_init = 0;
+        }
+        long   nvid  = variable_ID("_n");
+        long   nval  = (nvid >= 0 && milk_data.variable[nvid].type == 1)
+                           ? milk_data.variable[nvid].value.l
+                           : (nvid >= 0 ? (long) milk_data.variable[nvid].value.f : 0);
+        int    first = (!in_unit || !cs->ema_init || (nvid >= 0 && nval == 0));
+        IMAGE *dst   = &milk_data.image[oid];
+        for (uint64_t i = 0; i < s1.nel; i++)
+        {
+            double x           = arith_read_im_pix(s1.im, s1.dt, i);
+            double v           = first ? x : ((1.0 - alpha) * cs->scratch_buf[i] + alpha * x);
+            cs->scratch_buf[i] = v;
+            mc_write_im_pix(dst, out_dt, i, v);
+        }
+        cs->ema_init = 1;
+        mc_release_red_src(&s1);
+        mc_out_post(oid);
+        return 0;
+    }
 
     if (strcmp(fn, "cumsum") == 0)
     {

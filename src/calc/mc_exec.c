@@ -202,7 +202,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                            : image_ID(slot->bare, milk_data.image, milk_data.NB_MAX_IMAGE);
 
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
-        (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_STENCIL_LIB))
+        (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_STENCIL_LIB ||
+         (rhs->u.call.fn->kind == MC_FN_PROG && strcmp(rhs->u.call.fn->name, "ema") == 0)))
     {
         return mc_exec_prestage(prog, cs, avoid_id, call_site, in_unit, err, errsz);
     }
@@ -738,6 +739,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         }
     }
 
+    pass->vnx = vsz[0], pass->vny = vsz[1], pass->vnz = vsz[2];
     uint64_t nelem = (uint64_t) vsz[0] * (uint64_t) vsz[1] * (uint64_t) vsz[2];
     for (int i = 0; i < pass->nops; i++)
     {

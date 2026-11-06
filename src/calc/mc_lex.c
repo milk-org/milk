@@ -550,11 +550,13 @@ void mc_stmt_free(mc_stmt_t *s)
         case MC_STMT_IF:
             for (int i = 0; i < s->u.if_stmt.nbranches; i++)
             {
+                mcalc_sub_prog_free(s->u.if_stmt.branches[i].sub_prog);
                 mc_expr_free(s->u.if_stmt.branches[i].cond);
                 mc_stmt_free(s->u.if_stmt.branches[i].body);
             }
             break;
         case MC_STMT_FOR:
+            mcalc_sub_prog_free(s->u.for_stmt.sub_prog);
             mc_expr_free(s->u.for_stmt.start);
             mc_expr_free(s->u.for_stmt.stop);
             mc_expr_free(s->u.for_stmt.step);

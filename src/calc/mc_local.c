@@ -533,7 +533,9 @@ static int lex_local(const char *s, mc_lexp_t *x)
         else if ((strncmp(p, "nan", 3) == 0 || strncmp(p, "inf", 3) == 0) &&
                  !isalnum((unsigned char) p[3]) && p[3] != '_' && p[3] != '.')
         {
-            if (lpush(x, MC_TOK_DOUBLE, 0, (p[0] == 'n') ? NAN : INFINITY, NULL) != 0)
+            uint64_t cbits = (p[0] == 'n') ? 0x7ff8000000000000ULL : 0x7ff0000000000000ULL;
+            memcpy(&d, &cbits, sizeof(double));
+            if (lpush(x, MC_TOK_DOUBLE, 0, d, NULL) != 0)
             {
                 return -1;
             }

@@ -235,6 +235,8 @@ struct mc_expr
             mc_expr_t       *args[MC_MAX_ARGS];
             char             kw_names[MC_MAX_ARGS][64]; /* optional keyword arg name k=v */
             mc_expr_t       *udef_body;                 /* resolved inline body for udef_id >= 0 */
+            int              ema_init;
+            double           ema_val;
         } call;
 
         struct
@@ -286,8 +288,9 @@ typedef struct mc_stmt mc_stmt_t;
 
 typedef struct
 {
-    mc_expr_t *cond; /* NULL for else branch */
-    mc_stmt_t *body; /* linked list of statements */
+    mc_expr_t         *cond; /* NULL for else branch */
+    mc_stmt_t         *body; /* linked list of statements */
+    struct mcalc_prog *sub_prog;
 } mc_if_branch_t;
 
 struct mc_stmt
@@ -295,8 +298,9 @@ struct mc_stmt
     mc_stmt_kind_t kind;
     int            line;
     int            col;
-    int            is_local;    /* leading 'local' keyword */
-    int            needs_image; /* 1 if statement requires image engine */
+    int            is_local;     /* leading 'local' keyword */
+    int            needs_image;  /* 1 if statement requires image engine */
+    int            is_hist_stmt; /* 1 if appended by hist() ring rewriter */
     mc_stmt_t     *next;
 
     union
@@ -319,11 +323,12 @@ struct mc_stmt
 
         struct
         {
-            char       var[64];
-            mc_expr_t *start;
-            mc_expr_t *stop;
-            mc_expr_t *step; /* NULL for default 1 */
-            mc_stmt_t *body;
+            char               var[64];
+            mc_expr_t         *start;
+            mc_expr_t         *stop;
+            mc_expr_t         *step; /* NULL for default 1 */
+            mc_stmt_t         *body;
+            struct mcalc_prog *sub_prog;
         } for_stmt;
     } u;
 };
@@ -365,11 +370,35 @@ void mc_reduce_cache_evict_expr(const mc_expr_t *e);
 /** mc_stmt_free() - recursively free a linked list of AST statements. */
 void mc_stmt_free(mc_stmt_t *s);
 
+/** mc_resolve_prog_ex() - resolve all statements in @prog with unit context flag @in_unit. */
+int mc_resolve_prog_ex(mc_stmt_t *prog, int in_unit, char *err, size_t errsz);
+
 /** mc_resolve_stmt() - resolve names, types, shapes, and arities in @s (0 on ok, -1 on error). */
-int mc_resolve_stmt(mc_stmt_t *s, char *err, size_t errsz);
+static inline int mc_resolve_stmt(mc_stmt_t *s, char *err, size_t errsz)
+{
+    return mc_resolve_prog_ex(s, 0, err, errsz);
+}
 
 /** mc_resolve_prog() - resolve all statements in program list @prog (0 on ok, -1 on error). */
-int mc_resolve_prog(mc_stmt_t *prog, char *err, size_t errsz);
+static inline int mc_resolve_prog(mc_stmt_t *prog, char *err, size_t errsz)
+{
+    return mc_resolve_prog_ex(prog, 0, err, errsz);
+}
+
+/** mcalc_sub_prog_free() - free a cached branch/loop sub-program without freeing its AST. */
+void mcalc_sub_prog_free(struct mcalc_prog *p);
+
+/** mc_exec_sub_prog() - compile on first run and execute a branch/loop statement list @head. */
+int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, size_t errsz);
+
+/** mc_prog_set_skip() - set or clear the active unit `skip` flag for the current tick. */
+void mc_prog_set_skip(int on);
+
+/** mc_prog_skip_active() - return 1 if `skip` was triggered during the current tick. */
+int mc_prog_skip_active(void);
+
+/** mc_prog_in_unit() - return 1 if currently executing inside a `milk.calc` unit program. */
+int mc_prog_in_unit(void);
 
 /** mc_scalar_eval_expr() - evaluate a resolved scalar expression @e into @out (0 on ok, -1 on err). */
 int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz);
@@ -412,5 +441,14 @@ void mc_parse_ident_streamname(char *name, char *bare, char *loc);
 
 /** mc_set_expr_from_im() - populate expression result shape/type from image @im_ptr. */
 void mc_set_expr_from_im(mc_expr_t *e, const void *im_ptr);
+
+/** mc_expr_mentions_self() - return 1 if @e references identifier @bare, setting @out_im to peer. */
+int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out_im);
+
+/** mc_self_init_create() - create frame-0 zero-initialized stream or variable @tb for @rhs. */
+void mc_self_init_create(const char *tb, int is_local, const mc_expr_t *rhs);
+
+/** mc_rewrite_history() - expand `hist(s, N)` and `prev(s[, k])` into ring-buffer slices. */
+char *mc_rewrite_history(const char *text, int *out_nhist, char *err, size_t errsz);
 
 #endif /* MILK_MC_AST_H */

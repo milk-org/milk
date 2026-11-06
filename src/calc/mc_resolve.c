@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Olivier Guyon et al
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -11,6 +10,7 @@
 
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
+#include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "linalg/mc_linalg.h"
 #include "mc_ast.h"
@@ -26,16 +26,13 @@ typedef struct
 {
     char               *err;
     size_t              errsz;
-    int                 in_lazy_branch;
-    int                 slice_ax_size;
-    char                created_vars[MC_MAX_CREATED_VARS][256];
+    int                 in_unit, in_lazy_branch, slice_ax_size, ncreated, ncomp_vars, def_depth;
+    const char         *self_init_bare;
+    const IMAGE        *self_init_im;
+    char                created_vars[MC_MAX_CREATED_VARS][256], comp_vars[3][64];
     uint8_t             created_dt[MC_MAX_CREATED_VARS]; /* 255 = scalar var, >0 = image dt */
-    int                 ncreated;
-    char                comp_vars[3][64];
-    int                 ncomp_vars;
     const mcalc_udef_t *def_u[MC_UDEF_MAX_DEPTH];
     mc_expr_t *const   *def_args[MC_UDEF_MAX_DEPTH];
-    int                 def_depth;
 } mc_resolve_ctx_t;
 
 __attribute__((format(printf, 2, 3))) static int res_err(mc_resolve_ctx_t *ctx,
@@ -118,21 +115,16 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     e->u.ident.var_id = -1, e->u.ident.im_id = -1;
     int pidx                 = (e->u.ident.loc == 0) ? lookup_def_param(ctx, bare) : -1;
     e->u.ident.def_param_idx = pidx;
-    if (pidx >= 0)
+    for (int g = 0; pidx == -1 && e->u.ident.loc == 0 && g < ctx->ncomp_vars; g++)
     {
-        const mc_expr_t *ae = ctx->def_args[ctx->def_depth - 1][pidx];
-        e->u.ident.id_kind  = MC_ID_DEF_PARAM;
-        e->u.ident.im_id    = (ae->kind == MC_EXPR_IDENT) ? ae->u.ident.im_id : -1;
-        copy_res_meta(e, ae);
-        return 0;
+        pidx = (strcmp(ctx->comp_vars[g], bare) == 0) ? -2 : -1;
     }
-    for (int g = 0; e->u.ident.loc == 0 && g < ctx->ncomp_vars; g++)
+    if (pidx != -1)
     {
-        if (strcmp(ctx->comp_vars[g], bare) == 0)
-        {
-            e->u.ident.id_kind = MC_ID_VAR, set_expr_im(e, NULL, _DATATYPE_FLOAT);
-            return 0;
-        }
+        const mc_expr_t *ae = (pidx >= 0) ? ctx->def_args[ctx->def_depth - 1][pidx] : NULL;
+        e->u.ident.id_kind  = ae ? MC_ID_DEF_PARAM : MC_ID_VAR;
+        e->u.ident.im_id    = (ae && ae->kind == MC_EXPR_IDENT) ? ae->u.ident.im_id : -1;
+        return (ae ? copy_res_meta(e, ae) : set_expr_im(e, NULL, _DATATYPE_FLOAT)), 0;
     }
     long vid = variable_ID(bare);
     if (vid != -1 && milk_data.variable[vid].type != 3)
@@ -178,11 +170,19 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
                                       : MC_RES_SCALAR_D;
         return (num_ok || str_ok || ctx->in_lazy_branch) ? 0 : res_err(ctx, "property not found");
     }
-    if (e->u.ident.loc == 0 &&
-        (strcmp(bare, "pi") == 0 || strcmp(bare, "nan") == 0 || strcmp(bare, "inf") == 0))
+    int is_c = (e->u.ident.loc == 0 &&
+                (strcmp(bare, "pi") == 0 || strcmp(bare, "nan") == 0 || strcmp(bare, "inf") == 0));
+    if (is_c || (ctx->self_init_bare != NULL && strcmp(bare, ctx->self_init_bare) == 0))
     {
-        e->u.ident.id_kind = MC_ID_CONST, e->res_kind = MC_RES_SCALAR_D;
-        e->u.ident.const_val = (bare[0] == 'p') ? M_PI : (bare[0] == 'n') ? NAN : INFINITY;
+        uint64_t cbits     = !is_c              ? 0ULL
+                             : (bare[0] == 'p') ? 0x400921fb54442d18ULL
+                             : (bare[0] == 'n') ? 0x7ff8000000000000ULL
+                                                : 0x7ff0000000000000ULL;
+        e->u.ident.id_kind = (!is_c && ctx->self_init_im) ? MC_ID_IMAGE : MC_ID_CONST;
+        memcpy(&e->u.ident.const_val, &cbits, sizeof(double));
+        e->res_kind = MC_RES_SCALAR_D, e->needs_image = 0;
+        (void) (!is_c && ctx->self_init_im &&
+                (set_expr_im(e, ctx->self_init_im, ctx->self_init_im->md[0].datatype), 1));
         return 0;
     }
     const char *g      = milk_entity_ns_removed(e->u.ident.name);
@@ -238,13 +238,11 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
         nrange += (sa->has_colon || sa->is_full || sa->is_rev_full);
     }
     ctx->slice_ax_size = saved_slice_ax_sz;
-
     if (is_lhs && e->u.slice.naxis == 1 && !e->u.slice.axes[0].has_colon &&
         !e->u.slice.axes[0].is_full && !e->u.slice.axes[0].is_rev_full &&
         e->u.slice.axes[0].start != NULL && e->u.slice.axes[0].start->res_kind == MC_RES_IMAGE)
     {
-        e->u.slice.is_mask_index = 1;
-        return 0;
+        return (e->u.slice.is_mask_index = 1), 0;
     }
     if (e->u.slice.naxis > im_naxis || bad_bnd)
     {
@@ -271,26 +269,19 @@ static int resolve_udef_call(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     }
     ctx->def_u[ctx->def_depth] = u, ctx->def_args[ctx->def_depth] = e->u.call.args;
     mc_tok_list_t *btl = calloc(1, sizeof(mc_tok_list_t));
-    if (btl == NULL || mc_lex(u->body, btl) != 0)
-    {
-        res_err(ctx, "%s", btl ? btl->errmsg : "out of memory"), free(btl);
-        return -1;
-    }
-    mc_stmt_t *bst = mc_parse_stmt(btl, ctx->err, ctx->errsz);
-    free(btl);
+    mc_stmt_t     *bst = (btl != NULL && mc_lex(u->body, btl) == 0)
+                             ? mc_parse_stmt(btl, ctx->err, ctx->errsz)
+                             : NULL;
     if (bst == NULL || bst->kind != MC_STMT_EXPR || bst->u.expr == NULL)
     {
-        mc_stmt_free(bst);
-        return res_err(ctx, "invalid user function body in '%s'", u->name);
+        res_err(ctx, "%s", (btl && btl->errmsg[0]) ? btl->errmsg : "invalid user function body");
+        return free(btl), mc_stmt_free(bst), -1;
     }
-    ctx->def_depth++;
+    free(btl), ctx->def_depth++;
     int brc = resolve_expr(ctx, bst->u.expr, 1);
     ctx->def_depth--;
-    if (brc == 0)
-    {
-        copy_res_meta(e, bst->u.expr), mc_expr_free(e->u.call.udef_body);
-        e->u.call.udef_body = bst->u.expr, bst->u.expr = NULL;
-    }
+    (void) (brc == 0 && (copy_res_meta(e, bst->u.expr), mc_expr_free(e->u.call.udef_body),
+                         (e->u.call.udef_body = bst->u.expr), (bst->u.expr = NULL), 1));
     mc_stmt_free(bst);
     return brc;
 }
@@ -313,7 +304,16 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     {
         return res_err(ctx, "unknown function '%s'", e->u.call.name);
     }
-
+    if (e->u.call.fn != NULL && strcmp(e->u.call.fn->name, "post") == 0)
+    {
+        mc_expr_t *a0 = (e->u.call.nargs == 1) ? e->u.call.args[0] : NULL;
+        return (!a0 || a0->kind != MC_EXPR_IDENT)
+                   ? res_err(ctx, "post: expected post(stream_name)")
+                   : (mc_parse_ident_streamname(a0->u.ident.name, a0->u.ident.bare,
+                                                &a0->u.ident.loc),
+                      (a0->res_kind = e->res_kind = MC_RES_SCALAR_L),
+                      (a0->needs_image = e->needs_image = 0));
+    }
     for (int i = 0; i < e->u.call.nargs; i++)
     {
         if ((e->u.call.kw_names[i][0] != '\0' && e->u.call.ext_id < 0) ||
@@ -324,13 +324,11 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                        : -1;
         }
     }
-
     if (e->u.call.udef_id >= 0 || e->u.call.ext_id >= 0)
     {
         return (e->u.call.udef_id >= 0) ? resolve_udef_call(ctx, e)
                                         : mc_ext_resolve_call(e, nlhs, ctx->err, ctx->errsz);
     }
-
     const mc_func_t *fn    = e->u.call.fn;
     int              nargs = e->u.call.nargs;
     if (nargs < fn->min_args || (fn->max_args >= 0 && nargs > fn->max_args) || nlhs < fn->min_lhs ||
@@ -344,7 +342,6 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                                  : "wrong number of LHS targets for '%s'",
                              fn->name);
     }
-
     int any_im = 0, any_cplx = 0, any_dbl = 0;
     for (int i = 0; i < nargs; i++)
     {
@@ -354,7 +351,6 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         any_dbl |= (e->u.call.args[i]->res_kind == MC_RES_IMAGE &&
                     (dt == _DATATYPE_DOUBLE || dt == _DATATYPE_COMPLEX_DOUBLE));
     }
-
     if (any_cplx && fn->kind != MC_FN_CPLX && strcmp(fn->name, "abs") != 0 &&
         strcmp(fn->name, "fabs") != 0 && strcmp(fn->name, "reshape") != 0 &&
         strcmp(fn->name, "fft") != 0 && strcmp(fn->name, "ifft") != 0 &&
@@ -368,11 +364,20 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     {
     case MC_FN_SCALAR:
     case MC_FN_WHERE:
-        if (fn->kind == MC_FN_SCALAR && nargs == 3 &&
-            (e->u.call.args[1]->res_kind == MC_RES_IMAGE ||
-             e->u.call.args[2]->res_kind == MC_RES_IMAGE))
+    case MC_FN_PROG:
+        if ((fn->kind == MC_FN_SCALAR && nargs == 3 &&
+             (e->u.call.args[1]->res_kind == MC_RES_IMAGE ||
+              e->u.call.args[2]->res_kind == MC_RES_IMAGE)) ||
+            (fn->kind == MC_FN_PROG &&
+             (strcmp(fn->name, "ema") != 0 || e->u.call.args[0]->res_kind == MC_RES_STRING ||
+              e->u.call.args[1]->res_kind == MC_RES_IMAGE ||
+              e->u.call.args[1]->res_kind == MC_RES_STRING)))
         {
-            return res_err(ctx, "Only the first argument may be an image");
+            return res_err(ctx, (fn->kind == MC_FN_SCALAR)
+                                    ? "Only the first argument may be an image"
+                                : (strcmp(fn->name, "ema") == 0)
+                                    ? "ema: expected ema(expr, alpha) with scalar alpha"
+                                    : "function requires hist(stream, N) in a unit program");
         }
         for (int i = 0; any_im && i < nargs && e->res_naxis == 0; i++)
         {
@@ -381,34 +386,36 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                      memcpy(e->res_size, e->u.call.args[i]->res_size, sizeof(e->res_size))));
         }
         e->needs_image = any_im;
-        e->res_dt      = fn->cast_dt ? fn->cast_dt : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
-        e->res_kind    = any_im                      ? MC_RES_IMAGE
-                         : (fn->kind == MC_FN_WHERE) ? e->u.call.args[1]->res_kind
-                                                     : MC_RES_SCALAR_D;
+        e->res_dt   = (fn->kind == MC_FN_PROG && any_im && is_complex_dt(e->u.call.args[0]->res_dt))
+                          ? e->u.call.args[0]->res_dt
+                      : fn->cast_dt ? fn->cast_dt
+                                    : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
+        e->res_kind = any_im                      ? MC_RES_IMAGE
+                      : (fn->kind == MC_FN_WHERE) ? e->u.call.args[1]->res_kind
+                                                  : MC_RES_SCALAR_D;
         return 0;
 
     case MC_FN_CPLX:
-        if (strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0)
+        if ((strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0) &&
+            (!any_im || any_cplx || e->u.call.args[0]->res_kind == MC_RES_STRING ||
+             (nargs == 2 && e->u.call.args[1]->res_kind == MC_RES_STRING)))
         {
-            if (!any_im || any_cplx || e->u.call.args[0]->res_kind == MC_RES_STRING ||
-                (nargs == 2 && e->u.call.args[1]->res_kind == MC_RES_STRING))
-            {
-                return res_err(ctx, (strcmp(fn->name, "expi") == 0)
-                                        ? "expi: expected a real phase image"
-                                    : !any_im ? "cplx: needs at least one image"
-                                              : "cplx: needs two real operands of the same size");
-            }
-            set_expr_im(e, NULL, any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT);
-            return 0;
+            return res_err(ctx, (strcmp(fn->name, "expi") == 0)
+                                    ? "expi: expected a real phase image"
+                                : !any_im ? "cplx: needs at least one image"
+                                          : "cplx: needs two real operands of the same size");
         }
-        e->needs_image = any_im;
-        e->res_dt      = (strcmp(fn->name, "conj") == 0)
-                             ? e->u.call.args[0]->res_dt
-                             : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
-        e->res_kind    = any_im ? MC_RES_IMAGE
-                         : (strcmp(fn->name, "real") == 0 || strcmp(fn->name, "conj") == 0)
-                             ? e->u.call.args[0]->res_kind
-                             : MC_RES_SCALAR_D;
+        e->needs_image =
+            (strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0) ? 1 : any_im;
+        e->res_dt   = (strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0)
+                          ? (any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT)
+                      : (strcmp(fn->name, "conj") == 0)
+                          ? e->u.call.args[0]->res_dt
+                          : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
+        e->res_kind = e->needs_image ? MC_RES_IMAGE
+                      : (strcmp(fn->name, "real") == 0 || strcmp(fn->name, "conj") == 0)
+                          ? e->u.call.args[0]->res_kind
+                          : MC_RES_SCALAR_D;
         return 0;
 
     case MC_FN_PRNG:
@@ -536,6 +543,23 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
 {
     mc_expr_t    *target = e->u.assign.target, *rhs = e->u.assign.rhs;
     mc_tok_type_t op = e->u.assign.op;
+    if (ctx->in_unit && op == MC_TOK_ASSIGN && target->kind == MC_EXPR_IDENT)
+    {
+        mc_parse_ident_streamname(target->u.ident.name, target->u.ident.bare, &target->u.ident.loc);
+        const char  *tb       = target->u.ident.bare;
+        const IMAGE *other_im = NULL;
+        if (variable_ID(tb) == -1 && mc_resolve_or_autoconnect_image(target->u.ident.name) == -1 &&
+            created_var_op(ctx, tb, 0) == 0 && mc_host_str_get(tb) == NULL &&
+            mc_expr_mentions_self(rhs, tb, (const void **) &other_im))
+        {
+            ctx->self_init_bare = tb, ctx->self_init_im = other_im;
+            int prc             = resolve_expr(ctx, rhs, 1);
+            ctx->self_init_bare = NULL, ctx->self_init_im = NULL;
+            (void) (prc == 0 && (mc_self_init_create(
+                                     tb, target->u.ident.loc == 'L' || e->u.assign.is_local, rhs),
+                                 1));
+        }
+    }
     if (resolve_expr(ctx, rhs, 1) != 0 ||
         (target->kind == MC_EXPR_SLICE && resolve_slice(ctx, target, 1) != 0))
     {
@@ -563,16 +587,14 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     long        vid     = is_prop ? -1 : variable_ID(bare);
     if (is_prop || (vid != -1 && milk_data.variable[vid].type != 3))
     {
-        if (rhs->res_kind == MC_RES_IMAGE)
-        {
-            return res_err(ctx,
-                           is_prop ? "cannot assign image to property"
-                                   : "'%s' is a variable (calculator or bash), not an image",
-                           bare);
-        }
         target->u.ident.id_kind = is_prop ? MC_ID_PROP : MC_ID_VAR, target->u.ident.var_id = vid;
         e->needs_image = rhs->needs_image, e->res_kind = rhs->res_kind;
-        return 0;
+        return (rhs->res_kind == MC_RES_IMAGE)
+                   ? res_err(ctx,
+                             is_prop ? "cannot assign image to property"
+                                     : "'%s' is a variable (calculator or bash), not an image",
+                             bare)
+                   : 0;
     }
     imageID imid = mc_resolve_or_autoconnect_image(target->u.ident.name);
     int     cdt  = (imid == -1) ? created_var_op(ctx, bare, 0) : 0;
@@ -588,26 +610,25 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
                         : tdt);
         return 0;
     }
-    if (op != MC_TOK_ASSIGN)
+    if (op != MC_TOK_ASSIGN &&
+        ((mc_host_str_get(bare) == NULL && !mc_is_numeric_env_var(bare) && cdt == 0) ||
+         rhs->res_kind == MC_RES_IMAGE))
     {
-        if ((mc_host_str_get(bare) == NULL && !mc_is_numeric_env_var(bare) && cdt == 0) ||
-            rhs->res_kind == MC_RES_IMAGE)
-        {
-            return (rhs->res_kind == MC_RES_IMAGE)
-                       ? res_err(ctx, "'%s' is a variable (calculator or bash), not an image", bare)
-                       : res_err(ctx, "Variable not found for compound assign");
-        }
-        target->u.ident.id_kind = MC_ID_VAR, target->u.ident.var_id = -1;
-        e->needs_image = rhs->needs_image, e->res_kind = MC_RES_SCALAR_D;
-        return 0;
+        return (rhs->res_kind == MC_RES_IMAGE)
+                   ? res_err(ctx, "'%s' is a variable (calculator or bash), not an image", bare)
+                   : res_err(ctx, "Variable not found for compound assign");
     }
-    target->u.ident.id_kind = (rhs->res_kind == MC_RES_IMAGE) ? MC_ID_NEW : MC_ID_VAR;
-    target->u.ident.var_id  = -1;
-    created_var_op(ctx, bare,
-                   (rhs->res_kind == MC_RES_IMAGE) ? (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT)
-                                                   : 255);
+    target->u.ident.id_kind =
+        (op == MC_TOK_ASSIGN && rhs->res_kind == MC_RES_IMAGE) ? MC_ID_NEW : MC_ID_VAR;
+    target->u.ident.var_id = -1;
+    (void) (op == MC_TOK_ASSIGN &&
+            created_var_op(ctx, bare,
+                           (rhs->res_kind == MC_RES_IMAGE)
+                               ? (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT)
+                               : 255));
     e->needs_image = (rhs->res_kind == MC_RES_IMAGE) ? 1 : rhs->needs_image;
-    e->res_kind = rhs->res_kind, e->res_dt = rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT;
+    e->res_kind    = (op != MC_TOK_ASSIGN) ? MC_RES_SCALAR_D : rhs->res_kind;
+    e->res_dt      = rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT;
     return 0;
 }
 
@@ -617,7 +638,6 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     {
         return -1;
     }
-
     switch (e->kind)
     {
     case MC_EXPR_LONG:
@@ -650,17 +670,17 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
 
     case MC_EXPR_UNARY:
         if (resolve_expr(ctx, e->u.unary.operand, 1) != 0 ||
-            (e->u.unary.operand->res_kind == MC_RES_STRING && e->u.unary.op == MC_TOK_MINUS))
+            (e->u.unary.operand->res_kind == MC_RES_STRING && e->u.unary.op == MC_TOK_MINUS) ||
+            (e->u.unary.operand->res_kind == MC_RES_IMAGE &&
+             is_complex_dt(e->u.unary.operand->res_dt) && e->u.unary.op != MC_TOK_MINUS))
         {
             return (e->u.unary.operand->res_kind == MC_RES_STRING && e->u.unary.op == MC_TOK_MINUS)
                        ? res_err(ctx, "Cannot negate expression")
+                   : (e->u.unary.operand->res_kind == MC_RES_IMAGE &&
+                      is_complex_dt(e->u.unary.operand->res_dt) && e->u.unary.op != MC_TOK_MINUS)
+                       ? res_err(ctx, "Operator not supported for complex images; use real(), "
+                                      "imag() or abs() first")
                        : -1;
-        }
-        if (e->u.unary.operand->res_kind == MC_RES_IMAGE &&
-            is_complex_dt(e->u.unary.operand->res_dt) && e->u.unary.op != MC_TOK_MINUS)
-        {
-            return res_err(ctx, "Operator not supported for complex images; use real(), imag() or "
-                                "abs() first");
         }
         copy_res_meta(e, e->u.unary.operand);
         e->res_dt   = (e->res_kind == MC_RES_IMAGE && !is_complex_dt(e->res_dt) &&
@@ -723,20 +743,16 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     }
 
     case MC_EXPR_CHAIN:
-    {
-        int any_im = 0;
         for (int i = 0; i <= e->u.chain.nops; i++)
         {
-            if (resolve_lazy(ctx, e->u.chain.operands[i], i > 0 && !any_im) != 0)
+            if (resolve_lazy(ctx, e->u.chain.operands[i], i > 0 && !e->needs_image) != 0)
             {
                 return -1;
             }
-            any_im |= e->u.chain.operands[i]->needs_image;
+            e->needs_image |= e->u.chain.operands[i]->needs_image;
         }
-        e->needs_image = any_im, e->res_kind = any_im ? MC_RES_IMAGE : MC_RES_SCALAR_L;
-        e->res_dt = _DATATYPE_FLOAT;
-        return 0;
-    }
+        e->res_kind = e->needs_image ? MC_RES_IMAGE : MC_RES_SCALAR_L;
+        return (e->res_dt = _DATATYPE_FLOAT), 0;
 
     case MC_EXPR_TERNARY:
         if (resolve_expr(ctx, e->u.ternary.cond, 1) != 0 ||
@@ -782,9 +798,9 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
             snprintf(ctx->comp_vars[g], sizeof(ctx->comp_vars[g]), "%s", e->u.comp.gens[g].var);
         }
         ctx->ncomp_vars = e->u.comp.ngens;
-        int crc         = resolve_expr(ctx, e->u.comp.body, 1);
-        ctx->ncomp_vars = 0, set_expr_im(e, NULL, _DATATYPE_FLOAT);
-        return crc;
+        return (resolve_expr(ctx, e->u.comp.body, 1) == 0)
+                   ? ((ctx->ncomp_vars = 0), set_expr_im(e, NULL, _DATATYPE_FLOAT), 0)
+                   : ((ctx->ncomp_vars = 0), -1);
     }
     return -1;
 }
@@ -794,18 +810,16 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
     static const char *k_im_cond_err =
         "an if or for needs a number, not an image: test imin(...) for all pixels, imax(...) for "
         "any";
-
     for (; s != NULL; s = s->next)
     {
         s->needs_image = 0;
-        if (s->kind == MC_STMT_EMPTY || s->kind == MC_STMT_DEF || s->kind == MC_STMT_SKIP ||
-            s->kind == MC_STMT_EXPR)
+        if (s->kind <= MC_STMT_EXPR)
         {
-            if (s->kind == MC_STMT_EXPR && resolve_expr(ctx, s->u.expr, 1) != 0)
+            if (s->kind == MC_STMT_EXPR && (resolve_expr(ctx, s->u.expr, 1) != 0 ||
+                                            ((s->needs_image = s->u.expr->needs_image), 0)))
             {
                 return -1;
             }
-            (void) (s->kind == MC_STMT_EXPR && (s->needs_image = s->u.expr->needs_image));
             continue;
         }
         if (s->kind == MC_STMT_MULTI_ASSIGN)
@@ -844,41 +858,27 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
             }
             continue;
         }
-        if (s->kind == MC_STMT_IF)
-        {
-            for (int b = 0; b < s->u.if_stmt.nbranches; b++)
-            {
-                mc_if_branch_t *br = &s->u.if_stmt.branches[b];
-                if (br->cond != NULL &&
-                    (resolve_expr(ctx, br->cond, 1) != 0 || br->cond->res_kind == MC_RES_IMAGE))
-                {
-                    return (br->cond->res_kind == MC_RES_IMAGE) ? res_err(ctx, "%s", k_im_cond_err)
-                                                                : -1;
-                }
-                s->needs_image |= (br->cond != NULL && br->cond->needs_image);
-                int saved           = ctx->in_lazy_branch;
-                ctx->in_lazy_branch = 1;
-                int rc              = resolve_stmt_list(ctx, br->body);
-                ctx->in_lazy_branch = saved;
-                if (rc != 0)
-                {
-                    return -1;
-                }
-            }
-            continue;
-        }
+        int        nb    = (s->kind == MC_STMT_IF) ? s->u.if_stmt.nbranches : 3;
         mc_expr_t *fe[3] = { s->u.for_stmt.start, s->u.for_stmt.stop, s->u.for_stmt.step };
-        for (int j = 0; j < 3; j++)
+        for (int b = 0; b < nb; b++)
         {
-            if (fe[j] != NULL &&
-                (resolve_expr(ctx, fe[j], 1) != 0 || fe[j]->res_kind == MC_RES_IMAGE))
+            mc_expr_t *ce = (s->kind == MC_STMT_IF) ? s->u.if_stmt.branches[b].cond : fe[b];
+            if (ce != NULL && (resolve_expr(ctx, ce, 1) != 0 || ce->res_kind == MC_RES_IMAGE))
             {
-                return (fe[j]->res_kind == MC_RES_IMAGE) ? res_err(ctx, "%s", k_im_cond_err) : -1;
+                return (ce->res_kind == MC_RES_IMAGE) ? res_err(ctx, "%s", k_im_cond_err) : -1;
             }
-            s->needs_image |= (fe[j] != NULL && fe[j]->needs_image);
+            s->needs_image |= (ce != NULL && ce->needs_image);
+            int saved = ctx->in_lazy_branch;
+            if (s->kind == MC_STMT_IF &&
+                ((ctx->in_lazy_branch = 1),
+                 resolve_stmt_list(ctx, s->u.if_stmt.branches[b].body) != 0))
+            {
+                return (ctx->in_lazy_branch = saved), -1;
+            }
+            ctx->in_lazy_branch = saved;
         }
-        created_var_op(ctx, s->u.for_stmt.var, 255);
-        if (resolve_stmt_list(ctx, s->u.for_stmt.body) != 0)
+        if (s->kind == MC_STMT_FOR && (created_var_op(ctx, s->u.for_stmt.var, 255),
+                                       resolve_stmt_list(ctx, s->u.for_stmt.body) != 0))
         {
             return -1;
         }
@@ -886,14 +886,9 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
     return 0;
 }
 
-int mc_resolve_prog(mc_stmt_t *prog, char *err, size_t errsz)
+int mc_resolve_prog_ex(mc_stmt_t *prog, int in_unit, char *err, size_t errsz)
 {
     (void) (err && errsz > 0 && (err[0] = '\0'));
-    mc_resolve_ctx_t ctx = { .err = err, .errsz = errsz };
+    mc_resolve_ctx_t ctx = { .err = err, .errsz = errsz, .in_unit = in_unit };
     return (prog == NULL) ? -1 : resolve_stmt_list(&ctx, prog);
-}
-
-int mc_resolve_stmt(mc_stmt_t *s, char *err, size_t errsz)
-{
-    return mc_resolve_prog(s, err, errsz);
 }

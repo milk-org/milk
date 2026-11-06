@@ -202,6 +202,13 @@ imageID mc_out_prepare(mc_slot_t     *slot,
     }
     else
     {
+        id       = (slot->im_id >= 0 && slot->im_id < milk_data.NB_MAX_IMAGE &&
+                    milk_data.image[slot->im_id].used &&
+                    strcmp(milk_data.image[slot->im_id].name, bare) == 0)
+                       ? slot->im_id
+                       : ((is_tmp || slot->loc == 2 || slot->is_local)
+                              ? image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE)
+                              : mc_resolve_or_autoconnect_image(slot->name));
         long vid = variable_ID(bare);
         if (vid >= 0 && milk_data.variable[vid].type != 3)
         {
@@ -221,13 +228,6 @@ imageID mc_out_prepare(mc_slot_t     *slot,
             }
             return -1;
         }
-        id = (slot->im_id >= 0 && slot->im_id < milk_data.NB_MAX_IMAGE &&
-              milk_data.image[slot->im_id].used &&
-              strcmp(milk_data.image[slot->im_id].name, bare) == 0)
-                 ? slot->im_id
-                 : ((is_tmp || slot->loc == 2 || slot->is_local)
-                        ? image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE)
-                        : mc_resolve_or_autoconnect_image(slot->name));
     }
 
     uint64_t new_nel = 1;

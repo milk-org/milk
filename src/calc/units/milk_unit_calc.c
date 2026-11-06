@@ -24,8 +24,8 @@
 
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "calc_select.h"
 #include "fps_modulevars_resync.h"
+#include "mcalc.h"
 #include "milk_argval.h"
 #include "milk_unit.h"
 
@@ -306,10 +306,10 @@ static int declare(const char *text)
     }
     free(buf);
 
-    if (rc == 0 && (libs[0] != '\0' || calc_select_ext_count() > 0))
+    if (rc == 0 && (libs[0] != '\0' || mcalc_ext_count() > 0))
     {
         char err[512] = "";
-        if (libs[0] != '\0' && calc_select_ext_load_list(libs, err, sizeof(err)) != 0)
+        if (libs[0] != '\0' && mcalc_ext_load_list(libs, err, sizeof(err)) != 0)
         {
             fprintf(stderr, "milk.calc: %s\n", err);
             return -1;
@@ -321,10 +321,10 @@ static int declare(const char *text)
             (expr[0] != '\0' || file[0] != '\0') ? source_text(expr, file, err, sizeof(err)) : NULL;
         if (itext == NULL && etext == NULL && libs[0] != '\0')
         {
-            int next = calc_select_ext_count();
+            int next = mcalc_ext_count();
             for (int i = 0; i < next && rc == 0; i++)
             {
-                const milk_calc_ext_entry_t *e = calc_select_ext_get(i);
+                const milk_calc_ext_entry_t *e = mcalc_ext_get(i);
                 const milk_calc_param_set_t *ps =
                     (e != NULL && e->get_params != NULL) ? e->get_params() : NULL;
                 if (ps != NULL)
@@ -340,11 +340,11 @@ static int declare(const char *text)
         {
             if (itext != NULL)
             {
-                calc_select_ext_scan_source(itext, on_ext_param, on_ext_scalar_out, &rc);
+                mcalc_ext_scan_source(itext, on_ext_param, on_ext_scalar_out, &rc);
             }
             if (etext != NULL && rc == 0)
             {
-                calc_select_ext_scan_source(etext, on_ext_param, on_ext_scalar_out, &rc);
+                mcalc_ext_scan_source(etext, on_ext_param, on_ext_scalar_out, &rc);
             }
         }
         free(itext);
@@ -368,7 +368,7 @@ static int find_params(const char *name)
     if (pl >= 0 && fps.parray[pl].val.string[0][0] != '\0')
     {
         char err[512] = "";
-        if (calc_select_ext_load_list(fps.parray[pl].val.string[0], err, sizeof(err)) != 0)
+        if (mcalc_ext_load_list(fps.parray[pl].val.string[0], err, sizeof(err)) != 0)
         {
             fprintf(stderr, "milk.calc: %s\n", err);
             fps_disconnect(&fps);
@@ -445,20 +445,20 @@ static void report(PROCESSINFO *pi, const char *msg)
 
 typedef struct
 {
-    void    *prog;
-    long     pe;
-    long     pf;
-    long     pi;
-    long     pif;
-    long     pl;
-    uint64_t built[2];
-    uint64_t init_built[2];
-    uint64_t libs_built;
-    uint64_t stream_built[CALC_MAXPAR];
-    int      init_done;
-    double   t_start;
-    double   t_prev;
-    int      npar;
+    mcalc_prog *prog;
+    long        pe;
+    long        pf;
+    long        pi;
+    long        pif;
+    long        pl;
+    uint64_t    built[2];
+    uint64_t    init_built[2];
+    uint64_t    libs_built;
+    uint64_t    stream_built[CALC_MAXPAR];
+    int         init_done;
+    double      t_start;
+    double      t_prev;
+    int         npar;
 } calc_loop_ctx;
 
 /** run_unit_init_if_needed - Execute `.unit.init` / `.unit.initfile` when first run or modified. */
@@ -480,15 +480,15 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
     ctx->init_done     = 1;
     ctx->init_built[0] = pi_cnt;
     ctx->init_built[1] = pif_cnt;
-    calc_select_prog_free(ctx->prog);
+    mcalc_prog_free(ctx->prog);
     ctx->prog = NULL;
 
     if (init_expr[0] != '\0' || initfile[0] != '\0')
     {
         unsigned char assigned[CALC_MAXPAR + CALC_NBUILTIN] = { 0 };
         char         *itext = source_text(init_expr, initfile, err, errsz);
-        if (itext == NULL || calc_select_prog_exec_once(itext, cvars, ctx->npar + CALC_NBUILTIN,
-                                                        assigned, err, errsz) != 0)
+        if (itext == NULL || mcalc_prog_exec_once(itext, cvars, ctx->npar + CALC_NBUILTIN, assigned,
+                                                  err, errsz) != 0)
         {
             free(itext);
             return -1;
@@ -523,7 +523,7 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
     frame_cnt0   = frame_n;
     frame_ts     = 0.0;
     frame_missed = 0;
-    frame_torn   = (int64_t) calc_select_torn_count();
+    frame_torn   = (int64_t) mcalc_torn_count();
 
     if (processinfo != NULL && processinfo->trigger_image != NULL &&
         processinfo->trigger_image->md != NULL)
@@ -546,11 +546,11 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
     if (ctx->prog == NULL || stream_changed || pe_cnt != ctx->built[0] || pf_cnt != ctx->built[1])
     {
         char *text = source_text(expr, file, err, errsz);
-        calc_select_prog_free(ctx->prog);
+        mcalc_prog_free(ctx->prog);
         ctx->prog = (text != NULL)
-                        ? calc_select_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
+                        ? mcalc_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
                         : NULL;
-        calc_select_prog_set_processinfo(ctx->prog, processinfo);
+        mcalc_prog_set_processinfo(ctx->prog, processinfo);
         ctx->built[0] = pe_cnt;
         ctx->built[1] = pf_cnt;
         for (int k = 0; k < ctx->npar; k++)
@@ -563,13 +563,13 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
         }
         free(text);
     }
-    if (ctx->prog == NULL || calc_select_prog_run(ctx->prog, err, errsz) != 0)
+    if (ctx->prog == NULL || mcalc_prog_run(ctx->prog, err, errsz) != 0)
     {
         return -1;
     }
     for (int k = 0; k < ctx->npar; k++)
     {
-        if (calc_select_prog_assigns(ctx->prog, k))
+        if (mcalc_prog_assigns(ctx->prog, k))
         {
             sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
                               &bindings[CALC_NFIXED + k]);
@@ -606,7 +606,7 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     cvars[ctx.npar + 5] = (mcalc_binding) { "_missed", FPTYPE_INT64, &frame_missed };
     cvars[ctx.npar + 6] = (mcalc_binding) { "_torn", FPTYPE_INT64, &frame_torn };
 
-    calc_select_prog_attach();
+    mcalc_prog_attach();
     error[0] = '\0';
     functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", "");
     if (tname[0] != '\0' && image_ID(tname, dcimg, dcnimg) == -1)
@@ -623,7 +623,7 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
              (ctx.pl >= 0 && dcfpsptr->parray[ctx.pl].value_cnt != ctx.libs_built)))
         {
             ctx.libs_built = (ctx.pl >= 0) ? dcfpsptr->parray[ctx.pl].value_cnt : 0;
-            if (calc_select_ext_load_list(libs, err, sizeof(err)) != 0)
+            if (mcalc_ext_load_list(libs, err, sizeof(err)) != 0)
             {
                 report(processinfo, err);
                 processloopOK = 0;
@@ -642,7 +642,7 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     }
     MILK_PROCINFO_END(self)
 
-    calc_select_prog_free(ctx.prog);
+    mcalc_prog_free(ctx.prog);
     return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
@@ -721,7 +721,7 @@ int main(int argc, char **argv)
                          (strcmp(argv[j], "-l") == 0 || strcmp(argv[j], "--lib") == 0))
                 {
                     char err[512] = "";
-                    if (calc_select_ext_load_list(argv[++j], err, sizeof(err)) != 0)
+                    if (mcalc_ext_load_list(argv[++j], err, sizeof(err)) != 0)
                     {
                         fprintf(stderr, "milk.calc: %s\n", err);
                         return 1;
@@ -732,7 +732,7 @@ int main(int argc, char **argv)
                     pat = argv[j];
                 }
             }
-            return calc_select_print_catalog(pat, json_mode);
+            return mcalc_print_catalog(pat, json_mode);
         }
     }
 
