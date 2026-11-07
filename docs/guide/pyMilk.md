@@ -13,28 +13,27 @@ render_macros: true
 arrays in and out. It is what scripts, viewers and offline analysis use to talk to a running
 system.
 
-See also: [Streams](streams.md) · [FPS](fps.md) · [Programmer's Guide](../arch/programmers_guide.md)
+**Audience:** Operator · See also: [Streams](streams.md) · [FPS](fps.md) ·
+[Programmer's Guide](../arch/programmers_guide.md)
 
 To deploy and operate pipelines of milk compute units from Python (the `milk` package,
 `milk-pipeinit`, `milk-pipes`), see [Pipelines](pipelines.md).
 
----
-
 ## 1. Installation
 
 ```bash
-$ git clone https://github.com/milk-org/pyMilk --recurse-submodules
-$ cd pyMilk
-$ pip install -e .
+git clone https://github.com/milk-org/pyMilk --recurse-submodules  # (1)!
+cd pyMilk
+pip install -e .
 ```
+
+1. `--recurse-submodules` fetches ImageStreamIO, which the bindings are compiled from.
 
 The `-e` (developer mode) install is the supported one: the bindings are compiled in place
 from the ImageStreamIO submodule. Streams need nothing else. The `FPS` class needs a full
 milk installation, since it binds milk's own FPS library.
 
 `MILK_SHM_DIR` must be set: a stream named `mystream` is the file `$MILK_SHM_DIR/mystream.im.shm`.
-
----
 
 ## 2. Streams: the `SHM` class
 
@@ -63,8 +62,8 @@ frame = shm.get_data(check=True, timeout=None)   # wait forever
 
 `check=True` waits on one of the stream's semaphores, the same mechanism as the C API, with
 microsecond wake-up latency. The semaphore is flushed before waiting, so the frame returned was
-written *after* the call started: this is the way to wait for a fresh frame, not just a
-recent one.
+written *after* the call started: this is the way to wait for a fresh frame rather than take the
+latest one.
 
 ### 2.3. Grabbing many frames: `multi_recv_data()`
 
@@ -143,18 +142,14 @@ someone else since this object opened it).
 shm.save_as_fits("frame.fits")              # the current frame
 ```
 
----
-
 ## 3. Data ordering
 
 Data is column-major in shared memory, and a `symcode` constructor argument (0–7, default 4)
 selects the transposed / flipped representation you get on the Python side; the inverse is
 applied on write. `triDim` chooses how a 3D stream is ordered, and `autoSqueeze` removes
 singleton dimensions. Use the same values on both sides of a Python-to-Python exchange, and
-`symcode=0` when a stream must match a FITS file axis for axis (which is what the pipeline
-`[[dataloads]]` do).
-
----
+`symcode=0` when a stream must match a FITS file axis for axis, as the pipeline
+[data loads](pipelines_conf.md#32-data-loads) do.
 
 ## 4. Real-time loop example
 
@@ -174,10 +169,11 @@ while True:
 
 <!-- prettier-ignore -->
 !!! warning
-    Python's GIL limits true parallel performance. For latency-critical loops (>1 kHz), use C modules.
-    Python is best suited for monitoring, scripting, and offline analysis.
-
----
+    The performance of PyMilk is good, it's generally successful e.g. at polling all frames without miss on 2kHz+ camera streams.
+    Numpy operations are also accelerated on multiple CPUs by default.
+    However, for true real-time efficiency,
+    it is best to turn a prototyped pipeline into a C implementation early on after algorithm design.
+    Python is best suited for prototyping, monitoring, scripting, and offline analysis.
 
 ## 5. Function parameter structures: the `FPS` class
 
@@ -195,25 +191,26 @@ fps.run_stop();   fps.conf_stop()
 
 `fps.procinfo` (present when the FPS has `procinfo.*` keys) exposes the process-info
 parameters as attributes. `FPSManager("aol0_*")` finds and caches every FPS matching a glob.
-In a pipeline, FPS names are `<name>_<cu>` and the start/stop sequencing is done by
-[tasks](pipelines_plans.md); reach for `FPS` directly to read or tune parameters
-of a running compute unit.
+In a pipeline, FPS names are `<name>_<cu>`.
 
----
+!!! warning "FPS of a pipeline"
+    Start and stop a pipeline's processes through [tasks](pipelines_plans.md). Calling
+    `conf_start()` / `run_start()` directly bypasses them and can leave the pipeline `mixed` or
+    `inconsistent`. Use `FPS` only to read or tune parameters.
 
 ## 6. Viewers
 
 pyMilk ships three real-time viewers:
 
 ```bash
-$ shmImshow.py camstream --fr=20       # 2D image (PyQtGraph): histogram, dark subtraction, log scale
-$ shmPlot.py wfs_slopes --fr=10        # 1D multi-curve plot, one curve per row
-$ shmTermshow.py camstream --fr=10 -z=2    # ASCII art in the terminal, no GUI dependency
+shmImShow.py camstream --fr=20           # (1)!
+shmPlot.py wfs_slopes --fr=10            # (2)!
+shmTermShow.py camstream --fr=10 -z=2    # (3)!
 ```
+
+1. 2D image (PyQtGraph): histogram, dark subtraction, log scale.
+2. 1D multi-curve plot, one curve per row.
+3. ASCII art in the terminal, no GUI dependency.
 
 Press `H` in a viewer for the keyboard shortcuts. A `<name>_dark` stream, when it exists, is
 subtracted live.
-
----
-
-← [Documentation Index](../index.md)

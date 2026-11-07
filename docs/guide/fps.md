@@ -14,7 +14,7 @@ standardized interface directly in shared memory.
 
 See also: [Streams](streams.md) · [Process Info](procinfo.md) ·
 [Programmer's Guide](../arch/programmers_guide.md) ·
-[FPS Sequencer](sequencer.md)
+[FPS Sequencer](sequencer.md) · [pyMilk](pyMilk.md)
 
 ## 1. Architecture and Location
 

@@ -134,7 +134,8 @@ target = "mlatsim_dm"         # the stream to create
 1. A file in `rootdir/initdata/`, so: a hook product.
 
 The `LoadData` step of `deploy` creates each `target` stream from the FITS file `source`, with
-the file's shape and dtype. Every stream a CompU triggers on should exist before its conf process
+the file's shape and dtype, axis for axis (pyMilk `symcode=0`, see
+[pyMilk: data ordering](pyMilk.md#3-data-ordering)). Every stream a CompU triggers on should exist before its conf process
 starts, so this is the way to create the input streams of a pipeline.
 
 ### 3.3. Hooks: fetching and generating files
