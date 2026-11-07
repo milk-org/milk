@@ -5,7 +5,7 @@ description: Add or update pages on the MkDocs documentation site
 # Update Documentation Site
 
 Conventions, page checklist and tooling: `.agents/rules/documentation.md`,
-[`docs/developer/DocumentingCode.md`](../../docs/developer/DocumentingCode.md) and
+[`docs/developer/writing_docs.md`](../../docs/developer/writing_docs.md) and
 [`docs/developer/tooling.md`](../../docs/developer/tooling.md).
 
 1. Create or edit the page under the `docs/` subfolder matching its nav tab.

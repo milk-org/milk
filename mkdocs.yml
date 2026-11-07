@@ -107,7 +107,7 @@ nav:
     - Coding Standards: developer/coding_standards.md
     - Adding Plugins: developer/plugins.md
     - Managing Dependencies: developer/dependency_system.md
-    - Documenting Code: developer/DocumentingCode.md
+    - Writing Docs: developer/writing_docs.md
     - Tooling: developer/tooling.md
     - Multiple Versions: developer/multiversion.md
     - Working with Git: developer/WorkingWithGit.md

@@ -4,7 +4,7 @@ description: Documentation site structure and markdown standards for docs/ and R
 
 # Documentation
 
-Conventions and tooling: [`docs/developer/DocumentingCode.md`](../../docs/developer/DocumentingCode.md)
+Conventions and tooling: [`docs/developer/writing_docs.md`](../../docs/developer/writing_docs.md)
 and [`docs/developer/tooling.md`](../../docs/developer/tooling.md). Site: MkDocs Material from `docs/`
 (`mkdocs.yml`), Doxygen from the headers; both deployed by `.github/workflows/docs.yml` from
 `framework-dev`.
