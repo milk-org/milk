@@ -3,7 +3,7 @@
 Pipelines are sets of milk compute units that are declared, deployed and operated together by the
 `milk` Python package.
 
-**Audience:** All · See also: [Tour](pipelines_tour.md) · [Configuration](pipelines_conf.md) ·
+**Audience:** Operator · See also: [Tour](pipelines_tour.md) · [Configuration](pipelines_conf.md) ·
 [Operating](pipelines_operate.md) · [Glossary](pipelines_glossary.md)
 
 !!! note "Status"

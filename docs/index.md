@@ -66,13 +66,13 @@ Who might you be?
 
     [⮕ Build tiers](quickstart/build_tiers.md)
 
-- :material-console:{ .lg .middle } **CLI Overview**
+- :material-pipe:{ .lg .middle } **Pipelines**
 
     ***
 
-    Interactive shell, standalone executables, and scripting basics.
+    Deploy and operate sets of compute units from one configuration.
 
-    [⮕ CLI overview](quickstart/CLI_Overview.md)
+    [⮕ Pipelines](guide/pipelines.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
