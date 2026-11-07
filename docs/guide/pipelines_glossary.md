@@ -1,28 +1,99 @@
 # Pipelines glossary
 
-Published copy of the normative terms of the pipelines design (design-v7 §0). Specs and docs use these words only in these senses.
+Short definitions of the terms used in the pipelines pages. Each links to its normative
+definition.
 
-| Term | Definition |
-|------|-----------|
-| **confdir** | `<long>-conf/`. The editable configuration source of a pipeline: TOML files, `scripts/`, conf-hook declarations, and `data/` (conf-hook products plus tagfiles, git-ignored). No rootdir operation ever reads it. |
-| **clone** | A one-time, plain copy of a confdir's TOML files, `scripts/` and hook declarations to a new location. It excludes `data/`, writes a `.gitignore` containing `data/`, runs no conf hooks, makes no git commit, and refuses if the target exists. It leaves no ongoing link to the source. |
-| **conf hook** | A declared, idempotent provisioning action whose product lands in `confdir/data/` with a tagfile, for example fetching large files. Conf hooks never touch SHM, FPS, tmux, processes or machine configuration. |
-| **conf artifact** | A file-level unit of configuration whose fingerprint is tracked. There are two types: **conf file artifacts** (each TOML file of the conf set and each file under `scripts/`) and **hook artifacts** (each conf-hook product). Fetching produces hook artifacts; drift is computed per artifact. |
-| **fingerprint** | A small record that identifies an artifact's content and origin without storing the content: `content_hash` (sha256 of the file bytes; for a directory product, a hash over the sorted (relpath, hash) list, with empty directories included as `(relpath/, "")`), `size`, and for hook artifacts also `decl_digest` (a hash of the hook's TOML declaration) plus informational `source` and `time`. Equality is decided **only** by `content_hash` and `decl_digest`. Modes and mtime are ignored. Symlinks inside products are refused. The `.tag` suffix is reserved. |
-| **tagfile** | The recorded fingerprint of a hook artifact, stored next to it as `<product>.tag`. |
-| **consolidate** | Run the pending conf hooks of a confdir. Local to the confdir. It can be re-run at any time without affecting any rootdir. |
-| **confresolve** | API call: a TOML set (from a confdir or a rootdir) plus overrides → one validated `PipelineConfig`. Layers are merged and substitutions resolved. It always re-resolves (there is no cache this round) and has no side effects. |
-| **identity keys** | `long_name`, `name` (the short name) and `loop_number`. Paths, FPS names and the uniqueness rule derive from them. They are never overridable, and resync refuses to change them. |
-| **init** | Create a rootdir from a confdir: consolidate if needed, copy the conf file artifacts to `rootdir/conf/`, copy data and tagfiles to `rootdir/initdata/`, write `provenance.toml` (including the overrides used), and confresolve successfully. Refuses if the rootdir exists (use resync). Not atomic this round: on failure it reports and leaves what it wrote. |
-| **rootdir** | `<short>-rootdir/`. The authoritative, long-lived home of one pipeline instance after init. Hand edits of `rootdir/conf/` take effect immediately and are reported as drift. |
-| **drift** | A change between a conf artifact's recorded fingerprint and its current one, in the confdir or in the rootdir. It is reported **per artifact**, plus a **key-level resolved diff** (a difference in the confresolve output). Artifact drift is reported even when the resolved config is unchanged. Drift is only ever reported; resync is the only way to apply confdir changes to a rootdir. |
-| **resync** | Explicit propagation of selected drifted conf artifacts from the confdir into an existing rootdir. Records new fingerprints in provenance and returns a `ResyncReport`. Refused while the pipeline is running, refused for identity-key changes, and refuses to overwrite a locally modified rootdir artifact unless `--overwrite-local` is given. |
-| **provisioning** | Umbrella term for clone, consolidate, confresolve, init, drift and resync. File operations only; API `milk.provision`, CLI `milk-pipeinit`. The only contact with the live system: resync reads `any_run_active()` (§4.0 rule 5). Provisioning never writes to the rundir. |
-| **rundir** | `$MILK_SHM_DIR/pipe_rundirs/<short>/`. Ephemeral. It holds only non-derivable runtime facts: boot_id, the claim (short name, loop_number, **the deployed FPS names**), and the **applied linkage pairs**. `deploy` creates it and `teardown` removes it. Teardown, unlink and the consistency check read what was deployed from here, not from the current config. |
-| **cold** | No rundir and no FPS for this pipeline. `deploy` is the only operation allowed from cold. Any other operation raises `ColdSystemError` ("not deployed on this boot; run deploy"). |
-| **inconsistent** | Any mismatch between the rundir and the live FPS set: a stale rundir (boot_id mismatch), a valid rundir with some **recorded** FPS missing (for example after a failed deploy), or pipeline FPS present without a valid rundir. Every operation except `teardown` raises `InconsistentStateError`, with guidance to run teardown. |
-| **compute unit (CompU)** | One running instance of a milk compute unit within a pipeline, identified by (executable, FPS name): its FPS, its conf/run processes and its tmux session. "Session" is **not** used for this concept; it only ever means a tmux session. Code: `ComputeUnit`, `compute_units`, `ComputeUnitSpec`. |
-| **task** | A unit of operation on a rootdir's live pipeline with `can()` / `forward()` / `success()`. It is idempotent and may touch SHM, FPS, tmux and processes. It never modifies `rootdir/conf/`. It acts on all CompUs by default, or on an optional CompU subset. |
-| **plan** | Data, not code: a name, an ordered list of steps (task name plus an optional CompU subset), and a failure policy `on_failure: abort \| best_effort`. Defined in the generic registry or by a kind. Plans are what operators invoke. |
-| **kind** | A protocol that a pipeline declares (`kind = "…"`). It contributes required CompUs, live defaults from the installed package, allowed plans, and extra validation. |
-| **state** | The lifecycle status of a pipeline (`cold`, `inconsistent`, `deployed`, `configured`, `running`, or mixed), derived from rootdir + rundir + the live system. It is never stored. |
+**Audience:** All · See also: [Pipelines](pipelines.md) · [Configuration](pipelines_conf.md) ·
+[Operating](pipelines_operate.md) · [Internals: normative glossary](pipelines_internals.md#7-normative-glossary)
+
+## 1. Files and folders
+
+confdir
+:   `<long_name>-conf/`, the editable source of a pipeline: TOML files, `scripts/`, hook
+    declarations and `data/`. Kept in git. [Normative](pipelines_internals.md#term-confdir)
+
+rootdir
+:   `<name>-rootdir/`, the long-lived home of one pipeline instance, built by `init`. After init,
+    it is authoritative. [Normative](pipelines_internals.md#term-rootdir)
+
+rundir
+:   `$MILK_SHM_DIR/pipe_rundirs/<name>/`, the claim a deploy writes for the current boot.
+    Ephemeral. [Normative](pipelines_internals.md#term-rundir)
+
+conf artifact
+:   A file whose fingerprint is tracked: each conf file (TOML, `scripts/`) and each hook product.
+    Drift is computed per artifact. [Normative](pipelines_internals.md#term-conf-artifact)
+
+fingerprint
+:   The record of an artifact's content (a hash) and, for a hook product, of its declaration.
+    [Normative](pipelines_internals.md#term-fingerprint)
+
+tagfile
+:   `<product>.tag`, the fingerprint of a hook product, stored next to it.
+    [Normative](pipelines_internals.md#term-tagfile)
+
+identity keys
+:   `long_name`, `name` and `loop_number`. Every path and FPS name derives from them; they cannot
+    be overridden. [Normative](pipelines_internals.md#term-identity-keys)
+
+## 2. Provisioning
+
+provisioning
+:   The file operations on confdirs and rootdirs: clone, consolidate, confresolve, init, drift,
+    resync. CLI `milk-pipeinit`. [Normative](pipelines_internals.md#term-provisioning)
+
+clone
+:   A one-time copy of a confdir's conf files to a new location, without `data/`.
+    [Normative](pipelines_internals.md#term-clone)
+
+conf hook
+:   A declared action that fetches or generates a file into `confdir/data/`.
+    [Normative](pipelines_internals.md#term-conf-hook)
+
+consolidate
+:   Run the pending conf hooks of a confdir. [Normative](pipelines_internals.md#term-consolidate)
+
+confresolve
+:   Turn a confdir or rootdir, plus overrides, into one validated configuration.
+    [Normative](pipelines_internals.md#term-confresolve)
+
+init
+:   Build a rootdir from a confdir. [Normative](pipelines_internals.md#term-init)
+
+drift
+:   A change of a conf artifact since it was recorded, in the confdir or in the rootdir. Only
+    reported. [Normative](pipelines_internals.md#term-drift)
+
+resync
+:   Copy drifted artifacts from the confdir into an existing rootdir.
+    [Normative](pipelines_internals.md#term-resync)
+
+## 3. Live system
+
+compute unit (CompU)
+:   One milk `fpsexec` executable in a pipeline, with its FPS, its conf and run processes and its
+    tmux session. [Normative](pipelines_internals.md#term-compute-unit)
+
+kind
+:   The protocol a pipeline declares (`kind = "…"`). Kinds other than `generic`: not yet
+    implemented.
+    [Normative](pipelines_internals.md#term-kind)
+
+state
+:   `cold`, `deployed`, `configured`, `running`, `mixed` or `inconsistent`. Computed, never
+    stored. [Normative](pipelines_internals.md#term-state)
+
+cold
+:   Nothing deployed: no rundir and no FPS. [Normative](pipelines_internals.md#term-cold)
+
+inconsistent
+:   The rundir and the live FPSs disagree; only `teardown` is accepted.
+    [Normative](pipelines_internals.md#term-inconsistent)
+
+task
+:   One idempotent action on the live pipeline, on all CompUs or a subset.
+    [Normative](pipelines_internals.md#term-task)
+
+plan
+:   A named, ordered list of tasks with a failure policy, run by `milk-pipes <plan>`.
+    [Normative](pipelines_internals.md#term-plan)

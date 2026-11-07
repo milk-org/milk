@@ -96,10 +96,14 @@ nav:
     - pyMilk: guide/pyMilk.md
     - Pipelines:
       - Introduction: guide/pipelines.md
-      - Configuration Files: guide/pipelines_conf.md
-      - API Concepts: guide/pipelines_api.md
-      - "Provisioning: milk-pipeinit": guide/pipelines_provision.md
-      - "Operating: milk-pipes": guide/pipelines_operate.md
+      - Operate:
+        - Tour: guide/pipelines_tour.md
+        - "Operating: milk-pipes": guide/pipelines_operate.md
+      - Integrate:
+        - Configuration Files: guide/pipelines_conf.md
+        - "Drift, Resync & milk-pipeinit": guide/pipelines_provision.md
+        - Plans & Tasks: guide/pipelines_plans.md
+      - Internals: guide/pipelines_internals.md
       - Glossary: guide/pipelines_glossary.md
     - Valkey Integration: guide/valkey.md
   - Developer Guide:

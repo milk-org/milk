@@ -1,24 +1,26 @@
-# Pipelines: the `milk` Python package
+# Pipelines
 
-The `milk` Python package (`python/milk` in the milk repository) declares, deploys and operates
-**pipelines**: sets of milk compute units that are started, connected and stopped together. It
-replaces the shell-script loop management of milk v1 and cacao. The package is the API; the
-`milk-pipeinit` and `milk-pipes` commands are thin wrappers over it.
+Pipelines are sets of milk compute units that are declared, deployed and operated together by the
+`milk` Python package.
 
-This page is the entry point. The other pages are:
+**Audience:** All · See also: [Tour](pipelines_tour.md) · [Configuration](pipelines_conf.md) ·
+[Operating](pipelines_operate.md) · [Glossary](pipelines_glossary.md)
 
-- [Configuration files](pipelines_conf.md): the `conf.toml` syntax, substitutions, includes,
-  data loads, hooks, and how changes reach a deployed pipeline (drift and resync).
-- [API concepts](pipelines_api.md): the Python objects and how they fit together.
-- [Provisioning: `milk-pipeinit`](pipelines_provision.md) and
-  [Operating: `milk-pipes`](pipelines_operate.md): the command references.
-- [Glossary](pipelines_glossary.md): the normative definitions of every term used here.
+!!! note "Status"
+    The deploy lifecycle (provision, deploy, start, stop, teardown, linkages) is implemented.
+    Pipeline kinds other than `generic`, calibration store/load and the port of the cacao `aorun`
+    operations are not.
 
-Status: the deploy lifecycle (provision, deploy, start, stop, teardown, linkages) is
-implemented. Pipeline *kinds*, calibration store/load and the port of the cacao `aorun`
-operations are not yet.
+## 1. What the package does
 
-## Key concepts
+The `milk` package (`python/milk` in the milk repository) starts, connects and stops a pipeline's
+compute units together. It replaces the shell-script loop management of milk v1 and cacao. The
+package is the API; the `milk-pipeinit` and `milk-pipes` commands are thin wrappers over it.
+
+## 2. Key concepts
+
+A pipeline lives in three places: the confdir you edit, the rootdir built from it, and the rundir
+plus live system created by a deploy.
 
 ```mermaid
 flowchart LR
@@ -47,132 +49,54 @@ from. After init, only the rootdir matters: the live system never reads the conf
 changes reach the rootdir only through an explicit `resync`.
 
 **Rundir** (`$MILK_SHM_DIR/pipe_rundirs/<name>/`). The claim that `deploy` writes for the current
-boot. It is what makes the pipeline **state** computable: `cold` (nothing deployed),
-`deployed`, `configured` (conf processes up), `running`, `mixed`, or `inconsistent` (the rundir
-and the live FPSs disagree; `teardown` fixes it).
+boot. It is what makes the pipeline **state** computable: `cold`, `deployed`, `configured`,
+`running`, `mixed` or `inconsistent` (see [Operating: lifecycle](pipelines_operate.md#1-lifecycle)).
 
 **Plans and tasks.** Everything that touches the live system is a **task** (`InitFPS`,
 `ConfStart`, `RunStart`, ...), idempotent and restricted to any subset of CompUs. A **plan** is an
-ordered list of tasks with a failure policy. The built-in plans are `deploy` and `teardown`;
-starting the run processes is done from Python with `RunStart`, or with a plan of your own.
+ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_plans.md)).
 
-## A minimal `conf.toml`
+## 3. Where to go
 
-```toml
-long_name   = "pipelinebasic"
-name        = "basic"
-loop_number = 0
-teardown_kill_tmux = true
+<div class="grid cards" markdown>
 
-[compute_units.delay0]
-exec = "milk-fpsexec-mem-streamdelay"
+- **Operate**
 
-[compute_units.delay0.fps]              # written to the FPS at deploy
-naive_mode = true
-delaysec   = 0.01
-in_name    = "input"
-out_name   = "middle"
-procinfo.enabled      = true
-procinfo.triggermode  = 3
-procinfo.triggersname = "{compute_units.delay0.fps.in_name}"   # substitution
+    ***
 
-[compute_units.delay1]
-exec = "milk-fpsexec-mem-streamdelay"
+    Deploy, link, run and tear down a pipeline; read its state; handle failures.
 
-[compute_units.delay1.fps]
-naive_mode = true
-delaysec   = 0.01
-in_name    = "{compute_units.delay0.fps.out_name}"
-out_name   = "output"
-procinfo.enabled      = true
-procinfo.triggermode  = 3
-procinfo.triggersname = "{compute_units.delay0.fps.out_name}"
+    [⮕ Tour](pipelines_tour.md) · [⮕ Operating](pipelines_operate.md)
 
-[systemlinkage.loopback]                # local stream -> remote stream, applied by `link`
-input  = "source_point"
-output = "source_point"
+- **Integrate**
+
+    ***
+
+    Write a confdir, keep a rootdir in sync, write your own plans.
+
+    [⮕ Configuration](pipelines_conf.md) · [⮕ Drift and resync](pipelines_provision.md) ·
+    [⮕ Plans and tasks](pipelines_plans.md)
+
+- **Internals**
+
+    ***
+
+    Package layout, objects, state computation, task contract, normative terms.
+
+    [⮕ Internals](pipelines_internals.md)
+
+</div>
+
+## 4. Installing
+
+```bash
+pip install -e python/  # (1)!
 ```
 
-A pipeline that needs files adds `[[hooks]]` to fetch or generate them into `data/` and
-`[[dataloads]]` to load them into streams at deploy:
+1. Run from the milk repository root.
 
-```toml
-[[hooks]]
-id      = "dm"
-type    = "command"                     # run in data/; must create <product>
-command = ["python3", "../scripts/mkdm.py", "dm.fits"]
-product = "dm.fits"
+The package needs [pyMilk](https://github.com/milk-org/pyMilk) for SHM and FPS access, and
+`MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` set in the environment of anything that touches
+the live system. `import milk` itself works without a milk environment.
 
-[[dataloads]]
-source = "dm.fits"                      # a hook product, from rootdir/initdata/
-target = "mlatsim_dm"                   # the stream to create
-```
-
-Every key is explained in [Configuration files](pipelines_conf.md). Example confdirs live in
-`milk-examples/pipelines/` and in `python/tests/resources/` (`pipelinebasic-conf`,
-`mlatsim-conf`).
-
-## From a confdir to a running pipeline
-
-```console
-$ milk-pipeinit clone $MILK_ROOT/python/tests/resources/pipelinebasic-conf ~/pipes
-$ cd ~/pipes
-$ milk-pipeinit resolve pipelinebasic-conf      # print the resolved config; catches errors early
-$ milk-pipeinit init pipelinebasic-conf         # runs the hooks, builds ~/pipes/basic-rootdir
-$ milk-pipes state -p basic
-rootdir: /home/vdeo/pipes/basic-rootdir
-basic: cold
-drift: none
-$ milk-pipes deploy -p basic                    # ClaimRundir → InitFPS → LoadData → ConfStart
-$ milk-pipes link loopback -p basic             # apply a [systemlinkage]
-$ milk-pipes state -p basic
-basic: configured
-```
-
-Then from Python, start and stop the run processes:
-
-```python
-from milk.operate.pipeline import Pipeline
-from milk.operate.tasks import RunStart, RunStop
-
-pp = Pipeline("basic")                  # <cwd>/basic-rootdir, or a rootdir path
-pp.task_do(RunStart)                    # all CompUs
-pp.task_do(RunStop(pp, ["delay1"]))     # a subset
-```
-
-And when done:
-
-```console
-$ milk-pipes teardown -p basic                  # back to cold; keeps the rootdir and work/
-$ milk-pipes nuke -p basic                      # teardown, then delete the rootdir
-```
-
-`-p/--pipe` takes a rootdir path or a short name (`<cwd>/<name>-rootdir`); without it the
-current directory must be a rootdir.
-
-## Changing a deployed pipeline
-
-Edit the confdir, then:
-
-```console
-$ milk-pipes state -p basic
-basic: configured
-drift: 1 artifact(s); run `milk-pipeinit drift /home/vdeo/pipes/basic-rootdir`
-$ milk-pipeinit drift basic-rootdir             # what changed, and whether it is structural
-$ milk-pipes teardown -p basic
-$ milk-pipeinit resync basic-rootdir            # copy the changes into the rootdir
-$ milk-pipes deploy -p basic
-```
-
-Nothing is automatic: `resync` is refused while a run process is active and never deploys, and
-hand edits under `rootdir/conf/` are live immediately. The rules are in
-[Configuration files: drift and resync](pipelines_conf.md#keeping-a-rootdir-in-sync-drift-and-resync).
-
-## Installing
-
-The package is `python/` in the milk repository (`pip install -e python/`). It needs
-[pyMilk](https://github.com/milk-org/pyMilk) for SHM and FPS access, and `MILK_ROOT`,
-`MILK_INSTALLDIR` and `MILK_SHM_DIR` set in the environment of anything that touches the live
-system. `import milk` itself works without a milk environment.
-
-For plain stream access from Python (`SHM`, numpy), see the [pyMilk](pyMilk.md) page.
+For plain stream access from Python (`SHM`, numpy), see [pyMilk](pyMilk.md).

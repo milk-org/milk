@@ -196,7 +196,7 @@ fps.run_stop();   fps.conf_stop()
 `fps.procinfo` (present when the FPS has `procinfo.*` keys) exposes the process-info
 parameters as attributes. `FPSManager("aol0_*")` finds and caches every FPS matching a glob.
 In a pipeline, FPS names are `<name>_<cu>` and the start/stop sequencing is done by
-[tasks](pipelines_api.md#plans-and-tasks); reach for `FPS` directly to read or tune parameters
+[tasks](pipelines_plans.md); reach for `FPS` directly to read or tune parameters
 of a running compute unit.
 
 ---
