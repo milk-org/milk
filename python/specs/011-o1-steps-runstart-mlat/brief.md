@@ -12,8 +12,9 @@ from milk.operate.plans import Plan, Step, run, run_plan
 
 pp = Pipeline("mlatsim")                    # from tests/resources/mlatsim-conf, after init
 run_plan(pp, "deploy")
-run(pp, Plan("mlat", (Step("RunStart", ("wfssim",)), Step("RunStart", ("mlat",)),
-                      Step("WaitRunEnd", ("mlat",)), Step("RunStop", ("wfssim",)))))
+run(pp, Plan("mlat", (Step("RunStart", ("dmdelay",)), Step("RunStart", ("wfscam",)),
+                      Step("RunStart", ("mlat",)), Step("WaitRunEnd", ("mlat",)),
+                      Step("RunStop", ("wfscam", "dmdelay")))))
 ```
 ```console
 $ milk-show mlat mlatsim-rootdir/work/fps.mlatsim_mlat.datadir     # press r to redraw
@@ -55,7 +56,9 @@ $ milk-show mlat mlatsim-rootdir/work/fps.mlatsim_mlat.datadir     # press r to 
 - **`tests/resources/mlatsim-conf/`**:
   - A `command` hook (`scripts/mkdm.py`) writes a 16×16 float32 DM.
   - `[[dataloads]]` loads it as `mlatsim_dm`.
-  - `wfssim` is a streamdelay at about 1 kHz with a 3 ms delay.
+  - `dmdelay` (streamdelay, naive, triggermode 3 on the DM, `delaysec = 0.003`) feeds
+    `wfscam` (streamcopy, triggermode 4, `triggerdelay = 0.001`): a camera on a fixed clock
+    that DM writes never trigger. `[[dataloads]]` creates all three streams.
   - `mlat` does a single pass.
 
 ## Check first (external behaviour read from source, not yet run; stop rule applies)
@@ -63,7 +66,6 @@ $ milk-show mlat mlatsim-rootdir/work/fps.mlatsim_mlat.datadir     # press r to 
 - `procinfo.loopcntMax = 0` makes mlat run once and exit.
 - `hardwlatency.dat` lands in `rootdir/work/fps.mlatsim_mlat.datadir/` whatever the caller's
   cwd. `fps_write_RUNoutput_file` writes to a relative datadir.
-- mlat's conf check does not block `RunStart[mlat]` once wfssim has created `mlatsim_wfs`.
 - The measured latency is close to `delaysec`. The test bounds are loose; a miss is a finding,
   not a reason to loosen them.
 

@@ -20,6 +20,7 @@ dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12", "click>=8.1", "m
 [project.scripts]
 milk-pipes = "milk.operate.cli:milk_pipes"
 milk-pipeinit = "milk.provision.cli:milk_pipeinit"
+milk-show = "milk.show.cli:milk_show"
 
 [tool.setuptools.packages.find]
 include=["milk*"]
@@ -29,6 +30,7 @@ include=["milk*"]
 testpaths = ["tests"]
 addopts = [
     "--import-mode=importlib",
+    "--basetemp=/tmp/milk_pytest",  # static, wiped each run (pytest default: pytest-of-$USER/pytest-N)
     "--ignore=tests/mains",
     "--ignore=pyMilk",
     "--ignore=specs",

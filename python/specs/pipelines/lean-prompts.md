@@ -32,8 +32,8 @@ No plan document. Go straight to code.
 
 ```text
 Review the uncommitted diff in milk/ (git diff -- milk/) for slice <ID>.
-Make it smaller and plainer without changing behaviour: inline single-use helpers and variables;
-remove defensive checks that are not at a boundary, comments that restate the code, and unused
+Make it smaller and plainer without changing behaviour: inline single-use helpers and variables unless they have multiple use-points. Favor human readability, do not use abstractions for two uses or less.
+Remove defensive checks that are not at a boundary, comments that restate the code, and unused
 imports; prefer early returns. Apply the code rules in .github/copilot-instructions.md.
 The tests must stay green. Do not touch tests/. Report the net line count before and after.
 If something fails for an external reason, stop and report (stop rule); do not work around it.

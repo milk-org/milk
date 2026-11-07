@@ -79,6 +79,7 @@ def state(pipeline: Pipeline) -> PipelineState:
         st = State.DEPLOYED
     else:
         st = State.MIXED
+
     return PipelineState(st, reasons)
 
 

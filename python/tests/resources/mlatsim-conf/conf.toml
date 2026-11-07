@@ -1,9 +1,13 @@
 # mlat over a simulated DM -> WFS path (design-v7 Appendix A.1 shapes).
 #
-#   mlatsim_dm --[wfssim: streamdelay, ~1 kHz, delaysec]--> mlatsim_wfs
-#        ^                                                       |
-#        +---------------- mlat pokes dm, watches wfs -----------+
+#   mlatsim_dm --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
+#        ^                                                 |
+#        |                    [wfscam: streamcopy, fixed ~1 kHz clock]
+#        |                                                 v
+#        +-------- mlat pokes dm, watches wfs -------- mlatsim_wfs
 #
+# The camera samples the delayed DM on its own clock; DM writes never trigger it (optical, not
+# digital, feedback).
 # Session: see specs/011-o1-steps-runstart-mlat/brief.md.
 long_name = "mlatsim"
 name = "mlatsim"
@@ -16,35 +20,54 @@ type = "command"
 command = ["python3", "../scripts/mkdm.py", "dm.fits"]
 product = "dm.fits"
 
-[[dataloads]]                 # the DM stream must exist before wfssim and mlat start
+[[dataloads]]                 # every stream exists before any CompU starts
 source = "dm.fits"
 target = "mlatsim_dm"
 
-[compute_units.wfssim]        # the "camera": copies the DM, delaysec late, every triggerdelay
+[[dataloads]]
+source = "dm.fits"
+target = "mlatsim_dmdelayed"
+
+[[dataloads]]
+source = "dm.fits"
+target = "mlatsim_wfs"
+
+[compute_units.dmdelay]       # the DM response: copies each DM write, delaysec late
 exec = "milk-fpsexec-mem-streamdelay"
 
-[compute_units.wfssim.fps]
+[compute_units.dmdelay.fps]
 in_name = "mlatsim_dm"
-out_name = "mlatsim_wfs"
+out_name = "mlatsim_dmdelayed"
 delaysec = 0.003
 naive_mode = true
 procinfo.enabled = true
 procinfo.loopcntMax = -1
-procinfo.triggermode = 4      # delay: one frame every triggerdelay
+procinfo.triggermode = 3      # semaphore on the DM
+procinfo.triggersname = "{compute_units.dmdelay.fps.in_name}"
+
+[compute_units.wfscam]        # the camera: one frame every triggerdelay
+exec = "milk-fpsexec-mem-streamcopy"
+
+[compute_units.wfscam.fps]
+in_sname = "{compute_units.dmdelay.fps.out_name}"
+out_sname = "mlatsim_wfs"
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 4      # delay
 procinfo.triggerdelay = 0.001
 
 [compute_units.mlat]          # one measurement per run; the run ends by itself
 exec = "cacao-fpsexec-cacaopt-mlat"
 
 [compute_units.mlat.fps]
-dmstream = "{compute_units.wfssim.fps.in_name}"
-wfsstream = "{compute_units.wfssim.fps.out_name}"
+dmstream = "{compute_units.dmdelay.fps.in_name}"
+wfsstream = "{compute_units.wfscam.fps.out_sname}"
 pokemap = "null"
 OPDamp = 1.0
 CPA = 2.0
 frameratewait = 0.5
-NBiter = 10
-wfsNBframemax = 50
+NBiter = 50
+wfsNBframemax = 10
 option.saveseq = false
 option.seqNBframe = 20
 procinfo.enabled = true

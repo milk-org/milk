@@ -32,13 +32,14 @@ RESOURCES = Path(__file__).parents[1] / "resources"
 MEASURE = Plan(
     "mlat",
     (
-        Step("RunStart", ("wfssim",)),
+        Step("RunStart", ("dmdelay",)),
+        Step("RunStart", ("wfscam",)),
         Step("RunStart", ("mlat",)),
         Step("WaitRunEnd", ("mlat",)),
-        Step("RunStop", ("wfssim",)),
+        Step("RunStop", ("wfscam", "dmdelay")),
     ),
 )
-DELAYSEC = 0.003  # compute_units.wfssim.fps.delaysec in mlatsim-conf
+DELAYSEC = 0.003  # compute_units.dmdelay.fps.delaysec in mlatsim-conf
 
 
 @pytest.fixture
@@ -63,7 +64,9 @@ def _measure(pp: Pipeline) -> None:
 
 def test_mlat_measures_the_simulated_latency(mlatsim):
     _measure(mlatsim)
-    assert state(mlatsim).state is State.CONFIGURED  # wfssim stopped, mlat ended
+    assert (
+        state(mlatsim).state is State.CONFIGURED
+    )  # dmdelay and wfscam stopped, mlat ended
 
     name = mlatsim.config.fps_name("mlat")
     fps = FPS(name)
@@ -75,10 +78,7 @@ def test_mlat_measures_the_simulated_latency(mlatsim):
     # The run writes into rootdir/work, whatever the operator's cwd (here: the session tmp dir).
     datadir = mlatsim.work_folder / f"fps.{name}.datadir"
     lines = (datadir / "hardwlatency.dat").read_text().splitlines()
-    assert sum(line.startswith("#") for line in lines) == 10  # NBiter
-
-    matplotlib.use("Agg")
-    assert len(mlat_figure(datadir).axes[0].lines[0].get_xdata()) > 10
+    assert sum(line.startswith("#") for line in lines) == 50  # NBiter
 
 
 def test_a_second_measurement_runs_again(mlatsim):

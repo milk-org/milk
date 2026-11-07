@@ -180,6 +180,29 @@ class ConfStart(Task):
         return not stuck
 
 
+class RunStart(Task):
+    def can(self) -> bool:
+        for compu in self.compute_units.values():
+            if compu.fps is None or not compu.fps.conf_isrunning():
+                self.failure_reason = f"{compu.fpsname} is missing or its conf process is not running; run deploy."
+                return False
+        return True
+
+    def forward(self) -> None:
+        for compu, fps in self._existing():
+            if not fps.run_isrunning():
+                compu.runstart(tmux=True)
+        if not wait_until(self.success, self.TIMEOUT):
+            stuck = [c.fpsname for c, f in self._existing() if not f.run_isrunning()]
+            self.failure_reason = f"Run not started for {', '.join(stuck)}."
+
+    def success(self) -> bool:
+        return all(
+            c.fps is not None and c.fps.run_isrunning()
+            for c in self.compute_units.values()
+        )
+
+
 class RunStop(Task):
     def can(self) -> bool:
         return True
@@ -189,6 +212,23 @@ class RunStop(Task):
             if fps.run_isrunning():
                 compu.runstop()
         wait_until(self.success, self.TIMEOUT)
+
+    def success(self) -> bool:
+        return not any(fps.run_isrunning() for _, fps in self._existing())
+
+
+class WaitRunEnd(Task):
+    """Waits for the subset's runs to end by themselves; never stops anything."""
+
+    TIMEOUT = 120.0
+
+    def can(self) -> bool:
+        return True
+
+    def forward(self) -> None:
+        if not wait_until(self.success, self.TIMEOUT, interval=0.05):
+            running = [c.fpsname for c, f in self._existing() if f.run_isrunning()]
+            self.failure_reason = f"Still running: {', '.join(running)}."
 
     def success(self) -> bool:
         return not any(fps.run_isrunning() for _, fps in self._existing())

@@ -39,6 +39,22 @@ class Plan:
 PLANS: Registry[Plan] = Registry("plan")
 
 
+def run(pipeline: Pipeline, plan: Plan) -> None:
+    """Run any plan: build every task first (so ConfigError precedes side effects), gate, then do."""
+    tasks = [(s.label, TASKS[s.task](pipeline, s.compus)) for s in plan.steps]
+    gate(pipeline.short_name, state(pipeline), plan.accepts)
+    failures: list[tuple[str, Exception]] = []
+    for label, task in tasks:
+        try:
+            pipeline.task_do(task)
+        except MilkError as error:
+            if plan.on_failure == "abort":
+                raise
+            failures.append((label, error))
+    if failures:
+        raise BestEffortError(failures, pipeline=pipeline.short_name)
+
+
 def run_plan(pipeline: Pipeline, name: str) -> None:
     plan = PLANS[name]
     allowed = pipeline.config.plans
@@ -50,17 +66,7 @@ def run_plan(pipeline: Pipeline, name: str) -> None:
                 f"Plan {name!r} is not in this pipeline's plans {allowed}.",
                 pipeline=pipeline.short_name,
             )
-    gate(pipeline.short_name, state(pipeline), plan.accepts)
-    failures: list[tuple[str, Exception]] = []
-    for step in plan.steps:
-        try:
-            pipeline.task_do(TASKS[step.task](pipeline, step.compus))
-        except MilkError as error:
-            if plan.on_failure == "abort":
-                raise
-            failures.append((step.label, error))
-    if failures:
-        raise BestEffortError(failures, pipeline=pipeline.short_name)
+    run(pipeline, plan)
 
 
 for _plan in (

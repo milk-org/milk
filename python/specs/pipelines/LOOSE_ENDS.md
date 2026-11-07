@@ -54,3 +54,5 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [ ] `Pipeline.from_folder` checks `is_rootdir`, then `__init__` checks it again.
 - [ ] `milk-pipes nuke` raises `ClickException` inside `_user_errors()`; it passes through only
   because it is not a `MilkError`.
+- [ ] `milk-show mlat`: overlay fits on the figure (e.g. the latency step / per-iteration
+  latencies from the `#` lines of `hardwlatency.dat`).
