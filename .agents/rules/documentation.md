@@ -1,31 +1,26 @@
 ---
-description: Documentation site structure and markdown standards for docs/ and READMEs.
+description: Checklist for pages under docs/ and module READMEs; the rules live in docs/developer/writing_docs.md.
 ---
 
 # Documentation
 
-Conventions and tooling: [`docs/developer/writing_docs.md`](../../docs/developer/writing_docs.md)
-and [`docs/developer/tooling.md`](../../docs/developer/tooling.md). Site: MkDocs Material from `docs/`
-(`mkdocs.yml`), Doxygen from the headers; both deployed by `.github/workflows/docs.yml` from
-`framework-dev`.
+The rules are in [`docs/developer/writing_docs.md`](../../docs/developer/writing_docs.md) (human
+source, takes precedence); building and previewing in
+[`docs/developer/tooling.md`](../../docs/developer/tooling.md). Do not restate them here. To
+rewrite or restructure a page, use the `docs-writer` skill.
 
-## Adding a page
+## Adding or changing a page
 
-1. Create it in the `docs/` subfolder matching its nav tab (`quickstart/`, `guide/`, `developer/`,
-   `arch/`, `operations/`, `maintenance/`).
-2. Add it to `nav:` in `mkdocs.yml` and to `docs/index.md`.
-3. Start the file with YAML frontmatter `tags: [topic1, topic2]` (feeds `docs/tags.md`).
-4. Put a "See also" bar of 3-5 related pages near the top.
+1. Pick the page's one audience (writing_docs §2.1) and put it in the matching folder and nav group:
+   `quickstart/`, `guide/` (Internals as a subgroup of the topic), `developer/`, `arch/`,
+   `operations/`, `maintenance/`.
+2. Add it to `nav:` in `mkdocs.yml`. Entry-point pages also get a card in `docs/index.md`.
+3. Start it with the header line (writing_docs §2).
+4. Check that no other page already covers the topic; link to it instead of repeating it.
 
-## Formatting
+## Module READMEs
 
-- Prose wrapped at ~100 characters; tables and code blocks may exceed it.
-- ATX headings, no skipped levels.
-- Every fenced code block has a language (`bash`, `c`, `cmake`, `text`...).
-- No `$` / `milk-cli >` prompts in code blocks: they prevent copy-paste. Start milk-cli blocks with
-  `#!/usr/bin/env milk-script`.
-- Collapsible sections use `<details markdown="1">`.
-- Module READMEs: one-line description, source file table (`| File | Description |`), dependency list.
+One-line description, source file table (`| File | Description |`), dependency list.
 
 ## Before committing
 
