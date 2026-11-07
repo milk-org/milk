@@ -93,7 +93,14 @@ nav:
     - FIFO Command Input: guide/fifo.md
     - Readline Keys: guide/helpreadline.md
     - Scripts: guide/scripts.md
-    - Python API: guide/python.md
+    - pyMilk: guide/pyMilk.md
+    - Pipelines:
+      - Introduction: guide/pipelines.md
+      - Configuration Files: guide/pipelines_conf.md
+      - API Concepts: guide/pipelines_api.md
+      - "Provisioning: milk-pipeinit": guide/pipelines_provision.md
+      - "Operating: milk-pipes": guide/pipelines_operate.md
+      - Glossary: guide/pipelines_glossary.md
     - Valkey Integration: guide/valkey.md
   - Developer Guide:
     - Tutorial: developer/tutorial.md
