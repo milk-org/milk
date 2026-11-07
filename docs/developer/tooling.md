@@ -499,7 +499,7 @@ To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 !!! warning "This is global superseding"
     This approach is designed to supersede the system-wide installation with a development build.
-    This is not the same as running multiple, isolated versions. See [multiple versions here](../multiversion.md)
+    This is not the same as running multiple, isolated versions. See [multiple versions here](./multiversion.md)
 
 ### 6.2 Global install without sudo
 
