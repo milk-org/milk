@@ -118,8 +118,9 @@ static void *worker_main(void *arg)
             else if (now_ns() - t0 > spin_ns)
             {
                 pthread_mutex_lock(&mtx);
-                sleepers++;
-                while (__atomic_load_n(&job_gen, __ATOMIC_ACQUIRE) == seen)
+                /* seq_cst pairs with dispatch(): it sees this sleeper, or this sees its job */
+                __atomic_fetch_add(&sleepers, 1, __ATOMIC_SEQ_CST);
+                while (__atomic_load_n(&job_gen, __ATOMIC_SEQ_CST) == seen)
                 {
                     pthread_cond_wait(&cv, &mtx);
                 }
@@ -217,8 +218,8 @@ static int dispatch(int nth, uint64_t nitems, uint64_t chunk, arith_team_job_fn 
     job.nth    = nth;
     __atomic_store_n(&next_chunk, 0, __ATOMIC_RELAXED);
     __atomic_store_n(&done, 0, __ATOMIC_RELAXED);
-    __atomic_fetch_add(&job_gen, 1, __ATOMIC_RELEASE);
-    if (__atomic_load_n(&sleepers, __ATOMIC_ACQUIRE) > 0)
+    __atomic_fetch_add(&job_gen, 1, __ATOMIC_SEQ_CST);
+    if (__atomic_load_n(&sleepers, __ATOMIC_SEQ_CST) > 0)
     {
         pthread_mutex_lock(&mtx);
         pthread_cond_broadcast(&cv);
