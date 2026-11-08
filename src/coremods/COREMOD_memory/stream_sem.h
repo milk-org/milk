@@ -27,7 +27,6 @@ imageID COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, lo
 
 imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index);
 
-errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray, long NB_ID);
 
 errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID);
 

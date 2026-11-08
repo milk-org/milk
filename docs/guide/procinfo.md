@@ -188,6 +188,39 @@ processinfo_waitoninputstream_init(
 processinfo_waitoninputstream(processinfo);
 ```
 
+### Merging triggers
+
+A unit has one trigger stream. To trigger on several, run `trigmerge`: it waits on up to 16
+input streams and writes a small output stream each time its condition is met, and the unit
+triggers on that output.
+
+```bash
+milk-fpsexec-mem-trigmerge -n dmtrig fpsinit dmch0 dmch1 dmtrig   # .in0 .in1 .out
+@set f.dmtrig.in2=dmch2                                            # .in2 … .in15
+milk-fpsexec-mem-trigmerge -n dmtrig -loops runstart               # -loopd SEC caps the rate
+```
+
+- `.logic` is `any` (fire when any input posts) or `all` (fire once every input has a new
+  frame since the last fire). Inputs, `.logic` and `.timeout` can change while it runs.
+- `.timeout` (seconds, 0 = never) fires anyway when no merge happened for that long.
+- With `-loopd SEC` it fires at most once per period: inputs that arrive in between are merged
+  into the next fire. Without it, it fires as soon as the condition is met.
+- Clients that fall behind skip frames, as with any trigger: `trigmerge` does not wait for them.
+
+The output is an int64 stream of 52 elements (N = 16 inputs, bit or index k = `.in<k>`):
+
+| Elements      | Content                                                         |
+| ------------- | --------------------------------------------------------------- |
+| 0             | inputs that fired since the last fire (bitmask)                 |
+| 1             | configured inputs (bitmask)                                     |
+| 2             | inputs missing or, on a timeout, not received (bitmask)         |
+| 3             | why it fired: 0 = condition met, 1 = timeout                    |
+| 4 … 19        | each input's `cnt0` when it fired                               |
+| 20 … 35       | how many frames each input moved since the last fire            |
+| 36 … 51       | each input's write time, in ns                                  |
+
+The output's own `cnt0` and write time record the fire itself.
+
 ---
 
 ← [Documentation Index](../index.md)

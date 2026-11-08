@@ -16,6 +16,11 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-08** — `mem.trigmerge` (`milk-fpsexec-mem-trigmerge`) merges the triggers of up to 16
+  streams, any-of or all-of, into one small stream a unit triggers on. It records which inputs fired,
+  their counters, how many frames each moved and their write times; `-loopd` caps the rate. See
+  [Merging triggers](guide/procinfo.md#merging-triggers). The unused
+  `COREMOD_MEMORY_image_set_semwait_OR_IDarray()` it replaces is gone `#streams` `#fps`
 - **2026-11-08** — Thirty module commands that crashed at every call run again. They declared their
   parameters as pointers, but a binding copies each value into its variable: the value landed in
   the pointer itself (a 64-byte name over its neighbours), and the command crashed before its
