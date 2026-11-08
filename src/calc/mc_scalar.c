@@ -23,8 +23,6 @@
  *   `MC_FN_STR`, `MC_FN_CPLX`, `MC_FN_LUT`), stateful scalar `ema(x, alpha)`
  *   and `post(stream)` directives, and scalar-returning image reductions
  *   (`itot`, `imean`, `istats`, `icentroid`, `dot`, etc. via `mc_reduce.c`).
- * - Recursive inline `def` function calls with a bounded parameter frame stack
- *   (`g_udef_stk`).
  * - Executing statement-level control flow (`if`/`elif`/`else`, `for` loops
  *   with `MC_FOR_MAX_ITER` guard, `skip` tick termination, and multi-target
  *   tuple assignments).
@@ -45,6 +43,7 @@
 #include "libprocessinfo/processinfo.h"
 #include "COREMOD_arith/image_coord.h"
 #include "COREMOD_memory/create_variable.h"
+#include "COREMOD_memory/delete_variable.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/stream_sem.h"
 #include "COREMOD_memory/variable_ID.h"
@@ -54,28 +53,13 @@
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 
-#define MC_UDEF_MAX_DEPTH 4
 #define MC_FOR_MAX_ITER 100000
 
 /* ========================================================================= */
 /* Runtime Context State and Pixel/Variable Access Helpers                   */
 /* ========================================================================= */
 
-/**
- * struct mc_udef_frame_t - Call-stack activation record for an inline `def` call
- * @u:    Pointer to the active user-defined function descriptor
- * @args: Evaluated scalar argument values bound to `u->arg_names[]`
- */
-typedef struct
-{
-    const mcalc_udef_t *u;
-    mc_val_t            args[MCALC_UDEF_MAXARGS];
-} mc_udef_frame_t;
-
-static mc_udef_frame_t g_udef_stk[MC_UDEF_MAX_DEPTH];
-static int             g_udef_depth    = 0;
-static long            g_slice_end_val = -1;
-static int             g_sync_host_cnt = 0;
+static long g_slice_end_val = -1;
 
 /**
  * mc_scalar_set_slice_end - Set the active axis `end` index for slice bound evaluation
@@ -84,22 +68,6 @@ static int             g_sync_host_cnt = 0;
 void mc_scalar_set_slice_end(long end_val)
 {
     g_slice_end_val = end_val;
-}
-
-/**
- * mc_scalar_sync_host - Adjust the active `mcalc_eval_bash` host-sync nesting depth
- * @delta: +1 when entering bash evaluation, -1 when leaving, 0 to query
- *
- * When positive and a host string sink is registered, scalar variable stores
- * in `mc_store_scalar_var()` also mirror the formatted value into the host
- * shell environment.
- *
- * Return: Updated nesting depth counter
- */
-int mc_scalar_sync_host(int delta)
-{
-    g_sync_host_cnt += delta;
-    return g_sync_host_cnt;
 }
 
 /**
@@ -188,68 +156,60 @@ static void write_im_pix_val(IMAGE *im, uint64_t ii, double dval, long lval, int
  * @io_vid: Optional cached `milk_data.variable[]` index (updated in place)
  * @v:      Scalar or string value to store
  *
- * Updates `milk_data.variable[]` in place when `@io_vid` is valid, or creates
- * the variable via `create_variable_long_ID()` / `create_variable_ID()`. String
- * values and bash-synced numeric values are also forwarded to `mc_host_str_set()`.
+ * One store per name: a number goes to `milk_data.variable[]`, a string to the host's string
+ * table (mc_host_str_set()), and the name leaves the other one. A variable bound to a unit
+ * parameter keeps its place and takes either kind (mc_prog_store_vars() checks it).
  */
 void mc_store_scalar_var(const char *bare, long *io_vid, const mc_val_t *v)
 {
-    if (v->type == MC_VAL_STRING)
+    long vid =
+        (io_vid != NULL && *io_vid >= 0 && *io_vid < milk_data.NB_MAX_VARIABLE &&
+         milk_data.variable[*io_vid].used && strcmp(milk_data.variable[*io_vid].name, bare) == 0)
+            ? *io_vid
+            : variable_ID(bare);
+    int str = (v->type == MC_VAL_STRING);
+
+    if (str && vid >= 0 && !mc_var_bound(vid))
+    {
+        delete_variable_ID(bare);
+        vid = -1;
+    }
+    if (str && vid < 0)
     {
         mc_host_str_set(bare, v->sval);
-        return;
-    }
-
-    long vid = -1;
-    if (io_vid != NULL && *io_vid >= 0 && *io_vid < milk_data.NB_MAX_VARIABLE &&
-        milk_data.variable[*io_vid].used && strcmp(milk_data.variable[*io_vid].name, bare) == 0)
-    {
-        vid = *io_vid;
-    }
-
-    double dv = to_double(v);
-    if (v->type == MC_VAL_LONG)
-    {
-        if (vid >= 0)
-        {
-            milk_data.variable[vid].type    = 1;
-            milk_data.variable[vid].value.l = v->lval;
-        }
-        else
-        {
-            vid = create_variable_long_ID(bare, v->lval);
-        }
     }
     else
     {
+        if (!str)
+        {
+            mc_host_str_set(bare, NULL);
+        }
+        if (vid < 0)
+        {
+            vid = (v->type == MC_VAL_LONG) ? create_variable_long_ID(bare, v->lval)
+                                           : create_variable_ID(bare, to_double(v));
+        }
         if (vid >= 0)
         {
-            milk_data.variable[vid].type    = 0;
-            milk_data.variable[vid].value.f = dv;
-        }
-        else
-        {
-            vid = create_variable_ID(bare, dv);
+            VARIABLE *var = &milk_data.variable[vid];
+            var->type     = str ? 2 : (v->type == MC_VAL_LONG) ? 1 : 0;
+            if (str)
+            {
+                snprintf(var->value.s, sizeof(var->value.s), "%s", v->sval);
+            }
+            else if (var->type == 1)
+            {
+                var->value.l = v->lval;
+            }
+            else
+            {
+                var->value.f = to_double(v);
+            }
         }
     }
-
     if (io_vid != NULL)
     {
         *io_vid = vid;
-    }
-
-    if (g_sync_host_cnt > 0 && mc_host_has_str_sink())
-    {
-        char numv[64];
-        if (v->type == MC_VAL_LONG)
-        {
-            snprintf(numv, sizeof(numv), "%ld", v->lval);
-        }
-        else
-        {
-            snprintf(numv, sizeof(numv), "%.*g", mcalc_float_digits, dv);
-        }
-        mc_host_str_set(bare, numv);
     }
 }
 
@@ -264,7 +224,7 @@ void mc_store_scalar_var(const char *bare, long *io_vid, const mc_val_t *v)
  * @err:   Error message buffer
  * @errsz: Size of @err buffer in bytes
  *
- * Checks active `def` parameter frames first, then pre-resolved constants,
+ * Checks pre-resolved constants,
  * shared-memory entity properties, `milk_data.variable[]` (with cached
  * `var_id`), host/environment variables, and fallback constants (`pi`, `nan`,
  * `inf`).
@@ -275,27 +235,14 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
 {
     const char *bare = (e->u.ident.bare[0] != '\0') ? e->u.ident.bare : e->u.ident.name;
 
-    /* 1. Bound parameter in active inline 'def' call frame */
-    for (int j = 0;
-         e->u.ident.loc == 0 && g_udef_depth > 0 && j < g_udef_stk[g_udef_depth - 1].u->nargs; j++)
-    {
-        const mc_udef_frame_t *fr = &g_udef_stk[g_udef_depth - 1];
-        if ((e->u.ident.id_kind == MC_ID_DEF_PARAM && e->u.ident.def_param_idx == j) ||
-            strcmp(fr->u->arg_names[j], bare) == 0)
-        {
-            *out = fr->args[j];
-            return 0;
-        }
-    }
-
-    /* 2. Pre-resolved IEEE-754 constant */
+    /* 1. Pre-resolved IEEE-754 constant */
     if (e->u.ident.id_kind == MC_ID_CONST)
     {
         *out = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = e->u.ident.const_val };
         return 0;
     }
 
-    /* 3. Shared-memory entity property (s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop>) */
+    /* 2. Shared-memory entity property (s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop>) */
     if (e->u.ident.id_kind == MC_ID_PROP)
     {
         double dv = 0.0;
@@ -314,7 +261,7 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
         return sc_err(err, errsz, "property not found");
     }
 
-    /* 4. Core variable in milk_data.variable[] */
+    /* 3. Core variable in milk_data.variable[] */
     long vid = (e->u.ident.var_id >= 0 && e->u.ident.var_id < milk_data.NB_MAX_VARIABLE &&
                 milk_data.variable[e->u.ident.var_id].used &&
                 strcmp(milk_data.variable[e->u.ident.var_id].name, bare) == 0)
@@ -334,32 +281,26 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
         return 0;
     }
 
-    /* 5. Host string variable or numeric environment variable */
+    /* 4. Host string variable, or numeric environment variable */
     const char *cval = mc_host_str_get(bare);
-    if (cval == NULL && mc_is_numeric_env_var(bare))
-    {
-        cval = getenv(bare);
-    }
     if (cval != NULL)
     {
-        char  *ep1 = NULL;
-        char  *ep2 = NULL;
-        long   lv  = strtol(cval, &ep1, 0);
-        double dv  = strtod(cval, &ep2);
-        if (cval[0] != '\0' && (*ep1 == '\0' || *ep2 == '\0'))
-        {
-            *out = (*ep1 == '\0') ? (mc_val_t) { .type = MC_VAL_LONG, .lval = lv }
-                                  : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = dv };
-            return 0;
-        }
         out->type = MC_VAL_STRING;
         snprintf(out->sval, sizeof(out->sval), "%s", cval);
         return 0;
     }
+    if (mc_is_numeric_env_var(bare))
+    {
+        const char *ev  = getenv(bare);
+        char       *ep1 = NULL;
+        long        lv  = strtol(ev, &ep1, 0);
+        *out = (*ep1 == '\0') ? (mc_val_t) { .type = MC_VAL_LONG, .lval = lv }
+                              : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = strtod(ev, NULL) };
+        return 0;
+    }
 
-    /* 6. Fallback constants inside lazy branches */
-    if (e->u.ident.loc == 0 &&
-        (strcmp(bare, "pi") == 0 || strcmp(bare, "nan") == 0 || strcmp(bare, "inf") == 0))
+    /* 5. Fallback constants inside lazy branches */
+    if (e->u.ident.loc == 0 && mc_is_reserved_const(bare))
     {
         uint64_t cbits = (bare[0] == 'p')   ? 0x400921fb54442d18ULL
                          : (bare[0] == 'n') ? 0x7ff8000000000000ULL
@@ -370,6 +311,7 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
     }
 
     const char *gone = milk_entity_ns_removed(e->u.ident.name);
+    gone             = (gone != NULL) ? gone : mc_const_removed(e->u.ident.name);
     return sc_err(err, errsz, "undefined identifier '%s'%s%s", e->u.ident.name, gone ? ": " : "",
                   gone ? gone : "");
 }
@@ -438,7 +380,7 @@ static int resolve_single_pix_idx(const mc_expr_t *s_expr,
  * @err:   Error message buffer
  * @errsz: Size of @err buffer in bytes
  *
- * Handles inline `def` calls, 1-D lookup table interpolation `lut(x, tbl[, x0, dx])`,
+ * Handles 1-D lookup table interpolation `lut(x, tbl[, x0, dx])`,
  * scalar reductions (`mc_exec_reduce_scalar`), `post(stream)`, scalar math
  * (`MC_FN_SCALAR`), `where(c, a, b)`, scalar PRNG draws (`rand()`, `randn()`),
  * string functions (`MC_FN_STR`), scalar complex helpers (`real`, `imag`,
@@ -448,35 +390,10 @@ static int resolve_single_pix_idx(const mc_expr_t *s_expr,
  */
 static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
 {
-    /* Inline user-defined function call: push parameter frame and evaluate body */
-    if (e->u.call.udef_id >= 0)
-    {
-        const mcalc_udef_t *u = mcalc_udef_get(e->u.call.udef_id);
-        if (u == NULL || e->u.call.nargs != u->nargs || e->u.call.udef_body == NULL ||
-            g_udef_depth >= MC_UDEF_MAX_DEPTH)
-        {
-            return (g_udef_depth >= MC_UDEF_MAX_DEPTH)
-                       ? sc_err(err, errsz, "User function call depth exceeded")
-                       : sc_err(err, errsz, "invalid call to '%s'", e->u.call.name);
-        }
-        mc_udef_frame_t next_fr = { .u = u };
-        for (int i = 0; i < u->nargs; i++)
-        {
-            if (mc_scalar_eval_expr(e->u.call.args[i], &next_fr.args[i], err, errsz) != 0)
-            {
-                return -1;
-            }
-        }
-        g_udef_stk[g_udef_depth++] = next_fr;
-        int rc                     = mc_scalar_eval_expr(e->u.call.udef_body, out, err, errsz);
-        g_udef_depth--;
-        return rc;
-    }
-
     const mc_func_t *fn = e->u.call.fn;
     if (fn == NULL)
     {
-        return sc_err(err, errsz, "not implemented in the new engine");
+        return sc_err(err, errsz, "'%s' works on images, not on numbers", e->u.call.name);
     }
 
     int nargs = e->u.call.nargs;
@@ -594,9 +511,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
 
     case MC_FN_PRNG:
     {
-        int      kind = (strcmp(fn->name, "randn") == 0 || strcmp(fn->name, "grand") == 0)
-                            ? ARITH_COORD_RANDN
-                            : ARITH_COORD_RAND;
+        int      kind = (strcmp(fn->name, "randn") == 0) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
         uint32_t seed = (nargs == 1) ? (uint32_t) (int64_t) llround(to_double(&args[0]))
                                      : arith_next_rng_seed();
         *out          = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = arith_rng_draw(kind, seed) };
@@ -642,7 +557,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
     }
 
     default:
-        return sc_err(err, errsz, "not implemented in the new engine");
+        return sc_err(err, errsz, "'%s' needs an image argument", fn->name);
     }
 }
 
@@ -718,7 +633,10 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
     {
         if (!target->u.slice.is_single_pixel || rv.type == MC_VAL_STRING)
         {
-            return sc_err(err, errsz, "not implemented in the new engine");
+            return sc_err(err, errsz,
+                          (rv.type == MC_VAL_STRING)
+                              ? "a pixel holds a number, not a string"
+                              : "a slice is assigned in an image statement, not here");
         }
         IMAGE   *im = NULL;
         uint64_t ii = 0;
@@ -816,7 +734,7 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
     if (e == NULL || e->needs_image)
     {
         return sc_err(err, errsz,
-                      (e == NULL) ? "syntax error" : "not implemented in the new engine");
+                      (e == NULL) ? "syntax error" : "a number is needed here, not an image");
     }
 
     switch (e->kind)
@@ -846,7 +764,8 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         if (!e->u.slice.is_single_pixel || resolve_single_pix_idx(e, &im, &ii, err, errsz) != 0)
         {
             return !e->u.slice.is_single_pixel
-                       ? sc_err(err, errsz, "not implemented in the new engine")
+                       ? sc_err(err, errsz,
+                                "a slice is an image: reduce it (imean, imax...) to a number")
                        : -1;
         }
         read_im_pix_val(im, ii, out);
@@ -993,7 +912,7 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         return eval_assign(e, out, err, errsz);
 
     default:
-        return sc_err(err, errsz, "not implemented in the new engine");
+        return sc_err(err, errsz, "a number is needed here, not an image");
     }
 }
 
@@ -1016,7 +935,7 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
     if (s == NULL || (s->kind == MC_STMT_EXPR && s->u.expr->res_kind == MC_RES_IMAGE))
     {
         return sc_err(err, errsz,
-                      (s == NULL) ? "syntax error" : "not implemented in the new engine");
+                      (s == NULL) ? "syntax error" : "a number is needed here, not an image");
     }
 
     switch (s->kind)
@@ -1048,7 +967,7 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         }
         if (s->u.multi.nrhs != s->u.multi.nlhs)
         {
-            return sc_err(err, errsz, "not implemented in the new engine");
+            return sc_err(err, errsz, "give as many values as names (a, b = x, y)");
         }
         mc_val_t vals[MC_MAX_LHS] = { 0 };
         for (int j = 0; j < s->u.multi.nrhs; j++)
@@ -1090,7 +1009,12 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
             {
                 return -1;
             }
-            if (to_double(&cv) != 0.0)
+            int truth = mc_truth(&cv);
+            if (truth < 0)
+            {
+                return sc_err(err, errsz, "a condition is a number, not a string");
+            }
+            if (truth)
             {
                 return mc_exec_sub_prog((struct mcalc_prog **) &br->sub_prog, br->body, err, errsz);
             }
@@ -1108,6 +1032,10 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         mc_store_scalar_var(s->u.for_stmt.var, &vid, &vstart);
         for (int iters = 0; !mc_prog_skip_active(); iters++)
         {
+            if (mcalc_cancelled)
+            {
+                return sc_err(err, errsz, "interrupted");
+            }
             mc_val_t vstop;
             mc_val_t vstep = { .type = MC_VAL_LONG, .lval = 1 };
             if (mc_scalar_eval_expr(s->u.for_stmt.stop, &vstop, err, errsz) != 0 ||

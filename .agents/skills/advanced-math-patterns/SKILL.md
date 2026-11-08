@@ -46,37 +46,18 @@ _Note: Add `// MILK_CMAKE_REQUEST_BLAS` (or `MILK_CMAKE_MANDATE_BLAS`) to the so
 
 ## 2. Fast Fourier Transforms (FFT)
 
-Do not implement custom FFT logic or call `fftw` directly if you can avoid it. Milk has a dedicated `milkfft` plugin that wraps FFT operations safely into the stream processing architecture.
-
-- Include `fft/fft.h` (from `plugins/milk-extra-src/fft`).
-- In your `CMakeLists.txt`, link against `milkfft`.
-- Use `dofft()` or `init_fftwplan()` provided by the `milkfft` API to perform distributed or optimized 2D/3D transforms on `IMGID` streams.
+Do not implement custom FFT logic. In calculator expressions and `milk.calc` units, use `fft`, `ifft`
+and `fftshift` ([Calculator](../../../docs/guide/calculator.md)): they run cached FFTW plans
+(real-to-complex for real input, SIMD, on the calculator's thread team) in
+`src/calc/linalg/mc_fft_stack.c`. Plugin code can use the `milkfft` plugin
+(`plugins/milk-extra-src/fft`, `dofft.h`: `do2dfft`, `do2drfft`, ... on image names; link `milkfft`),
+which plans every call and runs single-threaded.
 
 ## 3. Loop Vectorization (SIMD)
 
-When writing element-wise math across large images, you must strictly guide GCC to vectorize the loop. If you miss one of these steps, GCC will fallback to scalar math (an 8x slowdown).
-
-1. **Restrict Pointers:** Always declare local aliases using `MILK_RESTRICT` (or standard `restrict`) so the compiler knows output does not overlap input.
-2. **Alignment:** Use `MILK_ASSUME_ALIGNED(ptr)` if your arrays are 64-byte aligned (true for all milk streams).
-3. **Index Type Matching:** The loop index (`ii`) MUST match the bounds variable type (`uint64_t`). A type mismatch (`int ii = 0; ii < uint64_size`) completely breaks GCC auto-vectorization.
-4. **OpenMP + SIMD:** Use OpenMP pragmas to distribute the loop across cores AND vector lanes.
-
-```c
-float * restrict in_ptr = inimg->im->array.F;
-float * restrict out_ptr = outimg->im->array.F;
-MILK_ASSUME_ALIGNED(in_ptr);
-MILK_ASSUME_ALIGNED(out_ptr);
-
-uint64_t xysize = inimg->mdt->size[0] * inimg->mdt->size[1];
-
-#pragma omp parallel for simd
-for (uint64_t ii = 0; ii < xysize; ii++)
-{
-    out_ptr[ii] = in_ptr[ii] * 2.5f;
-}
-```
-
-_Use `MILK_PREFETCH(addr, rw, locality)` inside loops that walk sequentially through massive multi-gigabyte arrays._
+Follow [performance-practices.md](../../rules/performance-practices.md) (restrict, alignment, index
+types, thread counts with `milk_omp_team_size`). Shared-memory stream data is only 8-byte aligned;
+local images are 64-byte aligned.
 
 ## 4. Avoiding Transcendentals in Hot Loops
 

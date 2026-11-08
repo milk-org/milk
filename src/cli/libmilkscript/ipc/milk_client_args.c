@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_lexicon.h"
 #include "fps_types.h"
 #include "milk_argval.h"
 #include "milk_client.h"
@@ -125,8 +126,9 @@ static int bad(const char *fname, const arg_spec_t *a, int n, const char *msg, c
  * @local: Non-zero to emit `local` bindings (inside a shell function), 0 for globals
  * @hooks: Shell integration hooks used to evaluate the generated variable bindings
  *
- * Parses parameter specifications (`name:type[=default][:help]`), matches positional
- * and `.name=value` arguments, validates types via `milk_argval_parse`, and evaluates
+ * Parses parameter specifications (`name:type[=default][:help]`), binds positional and
+ * `.name=value` arguments as module commands do (`milk_args_bind`), validates types via
+ * `milk_argval_parse`, and evaluates
  * a single-quoted assignment command in the calling shell.
  *
  * Return: 0 on success, 1 after printing `-h`/`--help`, 2 on declaration or argument error
@@ -161,60 +163,42 @@ int milk_client_args(int                        argc,
     }
     if (i == argc)
     {
-        fprintf(stderr, "Usage: @args \"name:type[=default][:help]\"... -- \"$@\"\n");
+        milk_lexicon_usage("args", stderr);
         rc = 2;
         goto out;
     }
 
-    int pos = 0;
-    int raw = 0;
-    rc      = 0;
-    for (i++; i < argc && rc == 0; i++)
+    /* -h/--help before a second "--" asks for the help; the values bind as module command arguments
+     * do (milk_args_bind()), every parameter taking positional values in order; "." keeps the default */
+    char         **vw = argv + i + 1;
+    int            nv = argc - i - 1;
+    milk_argslot_t slots[ARGS_MAX];
+    const char    *val[ARGS_MAX];
+    char           msg[192];
+    rc = 0;
+    for (int t = 0; t < nv && strcmp(vw[t], "--") != 0 && rc == 0; t++)
     {
-        const char *v = argv[i];
-        if (!raw && (strcmp(v, "-h") == 0 || strcmp(v, "--help") == 0))
+        if (strcmp(vw[t], "-h") == 0 || strcmp(vw[t], "--help") == 0)
         {
             print_help(fname, a, n);
             rc = 1;
         }
-        else if (!raw && strcmp(v, "--") == 0)
+    }
+    for (int k = 0; k < n; k++)
+    {
+        slots[k] = (milk_argslot_t) { a[k].name, 1 };
+    }
+    if (rc == 0 && milk_args_bind(nv, vw, -1, n, slots, val, NULL, msg, sizeof(msg)) != 0)
+    {
+        rc = bad(fname, a, n, "", msg);
+    }
+    for (int k = 0; k < n && rc == 0; k++)
+    {
+        int keep = (val[k] != NULL && strcmp(val[k], ".") == 0);
+        a[k].val = keep ? NULL : val[k];
+        if (keep && a[k].def == NULL)
         {
-            raw = 1;
-        }
-        else if (!raw && v[0] == '.' && v[1] != '\0' && strchr(v, '=') != NULL)
-        {
-            size_t len = (size_t) (strchr(v, '=') - v - 1);
-            int    k   = 0;
-            while (k < n && !(strncmp(a[k].name, v + 1, len) == 0 && a[k].name[len] == '\0'))
-            {
-                k++;
-            }
-            rc = (k == n) ? bad(fname, a, n, "no parameter ", v) : 0;
-            if (k < n)
-            {
-                a[k].val = strchr(v, '=') + 1;
-            }
-        }
-        else
-        {
-            while (pos < n && a[pos].val != NULL)
-            {
-                pos++; /* given by name */
-            }
-            if (pos == n)
-            {
-                rc = bad(fname, a, n, "too many values: ", v);
-            }
-            else if (!raw && strcmp(v, ".") == 0)
-            {
-                rc = (a[pos].def == NULL) ? bad(fname, a, n, "no default for ", a[pos].name) : 0;
-                a[pos].val = a[pos].def;
-                pos++;
-            }
-            else
-            {
-                a[pos++].val = v;
-            }
+            rc = bad(fname, a, n, "no default for ", a[k].name);
         }
     }
     if (rc != 0)

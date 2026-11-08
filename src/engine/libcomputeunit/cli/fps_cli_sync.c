@@ -22,11 +22,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #include "fps_types.h"
 #include "fps_internal.h"
 #include "fps_GetParamIndex.h"
+#include "fps_paramvalue.h"
+#include "milk_argval.h"
 
 #include "fps_cli_binding.h"
 #include "fps_cli_sync.h"
@@ -130,188 +131,54 @@ int fps_cli_option_span(int argc, char *const *argv, int i)
 }
 
 
-/** @brief 1 if @s (the text after a '-') starts a number: "-0.5" and "-.5" are values. */
-static int starts_number(const char *s)
+/** @brief What a value of parameter type @type must be, for an "invalid value" error. */
+static const char *expected_value(uint64_t type)
 {
-    return isdigit((unsigned char) s[0]) || (s[0] == '.' && isdigit((unsigned char) s[1]));
+    static char msg[64];
+
+    switch (type)
+    {
+    case FPTYPE_FLOAT64:
+    case FPTYPE_FLOAT32:
+    case FPTYPE_TIMESPEC:
+        return "a number";
+    case FPTYPE_INT64:
+    case FPTYPE_INT32:
+    case FPTYPE_PID:
+        return "an integer";
+    case FPTYPE_UINT64:
+    case FPTYPE_UINT32:
+        return "a non-negative integer";
+    case FPTYPE_ONOFF:
+        return "on/off, true/false or 1/0";
+    }
+    snprintf(msg, sizeof(msg), "at most %d characters", FUNCTION_PARAMETER_STRMAXLEN - 1);
+    return msg;
 }
 
 
 /**
- * @brief Length of the ".name" part of a ".name=value" word, 0 if @s is not one.
- *
- * The name starts with a letter or '_' and holds letters, digits, '_' and '.'.
- */
-static size_t tag_length(const char *s)
-{
-    size_t n = 1;
-
-    if (s[0] != '.' || !(isalpha((unsigned char) s[1]) || s[1] == '_'))
-    {
-        return 0;
-    }
-    while (isalnum((unsigned char) s[n]) || s[n] == '_' || s[n] == '.')
-    {
-        n++;
-    }
-    return (s[n] == '=') ? n : 0;
-}
-
-
-/** @brief Index of the binding whose keyword is the @len first characters of @tag, or -1. */
-static int find_binding(const FPS_CLI_BINDING *bindings, int nb_b, const char *tag, size_t len)
-{
-    for (int k = 0; k < nb_b; k++)
-    {
-        const char *kw = bindings[k].fpskeyword;
-        const char *t  = (kw[0] == '.') ? tag : tag + 1;
-        size_t      l  = (kw[0] == '.') ? len : len - 1;
-        if (strlen(kw) == l && strncmp(kw, t, l) == 0)
-        {
-            return k;
-        }
-    }
-    return -1;
-}
-
-
-/** @brief Read an ONOFF value: 1/on/true or 0/off/false (any case); -1 otherwise. */
-static int parse_onoff(const char *s)
-{
-    static const char *const on[]  = { "1", "on", "true", "yes", NULL };
-    static const char *const off[] = { "0", "off", "false", "no", NULL };
-
-    for (int k = 0; on[k] != NULL; k++)
-    {
-        if (strcasecmp(s, on[k]) == 0)
-        {
-            return 1;
-        }
-        if (strcasecmp(s, off[k]) == 0)
-        {
-            return 0;
-        }
-    }
-    return -1;
-}
-
-
-/**
- * @brief Check that @str is a valid value for a parameter of @type.
- *
- * Return: NULL when valid, else a short description of what was expected.
- */
-static const char *check_value(uint64_t type, const char *str)
-{
-    char *end = NULL;
-
-    errno = 0;
-    if (type == FPTYPE_FLOAT64 || type == FPTYPE_FLOAT32 || type == FPTYPE_TIMESPEC)
-    {
-        (void) strtod(str, &end);
-        return (end == str || *end != '\0' || errno != 0) ? "a number" : NULL;
-    }
-    if (type == FPTYPE_INT64 || type == FPTYPE_INT32 || type == FPTYPE_PID)
-    {
-        (void) strtoll(str, &end, 0);
-        return (end == str || *end != '\0' || errno != 0) ? "an integer" : NULL;
-    }
-    if (type == FPTYPE_UINT64 || type == FPTYPE_UINT32)
-    {
-        (void) strtoull(str, &end, 0);
-        return (end == str || *end != '\0' || errno != 0 || str[0] == '-')
-                   ? "a non-negative integer"
-                   : NULL;
-    }
-    if (type == FPTYPE_ONOFF)
-    {
-        return (parse_onoff(str) < 0) ? "on/off, 1/0 or true/false" : NULL;
-    }
-    if (FPTYPE_IS_STRING(type) && strlen(str) >= FUNCTION_PARAMETER_STRMAXLEN)
-    {
-        static char msg[64];
-        snprintf(msg, sizeof(msg), "at most %d characters", FUNCTION_PARAMETER_STRMAXLEN - 1);
-        return msg;
-    }
-    return NULL;
-}
-
-
-/**
- * @brief Write a single CLI string value into an FPS
- *        parameter, interpreting it according to the type.
- *
- * Bumps cnt0 and value_cnt, as functionparameter_SetParamValue_*() do, so a
- * running loop that watches the parameter sees the new value.
- */
-static void set_fps_value_from_string(FPS *fps, long pindex, uint64_t type, const char *str)
-{
-    if (type == FPTYPE_FLOAT64)
-    {
-        fps->parray[pindex].val.f64[0] = strtod(str, NULL);
-    }
-    else if (type == FPTYPE_FLOAT32)
-    {
-        fps->parray[pindex].val.f32[0] = strtof(str, NULL);
-    }
-    else if (type == FPTYPE_INT64)
-    {
-        fps->parray[pindex].val.i64[0] = strtoll(str, NULL, 0);
-    }
-    else if (type == FPTYPE_UINT64)
-    {
-        fps->parray[pindex].val.ui64[0] = strtoull(str, NULL, 0);
-    }
-    else if (type == FPTYPE_ONOFF)
-    {
-        fps->parray[pindex].val.i32[0] = (parse_onoff(str) == 1);
-    }
-    else if (type == FPTYPE_INT32)
-    {
-        fps->parray[pindex].val.i32[0] = (int32_t) strtol(str, NULL, 0);
-    }
-    else if (type == FPTYPE_UINT32)
-    {
-        fps->parray[pindex].val.ui32[0] = (uint32_t) strtoul(str, NULL, 0);
-    }
-    else if (type == FPTYPE_PID)
-    {
-        fps->parray[pindex].val.pid[0] = (pid_t) strtol(str, NULL, 0);
-    }
-    else if (type == FPTYPE_TIMESPEC)
-    {
-        double val                            = strtod(str, NULL);
-        fps->parray[pindex].val.ts[0].tv_sec  = (long) val;
-        fps->parray[pindex].val.ts[0].tv_nsec = (long) ((val - (long) val) * 1e9);
-    }
-    else if (FPTYPE_IS_STRING(type))
-    {
-        strncpy(fps->parray[pindex].val.string[0], str, FUNCTION_PARAMETER_STRMAXLEN - 1);
-        fps->parray[pindex].val.string[0][FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-    }
-    fps->parray[pindex].cnt0++;
-    fps->parray[pindex].value_cnt++;
-}
-
-
-/**
- * @brief Check one value, and write it into @fps unless @fps is NULL.
+ * @brief Check one value (milk_argval_parse(): the reading of every argument), and write it into @fps
+ *        unless @fps is NULL.
  *
  * Return: 0, or 2 (usage error, reported on stderr) if the value is invalid.
  */
 static int assign_value(FPS *fps, const FPS_CLI_BINDING *b, const char *str)
 {
-    const char *kw  = (b->fpskeyword[0] == '.') ? b->fpskeyword + 1 : b->fpskeyword;
-    const char *bad = NULL;
+    const char   *kw = (b->fpskeyword[0] == '.') ? b->fpskeyword + 1 : b->fpskeyword;
+    CLICMDARGDATA ad;
 
     if (strcmp(str, ".") == 0) /* keep the current value */
     {
         return 0;
     }
-    if ((bad = check_value(b->type, str)) != NULL)
+    memset(&ad, 0, sizeof(ad));
+    ad.type = b->type;
+    if (milk_argval_parse(b->type, str, &ad) != 0 ||
+        (FPTYPE_IS_STRING(b->type) && strlen(str) >= FUNCTION_PARAMETER_STRMAXLEN))
     {
         fprintf(stderr, "%s: invalid value '%s' for parameter '%s': expected %s\n",
-                standalone_argv[0], str, kw, bad);
+                standalone_argv[0], str, kw, expected_value(b->type));
         return 2;
     }
     if (fps != NULL)
@@ -319,7 +186,7 @@ static int assign_value(FPS *fps, const FPS_CLI_BINDING *b, const char *str)
         long pindex = functionparameter_GetParamIndex(fps, b->fpskeyword);
         if (pindex >= 0)
         {
-            set_fps_value_from_string(fps, pindex, b->type, str);
+            functionparameter_SetParamValue_arg(fps, (int) pindex, &ad);
         }
     }
     return 0;
@@ -327,42 +194,28 @@ static int assign_value(FPS *fps, const FPS_CLI_BINDING *b, const char *str)
 
 
 /**
- * @brief Print the parameters that take positional values, for a "too many values" error.
- */
-static void report_too_many(const FPS_CLI_BINDING *bindings, int nb_b, const char *extra)
-{
-    int nprim = 0;
-
-    fprintf(stderr, "%s: too many values, from '%s' on: ", standalone_argv[0], extra);
-    for (int k = 0; k < nb_b; k++)
-    {
-        if (bindings[k].is_primary)
-        {
-            const char *kw = bindings[k].fpskeyword;
-            fprintf(stderr, "%s%s", (nprim++ == 0) ? "" : " ", (kw[0] == '.') ? kw + 1 : kw);
-        }
-    }
-    fputs((nprim == 0) ? "(no parameter takes a positional value)\n"
-                       : " take positional values; set others with .name=value\n",
-          stderr);
-}
-
-
-/**
  * @brief Read the values after the command word; check them, and write them into
  *        @fps unless @fps is NULL.
+ *
+ * Unit options may appear anywhere before a "--"; another word starting with '-' there is an unknown
+ * option unless it reads as a number. The values bind as module command arguments do
+ * (milk_args_bind()): `.name=value` by name, the others into the positional parameters in order; a
+ * parameter given no value keeps its current one.
  *
  * Return: 0, or 2 (usage error, reported on stderr).
  */
 static int walk_values(FPS *fps, const FPS_CLI_BINDING *bindings, int nb_b)
 {
-    int          argc     = standalone_argc;
-    char *const *argv     = standalone_argv;
-    int          cmd_pos  = -1;
-    int          rc       = 0;
-    int          npos     = 0;
-    char        *assigned = NULL;
-    const char **posv     = NULL;
+    int             argc    = standalone_argc;
+    char *const    *argv    = standalone_argv;
+    int             cmd_pos = -1;
+    int             rc      = 0;
+    int             nw      = 0;
+    int             dashes  = 0;
+    char          **w       = NULL;
+    milk_argslot_t *slots   = NULL;
+    const char    **val     = NULL;
+    char            msg[256];
 
     if (argv == NULL)
     {
@@ -384,71 +237,50 @@ static int walk_values(FPS *fps, const FPS_CLI_BINDING *bindings, int nb_b)
         return 0;
     }
 
-    assigned = calloc((size_t) nb_b + 1, 1);
-    posv     = calloc((size_t) argc, sizeof(*posv));
-    if (assigned == NULL || posv == NULL)
+    w     = calloc((size_t) argc, sizeof(*w));
+    slots = calloc((size_t) nb_b + 1, sizeof(*slots));
+    val   = calloc((size_t) nb_b + 1, sizeof(*val));
+    if (w == NULL || slots == NULL || val == NULL)
     {
-        free(assigned);
-        free(posv);
-        return 2;
+        rc = 2;
     }
-
-    /* First pass: skip options, apply .name=value, collect positional values */
     for (int i = cmd_pos + 1; i < argc && rc == 0; i++)
     {
-        const char *s    = argv[i];
-        int         span = fps_cli_option_span(argc, argv, i);
-        size_t      tl   = tag_length(s);
+        CLICMDARGDATA num;
+        int           span = dashes ? 0 : fps_cli_option_span(argc, argv, i);
         if (span > 0)
         {
             i += span - 1;
+            continue;
         }
-        else if (s[0] == '-' && !starts_number(s + 1))
+        if (!dashes && argv[i][0] == '-' && strcmp(argv[i], "--") != 0 &&
+            milk_argval_parse(FPTYPE_FLOAT64, argv[i], &num) != 0)
         {
-            fprintf(stderr, "%s: unknown option '%s' (run with -h for help)\n", argv[0], s);
+            fprintf(stderr, "%s: unknown option '%s' (run with -h for help)\n", argv[0], argv[i]);
             rc = 2;
         }
-        else if (tl > 0)
-        {
-            int k = find_binding(bindings, nb_b, s, tl);
-            if (k < 0)
-            {
-                fprintf(stderr, "%s: no parameter '%.*s' (run with -h for the list)\n", argv[0],
-                        (int) tl - 1, s + 1);
-                rc = 2;
-            }
-            else
-            {
-                assigned[k] = 1;
-                rc          = assign_value(fps, &bindings[k], s + tl + 1);
-            }
-        }
-        else
-        {
-            posv[npos++] = s;
-        }
-    } // for (first pass)
-
-    /* Second pass: positional values fill the primary parameters not set by name */
-    for (int p = 0, k = 0; p < npos && rc == 0; p++, k++)
+        dashes |= (strcmp(argv[i], "--") == 0);
+        w[nw++] = argv[i];
+    }
+    for (int k = 0; k < nb_b && rc == 0; k++)
     {
-        while (k < nb_b && (!bindings[k].is_primary || assigned[k]))
-        {
-            k++;
-        }
-        if (k >= nb_b)
-        {
-            report_too_many(bindings, nb_b, posv[p]);
-            rc = 2;
-        }
-        else
-        {
-            rc = assign_value(fps, &bindings[k], posv[p]);
-        }
+        const char *kw      = bindings[k].fpskeyword;
+        slots[k].name       = (kw[0] == '.') ? kw + 1 : kw;
+        slots[k].positional = bindings[k].is_primary;
+    }
+    if (rc == 0 && milk_args_bind(nw, w, -1, nb_b, slots, val, NULL, msg, sizeof(msg)) != 0)
+    {
+        fprintf(stderr, "%s: %s (run with -h for the list)\n", argv[0], msg);
+        rc = 2;
+    }
+    for (int k = 0; k < nb_b && rc == 0; k++)
+    {
+        rc = (val[k] != NULL) ? assign_value(fps, &bindings[k], val[k]) : 0;
     }
 
-    free(assigned);
-    free(posv);
+    free(w);
+    free(slots);
+    free(val);
     return rc;
 }
 

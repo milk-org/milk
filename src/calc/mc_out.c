@@ -382,7 +382,7 @@ imageID mc_out_prepare(mc_slot_t     *slot,
                    : (slot->loc == 2 || slot->is_local)
                        ? image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE)
                        : mc_resolve_or_autoconnect_image(slot->name);
-        long vid = is_tmp ? -1 : variable_ID(bare);
+        long vid = (is_tmp || id >= 0) ? -1 : variable_ID(bare); /* an image comes first */
         if (vid >= 0 && milk_data.variable[vid].type != 3)
         {
             if (err != NULL && errsz > 0)

@@ -7,11 +7,10 @@
  * @brief Lossless bash <-> dcvar variable synchronization and inline entity expansion.
  *
  * Role & Goal:
- *   1. Moves scalar variables between the calling bash environment and milk's variable table
- *      (`data.core.variable[]` and `cli_vars[]`): the bash variables a calc expression names come in
- *      with the request; a command's declared outputs (CLICMDDATA.outvars) that it changed go back.
- *      A string cache (`g_dcvar_cached_str`) of the text last sent to bash keeps 64-bit values exact
- *      when bash sends that text back unchanged.
+ *   1. Moves scalar variables between the calling bash environment and milk's variables (a number
+ *      in `data.core.variable[]`, text in `cli_vars[]`): the bash variables a calc expression names
+ *      come in with the request; a command's declared outputs (CLICMDDATA.outvars) that it changed
+ *      go back.
  *   2. Expands the entity references (`s.<stream>.<prop>`, `f.<fps>.<param>`, `p.<proc>.<field>`)
  *      inside calc and test expressions before `mcalc_eval_bash()` runs them.
  */
@@ -29,13 +28,15 @@
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "mc_ast.h"
+#include "mc_func.h"
+#include "mc_plan.h"
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 
 #define DCVAR_CACHE_MAX 4096
-static char     g_dcvar_cached_str[DCVAR_CACHE_MAX][128];
 static uint32_t g_bash_epoch = 1;
 static uint32_t g_var_sync_epoch[DCVAR_CACHE_MAX];
 
@@ -71,58 +72,31 @@ void milk_server_bump_bash_epoch(void)
     }
 }
 
-/**
- * @brief Return 1 if @name is a read-only built-in mathematical/physical constant.
- *
- * @param name Variable name
- * @return 1 if built-in constant, 0 otherwise
- */
-static int is_builtin_const_var(const char *name)
+/** var_text() - the text milk prints for the value of dcvar entry @vid (to bash, with the shell's
+ * digits) into @buf. */
+static const char *var_text(long vid, char *buf, size_t sz)
 {
-    if (name == NULL || name[0] != '_')
+    const VARIABLE *v = &data.core.variable[vid];
+    if (v->type == 1)
     {
-        return 0;
+        snprintf(buf, sz, "%ld", v->value.l);
     }
-    return (strcmp(name, "_PI") == 0 || strcmp(name, "_e") == 0 || strcmp(name, "_gamma") == 0 ||
-            strcmp(name, "_c") == 0 || strcmp(name, "_h") == 0 || strcmp(name, "_k") == 0 ||
-            strcmp(name, "_pc") == 0 || strcmp(name, "_ly") == 0 || strcmp(name, "_AU") == 0);
-}
-
-/**
- * @brief Snapshot initial `dcvar` entries into the string cache.
- */
-void milk_server_init_dcvar_cache(void)
-{
-    if (data.core.variable == NULL)
+    else if (v->type == 0)
     {
-        return;
+        snprintf(buf, sz, "%.*g", cli_float_digits, v->value.f);
     }
-    for (long i = 0; i < data.core.NB_MAX_VARIABLE && i < DCVAR_CACHE_MAX; i++)
+    else
     {
-        if (!data.core.variable[i].used)
-        {
-            continue;
-        }
-        if (data.core.variable[i].type == 0)
-        {
-            snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%.*g", cli_float_digits,
-                     data.core.variable[i].value.f);
-        }
-        else if (data.core.variable[i].type == 1)
-        {
-            snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%ld",
-                     data.core.variable[i].value.l);
-        }
-        else if (data.core.variable[i].type == 2)
-        {
-            snprintf(g_dcvar_cached_str[i], sizeof(g_dcvar_cached_str[i]), "%s",
-                     data.core.variable[i].value.s);
-        }
+        snprintf(buf, sz, "%s", v->value.s);
     }
+    return buf;
 }
 
 /**
  * @brief Unpack NUL-delimited bash scalar variables from @buf and update `dcvar`.
+ *
+ * The shell's MILK_DPDIGITS sets the digits this request prints with (15 when absent): digits
+ * are per shell.
  *
  * @param buf       Payload buffer
  * @param len       Total payload length in bytes
@@ -135,7 +109,8 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
                                 uint32_t      *offset_io,
                                 int            is_repl)
 {
-    uint32_t off = *offset_io;
+    uint32_t off     = *offset_io;
+    cli_float_digits = 15;
     for (uint32_t i = 0; i < nvars && off < len; i++)
     {
         const char *vname = (const char *) (buf + off);
@@ -149,7 +124,13 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
         size_t      vlen = strnlen(vval, len - off);
         off += (uint32_t) (vlen + 1);
 
-        if (vname[0] == '\0' || is_builtin_const_var(vname))
+        if (strcmp(vname, "MILK_DPDIGITS") == 0)
+        {
+            long nd          = strtol(vval, NULL, 10);
+            cli_float_digits = (nd >= 1 && nd <= 17) ? (int) nd : 15;
+            continue;
+        }
+        if (vname[0] == '\0' || mc_is_reserved_const(vname)) /* pi, nan, inf */
         {
             continue;
         }
@@ -160,46 +141,45 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
         }
 
         long vid = variable_ID(vname);
-        if (vid >= 0 && vid < DCVAR_CACHE_MAX)
+        char txt[256];
+        if (is_repl && vid >= 0 && vid < DCVAR_CACHE_MAX && g_var_sync_epoch[vid] == g_bash_epoch)
         {
-            if (is_repl && g_var_sync_epoch[vid] == g_bash_epoch)
+            /* Already synced or modified in Calc REPL mode during the current bash epoch */
+            continue;
+        }
+        if (vid >= 0 && strcmp(var_text(vid, txt, sizeof(txt)), vval) == 0)
+        {
+            /* What milk prints for its value (a command's output, ...): keep the exact value */
+            if (vid < DCVAR_CACHE_MAX)
             {
-                /* Already synced or modified in Calc REPL mode during the current bash epoch */
-                continue;
-            }
-            if (g_dcvar_cached_str[vid][0] != '\0' && strcmp(g_dcvar_cached_str[vid], vval) == 0)
-            {
-                /* Unchanged in bash since milk last wrote it: preserve exact 64-bit value */
                 g_var_sync_epoch[vid] = g_bash_epoch;
-                continue;
             }
+            continue;
         }
 
-        char *endp = NULL;
-        long  lval = strtol(vval, &endp, 10);
-        if (vval[0] != '\0' && endp != vval && *endp == '\0')
+        /* One store per name: a number in dcvar, text in the string table */
+        char  *endl = NULL;
+        char  *endd = NULL;
+        long   lval = strtol(vval, &endl, 10);
+        double dval = strtod(vval, &endd);
+        if (vval[0] != '\0' && (*endl == '\0' || *endd == '\0'))
         {
-            vid = create_variable_long_ID(vname, lval);
+            cli_var_set(vname, NULL);
+            vid = (*endl == '\0') ? create_variable_long_ID(vname, lval)
+                                  : create_variable_ID(vname, dval);
             if (vid >= 0 && vid < DCVAR_CACHE_MAX)
             {
-                g_dcvar_cached_str[vid][0] = '\0';
-                g_var_sync_epoch[vid]      = g_bash_epoch;
+                g_var_sync_epoch[vid] = g_bash_epoch;
             }
         }
         else
         {
-            double dval = strtod(vval, &endp);
-            if (vval[0] != '\0' && endp != vval && *endp == '\0')
+            if (vid >= 0 && !mc_var_bound(vid)) /* a unit's bound variable keeps its place */
             {
-                vid = create_variable_ID(vname, dval);
-                if (vid >= 0 && vid < DCVAR_CACHE_MAX)
-                {
-                    g_dcvar_cached_str[vid][0] = '\0';
-                    g_var_sync_epoch[vid]      = g_bash_epoch;
-                }
+                delete_variable_ID(vname);
             }
+            cli_var_set(vname, vval);
         }
-        cli_var_set_text(vname, vval); /* a bash value is data, never a calc expression */
     }
     *offset_io = off;
 }
@@ -335,9 +315,8 @@ static void send_setvar(int client_fd, const char *vname, const char *val)
  * milk_server_outvars_send - Transmit queued output variable updates to the client and reset queue
  * @client_fd: Connected client socket file descriptor
  *
- * Formats each variable in `g_outq`, updates `g_dcvar_cached_str` to preserve
- * round-trip precision, sends a `MILK_MSG_SETVAR` frame to @client_fd, and clears
- * `g_noutq`.
+ * Formats each variable in `g_outq` (var_text(): when bash sends that text back, the exact value
+ * is kept), sends a `MILK_MSG_SETVAR` frame to @client_fd, and clears `g_noutq`.
  *
  * Return: void
  */
@@ -347,221 +326,49 @@ void milk_server_outvars_send(int client_fd)
     {
         long vid = variable_ID(g_outq[j]);
         char valstr[256];
-        if (vid < 0)
+        if (vid >= 0)
         {
-            continue;
+            send_setvar(client_fd, g_outq[j], var_text(vid, valstr, sizeof(valstr)));
         }
-        if (data.core.variable[vid].type == 1)
-        {
-            snprintf(valstr, sizeof(valstr), "%ld", data.core.variable[vid].value.l);
-        }
-        else if (data.core.variable[vid].type == 0)
-        {
-            snprintf(valstr, sizeof(valstr), "%.*g", cli_float_digits,
-                     data.core.variable[vid].value.f);
-        }
-        else
-        {
-            snprintf(valstr, sizeof(valstr), "%s", data.core.variable[vid].value.s);
-        }
-        if (vid < DCVAR_CACHE_MAX)
-        {
-            snprintf(g_dcvar_cached_str[vid], sizeof(g_dcvar_cached_str[vid]), "%s", valstr);
-        }
-        send_setvar(client_fd, g_outq[j], valstr);
     }
     g_noutq = 0;
-}
-
-/**
- * @brief Expand the entity references (`s.im.xsize`, `f.fps.param`, ...) inside an expression.
- *
- * Numeric values are substituted bare; string values are enclosed in double quotes.
- * Also runs `cli_expand_fpsvar()` for legacy `${fps...}` / `${stream...}` tokens.
- *
- * @param in    Input expression string
- * @param out   Output buffer for expanded expression
- * @param outsz Size of @out in bytes
- */
-void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz)
-{
-    if (outsz == 0)
-    {
-        return;
-    }
-    const char *src   = (in != NULL) ? in : "";
-    size_t      ip    = 0;
-    size_t      op    = 0;
-    size_t      len   = strlen(src);
-    int         in_sq = 0;
-    int         in_dq = 0;
-
-    while (ip < len && op + 1 < outsz)
-    {
-        char c = src[ip];
-        if (c == '\'' && !in_dq)
-        {
-            in_sq     = !in_sq;
-            out[op++] = src[ip++];
-            continue;
-        }
-        if (c == '"' && !in_sq)
-        {
-            in_dq     = !in_dq;
-            out[op++] = src[ip++];
-            continue;
-        }
-        if (in_sq || in_dq)
-        {
-            out[op++] = src[ip++];
-            continue;
-        }
-
-        if ((isalpha((unsigned char) c) || c == '_') &&
-            (ip == 0 || (!isalnum((unsigned char) src[ip - 1]) && src[ip - 1] != '_' &&
-                         src[ip - 1] != '.' && src[ip - 1] != '@')))
-        {
-            size_t tstart = ip;
-            size_t end    = tstart;
-            int    ndots  = 0;
-            while (end < len && (isalnum((unsigned char) src[end]) || src[end] == '_' ||
-                                 src[end] == '.' || src[end] == '-'))
-            {
-                if (src[end] == '.')
-                {
-                    ndots++;
-                }
-                end++;
-            }
-            while (end > tstart && src[end - 1] == '.')
-            {
-                end--;
-                ndots--;
-            }
-            size_t tlen = end - tstart;
-            if (ndots >= 2 && tlen < 256)
-            {
-                char tok[256];
-                memcpy(tok, src + tstart, tlen);
-                tok[tlen]         = '\0';
-                const char *dot1  = strchr(tok, '.');
-                size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - tok) : 0;
-                if (milk_is_entity_ns_prefix(tok, nslen))
-                {
-                    char val[512];
-                    val[0] = '\0';
-                    if (milk_shm_prop_get(tok, val, sizeof(val)) == 0 && val[0] != '\0')
-                    {
-                        char  *endp = NULL;
-                        double dv   = strtod(val, &endp);
-                        (void) dv;
-                        if (endp != val && *endp == '\0')
-                        {
-                            size_t vl = strlen(val);
-                            if (op + vl < outsz)
-                            {
-                                memcpy(out + op, val, vl);
-                                op += vl;
-                            }
-                        }
-                        else
-                        {
-                            int n = snprintf(out + op, outsz - op, "\"%s\"", val);
-                            if (n > 0 && op + (size_t) n < outsz)
-                            {
-                                op += (size_t) n;
-                            }
-                        }
-                        ip = end;
-                        continue;
-                    }
-                }
-            }
-        }
-        out[op++] = src[ip++];
-    } // while (ip < len && op + 1 < outsz)
-
-    out[op] = '\0';
 }
 
 /**
  * milk_server_mark_expr_vars_synced - Stamp all `dcvar` identifiers in @expr with `g_bash_epoch`
  * @expr: Calculator expression string that was just evaluated
  *
- * Scans @expr outside string literals and marks any referenced or newly assigned
- * variable present in `data.core.variable[]` as synchronized for the current
- * `g_bash_epoch`, enabling subsequent Calc mode lines to evaluate in-process.
+ * Marks each name of @expr (its calculator tokens) that is a variable in `data.core.variable[]`
+ * as synchronized for the current `g_bash_epoch`, enabling subsequent Calc mode lines to
+ * evaluate in-process.
  *
  * Return: void
  */
 void milk_server_mark_expr_vars_synced(const char *expr)
 {
-    if (expr == NULL)
+    mc_tok_list_t tl = { 0 };
+    int           nt = (expr != NULL && mc_lex(expr, &tl) == 0) ? tl.ntok : 0;
+    for (int t = 0; t < nt; t++)
     {
-        return;
+        const char *id = tl.toks[t].sval;
+        if (tl.toks[t].type == MC_TOK_IDENT && strchr(id, '.') == NULL)
+        {
+            long vid = variable_ID(id);
+            if (vid >= 0 && vid < DCVAR_CACHE_MAX)
+            {
+                g_var_sync_epoch[vid] = g_bash_epoch;
+            }
+        }
     }
-    int         in_sq = 0;
-    int         in_dq = 0;
-    const char *p     = expr;
-    while (*p != '\0')
-    {
-        char c = *p;
-        if (c == '\\' && !in_sq && p[1] != '\0')
-        {
-            p += 2;
-            continue;
-        }
-        if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-            p++;
-            continue;
-        }
-        if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-            p++;
-            continue;
-        }
-        if (in_sq || in_dq)
-        {
-            p++;
-            continue;
-        }
-        if ((isalpha((unsigned char) c) || c == '_') &&
-            (p == expr || (!isalnum((unsigned char) p[-1]) && p[-1] != '_' && p[-1] != '.')))
-        {
-            const char *start = p++;
-            while (isalnum((unsigned char) *p) || *p == '_')
-            {
-                p++;
-            }
-            size_t len = (size_t) (p - start);
-            if (*p != '.' && len > 0 && len < 64)
-            {
-                char ident[64];
-                memcpy(ident, start, len);
-                ident[len] = '\0';
-                long vid   = variable_ID(ident);
-                if (vid >= 0 && vid < DCVAR_CACHE_MAX)
-                {
-                    g_var_sync_epoch[vid] = g_bash_epoch;
-                }
-            }
-        }
-        else
-        {
-            p++;
-        }
-    } // while (*p != '\0')
+    mc_tok_list_free(&tl);
 }
 
 /**
  * milk_server_can_exec_calc_inproc - Check if @expr can run in-process without a bash round-trip
  * @expr: Calculator REPL expression to inspect
  *
- * Verifies that @expr contains no shell expansions (`$`, backticks, `@{`) and that
- * every identifier it references is either a function call, a built-in constant,
+ * Verifies that @expr lexes as calculator text with no shell expansions (`$`, backticks,
+ * backslashes, `@{`) and that every name it references is either a function call, a constant,
  * an entity property path (`s.im.xsize`, `f.fps.param`, ...), an existing image in
  * `data.core.image[]`, a variable in `data.core.variable[]` already synchronized at
  * `g_bash_epoch`, or a new LHS variable when no user bash commands have run yet.
@@ -570,199 +377,64 @@ void milk_server_mark_expr_vars_synced(const char *expr)
  */
 int milk_server_can_exec_calc_inproc(const char *expr)
 {
-    if (expr == NULL || expr[0] == '\0')
+    char          lhs_defs[16][64];
+    int           nlhs       = 0;
+    const char   *pending    = NULL; /* the target of the statement's `name =` */
+    int           depth      = 0;
+    int           stmt_start = 1;
+    mc_tok_list_t tl         = { 0 };
+    int           ok         = (expr != NULL && expr[0] != '\0' && strpbrk(expr, "\\$`") == NULL &&
+                                mc_lex(expr, &tl) == 0);
+
+    for (int t = 0; ok && t < tl.ntok; t++) /* the lexer adds EOF tokens: t + 1 is one */
     {
-        return 0;
+        const mc_tok_t *k  = &tl.toks[t];
+        const mc_tok_t *nx = &tl.toks[t + 1];
+        if ((k->type == MC_TOK_NEWLINE || k->type == MC_TOK_SEMI) && depth == 0)
+        {
+            if (pending != NULL && nlhs < 16)
+            {
+                snprintf(lhs_defs[nlhs++], sizeof(lhs_defs[0]), "%s", pending);
+            }
+            pending    = NULL;
+            stmt_start = 1;
+            continue;
+        }
+        depth += (k->type == MC_TOK_LPAREN || k->type == MC_TOK_LBRACK);
+        depth -= (depth > 0 && (k->type == MC_TOK_RPAREN || k->type == MC_TOK_RBRACK));
+        ok = !(k->type == MC_TOK_MATMUL && nx->type == MC_TOK_LBRACE);  /* @{...} */
+        if (ok && k->type == MC_TOK_IDENT && nx->type != MC_TOK_LPAREN) /* not a function call */
+        {
+            const char *id    = k->sval;
+            const char *dot   = strchr(id, '.');
+            int         ndots = 0;
+            for (const char *d = dot; d != NULL; d = strchr(d + 1, '.'))
+            {
+                ndots++;
+            }
+            if (dot != NULL) /* an entity path (s.cam.cnt0) */
+            {
+                ok = (ndots >= 2 && milk_is_entity_ns_prefix(id, (size_t) (dot - id)));
+            }
+            else
+            {
+                long vid = variable_ID(id);
+                ok = mc_is_reserved_const(id) ||
+                     image_ID(id, data.core.image, data.core.NB_MAX_IMAGE) != -1 ||
+                     (vid >= 0 && vid < DCVAR_CACHE_MAX && g_var_sync_epoch[vid] == g_bash_epoch);
+                for (int j = 0; j < nlhs && !ok; j++)
+                {
+                    ok = (strcmp(lhs_defs[j], id) == 0);
+                }
+                if (!ok && stmt_start && depth == 0 && nx->type == MC_TOK_ASSIGN && strlen(id) < 64)
+                {
+                    pending = id;
+                    ok      = 1;
+                }
+            }
+        }
+        stmt_start = 0;
     }
-
-    int         in_sq         = 0;
-    int         in_dq         = 0;
-    int         paren_depth   = 0;
-    int         brack_depth   = 0;
-    int         at_stmt_start = 1;
-    char        pending_lhs[64];
-    char        lhs_defs[16][64];
-    int         nlhs = 0;
-    const char *p    = expr;
-
-    pending_lhs[0] = '\0';
-
-    while (*p != '\0')
-    {
-        char c = *p;
-        if (c == '\'' && !in_dq)
-        {
-            in_sq         = !in_sq;
-            at_stmt_start = 0;
-            p++;
-            continue;
-        }
-        if (c == '"' && !in_sq)
-        {
-            in_dq         = !in_dq;
-            at_stmt_start = 0;
-            p++;
-            continue;
-        }
-        if (c == '\\' || (!in_sq && (c == '$' || c == '`' || (c == '@' && p[1] == '{'))))
-        {
-            return 0;
-        }
-        if (in_sq || in_dq)
-        {
-            p++;
-            continue;
-        }
-
-        if (c == ' ' || c == '\t' || c == '\r')
-        {
-            p++;
-            continue;
-        }
-        if ((c == ';' || c == '\n') && paren_depth == 0 && brack_depth == 0)
-        {
-            if (pending_lhs[0] != '\0' && nlhs < 16)
-            {
-                snprintf(lhs_defs[nlhs++], sizeof(lhs_defs[0]), "%s", pending_lhs);
-                pending_lhs[0] = '\0';
-            }
-            at_stmt_start = 1;
-            p++;
-            continue;
-        }
-        if (c == '(')
-        {
-            paren_depth++;
-            at_stmt_start = 0;
-            p++;
-            continue;
-        }
-        if (c == ')')
-        {
-            if (paren_depth > 0)
-            {
-                paren_depth--;
-            }
-            at_stmt_start = 0;
-            p++;
-            continue;
-        }
-        if (c == '[')
-        {
-            brack_depth++;
-            at_stmt_start = 0;
-            p++;
-            continue;
-        }
-        if (c == ']')
-        {
-            if (brack_depth > 0)
-            {
-                brack_depth--;
-            }
-            at_stmt_start = 0;
-            p++;
-            continue;
-        }
-        if (isdigit((unsigned char) c))
-        {
-            at_stmt_start = 0;
-            p++;
-            while (isalnum((unsigned char) *p) || *p == '_' || *p == '.')
-            {
-                p++;
-            }
-            continue;
-        }
-        if (c == '@' && (isalpha((unsigned char) p[1]) || p[1] == '_'))
-        {
-            p++;
-            c = *p;
-        }
-        if (isalpha((unsigned char) c) || c == '_')
-        {
-            const char *start = p++;
-            while (isalnum((unsigned char) *p) || *p == '_')
-            {
-                p++;
-            }
-            size_t len = (size_t) (p - start);
-            if (len == 0 || len >= 64)
-            {
-                return 0;
-            }
-            if (*p == '.')
-            {
-                int ndots = 0;
-                while (isalnum((unsigned char) *p) || *p == '_' || *p == '.' || *p == '-')
-                {
-                    if (*p == '.')
-                    {
-                        ndots++;
-                    }
-                    p++;
-                }
-                if (ndots < 2 || !milk_is_entity_ns_prefix(start, len))
-                {
-                    return 0;
-                }
-                at_stmt_start = 0;
-                continue;
-            }
-
-            const char *after = p;
-            while (*after == ' ' || *after == '\t')
-            {
-                after++;
-            }
-            if (*after == '(')
-            {
-                /* Function call */
-                at_stmt_start = 0;
-                continue;
-            }
-
-            char ident[64];
-            memcpy(ident, start, len);
-            ident[len] = '\0';
-
-            int known = is_builtin_const_var(ident) ||
-                        (image_ID(ident, data.core.image, data.core.NB_MAX_IMAGE) != -1);
-            if (!known)
-            {
-                long vid = variable_ID(ident);
-                if (vid >= 0 && vid < DCVAR_CACHE_MAX && g_var_sync_epoch[vid] == g_bash_epoch)
-                {
-                    known = 1;
-                }
-            }
-            for (int k = 0; k < nlhs && !known; k++)
-            {
-                if (strcmp(lhs_defs[k], ident) == 0)
-                {
-                    known = 1;
-                }
-            }
-            if (!known)
-            {
-                if (at_stmt_start && paren_depth == 0 && brack_depth == 0 && after[0] == '=' &&
-                    after[1] != '=')
-                {
-                    snprintf(pending_lhs, sizeof(pending_lhs), "%s", ident);
-                    known = 1;
-                }
-            }
-            if (!known)
-            {
-                return 0;
-            }
-            at_stmt_start = 0;
-            continue;
-        }
-
-        at_stmt_start = 0;
-        p++;
-    } // while (*p != '\0')
-
-    return (!in_sq && !in_dq) ? 1 : 0;
+    mc_tok_list_free(&tl);
+    return ok;
 }

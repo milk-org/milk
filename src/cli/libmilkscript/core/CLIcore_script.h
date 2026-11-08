@@ -18,21 +18,16 @@
  */
 
 #define CLI_MAX_VARS 256
-#define CLI_VAR_NAMELEN 64
+#define CLI_VAR_NAMELEN 80 /* as calculator variable and image names */
 #define CLI_VAR_VALLEN 512
 
+/* A string variable of the calculator (its numbers live in dcvar) */
 typedef struct
 {
     char name[CLI_VAR_NAMELEN];
     char val[CLI_VAR_VALLEN];
     int  used;
     int  readonly; /* 1 if marked readonly */
-    int  type;     /* 0: double, 1: long, 2: string */
-    union
-    {
-        double f;
-        long   l;
-    } num;
 } CLI_VAR;
 
 extern CLI_VAR cli_vars[CLI_MAX_VARS];
@@ -42,10 +37,8 @@ extern int     cli_calc_mode;
 
 const char *cli_var_get(const char *name);
 
+/** cli_var_set() - set string variable @name to @val (NULL removes it). */
 void cli_var_set(const char *name, const char *val);
-
-/** cli_var_set_text() - like cli_var_set(), but a value that is not a number stays text. */
-void cli_var_set_text(const char *name, const char *val);
 
 void cli_export_vars_to_env(void);
 

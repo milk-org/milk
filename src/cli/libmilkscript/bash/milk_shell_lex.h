@@ -38,6 +38,9 @@ typedef struct
     size_t         len;          /**< number of bytes scanned */
     int            incomplete;   /**< 1 if more input is needed to complete the text */
     int            unterminated; /**< 1 if a quote or substitution is still open at the end */
+    int            open_ctx;     /**< then the innermost open one: MSL_SQ, MSL_DQ, MSL_ANSI,
+                                      MSL_PARAM, MSL_ARITH, or MSL_OPEN (a substitution) */
+    size_t         open_at;      /**< and its first byte inside (the delimiter is just before) */
 } msl_map_t;
 
 int msl_scan(const char *src, size_t len, msl_map_t *map);

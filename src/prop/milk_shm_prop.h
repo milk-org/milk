@@ -55,9 +55,7 @@ IMAGE *milk_shm_prop_find_stream(const char *sname);
  * @brief Read a live milk entity property or FITS keyword into @out.
  *
  * Supported paths (leading '@' optional):
- *   s.<name>.<prop>      Stream/image property (xsize, ysize, zsize, naxis,
- *                        type, typeid, typename, dtype, cnt0, cnt1, nelement,
- *                        nelem, sem, pid, ownerPID, shared, NBkw)
+ *   s.<name>.<prop>      Stream/image property (milk_stream_props.h)
  *   s.<name>.kw.<KEY>    Stream/image FITS keyword value (or kw.* for list)
  *   f.<name>.<param>     FPS parameter value (or '*' for parameter list), or a
  *                        unit property (status, run, conf, ok, errors, msg, ...)

@@ -30,8 +30,11 @@ target_include_directories(
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libcomputeunit>)
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libcomputeunit>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>)
 
+# src/coremods: COREMOD_arith's header-only statistics kernels (s.<im>.mean ...); no link, which
+# libmilkbash would inherit
 target_link_libraries(
   ${LIBNAME}
   PUBLIC ImageStreamIO

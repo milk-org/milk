@@ -195,12 +195,15 @@ typedef struct mcalc_prog
     int            last_was_im; /* 1 if final step produced an image */
 } mcalc_prog_t;
 
-/* Compile C kernel source @c_src into a cached `.so` and return its `mc_k` symbol. */
-mc_kernel_fn mc_cc_compile(const char *c_src,
-                           char       *so_path_out,
-                           size_t      so_path_sz,
-                           char       *err,
-                           size_t      errsz);
+/* Run-time C compiles (mc_cc.c), shared by JIT kernels and `-l` extensions: the checked cache
+ * directory, a cache key that covers compiler, flags and CPU, and the compile step itself. */
+int  mc_cc_cache_dir(char *dir_out, size_t dir_sz, char *err, size_t errsz);
+void mc_cc_key(const char *text, char key[33]);
+int  mc_cc_build(const char        *c_path,
+                 const char        *so_path,
+                 const char *const *extra,
+                 char              *err,
+                 size_t             errsz);
 
 /* Resolve an image or slice expression into a concrete view `mc_view_t`. */
 int mc_view_resolve(const mc_expr_t *expr,
@@ -236,7 +239,7 @@ int mc_find_im_op(const mc_pass_t *pass,
 int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_t *prng_e, int cg);
 
 /* Return 1 if passes @a and @b can be fused into a single elementwise pass. */
-int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b);
+int mc_can_merge_passes(const mcalc_prog_t *prog, const mc_pass_t *a, const mc_pass_t *b);
 
 /* Return 1 if @e contains a `shift`/`roll` on an operand whose shape differs from @dsz. */
 int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3]);
@@ -310,13 +313,12 @@ int mc_exec_reduce_pair(const mc_expr_t *c0,
 int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz);
 
 /* Execute a pre-stage / non-elementwise reduction or stencil constructor step. */
-int mc_exec_prestage(mcalc_prog_t    *prog,
-                     mc_ctor_step_t  *cs,
-                     imageID          src_id,
-                     const mc_expr_t *call_site,
-                     int              in_unit,
-                     char            *err,
-                     size_t           errsz);
+int mc_exec_prestage(mcalc_prog_t   *prog,
+                     mc_ctor_step_t *cs,
+                     imageID         src_id,
+                     int             in_unit,
+                     char           *err,
+                     size_t          errsz);
 
 /* Free any cached CSR or scratch buffers attached to @cs. */
 void mc_ctor_step_free(mc_ctor_step_t *cs);
@@ -343,7 +345,6 @@ typedef struct
 
 /* Prepare reduction source @out from expression @e (materializing or L1-binding as needed). */
 int mc_prepare_red_src(const mc_expr_t *e,
-                       const mc_expr_t *call_site,
                        imageID          avoid_id,
                        int              allow_sub_pass,
                        mc_red_src_t    *out,
@@ -356,12 +357,8 @@ void mc_release_red_src(mc_red_src_t *s);
 /* Evaluate a block [off, off + len) of reduction source @s as double into @dst. */
 void mc_eval_src_block_d(const mc_red_src_t *s, uint64_t off, int len, double *restrict dst);
 
-/* Evaluate scalar expression @e (unwrapping `def` call site @call_site) into *@out. */
-int mc_eval_scalar_d(const mc_expr_t *e,
-                     const mc_expr_t *call_site,
-                     double          *out,
-                     char            *err,
-                     size_t           errsz);
+/* Evaluate scalar expression @e into *@out. */
+int mc_eval_scalar_d(const mc_expr_t *e, double *out, char *err, size_t errsz);
 
 /* Map a reduction function name to its `arith_reduce_op` enum value. */
 int mc_map_reduce_op(const char *name);
@@ -372,13 +369,26 @@ int mc_run_stat_max(const mc_red_src_t *s, double *out_max, char *err, size_t er
 /* Sync bound FPS/unit variables into `milk_data.variable` before execution. */
 void mc_prog_load_vars(mcalc_prog_t *p);
 
-/* Sync assigned bound variables from `milk_data.variable` back to their pointers. */
-void mc_prog_store_vars(mcalc_prog_t *p);
+/* Sync assigned bound variables from `milk_data.variable` back to their pointers; -1 with @err if
+ * one holds the other kind (a string for a number parameter). */
+int mc_prog_store_vars(mcalc_prog_t *p, char *err, size_t errsz);
+
+/* 1 if engine variable @vid is bound to a unit parameter (it keeps its place). */
+int mc_var_bound(long vid);
 
 /* Return 1 if all image slots in @p still match their planned datatype and shape. */
 int mc_prog_slots_valid(mcalc_prog_t *p, int same_gen);
 
 /* Compile all elementwise passes in @p, batching cache misses into a single compiler call. */
 int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz);
+
+/* Bind the arguments of a call to extension @ext_id to its inputs and parameters (mc_ext_loader.c). */
+int mc_ext_bind_args(int ext_id,
+                     int nargs,
+                     const char (*kw)[64],
+                     int   *in_arg,
+                     int   *par_arg,
+                     char  *err,
+                     size_t errsz);
 
 #endif /* MILK_CALC_MC_PLAN_H */

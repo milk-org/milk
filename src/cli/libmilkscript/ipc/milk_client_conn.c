@@ -8,7 +8,8 @@
  *
  * Role & Goal:
  *   Manages UNIX domain socket connections from bash builtins (`libmilkbash.so`)
- *   and `milk-call` to `milk-cli --server`. Handles lazy on-demand spawning of
+ *   and `milk-call` to `milk-cli --server`, kept between requests (one per process
+ *   and session, while the server's replies say so). Handles lazy on-demand spawning of
  *   the per-shell server daemon with lifetime pipe binding, packs the shell variables
  *   a calc expression names, and runs the response frame loop with `SIGINT`
  *   and `SIGWINCH` forwarding.
@@ -27,6 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "milk_client_internal.h"
@@ -162,8 +165,132 @@ static int autostart_server(const milk_client_hooks_t *hooks, const char *sockpa
     return rc;
 }
 
+/* The connections of this process to its sessions (the shell's and milk-cli's engine), kept
+ * between requests while the replies say MILK_FLAG_KEEP: a request then costs no connect() and no
+ * accept(). A forked subshell opens its own: two processes must not mix their frames on one. The
+ * connection is close-on-exec, which makes it one of the shell's own fds for bash: bash undoes a
+ * script's `exec N>` onto it. So it sits near the top of the fd limit, never on a number a script
+ * uses (none is kept when it cannot), and is used again only while that fd still is the socket. */
+typedef struct
+{
+    int      fd;
+    pid_t    pid;  /* the process that connected */
+    ino_t    ino;  /* the socket, to tell it from another file on the same fd number */
+    int      keep; /* the last reply on it said MILK_FLAG_KEEP */
+    uint64_t used; /* when it was last used, to replace the oldest */
+    char     path[256];
+} client_conn_t;
+
+static client_conn_t g_conns[2]   = { { .fd = -1 }, { .fd = -1 } };
+static uint64_t      g_conn_clock = 0;
+
+/** conn_is_ours() - 1 if the fd of @c still is its socket. */
+static int conn_is_ours(const client_conn_t *c)
+{
+    struct stat st;
+    return c->fd >= 0 && fstat(c->fd, &st) == 0 && S_ISSOCK(st.st_mode) && st.st_ino == c->ino;
+}
+
+/** conn_forget() - drop kept connection @c: close its fd if it still is the socket. */
+static void conn_forget(client_conn_t *c)
+{
+    if (conn_is_ours(c))
+    {
+        close(c->fd);
+    }
+    c->fd = -1;
+}
+
+/** conn_of() - the kept connection of this process on @fd, or NULL. */
+static client_conn_t *conn_of(int fd)
+{
+    for (int i = 0; i < 2 && fd >= 0; i++)
+    {
+        if (g_conns[i].fd == fd && g_conns[i].pid == getpid())
+        {
+            return &g_conns[i];
+        }
+    }
+    return NULL;
+}
+
+/** conn_high_fd() - move connection @fd to fd 1000 (3/4 of a lower limit); -1 if it cannot. */
+static int conn_high_fd(int fd)
+{
+    struct rlimit rl;
+    int           lo = 1000;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY && rl.rlim_cur <= 1024)
+    {
+        lo = (int) (rl.rlim_cur * 3 / 4);
+    }
+    int hi = (lo >= 64) ? fcntl(fd, F_DUPFD_CLOEXEC, lo) : -1;
+    if (hi >= 0)
+    {
+        close(fd);
+    }
+    return hi;
+}
+
+/** milk_client_connect() - this process's connection to @sockpath: the kept one if the server kept
+ * it too (no hang-up, nothing unread), else a new one; -1 if it cannot connect. */
+int milk_client_connect(const char *sockpath)
+{
+    client_conn_t *c = NULL;
+    for (int i = 0; i < 2; i++)
+    {
+        struct pollfd p = { g_conns[i].fd, POLLIN | POLLRDHUP, 0 };
+        if (g_conns[i].fd < 0 || strcmp(g_conns[i].path, sockpath) != 0)
+        {
+            continue;
+        }
+        if (g_conns[i].pid == getpid() && g_conns[i].keep && conn_is_ours(&g_conns[i]) &&
+            poll(&p, 1, 0) == 0)
+        {
+            g_conns[i].keep = 0; /* until this request's reply says MILK_FLAG_KEEP */
+            g_conns[i].used = ++g_conn_clock;
+            return g_conns[i].fd;
+        }
+        conn_forget(&g_conns[i]);
+    }
+    int         fd = milk_ipc_connect_once(sockpath);
+    int         hi = (fd >= 0) ? conn_high_fd(fd) : -1;
+    struct stat st;
+    if (hi < 0 || fstat(hi, &st) != 0)
+    {
+        return (hi >= 0) ? hi : fd; /* not kept: milk_client_end() closes it */
+    }
+    fd = hi;
+    c  = (g_conns[0].fd < 0 || (g_conns[1].fd >= 0 && g_conns[0].used < g_conns[1].used))
+             ? &g_conns[0]
+             : &g_conns[1];
+    conn_forget(c);
+    *c = (client_conn_t) { .fd = fd, .pid = getpid(), .ino = st.st_ino, .used = ++g_conn_clock };
+    snprintf(c->path, sizeof(c->path), "%s", sockpath);
+    return fd;
+}
+
+/** milk_client_end() - the request on @fd is over: keep the connection if its reply said so, else
+ * close it. */
+void milk_client_end(int fd)
+{
+    client_conn_t *c = conn_of(fd);
+    if (c == NULL)
+    {
+        if (fd >= 0)
+        {
+            close(fd);
+        }
+    }
+    else if (!c->keep)
+    {
+        conn_forget(c);
+    }
+}
+
 /**
  * @brief Connect to the active `milk-cli --server`, auto-starting it on demand.
+ *
+ * The connection is kept for the next request (milk_client_connect(), milk_client_end()).
  *
  * @param hooks        Optional shell callback hooks
  * @param sockpath_out Output buffer receiving the resolved socket path
@@ -175,7 +302,7 @@ int milk_client_connect_or_start(const milk_client_hooks_t *hooks,
                                  size_t                     sockpath_sz)
 {
     milk_ipc_resolve_sockpath(hooks, sockpath_out, sockpath_sz, 1);
-    int fd = milk_ipc_connect_once(sockpath_out);
+    int fd = milk_client_connect(sockpath_out);
     if (fd >= 0)
     {
         return fd;
@@ -191,7 +318,7 @@ int milk_client_connect_or_start(const milk_client_hooks_t *hooks,
     }
     if (autostart_server(hooks, sockpath_out) == 0)
     {
-        fd = milk_ipc_connect_once(sockpath_out);
+        fd = milk_client_connect(sockpath_out);
         if (fd >= 0)
         {
             return fd;
@@ -237,6 +364,18 @@ static void try_add_packed_var(milk_packed_vars_t        *pv,
         snprintf(pv->vals[pv->count], 128, "%s", val);
         pv->count++;
     }
+}
+
+/**
+ * milk_client_pack_digits - Pack the shell's MILK_DPDIGITS: the session prints with its digits
+ * @pv:    Packed variable accumulator
+ * @hooks: Optional shell callback hooks
+ *
+ * Return: void
+ */
+void milk_client_pack_digits(milk_packed_vars_t *pv, const milk_client_hooks_t *hooks)
+{
+    try_add_packed_var(pv, hooks, "MILK_DPDIGITS");
 }
 
 /**
@@ -306,7 +445,7 @@ static void resync_commands(const milk_client_hooks_t *hooks)
             hooks->def_cmd(k, hooks->ctx);
         }
     }
-    close(fd);
+    milk_client_end(fd);
 }
 
 /**
@@ -447,6 +586,11 @@ int milk_client_await_response(int                        fd,
         }
         else if (hdr.type == MILK_MSG_DONE)
         {
+            client_conn_t *c = conn_of(fd);
+            if (c != NULL)
+            {
+                c->keep = (hdr.flags & MILK_FLAG_KEEP) != 0; /* else milk_client_end() closes it */
+            }
             if (pl != NULL && hdr.len >= sizeof(int32_t))
             {
                 memcpy(&final_rc, pl, sizeof(int32_t));

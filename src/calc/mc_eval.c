@@ -44,6 +44,8 @@ int  mcalc_test_image   = 0;
 int  mcalc_float_digits = 15;
 char mcalc_lasterr[256] = "";
 
+volatile sig_atomic_t mcalc_cancelled = 0;
+
 /* Optional host environment callbacks and `mcalc_eval_str` output capture buffer. */
 static mcalc_host_ops g_host     = { NULL, NULL };
 static char          *g_calc_out = NULL;
@@ -169,13 +171,13 @@ const char *mc_host_str_get(const char *name)
 /**
  * mc_host_str_set - Assign a string variable in the host environment or fallback table
  * @name: Variable identifier
- * @val:  String value to store
+ * @val:  String value to store, or NULL to remove the variable
  *
  * Return: void
  */
 void mc_host_str_set(const char *name, const char *val)
 {
-    if (name == NULL || name[0] == '\0' || val == NULL)
+    if (name == NULL || name[0] == '\0')
     {
         return;
     }
@@ -189,7 +191,8 @@ void mc_host_str_set(const char *name, const char *val)
     {
         if (g_fb_vars[i].used && strcmp(g_fb_vars[i].name, name) == 0)
         {
-            snprintf(g_fb_vars[i].val, sizeof(g_fb_vars[i].val), "%s", val);
+            g_fb_vars[i].used = (val != NULL);
+            snprintf(g_fb_vars[i].val, sizeof(g_fb_vars[i].val), "%s", (val != NULL) ? val : "");
             return;
         }
         if (!g_fb_vars[i].used && free_slot < 0)
@@ -197,7 +200,7 @@ void mc_host_str_set(const char *name, const char *val)
             free_slot = i;
         }
     }
-    if (free_slot >= 0)
+    if (free_slot >= 0 && val != NULL)
     {
         g_fb_vars[free_slot].used = 1;
         snprintf(g_fb_vars[free_slot].name, sizeof(g_fb_vars[free_slot].name), "%s", name);
@@ -216,16 +219,6 @@ void mc_host_str_clear(void)
     stmt_cache_clear();
 }
 
-/**
- * mc_host_has_str_sink - Check whether an external host string setter is registered
- *
- * Return: 1 if `g_host.str_set != NULL`, 0 otherwise
- */
-int mc_host_has_str_sink(void)
-{
-    return g_host.str_set != NULL;
-}
-
 /* ============================================================================================== */
 /* User-Defined Inline Functions (`def f(x, ...) = body`)                                         */
 /* ============================================================================================== */
@@ -240,8 +233,47 @@ static int          g_nudefs = 0;
  */
 void mcalc_udef_clear(void)
 {
+    for (int i = 0; i < g_nudefs; i++)
+    {
+        mc_expr_free(g_udefs[i].body);
+    }
     g_nudefs = 0;
     stmt_cache_clear();
+}
+
+static mcalc_udef_t g_udefs_saved[MCALC_UDEF_MAX];
+static int          g_nudefs_saved = -1;
+
+/**
+ * mc_udef_save - Keep a copy of the def table for mc_udef_restore()
+ *
+ * Return: void
+ */
+void mc_udef_save(void)
+{
+    for (int i = 0; i < g_nudefs; i++)
+    {
+        g_udefs_saved[i]      = g_udefs[i];
+        g_udefs_saved[i].body = mc_expr_clone(g_udefs[i].body);
+    }
+    g_nudefs_saved = g_nudefs;
+}
+
+/**
+ * mc_udef_restore - Put back the def table saved by mc_udef_save(), dropping later changes
+ *
+ * Return: void
+ */
+void mc_udef_restore(void)
+{
+    if (g_nudefs_saved < 0)
+    {
+        return;
+    }
+    mcalc_udef_clear();
+    memcpy(g_udefs, g_udefs_saved, (size_t) g_nudefs_saved * sizeof(g_udefs[0]));
+    g_nudefs       = g_nudefs_saved;
+    g_nudefs_saved = -1;
 }
 
 /**
@@ -270,17 +302,18 @@ const mcalc_udef_t *mcalc_udef_get(int idx)
  * @name:      Function identifier
  * @nargs:     Number of formal parameters (`1 .. MCALC_UDEF_MAXARGS`)
  * @arg_names: Array of formal parameter names
- * @body:      Unparsed RHS expression string
+ * @body:      Parsed body, which the table takes over (freed here on failure)
  *
  * Replaces any existing `def` with the same @name and flushes `g_stmt_cache` so subsequent
  * calls re-inline the updated body.
  *
  * Return: Table index (`>= 0`) on success, or -1 if arguments are invalid or the table is full
  */
-int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], const char *body)
+int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], struct mc_expr *body)
 {
     if (name == NULL || body == NULL || nargs < 1 || nargs > MCALC_UDEF_MAXARGS)
     {
+        mc_expr_free(body);
         return -1;
     }
     int idx = -1;
@@ -291,8 +324,17 @@ int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], cons
             idx = i;
         }
     }
-    if (idx < 0 && (idx = (g_nudefs < MCALC_UDEF_MAX) ? g_nudefs++ : -1) < 0)
+    if (idx >= 0)
     {
+        mc_expr_free(g_udefs[idx].body); /* redefined */
+    }
+    else if (g_nudefs < MCALC_UDEF_MAX)
+    {
+        idx = g_nudefs++;
+    }
+    else
+    {
+        mc_expr_free(body);
         return -1;
     }
     snprintf(g_udefs[idx].name, sizeof(g_udefs[idx].name), "%s", name);
@@ -301,8 +343,33 @@ int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], cons
     {
         snprintf(g_udefs[idx].arg_names[i], sizeof(g_udefs[idx].arg_names[i]), "%s", arg_names[i]);
     }
-    snprintf(g_udefs[idx].body, sizeof(g_udefs[idx].body), "%s", body);
+    g_udefs[idx].body = body;
     stmt_cache_clear();
+    return idx;
+}
+
+/**
+ * mc_udef_add_stmt - Register the def of statement @s (MC_STMT_DEF), taking over its body
+ * @s:     Parsed `def` statement
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Return: Table index (`>= 0`) on success, or -1 (built-in name, table full)
+ */
+int mc_udef_add_stmt(mc_stmt_t *s, char *err, size_t errsz)
+{
+    if (mc_func_find(s->def.name) != NULL)
+    {
+        snprintf(err, errsz, "'%s' is a built-in function: give the def another name", s->def.name);
+        return -1;
+    }
+    int idx =
+        mcalc_udef_add(s->def.name, s->def.nargs, (const char (*)[64]) s->def.args, s->def.body);
+    s->def.body = NULL;
+    if (idx < 0)
+    {
+        snprintf(err, errsz, "too many defs (at most %d)", MCALC_UDEF_MAX);
+    }
     return idx;
 }
 
@@ -310,97 +377,40 @@ int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], cons
  * mcalc_udef_try_parse - Parse and register a `def name(a, b, ...) = expr` statement
  * @stmt: Input statement text
  *
+ * The reason for -1 is left in `mcalc_lasterr`.
+ *
  * Return: 1 if @stmt is a valid `def` and was registered, 0 if @stmt does not start with `def`,
- *         or -1 if @stmt starts with `def` but has invalid syntax
+ *         or -1 if @stmt starts with `def` but is not a valid one
  */
 int mcalc_udef_try_parse(const char *stmt)
 {
-    if (stmt == NULL)
-    {
-        return 0;
-    }
-    while (isspace((unsigned char) *stmt))
+    while (stmt != NULL && isspace((unsigned char) *stmt))
     {
         stmt++;
     }
-    if (strncmp(stmt, "def", 3) != 0 || !isspace((unsigned char) stmt[3]))
+    if (stmt == NULL || strncmp(stmt, "def", 3) != 0 || !isspace((unsigned char) stmt[3]))
     {
         return 0;
     }
-    const char *p = stmt + 4;
-    while (isspace((unsigned char) *p))
+    static _Thread_local mc_tok_list_t s_tl;
+    char                               err[256] = "";
+    mc_stmt_t *s = (mc_lex(stmt, &s_tl) == 0) ? mc_parse_stmt(&s_tl, err, sizeof(err)) : NULL;
+    /* At the prompt a def is checked when defined, as a statement is; a program (unit, --explain)
+     * checks it at each call, where a name the program creates later is known */
+    int rc = (s != NULL && s->kind == MC_STMT_DEF && mc_def_check(s, err, sizeof(err)) == 0 &&
+              mc_udef_add_stmt(s, err, sizeof(err)) >= 0)
+                 ? 1
+                 : -1;
+    if (rc < 0)
     {
-        p++;
+        snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "%s",
+                 (err[0] != '\0') ? err
+                 : (s_tl.errmsg[0] != '\0')
+                     ? s_tl.errmsg
+                     : "invalid def syntax (expected: def f(x, ...) = expr)");
     }
-    const char *nstart = p;
-    while (isalnum((unsigned char) *p) || *p == '_')
-    {
-        p++;
-    }
-    size_t nlen = (size_t) (p - nstart);
-    while (isspace((unsigned char) *p))
-    {
-        p++;
-    }
-    if (nlen == 0 || nlen >= 64 || *p != '(')
-    {
-        return -1;
-    }
-
-    char fname[64];
-    char args[MCALC_UDEF_MAXARGS][64];
-    int  nargs = 0;
-    memcpy(fname, nstart, nlen);
-    fname[nlen] = '\0';
-    p++;
-
-    while (*p != '\0' && *p != ')')
-    {
-        while (isspace((unsigned char) *p))
-        {
-            p++;
-        }
-        const char *astart = p;
-        while (isalnum((unsigned char) *p) || *p == '_')
-        {
-            p++;
-        }
-        size_t alen = (size_t) (p - astart);
-        while (isspace((unsigned char) *p))
-        {
-            p++;
-        }
-        if (alen == 0 || alen >= 64 || nargs >= MCALC_UDEF_MAXARGS || (*p != ',' && *p != ')'))
-        {
-            return -1;
-        }
-        memcpy(args[nargs], astart, alen);
-        args[nargs++][alen] = '\0';
-        p += (*p == ',');
-    }
-    if (*p != ')' || nargs == 0)
-    {
-        return -1;
-    }
-    p++;
-    while (isspace((unsigned char) *p))
-    {
-        p++;
-    }
-    if (*p != '=' || p[1] == '=')
-    {
-        return -1;
-    }
-    p++;
-    while (isspace((unsigned char) *p))
-    {
-        p++;
-    }
-    if (*p == '\0')
-    {
-        return -1;
-    }
-    return (mcalc_udef_add(fname, nargs, (const char (*)[64]) args, p) >= 0) ? 1 : -1;
+    mc_stmt_free(s);
+    return rc;
 }
 
 /* ============================================================================================== */
@@ -414,17 +424,27 @@ int mcalc_udef_try_parse(const char *stmt)
  *
  * Return: void
  */
+/* Position of the error in text of several lines (line 0: none), for report_err() */
+static _Thread_local int g_err_line = 0;
+static _Thread_local int g_err_col  = 0;
+
 static void report_err(const char *input, const char *msg)
 {
-    const char *m = (msg != NULL && msg[0] != '\0') ? msg : "syntax error";
-    snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "%s", m);
+    const char *m         = (msg != NULL && msg[0] != '\0') ? msg : "syntax error";
+    char        where[48] = "";
+    if (g_err_line > 0)
+    {
+        snprintf(where, sizeof(where), (g_err_col > 0) ? " (line %d, column %d)" : " (line %d)",
+                 g_err_line, g_err_col);
+    }
+    snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "%s%s", m, where);
     if (input != NULL && input[0] != '\0')
     {
-        fprintf(stderr, "milk: calc error: %s in '%s'\n", m, input);
+        fprintf(stderr, "milk: calc error: %s%s in '%s'\n", m, where, input);
     }
     else
     {
-        fprintf(stderr, "milk: calc error: %s\n", m);
+        fprintf(stderr, "milk: calc error: %s%s\n", m, where);
     }
 }
 
@@ -462,7 +482,7 @@ static void strip_arg_quotes(const char *lp, char *out, size_t outsz)
 }
 
 /**
- * eval_special_directives - Handle top-level directives (`loadlib`, `listengines`, `def`, blocks)
+ * eval_special_directives - Handle top-level directives (`loadlib`, `--list`, `def`, blocks)
  * @input:   Raw statement string
  * @is_test: 1 when evaluating a boolean `@test` condition, 0 for normal `@calc`
  * @out_rc:  Optional output exit code (`0` on success)
@@ -493,12 +513,10 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
         }
         return 1;
     }
-    if ((strncmp(lp, "__list_engines", 14) == 0 &&
-         (lp[14] == '\0' || isspace((unsigned char) lp[14]))) ||
-        (strncmp(lp, "listengines", 11) == 0 &&
-         (lp[11] == '\0' || isspace((unsigned char) lp[11]))))
+    if (strncmp(lp, "__list_engines", 14) == 0 &&
+        (lp[14] == '\0' || isspace((unsigned char) lp[14])))
     {
-        lp += (lp[0] == '_') ? 14 : 11;
+        lp += 14;
         while (*lp == ' ' || *lp == '\t')
         {
             lp++;
@@ -523,7 +541,9 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
     {
         if (udef_rc < 0)
         {
-            report_err(input, "invalid def syntax (expected: def f(x, ...) = expr)");
+            char why[sizeof(mcalc_lasterr)];
+            snprintf(why, sizeof(why), "%s", mcalc_lasterr);
+            report_err(input, why);
             return 0;
         }
         if (out_rc != NULL)
@@ -577,8 +597,7 @@ static void emit_scalar_result(const mc_val_t *result, int is_assign_op, const c
     }
     else if (result->type == MC_VAL_STRING)
     {
-        const char *cv = mc_host_str_get(result->sval);
-        snprintf(val_buf, sizeof(val_buf), "%s", (cv != NULL) ? cv : result->sval);
+        snprintf(val_buf, sizeof(val_buf), "%s", result->sval);
     }
 
     if (mcalc_out_mode == MCALC_OUT_BIND || mcalc_out_mode == MCALC_OUT_PIXELS)
@@ -698,7 +717,7 @@ static int expr_has_shadowed_var(const mc_expr_t *e)
     {
         r = expr_has_shadowed_var(e->u.call.args[i]);
     }
-    return r || (e && e->kind == MC_EXPR_CALL && expr_has_shadowed_var(e->u.call.udef_body));
+    return r;
 }
 
 /**
@@ -903,6 +922,10 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     if (!is_test && in_len > 0 && in_len < sizeof(g_stmt_cache[0].text))
     {
         int hit = try_stmt_cache_hit(input, in_hash, in_len, out_rc);
+        if (hit < 0 && out_rc != NULL)
+        {
+            *out_rc = 1; /* a cached statement is valid: its error is a failure */
+        }
         if (hit != 0)
         {
             return (hit > 0) ? 1 : 0;
@@ -945,6 +968,11 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         mc_stmt_free(s);
         report_err(input, err[0] != '\0' ? err : "evaluation error");
         return 0;
+    }
+    if (out_rc != NULL && !is_test)
+    {
+        *out_rc = 1; /* valid syntax, names and arguments: from here an error is a failure, while
+                      * @test keeps 2 for any error since 1 means false (as test(1) does) */
     }
 
     int  is_assign     = (s->kind == MC_STMT_MULTI_ASSIGN);
@@ -997,6 +1025,10 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
             input);
         snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "the condition is an image");
         mcalc_test_image = 1;
+        if (out_rc != NULL)
+        {
+            *out_rc = 2;
+        }
         return 0;
     }
 
@@ -1064,12 +1096,17 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
 
     if (is_test)
     {
-        int truthy = (result.type == MC_VAL_LONG) ? (result.lval != 0)
-                     : (result.type == MC_VAL_DOUBLE)
-                         ? (result.dval != 0.0 && !mc_isnan(result.dval))
-                         : (result.type == MC_VAL_STRING && result.sval[0] != '\0' &&
-                            strcmp(result.sval, "0") != 0);
+        int truthy = mc_truth(&result);
         mc_stmt_free(s);
+        if (truthy < 0)
+        {
+            report_err(input, "a condition is a number, not a string");
+            if (out_rc != NULL)
+            {
+                *out_rc = 2;
+            }
+            return 0;
+        }
         if (out_rc != NULL)
         {
             *out_rc = truthy ? 0 : 1;
@@ -1099,22 +1136,89 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
 }
 
 /**
- * mcalc_eval_bash - Evaluate a calculator statement with host variable synchronization
- * @input:   Expression or statement string to evaluate
- * @is_test: 1 for boolean condition testing (`@test`), 0 for normal evaluation
+ * eval_bash_text - Parse @input whole, then evaluate its statements one at a time
+ * @input:   Statements separated by `;` or newlines (blocks, comments and directives included)
+ * @is_test: 1 for `@test`, 0 for `@calc`
  * @out_rc:  Optional pointer receiving exit status (`0` success/true, `1` false, `2` error)
  *
- * Brackets `eval_bash_inner()` with `mc_scalar_sync_host(1)` and `mc_scalar_sync_host(-1)` so
- * scalar reads/writes stay synchronized with the host environment (`bash` or `milk-script`).
+ * A syntax error anywhere runs nothing. Each statement is then checked and run by
+ * eval_bash_inner(), against the session as the earlier ones left it; the first that fails, tests
+ * false or meets Ctrl-C (mcalc_cancelled) ends the text. Text without `;` or a newline is one
+ * statement and goes to eval_bash_inner() as written.
+ *
+ * Return: 1 on success, 0 on syntax or evaluation error
+ */
+static int eval_bash_text(const char *input, int is_test, int *out_rc)
+{
+    if (input == NULL || strpbrk(input, ";\n") == NULL)
+    {
+        return eval_bash_inner(input, is_test, out_rc);
+    }
+    static _Thread_local mc_tok_list_t s_tl;
+    char                               err[512]  = "";
+    mc_stmt_t                         *head      = NULL;
+    int                                multiline = (strchr(input, '\n') != NULL);
+    if (mc_lex(input, &s_tl) != 0 ||
+        ((head = mc_parse_prog(&s_tl, err, sizeof(err))) == NULL && err[0] != '\0'))
+    {
+        g_err_line = multiline ? s_tl.err_line : 0;
+        g_err_col  = multiline ? s_tl.err_col : 0;
+        report_err(input, (err[0] != '\0') ? err : s_tl.errmsg);
+        g_err_line = 0;
+        if (out_rc != NULL)
+        {
+            *out_rc = 2;
+        }
+        return 0;
+    }
+    if (head != NULL && head->next == NULL)
+    {
+        mc_stmt_free(head);
+        return eval_bash_inner(input, is_test, out_rc);
+    }
+    int ok = 1;
+    int rc = is_test ? 1 : 0; /* no statement: an empty @test is false */
+    for (const mc_stmt_t *s = head; s != NULL; s = s->next)
+    {
+        char *t    = mc_stmt_text(s, input);
+        g_err_line = multiline ? s->line : 0; /* errors of this statement name its line */
+        g_err_col  = 0;
+        if (mcalc_cancelled)
+        {
+            report_err(t, "interrupted");
+            rc = 2;
+            ok = 0;
+        }
+        else
+        {
+            ok = eval_bash_inner((t != NULL) ? t : "", is_test, &rc);
+        }
+        free(t);
+        g_err_line = 0;
+        if (!ok || rc != 0)
+        {
+            break;
+        }
+    }
+    mc_stmt_free(head);
+    if (out_rc != NULL)
+    {
+        *out_rc = rc;
+    }
+    return ok;
+}
+
+/**
+ * mcalc_eval_bash - Evaluate calculator statements for `@calc` and `@test` (eval_bash_text())
+ * @input:   Statements to evaluate
+ * @is_test: 1 for boolean condition testing (`@test`), 0 for normal evaluation
+ * @out_rc:  Optional pointer receiving exit status (`0` success/true, `1` false, `2` error)
  *
  * Return: 1 on success, 0 on syntax or evaluation error
  */
 int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
 {
-    mc_scalar_sync_host(1);
-    int r = eval_bash_inner(input, is_test, out_rc);
-    mc_scalar_sync_host(-1);
-    return r;
+    return eval_bash_text(input, is_test, out_rc);
 }
 
 /**

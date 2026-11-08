@@ -37,13 +37,12 @@ static void fps_process_clidata_and_sync(FPS             *fps,
  * @brief Generic CLIfunction for FPS-based modules.
  *
  * Implements the full milk CLI lifecycle for any FPS module:
- * parses the FPS name (local vs shared), connects or creates
- * the FPS, syncs CLI arguments into FPS parameters, sets up
- * processinfo if requested, and calls the compute function.
+ * gets the command's local FPS (`_<fps_name>`, in-process
+ * memory, made from the bindings on first use), syncs CLI
+ * arguments into FPS parameters, sets up processinfo if
+ * requested, and calls the compute function.
  *
  * Handles special cases: fpsinit, "?" query, ignore codes.
- * Local FPS names (prefixed '_') operate in-process; shared
- * FPS names use shared memory.
  *
  * @param app_info    FPS application identity
  * @param farg        CLI argument definitions
@@ -63,10 +62,7 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
     FPS fps;
     int procinfo = (data.cmd[data.cmdindex].cmdsettings.flags & CLICMDFLAG_PROCINFO) != 0;
 
-    /*
-     * Default FPS is local (underscore prefix).
-     * User can override with :fpsname syntax.
-     */
+    /* the FPS is local (underscore prefix) */
     char fpsname_with_session[200];
     snprintf(fpsname_with_session, sizeof(fpsname_with_session), "_%s", app_info->fps_name);
 
@@ -99,37 +95,17 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
         return RETURN_SUCCESS;
     }
 
-    /* Connect to existing FPS or use local */
-    memset(&fps, 0, sizeof(FPS));
-    fps.SMfd = -1;
-
-    if (dcfpsname[0] == '_')
+    /* the call's local FPS */
+    FPS *lfps = fps_local_get_or_create(dcfpsname, FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+    if (lfps == NULL)
     {
-        FPS *lfps = fps_local_get_or_create(dcfpsname, FUNCTION_PARAMETER_NBPARAM_DEFAULT);
-        if (lfps == NULL)
-        {
-            return RETURN_FAILURE;
-        }
-        if (lfps->NBparam == 0)
-        {
-            fps_generic_init(dcfpsname, app_info, bindings, nb_b, procinfo);
-        }
-        fps = *lfps;
+        return RETURN_FAILURE;
     }
-    else
+    if (lfps->NBparam == 0)
     {
-        if (fps_connect(dcfpsname, &fps, FPSCONNECT_SIMPLE) == -1)
-        {
-            fps_generic_init(dcfpsname, app_info, bindings, nb_b, procinfo);
-            if (fps_connect(dcfpsname, &fps, FPSCONNECT_SIMPLE) == -1)
-            {
-                printf("Failed to connect to "
-                       "FPS %s\n",
-                       dcfpsname);
-                return RETURN_SUCCESS;
-            }
-        }
+        fps_generic_init(dcfpsname, app_info, bindings, nb_b, procinfo);
     }
+    fps = *lfps;
 
     /* Print FPS name and type in color (interactive TTY only) */
     int suppress_banner = (!isatty(STDOUT_FILENO) || dcquiet != 0);
@@ -142,26 +118,13 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
             suppress_banner = 1;
         }
     }
-    if (dcfpsname[0] == '_')
+    if (!suppress_banner)
     {
-        if (!suppress_banner)
-        {
-            printf("\033[36mFPS \033[1m%s\033[22m"
-                   " \033[33m[LOCAL]\033[0m\n",
-                   dcfpsname);
-        }
-        fps_local_set_creator(dcfpsname, app_info->fps_name);
+        printf("\033[36mFPS \033[1m%s\033[22m"
+               " \033[33m[LOCAL]\033[0m\n",
+               dcfpsname);
     }
-    else
-    {
-        if (!suppress_banner)
-        {
-            printf("\033[36mFPS \033[1m%s\033[22m"
-                   " \033[32m[SHARED]\033[0m\n",
-                   dcfpsname);
-        }
-        fps_shared_record_usage(dcfpsname, app_info->fps_name);
-    }
+    fps_local_set_creator(dcfpsname, app_info->fps_name);
 
     /* Record last-used FPS for ? query */
     strncpy(fps_last_used_name, dcfpsname, sizeof(fps_last_used_name) - 1);
@@ -177,12 +140,6 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
     if (retval == RETURN_SUCCESS || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
     {
         fps_process_clidata_and_sync(&fps, farg, bindings, nb_b);
-
-        if (dcfpsname[0] == '\0')
-        {
-            strncpy(dcfpsname, fpsname_with_session, STRINGMAXLEN_FPS_NAME - 1);
-            dcfpsname[STRINGMAXLEN_FPS_NAME - 1] = '\0';
-        }
 
         cmdata->cmdsettings = &data.cmd[data.cmdindex].cmdsettings;
 
@@ -212,9 +169,5 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
     dcfpsptr       = NULL;
     dcfpsbindings  = NULL;
     dcfpsnbindings = 0;
-    if (dcfpsname[0] != '_')
-    {
-        fps_disconnect(&fps);
-    }
     return retval;
 }

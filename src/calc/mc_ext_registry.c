@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mc_func.h"
 #include "milk_calc_ext.h"
 
 /* Maximum number of registered extension kernels and operators per process. */
@@ -178,6 +179,14 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
     }
     memcpy(cname, np, nlen);
     cname[nlen] = '\0';
+    if (mc_func_find(cname) != NULL)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "extension '%s' has the name of a built-in function", cname);
+        }
+        return -1;
+    }
 
     if (e->kind == MILK_EXT_STENCIL && (e->radius < 1 || e->radius > 3))
     {

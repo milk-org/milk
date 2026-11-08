@@ -24,8 +24,8 @@ pytestmark = [
 SETUP = (
     "mem.mk2Dim a 8 6 >/dev/null; mem.mk2Dim b 8 6 >/dev/null; mem.mk3Dim cube 8 6 4 >/dev/null\n"
     "mem.mk2Dim row 8 1 >/dev/null; mem.mk2Dim col 1 6 >/dev/null\n"
-    '@calc "a = ix(a) + 10*iy(a) + 0.5*urand(a, 3); b = 100 + ix(b); row = ix(row) * 2; col = iy(col) * 1000"\n'
-    '@calc "cube = ix(cube) + 10*iy(cube) + 0.25*urand(cube, 5)"\n'
+    '@calc "a = ix(a) + 10*iy(a) + 0.5*rand(a, 3); b = 100 + ix(b); row = ix(row) * 2; col = iy(col) * 1000"\n'
+    '@calc "cube = ix(cube) + 10*iy(cube) + 0.25*rand(cube, 5)"\n'
 )
 
 
@@ -354,9 +354,9 @@ def test_datasets_and_generated_expressions(tmp_path):
         )
     )
     script_lines = [
-        '@calc "A = 0.2 + 0.5 * urand(zeros(16, 16), 1); B = 0.2 + 0.5 * urand(zeros(16, 16), 2); '
-        "C = zeros(16, 16); D = 0.3 + 0.4 * urand(zeros(16, 16), 3); "
-        "G = 0.5 + 0.5 * urand(zeros(16, 16), 4); O = 0.1 * urand(zeros(16, 16), 5); "
+        '@calc "A = 0.2 + 0.5 * rand(zeros(16, 16), 1); B = 0.2 + 0.5 * rand(zeros(16, 16), 2); '
+        "C = zeros(16, 16); D = 0.3 + 0.4 * rand(zeros(16, 16), 3); "
+        "G = 0.5 + 0.5 * rand(zeros(16, 16), 4); O = 0.1 * rand(zeros(16, 16), 5); "
         'M = where(A > 0.3, 1.0, 0.0); U = zeros(16, 16); V = zeros(16, 16); H = 7"\n'
         '@calc "x = 1.5; y = -0.5; n = 4; k = 2; t = 0.25; alpha = 0.5"\n'
         '@calc "def soft_thresh(x, t) = where(abs(x) > t, x, 0.0)"\n'

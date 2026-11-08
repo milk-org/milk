@@ -151,19 +151,6 @@ static inline int CLI_checkarg(int      argnum __attribute__((unused)),
 }
 
 /**
- * CLI_checkarg_noerrmsg - Quiet standalone stub for `CLI_checkarg_noerrmsg()`
- * @argnum:  Argument index (unused)
- * @argtype: Expected argument type mask (unused)
- *
- * Return: Always 1.
- */
-static inline int CLI_checkarg_noerrmsg(int      argnum __attribute__((unused)),
-                                        uint32_t argtype __attribute__((unused)))
-{
-    return 1;
-}
-
-/**
  * CLI_checkarg_array - Standalone stub for batch CLI argument descriptor validation
  * @fca:   Argument descriptor array (unused)
  * @nbarg: Number of argument descriptors (unused)
@@ -187,17 +174,6 @@ static inline errno_t CLI_checkarg_array(CLICMDARGDEF *fca __attribute__((unused
 static inline int CLIargs_to_FPSparams_setval(CLICMDARGDEF *fca __attribute__((unused)),
                                               int           n __attribute__((unused)),
                                               FPS          *fps __attribute__((unused)))
-{
-    return 0;
-}
-
-/**
- * CMDargs_to_FPSparams_create - Standalone stub for creating FPS parameters from CLI args
- * @fps: Target FPS structure (unused)
- *
- * Return: 0.
- */
-static inline int CMDargs_to_FPSparams_create(FPS *fps __attribute__((unused)))
 {
     return 0;
 }

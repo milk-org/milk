@@ -8,15 +8,18 @@
  *
  * Compiles generated C11 kernel source strings (`pass->c_src`) into shared
  * libraries (`.so`), loads them with `dlopen(RTLD_LAZY | RTLD_LOCAL)`, and
- * resolves their `mc_k` entry points.
+ * resolves their `mc_k` entry points. mc_cc_build(), mc_cc_cache_dir() and
+ * mc_cc_key() are also the compile step, cache and key of `-l` C extensions
+ * (mc_ext_loader.c), and `MILK_CC_FLAGS` is the flag list milk-cc uses.
  *
  * Caching and compilation architecture:
  * 1. **Environment-Salted 128-Bit Hashing**: `init_env_hash()` computes a
  *    process-wide seed once via `pthread_once`, mixing `MC_PRELUDE_VERSION`,
- *    the exact compiler flag string (`MC_CC_FLAGS_ID`), x86 CPUID feature bits
- *    (leaves 1 and 7, since `-march=native` is used), and the compiler binary's
- *    `(st_mtime, st_size, st_ino)`. `hash128()` mixes the compiler name and
- *    C source text into a 128-bit FNV-1a/MurmurHash3-fmix digest formatted as a
+ *    the compiler flags (`MILK_CC_FLAGS` and the JIT's own `k_jit_args`), x86
+ *    CPUID feature bits (leaves 1 and 7, since `-march=native` is used), and the
+ *    compiler binary's `(st_mtime, st_size, st_ino)`. `hash128()` mixes the
+ *    C source text (the shared prelude's part computed once) and the compiler
+ *    name into a 128-bit FNV-1a/MurmurHash3-fmix digest formatted as a
  *    32-character hex cache key.
  * 2. **Tier-1 In-Memory Cache**: `g_mem_cache` is a 4096-slot, 8-way linear
  *    probing table protected by `g_cc_lock` mapping `(h1, h2)` directly to an
@@ -29,8 +32,8 @@
  * 4. **Multi-Pass Batch Compilation**: When a program contains multiple
  *    cache-missing elementwise passes, `mc_cc_compile_prog()` merges their
  *    bodies into a single batch `.c` file (sharing one prelude parse and one
- *    `posix_spawn` compiler invocation) with `#define mc_k mc_k_<key>`, then
- *    hard-links the resulting `.so` to each individual `<key>.so` cache path.
+ *    compiler invocation) with `#define mc_k mc_k_<key>`, then hard-links the
+ *    resulting `.so` to each individual `<key>.so` cache path.
  */
 
 #if defined(__x86_64__) || defined(__i386__)
@@ -41,16 +44,15 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <spawn.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
+#include "libmilkcommon/milk_spawn.h"
 #include "mc_plan.h"
 #include "mc_prelude.h"
 
@@ -58,11 +60,14 @@
 #    define MILK_DEFAULT_CC "gcc"
 #endif
 
-#define MC_CC_FLAGS_ID                                                                            \
-    "-O3 -pipe -march=native -ffast-math -fno-finite-math-only -fno-associative-math -mno-recip " \
-    "-fopenmp-simd -fPIC -shared -std=gnu11"
+/* MILK_CC_FLAGS is the run-time compile flag list, set once in CMakeLists.txt (milk-cc uses it too) */
+#ifndef MILK_CC_FLAGS
+#    error "MILK_CC_FLAGS is set by CMakeLists.txt"
+#endif
 
-extern char **environ;
+/* The JIT adds these: no reassociation, so kernels round as the scalar evaluator does, and its
+ * generated code (also the batch file, which has no .c suffix) is GNU C11 */
+static const char *const k_jit_args[] = { "-fno-associative-math", "-std=gnu11", "-x", "c", NULL };
 
 #define MC_MEM_CACHE_CAP 4096
 #define MC_DISK_MAX_ENTRIES 4096
@@ -125,7 +130,7 @@ static void hash_bytes(uint64_t *io_h1, uint64_t *io_h2, const void *buf, size_t
  * get_compiler - Return the C compiler command or path to invoke
  *
  * Checks the `MILK_CALC_CC` environment variable first, falling back to the
- * build-time `MILK_DEFAULT_CC` (`"gcc"`).
+ * build-time `MILK_DEFAULT_CC` (the compiler milk was built with).
  *
  * Return: Non-NULL compiler command string
  */
@@ -143,7 +148,7 @@ static const char *get_compiler(void)
  * init_env_hash - Compute the one-time environment seed for kernel cache keys
  *
  * Invoked via `pthread_once(&g_env_once, init_env_hash)`. Mixes:
- * - `MC_PRELUDE_VERSION` and `MC_CC_FLAGS_ID`
+ * - `MC_PRELUDE_VERSION`, `MILK_CC_FLAGS` and `k_jit_args`
  * - Host CPUID feature registers (leaves 1 and 7 on x86/x86_64)
  * - Compiler executable `(st_mtime, st_size, st_ino)` resolved directly or via `$PATH`
  *
@@ -158,7 +163,11 @@ static void init_env_hash(void)
     uint64_t h1 = 0xcbf29ce484222325ULL ^ (uint64_t) MC_PRELUDE_VERSION;
     uint64_t h2 = 0x84222325cbf29ce4ULL ^ ((uint64_t) MC_PRELUDE_VERSION << 32);
 
-    hash_bytes(&h1, &h2, MC_CC_FLAGS_ID, sizeof(MC_CC_FLAGS_ID) - 1);
+    hash_bytes(&h1, &h2, MILK_CC_FLAGS, sizeof(MILK_CC_FLAGS) - 1);
+    for (int i = 0; k_jit_args[i] != NULL; i++)
+    {
+        hash_bytes(&h1, &h2, k_jit_args[i], strlen(k_jit_args[i]) + 1);
+    }
 
 #if defined(__x86_64__) || defined(__i386__)
     {
@@ -168,7 +177,8 @@ static void init_env_hash(void)
         unsigned edx = 0;
         if (__get_cpuid(1, &eax, &ebx, &ecx, &edx))
         {
-            uint32_t regs1[4] = { eax, ebx, ecx, edx };
+            /* EBX[31:24] is the APIC ID of the core this thread runs on, not a CPU feature */
+            uint32_t regs1[4] = { eax, ebx & 0x00FFFFFFu, ecx, edx };
             hash_bytes(&h1, &h2, regs1, sizeof(regs1));
         }
         if (__get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx))
@@ -225,6 +235,29 @@ static void init_env_hash(void)
     g_env_h2 = h2;
 }
 
+static void hash_src(uint64_t *h1, uint64_t *h2, const unsigned char *p, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        *h1 = (*h1 ^ p[i]) * 0x100000001b3ULL;
+        *h2 = (*h2 ^ (uint64_t) (p[i] ^ 0x5aU)) * 0x9e3779b97f4a7c15ULL;
+    }
+}
+
+/* Hash state after the environment and MC_PRELUDE_CORE_SRC, which every kernel source starts with */
+static pthread_once_t g_pre_once = PTHREAD_ONCE_INIT;
+static uint64_t       g_pre_h1   = 0;
+static uint64_t       g_pre_h2   = 0;
+
+static void init_pre_hash(void)
+{
+    pthread_once(&g_env_once, init_env_hash);
+    g_pre_h1 = g_env_h1;
+    g_pre_h2 = g_env_h2;
+    hash_src(&g_pre_h1, &g_pre_h2, (const unsigned char *) MC_PRELUDE_CORE_SRC,
+             sizeof(MC_PRELUDE_CORE_SRC) - 1);
+}
+
 /**
  * hash128 - Compute the 128-bit cache key for a compiler command and C source string
  * @cc:     Compiler command string
@@ -232,26 +265,26 @@ static void init_env_hash(void)
  * @out_h1: Output low 64-bit hash lane
  * @out_h2: Output high 64-bit hash lane
  *
- * Seeds from `g_env_h1`/`g_env_h2`, hashes @cc and @src, and finishes with a
- * MurmurHash3 64-bit avalanche finalizer on both lanes.
+ * Seeds from `g_env_h1`/`g_env_h2`, hashes @src then @cc, and finishes with a
+ * MurmurHash3 64-bit avalanche finalizer on both lanes. The state after
+ * `MC_PRELUDE_CORE_SRC`, which every kernel source starts with, is computed once.
  *
  * Return: void
  */
 static void hash128(const char *cc, const char *src, uint64_t *out_h1, uint64_t *out_h2)
 {
-    pthread_once(&g_env_once, init_env_hash);
-    uint64_t h1 = g_env_h1;
-    uint64_t h2 = g_env_h2;
+    pthread_once(&g_pre_once, init_pre_hash);
+    size_t   plen = sizeof(MC_PRELUDE_CORE_SRC) - 1;
+    int      pre = (strncmp(src, MC_PRELUDE_CORE_SRC, plen) == 0); /* hashed once, not per kernel */
+    uint64_t h1  = pre ? g_pre_h1 : g_env_h1;
+    uint64_t h2  = pre ? g_pre_h2 : g_env_h2;
 
+    src += pre ? plen : 0;
+    hash_src(&h1, &h2, (const unsigned char *) src, strlen(src));
     for (const unsigned char *p = (const unsigned char *) cc; *p != '\0'; p++)
     {
         h1 = (h1 ^ *p) * 0x100000001b3ULL;
         h2 = (h2 ^ (*p + 0x9eU)) * 0x100000001b3ULL;
-    }
-    for (const unsigned char *p = (const unsigned char *) src; *p != '\0'; p++)
-    {
-        h1 = (h1 ^ *p) * 0x100000001b3ULL;
-        h2 = (h2 ^ (uint64_t) (*p ^ 0x5aU)) * 0x9e3779b97f4a7c15ULL;
     }
     h1 ^= h1 >> 33;
     h1 *= 0xff51afd7ed558ccdULL;
@@ -261,6 +294,23 @@ static void hash128(const char *cc, const char *src, uint64_t *out_h1, uint64_t 
     h2 ^= h2 >> 33;
     *out_h1 = h1;
     *out_h2 = h2;
+}
+
+/**
+ * mc_cc_key - Format the 32-hex-digit cache key of @text
+ * @text: Text to key (a C source, or a description of a source file)
+ * @key:  Output key
+ *
+ * The key also covers the compiler, its flags, the CPU and `MC_PRELUDE_VERSION` (init_env_hash()).
+ *
+ * Return: void
+ */
+void mc_cc_key(const char *text, char key[33])
+{
+    uint64_t h1 = 0;
+    uint64_t h2 = 0;
+    hash128(get_compiler(), text, &h1, &h2);
+    snprintf(key, 33, "%016llx%016llx", (unsigned long long) h1, (unsigned long long) h2);
 }
 
 /**
@@ -335,7 +385,7 @@ static void mem_cache_insert(uint64_t h1, uint64_t h2, mc_kernel_fn fn, const ch
 /* ========================================================================== */
 
 /**
- * ensure_cache_dir - Resolve, create, and validate the on-disk kernel cache directory
+ * mc_cc_cache_dir - Resolve, create, and validate the on-disk kernel and extension cache directory
  * @dir_out: Output buffer receiving the validated directory path
  * @dir_sz:  Size of @dir_out in bytes
  * @err:     Error message buffer
@@ -348,7 +398,7 @@ static void mem_cache_insert(uint64_t h1, uint64_t h2, mc_kernel_fn fn, const ch
  *
  * Return: 0 on success, -1 on error
  */
-static int ensure_cache_dir(char *dir_out, size_t dir_sz, char *err, size_t errsz)
+int mc_cc_cache_dir(char *dir_out, size_t dir_sz, char *err, size_t errsz)
 {
     const char *env_dir = getenv("MILK_CALC_CACHE");
     if (env_dir != NULL && env_dir[0] != '\0')
@@ -534,93 +584,130 @@ static int write_source_atomically(const char   *cache_dir,
         snprintf(err, errsz, "cannot write kernel source '%s': %s", c_tmp, strerror(errno));
         return -1;
     }
-    if (fwrite(src, 1, slen, fp) != slen || fclose(fp) != 0)
+    int wok = (fwrite(src, 1, slen, fp) == slen);
+    if (fclose(fp) != 0 || !wok || rename(c_tmp, c_path_out) != 0)
     {
         (void) unlink(c_tmp);
-        snprintf(err, errsz, "failed writing kernel source '%s'", c_tmp);
+        snprintf(err, errsz, "failed writing kernel source '%s'", c_path_out);
         return -1;
     }
-    (void) rename(c_tmp, c_path_out);
     return 0;
 }
 
 /**
- * run_compiler - Spawn the C compiler to build a shared object from @c_path
- * @cc:      Compiler executable name or path
- * @c_path:  Input `.c` source file path
- * @so_tmp:  Output temporary `.so` file path
- * @err_tmp: Temporary file path for capturing compiler `stderr`
+ * first_error_line - Copy the compiler's first error line (else its first line) from @path
+ * @path:  File holding the compiler's stderr
+ * @out:   Output buffer (empty when the file is empty or unreadable)
+ * @outsz: Size of @out in bytes
+ *
+ * Return: void
+ */
+static void first_error_line(const char *path, char *out, size_t outsz)
+{
+    char   buf[4096];
+    FILE  *f = fopen(path, "r");
+    size_t n = (f != NULL) ? fread(buf, 1, sizeof(buf) - 1, f) : 0;
+    if (f != NULL)
+    {
+        fclose(f);
+    }
+    buf[n]   = '\0';
+    char *ln = strstr(buf, "error:");
+    while (ln != NULL && ln > buf && ln[-1] != '\n')
+    {
+        ln--;
+    }
+    ln = (ln != NULL) ? ln : buf;
+    snprintf(out, outsz, "%.*s", (int) strcspn(ln, "\n"), ln);
+}
+
+/**
+ * mc_cc_build - Compile C source file @c_path into shared object @so_path
+ * @c_path:  C source file
+ * @so_path: Output `.so`, built as `<so_path>.tmp.<pid>.<seq>` and renamed into place
+ * @extra:   NULL-terminated arguments placed before @c_path (`-I...`, `-std=...`), or NULL
  * @err:     Error message buffer
  * @errsz:   Size of @err in bytes
  *
- * Uses `posix_spawn` / `posix_spawnp` (avoiding `system()` shell overhead and
- * quoting hazards) with `STDERR_FILENO` redirected to @err_tmp. On compiler
- * failure, reads the first 255 bytes of diagnostics into @err and cleans up
- * temporary files.
+ * The one compile step for JIT kernels and `-l` extensions: runs get_compiler() with
+ * `MILK_CC_FLAGS -fPIC -shared` through milkspawn (no shell, stdin on /dev/null, no inherited
+ * descriptors, EINTR-safe wait) and reports the compiler's first error line on failure.
  *
- * Return: 0 on success, -1 on compilation failure
+ * Return: 0 on success, -1 on error
  */
-static int run_compiler(const char *cc,
-                        const char *c_path,
-                        const char *so_tmp,
-                        const char *err_tmp,
-                        char       *err,
-                        size_t      errsz)
+int mc_cc_build(const char        *c_path,
+                const char        *so_path,
+                const char *const *extra,
+                char              *err,
+                size_t             errsz)
 {
-    posix_spawn_file_actions_t fa;
-    posix_spawn_file_actions_init(&fa);
-    posix_spawn_file_actions_addopen(&fa, STDERR_FILENO, err_tmp, O_WRONLY | O_CREAT | O_TRUNC,
-                                     0600);
-
-    char *argv[] = { (char *) cc,
-                     "-O3",
-                     "-pipe",
-                     "-march=native",
-                     "-ffast-math",
-                     "-fno-finite-math-only",
-                     "-fno-associative-math",
-                     "-mno-recip",
-                     "-fopenmp-simd",
-                     "-fPIC",
-                     "-shared",
-                     "-std=gnu11",
-                     "-x",
-                     "c",
-                     (char *) c_path,
-                     "-lm",
-                     "-o",
-                     (char *) so_tmp,
-                     NULL };
-
-    pid_t child = 0;
-    int   sp_rc = (strchr(cc, '/') != NULL) ? posix_spawn(&child, cc, &fa, NULL, argv, environ)
-                                            : posix_spawnp(&child, cc, &fa, NULL, argv, environ);
-    posix_spawn_file_actions_destroy(&fa);
-
-    int wstatus = 0;
-    if (sp_rc == 0)
+    const char *cc       = get_compiler();
+    char        flags[]  = MILK_CC_FLAGS;
+    const char *argv[64] = { cc };
+    int         ac       = 1;
+    char       *save     = NULL;
+    for (char *t = strtok_r(flags, " ", &save); t != NULL && ac < 40;
+         t       = strtok_r(NULL, " ", &save))
     {
-        while (waitpid(child, &wstatus, 0) < 0 && errno == EINTR)
-        {
-        }
+        argv[ac++] = t;
     }
-    if (sp_rc != 0 || !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
+    argv[ac++] = "-fPIC";
+    argv[ac++] = "-shared";
+    for (int i = 0; extra != NULL && extra[i] != NULL && ac < 58; i++)
     {
-        char   ebuf[256] = { 0 };
-        FILE  *ef        = fopen(err_tmp, "r");
-        size_t nr        = (ef != NULL) ? fread(ebuf, 1, sizeof(ebuf) - 1, ef) : 0;
-        if (ef != NULL)
+        argv[ac++] = extra[i];
+    }
+
+    char so_tmp[600];
+    char err_tmp[600];
+    pthread_mutex_lock(&g_cc_lock);
+    unsigned long seq = ++g_tmp_seq;
+    pthread_mutex_unlock(&g_cc_lock);
+    snprintf(so_tmp, sizeof(so_tmp), "%s.tmp.%d.%lu", so_path, (int) getpid(), seq);
+    snprintf(err_tmp, sizeof(err_tmp), "%s.err.tmp.%d.%lu", so_path, (int) getpid(), seq);
+    argv[ac++] = c_path;
+    argv[ac++] = "-lm";
+    argv[ac++] = "-o";
+    argv[ac++] = so_tmp;
+    argv[ac]   = NULL;
+
+    int efd = open(err_tmp, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+    if (efd < 0)
+    {
+        snprintf(err, errsz, "cannot create '%s': %s", err_tmp, strerror(errno));
+        return -1;
+    }
+    pid_t pid    = milkspawn_start(argv, -1, efd);
+    int   sp_err = errno;
+    close(efd);
+    int rc = (pid < 0) ? -1 : milkspawn_wait(pid);
+    if (rc != 0)
+    {
+        char line[256];
+        first_error_line(err_tmp, line, sizeof(line));
+        if (pid < 0)
         {
-            fclose(ef);
+            snprintf(err, errsz, "cannot run C compiler '%s': %s", cc, strerror(sp_err));
         }
-        ebuf[nr] = '\0';
+        else if (line[0] != '\0')
+        {
+            snprintf(err, errsz, "C compiler failed: %s", line);
+        }
+        else
+        {
+            snprintf(err, errsz, "C compiler '%s' failed on '%s' (status %d)", cc, c_path, rc);
+        }
         (void) unlink(err_tmp);
         (void) unlink(so_tmp);
-        snprintf(err, errsz, "C kernel compiler '%s' failed: %s", cc,
-                 ebuf[0] ? ebuf : strerror(sp_rc ? sp_rc : EINVAL));
         return -1;
     }
     (void) unlink(err_tmp);
+    if (rename(so_tmp, so_path) != 0)
+    {
+        snprintf(err, errsz, "cannot rename '%s': %s", so_tmp, strerror(errno));
+        (void) unlink(so_tmp);
+        return -1;
+    }
     return 0;
 }
 
@@ -682,11 +769,11 @@ static mc_kernel_fn load_so_kernel(const char *so_path, const char *key, char *e
  *
  * Return: Compiled `mc_kernel_fn` pointer on success, or NULL on error
  */
-mc_kernel_fn mc_cc_compile(const char *c_src,
-                           char       *so_path_out,
-                           size_t      so_path_sz,
-                           char       *err,
-                           size_t      errsz)
+static mc_kernel_fn mc_cc_compile(const char *c_src,
+                                  char       *so_path_out,
+                                  size_t      so_path_sz,
+                                  char       *err,
+                                  size_t      errsz)
 {
     const char *cc = get_compiler();
     uint64_t    h1 = 0;
@@ -704,7 +791,7 @@ mc_kernel_fn mc_cc_compile(const char *c_src,
     pthread_mutex_unlock(&g_cc_lock);
 
     char cache_dir[384];
-    if (ensure_cache_dir(cache_dir, sizeof(cache_dir), err, errsz) != 0)
+    if (mc_cc_cache_dir(cache_dir, sizeof(cache_dir), err, errsz) != 0)
     {
         return NULL;
     }
@@ -719,25 +806,9 @@ mc_kernel_fn mc_cc_compile(const char *c_src,
     if (access(so_path, R_OK) != 0)
     {
         if (write_source_atomically(cache_dir, key, seq, c_src, strlen(c_src), c_path,
-                                    sizeof(c_path), err, errsz) != 0)
+                                    sizeof(c_path), err, errsz) != 0 ||
+            mc_cc_build(c_path, so_path, k_jit_args, err, errsz) != 0)
         {
-            return NULL;
-        }
-        char so_tmp[544];
-        char err_tmp[544];
-        int  pid = (int) getpid();
-        snprintf(so_tmp, sizeof(so_tmp), "%s/%s.so.tmp.%d.%lu", cache_dir, key, pid, seq);
-        snprintf(err_tmp, sizeof(err_tmp), "%s/%s.err.tmp.%d.%lu", cache_dir, key, pid, seq);
-
-        if (run_compiler(cc, c_path, so_tmp, err_tmp, err, errsz) != 0)
-        {
-            return NULL;
-        }
-        if (rename(so_tmp, so_path) != 0)
-        {
-            (void) unlink(so_tmp);
-            snprintf(err, errsz, "rename '%s' -> '%s' failed: %s", so_tmp, so_path,
-                     strerror(errno));
             return NULL;
         }
         maybe_prune_cache(cache_dir);
@@ -874,7 +945,7 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     }
 
     char cache_dir[384];
-    if (ensure_cache_dir(cache_dir, sizeof(cache_dir), err, errsz) != 0)
+    if (mc_cc_cache_dir(cache_dir, sizeof(cache_dir), err, errsz) != 0)
     {
         goto cleanup;
     }
@@ -1040,19 +1111,12 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
 
     int  pid = (int) getpid();
     char batch_c[544];
-    char batch_so_tmp[544];
-    char err_tmp[544];
     snprintf(batch_c, sizeof(batch_c), "%s/batch.c.tmp.%d.%lu", cache_dir, pid, seq);
-    snprintf(batch_so_tmp, sizeof(batch_so_tmp), "%s/batch.so.tmp.%d.%lu", cache_dir, pid, seq);
-    snprintf(err_tmp, sizeof(err_tmp), "%s/batch.err.tmp.%d.%lu", cache_dir, pid, seq);
 
     FILE *bfp = fopen(batch_c, "w");
-    if (bfp == NULL || fwrite(batch_src, 1, blen, bfp) != blen || fclose(bfp) != 0)
+    int   wok = (bfp != NULL && fwrite(batch_src, 1, blen, bfp) == blen);
+    if ((bfp != NULL && fclose(bfp) != 0) || !wok)
     {
-        if (bfp != NULL)
-        {
-            fclose(bfp);
-        }
         (void) unlink(batch_c);
         snprintf(err, errsz, "failed writing batch kernel source '%s'", batch_c);
         goto cleanup;
@@ -1060,40 +1124,32 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     free(batch_src);
     batch_src = NULL;
 
-    int cc_rc = run_compiler(cc, batch_c, batch_so_tmp, err_tmp, err, errsz);
+    int cc_rc = mc_cc_build(batch_c, jobs[last_miss_i].so_path, k_jit_args, err, errsz);
     (void) unlink(batch_c);
     if (cc_rc != 0)
     {
         goto cleanup;
     }
 
+    /* The other keys name the same library: hard-link it under a temp name, then rename */
     for (int u = 0; u < nmiss; u++)
     {
         for (int i = 0; i < npass; i++)
         {
             if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx == u)
             {
-                if (i != last_miss_i)
+                char so_tmp[600];
+                snprintf(so_tmp, sizeof(so_tmp), "%s.tmp.%d.%lu", jobs[i].so_path, pid, seq);
+                if (i != last_miss_i && (link(jobs[last_miss_i].so_path, so_tmp) != 0 ||
+                                         rename(so_tmp, jobs[i].so_path) != 0))
                 {
-                    (void) unlink(jobs[i].so_path);
-                    if (link(batch_so_tmp, jobs[i].so_path) != 0)
-                    {
-                        (void) unlink(batch_so_tmp);
-                        snprintf(err, errsz, "link '%s' -> '%s' failed: %s", batch_so_tmp,
-                                 jobs[i].so_path, strerror(errno));
-                        goto cleanup;
-                    }
+                    snprintf(err, errsz, "cannot link '%s': %s", jobs[i].so_path, strerror(errno));
+                    (void) unlink(so_tmp);
+                    goto cleanup;
                 }
                 break;
             }
         }
-    }
-    if (rename(batch_so_tmp, jobs[last_miss_i].so_path) != 0)
-    {
-        (void) unlink(batch_so_tmp);
-        snprintf(err, errsz, "rename '%s' -> '%s' failed: %s", batch_so_tmp,
-                 jobs[last_miss_i].so_path, strerror(errno));
-        goto cleanup;
     }
     maybe_prune_cache(cache_dir);
 

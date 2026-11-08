@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #define MILK_PROTO_MAGIC 0x4D494C4BU /* "MILK" */
-#define MILK_PROTO_VERSION 1U
+#define MILK_PROTO_VERSION 2U
 
 /* Request flags */
 #define MILK_FLAG_ASYNC 0x01U
@@ -32,6 +32,8 @@
 #define MILK_FLAG_REPL 0x08U   /* CALC: interactive calc mode (@calc --repl) */
 #define MILK_FLAG_NOWAIT \
     0x10U /* CALL: fail at once ("busy") rather than wait for another shell's */
+#define MILK_FLAG_EXPLAIN 0x20U /* CALC: print how the statements would run (@calc --explain) */
+#define MILK_FLAG_KEEP 0x40U    /* DONE: the connection stays open for the shell's next request */
 
 /* Client -> Server message opcodes */
 enum milk_msg_type

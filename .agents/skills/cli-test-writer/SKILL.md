@@ -22,7 +22,7 @@ Use after adding a CLI feature or fixing a CLI bug.
 | File (`python/tests/cli/`)    | Covers                                                            |
 | ----------------------------- | ----------------------------------------------------------------- |
 | `syntax_redesign_test.py`     | the language: keywords, arguments, catalog, legacy error checks   |
-| `syntax_enhancements_test.py` | Phase C additions (S1-S7): binding, `@defer` scopes, calculator, events, `@args`, undo |
+| `calc_cli_review_fixes_test.py` | the JIT/calc/CLI review fixes: front end, robustness, consolidation, shared tables |
 | `bash_engine_review_test.py`  | the bash engine: translator, server, coprocess, regressions       |
 | `bash_integration_test.py`    | longer scenarios in plain bash after `source milk.bash`           |
 | `units_sessions_test.py`      | `@session` lifecycle, `milk-fpsexec-milk-calc`, `milk-fpsexec-milk-script` |

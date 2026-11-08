@@ -27,11 +27,10 @@
 #endif
 
 #include "CLIcore.h"
+#include "CLIcore_UI_execute.h"
 
 #ifdef USE_READLINE
 
-extern int cli_comp_start;
-extern int cli_comp_end;
 extern int ghost_chars_on_line;
 
 void set_pending_suggestion(const char *text, int replace_len);

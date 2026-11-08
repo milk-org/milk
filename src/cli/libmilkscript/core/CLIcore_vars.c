@@ -62,158 +62,45 @@ void cli_export_vars_to_env(void)
     }
 }
 
-/* var_set() - set CLI variable @name to @val: a number if it reads as one, else (@eval) the value of
- * the math expression it holds, else text */
-static void var_set(const char *name, const char *val, int eval);
-
 /**
- * @brief Set a CLI variable (create or update)
+ * cli_var_set - Create, update or remove a string variable
+ * @name: Variable name
+ * @val:  Its text, or NULL to remove it
  *
- * @param name  Variable name
- * @param val   Value string
+ * The table holds the calculator's string variables only (a number lives in `dcvar`). Registered
+ * as the calculator's string-variable setter.
+ *
+ * Return: void
  */
 void cli_var_set(const char *name, const char *val)
 {
-    var_set(name, val, 1);
-}
-
-/**
- * cli_var_set_text - Set a CLI variable without evaluating math expressions
- * @name: Variable name to create or update
- * @val:  Value string (parsed as numeric literal if exact, otherwise stored as text)
- *
- * Updates @name in `cli_vars[]` and `dcvar[]` without invoking the calculator parser
- * on non-numeric strings. Used when syncing plain text values from bash.
- *
- * Return: void
- */
-void cli_var_set_text(const char *name, const char *val)
-{
-    var_set(name, val, 0);
-}
-
-/**
- * var_set - Create or update a CLI variable in the table and engine variable store
- * @name: Variable name to assign
- * @val:  Input string representation of the value
- * @eval: Non-zero to evaluate @val as a math expression if it is not a numeric literal
- *
- * Classifies @val as an integer, floating-point number, evaluated math expression (when
- * @eval is non-zero), or plain string, then records it in `cli_vars[]` and mirrors
- * numeric values into the engine's `dcvar` table.
- *
- * Return: void
- */
-static void var_set(const char *name, const char *val, int eval)
-{
-    int    type = 2;
-    long   numl = 0;
-    double numf = 0.0;
-    char   valbuf[CLI_VAR_VALLEN];
-
-    if (val != NULL && *val != '\0')
-    {
-        char *endptr = NULL;
-        strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
-        valbuf[CLI_VAR_VALLEN - 1] = '\0';
-        size_t len                 = strlen(valbuf);
-
-        numl = strtol(valbuf, &endptr, 10);
-        if (endptr != valbuf && *endptr == '\0')
-        {
-            type = 1;
-            strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
-            valbuf[CLI_VAR_VALLEN - 1] = '\0';
-        }
-        else
-        {
-            if (len > 0 && (valbuf[len - 1] == 'f' || valbuf[len - 1] == 'F'))
-            {
-                valbuf[len - 1] = '\0';
-            }
-            numf = strtod(valbuf, &endptr);
-            if (endptr != valbuf && *endptr == '\0' && len > 0)
-            {
-                type = 0;
-                strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
-                valbuf[CLI_VAR_VALLEN - 1] = '\0';
-            }
-            else
-            {
-                int    mtype;
-                long   mlval;
-                double mdval;
-                if (eval && mcalc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval))
-                {
-                    if (mtype == 1)
-                    {
-                        type = 1;
-                        numl = mlval;
-                        snprintf(valbuf, CLI_VAR_VALLEN, "%ld", numl);
-                    }
-                    else if (mtype == 2)
-                    {
-                        type = 0;
-                        numf = mdval;
-                        snprintf(valbuf, CLI_VAR_VALLEN, "%.*g", cli_float_digits, numf);
-                    }
-                }
-                else
-                {
-                    strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
-                    valbuf[CLI_VAR_VALLEN - 1] = '\0';
-                }
-            }
-        }
-    }
-    else
-    {
-        valbuf[0] = '\0';
-    }
-
+    int slot = -1;
     for (int i = 0; i < CLI_MAX_VARS; i++)
     {
         if (cli_vars[i].used && strcmp(cli_vars[i].name, name) == 0)
         {
-            strncpy(cli_vars[i].val, valbuf, CLI_VAR_VALLEN - 1);
-            cli_vars[i].val[CLI_VAR_VALLEN - 1] = '\0';
-            cli_vars[i].type                    = type;
-            if (type == 1)
-            {
-                cli_vars[i].num.l = numl;
-                create_variable_long_ID(name, numl);
-            }
-            if (type == 0)
-            {
-                cli_vars[i].num.f = numf;
-                create_variable_ID(name, numf);
-            }
-            return;
+            slot = i;
+            break;
         }
-    }
-
-    for (int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if (!cli_vars[i].used)
+        if (!cli_vars[i].used && slot < 0)
         {
-            strncpy(cli_vars[i].name, name, CLI_VAR_NAMELEN - 1);
-            cli_vars[i].name[CLI_VAR_NAMELEN - 1] = '\0';
-            strncpy(cli_vars[i].val, valbuf, CLI_VAR_VALLEN - 1);
-            cli_vars[i].val[CLI_VAR_VALLEN - 1] = '\0';
-            cli_vars[i].type                    = type;
-            if (type == 1)
-            {
-                cli_vars[i].num.l = numl;
-                create_variable_long_ID(name, numl);
-            }
-            if (type == 0)
-            {
-                cli_vars[i].num.f = numf;
-                create_variable_ID(name, numf);
-            }
-            cli_vars[i].used = 1;
-            return;
+            slot = i;
         }
     }
-    printf("Error: variable table full (max %d)\n", CLI_MAX_VARS);
+    if (val == NULL)
+    {
+        if (slot >= 0 && cli_vars[slot].used && strcmp(cli_vars[slot].name, name) == 0)
+        {
+            cli_vars[slot].used = 0;
+        }
+        return;
+    }
+    if (slot < 0)
+    {
+        printf("Error: variable table full (max %d)\n", CLI_MAX_VARS);
+        return;
+    }
+    snprintf(cli_vars[slot].name, sizeof(cli_vars[slot].name), "%s", name);
+    snprintf(cli_vars[slot].val, sizeof(cli_vars[slot].val), "%s", val);
+    cli_vars[slot].used = 1;
 }

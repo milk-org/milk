@@ -63,4 +63,11 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d);
  * processinfo entries, then apply -loops or -loopd; 0 or 1. */
 int milk_unit_create(const milk_unit_args *a, const FPS_APP_INFO *app, FPS_CLI_BINDING *b, int nb);
 
+/** milk_unit_declare() - declare the parameters of @text, blank-separated "name:type[=default][:help]":
+ * @bind binds one (a writable input) and returns where its value lives (NULL: it reported why not);
+ * each value starts at its default, read as on the command line. 0, or -1. */
+int milk_unit_declare(const char *tag,
+                      const char *text,
+                      void *(*bind)(const char *name, uint64_t type, const char *help));
+
 #endif

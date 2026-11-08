@@ -74,53 +74,6 @@ void fps_print_query_info(FPS_APP_INFO *app_info, FPS_CLI_BINDING *bindings, int
         }
     }
 
-    /* ---- Shared FPS in shm ---- */
-    {
-        char pattern[1024];
-        snprintf(pattern, sizeof(pattern), "ls %s/*.fps.shm 2>/dev/null", dcshmdir);
-
-        FILE *pp        = popen(pattern, "r");
-        int   shm_count = 0;
-        if (pp != NULL)
-        {
-            char line[512];
-            while (fgets(line, sizeof(line), pp) != NULL)
-            {
-                line[strcspn(line, "\n")] = '\0';
-
-                char *base = strrchr(line, '/');
-                base       = base ? base + 1 : line;
-                char *dot  = strstr(base, ".fps.shm");
-                if (dot)
-                {
-                    *dot = '\0';
-                }
-
-                /* Only show FPS used by this
-                 * compute unit */
-                if (!fps_shared_was_used_by(base, fpsn))
-                {
-                    continue;
-                }
-
-                if (shm_count == 0)
-                {
-                    printf("\n\033[1;33m  Shared FPS"
-                           " (shm):\033[0m\n");
-                }
-                printf("    \033[1;32m%-20s\033[0m"
-                       "  %s\n",
-                       base, line);
-                shm_count++;
-            }
-            pclose(pp);
-        }
-        if (shm_count == 0)
-        {
-            printf("  Shared FPS: (none)\n");
-        }
-    }
-
     /* ---- Parameter table ---- */
     printf("\n");
 
@@ -132,18 +85,7 @@ void fps_print_query_info(FPS_APP_INFO *app_info, FPS_CLI_BINDING *bindings, int
      * compute unit */
     if (fps_last_used_name[0] != '\0' && strcmp(fps_last_used_cmdkey, fpsn) == 0)
     {
-        if (fps_last_used_name[0] == '_')
-        {
-            show_fps = fps_local_find(fps_last_used_name);
-        }
-        else
-        {
-            if (fps_connect(fps_last_used_name, &tmp_fps, FPSCONNECT_SIMPLE) != -1)
-            {
-                show_fps        = &tmp_fps;
-                must_disconnect = 1;
-            }
-        }
+        show_fps = fps_local_find(fps_last_used_name);
     }
 
     /* Fallback: most recent local FPS for this

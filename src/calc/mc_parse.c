@@ -21,10 +21,10 @@
  *   (`[expr for x = a:b[:s], ...]`).
  * - Function call parsing with optional keyword arguments (`k=v`) for user C
  *   extensions.
- * - Statement and control-flow parsing for single-line (`if cond: stmt`),
- *   braced (`if cond { ... }`), and keyword-terminated (`if ... elif ... else
- *   ... end`, `for var = a:b[:s] ... end`) blocks, `local` declarations,
- *   multi-target tuple assignments (`a, b = ...`), `def`, and `skip`.
+ * - Statement and control-flow parsing for single-line (`if cond: stmt`) and
+ *   braced (`if cond { ... } elif ... else ...`, `for var = a:b[:s] { ... }`)
+ *   blocks, `local` declarations, multi-target tuple assignments
+ *   (`a, b = ...`), `def`, and `skip`.
  */
 
 #include <ctype.h>
@@ -43,6 +43,7 @@
  * struct mc_parse_ctx_t - Mutable state threaded through recursive-descent parsing
  * @tl:               Token list being consumed (`tl->pos` tracks current cursor)
  * @in_slice_bracket: Nesting depth inside `im[...]` slice brackets (enables `end` keyword)
+ * @nest:             Nesting depth inside `if` / `for` statements
  * @err_flag:         Non-zero once the first syntax error has been recorded
  * @err_line:         1-based source line of the first syntax error
  * @err_col:          1-based source column of the first syntax error
@@ -52,6 +53,7 @@ typedef struct
 {
     mc_tok_list_t *tl;
     int            in_slice_bracket;
+    int            nest;
     int            err_flag;
     int            err_line;
     int            err_col;
@@ -128,8 +130,8 @@ static void expect_tok(mc_parse_ctx_t *ctx, mc_tok_type_t t, const char *msg)
  * @kind: Expression node discriminant
  * @tok:  Token providing source line and column coordinates (may be NULL)
  *
- * Initializes sentinel IDs (`im_id`, `var_id`, `def_param_idx`, `udef_id`,
- * `ext_id`) to -1 for identifier and call nodes.
+ * Initializes sentinel IDs (`im_id`, `var_id`, `ext_id`) to -1 for identifier and
+ * call nodes.
  *
  * Return: Newly allocated `mc_expr_t` pointer, or NULL on allocation failure
  */
@@ -143,14 +145,12 @@ static mc_expr_t *alloc_expr(mc_expr_kind_t kind, const mc_tok_t *tok)
         e->col  = (tok != NULL) ? tok->col : 1;
         if (kind == MC_EXPR_IDENT)
         {
-            e->u.ident.im_id         = -1;
-            e->u.ident.var_id        = -1;
-            e->u.ident.def_param_idx = -1;
+            e->u.ident.im_id  = -1;
+            e->u.ident.var_id = -1;
         }
         else if (kind == MC_EXPR_CALL)
         {
-            e->u.call.udef_id = -1;
-            e->u.call.ext_id  = -1;
+            e->u.call.ext_id = -1;
         }
     }
     return e;
@@ -178,7 +178,6 @@ static mc_expr_t *make_call(const mc_tok_t *tok,
     mc_expr_t *c = alloc_expr(MC_EXPR_CALL, tok);
     snprintf(c->u.call.name, sizeof(c->u.call.name), "%s", fn_name);
     c->u.call.fn      = mc_func_find(fn_name);
-    c->u.call.udef_id = -1;
     c->u.call.ext_id  = -1;
     c->u.call.nargs   = (arg1 != NULL) ? 2 : 1;
     c->u.call.args[0] = arg0;
@@ -502,9 +501,8 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
             advance_tok(ctx);
             node = alloc_expr(MC_EXPR_CALL, t);
             snprintf(node->u.call.name, sizeof(node->u.call.name), "%s", t->sval);
-            node->u.call.udef_id = -1;
-            node->u.call.ext_id  = -1;
-            int nargs            = 0;
+            node->u.call.ext_id = -1;
+            int nargs           = 0;
             while (cur_tok(ctx)->type != MC_TOK_RPAREN && !ctx->err_flag)
             {
                 if (nargs >= MC_MAX_ARGS)
@@ -677,19 +675,6 @@ static void skip_stmt_seps(mc_parse_ctx_t *ctx)
 }
 
 /**
- * is_block_end_kw - Check whether token @t terminates an unbraced control block
- * @t: Token to inspect
- *
- * Return: 1 if @t is the identifier `end`, `elif`, or `else`, 0 otherwise
- */
-static int is_block_end_kw(const mc_tok_t *t)
-{
-    return t->type == MC_TOK_IDENT &&
-           (strcmp(t->sval, "end") == 0 || strcmp(t->sval, "elif") == 0 ||
-            strcmp(t->sval, "else") == 0);
-}
-
-/**
  * is_multi_lhs_start - Look ahead to check for a multi-target assignment `a, b = ...`
  * @ctx: Active parser context
  *
@@ -724,7 +709,7 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx);
 /**
  * parse_block_body - Parse a sequence of statements inside a block or program
  * @ctx:    Active parser context
- * @braced: 1 if the block is delimited by `{ ... }`, 0 if keyword/EOF-delimited
+ * @braced: 1 if the block is delimited by `{ ... }`, 0 for the whole program (up to EOF)
  *
  * Return: Head of the linked list of parsed `mc_stmt_t` nodes
  */
@@ -741,7 +726,7 @@ static mc_stmt_t *parse_block_body(mc_parse_ctx_t *ctx, int braced)
     {
         skip_stmt_seps(ctx);
         const mc_tok_t *t = cur_tok(ctx);
-        if (t->type == MC_TOK_EOF || (braced ? (t->type == MC_TOK_RBRACE) : is_block_end_kw(t)))
+        if (t->type == MC_TOK_EOF || (braced && t->type == MC_TOK_RBRACE))
         {
             break;
         }
@@ -765,10 +750,9 @@ static mc_stmt_t *parse_block_body(mc_parse_ctx_t *ctx, int braced)
  * @ctx:    Active parser context (positioned at `if`)
  * @if_tok: The `if` token for line/column tracking
  *
- * Supports three forms:
+ * Supports two forms:
  * 1. Single-line `if <cond>: <stmt>`
  * 2. Braced `if <cond> { ... } [elif <cond> { ... }]* [else { ... }]`
- * 3. Keyword-terminated `if <cond> ... [elif <cond> ...]* [else ...] end`
  *
  * Return: Newly allocated `MC_STMT_IF` statement node
  */
@@ -804,22 +788,24 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
         return s;
     }
 
-    /* Multi-statement block form (braced or 'end'-terminated) */
+    /* Block form: if <cond> { ... } [elif <cond> { ... }]* [else { ... }] */
     mc_tok_type_t bt = cur_tok(ctx)->type;
-    if (bt != MC_TOK_LBRACE && bt != MC_TOK_NEWLINE && bt != MC_TOK_SEMI)
+    if (bt != MC_TOK_LBRACE)
     {
-        parse_err(ctx, cur_tok(ctx), "if without ':'");
+        parse_err(ctx, cur_tok(ctx),
+                  (bt == MC_TOK_NEWLINE || bt == MC_TOK_SEMI)
+                      ? "'if ... end' was removed: write if <cond> { ... }"
+                      : "if without ':' or '{'");
         mc_expr_free(cond);
         return s;
     }
-    int braced                    = (bt == MC_TOK_LBRACE);
     s->u.if_stmt.branches[0].cond = cond;
-    s->u.if_stmt.branches[0].body = parse_block_body(ctx, braced);
+    s->u.if_stmt.branches[0].body = parse_block_body(ctx, 1);
     s->u.if_stmt.nbranches        = 1;
 
     while (!ctx->err_flag)
     {
-        while (braced && cur_tok(ctx)->type == MC_TOK_NEWLINE)
+        while (cur_tok(ctx)->type == MC_TOK_NEWLINE)
         {
             advance_tok(ctx);
         }
@@ -835,10 +821,10 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
         }
         int b                         = s->u.if_stmt.nbranches++;
         s->u.if_stmt.branches[b].cond = parse_expr(ctx, 0);
-        s->u.if_stmt.branches[b].body = parse_block_body(ctx, braced);
+        s->u.if_stmt.branches[b].body = parse_block_body(ctx, 1);
     }
 
-    while (!ctx->err_flag && braced && cur_tok(ctx)->type == MC_TOK_NEWLINE)
+    while (!ctx->err_flag && cur_tok(ctx)->type == MC_TOK_NEWLINE)
     {
         advance_tok(ctx);
     }
@@ -848,18 +834,7 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
         advance_tok(ctx);
         int b                         = s->u.if_stmt.nbranches++;
         s->u.if_stmt.branches[b].cond = NULL;
-        s->u.if_stmt.branches[b].body = parse_block_body(ctx, braced);
-    }
-    if (!braced && !ctx->err_flag)
-    {
-        if (cur_tok(ctx)->type != MC_TOK_IDENT || strcmp(cur_tok(ctx)->sval, "end") != 0)
-        {
-            parse_err(ctx, cur_tok(ctx), "if without end");
-        }
-        else
-        {
-            advance_tok(ctx);
-        }
+        s->u.if_stmt.branches[b].body = parse_block_body(ctx, 1);
     }
     return s;
 }
@@ -869,8 +844,7 @@ static mc_stmt_t *parse_if_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *if_tok)
  * @ctx:     Active parser context (positioned at `for`)
  * @for_tok: The `for` token for line/column tracking
  *
- * Supports both `{ ... }` braced bodies and `... end` keyword-terminated
- * bodies.
+ * The body is braced: `for <var> = <start>:<stop>[:<step>] { ... }`.
  *
  * Return: Newly allocated `MC_STMT_FOR` statement node
  */
@@ -900,24 +874,101 @@ static mc_stmt_t *parse_for_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *for_tok)
         s->u.for_stmt.step = parse_expr(ctx, 0);
     }
 
-    int braced         = (!ctx->err_flag && cur_tok(ctx)->type == MC_TOK_LBRACE);
-    s->u.for_stmt.body = parse_block_body(ctx, braced);
-    if (!braced && !ctx->err_flag)
+    mc_tok_type_t bt = cur_tok(ctx)->type;
+    if (!ctx->err_flag && bt != MC_TOK_LBRACE)
     {
-        if (cur_tok(ctx)->type != MC_TOK_IDENT || strcmp(cur_tok(ctx)->sval, "end") != 0)
+        parse_err(ctx, cur_tok(ctx),
+                  (bt == MC_TOK_NEWLINE || bt == MC_TOK_SEMI)
+                      ? "'for ... end' was removed: write for <var> = <start>:<end> { ... }"
+                      : "for without '{'");
+        return s;
+    }
+    s->u.for_stmt.body = parse_block_body(ctx, 1);
+    return s;
+}
+
+/* 1 if @s is a plain name: a letter or '_', then letters, digits or '_' */
+static int is_plain_name(const char *s)
+{
+    if (!isalpha((unsigned char) s[0]) && s[0] != '_')
+    {
+        return 0;
+    }
+    while (isalnum((unsigned char) *s) || *s == '_')
+    {
+        s++;
+    }
+    return *s == '\0';
+}
+
+/**
+ * parse_def_stmt - Parse `def name(a, ...) = expr`
+ * @ctx:     Active parser context, positioned at `def`
+ * @def_tok: The `def` token
+ *
+ * A def is a statement of its own: not inside `if` or `for`.
+ *
+ * Return: Newly allocated `MC_STMT_DEF` statement node
+ */
+static mc_stmt_t *parse_def_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *def_tok)
+{
+    mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));
+    s->kind      = MC_STMT_DEF;
+    s->line      = def_tok->line;
+    s->col       = def_tok->col;
+    advance_tok(ctx);
+    if (ctx->nest > 0)
+    {
+        parse_err(ctx, def_tok, "def must be a statement of its own, outside if and for");
+        return s;
+    }
+    const mc_tok_t *nt = advance_tok(ctx);
+    if (nt->type != MC_TOK_IDENT || !is_plain_name(nt->sval) ||
+        strlen(nt->sval) >= sizeof(s->def.name))
+    {
+        parse_err(ctx, nt, "def: expected a function name");
+        return s;
+    }
+    snprintf(s->def.name, sizeof(s->def.name), "%s", nt->sval);
+    expect_tok(ctx, MC_TOK_LPAREN, "def: expected '(' after the function name");
+    while (!ctx->err_flag)
+    {
+        const mc_tok_t *at = advance_tok(ctx);
+        if (s->def.nargs >= MCALC_UDEF_MAXARGS)
         {
-            parse_err(ctx, cur_tok(ctx), "for without end");
+            parse_err(ctx, at, "def: at most %d parameters", MCALC_UDEF_MAXARGS);
+            return s;
         }
-        else
+        if (at->type != MC_TOK_IDENT || !is_plain_name(at->sval) ||
+            strlen(at->sval) >= sizeof(s->def.args[0]))
         {
-            advance_tok(ctx);
+            parse_err(ctx, at, "def: expected a parameter name");
+            return s;
         }
+        snprintf(s->def.args[s->def.nargs++], sizeof(s->def.args[0]), "%s", at->sval);
+        if (cur_tok(ctx)->type != MC_TOK_COMMA)
+        {
+            break;
+        }
+        advance_tok(ctx);
+    }
+    expect_tok(ctx, MC_TOK_RPAREN, "def: expected ')' after the parameters");
+    expect_tok(ctx, MC_TOK_ASSIGN, "def: expected '=' before the body");
+    if (!ctx->err_flag)
+    {
+        s->def.body = parse_expr(ctx, 0);
+    }
+    const mc_tok_t *end_t = cur_tok(ctx);
+    if (!ctx->err_flag && end_t->type != MC_TOK_EOF && end_t->type != MC_TOK_NEWLINE &&
+        end_t->type != MC_TOK_SEMI && end_t->type != MC_TOK_RBRACE)
+    {
+        parse_err(ctx, end_t, "syntax error in def");
     }
     return s;
 }
 
 /**
- * parse_stmt_one - Parse a single statement from the token stream
+ * parse_stmt_tokens - Parse a single statement from the token stream
  * @ctx: Active parser context
  *
  * Dispatches on leading keywords (`skip`, `def`, `if`, `for`, `local`),
@@ -927,9 +978,8 @@ static mc_stmt_t *parse_for_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *for_tok)
  *
  * Return: Newly allocated `mc_stmt_t` node
  */
-static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
+static mc_stmt_t *parse_stmt_tokens(mc_parse_ctx_t *ctx)
 {
-    skip_stmt_seps(ctx);
     const mc_tok_t *t = cur_tok(ctx);
     if (t->type == MC_TOK_EOF)
     {
@@ -954,16 +1004,33 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
 
     if (t->type == MC_TOK_IDENT && strcmp(t->sval, "def") == 0)
     {
-        mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));
-        s->kind      = MC_STMT_DEF;
-        s->line      = t->line;
-        s->col       = t->col;
-        while (cur_tok(ctx)->type != MC_TOK_EOF && cur_tok(ctx)->type != MC_TOK_NEWLINE &&
-               cur_tok(ctx)->type != MC_TOK_SEMI && cur_tok(ctx)->type != MC_TOK_RBRACE)
+        return parse_def_stmt(ctx, t);
+    }
+
+    if (t->type == MC_TOK_IDENT && ctx->nest == 0 &&
+        (strcmp(t->sval, "loadlib") == 0 || strcmp(t->sval, "listengines") == 0 ||
+         strcmp(t->sval, "__list_engines") == 0))
+    {
+        const mc_tok_t *nx = &ctx->tl->toks[ctx->tl->pos + 1];
+        if (!mc_is_assign_tok(nx->type) && nx->type != MC_TOK_COMMA && nx->type != MC_TOK_LPAREN &&
+            strcmp(t->sval, "listengines") == 0)
         {
-            advance_tok(ctx);
+            parse_err(ctx, t, "'listengines' was removed: use @calc --list");
+            return NULL;
         }
-        return s;
+        if (!mc_is_assign_tok(nx->type) && nx->type != MC_TOK_COMMA && nx->type != MC_TOK_LPAREN)
+        {
+            mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));
+            s->kind      = MC_STMT_DIRECTIVE;
+            s->line      = t->line;
+            s->col       = t->col;
+            while (cur_tok(ctx)->type != MC_TOK_EOF && cur_tok(ctx)->type != MC_TOK_NEWLINE &&
+                   cur_tok(ctx)->type != MC_TOK_SEMI)
+            {
+                advance_tok(ctx);
+            }
+            return s;
+        }
     }
 
     if (t->type == MC_TOK_IDENT && strcmp(t->sval, "if") == 0)
@@ -971,7 +1038,10 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
         const mc_tok_t *nx = &ctx->tl->toks[ctx->tl->pos + 1];
         if (!mc_is_assign_tok(nx->type) && nx->type != MC_TOK_COMMA)
         {
-            return parse_if_stmt(ctx, t);
+            ctx->nest++;
+            mc_stmt_t *s = parse_if_stmt(ctx, t);
+            ctx->nest--;
+            return s;
         }
     }
 
@@ -979,7 +1049,10 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
         ctx->tl->toks[ctx->tl->pos + 1].type == MC_TOK_IDENT &&
         ctx->tl->toks[ctx->tl->pos + 2].type == MC_TOK_ASSIGN)
     {
-        return parse_for_stmt(ctx, t);
+        ctx->nest++;
+        mc_stmt_t *s = parse_for_stmt(ctx, t);
+        ctx->nest--;
+        return s;
     }
 
     int is_local = 0;
@@ -1029,7 +1102,7 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
         }
         const mc_tok_t *end_t = cur_tok(ctx);
         if (!ctx->err_flag && end_t->type != MC_TOK_EOF && end_t->type != MC_TOK_NEWLINE &&
-            end_t->type != MC_TOK_SEMI && end_t->type != MC_TOK_RBRACE && !is_block_end_kw(end_t))
+            end_t->type != MC_TOK_SEMI && end_t->type != MC_TOK_RBRACE)
         {
             parse_err(ctx, end_t, "syntax error in multi-target assignment");
         }
@@ -1058,11 +1131,59 @@ static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
 
     const mc_tok_t *end_t = cur_tok(ctx);
     if (!ctx->err_flag && end_t->type != MC_TOK_EOF && end_t->type != MC_TOK_NEWLINE &&
-        end_t->type != MC_TOK_SEMI && end_t->type != MC_TOK_RBRACE && !is_block_end_kw(end_t))
+        end_t->type != MC_TOK_SEMI && end_t->type != MC_TOK_RBRACE)
     {
         parse_err(ctx, end_t, "syntax error");
     }
     return s;
+}
+
+/* parse_stmt_one() - parse_stmt_tokens(), recording the statement's byte span in the source */
+static mc_stmt_t *parse_stmt_one(mc_parse_ctx_t *ctx)
+{
+    skip_stmt_seps(ctx);
+    int        first = ctx->tl->pos;
+    mc_stmt_t *s     = parse_stmt_tokens(ctx);
+    if (s != NULL)
+    {
+        const mc_tok_t *a = &ctx->tl->toks[first];
+        const mc_tok_t *b = &ctx->tl->toks[(ctx->tl->pos > first) ? ctx->tl->pos - 1 : first];
+        s->src_off        = a->off;
+        s->src_end        = b->off + b->len;
+    }
+    return s;
+}
+
+/**
+ * mc_stmt_text - Copy the source text of a parsed statement
+ * @s:   Statement parsed from @src
+ * @src: The text that was lexed (its byte offsets are recorded on the tokens)
+ *
+ * Return: Newly allocated, whitespace-trimmed text, or NULL
+ */
+char *mc_stmt_text(const mc_stmt_t *s, const char *src)
+{
+    if (s == NULL || src == NULL || s->src_end < s->src_off)
+    {
+        return NULL;
+    }
+    const char *a = src + s->src_off;
+    const char *b = src + s->src_end;
+    while (a < b && isspace((unsigned char) *a))
+    {
+        a++;
+    }
+    while (b > a && isspace((unsigned char) b[-1]))
+    {
+        b--;
+    }
+    char *t = malloc((size_t) (b - a) + 1);
+    if (t != NULL)
+    {
+        memcpy(t, a, (size_t) (b - a));
+        t[b - a] = '\0';
+    }
+    return t;
 }
 
 /* ========================================================================= */

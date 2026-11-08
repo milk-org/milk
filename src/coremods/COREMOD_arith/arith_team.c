@@ -7,7 +7,7 @@
  * @brief Persistent spin-barrier worker team: one dispatch per block loop, no fork/join.
  *
  * Role & Goal:
- *   Provides a process-wide persistent worker pool for `COREMOD_arith` and `libmilkscript/calc`
+ *   Provides a process-wide persistent worker pool for `COREMOD_arith` and the calculator (`src/calc`)
  *   block evaluators, reductions, and spatial pre-stages. The caller participates as thread 0,
  *   and workers spin for `MILK_CALC_SPIN_US` (default 2000 us) after a job before sleeping on a
  *   condition variable, avoiding libgomp sleep/wake penalties in real-time loops.

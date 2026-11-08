@@ -15,7 +15,7 @@
 #include <libfps/IMGID.h>
 #include "libmilkcommon/milk_compiler.h"
 
-/** Reduction operation codes shared across `COREMOD_arith` and `libmilkscript/calc`. */
+/** Reduction operation codes shared across `COREMOD_arith`, the calculator (`src/calc`) and `src/prop`. */
 typedef enum
 {
     ARITH_RED_SUM,
@@ -25,6 +25,7 @@ typedef enum
     ARITH_RED_STD,
     ARITH_RED_VAR,
     ARITH_RED_NORM,
+    ARITH_RED_RMS,
     ARITH_RED_ASUM,
     ARITH_RED_COUNT,
     ARITH_RED_DOT,
@@ -214,6 +215,9 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
     case ARITH_RED_NORM:
         r = sqrt(acc->sum);
         break;
+    case ARITH_RED_RMS:
+        r = sqrt(acc->sum / (double) acc->n);
+        break;
     case ARITH_RED_COUNT:
     default:
         r = (double) acc->n;
@@ -275,7 +279,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
                 arith_stat_merge_inline(acc, &blk);                                               \
                 return;                                                                           \
             }                                                                                     \
-            if (op == ARITH_RED_NORM || op == ARITH_RED_ASUM)                                     \
+            if (op == ARITH_RED_NORM || op == ARITH_RED_RMS || op == ARITH_RED_ASUM)              \
             {                                                                                     \
                 _Pragma("omp simd reduction(+:sb,nb)") for (int j = 0; j < len; j++)              \
                 {                                                                                 \
@@ -485,6 +489,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
             break;                                                                                \
         }                                                                                         \
         case ARITH_RED_NORM:                                                                      \
+        case ARITH_RED_RMS:                                                                       \
         {                                                                                         \
             double s2 = 0.0;                                                                      \
             _Pragma("omp simd reduction(+:s2)") for (int j = 0; j < len; j++)                     \
@@ -561,6 +566,9 @@ double arith_image_min_IMGID(IMGID *imgin);
 double arith_image_max(const char *ID_name);
 double arith_image_max_IMGID(IMGID *imgin);
 
+/** Value at fraction @frac of the sorted pixels of @im (where @mask != 0, or all if NULL); O(n)
+ * selection in @work (nelement floats for float32 @im, doubles otherwise; NULL to allocate). */
+double arith_image_percentile_im(const IMAGE *im, const IMAGE *mask, double frac, void *work);
 double arith_image_percentile(const char *ID_name, double fraction);
 double arith_image_percentile_IMGID(IMGID *imgin, double fraction);
 

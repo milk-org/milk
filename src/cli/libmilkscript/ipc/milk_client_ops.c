@@ -37,6 +37,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "CLIcore_script.h"
 #include "mcalc.h"
 #include "milk_client.h"
@@ -243,7 +244,7 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
     {
         snprintf(sockpath, sizeof(sockpath), "%s",
                  esock); // milk-cli's own: never started from here
-        if ((fd = milk_ipc_connect_once(sockpath)) < 0)
+        if ((fd = milk_client_connect(sockpath)) < 0)
         {
             fprintf(stderr, "milk: milk-cli's session does not answer (%s)\n", sockpath);
         }
@@ -264,6 +265,7 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
     /* only calc text reads shell variables: `n` in `mem.mk2Dim im n 4` is no variable */
     milk_packed_vars_t pv;
     pv.count = 0;
+    milk_client_pack_digits(&pv, hooks);
     for (int i = 1; i < argc && (strcmp(c0, "assert") == 0 || strcmp(c0, "pipe") == 0); i++)
     {
         milk_client_collect_identifiers(&pv, hooks, argv[i]);
@@ -304,7 +306,7 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
         {
             close(sw_stdin_fd);
         }
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
@@ -360,12 +362,12 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
 
     if (sret != 0)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    close(fd);
+    milk_client_end(fd);
     return rc;
 }
 
@@ -409,13 +411,13 @@ int milk_client_get_buf(const char *spec, char *out, size_t outsz, const milk_cl
     uint32_t slen = (uint32_t) (strlen(spec) + 1);
     if (milk_proto_send(fd, MILK_MSG_GET, 0, spec, slen) != 0)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
     int got_val = 0;
     int rc      = milk_client_await_response(fd, sockpath, hooks, out, outsz, &got_val);
-    close(fd);
+    milk_client_end(fd);
     return (rc == 0 && got_val) ? 0 : 1;
 }
 
@@ -468,7 +470,7 @@ int milk_client_set(const char                *spec,
 {
     if (spec == NULL || spec[0] == '\0')
     {
-        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment]\n");
+        milk_lexicon_usage("set", stderr);
         return 1;
     }
     if (strchr(spec, '.') == NULL)
@@ -549,7 +551,7 @@ int milk_client_set(const char                *spec,
     uint8_t *buf = (uint8_t *) malloc(tot);
     if (buf == NULL)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
     memcpy(buf, spec, l1);
@@ -567,12 +569,12 @@ int milk_client_set(const char                *spec,
     free(buf);
     if (sret != 0)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    close(fd);
+    milk_client_end(fd);
     return rc;
 }
 
@@ -844,8 +846,7 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
         free(specs);
         if (rc < 0)
         {
-            fprintf(stderr,
-                    "Usage: @get --watch [T] [--json] <entity>... (T > 0 s, default 0.5)\n");
+            milk_lexicon_usage("get", stderr);
             return 2;
         }
         return rc;
@@ -854,8 +855,7 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
     if (nspec == 0 || ((varname != NULL || arrname != NULL || assocname != NULL) &&
                        (nspec > 1 || strchr(spec, '=') != NULL)))
     {
-        fprintf(stderr, "Usage: @get [--json|-j] [-v var | -a arr | -A assoc] <entity> | "
-                        "@get [<name>=]<entity>... | @get --watch [T] <entity>...\n");
+        milk_lexicon_usage("get", stderr);
         free(specs);
         return 2;
     }
@@ -973,27 +973,6 @@ int milk_client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t 
 }
 
 /**
- * milk_client_is_entity_spec_token - Check whether @s is a qualified entity path (`s.x.y`, `f.x.p`, ...)
- * @s: Token string to inspect
- *
- * Used by `milk_client_set_argv()` and `milk_client_waitfor()` to distinguish
- * entity paths from separate value or comment tokens.
- *
- * Return: 1 if @s begins with a recognized entity namespace followed by a dot, 0 otherwise.
- */
-int milk_client_is_entity_spec_token(const char *s)
-{
-    if (s == NULL)
-    {
-        return 0;
-    }
-    char norm[256];
-    milk_normalize_entity_spec(s, norm, sizeof(norm));
-    const char *rest = norm;
-    return milk_entity_ns_kind(norm, &rest) != MILK_NS_NONE && strchr(rest, '.') != NULL;
-}
-
-/**
  * sh_quote - Append @s single-quoted for bash evaluation onto @out
  * @out: Destination NUL-terminated buffer
  * @sz:  Total capacity of @out in bytes
@@ -1046,31 +1025,17 @@ static int set_restore(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     char cmd[16384] = "__MILK_NOLOG=1 milkset";
     int  i          = 0;
-    while (i < argc) /* the assignment grammar of milk_client_set_argv() */
+    while (i < argc)
     {
-        const char *spec = argv[i++];
-        const char *eq   = strchr(spec, '=');
-        size_t      sl   = (eq != NULL) ? (size_t) (eq - spec) : strlen(spec);
-        int         has  = (eq != NULL);
-        if (eq == NULL && i < argc && strcmp(argv[i], "=") == 0)
-        {
-            has = (++i < argc);
-            i += has;
-        }
-        else if (eq == NULL && i < argc && !milk_client_is_entity_spec_token(argv[i]))
-        {
-            has = 1;
-            i++;
-        }
-        if (i < argc && !milk_client_is_entity_spec_token(argv[i])) /* a comment */
-        {
-            i++;
-        }
-        char name[512];
-        char old[4096];
-        char kv[4700];
-        snprintf(name, sizeof(name), "%.*s", (int) sl, spec);
-        if (!has) /* an action: nothing to put back */
+        milk_set_item_t it;
+        milk_set_item(argc, argv, &i, &it);
+        const char *eq = strchr(it.spec, '=');
+        char        name[512];
+        char        old[4096];
+        char        kv[4700];
+        snprintf(name, sizeof(name), "%.*s",
+                 (int) ((eq != NULL) ? (size_t) (eq - it.spec) : strlen(it.spec)), it.spec);
+        if (eq == NULL && it.val == NULL) /* an action: nothing to put back */
         {
             continue;
         }
@@ -1335,7 +1300,7 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
 {
     if (argc < 1 || argv == NULL || argv[0] == NULL)
     {
-        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment] [...]\n");
+        milk_lexicon_usage("set", stderr);
         return 1;
     }
     if (strcmp(argv[0], "--tui") == 0)
@@ -1366,46 +1331,18 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
     int         nolog = (nl != NULL && nl[0] != '\0');
     while (i < argc)
     {
-        const char *spec    = argv[i++];
-        const char *val     = NULL;
-        const char *comment = NULL;
-
-        if (strchr(spec, '=') != NULL)
-        {
-            if (i < argc && !milk_client_is_entity_spec_token(argv[i]))
-            {
-                comment = argv[i++];
-            }
-        }
-        else
-        {
-            if (i < argc && strcmp(argv[i], "=") == 0)
-            {
-                i++;
-                if (i < argc)
-                {
-                    val = argv[i++];
-                }
-            }
-            else if (i < argc && !milk_client_is_entity_spec_token(argv[i]))
-            {
-                val = argv[i++];
-            }
-            if (i < argc && !milk_client_is_entity_spec_token(argv[i]))
-            {
-                comment = argv[i++];
-            }
-        }
+        milk_set_item_t it;
+        milk_set_item(argc, argv, &i, &it);
 
         /* a value (not an action) that @restore --undo can set back: its values before and after */
         char        name[512];
         char        before[8192];
-        const char *eq  = strchr(spec, '=');
-        int         log = (eq != NULL || val != NULL) && !nolog;
+        const char *eq  = strchr(it.spec, '=');
+        int         log = (eq != NULL || it.val != NULL) && !nolog;
         snprintf(name, sizeof(name), "%.*s",
-                 (int) ((eq != NULL) ? (size_t) (eq - spec) : strlen(spec)), spec);
+                 (int) ((eq != NULL) ? (size_t) (eq - it.spec) : strlen(it.spec)), it.spec);
         log = log && undo_loggable(name) && undo_values(name, before, sizeof(before), hooks) == 0;
-        if (milk_client_set(spec, val, comment, hooks) != 0)
+        if (milk_client_set(it.spec, it.val, it.comment, hooks) != 0)
         {
             rc = 1;
         }
@@ -1532,7 +1469,7 @@ static int calc_local_list(const char *expr, int digits, char vals[][256], int m
  * client_calc_or_test - Shared implementation of `@calc` and `@test`
  * @expr:    Calculator or boolean expression string
  * @is_test: Non-zero for `@test` (exit status 0/1, no stdout output)
- * @repl:    Non-zero when invoked from interactive REPL (`MILK_FLAG_REPL`)
+ * @xflags:  `MILK_FLAG_REPL` (interactive calc mode), `MILK_FLAG_EXPLAIN` (`--explain`), or 0
  * @names:   Optional comma-separated variable names for `-v` binding
  * @arr:     Optional array variable name for `-a` pixel binding
  * @hooks:   Optional shell variable hooks
@@ -1545,7 +1482,7 @@ static int calc_local_list(const char *expr, int digits, char vals[][256], int m
  */
 static int client_calc_or_test(const char                *expr,
                                int                        is_test,
-                               int                        repl,
+                               uint8_t                    xflags,
                                const char                *names,
                                const char                *arr,
                                const milk_client_hooks_t *hooks)
@@ -1560,12 +1497,13 @@ static int client_calc_or_test(const char                *expr,
         return 2;
     }
 
+    milk_ipc_sync_shm_env(hooks); /* local reads of s.cam.cnt0 use the shell's MILK_SHM_DIR */
     const char *dp = milk_ipc_get_var(hooks, "MILK_DPDIGITS"); /* sent back by @config digits */
     long        nd = (dp != NULL) ? strtol(dp, NULL, 10) : 0;
     char        lv[16][256];
     char       *lp[16];
     int         truth = 0;
-    int n = (arr == NULL && !repl)
+    int n = (arr == NULL && xflags == 0)
                 ? calc_local_list(expr, (nd >= 1 && nd <= 17) ? (int) nd : 15, lv, 16, &truth)
                 : -1;
     if (n > 0 && (!is_test || n == 1)) /* nothing to look up on the server: evaluated here */
@@ -1599,6 +1537,7 @@ static int client_calc_or_test(const char                *expr,
 
     milk_packed_vars_t pv;
     pv.count = 0;
+    milk_client_pack_digits(&pv, hooks);
     milk_client_collect_identifiers(&pv, hooks, expr);
 
     size_t elen = strlen(expr) + 1;
@@ -1611,7 +1550,7 @@ static int client_calc_or_test(const char                *expr,
     uint8_t *buf = (uint8_t *) malloc(cap);
     if (buf == NULL)
     {
-        close(fd);
+        milk_client_end(fd);
         return 2;
     }
 
@@ -1638,9 +1577,7 @@ static int client_calc_or_test(const char                *expr,
     int cwd_fd    = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     int fds[4]    = { STDIN_FILENO, (out_fd >= 0) ? out_fd : STDOUT_FILENO, STDERR_FILENO, cwd_fd };
     uint8_t mtype = is_test ? MILK_MSG_TEST : MILK_MSG_CALC;
-    uint8_t flags = !bind           ? (repl ? MILK_FLAG_REPL : 0)
-                    : (arr != NULL) ? MILK_FLAG_PIXELS
-                                    : MILK_FLAG_BIND;
+    uint8_t flags = !bind ? xflags : (arr != NULL) ? MILK_FLAG_PIXELS : MILK_FLAG_BIND;
     int     sret = milk_proto_send_with_fds(fd, mtype, flags, buf, off, fds, (cwd_fd >= 0) ? 4 : 3);
     if (cwd_fd >= 0)
     {
@@ -1649,7 +1586,7 @@ static int client_calc_or_test(const char                *expr,
     free(buf);
 
     int rc = (sret != 0) ? 2 : milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    close(fd);
+    milk_client_end(fd);
 
     if (bind && out_fd >= 0)
     {
@@ -1718,8 +1655,12 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
             explain = 1;
             i++;
         }
-        else if (strcmp(argv[i], "--list") == 0 || strcmp(argv[i], "--engines") == 0 ||
-                 strcmp(argv[i], "--tokens") == 0)
+        else if (strcmp(argv[i], "--engines") == 0 || strcmp(argv[i], "--tokens") == 0)
+        {
+            fprintf(stderr, "milk: @calc: '%s' was removed: use --list\n", argv[i]);
+            return 2;
+        }
+        else if (strcmp(argv[i], "--list") == 0)
         {
             list_mode = 1;
             i++;
@@ -1823,17 +1764,27 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
     }
     else
     {
-        if (explain)
+        if (explain && nlibs > 0) /* load them first: --explain runs nothing */
         {
-            strcat(expr, (nlibs > 0) ? "; __explain " : "__explain ");
+            int lrc = client_calc_or_test(expr, 0, 0, NULL, NULL, hooks);
+            if (lrc != 0)
+            {
+                free(expr);
+                return lrc;
+            }
+            expr[0] = '\0';
         }
         for (int j = i; j < argc; j++)
         {
-            strcat(expr, (j == i && nlibs > 0 && !explain) ? "; " : (j > i) ? " " : "");
+            strcat(expr, (j == i && expr[0] != '\0') ? "; " : (j > i) ? " " : "");
             strcat(expr, argv[j]);
         }
     }
-    int rc = client_calc_or_test(expr, 0, repl, names, arr, hooks);
+    int rc = client_calc_or_test(expr, 0,
+                                 explain ? MILK_FLAG_EXPLAIN
+                                 : repl  ? MILK_FLAG_REPL
+                                         : 0,
+                                 names, arr, hooks);
     free(expr);
     return rc;
 }
@@ -1882,7 +1833,7 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
     {
         char sockpath[256];
         milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
-        int fd = milk_ipc_connect_once(sockpath);
+        int fd = milk_client_connect(sockpath);
         if (fd >= 0)
         {
             size_t   slen = strlen(s_norm) + 1;
@@ -1895,12 +1846,12 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
                 {
                     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
                     free(pl);
-                    close(fd);
+                    milk_client_end(fd);
                     return rc;
                 }
                 free(pl);
             }
-            close(fd);
+            milk_client_end(fd);
         }
     }
     return 1;

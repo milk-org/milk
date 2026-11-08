@@ -9,23 +9,19 @@ for compliance with project conventions.
 
 ## 1. Read the PR
 
-Get the PR diff and file list:
+Get the PR diff and file list (`TARGET`: the PR's target branch, `framework-dev` unless the PR
+targets `dev`):
 
 ```bash
-git diff framework-dev..HEAD --stat
-git diff framework-dev..HEAD
+TARGET=framework-dev
+git diff ${TARGET}..HEAD --stat
+git diff ${TARGET}..HEAD
 ```
 
 ## 2. Coding Style Check
 
-For each modified `.c` and `.h` file, verify:
-
-- [ ] Lines ≤ 100 characters
-- [ ] Linux kernel C coding style
-- [ ] Kernel-Doc comments above functions
-- [ ] Explicit `#include` for every header used
-- [ ] Code blocks `{ }` minimize variable scope
-- [ ] Multi-line function prototypes (one arg/line)
+Check each modified `.c` and `.h` file against the
+[coding standards](../../docs/developer/coding_standards.md) and the `code-style-guide` rule.
 
 ## 3. Architecture Check
 
@@ -39,15 +35,7 @@ For each modified `.c` and `.h` file, verify:
 
 ## 4. Performance Check
 
-For compute-function changes:
-
-- [ ] `MILK_HOT` on hot functions
-- [ ] `restrict` on pixel pointer parameters
-- [ ] Float math uses `f` variants (`sqrtf`)
-- [ ] No `malloc`/`free` in per-frame loops
-- [ ] No `printf` in hot paths
-- [ ] `else if` chains for datatype dispatch
-- [ ] BLAS for matrix operations
+For compute-function changes, check the `performance-practices` rule.
 
 ## 5. Documentation Check
 
@@ -61,14 +49,7 @@ For compute-function changes:
 
 ## 6. Build and Test
 
-// turbo-all
-
-```bash
-cd /home/oguyon/src/milk/_build && \
-cmake --build . -- -j$(nproc) && \
-make install && \
-ctest --output-on-failure
-```
+Run the [`/compile-test`](compile-test.md) workflow.
 
 ## 7. Post Review
 

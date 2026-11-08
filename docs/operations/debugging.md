@@ -142,7 +142,8 @@ semaphore.
 
 ### 4.2. Shared Memory Leaks
 
-**Symptom:** `$MILK_SHM_DIR` (`/dev/shm/`) fills up with stale `.im.shm` and `.fps.shm` files.
+**Symptom:** `$MILK_SHM_DIR` (default `/milk/shm`) fills up with stale `.im.shm` and `.fps.shm`
+files.
 
 **Cleanup:**
 
@@ -163,7 +164,7 @@ $ milk-shmimpurge
 **Symptom:** `SIGSEGV` when accessing `img.im->array.F`.
 
 **Likely cause:** The `IMGID` was not connected/resolved or the stream was deleted. Always check the
-return value of `resolveIMGID(&img, ERRMODE_ABORT)` (or `imgid_connect()`) and verify
+return value of `resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg)` (or `imgid_connect()`) and verify
 `img.im != NULL` before accessing pixel data.
 
 ---

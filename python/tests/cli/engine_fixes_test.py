@@ -313,7 +313,7 @@ def test_failed_image_assignments_are_errors(tmp_path):
     out = res.stdout + res.stderr
     for f in ("e1.txt", "e2.txt", "e3.txt"):
         out += f"\n--- {f}\n" + (tmp_path / f).read_text()
-    assert value(res.stdout, "mismatch") == "2", out
+    assert value(res.stdout, "mismatch") == "1", out  # a failure, not a usage error
     assert "Dimension mismatch" in (tmp_path / "e1.txt").read_text(), out
     assert value(res.stdout, "v") == "2 7", out
     assert value(res.stdout, "same") == "0 7", out

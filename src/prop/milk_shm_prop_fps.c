@@ -632,56 +632,14 @@ int cli_fps_set_param(const char *fpsname, const char *pname, const char *valstr
     {
         return -1;
     }
+    /* the reading of every argument value (milk_argval_parse()): 0x, 0o and 0b literals included */
     if (functionparameter_SetParamValue_fromString(&fps, pindex, valstr) == 0)
     {
         return 0;
     }
-
-    /* Fallback for hex/octal integer literals not accepted by the base-10 setter:
-     * the whole string must parse and fit, otherwise the parameter is left unchanged. */
-    uint32_t    ptype = fps.parray[pindex].type;
-    const char *kw    = fps.parray[pindex].keywordfull;
-    char       *endp  = NULL;
-    int         rc    = -1;
-    errno             = 0;
-    if (ptype & (FPTYPE_INT32 | FPTYPE_INT64))
-    {
-        long long v  = strtoll(valstr, &endp, 0);
-        int       ok = (endp != valstr && *endp == '\0' && errno == 0);
-        if (ok && (ptype & FPTYPE_INT32) && v >= INT32_MIN && v <= INT32_MAX)
-        {
-            rc = functionparameter_SetParamValue_INT32(&fps, kw, (int32_t) v) == EXIT_SUCCESS ? 0
-                                                                                              : -1;
-        }
-        else if (ok && (ptype & FPTYPE_INT64))
-        {
-            rc = functionparameter_SetParamValue_INT64(&fps, kw, (int64_t) v) == EXIT_SUCCESS ? 0
-                                                                                              : -1;
-        }
-    }
-    else if ((ptype & (FPTYPE_UINT32 | FPTYPE_UINT64)) && valstr[0] != '-')
-    {
-        unsigned long long v  = strtoull(valstr, &endp, 0);
-        int                ok = (endp != valstr && *endp == '\0' && errno == 0);
-        if (ok && (ptype & FPTYPE_UINT32) && v <= UINT32_MAX)
-        {
-            rc = functionparameter_SetParamValue_UINT32(&fps, kw, (uint32_t) v) == EXIT_SUCCESS
-                     ? 0
-                     : -1;
-        }
-        else if (ok && (ptype & FPTYPE_UINT64))
-        {
-            rc = functionparameter_SetParamValue_UINT64(&fps, kw, (uint64_t) v) == EXIT_SUCCESS
-                     ? 0
-                     : -1;
-        }
-    }
-    if (rc != 0)
-    {
-        fprintf(stderr, "Error: invalid value '%s' for '%s' (type 0x%x) in FPS '%s'\n", valstr,
-                pname, ptype, fpsname);
-    }
-    return rc;
+    fprintf(stderr, "Error: invalid value '%s' for '%s' (type 0x%x) in FPS '%s'\n", valstr, pname,
+            (unsigned) fps.parray[pindex].type, fpsname);
+    return -1;
 }
 
 /**

@@ -12,9 +12,8 @@ user experience, low latency, and zero terminal flicker.
 Never write direct, unbuffered print loops (e.g., using raw `printf` statements) to render entire
 TUI screens. Unbuffered terminal output causes severe screen flickering.
 
-- **Double Buffering**: Maintain a shadow grid buffer (`ov__shadow` / `sc_shadow`) containing the
-  intended screen state, and a front grid buffer (`ov__front` / `sc_front`) containing the
-  currently rendered screen state.
+- **Double Buffering**: Maintain a shadow grid buffer (`ov__shadow`) containing the intended screen
+  state, and a front grid buffer (`ov__front`) containing the currently rendered screen state.
 - **Delta Flushing**: At each frame refresh, compare the shadow buffer with the front buffer and
   only emit the ANSI positioning and color/text escape sequences for cells that changed.
 - **Synchronized Output**: Wrap frame updates with the synchronized output escape sequences
@@ -23,15 +22,9 @@ TUI screens. Unbuffered terminal output causes severe screen flickering.
 
 ## 2. TrueColor and ANSI Color Fallbacks
 
-To support different terminal environments (e.g., raw console, SSH session, local GUI terminal),
-TUIs must detect and support three levels of color depth:
-
-1. **Level 3 (TrueColor/24-bit RGB)**: Default mode when `COLORTERM=truecolor` is set.
-2. **Level 2 (256-color)**: Fallback using standard `\033[38;5;Xm` and `\033[48;5;Xm` color codes.
-3. **Level 1 (16-color)**: Basic terminal colors (ANSI codes 30-37 and 90-97).
-
-Always use the color-level detection API (`ov_detect_color_level()`) and apply color definitions
-conditionally using this hierarchy.
+TUIs follow the terminal's colour depth as milk-CTRL does
+([milk-CTRL.md, Colours](../../docs/guide/milk-CTRL.md#colours): 24-bit, 256, 16 colours, or
+monochrome): detect it with `ov_detect_color_level()` and apply colour definitions for that level.
 
 ## 3. Dependency Controls
 
@@ -64,7 +57,8 @@ TUI executables must support the standard help interface:
 
 ## 6. Color Scheme Conventions
 
-To deliver a premium visual aesthetic and high readability, TUIs must use a dark theme:
+Colours come from the theme palette (milk-CTRL has selectable themes, light ones included). The
+default dark theme uses:
 
 - **Backgrounds**: Deep charcoal or slate (e.g., RGB `20, 22, 28` for terminals; RGB `30, 32, 40`
   for panels). Avoid default pitch black or bright white backgrounds.
@@ -119,9 +113,9 @@ To deliver a premium visual aesthetic and high readability, TUIs must use a dark
 
 When a TUI grows in complexity to display multiple subsystems, follow these layout strategies:
 
-- **Multi-View Navigation (F2-F6)**: Organize primary functional modules into full-screen views.
-  Provide a top-level tab header. Map views to Function keys (e.g. F2 for Dashboard, F3 for Streams,
-  F4 for Processes, F5 for FPS, F6 for Connections) or Ctrl+Arrow keys.
+- **Multi-View Navigation (F2-F7)**: Organize primary functional modules into full-screen views.
+  Provide a top-level tab header. Map views to Function keys as milk-CTRL does (F2 Dashboard, F3
+  Streams, F4 Processes, F5 FPS, F6 Connections, F7 Loops) or Ctrl+Arrow keys.
 - **Focused Panel Switching (TAB)**: For views containing multiple concurrent panels (e.g., a list
   panel next to an inspector pane), support the `TAB` key to cycle focus. Draw focused panels
   with double borders (`╔═║`) and unfocused panels with single borders (`╭─│`).

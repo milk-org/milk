@@ -30,7 +30,6 @@ extern char               g_srvlog_sockpath[256];
 
 /* --- milk_server_vars.c --- */
 
-void milk_server_init_dcvar_cache(void);
 
 void milk_server_sync_bash_vars(const uint8_t *buf,
                                 uint32_t       len,
@@ -50,9 +49,6 @@ void milk_server_outvars_diff(const char *outvars, const uint64_t *h, int n);
 /** milk_server_outvars_send() - send the queued outputs to the caller as SETVAR (none if @client_fd < 0)
  * and forget them. */
 void milk_server_outvars_send(int client_fd);
-
-
-void milk_server_expand_entities_in_expr(const char *in, char *out, size_t outsz);
 
 void milk_server_mark_expr_vars_synced(const char *expr);
 
@@ -76,7 +72,10 @@ int milk_server_streamwrite(int argc, char **argv);
 
 /* --- milk_server_io.c --- */
 
-void milk_server_handle_complete(int client_fd, const char *prefix, const char *comp_type);
+void milk_server_handle_complete(int         client_fd,
+                                 int         keep,
+                                 const char *prefix,
+                                 const char *comp_type);
 
 /* --- milk_server_dispatch.c --- */
 
@@ -99,6 +98,14 @@ int milk_server_session_save(const char *path);
 /** milk_server_serve_waiting() - serve, in order, the requests that waited for the CALL that just ran. */
 void milk_server_serve_waiting(int listen_fd, int *shutdown_flag);
 
+/** milk_server_run_guarded() - run request body @fn(@arg) watched on @client_fd (-1: not) and
+ * fault-isolated; Ctrl-C stops the calculator at its next step. 130 if interrupted, 1 on a crash. */
+int milk_server_run_guarded(int         client_fd,
+                            int         listen_fd,
+                            const char *cmd,
+                            int (*fn)(void *),
+                            void *arg);
+
 int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, size_t log_cmd_sz);
 
 int milk_server_exec_call(int            client_fd,
@@ -115,6 +122,7 @@ int milk_server_assert(int argc, char **argv);
 int milk_server_batch_or_pipe(int argc, char **argv);
 
 int milk_server_exec_calc_or_test(int            client_fd,
+                                  int            listen_fd,
                                   int            is_test,
                                   uint8_t        flags,
                                   const uint8_t *payload,
@@ -126,7 +134,39 @@ int milk_server_exec_calc_or_test(int            client_fd,
 
 void milk_server_refresh_log_stats(void);
 
-int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag);
+/* What milk_server_handle_client() did with the connection */
+enum
+{
+    MILK_CONN_KEEP, /* answered (DONE with MILK_FLAG_KEEP): it waits for the shell's next request */
+    MILK_CONN_TAKEN, /* a worker thread, or the queue of requests waiting for a CALL, has it */
+    MILK_CONN_CLOSE  /* close it: answered without MILK_FLAG_KEEP, a fork serves it, or it ended */
+};
+
+/** milk_server_handle_client() - serve the request on @client_fd; @keep: the connection may stay
+ * open (milk_server_can_keep()). A MILK_CONN_* outcome. */
+int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag, int keep);
+
+/** milk_server_send_done() - reply DONE with payload @pl (@len bytes), MILK_FLAG_KEEP if @keep. */
+void milk_server_send_done(int client_fd, int keep, const void *pl, uint32_t len);
+
+/** milk_server_can_keep() - 1 if connection @fd may stay open after its request. */
+int milk_server_can_keep(int fd);
+
+/** milk_server_take_ready() - the connections with a request (kept ones, and new ones, accepted),
+ * at most @max into @fds; their number. */
+int milk_server_take_ready(int listen_fd, int *fds, int max);
+
+/** milk_server_conn_done() - after a request: keep connection @fd for the next one, or close it,
+ * as @outcome (MILK_CONN_*) says. */
+void milk_server_conn_done(int fd, int outcome);
+
+/** milk_server_stop_listening() - on SHUTDOWN of a session that is its own process (not milk-cli's,
+ * which ends at its prompt), before the reply: release the socket name (the next request starts a
+ * new server) and close the kept connections (their shells see it). */
+void milk_server_stop_listening(int listen_fd);
+
+/** Set by a crash in a request body (not Ctrl-C): its connection is closed after the reply. */
+extern volatile sig_atomic_t g_milk_server_crashed;
 
 /** Serializes everything that touches milk state (data.*, calc, stdio/cwd swaps); recursive. */
 void milk_server_cmd_lock(void);

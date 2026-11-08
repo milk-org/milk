@@ -379,8 +379,9 @@ graph TD
 
 > Built when `USE_COREMODS=ON` and `USE_CALC=ON` (independent of `USE_PLUGINS` and `USE_CLI`).
 > `milkcalc` compiles fused pixel/stencil/reduction expressions to C11 (`mc_emit.c`), caches
-> shared objects in `/tmp/milk-calc-cache-<uid>/` (`mc_cc.c`), and loads user C extensions
-> (`milk_calc_ext.h`, `mc_ext_loader.c`).
+> shared objects in `${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/` (`mc_cc.c`, which
+> also compiles user C extensions), and loads user C extensions (`milk_calc_ext.h`,
+> `mc_ext_loader.c`).
 
 ```mermaid
 flowchart LR
@@ -389,8 +390,8 @@ flowchart LR
     PLAN["milkcalc Planner\n(mc_plan.c)"]:::fw
     PRESTAGE["Pre-stages\n(BLAS / LAPACK / FFTW / spatial)"]:::coremod
     EMIT["C11 Emitter & Hash\n(mc_emit.c + mc_cc.c)"]:::jit
-    GCC["gcc -O3 -march=native\n-fopenmp-simd -shared -fPIC"]:::ext
-    CACHE["/tmp/milk-calc-cache-UID/\n(<hash32>.so & ext_<hash16>.so)"]:::jit
+    GCC["$MILK_CALC_CC + MILK_CC_FLAGS\n-shared -fPIC"]:::ext
+    CACHE["milk-calc-cache-UID/\n(<key>.so & ext_<key>.so)"]:::jit
     EXEC["OpenMP L1-Tiled Executor\n(mc_exec.c -> ImageStreamIO)"]:::core
 
     EXPR --> PLAN

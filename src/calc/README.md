@@ -17,7 +17,7 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 3. **Planner, C99 Code Generator & `.so` Cache (`mc_plan.c`, `mc_emit.c`, `mc_cc.c`, `mc_exec.c`)**:
    Fuses elementwise image operations, slices/views, stencils (`shift`, `roll`), `lut`, `ema`, and
    reductions into restricted C99 OpenMP/SIMD loops compiled into cached shared objects
-   (`${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/mc_<hash>.so`).
+   (`${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/<key>.so`).
 4. **Reductions, Spatial Pre-Stages & Linear Algebra (`mc_reduce.c`, `mc_prestage.c`, `linalg/`)**:
    Single-pass full-image, masked, and axis reductions, spatial filters (`medfilt*`, `gauss`,
    `conv2`, `boxmean`, `imin3`, `imax3`), in-place BLAS/LAPACK solvers (`@`, `.T`, `svd`, `eigh`,
@@ -35,7 +35,6 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 | `mcalc.h` | Public calculator API (`mcalc_eval_*`, `mcalc_local`, `mcalc_prog_*`, `mcalc_ext_*`) |
 | `mcalc_host.h` | Host callback registration (`mcalc_set_host`) for upper-tier string variables |
 | `milk_calc_ext.h` | Public C extension SDK header (Tier 1 block/stencil/image & Tier 2 multi-port ops) |
-| `milk_argval.h` / `milk_argval.c` | Typed argument declaration and validation parser (`name:type[=default][:help]`) |
 | `mc_ast.h` | Token, expression AST (`mc_expr_t`), and statement AST (`mc_stmt_t`) definitions |
 | `mc_func.h` / `mc_func.c` | Built-in function catalog, metadata, and `--list` introspection |
 | `mc_plan.h` | Planner, view (`mc_view_t`), pass (`mc_pass_t`), and program (`mcalc_prog_t`) structs |
@@ -49,7 +48,7 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 | `mc_out.c` | Output stream creation/preparation, `_tmpcalc*` scratch pool, and deferred posting |
 | `mc_plan.c` | AST-to-pass planner, basic-block fusion, and local scratch elision |
 | `mc_emit.c` | C99 OpenMP/SIMD kernel code generator |
-| `mc_cc.c` | On-disk (`mc_<hash>.so`) and in-memory LRU compiler/loader cache |
+| `mc_cc.c` | Run-time compiler driver (JIT kernels and `.c` extensions, `MILK_CC_FLAGS`), on-disk (`<key>.so`) and in-memory kernel cache |
 | `mc_exec.c` | Elementwise pass and constructor step execution with torn-read retry protection |
 | `mc_reduce.c` | Single-pass full-image, masked, pair, and tuple (`istats`, `icentroid`, `iarg*`) reductions |
 | `mc_prestage.c` | Axis reductions, `cumsum`, `pixunmap`, `rprof`, `gauss`, `medfilt*`, and `ema` pre-stages |
@@ -57,14 +56,13 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 | `mc_prog.c` | Multi-statement program compiler/runner (`mcalc_prog_*`, `--explain`) |
 | `mc_hist.c` | `hist(s, N)` and `prev(s[, k])` ring-buffer stream management and source rewriter |
 | `mc_ext_registry.c` | Global registry for loaded Tier 1 and Tier 2 calculator C extensions |
-| `mc_ext_loader.c` | On-the-fly `.c` -> `.so` extension compiler, `dlopen` loader, and FPS parameter scanner |
+| `mc_ext_loader.c` | `.c` / `.so` extension loader (compiles through `mc_cc.c`), `dlopen`, the call-argument binder (`mc_ext_bind_args`, shared with `mc_ext_exec.c`) and FPS parameter scanner |
 | `mc_ext_exec.c` | Runtime execution of Tier 1 (block, stencil, whole-image) and Tier 2 (`MILK_EXT_OP`) extensions |
-| `mc_ext_builtin.c` | Built-in reference extension kernels (`cscale1d`, `cbox3x3`, `cdemean`, `cbin2x2`) |
+| `mc_ext_builtin.c` | Built-in image extensions (`bblur1pix`, `rotate2d`, `circsym`, `circasym`, COREMOD_arith kernels) and stream-resolution helpers |
 | `linalg/mc_linalg.h` | Internal linear algebra, FFT, stacking, and spatial convolution interface |
 | `linalg/mc_linalg_blas.c` | Tensor constructors, BLAS Level 1-3 (`@`, `matmul`, `gemm`, `gemv`, `syrk`, ...), and `einsum` |
 | `linalg/mc_linalg_lapack.c` | LAPACK linear solvers (`trsv`, `trsm`, `gesv`, `posv`, `gels`, `solve`, `inv`, `pinv`, `svd`, `eigh`) |
 | `linalg/mc_fft_stack.c` | FFTW (`fft`, `ifft`, `fftshift`), stacking (`hstack`, `vstack`, `dstack`, `cat`, `rot90`), `conv2`, `boxmean` |
-| `units/milk_unit.h` / `milk_unit.c` | Shared CLI/FPS harness for code-free compute units (`milk.calc` and `milk.script`) |
 | `units/milk_unit_calc.c` | Standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit |
 
 ---
@@ -79,7 +77,7 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 
 ## Dependencies & Build Tier
 
-- **Build Tier**: Core tier (`USE_COREMODS=ON`; does not require `USE_CLI`).
+- **Build Tier**: Calculator & JIT tier (`USE_CALC=ON`, which needs `USE_COREMODS`; not `USE_CLI`).
 - **Internal Dependencies**: `milkprop`, `milkCOREMODarith`, `milkCOREMODmemory`, `milkcomputeunit`,
   `milkfps`, `milkprocessinfo`, `milkdata`, `ImageStreamIO`, `milkcommon`.
 - **Optional External Dependencies**: OpenMP, OpenBLAS / MKL (`HAVE_BLAS`), LAPACKE

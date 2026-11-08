@@ -32,6 +32,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "fps_unit.h"
 #include "fps_unit_state.h"
 #include "milk_detach.h"
@@ -1242,33 +1243,7 @@ static int cmd_prune(const milk_client_hooks_t *hooks)
 /* print_session_help - usage of @session */
 static void print_session_help(void)
 {
-    printf("Usage: @session [<verb> [args...]]\n\n");
-    printf("A session is a milk-cli server: it holds images, calculator variables and settings.\n");
-    printf(
-        "Each shell has its own, started on its first command; a named session is shared by the\n");
-    printf(
-        "shells that use it, and lives until it is ended. Scripts started from a shell use its\n");
-    printf("session. A session belongs to the MILK_SHM_DIR it started with.\n\n");
-    printf("Verbs:\n");
-    printf("  status [name]                This shell's session, or session <name> (default)\n");
-    printf("  ls [--json]                  This user's sessions in this MILK_SHM_DIR\n");
-    printf("  new <name> [-d] [--idle T]   Start session <name> and use it (-d: do not); fails if "
-           "it runs.\n");
-    printf("                               --idle: it ends after T (90, 30s, 10m, 2h, 1d) without "
-           "a command\n");
-    printf("                               while no shell uses it\n");
-    printf("  use <name>                   Use session <name>; fails if it does not run\n");
-    printf("  leave                        Use this shell's own session again\n");
-    printf("  who [name]                   The shells that use a session\n");
-    printf("  end [name|--all] [--units]   End a session, the one in use by default (--all: every "
-           "one ls lists;\n");
-    printf("                               --units: and the units it started)\n");
-    printf("  prune                        Remove what ended sessions and exited shells left\n");
-    printf("  save <file>                  Write the session's state as a milk script, images in "
-           "<file>.d/\n");
-    printf("  restore <file>               Run that script in this shell's session (units: listed, "
-           "not started)\n");
-    printf("  log [options] [pattern]      The session's command log (@log)\n");
+    milk_lexicon_print_help(milk_lexicon_keyword("session"), stdout);
 }
 
 /**

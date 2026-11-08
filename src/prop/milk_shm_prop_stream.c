@@ -7,9 +7,8 @@
  * @brief Stream and in-memory image handler (`@s.` / `@stream.`) for entity ops.
  *
  * Role & Goal:
- *   Implements metadata inspection (`xsize`, `ysize`, `zsize`, `naxis`,
- *   `dtype`, `cnt0`, `cnt1`, `nelem`, `sem`, `pid`, `shared`, `NBkw`),
- *   FITS keyword reads/writes (`kw.<KEY>` and `kw.*`), and existence checks
+ *   Implements the properties listed in milk_stream_props.h (metadata, pixel
+ *   statistics), FITS keyword reads/writes (`kw.<KEY>` and `kw.*`), and existence checks
  *   for both local CLI images (`data.core.image[]`) and `/dev/shm/*.im.shm`
  *   ImageStreamIO shared-memory streams.
  */
@@ -24,11 +23,15 @@
 #include <unistd.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkdata/milk_frame.h"
 #include "libmilkdata/milk_type_dispatch.h"
 #include "libmilkdata/milkdata.h"
+#include "COREMOD_arith/image_elem_block.h"
+#include "COREMOD_arith/image_stats.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop.h"
 #include "milk_shm_prop_internal.h"
+#include "milk_stream_props.h"
 
 /**
  * @brief Locate an active local image or open a shared-memory stream.
@@ -291,8 +294,35 @@ static uint64_t stream_sample_sig(const IMAGE *im)
     return hash;
 }
 
-/** stream_stats() - fill @st from the pixels of @im (two passes, like arith_image_rms); -1 if complex, 1 if
- * the three attempts all overlapped a write (@st then holds the last, possibly torn, pass). */
+/** stream_acc() - accumulate @op over the pixels of @im with COREMOD_arith's header-only block kernels
+ * (those of the calculator's reductions; no link to COREMOD_arith, which libmilkbash would pull in). */
+static void stream_acc(const IMAGE *im, arith_reduce_op op, arith_stat_acc_t *acc)
+{
+    MILK_ALIGNED(64) double buf[ARITH_ELEM_BLK];
+    uint64_t                n  = im->md->nelement;
+    uint8_t                 dt = im->md->datatype;
+    *acc                       = (arith_stat_acc_t) { 0, 0.0, 0.0, 0.0, NAN, NAN };
+    for (uint64_t off = 0; off < n; off += ARITH_ELEM_BLK)
+    {
+        int len = (int) ((n - off < ARITH_ELEM_BLK) ? n - off : ARITH_ELEM_BLK);
+        if (dt == _DATATYPE_FLOAT)
+        {
+            arith_stat_block_f_inline(op, im->array.F + off, NULL, len, acc);
+        }
+        else if (dt == _DATATYPE_DOUBLE)
+        {
+            arith_stat_block_d_inline(op, im->array.D + off, NULL, len, acc);
+        }
+        else
+        {
+            arith_load_block_d_inline(im, off, len, buf);
+            arith_stat_block_d_inline(op, buf, NULL, len, acc);
+        }
+    }
+}
+
+/** stream_stats() - fill @st from the pixels of @im (COREMOD_arith statistics); -1 if complex, 1 if every
+ * attempt overlapped a write (@st then holds the last, possibly torn, read). */
 static int stream_stats(const IMAGE *im, stream_stats_t *st)
 {
     uint64_t n  = im->md->nelement;
@@ -331,63 +361,34 @@ static int stream_stats(const IMAGE *im, stream_stats_t *st)
         pthread_mutex_unlock(&g_stats_lock);
     }
 
-#define STATS_PASS1(MBR)                                                                           \
-    const typeof(im->array.MBR[0]) *restrict px = im->array.MBR;                                   \
-    _Pragma(                                                                                       \
-        "omp simd reduction(+:tot,cnt) reduction(min:vmin) reduction(max:vmax)") for (uint64_t i = \
-                                                                                          0;       \
-                                                                                      i < n; i++)  \
-    {                                                                                              \
-        double v = (double) px[i];                                                                 \
-        tot += v;                                                                                  \
-        vmin = (v < vmin) ? v : vmin;                                                              \
-        vmax = (v > vmax) ? v : vmax;                                                              \
-        cnt += (v != 0.0) ? 1.0 : 0.0;                                                             \
-    }
-#define STATS_PASS2(MBR)                                                 \
-    const typeof(im->array.MBR[0]) *restrict px = im->array.MBR;         \
-    _Pragma("omp simd reduction(+:s2)") for (uint64_t i = 0; i < n; i++) \
-    {                                                                    \
-        double d = (double) px[i] - mean;                                \
-        s2 += d * d;                                                     \
-    }
-
+    /* The calculator's statistics (imin, imax, imean, istd, ivar, itot, icount), read under the
+     * torn-frame rule of milk_frame.h */
     uint64_t clean_cnt0 = 0;
     int      clean      = 0;
-    for (int attempt = 0; attempt < 3; attempt++)
+    for (int attempt = 0; attempt < MILK_FRAME_TRIES; attempt++)
     {
-        uint64_t c0   = __atomic_load_n(&im->md->cnt0, __ATOMIC_ACQUIRE);
-        uint8_t  w0   = __atomic_load_n(&im->md->write, __ATOMIC_ACQUIRE);
-        double   tot  = 0.0;
-        double   vmin = INFINITY;
-        double   vmax = -INFINITY;
-        double   cnt  = 0.0;
-        double   s2   = 0.0;
-
-        MILK_FOR_EACH_DATATYPE(dt, STATS_PASS1, STATS_PASS1(D))
-        double mean = tot / (double) n;
-        MILK_FOR_EACH_DATATYPE(dt, STATS_PASS2, STATS_PASS2(D))
-
-        st->tot   = tot;
-        st->min   = vmin;
-        st->max   = vmax;
-        st->count = cnt;
-        st->mean  = mean;
-        st->var   = s2 / (double) n;
-
-        uint8_t  w1 = __atomic_load_n(&im->md->write, __ATOMIC_ACQUIRE);
-        uint64_t c1 = __atomic_load_n(&im->md->cnt0, __ATOMIC_ACQUIRE);
-        if (!im->md->shared || (w0 == 0 && w1 == 0 && c0 == c1))
+        milk_frame_mark_t mark = milk_frame_mark(im);
+        arith_stat_acc_t  all;
+        arith_stat_acc_t  nz;
+        stream_acc(im, ARITH_RED_ALL, &all);
+        stream_acc(im, ARITH_RED_COUNT, &nz);
+        st->tot   = arith_stat_finish_inline(&all, ARITH_RED_SUM, 0);
+        st->min   = arith_stat_finish_inline(&all, ARITH_RED_MIN, 0);
+        st->max   = arith_stat_finish_inline(&all, ARITH_RED_MAX, 0);
+        st->mean  = arith_stat_finish_inline(&all, ARITH_RED_MEAN, 0);
+        st->var   = arith_stat_finish_inline(&all, ARITH_RED_VAR, 0);
+        st->count = arith_stat_finish_inline(&nz, ARITH_RED_COUNT, 1);
+        if (!im->md->shared || milk_frame_clean(im, mark))
         {
-            clean_cnt0 = c0;
+            clean_cnt0 = mark.cnt0;
             clean      = 1;
             break;
         }
-        struct timespec backoff = { 0, 20000 }; /* let the writer finish its frame */
-        nanosleep(&backoff, NULL);
+        if (attempt < MILK_FRAME_TRIES - 1)
+        {
+            milk_frame_wait();
+        }
     }
-#undef STATS_PASS1
-#undef STATS_PASS2
 
     if (can_cache && clean)
     {
@@ -634,9 +635,13 @@ int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size
     }
     else if (strcmp(prop, "list") == 0 || strcmp(prop, "*") == 0)
     {
-        snprintf(out, outsz,
-                 "xsize ysize zsize naxis dtype typename type cnt0 cnt1 nelem sem pid ownerPID "
-                 "shared NBkw location inode age fps summary min max mean std var tot count stats");
+        size_t pos = 0;
+        out[0]     = '\0';
+        for (int i = 0; milk_stream_props[i].name != NULL && pos < outsz; i++)
+        {
+            pos += (size_t) snprintf(out + pos, outsz - pos, "%s%s", (i > 0) ? " " : "",
+                                     milk_stream_props[i].name);
+        }
     }
     else if (strcmp(prop, "kv") == 0)
     {

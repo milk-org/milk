@@ -64,9 +64,9 @@ def test_index_reductions_match_the_eager_path(tmp_path, nthreads: int):
     """NaNs skipped, ties to the first index, -1 when every element is NaN; fused equals eager."""
     res = milk_bash(
         "mem.mk2Dim a 2048 1024 >/dev/null; mem.mk2Dim b 64 64 >/dev/null\n"
-        '@calc "a = urand(a, 3) - 0.5; a[3,2] = sqrt(-1); a[100,7] = sqrt(-1)"\n'
+        '@calc "a = rand(a, 3) - 0.5; a[3,2] = sqrt(-1); a[100,7] = sqrt(-1)"\n'
         '@calc "a[5,1] = imax(a); a[1500,600] = imax(a); a[7,900] = imin(a); a[2000,1000] = imin(a)"\n'
-        '@calc "b = sqrt(-1) * urand(b, 4)"\n'
+        '@calc "b = sqrt(-1) * rand(b, 4)"\n'
         '@calc -v f1,f2,f3 "iargmax(a); iargmin(a); iamax(a)"; echo "fused=$f1,$f2,$f3"\n'
         '@calc -v e1,e2,e3 "iargmax(a[::1b]); iargmin(a[::1b]); iamax(a[::1b])"; echo "eager=$e1,$e2,$e3"\n'
         '@calc -v x,y "2 * iargmin(a) - iamax(a) + 1; 2 * iargmin(a[::1b]) - iamax(a[::1b]) + 1"; echo "expr=$x,$y"\n'
@@ -93,7 +93,7 @@ def test_cumsum_along_each_axis(tmp_path, nthreads: int):
     text path, and a bad axis is an error."""
     res = milk_bash(
         "mem.mk2Dim a 600 7 >/dev/null; mem.mk3Dim c 300 5 4 >/dev/null\n"
-        '@calc "a = urand(a, 3) - 0.5; c = urand(c, 5) - 0.3"\n'
+        '@calc "a = rand(a, 3) - 0.5; c = rand(c, 5) - 0.3"\n'
         '@calc "a0 = cumsum(a); a1 = cumsum(a, 1); c2 = cumsum(c, 2); c0 = cumsum(c, 0) * 2 + 1"\n'
         '@calc "e0 = cumsum(a[::1b], 0); e1 = cumsum(a[::1b], 1); e2 = cumsum(c[::1b], 2)"\n'
         '@calc -v p0,p1,p2,p3 "a0[299,3]; itot(a[0:299,3]); a1[7,5]; itot(a[7,0:5])"; echo "p=$p0,$p1,$p2,$p3"\n'

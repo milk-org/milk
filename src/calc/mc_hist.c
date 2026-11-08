@@ -43,15 +43,19 @@
 
 /**
  * struct mc_hist_decl_t - Descriptor for a stream with an associated `<name>_hist` ring buffer
- * @name:  Stream identifier
- * @N:     Ring depth in frames (`>= 2`)
- * @naxis: Dimensionality of the source stream (`1` or `2`; `0` before `hist_ring()` validation)
+ * @name:    Stream identifier
+ * @N:       Ring depth in frames (`>= 2`)
+ * @naxis:   Dimensionality of the source stream (`1` or `2`; `0` before `hist_ring()` validation)
+ * @src_off: Byte span of the statement that declared (or first used) the ring
+ * @src_end:
  */
 typedef struct
 {
     char name[STRINGMAXLEN_IMAGE_NAME];
     int  N;
     int  naxis;
+    int  src_off;
+    int  src_end;
 } mc_hist_decl_t;
 
 /* ============================================================================================== */
@@ -85,7 +89,7 @@ int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out
     case MC_EXPR_SLICE:
     {
         char nbuf[256];
-        char bbuf[256];
+        char bbuf[MC_IDENT_MAX];
         snprintf(nbuf, sizeof(nbuf), "%s",
                  (e->kind == MC_EXPR_IDENT) ? e->u.ident.name : e->u.slice.name);
         mc_parse_ident_streamname(nbuf, bbuf, NULL);
@@ -187,26 +191,6 @@ void mc_self_init_create(const char *tb, int is_local, const mc_expr_t *rhs)
 /* ============================================================================================== */
 
 /**
- * trim_hist - Trim leading and trailing ASCII whitespace in place
- * @s: Mutable NUL-terminated string buffer
- *
- * Return: Pointer to the first non-whitespace character in @s
- */
-static char *trim_hist(char *s)
-{
-    while (isspace((unsigned char) *s))
-    {
-        s++;
-    }
-    size_t n = strlen(s);
-    while (n > 0 && isspace((unsigned char) s[n - 1]))
-    {
-        s[--n] = '\0';
-    }
-    return s;
-}
-
-/**
  * hist_ring - Validate source stream `d->name` and create or verify `<name>_hist`
  * @d:     History declaration entry (populated with `d->naxis` on success)
  * @err:   Error message buffer
@@ -260,348 +244,275 @@ static int hist_ring(mc_hist_decl_t *d, char *err, size_t errsz)
     }
     return 0;
 }
-
 /**
- * hist_find - Look up a stream name in the active `mc_hist_decl_t` table
- * @decl: Array of history declarations
- * @nd:   Number of valid entries in @decl
- * @name: Stream name to search for
- *
- * Return: Index in `[0, nd)` if found, or -1 if not present
+ * struct hist_ctx_t - State of the `hist()` / `prev()` rewrite of one program
+ * @decl:    Rings found so far
+ * @nd:      Number of entries in @decl
+ * @in_unit: 1 when compiling a unit (whose `_n` indexes the rings)
+ * @off:     Byte span of the statement being rewritten
+ * @end:
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
  */
-static int hist_find(const mc_hist_decl_t *decl, int nd, const char *name)
+typedef struct
 {
-    for (int i = 0; i < nd; i++)
+    mc_hist_decl_t decl[MC_HIST_MAX];
+    int            nd;
+    int            in_unit;
+    int            off;
+    int            end;
+    char          *err;
+    size_t         errsz;
+} hist_ctx_t;
+
+/* Index of the ring of stream @name, added with depth @N if new; -1 when there are too many */
+static int hist_ring_of(hist_ctx_t *h, const char *name, int N)
+{
+    for (int k = 0; k < h->nd; k++)
     {
-        if (strcmp(decl[i].name, name) == 0)
+        if (strcmp(h->decl[k].name, name) == 0)
         {
-            return i;
+            return k;
         }
     }
-    return -1;
-}
-
-/**
- * call_args - Parse the `(stream[, int_arg])` argument list of a `hist(` or `prev(` call
- * @c:    Pointer immediately following the opening `(`
- * @a1:   Output buffer receiving the trimmed stream identifier
- * @a1sz: Capacity of @a1 in bytes
- * @a2:   Output pointer receiving the integer second argument (or @def if omitted)
- * @def:  Default value for *@a2 when the call has only one argument
- *
- * Return: Pointer to the character immediately after the closing `)`, or NULL on syntax error
- */
-static const char *call_args(const char *c, char *a1, size_t a1sz, long *a2, long def)
-{
-    const char *o     = c;
-    int         depth = 0;
-    while (*c != '\0' && !(*c == ',' && depth == 0) && !(*c == ')' && depth == 0))
+    if (h->nd == MC_HIST_MAX)
     {
-        depth += (*c == '(' || *c == '[') - (*c == ')' || *c == ']');
-        c++;
-    }
-    if (*c == '\0' || (size_t) (c - o) >= a1sz)
-    {
-        return NULL;
-    }
-    char tmp[STRINGMAXLEN_IMAGE_NAME];
-    snprintf(tmp, sizeof(tmp), "%.*s", (int) (c - o), o);
-    snprintf(a1, a1sz, "%s", trim_hist(tmp));
-    *a2 = def;
-    if (*c == ',')
-    {
-        *a2 = strtol(c + 1, (char **) &c, 10);
-        while (isspace((unsigned char) *c))
-        {
-            c++;
-        }
-    }
-    return (*c == ')') ? c + 1 : NULL;
-}
-
-/**
- * at_ident_start - Check whether pointer @c is at the start of a standalone identifier token
- * @text: Beginning of the full source string
- * @c:    Current scan position inside @text
- *
- * Prevents matching `my_hist(` or `xprev(` as `hist(` / `prev(`.
- *
- * Return: 1 if @c is not preceded by an identifier character, 0 otherwise
- */
-static int at_ident_start(const char *text, const char *c)
-{
-    return c == text || !(isalnum((unsigned char) c[-1]) || c[-1] == '_');
-}
-
-/**
- * ensure_out_cap - Grow heap buffer `*out` so at least @extra bytes remain after @len
- * @out:   In/out pointer to heap-allocated character buffer
- * @cap:   In/out capacity of `*out` in bytes
- * @len:   Current used length in bytes
- * @extra: Additional bytes required
- *
- * Return: 0 on success, -1 on `realloc` failure
- */
-static int ensure_out_cap(char **out, size_t *cap, size_t len, size_t extra)
-{
-    if (len + extra < *cap)
-    {
-        return 0;
-    }
-    size_t new_cap = (*cap * 2 > len + extra + 1024) ? (*cap * 2) : (len + extra + 1024);
-    char  *nb      = realloc(*out, new_cap);
-    if (nb == NULL)
-    {
+        snprintf(h->err, h->errsz, "more than %d streams with a history", MC_HIST_MAX);
         return -1;
     }
-    *out = nb;
-    *cap = new_cap;
-    return 0;
+    mc_hist_decl_t *d = &h->decl[h->nd];
+    memset(d, 0, sizeof(*d));
+    snprintf(d->name, sizeof(d->name), "%s", name);
+    d->N       = N;
+    d->src_off = h->off;
+    d->src_end = h->end;
+    return h->nd++;
 }
 
-/**
- * scan_hist_decls - Pass 1 scan collecting explicit `hist(stream, N)` declarations
- * @text:  Program source text
- * @decl:  Output array of history declarations (`MC_HIST_MAX`)
- * @nd:    In/out count of declarations in @decl
- * @err:   Error message buffer
- * @errsz: Capacity of @err in bytes
- *
- * Skips string literals and `#` comments so `hist(...)` inside strings or comments is ignored.
- * Rejects conflicting depth declarations for the same stream.
- *
- * Return: 0 on success, -1 on duplicate conflicting depth or table overflow
- */
-static int scan_hist_decls(const char *text, mc_hist_decl_t *decl, int *nd, char *err, size_t errsz)
+/* The expression of the one-statement text @text, or NULL */
+static mc_expr_t *parse_snippet(const char *text)
 {
-    char name[STRINGMAXLEN_IMAGE_NAME];
-    long num = 0;
-    char q   = 0;
-
-    for (const char *h = text; *h != '\0'; h++)
+    static _Thread_local mc_tok_list_t s_tl;
+    mc_stmt_t *s = (mc_lex(text, &s_tl) == 0) ? mc_parse_stmt(&s_tl, NULL, 0) : NULL;
+    mc_expr_t *e = (s != NULL && s->kind == MC_STMT_EXPR) ? s->u.expr : NULL;
+    if (e != NULL)
     {
-        if (q != 0)
+        s->u.expr = NULL;
+    }
+    mc_stmt_free(s);
+    return e;
+}
+
+/* 1 if @e calls @fn with a stream name first */
+static int is_ring_call(const mc_expr_t *e, const char *fn)
+{
+    return e != NULL && e->kind == MC_EXPR_CALL && strcmp(e->u.call.name, fn) == 0 &&
+           e->u.call.nargs >= 1 && e->u.call.args[0]->kind == MC_EXPR_IDENT;
+}
+
+/* Pass 1: each statement `hist(s, N)`, at any depth, declares a ring and becomes empty */
+static int hist_find_decls(hist_ctx_t *h, mc_stmt_t *s)
+{
+    for (; s != NULL; s = s->next)
+    {
+        mc_expr_t *e = (s->kind == MC_STMT_EXPR) ? s->u.expr : NULL;
+        if (is_ring_call(e, "hist") && e->u.call.nargs == 2 &&
+            e->u.call.args[1]->kind == MC_EXPR_LONG)
         {
-            if (*h == '\\' && h[1] != '\0')
+            if (!h->in_unit)
             {
-                h++;
-            }
-            else if (*h == q)
-            {
-                q = 0;
-            }
-            continue;
-        }
-        if (*h == '"' || *h == '\'')
-        {
-            q = *h;
-            continue;
-        }
-        if (*h == '#')
-        {
-            while (h[1] != '\0' && h[1] != '\n')
-            {
-                h++;
-            }
-            continue;
-        }
-        const char *e = NULL;
-        if (at_ident_start(text, h) && strncmp(h, "hist(", 5) == 0 &&
-            (e = call_args(h + 5, name, sizeof(name), &num, 0)) != NULL)
-        {
-            int k = hist_find(decl, *nd, name);
-            if (k >= 0 && decl[k].N != (int) num)
-            {
-                snprintf(err, errsz, "hist(%s) declared twice with different depths", name);
+                snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
                 return -1;
             }
+            h->off = s->src_off;
+            h->end = s->src_end;
+            int k  = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
             if (k < 0)
             {
-                if (*nd == MC_HIST_MAX)
-                {
-                    snprintf(err, errsz, "more than %d hist() declarations", MC_HIST_MAX);
-                    return -1;
-                }
-                snprintf(decl[*nd].name, sizeof(decl[*nd].name), "%s", name);
-                decl[(*nd)++].N = (int) num;
+                return -1;
             }
-            h = e - 1;
+            h->decl[k].N       = (int) e->u.call.args[1]->u.lval;
+            h->decl[k].src_off = s->src_off;
+            h->decl[k].src_end = s->src_end;
+            mc_expr_free(e);
+            s->u.expr = NULL;
+            s->kind   = MC_STMT_EMPTY;
         }
-    }
-    return 0;
-}
-
-/**
- * expand_prev_call - Rewrite a single `prev(name, num)` call into a `<name>_hist[...]` slice
- * @decl:  Active history declaration table
- * @nd:    In/out count of entries in @decl (auto-adds depth-2 entry if @name was not declared)
- * @name:  Stream name referenced by `prev()`
- * @num:   Lookback lag in frames (`1 <= num < N`)
- * @out:   In/out destination text buffer
- * @cap:   In/out capacity of `*out`
- * @len:   In/out current length of `*out`
- * @err:   Error message buffer
- * @errsz: Capacity of @err in bytes
- *
- * Ensures `<name>_hist` is created via `hist_ring()` and emits the slice expression
- * `<name>_hist[:, (_n + N - num) % N]` (1D) or `<name>_hist[:,:, (_n + N - num) % N]` (2D).
- *
- * Return: 0 on success, -1 on lag out of range or stream error
- */
-static int expand_prev_call(mc_hist_decl_t *decl,
-                            int            *nd,
-                            const char     *name,
-                            long            num,
-                            char          **out,
-                            size_t         *cap,
-                            size_t         *len,
-                            char           *err,
-                            size_t          errsz)
-{
-    int k = hist_find(decl, *nd, name);
-    if (k < 0)
-    {
-        if (*nd == MC_HIST_MAX)
+        for (int b = 0; s->kind == MC_STMT_IF && b < s->u.if_stmt.nbranches; b++)
         {
-            snprintf(err, errsz, "more than %d streams with a history", MC_HIST_MAX);
+            if (hist_find_decls(h, s->u.if_stmt.branches[b].body) != 0)
+            {
+                return -1;
+            }
+        }
+        if (s->kind == MC_STMT_FOR && hist_find_decls(h, s->u.for_stmt.body) != 0)
+        {
             return -1;
         }
-        snprintf(decl[*nd].name, sizeof(decl[*nd].name), "%s", name);
-        decl[*nd].N = 2;
-        k           = (*nd)++;
     }
-    if (num < 1 || num >= decl[k].N)
+    return 0;
+}
+
+/* Pass 2: each `prev(s[, k])` in @*pe becomes the slice of its ring for k frames ago */
+static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
+{
+    mc_expr_t *e = *pe;
+    if (is_ring_call(e, "prev") && e->u.call.nargs <= 2 &&
+        (e->u.call.nargs == 1 || e->u.call.args[1]->kind == MC_EXPR_LONG))
     {
-        snprintf(err, errsz, "prev(%s, %ld): the ring holds %d frames", name, num, decl[k].N);
-        return -1;
+        if (!h->in_unit)
+        {
+            snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
+            return -1;
+        }
+        long lag = (e->u.call.nargs == 2) ? e->u.call.args[1]->u.lval : 1;
+        int  k   = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
+        if (k < 0)
+        {
+            return -1;
+        }
+        mc_hist_decl_t *d = &h->decl[k];
+        if (lag < 1 || lag >= d->N)
+        {
+            snprintf(h->err, h->errsz, "prev(%s, %ld): the ring holds %d frames", d->name, lag,
+                     d->N);
+            return -1;
+        }
+        if (d->naxis == 0 && hist_ring(d, h->err, h->errsz) != 0)
+        {
+            return -1;
+        }
+        char text[STRINGMAXLEN_IMAGE_NAME + 64];
+        snprintf(text, sizeof(text), "%s_hist[%s(_n + %d) %% %d]", d->name,
+                 (d->naxis == 2) ? ":,:," : ":,", d->N - (int) lag, d->N);
+        mc_expr_t *sl = parse_snippet(text);
+        if (sl == NULL)
+        {
+            snprintf(h->err, h->errsz, "prev: '%s' is no stream name", d->name);
+            return -1;
+        }
+        sl->line = e->line;
+        sl->col  = e->col;
+        mc_expr_free(e);
+        *pe = sl;
+        return 0;
     }
-    if (decl[k].naxis == 0 && hist_ring(&decl[k], err, errsz) != 0)
+    mc_expr_t **slots[MC_MAX_ARGS];
+    for (int i = 0, n = mc_expr_child_slots(e, slots); i < n; i++)
     {
-        return -1;
+        if (hist_expand(h, slots[i]) != 0)
+        {
+            return -1;
+        }
     }
-    *len +=
-        (size_t) snprintf(*out + *len, *cap - *len, "%s_hist[%s(_n + %d) %% %d]", name,
-                          (decl[k].naxis == 2) ? ":,:," : ":,", decl[k].N - (int) num, decl[k].N);
+    return 0;
+}
+
+/* Pass 2 over every expression of statement list @s */
+static int hist_expand_stmts(hist_ctx_t *h, mc_stmt_t *s)
+{
+    for (; s != NULL; s = s->next)
+    {
+        h->off = s->src_off;
+        h->end = s->src_end;
+        int rc = 0;
+        switch (s->kind)
+        {
+        case MC_STMT_EXPR:
+            rc = hist_expand(h, &s->u.expr);
+            break;
+        case MC_STMT_MULTI_ASSIGN:
+            for (int i = 0; rc == 0 && i < s->u.multi.nrhs; i++)
+            {
+                rc = hist_expand(h, &s->u.multi.rhs[i]);
+            }
+            break;
+        case MC_STMT_IF:
+            for (int b = 0; rc == 0 && b < s->u.if_stmt.nbranches; b++)
+            {
+                rc = (hist_expand(h, &s->u.if_stmt.branches[b].cond) != 0 ||
+                      hist_expand_stmts(h, s->u.if_stmt.branches[b].body) != 0)
+                         ? -1
+                         : 0;
+            }
+            break;
+        case MC_STMT_FOR:
+            rc = (hist_expand(h, &s->u.for_stmt.start) != 0 ||
+                  hist_expand(h, &s->u.for_stmt.stop) != 0 ||
+                  hist_expand(h, &s->u.for_stmt.step) != 0 ||
+                  hist_expand_stmts(h, s->u.for_stmt.body) != 0)
+                     ? -1
+                     : 0;
+            break;
+        case MC_STMT_DEF:
+            rc = hist_expand(h, &s->def.body);
+            break;
+        default:
+            break;
+        }
+        if (rc != 0)
+        {
+            return -1;
+        }
+    }
     return 0;
 }
 
 /**
- * mc_rewrite_history - Expand `hist()` and `prev()` calls in @text into ring-buffer slice syntax
- * @text:      Input program source text
- * @out_nhist: Optional output pointer receiving the number of appended ring-update statements
+ * mc_hist_rewrite - Turn the `hist(s, N)` declarations and `prev(s[, k])` calls of a program into rings
+ * @head:      Statement list of the program; one ring update per ring is appended to it
+ * @in_unit:   1 when compiling a unit, whose `_n` indexes the rings
+ * @out_nhist: Receives the number of appended ring updates
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
  *
- * Performs a two-pass rewrite:
- *   1. `scan_hist_decls()` gathers all explicit `hist(s, N)` declarations.
- *   2. Strips `hist(...)` calls, expands `prev(s[, k])` into `<s>_hist[..., (_n + N - k) % N]`,
- *      and appends one `<s>_hist[..., _n % N] = <s>` statement per history stream at the end of
- *      the returned string.
+ * Each `hist(s, N)` statement declares an N-frame ring `<s>_hist` and becomes empty (the statement
+ * numbering is kept). Each `prev(s[, k])` becomes the slice `<s>_hist[:, (_n + N - k) % N]`
+ * (`[:,:, ...]` for a 2-D stream), N being 2 for a stream without `hist`. The rings are created or
+ * checked here, and an update `<s>_hist[:, _n % N] = <s>` per ring is appended, flagged
+ * `is_hist_stmt`, with the span of the statement that declared (or first used) the ring.
  *
- * Return: Newly heap-allocated rewritten program string (caller must `free()`), or NULL on error
+ * Return: 0 on success, -1 on error (`hist` or `prev` outside a unit, too many rings, bad lag)
  */
-char *mc_rewrite_history(const char *text, int *out_nhist, char *err, size_t errsz)
+int mc_hist_rewrite(mc_stmt_t **head, int in_unit, int *out_nhist, char *err, size_t errsz)
 {
-    if (out_nhist != NULL)
+    hist_ctx_t h = { .in_unit = in_unit, .err = err, .errsz = errsz };
+    *out_nhist   = 0;
+    if (hist_find_decls(&h, *head) != 0 || hist_expand_stmts(&h, *head) != 0)
     {
-        *out_nhist = 0;
+        return -1;
     }
-    mc_hist_decl_t decl[MC_HIST_MAX];
-    int            nd  = 0;
-    size_t         cap = strlen(text) * 4 + 1024;
-    char          *out = malloc(cap);
-    size_t         len = 0;
-    const char    *c   = text;
-    char           name[STRINGMAXLEN_IMAGE_NAME];
-    long           num = 0;
-    char           q   = 0;
-
-    memset(decl, 0, sizeof(decl));
-    if (out == NULL || scan_hist_decls(text, decl, &nd, err, errsz) != 0)
+    mc_stmt_t **tail = head;
+    while (*tail != NULL)
     {
-        free(out);
-        return NULL;
+        tail = &(*tail)->next;
     }
-    out[0] = '\0';
-    while (*c != '\0')
+    for (int k = 0; k < h.nd; k++)
     {
-        if (ensure_out_cap(&out, &cap, len, 512) != 0)
+        mc_hist_decl_t *d = &h.decl[k];
+        char            text[2 * STRINGMAXLEN_IMAGE_NAME + 64];
+        if (d->naxis == 0 && hist_ring(d, err, errsz) != 0)
         {
-            free(out);
-            return NULL;
+            return -1;
         }
-        if (q != 0)
+        snprintf(text, sizeof(text), "%s_hist[%s_n %% %d] = %s", d->name,
+                 (d->naxis == 2) ? ":,:," : ":,", d->N, d->name);
+        mc_stmt_t *s = calloc(1, sizeof(*s));
+        if (s == NULL || (s->u.expr = parse_snippet(text)) == NULL)
         {
-            if (*c == '\\' && c[1] != '\0')
-            {
-                out[len++] = *c++;
-            }
-            else if (*c == q)
-            {
-                q = 0;
-            }
-            out[len++] = *c++;
-            out[len]   = '\0';
-            continue;
+            free(s);
+            snprintf(err, errsz, "hist: '%s' is no stream name", d->name);
+            return -1;
         }
-        if (*c == '"' || *c == '\'')
-        {
-            q          = *c;
-            out[len++] = *c++;
-            out[len]   = '\0';
-            continue;
-        }
-        if (*c == '#')
-        {
-            while (*c != '\0' && *c != '\n')
-            {
-                if (ensure_out_cap(&out, &cap, len, 8) != 0)
-                {
-                    free(out);
-                    return NULL;
-                }
-                out[len++] = *c++;
-            }
-            out[len] = '\0';
-            continue;
-        }
-        const char *e = NULL;
-        if (at_ident_start(text, c) && strncmp(c, "hist(", 5) == 0 &&
-            (e = call_args(c + 5, name, sizeof(name), &num, 0)) != NULL)
-        {
-            c = e;
-            continue;
-        }
-        if (at_ident_start(text, c) && strncmp(c, "prev(", 5) == 0 &&
-            (e = call_args(c + 5, name, sizeof(name), &num, 1)) != NULL)
-        {
-            if (expand_prev_call(decl, &nd, name, num, &out, &cap, &len, err, errsz) != 0)
-            {
-                free(out);
-                return NULL;
-            }
-            c = e;
-            continue;
-        }
-        out[len++] = *c++;
-        out[len]   = '\0';
+        s->kind         = MC_STMT_EXPR;
+        s->is_hist_stmt = 1;
+        s->src_off      = d->src_off;
+        s->src_end      = d->src_end;
+        *tail           = s;
+        tail            = &s->next;
     }
-    for (int k = 0; k < nd; k++)
-    {
-        if (ensure_out_cap(&out, &cap, len, 512) != 0 ||
-            (decl[k].naxis == 0 && hist_ring(&decl[k], err, errsz) != 0))
-        {
-            free(out);
-            return NULL;
-        }
-        len += (size_t) snprintf(out + len, cap - len, "\n%s_hist[%s_n %% %d] = %s", decl[k].name,
-                                 (decl[k].naxis == 2) ? ":,:," : ":,", decl[k].N, decl[k].name);
-    }
-    if (out_nhist != NULL)
-    {
-        *out_nhist = nd;
-    }
-    return out;
+    *out_nhist = h.nd;
+    return 0;
 }
 
 /* ============================================================================================== */
@@ -676,7 +587,7 @@ static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
 }
 
 /**
- * mcalc_prog_explain - Compile, execute once, and print the execution plan of @text to @out
+ * mcalc_prog_explain - Compile @text and print its execution plan to @out, without running it
  * @text: Program source text to analyze
  * @out:  Output `FILE *` stream (e.g. `stdout`)
  *
@@ -684,23 +595,26 @@ static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
  * planner scheduled it:
  *   - `def, inlined where it is called`
  *   - `kept, merged into the fused pass of statement K`
- *   - `kept: fused pass over NxMxK (<dtype>, 1D|ND, P operands[, Q pre-stages]), writes ...`
+ *   - `kept: fused pass over NxMxK (<dtype>, 1D|ND, P operands[, Q pre-stages]), writes ...`, or
+ *     `over a shape set at run time (<dtype>, P operands...)` when planning cannot know it (an
+ *     operand is a target the program creates, or the operand shapes do not match)
  *   - `kept: constructor/library step`
  *   - `kept: scalar tape: N ops, M reductions, 0 pre-stages`
  *
- * Return: 0 on success, 1 on compilation or execution error
+ * Return: 0 on success, 1 on compilation error
  */
 int mcalc_prog_explain(const char *text, FILE *out)
 {
-    char        err[512] = "";
-    mcalc_prog *p        = mcalc_prog_new(text, NULL, 0, err, sizeof(err));
-    if (p == NULL || mcalc_prog_run(p, err, sizeof(err)) != 0)
+    char err[512] = "";
+    mc_udef_save(); /* its defs stay out of the session */
+    mcalc_prog *p = mcalc_prog_new(text, NULL, 0, err, sizeof(err));
+    mc_udef_restore();
+    if (p == NULL)
     {
         if (out != NULL)
         {
-            fprintf(out, "milk.calc: %s\n", err[0] != '\0' ? err : "compilation error");
+            fprintf(out, "milk: calc error: %s\n", err[0] != '\0' ? err : "compilation error");
         }
-        mcalc_prog_free(p);
         return 1;
     }
     int              nkept = 0;
@@ -757,16 +671,23 @@ int mcalc_prog_explain(const char *text, FILE *out)
                                                       p->slots[st->pass.outs[k].slot_idx].bare);
                         }
                     }
-                    const char *lim_note = (cur_s != NULL && cur_s->kind == MC_STMT_MULTI_ASSIGN &&
-                                            cur_s->u.multi.nlhs > 4)
-                                               ? " (more than 4 targets (FUSE_MAXDST))"
-                                               : "";
+                    const char *lim_note  = (cur_s != NULL && cur_s->kind == MC_STMT_MULTI_ASSIGN &&
+                                             cur_s->u.multi.nlhs > 4)
+                                                ? " (more than 4 targets (FUSE_MAXDST))"
+                                                : "";
+                    char        shape[48] = "a shape set at run time";
+                    if (st->pass.vnx != 0)
+                    {
+                        snprintf(shape, sizeof(shape), "%ux%ux%u", st->pass.vnx,
+                                 st->pass.vny ? st->pass.vny : 1, st->pass.vnz ? st->pass.vnz : 1);
+                    }
                     snprintf(how, sizeof(how),
-                             "kept: fused pass over %ux%ux%u (%s, %s, %d operand%s%s)%s, writes%s",
-                             st->pass.vnx ? st->pass.vnx : 1, st->pass.vny ? st->pass.vny : 1,
-                             st->pass.vnz ? st->pass.vnz : 1, wtype,
-                             st->pass.is_1d_contig ? "1D" : "ND", nin_ops,
-                             (nin_ops == 1) ? "" : "s", ps_buf, lim_note, wr_buf);
+                             "kept: fused pass over %s (%s, %s%d operand%s%s)%s, writes%s", shape,
+                             wtype,
+                             (st->pass.vnx == 0)     ? ""
+                             : st->pass.is_1d_contig ? "1D, "
+                                                     : "ND, ",
+                             nin_ops, (nin_ops == 1) ? "" : "s", ps_buf, lim_note, wr_buf);
                 }
             }
             else if (st->kind == MC_STEP_CTOR)

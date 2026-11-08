@@ -16,7 +16,6 @@
 #    define _GNU_SOURCE
 #endif
 
-#include <math.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,19 +56,6 @@ errno_t CLI_data_init()
 
     /* Sync: data.core shares milk_data's arrays */
     data.core = milk_data;
-
-    mcalc_host_ops calc_host = { cli_var_get, cli_var_set };
-    mcalc_set_host(&calc_host);
-
-    create_variable_ID("_PI", 3.14159265358979323846264338328);
-    create_variable_ID("_e", exp(1));
-    create_variable_ID("_gamma", 0.5772156649);
-    create_variable_ID("_c", 299792458.0);
-    create_variable_ID("_h", 6.626075540e-34);
-    create_variable_ID("_k", 1.38065812e-23);
-    create_variable_ID("_pc", 3.0856776e16);
-    create_variable_ID("_ly", 9.460730472e15);
-    create_variable_ID("_AU", 1.4959787066e11);
 
     gettimeofday(&t1, NULL);
     srand(t1.tv_usec * t1.tv_sec);

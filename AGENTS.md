@@ -39,16 +39,16 @@ designed for Adaptive Optics (AO) and high-performance
 scientific computing. Its defining characteristic is a
 **shared-memory micro-service architecture**: many small
 standalone executables (compute units) communicate via
-zero-copy tensors in `/dev/shm/` and are configured
+zero-copy tensors in `$MILK_SHM_DIR` (default `/milk/shm`) and are configured
 through a shared-memory parameter system.
 
 **Three pillars:**
 
-| Pillar                               | Purpose                                                     | Shared Memory Path  |
-| ------------------------------------ | ----------------------------------------------------------- | ------------------- |
-| **ImageStreamIO** (Streams)          | Zero-copy n-dimensional data passing between processes      | `/dev/shm/*.im.shm` |
-| **FPS** (Function Processing System) | Real-time parameter sync, state control (run/stop/conf)     | `/dev/shm/fps.*`    |
-| **processinfo**                      | Heartbeat telemetry, loop rate profiling, health monitoring | `/dev/shm/proc.*`   |
+| Pillar                               | Purpose                                                     | Files                       |
+| ------------------------------------ | ----------------------------------------------------------- | --------------------------- |
+| **ImageStreamIO** (Streams)          | Zero-copy n-dimensional data passing between processes      | `*.im.shm`                  |
+| **FPS** (Function Processing System) | Real-time parameter sync, state control (run/stop/conf)     | `*.fps.shm`, `*.fps.d/`     |
+| **processinfo**                      | Heartbeat telemetry, loop rate profiling, health monitoring | `proc.*.shm`                |
 
 Compute units run as detached background processes
 (**units**) for fault isolation — a crash in one unit
@@ -143,7 +143,7 @@ img.mdt->naxis = 2;
 img.mdt->size[0] = 128;
 img.mdt->size[1] = 128;
 img.mdt->shared = 1;
-imgid_mkimage(&img);
+imgid_create_registered(&img); // which creator when: docs/guide/streams.md §5
 
 // Access pixel data:
 float *data = img.im->array.F;
@@ -201,23 +201,12 @@ trigger conditions and required actions (human-readable overview:
 
 ## 9. Build System Quick Reference
 
-### Build tiers
+### Build tiers and the compile-test cycle
 
-| Tier           | CMake Flags                        | What's built                                                  |
-| -------------- | ---------------------------------- | ------------------------------------------------------------- |
-| Engine         | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkcommon, milkfps, milkdata, milkprocessinfo |
-| Core           | `-DUSE_CLI=OFF`                    | Engine + COREMODs (arith, memory, tools, iofits)              |
-| Core (no FITS) | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Core without COREMOD_iofits                                   |
-| Full           | _(defaults)_                       | Everything: CLI + all plugins                                 |
-
-### Compile-test cycle
-
-```bash
-$ cd _build
-$ make -j$(nproc)
-$ make install
-$ ctest --output-on-failure
-```
+Tiers and their CMake flags: [build_tiers.md](docs/quickstart/build_tiers.md). Build with
+`cmake --build _build`, install only under a prefix
+([tooling.md §6](docs/developer/tooling.md#6-dev-installs-without-sudo)), and test with pytest
+([tooling.md §4](docs/developer/tooling.md#4-testing-through-a-standard-python-suite-pytest-and-nox)).
 
 ### Module CMakeLists.txt
 

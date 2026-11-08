@@ -7,90 +7,50 @@ description: Set up a development environment from scratch
 Use this workflow for first-time setup of a milk
 development environment.
 
-## 1. Install System Dependencies
+## 1. Install Dependencies and Clone
 
-### Ubuntu / Debian
-
-```bash
-sudo apt-get update
-sudo apt-get install -y \
-  gcc g++ cmake make \
-  libcfitsio-dev libncurses-dev \
-  libopenblas-dev \
-  git tmux \
-  pkg-config
-```
-
-### Fedora / RHEL
+Install the system dependencies and clone the repository with its submodules (`ImageStreamIO`
+and others) as [compile.md §1](../../docs/quickstart/compile.md#1-download-and-install-milk)
+shows. On macOS (Homebrew):
 
 ```bash
-sudo dnf install -y \
-  gcc gcc-c++ cmake make \
-  cfitsio-devel ncurses-devel \
-  openblas-devel \
-  git tmux \
-  pkg-config
+brew install cmake cfitsio ncurses openblas git tmux pkg-config
 ```
 
-### macOS (Homebrew)
-
-```bash
-brew install cmake cfitsio ncurses openblas \
-  git tmux pkg-config
-```
-
-## 2. Clone the Repository
-
-```bash
-cd ~/src
-git clone https://github.com/milk-org/milk.git
-cd milk
-```
-
-## 3. Initialize Submodules
-
-```bash
-git submodule update --init --recursive
-```
-
-This initializes `ImageStreamIO` and other
-submodule dependencies.
-
-## 4. Checkout the Development Branch
+## 2. Checkout the Development Branch
 
 ```bash
 git checkout framework-dev
 ```
 
 > [!CAUTION]
-> Never work directly on `dev` or `main`.
+> Never commit to `dev` or `framework-dev` (`git-workflow` rule).
 > Create feature branches from `framework-dev`.
 
-## 5. Configure and Build
+## 3. Configure, Build and Install
+
+Install under `_build/_install`, not the system prefix
+([tooling.md §6](../../docs/developer/tooling.md#6-dev-installs-without-sudo)):
 
 ```bash
 mkdir _build && cd _build
-cmake .. -DCMAKE_INSTALL_PREFIX=../local
+cmake ..
 make -j$(nproc)
-make install
+cmake --install . --prefix _install
 ```
 
-### Optional Build Flags
+Optional build flags:
+[build_tiers.md](../../docs/quickstart/build_tiers.md#optional-dependencies),
+[performance.md §7](../../docs/operations/performance.md#7-quick-checklist) (`-DVEC_REPORT=ON`,
+PGO, static LTO) and
+[debugging.md §5](../../docs/operations/debugging.md#5-build-time-debugging) (Debug build).
 
-| Flag                       | Purpose              |
-| -------------------------- | -------------------- |
-| `-DUSE_STATIC_LTO=ON`      | Static LTO build     |
-| `-DVEC_REPORT=ON`          | Vectorization report |
-| `-DCMAKE_BUILD_TYPE=Debug` | Debug symbols        |
-| `-DUSE_CFITSIO=OFF`        | Build without FITS   |
+## 4. Set the Environment
 
-## 6. Source the Environment
-
-Add to your shell profile:
-
-```bash
-source ~/src/milk/local/bin/milk-setup.bash
-```
+Set `MILK_INSTALLDIR` and `PATH` as
+[tooling.md §6.1](../../docs/developer/tooling.md#61-install-and-use) shows (`milk-check`
+verifies them); to use milk commands from bash, `source milk.bash`
+([sessions.md](../../docs/guide/sessions.md#using-milk-from-plain-bash)).
 
 Verify the installation:
 
@@ -98,35 +58,25 @@ Verify the installation:
 milk-cli -i
 ```
 
-## 7. Run Tests
+## 5. Run Tests
+
+Set up and run the test suite as
+[tooling.md §4.1](../../docs/developer/tooling.md#41-setup) and
+[§4.2](../../docs/developer/tooling.md#42-pytest) show.
+
+## 6. Verify the CLI
 
 ```bash
-cd ~/src/milk/_build
-ctest --output-on-failure
+milk-cli -c '@module list'
 ```
 
-## 8. Verify the CLI
+## 7. Set Up Git Worktrees (Optional)
 
-```bash
-echo "m?" | milk-cli 2>/dev/null
-echo "exit" | milk-cli 2>/dev/null
-```
+For working on multiple features simultaneously, follow WorkingWithGit.md
+[§3](../../docs/developer/WorkingWithGit.md#3-parallel-development-using-git-worktrees); each
+worktree needs its own `_build` directory.
 
-## 9. Set Up Git Worktrees (Optional)
-
-For working on multiple features simultaneously:
-
-```bash
-cd ~/src/milk
-git worktree add ../milk-docs \
-  -b docs/current-task framework-dev
-git worktree add ../milk-feat \
-  -b feat/current-task framework-dev
-```
-
-Each worktree needs its own `_build` directory.
-
-## 10. Read the Onboarding Docs
+## 8. Read the Onboarding Docs
 
 - [`AGENTS.md`](../../AGENTS.md) — if using AI
   coding agents

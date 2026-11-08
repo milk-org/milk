@@ -25,9 +25,9 @@ static const milk_keyword_t keywords[] = {
       "  -v a,b      bind the values of the last statements (an assignment's value is the assigned "
       "one)\n"
       "  -a <arr>    bind the pixels of an image result into an indexed array\n"
-      "  -l <file>   load user C extension (.c or .so) into the session\n"
+      "  -l, --lib <file>  load user C extension (.c or .so) into the session\n"
       "  --list [p]  list pre-compiled bytecode engines, tokens & loaded C extensions\n"
-      "              (aliases: --engines, --tokens; add --json for JSON output)\n"
+      "              (add --json for JSON output)\n"
       "  --explain   compile the statements as a unit would and print how each one runs\n"
       "              (kept fused pass, merged, scalar tape, or text and why; new targets run "
       "once)\n"
@@ -39,7 +39,8 @@ static const milk_keyword_t keywords[] = {
       "  @calc -v rms,ptv \"istd(im1); imax(im1) - imin(im1)\"\n"
       "  @calc -a row \"im1[*, 10]\"\n"
       "  @calc --list stencil\n"
-      "  @calc --explain \"out = cam * gain; z = cplx(out, out)\"" },
+      "  @calc --explain \"out = cam * gain; z = cplx(out, out)\"",
+      "-v -a -l --lib --list --explain --json --help", NULL },
     { "test", MILK_KW_BUILTIN, MILK_KW_ALL, 1, "@test \"<boolean-expr>\"",
       "Evaluate a boolean expression: exit status 0 if true, 1 if false",
       "  Made for bash conditionals (if, while, &&); no subshell.",
@@ -53,7 +54,8 @@ static const milk_keyword_t keywords[] = {
       "  Expression mode: a failed relation prints both sides and returns 1.\n"
       "  Entity mode: existence, running owner, frame rate, age, cnt0 or geometry.",
       "  @assert \"istd(wfs) < 0.5\" \"WFS residual diverged\"\n"
-      "  @assert --running --fps-min 500 s.wfs_cam \"camera degraded\"" },
+      "  @assert --running --fps-min 500 s.wfs_cam \"camera degraded\"",
+      "--exists -e --running -r --fps-min --max-age --cnt-min --dim -m --msg", NULL },
     { "get", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
       "@get [-v <var>|-a <arr>|-A <assoc>|--json] <spec> | @get [<var>=]<spec>... | "
       "@get --watch [T] <spec>...",
@@ -64,8 +66,8 @@ static const milk_keyword_t keywords[] = {
       "  --watch [T] the values every T s (0.5) until Ctrl-C: in place at a terminal, else one "
       "line\n"
       "              per refresh\n"
-      "  Globs: s.*, s.<glob>.<attr>.  Streams: xsize ysize zsize naxis cnt0 cnt1 type shared age "
-      "kw.<KEY>,\n  min max mean std var tot count, stats (all of them, for -A).\n"
+      "  Globs: s.*, s.<glob>.<prop>.  Streams: the properties of @help streams (stats: all the\n"
+      "  statistics, for -A).\n"
       "  FPS: any parameter; status (or run) and conf: stopped starting running stopping exited\n"
       "  failed; session; run.out, conf.out (last output lines).  Processes: status loopcnt ctrl "
       "pid.",
@@ -73,7 +75,8 @@ static const milk_keyword_t keywords[] = {
       "  @get nx=s.cam0.xsize ny=s.cam0.ysize\n"
       "  @get -A st s.cam0.stats\n"
       "  @get -A widths 's.dm*.xsize'\n"
-      "  @get --json s.cam0" },
+      "  @get --json s.cam0",
+      "--json -j -v -a -A", NULL },
     { "set", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
       "@set [--restore] <spec>[=]<value> [<spec>=<value> ...] [comment] | @set --tui [<fps>]",
       "Write stream keywords, FPS parameters, process controls; run FPS/process actions",
@@ -99,7 +102,8 @@ static const milk_keyword_t keywords[] = {
       "  Patterns select a namespace: 's.*' streams, 'f.*' FPS, 'p.*' processes.",
       "  @ls\n"
       "  @ls 's.cam*'\n"
-      "  @ls -a names 'f.*'" },
+      "  @ls -a names 'f.*'",
+      "-l --long -q --quiet --json --local -h --help", NULL },
     /* events and time */
     { "waitfor", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
       "@waitfor <entity|expr> [N] [-t <sec>] [--cnt <target>] | @waitfor [--next] \"<expr>\" [-t "
@@ -131,7 +135,10 @@ static const milk_keyword_t keywords[] = {
       "  @on --max-hz 10 s.cam0 'info.imstats s.cam0'\n"
       "  @on --when 'imax(cam0) > 60000' --hold 0.5 -- echo saturated\n"
       "  @on --every 1 -- '@get s.cam0.cnt0 >> counts.txt'\n"
-      "  @on --stop 1" },
+      "  @on --stop 1",
+      "--once -1 --scoped --max-hz --cooldown --timeout -t --when --hold --level --every --list "
+      "--stop -s --clear",
+      NULL },
     { "sleep", MILK_KW_BUILTIN, MILK_KW_ALL, 0,
       "@sleep <seconds> | @sleep --every <seconds>|--hz <rate> [--late <var>] <var>",
       "Sleep without starting a process (Ctrl-C interrupts it); pace a loop",
@@ -150,7 +157,8 @@ static const milk_keyword_t keywords[] = {
       "  --stdout  write the pixels to stdout as text (--raw: binary), or bind them into an array",
       "  @grab -t 1 s.cam0 l.dark\n"
       "  @grab --fits telem.fits --timestamps telem.txt s.cam0 100\n"
-      "  @grab --stdout --raw s.cam0 | python3 analyze.py" },
+      "  @grab --stdout --raw s.cam0 | python3 analyze.py",
+      "--fits -f --timestamps --ts --timeout -t --stdout --raw -a", NULL },
     { "replay", MILK_KW_SERVER, MILK_KW_ALL, 1,
       "@replay [--fps <hz>|--dt <sec>] [--count <N>] [--loop] <cube_or_fits> <dst_stream> | "
       "@replay --stdin [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]]",
@@ -159,13 +167,13 @@ static const milk_keyword_t keywords[] = {
       "  --stdin  write the values read from stdin (--raw: binary) into the stream, creating it if "
       "needed",
       "  @replay --fps 200 telem.fits cam0_sim\n"
-      "  python3 gen.py | @replay --stdin --dtype F32 cam0 128 128" },
+      "  python3 gen.py | @replay --stdin --dtype F32 cam0 128 128",
+      "--fps -r --count -n --loop -l --stdin --raw --dtype", NULL },
     { "snapshot", MILK_KW_SERVER, MILK_KW_ALL, 1, "@snapshot [-o <file>] [<pattern>...]",
-      "Save FPS parameters and stream keywords", "",
-      "  @snapshot -o base.snap 'f.loop*' 's.cam*'" },
-    { "diff", MILK_KW_SERVER, MILK_KW_ALL, 1, "@diff <snap_a> [snap_b]",
-      "Compare a snapshot with the live state or another snapshot (status 1 if they differ)", "",
-      "  @diff base.snap" },
+      "Save FPS parameters and stream keywords", "", "  @snapshot -o base.snap 'f.loop*' 's.cam*'",
+      "-o --output", NULL },
+    { "diff", MILK_KW_SERVER, MILK_KW_ALL, 1, "@diff <snap_file> [<pattern>...]",
+      "Compare a snapshot with the live state (status 1 if they differ)", "", "  @diff base.snap" },
     { "restore", MILK_KW_SERVER, MILK_KW_ALL, 1,
       "@restore [-n] <snap_file> [<pattern>...] | @restore --undo [-n] [N]",
       "Apply a snapshot back to the live state (-n: dry run), or undo this shell's last @set calls",
@@ -173,7 +181,8 @@ static const milk_keyword_t keywords[] = {
       "              parameters, stream keywords), where they still hold what was written; the\n"
       "              others are left as they are, with a warning (status 1). -n lists them.",
       "  @restore -n base.snap\n"
-      "  @restore --undo 3" },
+      "  @restore --undo 3",
+      "--undo --dry-run -n", NULL },
     { "pipe", MILK_KW_SERVER, MILK_KW_ALL, 1,
       "@pipe \"<cmd1> |> <cmd2> |> ...\" | @pipe \"<cmd1>; <cmd2>\"",
       "Run several milk commands and expressions in one request; '_' is the image the previous "
@@ -217,33 +226,43 @@ static const milk_keyword_t keywords[] = {
       "log ...]",
       "Show, start, join, leave or end sessions: the milk-cli servers that hold images and "
       "variables",
+      "  status [<name>]        this shell's session, or session <name>\n"
+      "  ls [--json]            this user's sessions in this MILK_SHM_DIR (ORPHANED: the shell "
+      "that\n"
+      "                         created it has exited)\n"
+      "  new <name> [-d]        start session <name> and use it (-d: do not); fails if it runs.\n"
+      "    [--idle <T>]         it ends after T (90, 30s, 10m, 2h, 1d) without a command while no\n"
+      "                         shell uses it\n"
+      "  use <name>             use session <name>; fails if it does not run\n"
+      "  leave                  use this shell's own session again\n"
+      "  who [<name>]           the shells that use a session\n"
+      "  end [<name>|--all]     end a session, the one in use by default (--all: every one ls\n"
+      "    [--units]            lists; --units: and the units started from it)\n"
+      "  prune                  remove what ended sessions and exited shells left\n"
+      "  save <file>            write the session's state as a milk script, images in <file>.d/\n"
+      "  restore <file>         run that script in this shell's session (units: listed, not "
+      "started)\n"
+      "  log [...]              the session's command log (@log)\n"
       "  A shell's own session starts on its first command and ends with the shell (inside "
       "milk-cli:\n"
-      "  milk-cli's); scripts started from the shell use it too. A named one (new) is shared by "
-      "the\n"
-      "  shells that use it and runs until it is ended, or until --idle T passes without a "
-      "command\n"
-      "  while no shell uses it; ls lists it ORPHANED once the shell that created it has exited.\n"
-      "  A session belongs to the MILK_SHM_DIR it started with: ls lists those of the current "
-      "one.\n"
-      "  Units started from a named session record it, and end --units stops them too. end with "
-      "no\n"
-      "  name ends the session in use. save writes the session's state as a milk script (images "
-      "in\n"
-      "  <file>.d/); restore runs it. milk-cli --session NAME starts a REPL whose bash uses "
-      "session NAME.",
+      "  milk-cli's); scripts started from the shell use it too. A named one is shared by the "
+      "shells\n"
+      "  that use it and runs until it is ended. A session belongs to the MILK_SHM_DIR it started "
+      "with.\n"
+      "  milk-cli --session NAME starts a REPL whose bash uses session NAME.",
       "  @session new bench1 --idle 2h\n"
       "  @session use bench1\n"
-      "  @session end bench1 --units" },
+      "  @session end bench1 --units",
+      NULL, "status ls new use leave who end prune save restore log" },
     { "module", MILK_KW_SERVER, MILK_KW_ALL, 0,
       "@module [list [--all]] | @module load <name|file.so> [--as <short>]",
       "List the loaded modules, or load one (commands of installed modules load on first use)",
       "  --all   also the installed modules not loaded yet\n"
       "  --as    register the module's commands under another short name",
-      "  @module list\n  @module load milkfft" },
+      "  @module list\n  @module load milkfft", NULL, "list load" },
     { "config", MILK_KW_SHELL, MILK_KW_ALL, 0, "@config [<key> [<value>...]]",
       "Show or change a session setting",
-      "  digits <N>               significant digits of printed results (all calc paths)\n"
+      "  digits <N>               significant digits of printed results, for this shell\n"
       "  precision single|double  precision of the images commands create (calculator results "
       "follow\n"
       "                           their operands)\n"
@@ -254,15 +273,33 @@ static const milk_keyword_t keywords[] = {
       "  inline on|off            expand @{...} in lines typed at an interactive milk.bash prompt\n"
       "  synhl, syndiag, indent, showmatch, calc on|off; sessionlog on|off|<file>   (milk-cli "
       "REPL)",
-      "  @config digits 4\n  @config prompt watch f.loop.run\n  @config" },
+      "  @config digits 4\n  @config prompt watch f.loop.run\n  @config", NULL,
+      "digits precision procinfo prompt inline synhl syndiag indent showmatch calc "
+      "sessionlog\nprompt: status watch unwatch clear preset on off render\npreset: minimal std "
+      "ao\n*: single double on off" },
     { "unload", MILK_KW_SHELL, MILK_KW_BASH, 0, "@unload",
       "Remove milk from this bash shell: stop its session and watchers, unset the functions", "",
       "  @unload" },
     /* introspection */
     { "log", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
       "@log [-n <N>|-a] [-g <pat>] [-e] [--slow <ms>] [--since <dur>] [-f] [-s <name>] [--json] "
-      "[--clear]",
-      "Show the session's recent commands with timing and status", "", "  @log -n 20\n  @log -e" },
+      "[--clear] [<pattern>]",
+      "Show the session's recent commands with timing and status",
+      "  -n, --last <N>        the last N matching entries (20)\n"
+      "  -a, --all             every entry in the ring buffer\n"
+      "  -g, --grep <regex>    case-insensitive extended regex on the command and its output\n"
+      "  -e, --errors          failed commands only (status not 0)\n"
+      "      --slow <ms>       commands slower than <ms> ms only\n"
+      "      --since <spec>    since a relative time (30s, 5m, 1h) or HH:MM:SS\n"
+      "  -f, --follow          live-tail new commands and outputs\n"
+      "  -s, --session <name>  the log of session <name>\n"
+      "      --json            JSON Lines\n"
+      "      --clear           clear the session's ring buffer\n"
+      "  Also: @session log [options] [<pattern>].",
+      "  @log -n 20\n  @log -e",
+      "-n --last -a --all -g --grep -e --errors --slow --since -f --follow -s --session --json "
+      "--clear -h --help",
+      NULL },
     { "help", MILK_KW_SERVER, MILK_KW_ALL, 0,
       "@help [<keyword|namespace|module|module.cmd|topic>] [--json|--porcelain] | @help -k <regex> "
       "| @help --tui",
@@ -383,9 +420,63 @@ int milk_lexicon_help_arg(const milk_keyword_t *k, const char *arg)
     {
         return 0;
     }
-    return strcmp(arg, "--help") == 0 ||
-           (strcmp(arg, "-h") == 0 && strcmp(k->name, "calc") != 0 &&
-            strcmp(k->name, "test") != 0 && strcmp(k->name, "assert") != 0);
+    return strcmp(arg, "--help") == 0 || (strcmp(arg, "-h") == 0 && !milk_lexicon_takes_expr(k));
+}
+
+/**
+ * milk_lexicon_takes_expr - Check whether the arguments of keyword @k are calculator text
+ * @k: Keyword descriptor
+ *
+ * Return: 1 for `@calc`, `@test` and `@assert`, 0 otherwise
+ */
+int milk_lexicon_takes_expr(const milk_keyword_t *k)
+{
+    return strcmp(k->name, "calc") == 0 || strcmp(k->name, "test") == 0 ||
+           strcmp(k->name, "assert") == 0;
+}
+
+/**
+ * milk_lexicon_print_list - Print the keywords, one per line
+ * @fp:            Output stream
+ * @callable_only: Only the keywords milk-call implements
+ * @synopsis:      Each synopsis, its summary on the next line, instead of the name and summary
+ *
+ * Return: void
+ */
+void milk_lexicon_print_list(FILE *fp, int callable_only, int synopsis)
+{
+    for (const milk_keyword_t *k = keywords; k->name != NULL; k++)
+    {
+        if (callable_only && !k->callable)
+        {
+            continue;
+        }
+        if (synopsis)
+        {
+            fprintf(fp, "  %s\n      %s\n", k->synopsis, k->summary);
+        }
+        else
+        {
+            fprintf(fp, "  @%-10s %s\n", k->name, k->summary);
+        }
+    }
+}
+
+/**
+ * milk_lexicon_usage - Print the usage line of keyword @name (for a usage error)
+ * @name: Keyword name, with or without the sigil
+ * @fp:   Output stream
+ *
+ * Return: 2, the status of a usage error
+ */
+int milk_lexicon_usage(const char *name, FILE *fp)
+{
+    const milk_keyword_t *k = milk_lexicon_keyword(name);
+    if (k != NULL)
+    {
+        fprintf(fp, "usage: %s\n", k->synopsis);
+    }
+    return 2;
 }
 
 /**

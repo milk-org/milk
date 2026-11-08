@@ -115,13 +115,11 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
     }
     const milk_calc_param_set_t *pset = ext->get_params ? ext->get_params() : NULL;
     const milk_calc_op_ports_t  *pts  = ext->get_ports ? ext->get_ports() : NULL;
-    int                          npos = 0;
 
     for (int i = 0; i < e->u.call.nargs; i++)
     {
         if (e->u.call.kw_names[i][0] == '\0')
         {
-            npos++;
             continue;
         }
         const char *kw    = strip_dot(e->u.call.kw_names[i]);
@@ -148,53 +146,66 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
         }
     }
 
-    int min_img = (ext->kind == MILK_EXT_BLK2) ? 2 : 1;
-    if (ext->kind == MILK_EXT_OP && pts != NULL)
+    if (ext->kind == MILK_EXT_OP && pts != NULL && nlhs > pts->nout)
     {
-        min_img = 0;
-        for (int p = 0; p < pts->nin; p++)
-        {
-            if (!(pts->in_ports[p].flags & MILK_PORT_OPT))
-            {
-                min_img++;
-            }
-        }
-        if (nlhs > pts->nout)
-        {
-            return ext_err(err, errsz, "%s: too many LHS targets (%d > %d)", ext->name, nlhs,
-                           pts->nout);
-        }
+        return ext_err(err, errsz, "%s: too many LHS targets (%d > %d)", ext->name, nlhs,
+                       pts->nout);
     }
-    else if (nlhs > 1)
+    if (ext->kind != MILK_EXT_OP && nlhs > 1)
     {
         return ext_err(err, errsz, "%s: single-output kernel cannot unpack into %d targets",
                        ext->name, nlhs);
     }
 
-    if (npos < min_img)
+    int in_arg[MILK_CALC_MAX_PORTS];
+    int par_arg[MILK_CALC_MAX_PARAMS];
+    int nin =
+        mc_ext_bind_args(e->u.call.ext_id, e->u.call.nargs, (const char (*)[64]) e->u.call.kw_names,
+                         in_arg, par_arg, err, errsz);
+    if (nin < 0)
     {
-        return ext_err(err, errsz, "%s: expected at least %d positional argument(s)", ext->name,
-                       min_img);
+        return -1;
     }
-    for (int i = 0; i < min_img && i < e->u.call.nargs; i++)
+    for (int p = 0; p < nin; p++)
     {
-        if (e->u.call.kw_names[i][0] == '\0' && e->u.call.args[i]->res_kind != MC_RES_IMAGE &&
-            !(ext->kind == MILK_EXT_OP && pts != NULL && pts->in_ports[i].kind == MILK_PORT_SCALAR))
+        int is_op = (ext->kind == MILK_EXT_OP && pts != NULL);
+        if (in_arg[p] < 0)
         {
-            return ext_err(err, errsz, "%s: argument %d must be an image", ext->name, i + 1);
+            if (is_op && (pts->in_ports[p].flags & MILK_PORT_OPT))
+            {
+                continue;
+            }
+            return is_op ? ext_err(err, errsz, "%s: missing required input port '%s'", ext->name,
+                                   pts->in_ports[p].name)
+                         : ext_err(err, errsz, "%s: expected %d image argument(s)", ext->name, nin);
+        }
+        if (e->u.call.args[in_arg[p]]->res_kind != MC_RES_IMAGE &&
+            !(is_op && pts->in_ports[p].kind == MILK_PORT_SCALAR))
+        {
+            return ext_err(err, errsz, "%s: argument %d must be an image", ext->name,
+                           in_arg[p] + 1);
+        }
+    }
+    for (int k = 0; pset != NULL && k < pset->nparams; k++)
+    {
+        if (par_arg[k] >= 0 && e->u.call.args[par_arg[k]]->res_kind == MC_RES_IMAGE)
+        {
+            return ext_err(err, errsz, "%s: parameter %s takes a number, not an image", ext->name,
+                           strip_dot(pset->specs[k].name));
         }
     }
 
-    e->needs_image = 1;
-    e->res_kind    = MC_RES_IMAGE;
-    e->res_dt      = (strcmp(ext->name, "rotate2d") == 0 && e->u.call.nargs > 0 &&
-                      e->u.call.args[0]->res_dt == _DATATYPE_DOUBLE)
-                         ? _DATATYPE_DOUBLE
-                         : _DATATYPE_FLOAT;
-    if (ext->kind != MILK_EXT_OP && e->u.call.nargs > 0 && e->u.call.args[0]->res_naxis > 0)
+    e->needs_image       = 1;
+    e->res_kind          = MC_RES_IMAGE;
+    const mc_expr_t *im0 = (ext->kind != MILK_EXT_OP) ? e->u.call.args[in_arg[0]] : NULL;
+    e->res_dt =
+        (im0 != NULL && strcmp(ext->name, "rotate2d") == 0 && im0->res_dt == _DATATYPE_DOUBLE)
+            ? _DATATYPE_DOUBLE
+            : _DATATYPE_FLOAT;
+    if (im0 != NULL && im0->res_naxis > 0)
     {
-        e->res_naxis = e->u.call.args[0]->res_naxis;
-        memcpy(e->res_size, e->u.call.args[0]->res_size, sizeof(e->res_size));
+        e->res_naxis = im0->res_naxis;
+        memcpy(e->res_size, im0->res_size, sizeof(e->res_size));
     }
     return 0;
 }
@@ -282,26 +293,22 @@ static int lookup_calc_var_d(const char *name, double *out)
 
 /**
  * pack_ext_params - Populate the binary parameter struct buffer @pbuf for an extension call
- * @ext:       Registered extension entry
- * @rhs:       Extension `MC_EXPR_CALL` AST node
- * @call_site: Enclosing `def` call site for formal parameter substitution, or NULL
- * @n_img_pos: Number of leading positional arguments consumed as image/port inputs
- * @pbuf:      Output buffer of size `MILK_CALC_PARAM_BYTES`
- * @err:       Error message buffer
- * @errsz:     Capacity of @err in bytes
+ * @ext:     Registered extension entry
+ * @rhs:     Extension `MC_EXPR_CALL` AST node
+ * @par_arg: The argument that binds each parameter, or -1 (mc_ext_bind_args())
+ * @pbuf:    Output buffer of size `MILK_CALC_PARAM_BYTES`
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
  *
- * Resolution precedence for each parameter `p`:
- *   1. Explicit keyword argument `pname = expr` in the call.
- *   2. Positional scalar argument at index `n_img_pos + p`.
- *   3. Live variable `<label>.<pname>` (or `<ext->name>.<pname>` if `<label>` is an instance tag
- *      from `ext:label(...)`), auto-creating `<label>.<pname>` with `sp->def_num` if absent.
+ * A parameter takes the value of its argument; without one, the live variable `<label>.<pname>`
+ * (or `<ext->name>.<pname>` if `<label>` is an instance tag from `ext:label(...)`), created with
+ * `sp->def_num` if absent.
  *
  * Return: 0 on success, -1 if evaluating a scalar argument expression fails
  */
 static int pack_ext_params(const milk_calc_ext_entry_t *ext,
                            const mc_expr_t             *rhs,
-                           const mc_expr_t             *call_site,
-                           int                          n_img_pos,
+                           const int                   *par_arg,
                            uint8_t                     *pbuf,
                            char                        *err,
                            size_t                       errsz)
@@ -316,49 +323,20 @@ static int pack_ext_params(const milk_calc_ext_entry_t *ext,
     const char *colon = strchr(rhs->u.call.name, ':');
     const char *label = (colon != NULL && colon[1] != '\0') ? (colon + 1) : ext->name;
 
-    int pos_args[MC_MAX_ARGS];
-    int npos = 0;
-    for (int i = 0; i < rhs->u.call.nargs; i++)
-    {
-        if (rhs->u.call.kw_names[i][0] == '\0')
-        {
-            pos_args[npos++] = i;
-        }
-    }
-
     for (int p = 0; p < pset->nparams; p++)
     {
         const milk_calc_param_spec_t *sp    = &pset->specs[p];
         const char                   *pname = strip_dot(sp->name);
         double                        val   = sp->def_num;
-        int                           bound = 0;
 
-        for (int i = 0; i < rhs->u.call.nargs; i++)
+        if (par_arg[p] >= 0)
         {
-            if (rhs->u.call.kw_names[i][0] != '\0' &&
-                strcmp(strip_dot(rhs->u.call.kw_names[i]), pname) == 0)
+            if (mc_eval_scalar_d(rhs->u.call.args[par_arg[p]], &val, err, errsz) != 0)
             {
-                if (mc_eval_scalar_d(rhs->u.call.args[i], call_site, &val, err, errsz) != 0)
-                {
-                    return -1;
-                }
-                bound = 1;
-                break;
+                return -1;
             }
         }
-        if (!bound && n_img_pos + p < npos)
-        {
-            int ai = pos_args[n_img_pos + p];
-            if (rhs->u.call.args[ai]->res_kind != MC_RES_IMAGE)
-            {
-                if (mc_eval_scalar_d(rhs->u.call.args[ai], call_site, &val, err, errsz) != 0)
-                {
-                    return -1;
-                }
-                bound = 1;
-            }
-        }
-        if (!bound)
+        else
         {
             char vname[128];
             char fbname[128];
@@ -580,7 +558,6 @@ static void free_op_cache_state(void *ptr)
  * @cs:        Constructor step holding persistent `ext_state` cache (may be NULL)
  * @ext:       Registered operator descriptor
  * @rhs:       Operator `MC_EXPR_CALL` AST node
- * @call_site: Enclosing `def` call site, or NULL
  * @multi_s:   Enclosing `MC_STMT_MULTI_ASSIGN` statement when unpacking multiple outputs, or NULL
  * @avoid_id:  Output `imageID` to avoid input aliasing with, or -1
  * @in_unit:   1 when running inside a `milk.calc` unit
@@ -599,7 +576,6 @@ static int exec_ext_op(mcalc_prog_t                *prog,
                        mc_ctor_step_t              *cs,
                        const milk_calc_ext_entry_t *ext,
                        const mc_expr_t             *rhs,
-                       const mc_expr_t             *call_site,
                        const mc_stmt_t             *multi_s,
                        imageID                      avoid_id,
                        int                          in_unit,
@@ -623,8 +599,9 @@ static int exec_ext_op(mcalc_prog_t                *prog,
     int     in_tmp[MILK_CALC_MAX_PORTS];
     int     f32_tmp[MILK_CALC_MAX_PORTS];
     imageID f32_ids[MILK_CALC_MAX_PORTS];
-    int     rc      = 0;
-    int     pos_cur = 0;
+    int     in_arg[MILK_CALC_MAX_PORTS];
+    int     par_arg[MILK_CALC_MAX_PARAMS];
+    int     rc = 0;
 
     for (int p = 0; p < MILK_CALC_MAX_PORTS; p++)
     {
@@ -633,30 +610,16 @@ static int exec_ext_op(mcalc_prog_t                *prog,
         in_tmp[p]  = 0;
         f32_tmp[p] = 0;
     }
+    if (mc_ext_bind_args(rhs->u.call.ext_id, rhs->u.call.nargs,
+                         (const char (*)[64]) rhs->u.call.kw_names, in_arg, par_arg, err,
+                         errsz) < 0)
+    {
+        return -1;
+    }
 
-    /* Bind input ports by keyword match first, then by next available positional argument. */
     for (int p = 0; p < pts->nin; p++)
     {
-        const mc_expr_t *arg = NULL;
-        for (int i = 0; i < rhs->u.call.nargs; i++)
-        {
-            if (rhs->u.call.kw_names[i][0] != '\0' &&
-                milk_calc_port_match_(ext->name, pts->in_ports[p].name,
-                                      strip_dot(rhs->u.call.kw_names[i])))
-            {
-                arg = rhs->u.call.args[i];
-                break;
-            }
-        }
-        while (arg == NULL && pos_cur < rhs->u.call.nargs)
-        {
-            int idx = pos_cur++;
-            if (rhs->u.call.kw_names[idx][0] == '\0')
-            {
-                arg = rhs->u.call.args[idx];
-                break;
-            }
-        }
+        const mc_expr_t *arg = (in_arg[p] >= 0) ? rhs->u.call.args[in_arg[p]] : NULL;
         if (arg == NULL)
         {
             if (pts->in_ports[p].flags & MILK_PORT_OPT)
@@ -669,17 +632,16 @@ static int exec_ext_op(mcalc_prog_t                *prog,
         }
         if (pts->in_ports[p].kind == MILK_PORT_SCALAR)
         {
-            if (mc_eval_scalar_d(arg, call_site, &ctx.in_scalar[p], err, errsz) != 0)
+            if (mc_eval_scalar_d(arg, &ctx.in_scalar[p], err, errsz) != 0)
             {
                 rc = -1;
                 goto done;
             }
-            ctx.in_bound[p] = 1;
         }
         else
         {
-            if (mc_resolve_or_eval_im(arg, call_site, avoid_id, in_unit, &in_ids[p], &in_tmp[p],
-                                      err, errsz) != 0)
+            if (mc_resolve_or_eval_im(arg, avoid_id, in_unit, &in_ids[p], &in_tmp[p], err, errsz) !=
+                0)
             {
                 rc = -1;
                 goto done;
@@ -691,13 +653,12 @@ static int exec_ext_op(mcalc_prog_t                *prog,
                              pts->in_ports[p].name);
                 goto done;
             }
-            ctx.in_img[p]   = &milk_data.image[f32_ids[p]];
-            ctx.in_bound[p] = 1;
+            ctx.in_img[p] = &milk_data.image[f32_ids[p]];
         }
     }
 
     uint8_t pbuf[MILK_CALC_PARAM_BYTES];
-    if (pack_ext_params(ext, rhs, call_site, pos_cur, pbuf, err, errsz) != 0)
+    if (pack_ext_params(ext, rhs, par_arg, pbuf, err, errsz) != 0)
     {
         rc = -1;
         goto done;
@@ -910,7 +871,6 @@ done:
  * @prog:      Enclosing planned program
  * @cs:        Constructor step descriptor
  * @avoid_id:  Output `imageID` to avoid aliasing with when evaluating inputs, or -1
- * @call_site: Enclosing `def` call site when inlined from a user function, or NULL
  * @in_unit:   1 when running inside a `milk.calc` unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -920,16 +880,15 @@ done:
  *
  * Return: 0 on success, -1 on error
  */
-int mc_exec_ext_ctor(mcalc_prog_t    *prog,
-                     mc_ctor_step_t  *cs,
-                     imageID          avoid_id,
-                     const mc_expr_t *call_site,
-                     int              in_unit,
-                     char            *err,
-                     size_t           errsz)
+int mc_exec_ext_ctor(mcalc_prog_t   *prog,
+                     mc_ctor_step_t *cs,
+                     imageID         avoid_id,
+                     int             in_unit,
+                     char           *err,
+                     size_t          errsz)
 {
     mc_slot_t                   *slot = &prog->slots[cs->slot_idx];
-    const mc_expr_t             *rhs  = call_site ? cs->rhs_expr->u.call.udef_body : cs->rhs_expr;
+    const mc_expr_t             *rhs  = cs->rhs_expr;
     const milk_calc_ext_entry_t *ext  = milk_calc_ext_get(rhs->u.call.ext_id);
     if (ext == NULL)
     {
@@ -937,11 +896,14 @@ int mc_exec_ext_ctor(mcalc_prog_t    *prog,
     }
     if (ext->kind == MILK_EXT_OP)
     {
-        return exec_ext_op(prog, cs, ext, rhs, call_site, NULL, avoid_id, in_unit, NULL, err,
-                           errsz);
+        return exec_ext_op(prog, cs, ext, rhs, NULL, avoid_id, in_unit, NULL, err, errsz);
     }
 
-    int     n_img = (ext->kind == MILK_EXT_BLK2) ? 2 : 1;
+    int in_arg[MILK_CALC_MAX_PORTS];
+    int par_arg[MILK_CALC_MAX_PARAMS];
+    int n_img =
+        mc_ext_bind_args(rhs->u.call.ext_id, rhs->u.call.nargs,
+                         (const char (*)[64]) rhs->u.call.kw_names, in_arg, par_arg, err, errsz);
     imageID id0   = -1;
     imageID id1   = -1;
     imageID f0    = -1;
@@ -952,10 +914,11 @@ int mc_exec_ext_ctor(mcalc_prog_t    *prog,
     int     ftmp1 = 0;
     int     rc    = 0;
 
-    if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &id0, &tmp0, err,
+    if (n_img < 0 ||
+        mc_resolve_or_eval_im(rhs->u.call.args[in_arg[0]], avoid_id, in_unit, &id0, &tmp0, err,
                               errsz) != 0 ||
-        (n_img == 2 && mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit,
-                                             &id1, &tmp1, err, errsz) != 0))
+        (n_img == 2 && mc_resolve_or_eval_im(rhs->u.call.args[in_arg[1]], avoid_id, in_unit, &id1,
+                                             &tmp1, err, errsz) != 0))
     {
         if (tmp0)
         {
@@ -965,7 +928,7 @@ int mc_exec_ext_ctor(mcalc_prog_t    *prog,
     }
 
     uint8_t pbuf[MILK_CALC_PARAM_BYTES];
-    if (pack_ext_params(ext, rhs, call_site, n_img, pbuf, err, errsz) != 0)
+    if (pack_ext_params(ext, rhs, par_arg, pbuf, err, errsz) != 0)
     {
         rc = -1;
         goto done;
@@ -1106,7 +1069,7 @@ int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
     {
         const milk_calc_ext_entry_t *ext = milk_calc_ext_get(rhs->u.call.ext_id);
         return (ext != NULL && ext->kind == MILK_EXT_OP)
-                   ? exec_ext_op(prog, cs, ext, rhs, NULL, s, -1, in_unit, out, err, errsz)
+                   ? exec_ext_op(prog, cs, ext, rhs, s, -1, in_unit, out, err, errsz)
                    : ext_err(err, errsz, "unknown multi-output extension '%s'", rhs->u.call.name);
     }
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
@@ -1114,5 +1077,6 @@ int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
     {
         return mc_exec_multi_svd_or_eigh(prog, s, in_unit, err, errsz);
     }
-    return ext_err(err, errsz, "not implemented in the new engine");
+    return ext_err(err, errsz, "'%s' has one result: assign it to one name",
+                   (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.name : "the expression");
 }

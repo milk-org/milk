@@ -72,13 +72,9 @@ set(MILKSCRIPT_SOURCES
 add_library(milkscript SHARED ${MILKSCRIPT_SOURCES})
 milk_apply_extensions(milkscript)
 
-# The fused evaluator's float32 kernels: under -Ofast, GCC vectorizes float division and 1/sqrt with
-# approximate reciprocals (RCPPS/RSQRTPS + Newton step), which turn x/0 into NaN instead of inf.
-# -mno-recip keeps IEEE division and square root there (-mrecip=none is not honoured by GCC 15), and
-# unlike -fno-finite-math-only it keeps __FAST_MATH__, so libm calls still vectorize with libmvec.
-# Applied to the whole library: the shared inline kernels are instantiated in several calc sources.
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
-  target_compile_options(milkscript PRIVATE -mno-recip)
+# NaN comparisons and isfinite() must keep IEEE semantics, as in libmilkcalc (src/calc/CMakeLists.txt).
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+  target_compile_options(milkscript PRIVATE -fno-finite-math-only)
 endif()
 
 if(USE_CFITSIO AND ${CFITSIO_FOUND})
@@ -188,7 +184,6 @@ add_library(
   ipc/milk_srvlog_shm.c
   ipc/milk_srv_manager.c
   core/milk_lexicon.c
-  ../../calc/milk_argval.c
   ../../calc/mc_ext_registry.c
   ../../calc/mc_ext_loader.c
   ../../calc/mc_func.c
@@ -200,7 +195,7 @@ target_include_directories(
   milkbash PRIVATE $<TARGET_PROPERTY:milkscript,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_definitions(milkbash PRIVATE MILK_BASH_CLIENT)
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-  target_compile_options(milkbash PRIVATE -fopenmp-simd)
+  target_compile_options(milkbash PRIVATE -fopenmp-simd -fno-finite-math-only)
 endif()
 target_link_libraries(
   milkbash PRIVATE milkprop milkfps milkcomputeunit milkprocessinfo milkdata m dl rt

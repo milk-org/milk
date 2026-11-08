@@ -183,11 +183,11 @@ void mc_prog_load_vars(mcalc_prog_t *p)
  *
  * Return: void
  */
-void mc_prog_store_vars(mcalc_prog_t *p)
+int mc_prog_store_vars(mcalc_prog_t *p, char *err, size_t errsz)
 {
     if (p == NULL || p->vars == NULL || p->var_ids == NULL || p->assigned == NULL)
     {
-        return;
+        return 0;
     }
     for (int i = 0; i < p->nvars; i++)
     {
@@ -203,7 +203,9 @@ void mc_prog_store_vars(mcalc_prog_t *p)
                       p->vars[i].type == FPTYPE_FILENAME);
         if ((v->type == 2) != is_str)
         {
-            continue;
+            snprintf(err, errsz, "%s is a %s parameter: it cannot take a %s", p->vars[i].name,
+                     is_str ? "string" : "number", is_str ? "number" : "string");
+            return -1;
         }
         switch (p->vars[i].type)
         {
@@ -233,6 +235,7 @@ void mc_prog_store_vars(mcalc_prog_t *p)
             break;
         }
     }
+    return 0;
 }
 
 /* ============================================================================================== */
@@ -274,7 +277,7 @@ static int mark_assigned_name(mcalc_prog_t *p, const char *name, char *err, size
         return 0;
     }
     char nbuf[256];
-    char bare[256];
+    char bare[MC_IDENT_MAX];
     snprintf(nbuf, sizeof(nbuf), "%s", name);
     mc_parse_ident_streamname(nbuf, bare, NULL);
     const char *key = (bare[0] != '\0') ? bare : name;
@@ -359,6 +362,42 @@ static int scan_assigned_stmts(mcalc_prog_t *p, const mc_stmt_t *s, char *err, s
     return 0;
 }
 
+/* The number of live programs that bind each engine variable to a unit parameter */
+static int *g_bound  = NULL;
+static long g_nbound = 0;
+
+/** bound_add() - count @d more (or fewer) programs that bind engine variable @vid. */
+static void bound_add(long vid, int d)
+{
+    if (vid >= g_nbound)
+    {
+        long n = (milk_data.NB_MAX_VARIABLE > vid) ? milk_data.NB_MAX_VARIABLE : vid + 1;
+        int *b = realloc(g_bound, (size_t) n * sizeof(*b));
+        if (b == NULL)
+        {
+            return;
+        }
+        memset(b + g_nbound, 0, (size_t) (n - g_nbound) * sizeof(*b));
+        g_bound  = b;
+        g_nbound = n;
+    }
+    if (vid >= 0)
+    {
+        g_bound[vid] += d;
+    }
+}
+
+/**
+ * mc_var_bound - 1 if engine variable @vid is bound to a unit parameter
+ * @vid: Index in `milk_data.variable[]`
+ *
+ * A bound variable keeps its place whatever is assigned to it (mc_store_scalar_var()).
+ */
+int mc_var_bound(long vid)
+{
+    return vid >= 0 && vid < g_nbound && g_bound[vid] > 0;
+}
+
 /**
  * bind_prog_vars - Allocate and initialize bound variable tables on @p
  * @p:     Program being constructed
@@ -397,6 +436,10 @@ static int bind_prog_vars(mcalc_prog_t        *p,
     }
     for (int i = 0; i < nvars; i++)
     {
+        p->var_ids[i] = -1;
+    }
+    for (int i = 0; i < nvars; i++)
+    {
         int is_str    = (vars[i].type == FPTYPE_STRING || vars[i].type == FPTYPE_STREAMNAME ||
                          vars[i].type == FPTYPE_FITSFILENAME || vars[i].type == FPTYPE_FILENAME);
         int is_flt    = (vars[i].type == FPTYPE_FLOAT64 || vars[i].type == FPTYPE_FLOAT32);
@@ -412,105 +455,11 @@ static int bind_prog_vars(mcalc_prog_t        *p,
             }
             return -1;
         }
+        bound_add(p->var_ids[i], 1);
     }
     mc_prog_load_vars(p);
     return 0;
 }
-
-/**
- * split_stmt_texts - Split rewritten program source @text into per-statement strings
- * @p:    Program whose `stmt_texts[]` array will be populated
- * @text: Rewritten program text
- *
- * Tracks quote state and parenthesis/bracket/brace nesting depth so semicolons and newlines
- * inside blocks or strings do not split a top-level statement. Used by `mcalc_prog_explain()` and
- * for attaching `" in '<stmt>'"` context to unit error messages.
- *
- * Return: void
- */
-static void split_stmt_texts(mcalc_prog_t *p, const char *text)
-{
-    if (p->nstmts <= 0 || text == NULL)
-    {
-        return;
-    }
-    p->stmt_texts = calloc((size_t) p->nstmts, sizeof(char *));
-    if (p->stmt_texts == NULL)
-    {
-        return;
-    }
-    int         idx   = 0;
-    int         depth = 0;
-    char        quote = 0;
-    const char *start = text;
-    for (const char *c = text;; c++)
-    {
-        if (quote != 0)
-        {
-            if (*c == '\\' && c[1] != '\0')
-            {
-                c++;
-                continue;
-            }
-            if (*c == quote)
-            {
-                quote = 0;
-            }
-        }
-        else if (*c == '"' || *c == '\'')
-        {
-            quote = *c;
-        }
-        else if (*c == '(' || *c == '[' || *c == '{')
-        {
-            depth++;
-        }
-        else if ((*c == ')' || *c == ']' || *c == '}') && depth > 0)
-        {
-            depth--;
-        }
-        else if (depth == 0 && (*c == ';' || *c == '\n' || *c == '#' || *c == '\0'))
-        {
-            const char *s0 = start;
-            const char *s1 = c;
-            while (s0 < s1 && isspace((unsigned char) *s0))
-            {
-                s0++;
-            }
-            while (s1 > s0 && isspace((unsigned char) s1[-1]))
-            {
-                s1--;
-            }
-            if (s1 > s0 && idx < p->nstmts)
-            {
-                size_t len         = (size_t) (s1 - s0);
-                p->stmt_texts[idx] = malloc(len + 1);
-                if (p->stmt_texts[idx] != NULL)
-                {
-                    memcpy(p->stmt_texts[idx], s0, len);
-                    p->stmt_texts[idx][len] = '\0';
-                }
-                idx++;
-            }
-            if (*c == '#')
-            {
-                while (*c != '\0' && *c != '\n')
-                {
-                    c++;
-                }
-            }
-            if (*c == '\0')
-            {
-                break;
-            }
-            start = c + 1;
-        }
-    }
-}
-
-/* ============================================================================================== */
-/* Program Lifecycle, Plan Validation, and Execution                                              */
-/* ============================================================================================== */
 
 /**
  * mcalc_prog_new - Compile a multi-statement calculator program into an executable plan
@@ -564,30 +513,25 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         return NULL;
     }
 
-    int   nhist = 0;
-    char *rt    = mc_rewrite_history(text, &nhist, err, errsz);
-    if (rt == NULL)
-    {
-        mcalc_prog_free(p);
-        return NULL;
-    }
-    mc_tok_list_t *tl = calloc(1, sizeof(*tl));
-    if (tl == NULL || mc_lex(rt, tl) != 0)
+    int            nhist = 0;
+    mc_tok_list_t *tl    = calloc(1, sizeof(*tl));
+    if (tl == NULL || mc_lex(text, tl) != 0)
     {
         if (tl != NULL && err != NULL && errsz > 0)
         {
             snprintf(err, errsz, "%s", tl->errmsg[0] != '\0' ? tl->errmsg : "syntax error");
         }
+        mc_tok_list_free(tl);
         free(tl);
-        free(rt);
         mcalc_prog_free(p);
         return NULL;
     }
     p->ast_head = mc_parse_prog(tl, err, errsz);
+    mc_tok_list_free(tl);
     free(tl);
-    if (p->ast_head == NULL && err != NULL && err[0] != '\0')
+    if ((p->ast_head == NULL && err != NULL && err[0] != '\0') ||
+        mc_hist_rewrite(&p->ast_head, vars != NULL, &nhist, err, errsz) != 0)
     {
-        free(rt);
         mcalc_prog_free(p);
         return NULL;
     }
@@ -601,7 +545,6 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         {
             snprintf(err, errsz, "more than 128 statements");
         }
-        free(rt);
         mcalc_prog_free(p);
         return NULL;
     }
@@ -610,7 +553,6 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         p->stmt_to_step = malloc((size_t) p->nstmts * sizeof(int));
         if (p->stmt_to_step == NULL)
         {
-            free(rt);
             mcalc_prog_free(p);
             return NULL;
         }
@@ -618,26 +560,34 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         {
             p->stmt_to_step[i] = -1;
         }
-        split_stmt_texts(p, rt);
-        int idx = 0;
+        p->stmt_texts = calloc((size_t) p->nstmts, sizeof(char *));
+        int idx       = 0;
         for (mc_stmt_t *s = p->ast_head; s != NULL; s = s->next, idx++)
         {
-            s->is_hist_stmt = (idx >= p->nstmts - nhist);
-            s->needs_image  = -1;
-            if (s->kind == MC_STMT_DEF && (p->stmt_texts == NULL || p->stmt_texts[idx] == NULL ||
-                                           mcalc_udef_try_parse(p->stmt_texts[idx]) <= 0))
+            if (p->stmt_texts != NULL)
+            {
+                p->stmt_texts[idx] = mc_stmt_text(s, text);
+            }
+            s->needs_image = -1;
+            if (s->kind == MC_STMT_DIRECTIVE)
             {
                 if (err != NULL && errsz > 0)
                 {
-                    snprintf(err, errsz, "invalid def syntax");
+                    snprintf(err, errsz, "'%s' works only in @calc",
+                             (p->stmt_texts != NULL && p->stmt_texts[idx] != NULL)
+                                 ? p->stmt_texts[idx]
+                                 : "loadlib");
                 }
-                free(rt);
+                mcalc_prog_free(p);
+                return NULL;
+            }
+            if (s->kind == MC_STMT_DEF && mc_udef_add_stmt(s, err, errsz) < 0)
+            {
                 mcalc_prog_free(p);
                 return NULL;
             }
         }
     }
-    free(rt);
     if (scan_assigned_stmts(p, p->ast_head, err, errsz) != 0)
     {
         mcalc_prog_free(p);
@@ -839,6 +789,13 @@ void mcalc_prog_free(mcalc_prog *p)
         }
         free(p->stmt_texts);
     }
+    for (int i = 0; p->var_ids != NULL && i < p->nvars; i++)
+    {
+        if (p->var_ids[i] >= 0)
+        {
+            bound_add(p->var_ids[i], -1);
+        }
+    }
     free(p->vars);
     free(p->var_ids);
     free(p->assigned);
@@ -893,6 +850,12 @@ static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
         if (g_prog_skip && !st->is_hist_step)
         {
             continue;
+        }
+        if (mcalc_cancelled)
+        {
+            snprintf(err, errsz, "interrupted");
+            rc = -1;
+            break;
         }
         if (st->kind == MC_STEP_SCALAR)
         {
@@ -1049,7 +1012,7 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     mc_post_flush(p->processinfo);
     if (rc == 0)
     {
-        mc_prog_store_vars(p);
+        rc = mc_prog_store_vars(p, err, errsz);
     }
     return rc;
 }

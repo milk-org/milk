@@ -117,7 +117,8 @@ def test_E8_calc_bad_declarations_and_long_values(tmp_path):
 def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
     """fpsinit, then run in another process (it finds the declared parameters in the FPS): each frame
     of .unit.trigger runs the statements; @set of a parameter and of .unit.expr apply from the next frame;
-    an error stops the loop with the reason in .unit.error."""
+    a .unit.expr that does not compile leaves the previous statements running; an error while running
+    stops the loop with the reason in .unit.error."""
     res = milk_bash(
         HELPERS
         + 'milk-fpsexec-milk-calc -n u2 -t cam -p "gain:float=2" -e "out2 = cam * gain" fpsinit >/dev/null\n'
@@ -126,20 +127,22 @@ def test_E8_calc_loop_follows_frames_and_live_changes(tmp_path):
         'frame 5; echo "a=$(@get s.out2.mean)"\n'
         '@set f.u2.gain=3; frame 5; echo "b=$(@get s.out2.mean)"\n'
         '@set f.u2.unit.expr="out2 = cam + gain"; frame 5; echo "c=$(@get s.out2.mean)"\n'
-        '@set f.u2.unit.expr="out2 = cam + nosuch(cam)"; frame 6\n'
+        '@set f.u2.unit.expr="out2 = cam + nosuch(cam)"; frame 6; echo "d=$(@get s.out2.mean)"\n'
+        '@set f.u2.unit.expr="out2 = cam / (gain - 3)"; frame 7\n'
         "for _ in $(seq 40); do kill -0 $pid 2>/dev/null || break; sleep 0.05; done\n"
         'echo "exited=$(kill -0 $pid 2>/dev/null && echo no || echo yes)"; stop $pid\n'
-        'echo "d=$(@get s.out2.mean)"; echo "error=$(@get f.u2.unit.error)"',
+        'echo "e=$(@get s.out2.mean)"; echo "error=$(@get f.u2.unit.error)"',
         tmp_path,
     )
-    got = [value(res.stdout, k) for k in ("a", "b", "c", "exited", "d", "error")]
+    got = [value(res.stdout, k) for k in ("a", "b", "c", "d", "exited", "e", "error")]
     assert got == [
         "10",
         "15",
         "8",
+        "9",
         "yes",
-        "8",
-        "unknown function 'nosuch' in 'out2 = cam + nosuch(cam)'",
+        "9",
+        "Division by zero in 'out2 = cam / (gain - 3)'",
     ], (
         res.stdout + res.stderr + (tmp_path / "run.log").read_text()
     )
@@ -290,11 +293,9 @@ def test_E8_calc_values_set_declared_parameters(tmp_path):
     assert (
         " 0 gain FLOAT64 3.5" in res.stdout and " 2 n INT64 -4" in res.stdout
     ), res.stdout
-    assert (
-        "too many values, from '4' on: gain off n take positional values" in res.stdout
-    )
+    assert "unexpected argument '4'" in res.stdout  # the rules of module commands
     assert "invalid value 'abc' for parameter 'gain': expected a number" in res.stdout
-    assert "no parameter 'nosuch'" in res.stdout
+    assert "unknown parameter .nosuch" in res.stdout
     assert "run fpsinit to declare other parameters" in res.stdout
 
 
@@ -1096,7 +1097,8 @@ milk-fps-runstop e5u >/dev/null 2>&1
 def test_E4_another_shells_command_waits_for_a_long_one(tmp_path, sessions):
     """D38 (user decision 2026-10-26): what another process group sends during a long command waits
     for it, then runs on the state it left, instead of in a fork whose changes are lost; --nowait
-    fails at once with "busy"; Ctrl-C gives up a waiting command without running it."""
+    fails at once with "busy"; Ctrl-C gives up a waiting command without running it, and the
+    shell's next command runs (on a new connection)."""
     n = sessions()
     res = milk_bash(
         rf"""
@@ -1106,15 +1108,15 @@ other() {{ setsid env -u MILKCLI_SOCK -u _MILK_SERVER_NAME bash --norc -c "sourc
 other 'mem.imsetsemwait e4s 0 >/dev/null; echo "a=$(date +%s.%N)"' > a.out 2>&1 &
 sleep 0.5
 other '@calc "x = 5" >/dev/null; echo "b=$(date +%s.%N)"; echo "x=$(@calc x)"' > b.out 2>&1 &
-other 'echo $$ > d.pid; @calc "y = 2" >/dev/null 2>&1; echo "d=$?"' > d.out 2>&1 &
+other 'echo $$ > d.pid; @calc "y = 2" >/dev/null 2>&1; echo "d=$?"; until [ -e go ]; do sleep 0.05; done; @calc "z = 3" >/dev/null; echo "d2=$?"' > d.out 2>&1 &
 for _ in $(seq 200); do [ -s d.pid ] && break; sleep 0.05; done
 sleep 0.5  # its request waits now (its client handles Ctrl-C; bash ignored it in the background)
 kill -INT "$(cat d.pid)"
 other 'milkcall --nowait mem.listim >/dev/null 2>c.err; echo "c=$?"' > c.out 2>&1
 sleep 0.3
-echo "posted=$(date +%s.%N)"; mem.imsetsempost e4s 0 >/dev/null
+echo "posted=$(date +%s.%N)"; mem.imsetsempost e4s 0 >/dev/null; touch go
 wait
-other '@calc y >/dev/null 2>&1; echo "y=$?"' > y.out 2>&1
+other '@calc y >/dev/null 2>&1; echo "y=$?"; echo "z=$(@calc z)"' > y.out 2>&1
 cat a.out b.out c.out d.out y.out
 """,
         tmp_path,
@@ -1130,6 +1132,7 @@ cat a.out b.out c.out d.out y.out
     assert "milk: busy: mem.imsetsemwait e4s 0 for" in err, out
     assert value(res.stdout, "d") == "130", out
     assert value(res.stdout, "y") not in (None, "0"), out  # given up: never ran
+    assert value(res.stdout, "d2") == "0" and value(res.stdout, "z") == "3", out
 
 
 def _pty_cli(env: dict[str, str], cwd: Path) -> tuple[int, int]:

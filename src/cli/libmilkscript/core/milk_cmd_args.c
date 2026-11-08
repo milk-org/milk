@@ -221,31 +221,6 @@ milk_call_t *milk_args_call(int cmdi)
 }
 
 /**
- * milk_args_named - Check whether a token has `.tag=value` named-argument syntax
- * @s: Candidate token string
- *
- * Tests if @s begins with `.` followed by a valid parameter tag (`[A-Za-z_][A-Za-z0-9_.]*`)
- * and an `=` assignment delimiter.
- *
- * Return: 1 if @s is a `.tag=value` token, 0 otherwise
- */
-int milk_args_named(const char *s)
-{
-    if (s == NULL || s[0] != '.' || !(isalpha((unsigned char) s[1]) || s[1] == '_'))
-    {
-        return 0;
-    }
-    for (s += 2; *s != '='; s++)
-    {
-        if (!isalnum((unsigned char) *s) && *s != '_' && *s != '.')
-        {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-/**
  * milk_args_tag - Strip a leading dot from an FPS parameter tag if present
  * @fpstag: Parameter tag string from `CLICMDARGDEF` or `CLICMDARGDATA`
  *

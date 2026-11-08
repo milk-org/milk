@@ -68,11 +68,13 @@ milk-fpsexec-milk-calc -n wfsprep runstart   # in the background
 
 ## Tier 1: Custom Pixel, Stencil, and Whole-Image Kernels (`milk_calc_ext.h`)
 
-**Use when:** you want to embed custom C math inside `.calc` expressions without giving up loop
-fusion or declarative `.calc` composition:
+**Use when:** you want to embed custom C math inside `.calc` expressions and keep declarative
+`.calc` composition. A Tier 1 kernel runs as a step of its own, before the fused pass that uses its
+result (`--explain` shows it as a pre-stage): a chain such as `nlcorr(A) * 2 + B` costs about twice
+the same math written inline.
 
-- **Tier 1a (`MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2`)**: 1-input or 2-input 1D SIMD block kernels
-  fused directly into the L1 cache tile loop (`FUSE_BLK = 1024`).
+- **Tier 1a (`MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2`)**: 1-input or 2-input 1D SIMD block kernels,
+  called on blocks of the image in parallel.
 - **Tier 1b (`MILK_CALC_REG_STENCIL`)**: 2D $(2R+1)\times(2R+1)$ neighborhood kernels
   ($R \in \{1, 2, 3\}$). The engine pre-clamps row and column boundaries into thread-local strip
   buffers and passes `const float *const *rows` (`2*R + 1` row pointers, each of length
@@ -198,10 +200,8 @@ milk-fpsexec-milk-calc -n wfsprep -t wfscam -l wfskernels.c \
 milk-fpsexec-milk-calc -n wfsprep runstart
 ```
 
-On first load, `milk` compiles `wfskernels.c` into
-`${TMPDIR:-/tmp}/milk-calc-cache-<uid>/ext_<fnv1a64>.so` with
-`-O3 -march=native -ffast-math -fopenmp-simd -fPIC -shared` and reuses the cached `.so` on subsequent runs
-until the source file content changes.
+On first load, `milk` compiles `wfskernels.c` and reuses the cached `.so` until the file changes
+([compiler, flags and cache](calculator.md#auto-compilation-and-caching-l-lib)).
 
 ---
 
@@ -227,6 +227,10 @@ and applies three rules:
    - Calling `despike3x3:fine(a, th = 3.0 * rms)` binds `th` to the `.calc` expression `3.0 * rms`
      and omits `.fine.th` from the FPS so external users cannot accidentally fight the internal
      formula.
+   - Arguments bind as a module command's do: `name = value` by name, the others fill the image
+     inputs (an operator's input ports), then the parameters not named, in declaration order.
+     `despike3x3:fine(a, 3.0 * rms)` binds `th` too. Too many arguments, or a name given twice,
+     is an error.
 
 ---
 
@@ -254,11 +258,11 @@ and applies three rules:
       "Pixel threshold before summing (run-writable)")
 
 #define SH_PORTS(X)                                                                      \
-    X(IN,  frame, MILK_PORT_IMAGE,  MILK_PORT_TRIGGER,                "WFS image")       \
-    X(IN,  flat,  MILK_PORT_IMAGE,  MILK_PORT_LATEST | MILK_PORT_OPT, "Optional flat")   \
-    X(OUT, sx,    MILK_PORT_IMAGE,  MILK_POST_EVERY,                  "X slopes")        \
-    X(OUT, sy,    MILK_PORT_IMAGE,  MILK_POST_EVERY,                  "Y slopes")        \
-    X(OUT, flux,  MILK_PORT_SCALAR, 0,                                "Total WFS flux")
+    X(IN,  frame, MILK_PORT_IMAGE,  0,             "WFS image")      \
+    X(IN,  flat,  MILK_PORT_IMAGE,  MILK_PORT_OPT, "Optional flat")  \
+    X(OUT, sx,    MILK_PORT_IMAGE,  0,             "X slopes")       \
+    X(OUT, sy,    MILK_PORT_IMAGE,  0,             "Y slopes")       \
+    X(OUT, flux,  MILK_PORT_SCALAR, 0,             "Total WFS flux")
 
 MILK_CALC_OP_DECLARE(shs, SH_PARAMS, SH_PORTS);
 
@@ -445,7 +449,9 @@ milk-cc custom_scale.c
 ```
 
 `milk-cc` also compiles Tier 1 / Tier 2 `.c` files (those using `MILK_CALC_EXT_EXPORT`) into
-shared libraries (`<stem>.so`) when you prefer pre-compiling `.so` plugins ahead of time:
+shared libraries (`<stem>.so`) when you prefer pre-compiling `.so` plugins ahead of time. Both modes
+use the calculator's compiler and flags
+([`MILK_CALC_CC`, `MILK_CC_FLAGS`](calculator.md#fusion-cost-model)); `-v` prints the command:
 
 ```bash
 milk-cc wfskernels.c -o wfskernels.so
@@ -462,7 +468,7 @@ milk-fpsexec-milk-calc -l ./wfskernels.so --list
 
 | Macro / Function | Purpose |
 | :--- | :--- |
-| `MILK_CALC_PARAMS(name, PARAM_MACRO)` | Define `struct <name>_par` (and `struct <name>`) plus FPS metadata from `X(".kw", field, fptype, defval, flags, desc)` |
+| `MILK_CALC_PARAMS(name, PARAM_MACRO)` | Define `struct <name>_par` plus FPS metadata from `X(".kw", field, fptype, defval, flags, desc)` |
 | `MILK_CALC_NOPARAMS` | Sentinel for stateless kernels with no parameters |
 | `MILK_CALC_REG_BLK(name, fn, par, cost)` | Register a 1-input 1D SIMD block kernel: `void fn(float *restrict out, const float *restrict in, const struct par_par *P, int len)` |
 | `MILK_CALC_REG_BLK2(name, fn, par, cost)` | Register a 2-input 1D SIMD block kernel: `void fn(float *restrict out, const float *restrict in0, const float *restrict in1, const struct par_par *P, int len)` |

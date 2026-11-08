@@ -147,63 +147,18 @@ static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *de
     return 0;
 }
 
-/**
- * declare - Parse whitespace-separated parameter specifications and bind them
- * @text: Space-separated list of `"name:type[=default][:help]"` declarations
- *
- * Parses each parameter specification in @text, registers it via bind(), and
- * initializes its default value in `pval[]`.
- *
- * Return: 0 on success, -1 on syntax error or binding failure.
- */
+/** bind_declared() - milk_unit_declare()'s bind: a writable input, valued in pval[]. */
+static void *bind_declared(const char *name, uint64_t type, const char *help)
+{
+    return (bind(name, type, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, help) == 0)
+               ? (void *) &pval[nbind - SCRIPT_NFIXED - 1]
+               : NULL;
+}
+
+/** declare() - bind the parameters of @text ("name:type[=default][:help]", blank-separated). */
 static int declare(const char *text)
 {
-    char *buf = strdup(text);
-    char *save;
-    int   rc = (buf == NULL) ? -1 : 0;
-
-    for (char *t = strtok_r(buf, " \t\n", &save); t != NULL && rc == 0;
-         t       = strtok_r(NULL, " \t\n", &save))
-    {
-        milk_argspec_t d;
-        CLICMDARGDATA  ad;
-        char           spec[FUNCTION_PARAMETER_STRMAXLEN * 4];
-        snprintf(spec, sizeof(spec), "%s", t);
-        memset(&ad, 0, sizeof(ad));
-        if (milk_argspec_parse(t, &d) != 0 || (d.def != NULL && d.type != FPTYPE_STRING &&
-                                               milk_argval_parse(d.type, d.def, &ad) != 0))
-        {
-            fprintf(
-                stderr,
-                "milk.script: bad parameter '%s': name:type[=default][:help], type int uint float "
-                "bool str stream fits\n",
-                spec);
-            rc = -1;
-        }
-        else if ((rc = bind(d.name, d.type, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, d.help)) == 0)
-        {
-            int k = nbind - SCRIPT_NFIXED - 1;
-            switch (d.type)
-            {
-            case FPTYPE_INT64:
-                pval[k].i = ad.val.i64;
-                break;
-            case FPTYPE_UINT64:
-                pval[k].u = ad.val.ui64;
-                break;
-            case FPTYPE_FLOAT64:
-                pval[k].f = ad.val.f64;
-                break;
-            case FPTYPE_ONOFF:
-                pval[k].b = (ad.val.i64 != 0);
-                break;
-            default:
-                snprintf(pval[k].s, sizeof(pval[k].s), "%s", (d.def != NULL) ? d.def : "");
-            }
-        }
-    }
-    free(buf);
-    return rc;
+    return milk_unit_declare("milk.script", text, bind_declared);
 }
 
 /**

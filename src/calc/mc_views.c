@@ -567,10 +567,13 @@ int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_
  * - If pass @b reads a slot written by pass @a, that access is purely pointwise
  *   and un-sliced (so `_v<out_idx>` can be forwarded in-register at the current
  *   pixel without requiring neighboring pixels of @a's output to be in memory).
+ * - No hoisted scalar of pass @b (e.g. `imean(y)`) reads a slot written by pass
+ *   @a: scalars are evaluated before the kernel runs, so they would see the
+ *   previous value of the slot.
  *
  * Return: 1 if @a and @b can be safely fused, 0 otherwise
  */
-int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b)
+int mc_can_merge_passes(const mcalc_prog_t *prog, const mc_pass_t *a, const mc_pass_t *b)
 {
     int bad =
         (a->is_comp || b->is_comp || a->no_dst_bcast || b->no_dst_bcast ||
@@ -595,6 +598,11 @@ int mc_can_merge_passes(const mc_pass_t *a, const mc_pass_t *b)
     for (int i = 0; i < b->nops; i++)
     {
         bad |= (!b->ops[i].is_out && b->ops[i].is_expr_im);
+        for (int j = 0; b->ops[i].is_scalar && j < a->nouts; j++)
+        {
+            bad |= mc_expr_mentions_self(b->ops[i].scalar_expr,
+                                         prog->slots[a->outs[j].slot_idx].bare, NULL);
+        }
         for (int j = 0; !b->ops[i].is_out && j < a->nouts; j++)
         {
             bad |= (b->ops[i].slot_idx == a->outs[j].slot_idx &&
@@ -625,10 +633,9 @@ int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3])
              (e->kind == MC_EXPR_TERNARY && (mc_has_bcast_stencil(e->u.ternary.cond, dsz) ||
                                              mc_has_bcast_stencil(e->u.ternary.t_expr, dsz) ||
                                              mc_has_bcast_stencil(e->u.ternary.f_expr, dsz))) ||
-             (e->kind == MC_EXPR_CALL &&
-              ((e->u.call.fn != NULL && e->u.call.fn->kind == MC_FN_SHIFT && e->u.call.nargs >= 1 &&
-                memcmp(e->u.call.args[0]->res_size, dsz, 3 * sizeof(uint32_t)) != 0) ||
-               mc_has_bcast_stencil(e->u.call.udef_body, dsz))));
+             (e->kind == MC_EXPR_CALL && e->u.call.fn != NULL &&
+              e->u.call.fn->kind == MC_FN_SHIFT && e->u.call.nargs >= 1 &&
+              memcmp(e->u.call.args[0]->res_size, dsz, 3 * sizeof(uint32_t)) != 0));
     for (int i = 0; !r && e != NULL && e->kind == MC_EXPR_CALL && i < e->u.call.nargs; i++)
     {
         r |= mc_has_bcast_stencil(e->u.call.args[i], dsz);

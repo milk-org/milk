@@ -20,11 +20,6 @@
  *   memory parameter array with the values parsed
  *   from the command line.
  *
- * - **CMDargs_to_FPSparams_create**: Create new FPS
- *   parameter entries from the command's CLICMDARGDEF
- *   array, initializing them with description, type,
- *   and default values.
- *
  * - **get_farg_ptr**: Retrieve a void pointer to the
  *   typed value inside the command's argdata union,
  *   used by the generic function-call dispatch.
@@ -160,159 +155,6 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FPS *fps)
 }
 
 
-/** @brief Build FPS from command args
- */
-int CMDargs_to_FPSparams_create(FPS *fps)
-{
-    DEBUG_TRACE_FSTART();
-
-    int  NBarg_processed = 0;
-    long fpi             = 0;
-
-
-    for (int argi = 0; argi < data.cmd[data.cmdindex].nbparam; argi++)
-    {
-        // if argument is part of FPS
-        long tmpvall = 0;
-
-        switch (data.cmd[data.cmdindex].argdata[argi].type)
-        {
-            // float point types
-
-        case FPTYPE_FLOAT32:
-        {
-            float tmpf = data.cmd[data.cmdindex].argdata[argi].val.f32;
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr,
-                                         FPTYPE_FLOAT32,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag, &tmpf, NULL);
-            NBarg_processed++;
-        }
-        break;
-
-        case FPTYPE_FLOAT64:
-        {
-            double tmplf = data.cmd[data.cmdindex].argdata[argi].val.f64;
-            function_parameter_add_entry(
-                fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_FLOAT64,
-                data.cmd[data.cmdindex].argdata[argi].fpflag, &tmplf, NULL);
-            NBarg_processed++;
-        }
-        break;
-
-            // integer typtes
-
-        case FPTYPE_ONOFF: // default to INT64
-        {
-            tmpvall = data.cmd[data.cmdindex].argdata[argi].val.ui64;
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_ONOFF,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag, &tmpvall,
-                                         NULL);
-            NBarg_processed++;
-        }
-        break;
-
-        case FPTYPE_INT32:
-        {
-            int32_t tmpi32 = data.cmd[data.cmdindex].argdata[argi].val.i32;
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_INT32,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag, &tmpi32,
-                                         NULL);
-            NBarg_processed++;
-        }
-        break;
-
-        case FPTYPE_UINT32:
-        {
-            uint32_t tmpui32 = data.cmd[data.cmdindex].argdata[argi].val.ui32;
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_UINT32,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag, &tmpui32,
-                                         NULL);
-            NBarg_processed++;
-        }
-        break;
-
-        case FPTYPE_INT64:
-        {
-            int64_t tmpi64 = data.cmd[data.cmdindex].argdata[argi].val.i64;
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_INT64,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag, &tmpi64,
-                                         NULL);
-            NBarg_processed++;
-        }
-        break;
-
-        case FPTYPE_UINT64:
-        {
-            uint64_t tmpui64 = data.cmd[data.cmdindex].argdata[argi].val.ui64;
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_UINT64,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag, &tmpui64,
-                                         NULL);
-            NBarg_processed++;
-        }
-        break;
-
-        case FPTYPE_STRING_NOT_STREAM:
-        case FPTYPE_STRING:
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr, FPTYPE_STRING,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag,
-                                         data.cmd[data.cmdindex].argdata[argi].val.s, NULL);
-            NBarg_processed++;
-            break;
-
-        case FPTYPE_STREAMNAME:
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr,
-                                         FPTYPE_STREAMNAME,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag,
-                                         data.cmd[data.cmdindex].argdata[argi].val.s, NULL);
-            NBarg_processed++;
-            break;
-
-        case FPTYPE_FILENAME:
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr,
-                                         FPTYPE_FILENAME,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag,
-                                         data.cmd[data.cmdindex].argdata[argi].val.s, NULL);
-            NBarg_processed++;
-            break;
-
-        case FPTYPE_FITSFILENAME:
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr,
-                                         FPTYPE_FITSFILENAME,
-                                         data.cmd[data.cmdindex].argdata[argi].fpflag,
-                                         data.cmd[data.cmdindex].argdata[argi].val.s, NULL);
-            NBarg_processed++;
-            break;
-
-        case FPTYPE_FPSNAME:
-            //printf("ADDING FPS ENTRY %s at index %d\n", data.cmd[data.cmdindex].argdata[argi].fpstag, argi);
-            function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                         data.cmd[data.cmdindex].argdata[argi].descr,
-                                         FPTYPE_FPSNAME,
-                                         FPFLAG_DEFAULT_INPUT | FPFLAG_FPS_RUN_REQUIRED,
-                                         data.cmd[data.cmdindex].argdata[argi].val.s, &fpi);
-            //printf("fpi = %ld\n", fpi);
-            fps->parray[fpi].info.fps.FPSNBparamMAX = 0;
-            NBarg_processed++;
-            break;
-        }
-    }
-
-    DEBUG_TRACE_FEXIT();
-    return NBarg_processed;
-}
-
-
 /** @brief get FPS pointer to function argument/parameter
  */
 void *get_farg_ptr(char *tag, long *fpsi)
@@ -359,7 +201,6 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
     int INIT_MODE __attribute__((unused)) = 0;
     dcfpscode                             = 0;
     char FPS_name[STRINGMAXLEN_FPS_NAME];
-    int  FPS_name_set = 0;
 
     // Initialize FPS_name to default
     if (fpsname_default != NULL)
@@ -372,70 +213,8 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         FPS_name[0] = '\0';
     }
 
-    // Check if the command itself has colon-separated syntax: cmdkey:fpsname:action
-    char *cmd_str     = data.cmdargtoken[0].val.string;
-    char *first_colon = strchr(cmd_str, ':');
-    if (first_colon != NULL)
-    {
-        char *second_colon = strchr(first_colon + 1, ':');
-
-        // Extract FPS name if present between first and second colon, or after first colon
-        if (first_colon[1] != '\0' && first_colon[1] != ':')
-        {
-            size_t fps_len = second_colon ? (size_t) (second_colon - (first_colon + 1))
-                                          : strlen(first_colon + 1);
-            if (fps_len > 0 && fps_len < STRINGMAXLEN_FPS_NAME)
-            {
-                strncpy(FPS_name, first_colon + 1, fps_len);
-                FPS_name[fps_len] = '\0';
-                FPS_name_set      = 1;
-            }
-        }
-
-
-        // Extract action if present after second colon
-        if (second_colon != NULL && second_colon[1] != '\0')
-        {
-            char *action = second_colon + 1;
-            if (strcmp(action, "init") == 0)
-            {
-                dcfpscode = FPSCMDCODE_FPSINIT;
-                data.cmd[data.cmdindex].cmdsettings.flags &= ~CLICMDFLAG_PROCINFO;
-            }
-            else if (strcmp(action, "initp") == 0)
-            {
-                dcfpscode = FPSCMDCODE_FPSINIT;
-                data.cmd[data.cmdindex].cmdsettings.flags |= CLICMDFLAG_PROCINFO;
-            }
-            else if (strcmp(action, "?") == 0)
-            {
-                // Ignore the command so it doesn't run, but allow FPS args check
-                dcfpscode = FPSCMDCODE_IGNORE;
-                // Print the FPS parameters by connecting to it
-                FPS tmp_fps;
-                if (fps_connect(FPS_name, &tmp_fps, FPSCONNECT_SIMPLE) == -1)
-                {
-                    printf("FPS %s does not exist.\n", FPS_name);
-                }
-                else
-                {
-                    function_parameter_print_info(&tmp_fps, 0, 0);
-                    fps_disconnect(&tmp_fps);
-                }
-            }
-        }
-    }
-
     strncpy(dcfpsname, FPS_name, STRINGMAXLEN_FPS_NAME - 1);
     dcfpsname[STRINGMAXLEN_FPS_NAME - 1] = '\0';
-
-    // Read FPS interface from args
-    if (dcfpscode == 0)
-    {
-        // set to 0 as default if we didn't extract an action above
-        dcfpscode = 0;
-    }
-
 
     int printinfo __attribute__((unused)) = 0;
     // if using FPS implementation, FPSCMDCODE will be set to != 0
@@ -606,31 +385,28 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         // ===============================
 
         // if main CLI process has been named with -n option, then use the process name to construct fpsname
-        if (FPS_name_set == 0)
+        if (data.processnameflag == 1)
         {
-            if (data.processnameflag == 1)
+            // Automatically set fps name to be process name up to first instance of character '.'
+            strncpy(FPS_name, data.processname0, STRINGMAXLEN_FPS_NAME - 1);
+            FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
+        }
+        else // otherwise, construct name as follows
+        {
+            // Adopt default name for fpsname
+            int slen = snprintf(FPS_name, STRINGMAXLEN_FPS_NAME, "%s", fpsname_default);
+            if (slen < 1)
             {
-                // Automatically set fps name to be process name up to first instance of character '.'
-                strncpy(FPS_name, data.processname0, STRINGMAXLEN_FPS_NAME - 1);
-                FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
             }
-            else // otherwise, construct name as follows
+            if (slen >= STRINGMAXLEN_FPS_NAME)
             {
-                // Adopt default name for fpsname
-                int slen = snprintf(FPS_name, STRINGMAXLEN_FPS_NAME, "%s", fpsname_default);
-                if (slen < 1)
-                {
-                    PRINT_ERROR("snprintf wrote <1 char");
-                    abort(); // can't handle this error any other way
-                }
-                if (slen >= STRINGMAXLEN_FPS_NAME)
-                {
-                    PRINT_ERROR("snprintf string truncation.\n"
-                                "Full string  : %s\n"
-                                "Truncated to : %s",
-                                fpsname_default, FPS_name);
-                    abort(); // can't handle this error any other way
-                }
+                PRINT_ERROR("snprintf string truncation.\n"
+                            "Full string  : %s\n"
+                            "Truncated to : %s",
+                            fpsname_default, FPS_name);
+                abort(); // can't handle this error any other way
             }
         }
     }

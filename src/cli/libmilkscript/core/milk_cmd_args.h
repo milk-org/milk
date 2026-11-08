@@ -26,7 +26,6 @@ enum
 {
     MILK_ARGSRC_DECL,    /* declared default */
     MILK_ARGSRC_SESSION, /* session default */
-    MILK_ARGSRC_FPS,     /* current value of the shared FPS the call runs on */
     MILK_ARGSRC_PRESET,  /* --load=NAME */
     MILK_ARGSRC_DOT,     /* `.`: the default, given explicitly */
     MILK_ARGSRC_ARG,     /* positional value */
@@ -58,8 +57,6 @@ int milk_args_end(void);
 /** milk_args_call() - the call of data.cmd[@cmdi] in progress, or NULL. */
 milk_call_t *milk_args_call(int cmdi);
 
-/** milk_args_named() - 1 if @s is a named argument `.tag=value`. */
-int milk_args_named(const char *s);
 
 /** milk_args_find() - index of the parameter of @cmdi named @tag (@len chars, no leading dot), or -1. */
 int milk_args_find(int cmdi, const char *tag, size_t len);

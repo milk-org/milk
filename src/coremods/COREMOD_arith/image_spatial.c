@@ -7,7 +7,7 @@
  * @brief Shared spatial, CSR segment-reduction, separable Gaussian, cumsum, and binning kernels.
  *
  * Role & Goal:
- *   Provides pure `IMAGE`-level spatial and pre-stage kernels shared by `libmilkscript/calc`
+ *   Provides pure `IMAGE`-level spatial and pre-stage kernels shared by the calculator (`src/calc`)
  *   and Core/Plugin modules (`image_filter`, `image_basic`, `COREMOD_arith`).
  */
 
@@ -640,9 +640,184 @@ void arith_gauss_pass_d(double       *io,
 }
 
 /**
+ * work_buffer - Return @need bytes of scratch from the caller's reusable buffer, or a local one
+ * @scratch_buf: Optional reusable scratch pointer (grown with `realloc`), or NULL
+ * @scratch_cap: Capacity in bytes of `*scratch_buf`
+ * @need:        Bytes needed
+ * @local:       Receives the buffer to free() when no reusable buffer was given (else NULL)
+ *
+ * Return: Scratch buffer, or NULL when out of memory.
+ */
+static void *work_buffer(void **scratch_buf, size_t *scratch_cap, size_t need, void **local)
+{
+    *local = NULL;
+    if (scratch_buf == NULL || scratch_cap == NULL)
+    {
+        *local = malloc(need);
+        return *local;
+    }
+    if (*scratch_cap < need)
+    {
+        void *na = realloc(*scratch_buf, need);
+        if (na == NULL)
+        {
+            return NULL;
+        }
+        *scratch_buf = na;
+        *scratch_cap = need;
+    }
+    return *scratch_buf;
+}
+
+/**
+ * plane_dims - Read the x, y, z sizes of @im (missing axes are 1)
+ * @im: Image
+ * @n:  Output sizes
+ *
+ * Return: Number of pixels.
+ */
+static uint64_t plane_dims(const IMAGE *im, int64_t n[3])
+{
+    for (int a = 0; a < 3; a++)
+    {
+        n[a] = (im->md[0].naxis > a && im->md[0].size[a] > 0) ? (int64_t) im->md[0].size[a] : 1;
+    }
+    return (uint64_t) (n[0] * n[1] * n[2]);
+}
+
+/**
+ * load_rows - Copy @nel pixels of @src into @io (float32, or float64 when @is_dbl), converting
+ * @src:    Source image
+ * @io:     Destination buffer
+ * @nel:    Number of pixels
+ * @is_dbl: Non-zero for float64
+ *
+ * Return: void
+ */
+static void load_rows(const IMAGE *src, void *io, uint64_t nel, int is_dbl)
+{
+    if (src->array.raw == io)
+    {
+        return;
+    }
+    for (uint64_t off = 0; off < nel; off += ARITH_ELEM_BLK)
+    {
+        int len = (int) ((nel - off < ARITH_ELEM_BLK) ? nel - off : ARITH_ELEM_BLK);
+        if (is_dbl)
+        {
+            arith_load_block_d_inline(src, off, len, (double *) io + off);
+        }
+        else
+        {
+            arith_load_block_f_inline(src, off, len, (float *) io + off);
+        }
+    }
+}
+
+/**
+ * store_rows - Write @nel pixels of @io (float32, or float64 when @is_dbl) into @dst, converting
+ * @dst:    Destination image
+ * @io:     Source buffer
+ * @nel:    Number of pixels
+ * @is_dbl: Non-zero for float64
+ *
+ * Return: void
+ */
+static void store_rows(IMAGE *dst, const void *io, uint64_t nel, int is_dbl)
+{
+    if (dst->array.raw == io)
+    {
+        return;
+    }
+    for (uint64_t off = 0; off < nel; off += ARITH_ELEM_BLK)
+    {
+        int len = (int) ((nel - off < ARITH_ELEM_BLK) ? nel - off : ARITH_ELEM_BLK);
+        if (is_dbl)
+        {
+            arith_store_block_d_inline(dst, off, len, (const double *) io + off, 0, 0.0);
+        }
+        else
+        {
+            arith_store_block_f_inline(dst, off, len, (const float *) io + off);
+        }
+    }
+}
+
+/**
+ * arith_image_sepfilt2d_im - Separable symmetric 2D filter from @src into @dst, per plane
+ * @src:         Source image (any real type; may equal @dst)
+ * @dst:         Destination image (any real type, same geometry as @src)
+ * @Rx:          X tap radius (`<= ARITH_GAUSS_MAX_R`)
+ * @wx:          X half-kernel weights `wx[0 .. Rx]`
+ * @Ry:          Y tap radius (`<= ARITH_GAUSS_MAX_R`)
+ * @wy:          Y half-kernel weights `wy[0 .. Ry]`
+ * @scratch_buf: Optional reusable scratch pointer (or NULL to allocate/free internally)
+ * @scratch_cap: Capacity in bytes of `*scratch_buf`
+ *
+ * Clamped edges. Computes in float64 when @dst is float64, else in float32; an integer @dst gets
+ * the result cast to its type. Shared by gauss and box filters.
+ *
+ * Return: 0 on success, -1 on error.
+ */
+int arith_image_sepfilt2d_im(const IMAGE  *src,
+                             IMAGE        *dst,
+                             int           Rx,
+                             const double *wx,
+                             int           Ry,
+                             const double *wy,
+                             void        **scratch_buf,
+                             size_t       *scratch_cap)
+{
+    if (src == NULL || dst == NULL || src->md == NULL || dst->md == NULL || Rx < 0 || Ry < 0 ||
+        Rx > ARITH_GAUSS_MAX_R || Ry > ARITH_GAUSS_MAX_R ||
+        !arith_is_real_dt(src->md[0].datatype) || !arith_is_real_dt(dst->md[0].datatype))
+    {
+        return -1;
+    }
+    int64_t        n[3];
+    const uint64_t nel    = plane_dims(dst, n);
+    const uint8_t  ddt    = dst->md[0].datatype;
+    const int      is_dbl = (ddt == _DATATYPE_DOUBLE);
+    const int      in_dst = is_dbl || ddt == _DATATYPE_FLOAT; /* filter in place in @dst */
+    const size_t   el     = is_dbl ? sizeof(double) : sizeof(float);
+
+    int nth = milk_omp_team_size(nel * (uint64_t) (1 + (Rx + Ry) / 4), ARITH_SPATIAL_OMP_MIN);
+    if ((int64_t) nth > n[1] * n[2])
+    {
+        nth = (int) (n[1] * n[2]);
+    }
+    int64_t pad_stride = n[0] + 2 * (int64_t) Rx + 16;
+    size_t  tmp_el     = (size_t) nel + (size_t) nth * (size_t) pad_stride;
+    void   *local      = NULL;
+    char *work = work_buffer(scratch_buf, scratch_cap, (tmp_el + (in_dst ? 0 : nel)) * el, &local);
+    if (work == NULL)
+    {
+        return -1;
+    }
+    void *io = in_dst ? dst->array.raw : work + tmp_el * el;
+
+    load_rows(src, io, nel, is_dbl);
+    if (Rx > 0 || Ry > 0)
+    {
+        if (is_dbl)
+        {
+            arith_gauss_pass_d((double *) io, (double *) work, n[0], n[1], n[2], Rx, Ry, wx, wy,
+                               nth);
+        }
+        else
+        {
+            arith_gauss_pass_f((float *) io, (float *) work, n[0], n[1], n[2], Rx, Ry, wx, wy, nth);
+        }
+    }
+    store_rows(dst, io, nel, is_dbl);
+    free(local);
+    return 0;
+}
+
+/**
  * arith_image_gauss2d_im - Separable 2D Gaussian convolution from @src into @dst
- * @src:         Source image (may equal @dst for in-place filtering on float32/float64)
- * @dst:         Destination image (float32 or float64, same geometry as @src)
+ * @src:         Source image (any real type; may equal @dst)
+ * @dst:         Destination image (any real type, same geometry as @src)
  * @sx:          X standard deviation in pixels
  * @sy:          Y standard deviation in pixels
  * @max_R:       Optional explicit radius cap (`<= 0` uses `min(ceil(3 * sigma), 32)`)
@@ -659,103 +834,343 @@ int arith_image_gauss2d_im(const IMAGE *src,
                            void       **scratch_buf,
                            size_t      *scratch_cap)
 {
-    if (src == NULL || dst == NULL || src->md == NULL || dst->md == NULL)
-    {
-        return -1;
-    }
-    const int64_t nx = (int64_t) dst->md[0].size[0];
-    const int64_t ny =
-        (dst->md[0].naxis > 1 && dst->md[0].size[1] > 0) ? (int64_t) dst->md[0].size[1] : 1;
-    const int64_t nz =
-        (dst->md[0].naxis > 2 && dst->md[0].size[2] > 0) ? (int64_t) dst->md[0].size[2] : 1;
-    const uint64_t nel    = (uint64_t) (nx * ny * nz);
-    const uint8_t  sdt    = src->md[0].datatype;
-    const uint8_t  ddt    = dst->md[0].datatype;
-    const int      is_flt = (ddt == _DATATYPE_FLOAT);
-    if (!is_flt && ddt != _DATATYPE_DOUBLE)
-    {
-        return -1;
-    }
-
-    if (src != dst)
-    {
-        if (sdt == ddt)
-        {
-            memcpy(dst->array.raw, src->array.raw, nel * (is_flt ? sizeof(float) : sizeof(double)));
-        }
-        else if (is_flt)
-        {
-            for (uint64_t off = 0; off < nel; off += ARITH_ELEM_BLK)
-            {
-                uint64_t len = (nel - off < ARITH_ELEM_BLK) ? nel - off : ARITH_ELEM_BLK;
-                arith_load_block_f_inline(src, off, len, dst->array.F + off);
-            }
-        }
-        else
-        {
-            for (uint64_t off = 0; off < nel; off += ARITH_ELEM_BLK)
-            {
-                uint64_t len = (nel - off < ARITH_ELEM_BLK) ? nel - off : ARITH_ELEM_BLK;
-                arith_load_block_d_inline(src, off, len, dst->array.D + off);
-            }
-        }
-    }
-
     int    Rx = 0, Ry = 0;
     double wx[ARITH_GAUSS_MAX_R + 1];
     double wy[ARITH_GAUSS_MAX_R + 1];
     arith_build_gauss_weights(sx, max_R, &Rx, wx);
     arith_build_gauss_weights(sy, max_R, &Ry, wy);
-    if (Rx == 0 && Ry == 0)
+    return arith_image_sepfilt2d_im(src, dst, Rx, wx, Ry, wy, scratch_buf, scratch_cap);
+}
+
+/**
+ * arith_image_boxmean2d_im - (2r+1) x (2r+1) box mean from @src into @dst, per plane
+ * @src:         Source image (any real type; may equal @dst)
+ * @dst:         Destination image (any real type, same geometry as @src)
+ * @r:           Half-width (`0 .. ARITH_GAUSS_MAX_R`)
+ * @scratch_buf: Optional reusable scratch pointer (or NULL to allocate/free internally)
+ * @scratch_cap: Capacity in bytes of `*scratch_buf`
+ *
+ * Clamped edges; two 1D passes (arith_image_sepfilt2d_im()).
+ *
+ * Return: 0 on success, -1 on error.
+ */
+int arith_image_boxmean2d_im(const IMAGE *src,
+                             IMAGE       *dst,
+                             int          r,
+                             void       **scratch_buf,
+                             size_t      *scratch_cap)
+{
+    double w[ARITH_GAUSS_MAX_R + 1];
+    if (r < 0 || r > ARITH_GAUSS_MAX_R)
     {
-        return 0;
+        return -1;
+    }
+    for (int d = 0; d <= r; d++)
+    {
+        w[d] = 1.0 / (double) (2 * r + 1);
+    }
+    return arith_image_sepfilt2d_im(src, dst, r, w, r, w, scratch_buf, scratch_cap);
+}
+
+/* MM2 - NaN-skipping min (@MX == 0) or max of @a and @b, NaN only when both are. The bit tests keep
+ * it right under -Ofast, where a plain compare may have its operands swapped. */
+#define MM2(a, b, MX, ISNAN) \
+    (ISNAN(a) ? (b) : ISNAN(b) ? (a) : (MX) ? ((a) > (b) ? (a) : (b)) : ((a) < (b) ? (a) : (b)))
+
+/** MINMAX3_JOBS - 3-tap NaN-skipping min/max along x (@src rows -> tmp), then along y (-> @io). */
+#define MINMAX3_JOBS(SFX, FT, ISNAN)                                                     \
+    typedef struct                                                                       \
+    {                                                                                    \
+        const IMAGE *src;                                                                \
+        FT          *io;                                                                 \
+        FT          *tmp;                                                                \
+        FT          *rows;                                                               \
+        int64_t      nx;                                                                 \
+        int64_t      ny;                                                                 \
+        int          is_max;                                                             \
+    } mm3_ctx_##SFX;                                                                     \
+                                                                                         \
+    static void mm3_x_job_##SFX(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)   \
+    {                                                                                    \
+        const mm3_ctx_##SFX *g  = (const mm3_ctx_##SFX *) ctx;                           \
+        const int64_t        nx = g->nx;                                                 \
+        FT                  *p  = g->rows + (int64_t) tid * (nx + 2);                    \
+        (void) nth;                                                                      \
+        for (uint64_t r = lo; r < hi; r++)                                               \
+        {                                                                                \
+            FT *t = g->tmp + (int64_t) r * nx;                                           \
+            arith_load_block_##SFX##_inline(g->src, r * (uint64_t) nx, (int) nx, p + 1); \
+            p[0]      = p[1];                                                            \
+            p[nx + 1] = p[nx];                                                           \
+            if (g->is_max)                                                               \
+            {                                                                            \
+                _Pragma("omp simd") for (int64_t x = 0; x < nx; x++)                     \
+                {                                                                        \
+                    t[x] = MM2(MM2(p[x], p[x + 1], 1, ISNAN), p[x + 2], 1, ISNAN);       \
+                }                                                                        \
+            }                                                                            \
+            else                                                                         \
+            {                                                                            \
+                _Pragma("omp simd") for (int64_t x = 0; x < nx; x++)                     \
+                {                                                                        \
+                    t[x] = MM2(MM2(p[x], p[x + 1], 0, ISNAN), p[x + 2], 0, ISNAN);       \
+                }                                                                        \
+            }                                                                            \
+        }                                                                                \
+    }                                                                                    \
+                                                                                         \
+    static void mm3_y_job_##SFX(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)   \
+    {                                                                                    \
+        const mm3_ctx_##SFX *g  = (const mm3_ctx_##SFX *) ctx;                           \
+        const int64_t        nx = g->nx;                                                 \
+        const int64_t        ny = g->ny;                                                 \
+        (void) tid;                                                                      \
+        (void) nth;                                                                      \
+        for (uint64_t r = lo; r < hi; r++)                                               \
+        {                                                                                \
+            const int64_t y  = (int64_t) r % ny;                                         \
+            const FT     *tc = g->tmp + (int64_t) r * nx;                                \
+            const FT     *tm = tc - ((y > 0) ? nx : 0);                                  \
+            const FT     *tp = tc + ((y < ny - 1) ? nx : 0);                             \
+            FT           *o  = g->io + (int64_t) r * nx;                                 \
+            if (g->is_max)                                                               \
+            {                                                                            \
+                _Pragma("omp simd") for (int64_t x = 0; x < nx; x++)                     \
+                {                                                                        \
+                    o[x] = MM2(MM2(tm[x], tc[x], 1, ISNAN), tp[x], 1, ISNAN);            \
+                }                                                                        \
+            }                                                                            \
+            else                                                                         \
+            {                                                                            \
+                _Pragma("omp simd") for (int64_t x = 0; x < nx; x++)                     \
+                {                                                                        \
+                    o[x] = MM2(MM2(tm[x], tc[x], 0, ISNAN), tp[x], 0, ISNAN);            \
+                }                                                                        \
+            }                                                                            \
+        }                                                                                \
     }
 
-    size_t el_bytes = is_flt ? sizeof(float) : sizeof(double);
-    int    nth = milk_omp_team_size(nel * (uint64_t) (1 + (Rx + Ry) / 4), ARITH_SPATIAL_OMP_MIN);
-    if ((int64_t) nth > ny * nz)
-    {
-        nth = (int) (ny * nz);
-    }
-    int64_t pad_stride = nx + 2 * (int64_t) Rx + 16;
-    size_t  need       = ((size_t) nel + (size_t) nth * (size_t) pad_stride) * el_bytes;
+MINMAX3_JOBS(f, float, arith_isnan_f)
+MINMAX3_JOBS(d, double, arith_isnan_d)
+#undef MINMAX3_JOBS
 
-    void *local_buf = NULL;
-    void *work_buf  = NULL;
-    if (scratch_buf != NULL && scratch_cap != NULL)
+/**
+ * arith_image_minmax3_im - 3x3 minimum (erosion) or maximum (dilation) from @src into @dst
+ * @src:         Source image (any real type; may equal @dst)
+ * @dst:         Destination image (any real type, same geometry as @src)
+ * @is_max:      Non-zero for the maximum
+ * @scratch_buf: Optional reusable scratch pointer (or NULL to allocate/free internally)
+ * @scratch_cap: Capacity in bytes of `*scratch_buf`
+ *
+ * Per plane, clamped edges, separable (3 taps along x, then along y). NaN pixels are skipped: only
+ * an all-NaN window gives NaN. Computes in float64 when @dst is float64, else in float32.
+ *
+ * Return: 0 on success, -1 on error.
+ */
+int arith_image_minmax3_im(const IMAGE *src,
+                           IMAGE       *dst,
+                           int          is_max,
+                           void       **scratch_buf,
+                           size_t      *scratch_cap)
+{
+    if (src == NULL || dst == NULL || src->md == NULL || dst->md == NULL ||
+        !arith_is_real_dt(src->md[0].datatype) || !arith_is_real_dt(dst->md[0].datatype))
     {
-        if (*scratch_cap < need)
-        {
-            void *na = realloc(*scratch_buf, need);
-            if (na == NULL)
-            {
-                return -1;
-            }
-            *scratch_buf = na;
-            *scratch_cap = need;
-        }
-        work_buf = *scratch_buf;
+        return -1;
+    }
+    int64_t        n[3];
+    const uint64_t nel    = plane_dims(dst, n);
+    const uint8_t  ddt    = dst->md[0].datatype;
+    const int      is_dbl = (ddt == _DATATYPE_DOUBLE);
+    const int      in_dst = is_dbl || ddt == _DATATYPE_FLOAT;
+    const size_t   el     = is_dbl ? sizeof(double) : sizeof(float);
+
+    int nth = milk_omp_team_size(nel, ARITH_SPATIAL_OMP_MIN);
+    if ((int64_t) nth > n[1] * n[2])
+    {
+        nth = (int) (n[1] * n[2]);
+    }
+    size_t tmp_el = (size_t) nel + (size_t) nth * (size_t) (n[0] + 2);
+    void  *local  = NULL;
+    char  *work = work_buffer(scratch_buf, scratch_cap, (tmp_el + (in_dst ? 0 : nel)) * el, &local);
+    if (work == NULL)
+    {
+        return -1;
+    }
+    void    *io   = in_dst ? dst->array.raw : work + tmp_el * el;
+    uint64_t rows = (uint64_t) (n[1] * n[2]);
+    if (is_dbl)
+    {
+        mm3_ctx_d g = { src, io, (double *) work, (double *) work + nel, n[0], n[1], is_max };
+        arith_team_run(nth, rows, mm3_x_job_d, &g);
+        arith_team_run(nth, rows, mm3_y_job_d, &g);
     }
     else
     {
-        local_buf = malloc(need);
-        if (local_buf == NULL)
-        {
-            return -1;
-        }
-        work_buf = local_buf;
+        mm3_ctx_f g = { src, io, (float *) work, (float *) work + nel, n[0], n[1], is_max };
+        arith_team_run(nth, rows, mm3_x_job_f, &g);
+        arith_team_run(nth, rows, mm3_y_job_f, &g);
+    }
+    store_rows(dst, io, nel, is_dbl);
+    free(local);
+    return 0;
+}
+
+/** CONV2D_JOBS - pad rows of @src with clamped edges (-> pad), then convolve (pad -> @io). */
+#define CONV2D_JOBS(SFX, FT)                                                              \
+    typedef struct                                                                        \
+    {                                                                                     \
+        const IMAGE *src;                                                                 \
+        FT          *io;                                                                  \
+        FT          *pad;                                                                 \
+        const FT    *w;                                                                   \
+        int64_t      nx;                                                                  \
+        int64_t      ny;                                                                  \
+        int          kx;                                                                  \
+        int          ky;                                                                  \
+    } conv_ctx_##SFX;                                                                     \
+                                                                                          \
+    static void conv_pad_job_##SFX(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi) \
+    {                                                                                     \
+        const conv_ctx_##SFX *g  = (const conv_ctx_##SFX *) ctx;                          \
+        const int64_t         nx = g->nx;                                                 \
+        const int             rx = g->kx / 2;                                             \
+        (void) tid;                                                                       \
+        (void) nth;                                                                       \
+        for (uint64_t r = lo; r < hi; r++)                                                \
+        {                                                                                 \
+            FT *p = g->pad + (int64_t) r * (nx + 2 * rx) + rx;                            \
+            arith_load_block_##SFX##_inline(g->src, r * (uint64_t) nx, (int) nx, p);      \
+            for (int d = 1; d <= rx; d++)                                                 \
+            {                                                                             \
+                p[-d]         = p[0];                                                     \
+                p[nx - 1 + d] = p[nx - 1];                                                \
+            }                                                                             \
+        }                                                                                 \
+    }                                                                                     \
+                                                                                          \
+    static void conv_job_##SFX(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)     \
+    {                                                                                     \
+        const conv_ctx_##SFX *g   = (const conv_ctx_##SFX *) ctx;                         \
+        const int64_t         nx  = g->nx;                                                \
+        const int64_t         ny  = g->ny;                                                \
+        const int64_t         nxp = nx + 2 * (g->kx / 2);                                 \
+        (void) tid;                                                                       \
+        (void) nth;                                                                       \
+        for (uint64_t r = lo; r < hi; r++)                                                \
+        {                                                                                 \
+            const int64_t z = (int64_t) r / ny;                                           \
+            const int64_t y = (int64_t) r % ny;                                           \
+            FT           *o = g->io + (int64_t) r * nx;                                   \
+            _Pragma("omp simd") for (int64_t x = 0; x < nx; x++)                          \
+            {                                                                             \
+                o[x] = 0;                                                                 \
+            }                                                                             \
+            for (int j = 0; j < g->ky; j++)                                               \
+            {                                                                             \
+                int64_t sy  = y + j - g->ky / 2;                                          \
+                sy          = (sy < 0) ? 0 : ((sy >= ny) ? ny - 1 : sy);                  \
+                const FT *p = g->pad + (z * ny + sy) * nxp;                               \
+                for (int i = 0; i < g->kx; i++)                                           \
+                {                                                                         \
+                    const FT  w = g->w[j * g->kx + i];                                    \
+                    const FT *q = p + i;                                                  \
+                    if (w != 0)                                                           \
+                    {                                                                     \
+                        _Pragma("omp simd") for (int64_t x = 0; x < nx; x++)              \
+                        {                                                                 \
+                            o[x] += w * q[x];                                             \
+                        }                                                                 \
+                    }                                                                     \
+                }                                                                         \
+            }                                                                             \
+        }                                                                                 \
     }
 
-    if (is_flt)
+CONV2D_JOBS(f, float)
+CONV2D_JOBS(d, double)
+#undef CONV2D_JOBS
+
+/**
+ * arith_image_conv2d_im - 2D convolution of @src with kernel @kern into @dst, per plane
+ * @src:         Source image (any real type; may equal @dst)
+ * @dst:         Destination image (any real type, same geometry as @src)
+ * @kern:        2D kernel image (any real type) with odd sizes up to 31
+ * @scratch_buf: Optional reusable scratch pointer (or NULL to allocate/free internally)
+ * @scratch_cap: Capacity in bytes of `*scratch_buf`
+ *
+ * out(x, y) = sum over (i, j) of K(i, j) src(x + rx - i, y + ry - j): the kernel is flipped, as in
+ * a convolution, and edges are clamped. Computes in float64 when @dst is float64, else in float32.
+ *
+ * Return: 0 on success, -1 on error.
+ */
+int arith_image_conv2d_im(const IMAGE *src,
+                          IMAGE       *dst,
+                          const IMAGE *kern,
+                          void       **scratch_buf,
+                          size_t      *scratch_cap)
+{
+    if (src == NULL || dst == NULL || kern == NULL || src->md == NULL || dst->md == NULL ||
+        kern->md == NULL || !arith_is_real_dt(src->md[0].datatype) ||
+        !arith_is_real_dt(dst->md[0].datatype) || !arith_is_real_dt(kern->md[0].datatype) ||
+        kern->md[0].naxis != 2)
     {
-        arith_gauss_pass_f(dst->array.F, (float *) work_buf, nx, ny, nz, Rx, Ry, wx, wy, nth);
+        return -1;
+    }
+    const int kx = (int) kern->md[0].size[0];
+    const int ky = (int) kern->md[0].size[1];
+    if (kx < 1 || kx > 31 || ky < 1 || ky > 31 || (kx & 1) == 0 || (ky & 1) == 0)
+    {
+        return -1;
+    }
+    int64_t        n[3];
+    const uint64_t nel    = plane_dims(dst, n);
+    const uint8_t  ddt    = dst->md[0].datatype;
+    const int      is_dbl = (ddt == _DATATYPE_DOUBLE);
+    const int      in_dst = is_dbl || ddt == _DATATYPE_FLOAT;
+    const size_t   el     = is_dbl ? sizeof(double) : sizeof(float);
+    const size_t   pad_el = (size_t) (n[0] + 2 * (kx / 2)) * (size_t) (n[1] * n[2]);
+
+    int nth = milk_omp_team_size(nel * (uint64_t) (1 + kx * ky / 8), ARITH_SPATIAL_OMP_MIN);
+    if ((int64_t) nth > n[1] * n[2])
+    {
+        nth = (int) (n[1] * n[2]);
+    }
+    void *local = NULL;
+    char *work  = work_buffer(scratch_buf, scratch_cap, (pad_el + (in_dst ? 0 : nel)) * el, &local);
+    if (work == NULL)
+    {
+        return -1;
+    }
+    void    *io   = in_dst ? dst->array.raw : work + pad_el * el;
+    uint64_t rows = (uint64_t) (n[1] * n[2]);
+    double   wd[31 * 31];
+    float    wf[31 * 31];
+    for (int j = 0; j < ky; j++)
+    {
+        for (int i = 0; i < kx; i++)
+        {
+            double v       = arith_read_im_pix(kern, kern->md[0].datatype,
+                                               (uint64_t) (ky - 1 - j) * (uint64_t) kx +
+                                                   (uint64_t) (kx - 1 - i));
+            wd[j * kx + i] = v;
+            wf[j * kx + i] = (float) v;
+        }
+    }
+    if (is_dbl)
+    {
+        conv_ctx_d g = { src, io, (double *) work, wd, n[0], n[1], kx, ky };
+        arith_team_run(nth, rows, conv_pad_job_d, &g);
+        arith_team_run(nth, rows, conv_job_d, &g);
     }
     else
     {
-        arith_gauss_pass_d(dst->array.D, (double *) work_buf, nx, ny, nz, Rx, Ry, wx, wy, nth);
+        conv_ctx_f g = { src, io, (float *) work, wf, n[0], n[1], kx, ky };
+        arith_team_run(nth, rows, conv_pad_job_f, &g);
+        arith_team_run(nth, rows, conv_job_f, &g);
     }
-
-    free(local_buf);
+    store_rows(dst, io, nel, is_dbl);
+    free(local);
     return 0;
 }
 

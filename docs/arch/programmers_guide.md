@@ -124,8 +124,8 @@ Working example with several units per file: `plugins/test-src/runnabletest`.
 4. **Implement the compute function** `<stem>_compute(const MILK_RUNNABLE *self)`: parameters are
    already synced; the processinfo loop is `MILK_PROCINFO_INIT/LOOPSTART/END(self)`.
 
-5. **Register and build**: list the unit in the module registry, add the source to the module's
-   `CMakeLists.txt` (see [§6](#6-cmakeliststxt-conventions)).
+5. **Register and build**: list the unit in the module registry and re-run `cmake`: the module's
+   `CMakeLists.txt` globs its sources (see [§6](#6-cmakeliststxt-conventions)).
 
 ### `MILK_RUNNABLE` units
 
@@ -154,16 +154,17 @@ Working example with several units per file: `plugins/test-src/runnabletest`.
 - `src/tui/`: Engine-tier terminal UIs (`fpsCTRL`, `procCTRL`) and the shared `milkTUI_compat.h`.
 - `src/prop/`: Shared-memory entity property library (`milkprop`: `s.<stream>.<prop>`, `f.<fps>.<param>`,
   `p.<proc>.<prop>`), layered on the engine tier without CLI dependencies.
-- `src/calc/`: Calculator engine and C extension SDK (`milkcalc`, `milk_calc_ext.h`, `milk_argval`,
-  `milk_unit`), layered on `src/engine/`, `src/coremods/`, and `src/prop/`.
+- `src/calc/`: Calculator engine and C extension SDK (`milkcalc`, `milk_calc_ext.h`), layered on
+  `src/engine/` (argument values: `milk_argval` in libfps; code-free unit harness: `milk_unit` in
+  libcomputeunit), `src/coremods/`, and `src/prop/`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),
   `CLIcore` (interactive shell) and `overview` (milk-CTRL; `milk-streamCTRL` is a link that opens it on
   its streams view).
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).
-- `plugins/cacao-src/`: Cacao AO loop modules (user-created symlink to `~/src/cacao`; not present on
-  a fresh clone).
+- `plugins/cacao-src/`: Cacao AO loop modules (user-created symlink to a cacao checkout, e.g.
+  `~/src/cacao`; not present on a fresh clone).
 - `docs/`: Documentation.
 
 ### Standalone Executables vs Core Modules

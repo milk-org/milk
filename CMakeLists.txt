@@ -533,6 +533,14 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
   endif()
 endforeach()
 
+# Flags of every run-time C compile: calculator JIT kernels, `@calc -l` extensions and milk-cc. One
+# list: libmilkcalc gets it as MILK_CC_FLAGS, and milk-cc has it written in when configured.
+set(MILK_CC_FLAGS
+    "-O3 -pipe -march=native -ffast-math -fno-finite-math-only -fopenmp-simd")
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  string(APPEND MILK_CC_FLAGS " -mno-recip")
+endif()
+
 # Calculator & JIT layer (milkprop + milkcalc + milk-fpsexec-milk-calc)
 if(USE_COREMODS AND USE_CALC)
   add_subdirectory(src/prop)
@@ -700,10 +708,12 @@ if(build_python_module)
 endif()
 
 if(USE_CLI)
+  # milk-cc gets MILK_CC_FLAGS and the default compiler written in
+  configure_file(scripts/milk-cc ${CMAKE_BINARY_DIR}/scripts/milk-cc @ONLY)
   install(
     PROGRAMS scripts/milk-cli-all
     scripts/milk-argparse
-    scripts/milk-cc
+    ${CMAKE_BINARY_DIR}/scripts/milk-cc
     scripts/milk-check
     scripts/milk-completion.sh
     scripts/milk-commands

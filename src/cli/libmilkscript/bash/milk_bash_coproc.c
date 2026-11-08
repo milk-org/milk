@@ -431,7 +431,7 @@ static int await_coproc_status(char *sbuf, size_t sbufsz, int *out_exit_req, int
             dcsigINT = 0;
             kill(-g_bash_pid, SIGINT);
         }
-        struct pollfd pfds[3] = { { g_listen_fd, POLLIN, 0 },
+        struct pollfd pfds[3] = { { milk_server_ready_fd(), POLLIN, 0 },
                                   { g_status_pipe_r, POLLIN | POLLHUP | POLLERR, 0 },
                                   { g_bash_pidfd, POLLIN, 0 } };
         int           pr      = poll(pfds, (g_bash_pidfd >= 0) ? 3 : 2, 50);
@@ -574,17 +574,17 @@ int milk_bash_coproc_run(char *translated, int *out_exit_req, int *out_lost)
 }
 
 /**
- * milk_bash_engine_listen_fd - Return the in-process UNIX domain listener file descriptor
+ * milk_bash_engine_ready_fd - The fd to poll for requests to the engine (milk_server_ready_fd())
  *
- * Return: Listener socket file descriptor, or -1 if not initialized
+ * Return: readable when a shell connects or sends a request; -1 if not initialized
  */
-int milk_bash_engine_listen_fd(void)
+int milk_bash_engine_ready_fd(void)
 {
-    return g_listen_fd;
+    return (g_listen_fd >= 0) ? milk_server_ready_fd() : -1;
 }
 
 /**
- * milk_bash_engine_serve - Accept and service one pending request on the engine socket
+ * milk_bash_engine_serve - Serve the pending requests on the engine socket (new and kept connections)
  */
 void milk_bash_engine_serve(void)
 {
@@ -644,7 +644,7 @@ void milk_bash_engine_shutdown(void)
                 dcsigINT = 0;
                 kill(-g_bash_pid, SIGINT);
             }
-            struct pollfd pfds[3] = { { g_listen_fd, POLLIN, 0 },
+            struct pollfd pfds[3] = { { milk_server_ready_fd(), POLLIN, 0 },
                                       { g_status_pipe_r, POLLIN | POLLHUP | POLLERR, 0 },
                                       { g_bash_pidfd, POLLIN, 0 } };
             int           pr      = poll(pfds, 3, 50);
@@ -702,7 +702,7 @@ void milk_bash_engine_abort(void)
     int shutdown_flag = 0;
     for (int iter = 0; iter < 200 && !synced; iter++)
     {
-        struct pollfd pfds[2] = { { g_listen_fd, POLLIN, 0 },
+        struct pollfd pfds[2] = { { milk_server_ready_fd(), POLLIN, 0 },
                                   { g_status_pipe_r, POLLIN | POLLHUP | POLLERR, 0 } };
         if (poll(pfds, 2, 10) <= 0)
         {

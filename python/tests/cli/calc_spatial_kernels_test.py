@@ -5,6 +5,8 @@ Regression tests for spatial, remapping, and domain kernels in the milk.calc / @
 - pixunmap(im, map[, n]): fused segmented-mean reduction with CSR gather cache
 - rprof(im[, cx, cy]): azimuthal radial profile reduction and lut(ir(im), rprof(im)) composition
 - gauss(im, sigma[, sigmay]): separable 2-pass 2D Gaussian blur
+- boxmean(im, r), conv2(im, K), imin3(im), imax3(im): COREMOD_arith kernels with clamped edges
+- fft(im), ifft(im): FFTW transforms (real-to-complex for real input) against numpy
 - interp2(im, xmap, ymap): 2D sub-pixel bilinear interpolation gather
 - cx, cy[, flux] = icentroid(im[, th]): single-pass thresholded flux-weighted centroid reduction
 """
@@ -221,6 +223,146 @@ def test_gauss_separable_2d_blur(tmp_path):
     ref_aniso = _np_gauss2d_clamped(arr, 2.2, 0.9)
     np.testing.assert_allclose(got_iso, ref_iso, rtol=1e-5, atol=1e-5)
     np.testing.assert_allclose(got_aniso, ref_aniso, rtol=1e-5, atol=1e-5)
+
+
+def _edge_windows(arr: np.ndarray, ky: int, kx: int) -> np.ndarray:
+    """(ny, nx, ky, kx) windows of @arr with edge-clamped (nearest) padding."""
+    padded = np.pad(arr, ((ky // 2, ky // 2), (kx // 2, kx // 2)), mode="edge")
+    return np.lib.stride_tricks.sliding_window_view(padded, (ky, kx))
+
+
+def test_box_conv_and_minmax_match_numpy(tmp_path):
+    """boxmean, conv2 (a convolution: the kernel is flipped) and imin3/imax3 (NaN skipped, an all-NaN
+    window gives NaN) clamp edges; imin3 filters a cube plane by plane and fills an integer stream.
+    """
+    rng = np.random.default_rng(7)
+    ny, nx = 13, 19
+    arr = rng.normal(10.0, 5.0, size=(ny, nx)).astype(np.float32)
+    nan = arr.copy()
+    nan[0, 0] = nan[5, 7] = np.nan
+    nan[9:12, 2:5] = np.nan  # the window around (10, 3) is all NaN
+    kern = np.arange(15, dtype=np.float32).reshape(3, 5)  # 3 rows (y) x 5 columns (x)
+    cube = rng.normal(0.0, 1.0, size=(3, ny, nx)).astype(np.float32)
+    for name, data in (("cl", arr), ("nn", nan), ("kk", kern), ("cb", cube)):
+        fits.writeto(tmp_path / f"{name}.fits", data, overwrite=True)
+    res = milk_bash(
+        "".join(
+            f'iofits.loadfits "{n}.fits" {n} 0 >/dev/null\n'
+            for n in ("cl", "nn", "kk", "cb")
+        )
+        + '@calc "b2 = boxmean(cl, 2); cv = conv2(cl, kk); mn = imin3(nn); mx = imax3(nn)"\n'
+        '@calc "mc = imin3(cb)"; mem.mk2Dim "@STU16:u16o" 19 13 >/dev/null\n'
+        '@calc "u16o = imax3(cl * 100)"; echo "u16=$?"; echo "u16_dt=$(@get s.u16o.dtype)"\n'
+        + "".join(
+            f'iofits.saveFITS {n} "o_{n}.fits" >/dev/null\n'
+            for n in ("b2", "cv", "mn", "mx", "mc", "u16o")
+        ),
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert res.returncode == 0, out
+    got = {
+        n: fits.getdata(tmp_path / f"o_{n}.fits")
+        for n in ("b2", "cv", "mn", "mx", "mc", "u16o")
+    }
+    np.testing.assert_allclose(
+        got["b2"], _edge_windows(arr, 5, 5).mean(axis=(-2, -1)), rtol=1e-5
+    )
+    conv = (_edge_windows(arr, 3, 5) * kern[::-1, ::-1]).sum(axis=(-2, -1))
+    np.testing.assert_allclose(got["cv"], conv, rtol=1e-5)
+    with np.errstate(invalid="ignore"), pytest.warns(RuntimeWarning):
+        np.testing.assert_array_equal(
+            got["mn"], np.nanmin(_edge_windows(nan, 3, 3), axis=(-2, -1))
+        )
+    with pytest.warns(RuntimeWarning):
+        np.testing.assert_array_equal(
+            got["mx"], np.nanmax(_edge_windows(nan, 3, 3), axis=(-2, -1))
+        )
+    assert np.isnan(got["mn"][10, 3]) and np.isnan(got["mx"][10, 3])
+    for k in range(3):
+        np.testing.assert_array_equal(
+            got["mc"][k], _edge_windows(cube[k], 3, 3).min(axis=(-2, -1))
+        )
+    assert (
+        value(res.stdout, "u16") == "0" and value(res.stdout, "u16_dt") == "UINT16"
+    ), out
+    big = _edge_windows(arr * np.float32(100), 3, 3).max(axis=(-2, -1))
+    np.testing.assert_array_equal(got["u16o"], big.astype(np.uint16))
+
+
+def test_fft_matches_numpy(tmp_path):
+    """fft of real input (half spectrum, mirrored) for even and odd sizes, 1-D, 3-D and float64, fft
+    of complex input and ifft match numpy; a real stream cannot take the complex result.
+    """
+    rng = np.random.default_rng(3)
+    data = {
+        "a2": rng.normal(size=(6, 9)).astype(np.float32),
+        "b2": rng.normal(size=(7, 8)).astype(np.float32),
+        "c1": rng.normal(size=(10,)).astype(np.float32),
+        "d3": rng.normal(size=(3, 4, 5)).astype(np.float32),
+        "e2": rng.normal(size=(6, 8)),
+    }
+    for name, arr in data.items():
+        fits.writeto(tmp_path / f"{name}.fits", arr, overwrite=True)
+    outs = [f"{p}_{n}" for n in data for p in ("R", "I")] + ["R_g", "I_g", "Q"]
+    res = milk_bash(
+        "".join(f'iofits.loadfits "{n}.fits" {n} 0 >/dev/null\n' for n in data)
+        + "".join(
+            f'@calc "F_{n} = fft({n}); R_{n} = real(F_{n}); I_{n} = imag(F_{n})"\n'
+            for n in data
+        )
+        + '@calc "G = fft(F_a2); R_g = real(G); I_g = imag(G); Q = real(ifft(F_a2))"\n'
+        'mem.mk2Dim "@S:rs" 9 6 >/dev/null; @calc "rs = fft(a2)" 2>rs.err; echo "rs=$?"\n'
+        + "".join(f'iofits.saveFITS {o} "o_{o}.fits" >/dev/null\n' for o in outs),
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert res.returncode == 0, out
+
+    def got(n):
+        return fits.getdata(tmp_path / f"o_R_{n}.fits") + 1j * fits.getdata(
+            tmp_path / f"o_I_{n}.fits"
+        )
+
+    for name, arr in data.items():
+        tol = 1e-12 if arr.dtype == np.float64 else 1e-4
+        np.testing.assert_allclose(got(name), np.fft.fftn(arr), atol=tol, err_msg=name)
+    np.testing.assert_allclose(
+        got("g"), np.fft.fft2(np.fft.fft2(data["a2"])), atol=1e-3
+    )
+    np.testing.assert_allclose(
+        fits.getdata(tmp_path / "o_Q.fits"), data["a2"], atol=1e-5
+    )
+    assert value(res.stdout, "rs") != "0", out
+    assert "is a real stream" in (tmp_path / "rs.err").read_text(), out
+
+
+def test_fft_in_a_unit_matches_numpy(tmp_path):
+    """A unit plans its transforms with FFTW_MEASURE (on scratch buffers, then runs them on its
+    own): real input, complex input and ifft still match numpy."""
+    a = np.random.default_rng(4).normal(size=(10, 12)).astype(np.float32)
+    fits.writeto(tmp_path / "a.fits", a, overwrite=True)
+    outs = ["R_F", "I_F", "R_G", "I_G", "Q"]
+    res = milk_bash(
+        'iofits.loadfits "a.fits" a 0 >/dev/null; mem.mk2Dim "@S:cam" 12 10 >/dev/null\n'
+        '@calc "cam = a"\n'
+        'milk-fpsexec-milk-calc -n uf -e "F = fft(cam); G = fft(F); Q = real(ifft(F))" exec '
+        '>/dev/null 2>&1; echo "rc=$?"\n'
+        '@calc "R_F = real(F); I_F = imag(F); R_G = real(G); I_G = imag(G)"\n'
+        + "".join(f'iofits.saveFITS {o} "o_{o}.fits" >/dev/null\n' for o in outs),
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0", out
+
+    def got(n):
+        return fits.getdata(tmp_path / f"o_R_{n}.fits") + 1j * fits.getdata(
+            tmp_path / f"o_I_{n}.fits"
+        )
+
+    np.testing.assert_allclose(got("F"), np.fft.fft2(a), atol=1e-4)
+    np.testing.assert_allclose(got("G"), np.fft.fft2(np.fft.fft2(a)), atol=1e-2)
+    np.testing.assert_allclose(fits.getdata(tmp_path / "o_Q.fits"), a, atol=1e-5)
 
 
 def test_interp2_bilinear_gather(tmp_path):

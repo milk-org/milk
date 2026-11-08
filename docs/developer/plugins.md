@@ -46,8 +46,8 @@ Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the
 
 New plugins go in `plugins/<plugin>/` (or `plugins/<group>/<plugin>/`), never under
 `milk-extra-src/`, which is reserved for the plugins shipped in the `milk` repository. Everything
-under `plugins/` except `milk-extra-src/` is git-ignored: a new plugin is its own repository, and must
-never be committed to `milk`. Plugins are discovered automatically, no parent `CMakeLists.txt` needs
+under `plugins/` except `milk-extra-src/` and `test-src/` (milk's test plugins) is git-ignored: a new
+plugin is its own repository, and must never be committed to `milk`. Plugins are discovered automatically, no parent `CMakeLists.txt` needs
 editing.
 
 ## 3. Setting up CMakeLists.txt

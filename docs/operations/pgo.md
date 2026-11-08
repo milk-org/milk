@@ -149,7 +149,7 @@ Builds static archive variants (`.a`) of every milk library and links them into 
 executables. Gives GCC maximum cross-module visibility.
 
 ```bash
-cd /home/oguyon/src/milk-perf/_build
+cd _build
 
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \

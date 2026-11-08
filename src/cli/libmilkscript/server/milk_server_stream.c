@@ -34,12 +34,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "CLIcore.h"
 #ifdef USE_CFITSIO
 #    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkdata/milk_frame.h"
 #include "mcalc.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop.h"
@@ -142,11 +144,9 @@ static int waitfor_expr_cond(const char            *target,
         {
             return MILK_WAIT_CANCEL;
         }
-        char expanded[8192];
-        int  eval_rc = 2;
+        int eval_rc = 2;
         ops->lock(ops->ctx);
-        milk_server_expand_entities_in_expr(target, expanded, sizeof(expanded));
-        mcalc_eval_bash(expanded, 1, &eval_rc);
+        mcalc_eval_bash(target, 1, &eval_rc);
         int on_image = mcalc_test_image;
         ops->unlock(ops->ctx);
         if (eval_rc == 0)
@@ -571,12 +571,11 @@ int milk_server_grab(int         client_fd,
             milk_server_cmd_unlock(); /* copy a shm frame without holding up other commands */
         }
 
-        /* recopy if the writer touched the frame while we copied it (torn frame) */
+        /* recopy a frame the writer touched while we copied it (torn frame, milk_frame.h) */
         uint64_t frame_cnt = 0;
-        for (int tries = 0; tries < 3; tries++)
+        for (int tries = 0; tries < MILK_FRAME_TRIES; tries++)
         {
-            uint64_t c0 = __atomic_load_n(&in.md->cnt0, __ATOMIC_ACQUIRE);
-            uint8_t  w0 = __atomic_load_n(&in.md->write, __ATOMIC_ACQUIRE);
+            milk_frame_mark_t mark = milk_frame_mark(&in);
             if (in_dt == out_dt)
             {
                 __builtin_memcpy(((uint8_t *) cube.array.raw) + (size_t) f * npix2d * out_elsz,
@@ -590,12 +589,14 @@ int milk_server_grab(int         client_fd,
                     write_typed_elem(&cube, out_dt, base + p, read_typed_elem(&in, in_dt, p));
                 }
             }
-            uint8_t  w1 = __atomic_load_n(&in.md->write, __ATOMIC_ACQUIRE);
-            uint64_t c1 = __atomic_load_n(&in.md->cnt0, __ATOMIC_ACQUIRE);
-            frame_cnt   = c0;
-            if (w0 == 0 && w1 == 0 && c0 == c1)
+            frame_cnt = mark.cnt0;
+            if (milk_frame_clean(&in, mark))
             {
                 break;
+            }
+            if (tries < MILK_FRAME_TRIES - 1)
+            {
+                milk_frame_wait();
             }
         }
 
@@ -778,7 +779,7 @@ int milk_server_streamcat(int argc, char **argv)
     }
     if (sname == NULL)
     {
-        fprintf(stderr, "Usage: @grab --stdout [--raw] <stream>\n");
+        milk_lexicon_usage("grab", stderr);
         return 1;
     }
     FPS_STREAMNAME_PARSED sp_cat = fps_streamname_parse(sname);
@@ -941,8 +942,7 @@ int milk_server_streamwrite(int argc, char **argv)
 
     if (sname_raw == NULL)
     {
-        fprintf(stderr, "Usage: @replay --stdin [--raw] [--dtype <type>] <stream> [xsize [ysize "
-                        "[zsize]]] [-]\n");
+        milk_lexicon_usage("replay", stderr);
         return 1;
     }
 
@@ -1187,8 +1187,7 @@ int milk_server_replay(int argc, char **argv)
 
     if (src_raw == NULL || dst_raw == NULL)
     {
-        fprintf(stderr, "Usage: @replay [--fps <hz>] [--count <n>] [--loop] <src_cube_or_fits> "
-                        "<dst_stream>\n");
+        milk_lexicon_usage("replay", stderr);
         return 1;
     }
 

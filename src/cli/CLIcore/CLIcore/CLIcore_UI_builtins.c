@@ -133,7 +133,7 @@ errno_t cli_timing_toggle(void)
 
 #ifdef USE_READLINE
 /**
- * @brief Toggle readline syntax highlighting.
+ * @brief Turn readline syntax highlighting on or off.
  *
  * Usage: synhl [on|off]
  * With no args, toggles the current state.
@@ -143,31 +143,25 @@ errno_t cli_syntax_highlight_toggle(void)
     if (data.cmdNBarg >= 2)
     {
         const char *arg = data.cmdargtoken[1].val.string;
-        if (strcmp(arg, "on") == 0)
+        if (strcmp(arg, "on") == 0 || strcmp(arg, "1") == 0)
         {
-            data.syntax_highlight = 2; // Default to full TS
-            printf("Syntax highlighting ON (level 2)\n");
+            data.syntax_highlight = 1;
         }
-        else if (strcmp(arg, "off") == 0)
+        else if (strcmp(arg, "off") == 0 || strcmp(arg, "0") == 0)
         {
             data.syntax_highlight = 0;
-            printf("Syntax highlighting OFF\n");
-        }
-        else if (arg[0] >= '0' && arg[0] <= '2' && arg[1] == '\0')
-        {
-            data.syntax_highlight = arg[0] - '0';
-            printf("Syntax highlighting set to level %d\n", data.syntax_highlight);
         }
         else
         {
-            printf("Usage: @config synhl [on|off|0|1|2]\n");
+            printf("Usage: @config synhl [on|off]\n");
+            return RETURN_SUCCESS;
         }
     }
     else
     {
-        data.syntax_highlight = (data.syntax_highlight + 1) % 3;
-        printf("Syntax highlighting level %d\n", data.syntax_highlight);
+        data.syntax_highlight = !data.syntax_highlight;
     }
+    printf("Syntax highlighting %s\n", data.syntax_highlight ? "ON" : "OFF");
     return RETURN_SUCCESS;
 }
 

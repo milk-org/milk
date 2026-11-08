@@ -19,12 +19,6 @@ __attribute__((weak)) void cli_history_save(void)
 
 __attribute__((weak)) DATA data;
 
-__attribute__((weak)) int cli_is_command(const char *word)
-{
-    (void) word;
-    return 0;
-}
-
 __attribute__((weak)) void cli_history_log_cmd(const char *cmd)
 {
     (void) cmd;

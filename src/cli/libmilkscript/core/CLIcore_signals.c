@@ -13,6 +13,7 @@
 #    define _GNU_SOURCE
 #endif
 
+#include <pthread.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <sys/resource.h> // getrlimit
@@ -21,9 +22,23 @@
 
 #include "CLIcore.h"
 #include "CLIcore_signals.h"
+#include "mcalc.h"
 #include "CLIcore_UI_execute.h"
 
 #include "timeutils.h"
+
+/* Re-enable ECHO on stdin, leaving the terminal usable; -1 without a terminal */
+static int terminal_echo_on(void)
+{
+    struct termios termInfo;
+    if (tcgetattr(0, &termInfo) == -1)
+    {
+        return -1;
+    }
+    termInfo.c_lflag |= ECHO; /* turn on ECHO */
+    tcsetattr(0, TCSADRAIN, &termInfo);
+    return 0;
+}
 
 /**
  * @brief Restore terminal echo mode.
@@ -35,15 +50,11 @@
  */
 static void set_terminal_echo_on(int signo)
 {
-    // Terminal settings
-    struct termios termInfo;
-    if (tcgetattr(0, &termInfo) == -1)
+    if (terminal_echo_on() != 0)
     {
         printf("PID %d sig_handler received %s\n", CLIPID, strsignal(signo));
         exit(EXIT_FAILURE);
     }
-    termInfo.c_lflag |= ECHO; /* turn on ECHO */
-    tcsetattr(0, TCSADRAIN, &termInfo);
 }
 
 /**
@@ -242,8 +253,9 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
 
 static sigjmp_buf            cli_repl_env;
 static volatile sig_atomic_t cli_fault_isolation_active = 0;
-static volatile sig_atomic_t cli_interactive_mode       = 0;
-static volatile sig_atomic_t cli_sigint_forward         = 0;
+static pthread_t             cli_fault_isolation_thread; /* the thread cli_repl_env belongs to */
+static volatile sig_atomic_t cli_interactive_mode = 0;
+static volatile sig_atomic_t cli_sigint_forward   = 0;
 
 /**
  * cli_set_interactive_mode - Enable or disable interactive REPL signal behavior
@@ -288,13 +300,14 @@ sigjmp_buf *cli_get_repl_env(void)
  * cli_fault_isolation_arm - Arm signal-based fault recovery around command execution
  *
  * Enables `siglongjmp` recovery in `sig_handler` so fatal signals (`SIGSEGV`,
- * `SIGBUS`, `SIGFPE`, `SIGILL`, `SIGABRT`) and `SIGINT` abort only the current
- * command and return control to `cli_repl_env`.
+ * `SIGBUS`, `SIGFPE`, `SIGILL`, `SIGABRT`) raised in the calling thread, and `SIGINT`,
+ * abort only the current command and return control to `cli_repl_env`.
  *
  * Return: void
  */
 void cli_fault_isolation_arm(void)
 {
+    cli_fault_isolation_thread = pthread_self();
     cli_fault_isolation_active = 1;
 }
 
@@ -323,7 +336,8 @@ int cli_is_fault_isolation_armed(void)
     return cli_fault_isolation_active;
 }
 
-/** cli_set_sigint_forward() - while on, SIGINT only sets dcsigINT; the bash engine passes it on to bash. */
+/** cli_set_sigint_forward() - while on, SIGINT only sets dcsigINT and mcalc_cancelled; the bash engine
+ * passes it on to bash, the calculator stops at its next step or loop iteration. */
 void cli_set_sigint_forward(int on)
 {
     cli_sigint_forward = on;
@@ -351,17 +365,19 @@ void sig_handler(int signo)
     case SIGINT:
         if (cli_sigint_forward)
         {
-            dcsigINT = 1;
+            dcsigINT        = 1;
+            mcalc_cancelled = 1; /* the calculator stops at its next step or loop iteration */
             break;
         }
-        set_terminal_echo_on(signo);
-        if (cli_fault_isolation_active)
+        if (cli_fault_isolation_active) /* only the command stops, with or without a terminal */
         {
+            (void) terminal_echo_on();
             dcsigINT = 1;
             fprintf(stderr, "\n^C\n");
             siglongjmp(cli_repl_env, 2);
         }
-        else if (cli_interactive_mode)
+        set_terminal_echo_on(signo);
+        if (cli_interactive_mode)
         {
             dcsigINT = 0;
             fprintf(stderr, "\n");
@@ -403,9 +419,9 @@ void sig_handler(int signo)
         {
             dcsigSEGV = 1;
         }
-        set_terminal_echo_on(signo);
-        if (cli_fault_isolation_active)
+        if (cli_fault_isolation_active && pthread_equal(pthread_self(), cli_fault_isolation_thread))
         {
+            (void) terminal_echo_on();
             fprintf(stderr,
                     "\n\033[1;31m[CRASH INTERCEPTED]\033[0m Signal %d (%s) caught during command "
                     "execution.\n"
@@ -415,6 +431,7 @@ void sig_handler(int signo)
         }
         else
         {
+            set_terminal_echo_on(signo);
             printf("PID %d sig_handler received %s\n", CLIPID, strsignal(signo));
             write_process_exit_report(strsignal(signo));
             exit(EXIT_FAILURE);
@@ -423,9 +440,9 @@ void sig_handler(int signo)
 
     case SIGABRT:
         dcsigABRT = 1;
-        set_terminal_echo_on(signo);
-        if (cli_fault_isolation_active)
+        if (cli_fault_isolation_active && pthread_equal(pthread_self(), cli_fault_isolation_thread))
         {
+            (void) terminal_echo_on();
             fprintf(
                 stderr,
                 "\n\033[1;31m[ABORT INTERCEPTED]\033[0m SIGABRT caught during command execution.\n"
@@ -434,6 +451,7 @@ void sig_handler(int signo)
         }
         else
         {
+            set_terminal_echo_on(signo);
             printf("PID %d sig_handler received SIGABRT\n", CLIPID);
             write_process_exit_report("SIGABRT");
             exit(EXIT_FAILURE);

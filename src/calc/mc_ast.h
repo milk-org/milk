@@ -23,7 +23,8 @@
 #include "mcalc.h"
 
 #define MC_TOK_STR_MAX 1024
-#define MC_MAX_TOKENS 512
+#define MC_IDENT_MAX 256    /* size of a bare identifier buffer */
+#define MC_MAX_TOKENS 65536 /* a guard: the token list grows as needed */
 #define MC_MAX_ARGS 16
 #define MC_MAX_LHS 8
 #define MC_MAX_CHAIN 8
@@ -81,20 +82,27 @@ typedef struct
     mc_tok_type_t type;
     int           line;
     int           col;
+    int           off;            /* byte offset in the lexed text */
+    int           len;            /* byte length in the lexed text */
     int           no_space_after; /* 1 if immediately followed by '(' without whitespace */
     long          lval;
     double        dval;
-    char          sval[MC_TOK_STR_MAX];
+    char         *sval; /* NUL-terminated token text, in the list's string buffer */
 } mc_tok_t;
 
+/* Filled by mc_lex(), which grows the buffers as needed and reuses them on the next call;
+ * mc_tok_list_free() releases them. */
 typedef struct
 {
-    mc_tok_t toks[MC_MAX_TOKENS];
-    int      ntok;
-    int      pos;
-    int      err_line;
-    int      err_col;
-    char     errmsg[256];
+    mc_tok_t *toks;
+    int       cap;
+    int       ntok;
+    int       pos;
+    int       err_line;
+    int       err_col;
+    char      errmsg[256];
+    char     *strs; /* token texts */
+    size_t    strs_cap;
 } mc_tok_list_t;
 
 /* Runtime scalar / image value representation */
@@ -128,12 +136,11 @@ typedef enum
 typedef enum
 {
     MC_ID_UNRESOLVED = 0,
-    MC_ID_DEF_PARAM, /* bound parameter of active def function */
-    MC_ID_CONST,     /* fallback constant pi, nan, inf */
-    MC_ID_VAR,       /* numeric/string variable in data.core.variable or host/env */
-    MC_ID_IMAGE,     /* existing image in data.core.image */
-    MC_ID_PROP,      /* SHM property s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop> */
-    MC_ID_NEW        /* new target identifier on LHS */
+    MC_ID_CONST, /* fallback constant pi, nan, inf */
+    MC_ID_VAR,   /* numeric/string variable in data.core.variable or host/env */
+    MC_ID_IMAGE, /* existing image in data.core.image */
+    MC_ID_PROP,  /* SHM property s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop> */
+    MC_ID_NEW    /* new target identifier on LHS */
 } mc_ident_kind_t;
 
 typedef struct mc_expr mc_expr_t;
@@ -171,7 +178,7 @@ typedef enum
     MC_EXPR_BINARY,  /* a op b */
     MC_EXPR_CHAIN,   /* chained relational comparison a <= x <= b */
     MC_EXPR_TERNARY, /* cond ? t : f */
-    MC_EXPR_CALL,    /* fn(arg1, ...) or udef(arg1, ...) or ext(arg1, k=v, ...) */
+    MC_EXPR_CALL,    /* fn(arg1, ...) or ext(arg1, k=v, ...); def calls are inlined */
     MC_EXPR_SLICE,   /* target[ax0, ...] or im[mask] */
     MC_EXPR_ASSIGN,  /* target op= rhs (as expression or statement root) */
     MC_EXPR_VEC_LIT, /* [e1, e2, ...] 1-D vector literal */
@@ -201,12 +208,11 @@ struct mc_expr
         struct
         {
             char            name[MC_TOK_STR_MAX];
-            char            bare[256];
+            char            bare[MC_IDENT_MAX];
             char            loc; /* 'S', 'L', or 0 */
             mc_ident_kind_t id_kind;
             long            var_id;
             long            im_id;
-            int             def_param_idx;
             double          const_val;
         } ident;
 
@@ -240,13 +246,11 @@ struct mc_expr
         struct
         {
             char             name[128];
-            const mc_func_t *fn;      /* built-in function entry, or NULL */
-            int              udef_id; /* index in udef table, or -1 */
-            int              ext_id;  /* index in milk_calc_ext registry, or -1 */
+            const mc_func_t *fn;     /* built-in function entry, or NULL */
+            int              ext_id; /* index in milk_calc_ext registry, or -1 */
             int              nargs;
             mc_expr_t       *args[MC_MAX_ARGS];
             char             kw_names[MC_MAX_ARGS][64]; /* optional keyword arg name k=v */
-            mc_expr_t       *udef_body;                 /* resolved inline body for udef_id >= 0 */
             int              ema_init;
             double           ema_val;
         } call;
@@ -254,7 +258,7 @@ struct mc_expr
         struct
         {
             char            name[MC_TOK_STR_MAX];
-            char            bare[256];
+            char            bare[MC_IDENT_MAX];
             long            im_id;
             int             naxis;
             mc_slice_axis_t axes[MC_MAX_SLICE_AX];
@@ -293,7 +297,8 @@ typedef enum
     MC_STMT_DEF,          /* def f(x, ...) = body */
     MC_STMT_SKIP,         /* skip (inside unit program) */
     MC_STMT_IF,           /* if / elif / else */
-    MC_STMT_FOR           /* for var = start:stop[:step] ... end */
+    MC_STMT_FOR,          /* for var = start:stop[:step] ... end */
+    MC_STMT_DIRECTIVE     /* @calc only, at top level: loadlib "f", listengines [...] */
 } mc_stmt_kind_t;
 
 typedef struct mc_stmt mc_stmt_t;
@@ -313,6 +318,8 @@ struct mc_stmt
     int            is_local;     /* leading 'local' keyword */
     int            needs_image;  /* 1 if statement requires image engine */
     int            is_hist_stmt; /* 1 if appended by hist() ring rewriter */
+    int            src_off;      /* byte span of the statement in the lexed text */
+    int            src_end;
     mc_stmt_t     *next;
 
     union
@@ -343,6 +350,14 @@ struct mc_stmt
             struct mcalc_prog *sub_prog;
         } for_stmt;
     } u;
+
+    struct /* MC_STMT_DEF, outside the union: code that reads u.expr sees NULL */
+    {
+        char       name[64];
+        int        nargs;
+        char       args[MCALC_UDEF_MAXARGS][64];
+        mc_expr_t *body;
+    } def;
 };
 
 /** mc_op_prec() - return binary/ternary operator precedence (or 0 if not an infix operator). */
@@ -364,8 +379,30 @@ static inline int mc_is_rel_tok(mc_tok_type_t t)
 /** mc_scan_number() - scan a numeric literal at @p; return bytes consumed (0 if not a number). */
 size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, double *out_d);
 
+/** mc_scan_ident() - length of the identifier or entity path at @start (`s.my-cam.cnt0`). */
+size_t mc_scan_ident(const char *start);
+
 /** mc_lex() - tokenize calculator source @src into @out (returns 0 on ok, -1 on lexical error). */
 int mc_lex(const char *src, mc_tok_list_t *out);
+
+/** mc_udef_add_stmt() - register the def of statement @s (taking its body); -1 with @err on error. */
+int mc_udef_add_stmt(mc_stmt_t *s, char *err, size_t errsz);
+
+/** mc_udef_save() / mc_udef_restore() - copy the def table, and put that copy back. */
+void mc_udef_save(void);
+void mc_udef_restore(void);
+
+/** mc_expr_child_slots() - addresses of @e's child pointers in @slots; returns their number. */
+int mc_expr_child_slots(mc_expr_t *e, mc_expr_t **slots[MC_MAX_ARGS]);
+
+/** mc_expr_clone() - deep copy of expression @e, without per-call-site state (NULL if out of memory). */
+mc_expr_t *mc_expr_clone(const mc_expr_t *e);
+
+/** mc_tok_list_free() - release the buffers mc_lex() allocated in @tl (not @tl itself). */
+void mc_tok_list_free(mc_tok_list_t *tl);
+
+/** mc_stmt_text() - copy of statement @s's text in @src (the text it was lexed from), trimmed. */
+char *mc_stmt_text(const mc_stmt_t *s, const char *src);
 
 /** mc_parse_stmt() - parse a single statement from @tl (returns NULL on syntax error). */
 mc_stmt_t *mc_parse_stmt(mc_tok_list_t *tl, char *err, size_t errsz);
@@ -418,8 +455,12 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
 /** mc_scalar_set_slice_end() - set active slice axis 'end' bound (-1 when inactive). */
 void mc_scalar_set_slice_end(long end_val);
 
-/** mc_scalar_sync_host() - adjust active `mcalc_eval_bash` depth for host string sync. */
-int mc_scalar_sync_host(int delta);
+
+/** mc_def_check() - check the names and calls of def statement @s's body (0 ok, -1: @err why). */
+int mc_def_check(mc_stmt_t *s, char *err, size_t errsz);
+
+/** mc_truth() - 1 if condition value @v is true, 0 if false (zero, NaN), -1 if it is a string. */
+int mc_truth(const mc_val_t *v);
 
 /** mc_scalar_exec_stmt() - execute a resolved scalar statement @s into @out (0 on ok, -1 on err). */
 int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz);
@@ -460,7 +501,7 @@ int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out
 /** mc_self_init_create() - create frame-0 zero-initialized stream or variable @tb for @rhs. */
 void mc_self_init_create(const char *tb, int is_local, const mc_expr_t *rhs);
 
-/** mc_rewrite_history() - expand `hist(s, N)` and `prev(s[, k])` into ring-buffer slices. */
-char *mc_rewrite_history(const char *text, int *out_nhist, char *err, size_t errsz);
+/** mc_hist_rewrite() - turn the hist()/prev() of program @head into ring slices and updates. */
+int mc_hist_rewrite(mc_stmt_t **head, int in_unit, int *out_nhist, char *err, size_t errsz);
 
 #endif /* MILK_MC_AST_H */

@@ -61,10 +61,11 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req);
  */
 int milk_bash_engine_exec_file(const char *filename, int *out_exit_req);
 
-/** Listening socket of the in-process server (-1 before start), for the REPL's idle select(). */
-int milk_bash_engine_listen_fd(void);
+/** The in-process server's requests to poll (-1 before start), for the REPL's idle select():
+ * new connections and kept ones (milk_server_ready_fd()). */
+int milk_bash_engine_ready_fd(void);
 
-/** Serve one pending request on the in-process server socket while the prompt is idle. */
+/** Serve the pending requests of the in-process server while the prompt is idle. */
 void milk_bash_engine_serve(void);
 
 /** 1 once a client asked milk-cli's session to end (`@session end` from another shell). */

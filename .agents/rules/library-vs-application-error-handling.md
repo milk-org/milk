@@ -29,9 +29,12 @@ like.
   internal-invariant assertion that should crash a
   debug build. Wrap it in `#ifndef NDEBUG`, or use the
   forthcoming `MILK_BUG(fmt, ...)` macro (§5 below).
+  The documented exception is `MILK_WEAK_FUNCDEF`
+  ([dependency_system.md](../../docs/developer/dependency_system.md)): the stub of a feature
+  that was not built reports it and aborts.
 
 ```c
-/* WRONG — library code (processinfo_shm_create.c) */
+/* WRONG — library code */
 SM_fd = open(SM_fname,
              O_RDWR | O_CREAT | O_TRUNC, FILEMODE);
 if (SM_fd == -1)
@@ -68,8 +71,7 @@ Three approved function shapes:
    when the natural return type can collide with an
    error sentinel. Functions that return
    `long pindex` or `-1` from the same return slot
-   (today's `processinfo_shm_list_create()` is the
-   canonical counter-example) violate this rule.
+   violate this rule.
 3. **Pointer-returning:** MAY return `NULL` on
    failure; the function MUST call `PRINT_ERROR`
    itself before returning `NULL` (the caller has no
@@ -94,7 +96,9 @@ and the codes must satisfy
 
 - `EXECUTE_SYSTEM_COMMAND(format, ...)` checks the
   `system()` return and logs failures via
-  `PRINT_ERROR`. Use this by default.
+  `PRINT_ERROR`. Use this by default, in coremods and
+  plugins only: engine libraries (`src/engine`) never
+  call `system()` (the `engine_guards` CTest rejects it).
 - `EXECUTE_SYSTEM_COMMAND_NOCHECK(format, ...)` is the
   opt-in silent variant. Use it only when the exit
   status genuinely doesn't matter (e.g. removing a
@@ -108,7 +112,7 @@ and the codes must satisfy
 
 ## 4. Standalone CLI Exit Codes
 
-For executables with their own `main()` (`milkCTRL`,
+For executables with their own `main()` (`milk-CTRL`,
 `milk-stream-graph`, `milk-stream-info`,
 `milk-procinfo-info`, `milk-fps-*` wrappers,
 `milk-streamCTRL`, `milk-fpsCTRL`, `milk-procCTRL`):

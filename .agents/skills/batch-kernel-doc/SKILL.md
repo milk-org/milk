@@ -22,20 +22,6 @@ functions with Kernel-Doc style comments.
 Find functions that lack a `/** ... */` comment
 block immediately above them.
 
-### Quick scan command
-
-```bash
-# List .c files with undocumented functions
-# (function definitions not preceded by /**)
-for f in src/path/*.c; do
-  count=$(grep -cP '^\w[\w\s\*]*\(' "$f" \
-    | head -1)
-  documented=$(grep -cB1 '^\w[\w\s\*]*\(' "$f" \
-    | grep -c '/\*\*')
-  echo "$f: $count functions, $documented documented"
-done
-```
-
 ### Manual scan approach
 
 For each `.c` file:
@@ -60,28 +46,15 @@ Order by impact:
 
 ### Kernel-Doc format
 
-```c
-/**
- * function_name - Brief one-line description
- * @param1:  Description of first parameter
- * @param2:  Description of second parameter
- *
- * Detailed description of what the function does,
- * why it exists, and any important algorithmic
- * notes. Keep lines ≤ 100 characters.
- *
- * Context: any important usage context (e.g.,
- * "called from the main loop", "must hold lock").
- *
- * Return: Description of return value, or "void"
- */
-```
+Follow [Documenting Code
+§3.1](../../../docs/developer/DocumentingCode.md#31-standard-function-documentation):
+`name() - summary`, one `@arg:` line per parameter, a description, then `Return:`.
 
 ### Content guidelines
 
 - **Brief line**: verb phrase describing the
   action (`"Parse arithmetic expression"`,
-  `"Register CLI command for module"`)
+  `"Build response matrix"`)
 - **Parameters**: describe purpose and valid
   ranges, not just type restating
 - **Body**: explain the _why_ and _how_, not
@@ -97,27 +70,27 @@ Order by impact:
 
 ```c
 /**
- * module_init - Initialize the FOO subsystem
+ * module_init() - Initialize the FOO subsystem
  * @config:  Configuration parameters
  *
- * Allocates internal state, registers CLI
- * commands, and connects to shared memory
- * streams. Must be called before any other
- * FOO function.
+ * Allocates internal state and connects to
+ * shared memory streams. Must be called before
+ * any other FOO function.
  *
  * Return: RETURN_SUCCESS or RETURN_FAILURE
  */
 ```
 
-**Compute / FPS exec function:**
+**Compute function (`MILK_RUNNABLE` unit):**
 
 ```c
 /**
- * fpsexec - Execute the BAR computation
+ * bar_compute() - Execute the BAR computation
+ * @self:  Runnable descriptor of the unit
  *
- * Core computation function called by the FPS
- * framework. Parameters are synced from shared
- * memory before each invocation.
+ * Compute function of the BAR unit. Parameters
+ * are synced from shared memory before each
+ * invocation.
  *
  * Algorithm: [brief description of the method]
  *
@@ -126,20 +99,6 @@ Order by impact:
  * vectorization.
  *
  * Return: RETURN_SUCCESS or RETURN_FAILURE
- */
-```
-
-**CLI registration function:**
-
-```c
-/**
- * <module>__funcname - one-line summary
- *
- * Registers the "module.funcname" command with
- * the CLI framework. Called from initModule()
- * during module loading.
- *
- * Return: CLI registration error code
  */
 ```
 
@@ -155,7 +114,9 @@ with correctness:
    syntax errors in the doc comments
    c. Check that no functions were accidentally
    modified (only comments added)
-3. **Between batches**: commit the changes so
+3. **Between batches**: commit the changes on a
+   feature branch, never on `dev` or
+   `framework-dev` (`git-workflow` rule), so
    that failures in a later batch don't lose
    earlier work
 4. **Header files**: after documenting `.c`

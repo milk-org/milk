@@ -32,6 +32,7 @@
 #include "fps_internal.h"
 
 #include "fps_GetParamIndex.h"
+#include "fps_GetTypeString.h"
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 #include "fps_paramvalue.h"
@@ -704,215 +705,103 @@ uint64_t *functionparameter_GetParamPtr_fpflag(FPS *fps, const char *paramname)
  * ========================================================== */
 
 /**
- * functionparameter_SetParamValue_fromString -
- *      set an FPS parameter from a string value.
- * @fps:      connected FPS structure
- * @pindex:   index into fps->parray[]
- * @strval:   NUL-terminated string representation
+ * functionparameter_SetParamValue_arg - set an FPS parameter to a value read by milk_argval_parse()
+ * @fps:    connected FPS structure
+ * @pindex: index into fps->parray[]
+ * @ad:     the value, in the field of the parameter's type
  *
- * Looks up the parameter type and dispatches to the
- * appropriate typed setter.  Handles ONOFF parsing
- * ("ON"/"OFF"/"1"/"0") and all numeric/string types.
+ * Writes through the typed setters (an ONOFF value also sets FPFLAG_ONOFF). A string must fit the FPS
+ * (FUNCTION_PARAMETER_STRMAXLEN - 1 characters): it is never cut.
  *
- * Returns 0 on success, -1 if pindex is out of range.
+ * Returns 0 on success, -1 if pindex is out of range or the value does not fit.
  */
-int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char *strval)
+int functionparameter_SetParamValue_arg(FPS *fps, int pindex, const CLICMDARGDATA *ad)
 {
     if (pindex < 0 || pindex >= fps->md->NBparamMAX)
     {
         return -1;
     }
-
-    const char *kw  = fps->parray[pindex].keywordfull;
-    const char *kwf = fps->parray[pindex].keywordfull;
-    char       *endptr;
+    const char *kw = fps->parray[pindex].keywordfull;
+    int         rc = EXIT_FAILURE;
 
     switch (fps->parray[pindex].type)
     {
     case FPTYPE_INT32:
-    {
-        long val = strtol(strval, &endptr, 10);
-        if (*endptr == '\0' || *endptr == '\n')
-        {
-            if (functionparameter_SetParamValue_INT32(fps, kw, (int32_t) val) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s INT32 %ld", kwf, val);
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_INT32(fps, kw, ad->val.i32);
         break;
-    }
-
     case FPTYPE_UINT32:
-    {
-        long val = strtol(strval, &endptr, 10);
-        if ((*endptr == '\0' || *endptr == '\n') && (val >= 0))
-        {
-            if (functionparameter_SetParamValue_UINT32(fps, kw, (uint32_t) val) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s UINT32 %ld", kwf, val);
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_UINT32(fps, kw, ad->val.ui32);
         break;
-    }
-
     case FPTYPE_INT64:
     case FPTYPE_PID:
-    {
-        long long val = strtoll(strval, &endptr, 10);
-        if (*endptr == '\0' || *endptr == '\n')
-        {
-            if (functionparameter_SetParamValue_INT64(fps, kw, val) == EXIT_SUCCESS)
-            {
-                if (fps->parray[pindex].type == FPTYPE_PID)
-                {
-                    functionparameter_outlog("SETVAL", "%s PID %lld", kwf, val);
-                }
-                else
-                {
-                    functionparameter_outlog("SETVAL", "%s INT64 %lld", kwf, val);
-                }
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_INT64(fps, kw, ad->val.i64);
         break;
-    }
-
     case FPTYPE_UINT64:
-    {
-        long long val = strtoll(strval, &endptr, 10);
-        if ((*endptr == '\0' || *endptr == '\n') && (val >= 0))
-        {
-            if (functionparameter_SetParamValue_UINT64(fps, kw, (uint64_t) val) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s UINT64 %llu", kwf, (unsigned long long) val);
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_UINT64(fps, kw, ad->val.ui64);
         break;
-    }
-
     case FPTYPE_FLOAT32:
-    {
-        float val = strtof(strval, &endptr);
-        if (*endptr == '\0' || *endptr == '\n')
-        {
-            if (functionparameter_SetParamValue_FLOAT32(fps, kw, val) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s FLOAT32 %f", kwf, val);
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_FLOAT32(fps, kw, ad->val.f32);
         break;
-    }
-
     case FPTYPE_FLOAT64:
-    {
-        double val = strtod(strval, &endptr);
-        if (*endptr == '\0' || *endptr == '\n')
-        {
-            if (functionparameter_SetParamValue_FLOAT64(fps, kw, val) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s FLOAT64 %lf", kwf, val);
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_FLOAT64(fps, kw, ad->val.f64);
         break;
-    }
-
     case FPTYPE_TIMESPEC:
     {
-        double val = strtod(strval, &endptr);
-        if (*endptr == '\0' || *endptr == '\n')
-        {
-            struct timespec tspec = { .tv_sec = val, .tv_nsec = 0 };
-            tspec.tv_nsec         = (long) ((val - tspec.tv_sec) * 1e9);
-
-            if (functionparameter_SetParamValue_TIMESPEC(fps, kw, tspec) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s FLOAT64 %lf", kwf,
-                                         (double) tspec.tv_sec + 1e-9 * tspec.tv_nsec);
-                return 0;
-            }
-        }
+        struct timespec ts = { .tv_sec = (time_t) ad->val.f64, .tv_nsec = 0 };
+        ts.tv_nsec         = (long) ((ad->val.f64 - (double) ts.tv_sec) * 1e9);
+        rc                 = functionparameter_SetParamValue_TIMESPEC(fps, kw, ts);
         break;
     }
-
     case FPTYPE_ONOFF:
-    {
-        /* Use exact case-insensitive comparison (with or without
-         * trailing newline, consistent with numeric parsers above)
-         * to avoid silently accepting "ONCE" as ON or "OFFLINE"
-         * as OFF.
-         */
-        int is_on  = strcasecmp(strval, "ON") == 0 || strcasecmp(strval, "ON\n") == 0 ||
-                     strcmp(strval, "1") == 0;
-        int is_off = strcasecmp(strval, "OFF") == 0 || strcasecmp(strval, "OFF\n") == 0 ||
-                     strcmp(strval, "0") == 0;
-
-        if (is_on)
-        {
-            if (functionparameter_SetParamValue_ONOFF(fps, kw, 1) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s ONOFF ON", kwf);
-                return 0;
-            }
-        }
-        else if (is_off)
-        {
-            if (functionparameter_SetParamValue_ONOFF(fps, kw, 0) == EXIT_SUCCESS)
-            {
-                functionparameter_outlog("SETVAL", "%s ONOFF OFF", kwf);
-                return 0;
-            }
-        }
+        rc = functionparameter_SetParamValue_ONOFF(fps, kw, ad->val.i64 != 0);
         break;
-    }
-
-    case FPTYPE_FILENAME:
-    case FPTYPE_FITSFILENAME:
-    case FPTYPE_EXECFILENAME:
-    case FPTYPE_DIRNAME:
-    case FPTYPE_STREAMNAME:
-    case FPTYPE_STRING:
-    case FPTYPE_FPSNAME:
     default:
-    {
-        if (functionparameter_SetParamValue_STRING(fps, kw, strval) == EXIT_SUCCESS)
-        {
-            const char *ttype = "STRING";
-            if (fps->parray[pindex].type == FPTYPE_FILENAME)
-            {
-                ttype = "FILENAME";
-            }
-            else if (fps->parray[pindex].type == FPTYPE_FITSFILENAME)
-            {
-                ttype = "FITSFILENAME";
-            }
-            else if (fps->parray[pindex].type == FPTYPE_EXECFILENAME)
-            {
-                ttype = "EXECFILENAME";
-            }
-            else if (fps->parray[pindex].type == FPTYPE_DIRNAME)
-            {
-                ttype = "DIRNAME";
-            }
-            else if (fps->parray[pindex].type == FPTYPE_STREAMNAME)
-            {
-                ttype = "STREAMNAME";
-            }
-            else if (fps->parray[pindex].type == FPTYPE_FPSNAME)
-            {
-                ttype = "FPSNAME";
-            }
-
-            functionparameter_outlog("SETVAL", "%s %s %s", kwf, ttype, strval);
-            return 0;
-        }
+        rc = (strlen(ad->val.s) < FUNCTION_PARAMETER_STRMAXLEN)
+                 ? functionparameter_SetParamValue_STRING(fps, kw, ad->val.s)
+                 : EXIT_FAILURE;
         break;
     }
-    }
+    return (rc == EXIT_SUCCESS) ? 0 : -1;
+}
 
-    return -1;
+/**
+ * functionparameter_SetParamValue_fromString -
+ *      set an FPS parameter from a string value.
+ * @fps:      connected FPS structure
+ * @pindex:   index into fps->parray[]
+ * @strval:   NUL-terminated string representation (one trailing newline is ignored)
+ *
+ * Reads @strval as every argument is read (milk_argval_parse(): calculator literals, on/off/true/false/
+ * 1/0), sets the parameter (functionparameter_SetParamValue_arg()) and logs it.
+ *
+ * Returns 0 on success, -1 if pindex is out of range or @strval is not a value of the parameter.
+ */
+int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char *strval)
+{
+    CLICMDARGDATA ad;
+    char          txt[STRINGMAXLEN_CLICMDARG];
+    char          shown[STRINGMAXLEN_CLICMDARG];
+    size_t        len = strlen(strval);
+
+    if (pindex < 0 || pindex >= fps->md->NBparamMAX || len >= sizeof(txt))
+    {
+        return -1;
+    }
+    memcpy(txt, strval, len + 1);
+    if (len > 0 && txt[len - 1] == '\n')
+    {
+        txt[len - 1] = '\0';
+    }
+    memset(&ad, 0, sizeof(ad));
+    ad.type = fps->parray[pindex].type;
+    if (milk_argval_parse(ad.type, txt, &ad) != 0 ||
+        functionparameter_SetParamValue_arg(fps, pindex, &ad) != 0)
+    {
+        return -1;
+    }
+    char tname[STRINGMAXLEN_FPSTYPE];
+    functionparameter_GetTypeString((uint32_t) ad.type, tname); /* " INT32 " */
+    milk_argval_format(&ad, shown, sizeof(shown));
+    functionparameter_outlog("SETVAL", "%s%s%s", fps->parray[pindex].keywordfull, tname, shown);
+    return 0;
 }

@@ -353,12 +353,10 @@ extern uint8_t TYPESIZE[32];
 #    define CLI_ALIAS_NAMELEN 64
 #    define CLI_ALIAS_CMDLEN 512
 
-/* Tab completion modes for data.CLImatchMode */
+/* The contexts cli_ts_determine_completion_mode() finds for the word at the prompt */
 #    define CLICOMPLETIONMODE_COMMANDS 0
 #    define CLICOMPLETIONMODE_IMAGES 1
-#    define CLICOMPLETIONMODE_CMDARGS 2
 #    define CLICOMPLETIONMODE_FILES 3
-#    define CLICOMPLETIONMODE_FPSPARAMS 4
 #    define CLICOMPLETIONMODE_VARS_FPS 5
 #    define CLICOMPLETIONMODE_VARS_STREAM 7
 #    define CLICOMPLETIONMODE_VARS_ENV 8

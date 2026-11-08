@@ -16,6 +16,58 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-08** — The milkfft transforms work on every image. They took `resolveIMGID()`'s image
+  ID for a status, so `fft.dofft`, `fft.do1Dfft`, `fft.do1Drfft` and the commands built on them
+  (`imgfilt.fconv`, `fft.fcorrel`, `fft.transl`) did nothing unless their input was the first image
+  in the table. `fft.dofft` honours its direction (1: inverse); the 2-D real transform fills the
+  inverse spectrum and transforms a cube frame by frame; `fft.do1Drfft` takes any real type. A
+  compute unit plans each new `fft` or `ifft` shape with `FFTW_MEASURE` (on one core, a 2048²
+  complex transform: 82 ms estimated, 17 ms measured, planned in 1 s); `@calc` keeps instant
+  `FFTW_ESTIMATE` plans. `@calc --tokens` is removed (use `--list`). The `cmdkey:fpsname:action`
+  syntax, which never worked, is gone from the parser and from `milk-fps-help` `#performance`
+  `#cli`
+- **2026-11-08** — Shorter path for each request to a session. A shell keeps one connection to its
+  session and sends every request on it (a subshell opens its own); it sits near the open-file
+  limit, out of the way of the descriptors scripts open. The session captures the output of commands
+  whose stdout is not a terminal with one thread for its life, not one per command. A server `@calc`
+  takes 20 µs instead of 23, a milk command with its output in a file or a pipe 36–40 µs instead of
+  52–56. A `milk-cli --server` session ended by `milkshutdown` or `@session end` releases its socket
+  before it answers, so the shell's next command starts a new session `#performance` `#cli`
+- **2026-11-08** — One copy of each piece. Bash and the milk-cli prompt complete with one engine:
+  keyword options and words come from the keyword table, `@calc`, `@test`, `@assert`, calc mode and
+  `@{...}` complete function names (with their `(`), variables and images, also inside quotes, and
+  every argument after the first is completed as itself. Syntax highlighting is tree-sitter only:
+  `@config synhl on|off`. A calculator variable holds what was assigned last, a number or a string,
+  in one store: `t = 5; t = "xyz"` gives `xyz`, `s = "5"; s + 1` gives `"51"`; a unit's string
+  parameter takes a string assignment, and a number parameter refuses one. Extension call arguments
+  bind as module-command arguments do, at run time and for the unit's FPS alike (a positional
+  parameter of an operator, a positional value after a named one); too many is an error; `-l`
+  without statements exposes the library's parameters only. `@set` reads its words with one parser
+  in the shell and the session. Shell text is quoted by one lexer and calculator text by the
+  calculator's, everywhere. milk.bash stops with a message when its builtins cannot load (the
+  milk-call fallback is gone). Removed from `milk_calc_ext.h`: the port flags nothing read
+  (`MILK_PORT_TRIGGER`, `MILK_PORT_LATEST`, `MILK_POST_EVERY`, `MILK_POST_ON_CHANGE`),
+  `MILK_OUT_SCALAR_PTR`, `milk_op_set_out_shape1d`, `milk_op_set_out_datatype` and the duplicate
+  `struct <name>`; extension ABI version 2 `#cli` `#api` `#refactor` `#docs`
+- **2026-11-07** — Faster calculator kernels, with the same results. `tan`, `%`, `fmod` and `wrap_pi`
+  vectorize (`%`, `fmod` and `wrap_pi` stay exact while $|x/y| < 2^{52}$, and give NaN beyond);
+  casts and stores to 8- and 16-bit integers and `x & c` use 32-bit vector code; an image one pixel
+  wide keeps the vectorized loop; merged statements that read their own target no longer copy it;
+  `ema` and the reductions read images with typed vector loads; the kernel cache key hashes the
+  shared prelude once. At 256², one thread: `wrap_pi` 1084 → 70 µs, `tan` 348 → 24, `%` 509 → 171,
+  `ema` 221 → 27, `I16 & 0xF0` 40 → 5, `u16()` 33 → 11, a one-column operand 21 → 6. Tier-1a
+  extension kernels run as a step of their own; the docs had said they were fused `#performance`
+  `#docs`
+- **2026-11-07** — One set of calculator language rules. A condition is a number (a string is an
+  error, NaN is false) in `@test`, `@assert`, `@waitfor` and `if` alike; a name is an image first,
+  then a bash variable, then a calculator variable; inside brackets `end` is always the axis end;
+  `wrap_pi` wraps into $(-\pi, \pi]$ for scalars and images; an integer literal beyond 64 bits is a
+  double; a name longer than 79 characters is an error, not cut; `@calc` exits 1 when the
+  calculation fails and 2 for syntax, name and argument errors, and errors in text of several lines
+  name the line; a `def` typed at `@calc` is checked when defined. `irms` is now the root mean square and
+  `trunc(x)` truncates. Removed, each failing with a message that names the replacement: `ln`,
+  `fabs`, `urand`, `grand`, `nrm2`, `trunc(x, lo, hi)`, the `_PI`-style constants, `if`/`for` ...
+  `end` blocks, `listengines` and `--engines` `#cli` `#docs`
 - **2026-11-05** — Calculator logarithm and power functions align with C (`<math.h>`) and Python:
   `log(x)` is now the natural logarithm (with `ln(x)` kept as an alias) and `log10(x)` is the
   base-10 logarithm; `pow(a, b)` replaces the `^` operator (with integer exactness preserved for

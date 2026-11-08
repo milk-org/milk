@@ -188,6 +188,35 @@ int cli_ts_check_prefix_or_boundary_mode(const char *line, int start, const char
 }
 
 /**
+ * cli_ts_shell_ctx - The shell context of each byte of @s (enum msl_ctx, from msl_scan())
+ * @s:   Text
+ * @len: Length of @s
+ *
+ * The one quoting and comment rule of the lexical scanners. A backslash and the character it
+ * escapes count as quoted (MSL_SQ). The caller free()s the result.
+ *
+ * Return: @len + 1 context bytes, or NULL if @s cannot be scanned
+ */
+unsigned char *cli_ts_shell_ctx(const char *s, size_t len)
+{
+    msl_map_t m;
+    if (s == NULL || msl_scan(s, len, &m) != 0)
+    {
+        return NULL;
+    }
+    for (size_t i = 0; i + 1 < len; i++)
+    {
+        if (m.ctx[i] == MSL_CODE && s[i] == '\\')
+        {
+            m.ctx[i] = m.ctx[i + 1] = MSL_SQ;
+            i++;
+        }
+    }
+    free(m.depth);
+    return m.ctx;
+}
+
+/**
  * @brief Lexical fallback for determining completion mode and active command.
  */
 int cli_determine_mode_lexical(const char *line,
@@ -212,31 +241,17 @@ int cli_determine_mode_lexical(const char *line,
         return early;
     }
 
-    int in_sq      = 0;
-    int in_dq      = 0;
+    unsigned char *ctx = cli_ts_shell_ctx(line, (size_t) start);
+    if (ctx == NULL)
+    {
+        return CLICOMPLETIONMODE_COMMANDS;
+    }
     int stmt_start = 0;
     for (int i = 0; i < start; i++)
     {
-        char c = line[i];
-        if (c == '\\' && line[i + 1] != '\0' && !in_sq)
+        if ((ctx[i] == MSL_CODE || ctx[i] == MSL_OPEN) && strchr(";|&({\n`", line[i]) != NULL)
         {
-            i++;
-            continue;
-        }
-        if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-        }
-        else if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (c == ';' || c == '|' || c == '&' || c == '(' || c == '{' || c == '\n' || c == '`')
-            {
-                stmt_start = i + 1;
-            }
+            stmt_start = i + 1;
         }
     }
 
@@ -256,6 +271,7 @@ int cli_determine_mode_lexical(const char *line,
 
     if (cmd_start >= line + start || (line + start) <= cmd_end)
     {
+        free(ctx);
         return CLICOMPLETIONMODE_COMMANDS;
     }
 
@@ -272,44 +288,23 @@ int cli_determine_mode_lexical(const char *line,
 
     int arg_count = 0;
     int in_word   = 0;
-    in_sq         = 0;
-    in_dq         = 0;
-    for (const char *ap = cmd_end; ap < line + start; ap++)
+    for (int i = (int) (cmd_end - line); i < start; i++)
     {
-        char ac = *ap;
-        if (ac == '\\' && *(ap + 1) != '\0' && !in_sq)
+        if (ctx[i] == MSL_CODE && isspace((unsigned char) line[i]))
         {
-            ap++;
-            in_word = 1;
-            continue;
+            in_word = 0;
         }
-        if (ac == '\'' && !in_dq)
+        else if (!in_word)
         {
-            in_sq   = !in_sq;
+            arg_count++;
             in_word = 1;
-        }
-        else if (ac == '"' && !in_sq)
-        {
-            in_dq   = !in_dq;
-            in_word = 1;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (isspace((unsigned char) ac))
-            {
-                in_word = 0;
-            }
-            else if (!in_word)
-            {
-                arg_count++;
-                in_word = 1;
-            }
         }
     }
+    free(ctx);
 
-    if (out_argidx)
+    if (out_argidx) /* the arguments before the word: its index */
     {
-        *out_argidx = (arg_count > 0) ? (arg_count - 1) : 0;
+        *out_argidx = arg_count;
     }
     return -1;
 }
@@ -320,56 +315,24 @@ int cli_determine_mode_lexical(const char *line,
  * @len:  Length of @line in bytes.
  * @mask: Output array of @len bytes receiving the lexical state per byte.
  *
- * Populates `mask[i]` with 0 for unquoted code, 1 for single-quoted text,
- * 2 for double-quoted text, and 3 for `#` comments so delimiter and keyword
- * matchers can skip non-code regions in O(1) time per byte.
+ * Populates `mask[i]` (cli_ts_shell_ctx()) with 0 for unquoted code, 1 for single-quoted or
+ * escaped text, 2 for double-quoted text, and 3 for comments and here-documents so delimiter and
+ * keyword matchers can skip non-code regions in O(1) time per byte.
  *
  * Return: Nothing.
  */
 static void build_quote_comment_mask(const char *line, int len, uint8_t *mask)
 {
-    int in_sq  = 0;
-    int in_dq  = 0;
-    int in_cmt = 0;
+    unsigned char *ctx = cli_ts_shell_ctx(line, (size_t) len);
     for (int i = 0; i < len; i++)
     {
-        char c = line[i];
-        if (in_cmt)
-        {
-            mask[i] = 3;
-            if (c == '\n')
-            {
-                in_cmt = 0;
-            }
-            continue;
-        }
-        if (c == '\\' && i + 1 < len && !in_sq)
-        {
-            mask[i]     = in_dq ? 2 : 0;
-            mask[i + 1] = in_dq ? 2 : 0;
-            i++;
-            continue;
-        }
-        if (c == '\'' && !in_dq)
-        {
-            in_sq   = !in_sq;
-            mask[i] = 1;
-            continue;
-        }
-        if (c == '"' && !in_sq)
-        {
-            in_dq   = !in_dq;
-            mask[i] = 2;
-            continue;
-        }
-        if (c == '#' && !in_sq && !in_dq)
-        {
-            in_cmt  = 1;
-            mask[i] = 3;
-            continue;
-        }
-        mask[i] = in_sq ? 1 : (in_dq ? 2 : 0);
+        int c   = (ctx != NULL) ? ctx[i] : MSL_CODE;
+        mask[i] = (c == MSL_SQ || c == MSL_ANSI)           ? 1
+                  : (c == MSL_DQ)                          ? 2
+                  : (c == MSL_COMMENT || c == MSL_HEREDOC) ? 3
+                                                           : 0;
     }
+    free(ctx);
 }
 
 /**
@@ -929,48 +892,14 @@ bool cli_ts_is_statement_boundary_before(const char *s, size_t i)
  */
 int cli_ts_count_shell_keyword(const char *s, const char *kw)
 {
-    size_t kwlen      = strlen(kw);
-    int    count      = 0;
-    int    in_dquote  = 0;
-    int    in_squote  = 0;
-    int    in_comment = 0;
+    size_t         kwlen = strlen(kw);
+    size_t         n     = strlen(s);
+    unsigned char *ctx   = cli_ts_shell_ctx(s, n);
+    int            count = 0;
 
-    for (size_t i = 0; s[i] != '\0'; i++)
+    for (size_t i = 0; ctx != NULL && i + kwlen <= n; i++)
     {
-        if (s[i] == '\n')
-        {
-            in_comment = 0;
-        }
-        if (in_comment)
-        {
-            continue;
-        }
-        if (s[i] == '\\' && s[i + 1] != '\0' && !in_squote)
-        {
-            i++;
-            continue;
-        }
-        if (s[i] == '"' && !in_squote)
-        {
-            in_dquote = !in_dquote;
-            continue;
-        }
-        if (s[i] == '\'' && !in_dquote)
-        {
-            in_squote = !in_squote;
-            continue;
-        }
-        if (in_dquote || in_squote)
-        {
-            continue;
-        }
-        if (s[i] == '#' && cli_ts_is_statement_boundary_before(s, i))
-        {
-            in_comment = 1;
-            continue;
-        }
-
-        if (strncmp(&s[i], kw, kwlen) == 0)
+        if (ctx[i] == MSL_CODE && strncmp(&s[i], kw, kwlen) == 0)
         {
             char rc       = s[i + kwlen];
             bool right_ok = (rc == '\0' || rc == ' ' || rc == '\t' || rc == '\n' || rc == '\r' ||
@@ -982,6 +911,7 @@ int cli_ts_count_shell_keyword(const char *s, const char *kw)
             }
         }
     }
+    free(ctx);
     return count;
 }
 
@@ -990,71 +920,20 @@ int cli_ts_count_shell_keyword(const char *s, const char *kw)
  */
 void cli_ts_count_block_braces(const char *s, int *out_open, int *out_close)
 {
-    int open_cnt        = 0;
-    int close_cnt       = 0;
-    int in_dquote       = 0;
-    int in_squote       = 0;
-    int in_comment      = 0;
-    int var_brace_depth = 0;
+    size_t         n         = strlen(s);
+    unsigned char *ctx       = cli_ts_shell_ctx(s, n);
+    int            open_cnt  = 0;
+    int            close_cnt = 0;
 
-    for (size_t i = 0; s[i] != '\0'; i++)
+    for (size_t i = 0; ctx != NULL && i < n; i++)
     {
-        if (s[i] == '\n')
+        if (ctx[i] == MSL_CODE) /* not ${...}, quoted or a comment */
         {
-            in_comment = 0;
-        }
-        if (in_comment)
-        {
-            continue;
-        }
-        if (s[i] == '\\' && s[i + 1] != '\0' && !in_squote)
-        {
-            i++;
-            continue;
-        }
-        if (s[i] == '"' && !in_squote)
-        {
-            in_dquote = !in_dquote;
-            continue;
-        }
-        if (s[i] == '\'' && !in_dquote)
-        {
-            in_squote = !in_squote;
-            continue;
-        }
-        if (in_dquote || in_squote)
-        {
-            continue;
-        }
-        if (s[i] == '#' && cli_ts_is_statement_boundary_before(s, i))
-        {
-            in_comment = 1;
-            continue;
-        }
-
-        if (s[i] == '$' && s[i + 1] == '{')
-        {
-            var_brace_depth++;
-            i++;
-            continue;
-        }
-        if (s[i] == '{')
-        {
-            open_cnt++;
-        }
-        else if (s[i] == '}')
-        {
-            if (var_brace_depth > 0)
-            {
-                var_brace_depth--;
-            }
-            else
-            {
-                close_cnt++;
-            }
+            open_cnt += (s[i] == '{');
+            close_cnt += (s[i] == '}');
         }
     }
-
+    free(ctx);
     if (out_open)
     {
         *out_open = open_cnt;

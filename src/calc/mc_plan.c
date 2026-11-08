@@ -137,32 +137,18 @@ static int is_ctor_fn(const mc_func_t *fn)
 }
 
 /**
- * is_inline_stencil_fn - Check if a stencil function can be emitted inline in a C kernel
- * @fn: Built-in function descriptor (may be NULL)
- *
- * Small fixed-neighborhood non-linear filters (`medfilt3`, `medfilt5`, `medfilt7`,
- * `imin3`, `imax3`) are evaluated directly inside the generated C kernel via
- * `MC_DEF_SPATIAL` helpers, whereas separable convolutions (`gaussfilt`, `boxfilt`,
- * etc.) run as pre-staged multi-pass constructors.
- *
- * Return: 1 if inline stencil function, 0 otherwise
- */
-static int is_inline_stencil_fn(const mc_func_t *fn)
-{
-    return fn != NULL && fn->kind == MC_FN_STENCIL_LIB &&
-           (strncmp(fn->name, "medfilt", 7) == 0 || strcmp(fn->name, "imin3") == 0 ||
-            strcmp(fn->name, "imax3") == 0);
-}
-
-/**
  * is_prestage_stencil_fn - Check if a stencil function requires a pre-stage step
  * @fn: Built-in function descriptor (may be NULL)
  *
- * Return: 1 if @fn is a library stencil that is not emitted inline, 0 otherwise
+ * Library stencils (`medfilt*`, `imin3`, `imax3`, `boxmean`, `conv2`, `gauss`, `cumsum`,
+ * `pixunmap`, `rprof`) run as whole-image pre-stages (mc_exec_prestage()), mostly COREMOD_arith
+ * kernels; `shift` and `roll` stay in the fused pass.
+ *
+ * Return: 1 if @fn is a library stencil, 0 otherwise
  */
 static int is_prestage_stencil_fn(const mc_func_t *fn)
 {
-    return fn != NULL && fn->kind == MC_FN_STENCIL_LIB && !is_inline_stencil_fn(fn);
+    return fn != NULL && fn->kind == MC_FN_STENCIL_LIB;
 }
 
 /**
@@ -171,56 +157,19 @@ static int is_prestage_stencil_fn(const mc_func_t *fn)
  *
  * Identifies vector literals, `linspace`/`zeros`/`eye`, linear algebra and shape
  * operators, pre-staged stencil filters, registered C extensions, image-returning
- * axis reductions (`isum(im, axis)`, etc.), and stateful `ema()` calls. Also
- * unwraps user-defined `def` macro calls to inspect their body.
+ * axis reductions (`isum(im, axis)`, etc.), and stateful `ema()` calls.
  *
  * Return: 1 if @e requires a `MC_STEP_CTOR` execution step, 0 otherwise
  */
 static int is_ctor_call(const mc_expr_t *e)
 {
     const mc_func_t *fn = (e != NULL && e->kind == MC_EXPR_CALL) ? e->u.call.fn : NULL;
-    if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.udef_id >= 0 &&
-        e->u.call.udef_body != NULL)
-    {
-        return is_ctor_call(e->u.call.udef_body);
-    }
     return (e != NULL && e->kind == MC_EXPR_VEC_LIT) || is_ctor_fn(fn) ||
            is_prestage_stencil_fn(fn) ||
            (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
            (fn != NULL && e->res_kind == MC_RES_IMAGE &&
             (fn->kind == MC_FN_REDUCE_D ||
              (fn->kind == MC_FN_PROG && strcmp(fn->name, "ema") == 0)));
-}
-
-/**
- * expr_uses_def_param - Check if an expression tree references any `def` parameter
- * @e: Expression AST node to inspect
- *
- * When walking inside a user-defined function (`def f(a, b) = ...`), sub-expressions
- * that depend on formal parameters cannot be hoisted as raw AST nodes without
- * substituting the caller's argument expressions first.
- *
- * Return: 1 if any `MC_EXPR_IDENT` in @e has `def_param_idx >= 0`, 0 otherwise
- */
-static int expr_uses_def_param(const mc_expr_t *e)
-{
-    int r = (e != NULL) &&
-            ((e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0) ||
-             (e->kind == MC_EXPR_UNARY && expr_uses_def_param(e->u.unary.operand)) ||
-             (e->kind == MC_EXPR_BINARY &&
-              (expr_uses_def_param(e->u.binary.left) || expr_uses_def_param(e->u.binary.right))) ||
-             (e->kind == MC_EXPR_TERNARY &&
-              (expr_uses_def_param(e->u.ternary.cond) || expr_uses_def_param(e->u.ternary.t_expr) ||
-               expr_uses_def_param(e->u.ternary.f_expr))));
-    for (int i = 0; e != NULL && e->kind == MC_EXPR_CHAIN && i <= e->u.chain.nops; i++)
-    {
-        r |= expr_uses_def_param(e->u.chain.operands[i]);
-    }
-    for (int i = 0; e != NULL && e->kind == MC_EXPR_CALL && i < e->u.call.nargs; i++)
-    {
-        r |= expr_uses_def_param(e->u.call.args[i]);
-    }
-    return r;
 }
 
 /**
@@ -231,7 +180,7 @@ static int expr_uses_def_param(const mc_expr_t *e)
  *
  * Recursively traverses @e and rejects unresolved function calls that belong
  * neither to the built-in table (`fn != NULL`) nor to the C extension registry
- * (`ext_id >= 0`) nor to user-defined functions (`udef_id >= 0`).
+ * (`ext_id >= 0`).
  *
  * Return: 0 if supported, -1 on error (with @err populated)
  */
@@ -273,17 +222,15 @@ static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
     {
         rc = check_expr_supported(e->u.call.args[i], err, errsz);
     }
-    if (!e || e->kind != MC_EXPR_CALL || rc != 0 || e->u.call.udef_id >= 0)
+    if (!e || e->kind != MC_EXPR_CALL || rc != 0)
     {
-        return (rc || !e || e->kind != MC_EXPR_CALL)
-                   ? rc
-                   : check_expr_supported(e->u.call.udef_body, err, errsz);
+        return rc;
     }
     const mc_fn_kind_t fk =
         (e->u.call.ext_id < 0 && e->u.call.fn) ? e->u.call.fn->kind : (mc_fn_kind_t) -1;
     return (e->u.call.ext_id >= 0 || fk >= 0)
                ? 0
-               : plan_err(err, errsz, "not implemented in the new engine");
+               : plan_err(err, errsz, "'%s' cannot run in a compiled program", e->u.call.name);
 }
 
 /* ========================================================================== */
@@ -439,10 +386,7 @@ static int add_scalar_op(mc_pass_t *pass, const mc_expr_t *se, int div_c, int no
  * @err:        Error message buffer
  * @errsz:      Size of @err in bytes
  * @comp_gens:  Active array comprehension generators (or NULL)
- * @def_stk:    Call stack of active user-defined `def` functions (up to depth 4)
- * @def_args:   Call stack of caller argument arrays for active `def` invocations
  * @ncomp_gens: Number of active comprehension generators
- * @def_depth:  Current `def` expansion nesting depth
  * @in_guarded: 1 when inside a short-circuit or ternary branch where zero divisors
  *              may be dynamically guarded and must not fail unconditionally before
  *              the kernel runs
@@ -454,10 +398,7 @@ typedef struct
     char                *err;
     size_t               errsz;
     const mc_comp_gen_t *comp_gens;
-    const mcalc_udef_t  *def_stk[4];
-    mc_expr_t *const    *def_args[4];
     int                  ncomp_gens;
-    int                  def_depth;
     int                  in_guarded;
 } plan_walk_ctx_t;
 
@@ -488,16 +429,6 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         return 0;
     }
 
-    /* Substitute formal parameter if inside an expanded user-defined `def` call */
-    if (e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 && w->def_depth > 0)
-    {
-        w->def_depth--;
-        int rc = walk_pass_expr(w, w->def_args[w->def_depth][e->u.ident.def_param_idx], div_check,
-                                non_pt, tbl);
-        w->def_depth++;
-        return rc;
-    }
-
     /* Comprehension generator variables (e.g. `i`, `j`) are synthesized in-kernel */
     for (int g = 0; e->kind == MC_EXPR_IDENT && g < w->ncomp_gens; g++)
     {
@@ -508,13 +439,13 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
     }
 
     /* Hoist pure scalar subtrees as pre-evaluated scalar pass parameters */
-    if (e->res_kind != MC_RES_IMAGE && !(w->def_depth > 0 && expr_uses_def_param(e)))
+    if (e->res_kind != MC_RES_IMAGE)
     {
         return add_scalar_op(w->pass, e, w->in_guarded ? 0 : div_check, non_pt, -1);
     }
 
     /* Hoist embedded constructor/prestage calls into a preceding MC_STEP_CTOR step */
-    if (is_ctor_call(e) && !(w->def_depth > 0 && expr_uses_def_param(e)))
+    if (is_ctor_call(e))
     {
         mcalc_prog_t *p = w->prog;
         char          ps_nm[32];
@@ -629,19 +560,6 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         }
         return rc ? -1 : walk_pass_expr(w, e->u.comp.body, 0, 0, 0);
     case MC_EXPR_CALL:
-        if (e->u.call.udef_id >= 0)
-        {
-            const mcalc_udef_t *u = mcalc_udef_get(e->u.call.udef_id);
-            if (u == NULL || w->def_depth >= 4)
-            {
-                return -1;
-            }
-            w->def_stk[w->def_depth]    = u;
-            w->def_args[w->def_depth++] = e->u.call.args;
-            rc                          = walk_pass_expr(w, e->u.call.udef_body, 0, 0, 0);
-            w->def_depth--;
-            return rc;
-        }
         if (e->u.call.fn == NULL)
         {
             return -1;
@@ -708,15 +626,12 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
             return (rc == 0 && e->u.call.nargs == 3) ? walk_pass_expr(w, e->u.call.args[2], 0, 0, 0)
                                                      : rc;
         default:
-        {
-            int is_st = is_inline_stencil_fn(e->u.call.fn);
-            w->pass->uses_coords_or_stencil |= (e->u.call.fn->kind == MC_FN_COORD || is_st);
+            w->pass->uses_coords_or_stencil |= (e->u.call.fn->kind == MC_FN_COORD);
             for (int i = 0; i < e->u.call.nargs && rc == 0; i++)
             {
-                rc = walk_pass_expr(w, e->u.call.args[i], 0, (is_st && i == 0), 0);
+                rc = walk_pass_expr(w, e->u.call.args[i], 0, 0, 0);
             }
             return rc;
-        }
         }
     default:
         return -1;
@@ -851,13 +766,9 @@ static const mc_expr_t *unwrap_ax_red(const mc_op_desc_t *o)
 {
     const mc_expr_t *se =
         (!o->is_scalar && !o->is_out && !o->has_slice && !o->is_expr_im) ? o->slice_expr : NULL;
-    const mc_expr_t *ub =
-        (se && se->kind == MC_EXPR_CALL && se->u.call.udef_id >= 0 && se->u.call.udef_body)
-            ? se->u.call.udef_body
-            : se;
-    return (ub && ub->kind == MC_EXPR_CALL && ub->u.call.fn &&
-            ub->u.call.fn->kind == MC_FN_REDUCE_D && ub->u.call.nargs == 2)
-               ? ub
+    return (se && se->kind == MC_EXPR_CALL && se->u.call.fn &&
+            se->u.call.fn->kind == MC_FN_REDUCE_D && se->u.call.nargs == 2)
+               ? se
                : NULL;
 }
 
@@ -1031,6 +942,18 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
     pass->vny          = sz[1];
     pass->vnz          = sz[2];
     pass->is_1d_contig = (contig && sz[0] > 0);
+
+    /* An image one pixel wide is broadcast along x: the SIMD row loop reads its one value per row
+     * (the kernel checks at run time that its x stride is 0) */
+    for (int i = 0; sz[0] > 1 && i < pass->nops; i++)
+    {
+        mc_op_desc_t *o = &pass->ops[i];
+        if (!o->is_scalar && !o->is_out && !o->is_table_arg && !o->has_slice && !o->is_expr_im &&
+            !o->is_non_pointwise && o->slot_idx >= 0 && prog->slots[o->slot_idx].plan_size[0] == 1)
+        {
+            o->is_x_bcast = 1;
+        }
+    }
 }
 
 /* ========================================================================== */
@@ -1058,7 +981,7 @@ static void merge_passes_and_elide_locals(mcalc_prog_t *prog)
         if (w > 0 && prog->steps[w - 1].kind == MC_STEP_PASS &&
             prog->steps[r].kind == MC_STEP_PASS &&
             prog->steps[w - 1].is_hist_step == prog->steps[r].is_hist_step &&
-            mc_can_merge_passes(&prog->steps[w - 1].pass, &prog->steps[r].pass))
+            mc_can_merge_passes(prog, &prog->steps[w - 1].pass, &prog->steps[r].pass))
         {
             mc_pass_t *pa = &prog->steps[w - 1].pass;
             mc_pass_t *pb = &prog->steps[r].pass;
@@ -1170,7 +1093,7 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                      !(s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2));
         if (bad_s || (s->kind == MC_STMT_EXPR && check_expr_supported(s->u.expr, err, errsz) != 0))
         {
-            return bad_s ? plan_err(err, errsz, "not implemented in the new engine") : -1;
+            return bad_s ? plan_err(err, errsz, "give as many values as names (a, b = x, y)") : -1;
         }
         for (int j = 0; s->kind == MC_STMT_MULTI_ASSIGN && j < s->u.multi.nrhs; j++)
         {

@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #include "ImageStreamIO/ImageStruct.h"
+#include "mc_ast.h"
 #include "mc_func.h"
 #include "mcalc.h"
 #include "milk_calc_ext.h"
@@ -107,15 +108,59 @@ double mc_sign(double a)
 }
 
 /**
- * mc_wrap_pi - Wrap an angle in radians into the principal interval `[-pi, pi)`
+ * mc_fmodd - Remainder of @x / @y with the quotient truncated toward zero, as fmod()
+ * @x: Dividend
+ * @y: Divisor
+ *
+ * The formula of the generated kernels' `mc_fmodd()` (mc_prelude.h), so `%` on numbers and on
+ * images agree, and it vectorizes there: q = trunc(x / y) may be off by one, and the remainder is
+ * then recomputed with the neighbouring quotient by an FMA, which is exact.
+ *
+ * Return: fmod(@x, @y) while |@x / @y| < 2^52, NaN beyond
+ */
+double mc_fmodd(double x, double y)
+{
+    double q = trunc(x / y), s = copysign(1.0, x / y), r = fma(-q, y, x);
+    r = (r != 0.0 && signbit(r) != signbit(x)) ? fma(-(q - s), y, x) : r;
+    r = (fabs(r) >= fabs(y)) ? fma(-(q + s), y, x) : r;
+    r = (r == 0.0) ? copysign(0.0, x) : r;
+    return (fabs(x / y) < 0x1p52 && fabs(r) < fabs(y)) ? r : NAN;
+}
+
+/**
+ * mc_wrap_pi - Wrap an angle in radians into the principal interval `(-pi, pi]`
  * @a: Input angle in radians
  *
- * Return: Wrapped angle in `[-pi, pi)`
+ * The formula of the generated kernels' `mc_wrap_pid()` (mc_prelude.h), as mc_fmodd() with the
+ * quotient rounded to nearest: remainder(@a, 2 pi), with `-pi` mapped to `pi`.
+ *
+ * Return: Wrapped angle in `(-pi, pi]` while |@a| < 2^52 * 2 pi, NaN beyond
  */
 double mc_wrap_pi(double a)
 {
-    const double two_pi = 2.0 * M_PI;
-    return a - two_pi * floor((a + M_PI) / two_pi);
+    const double tp = 2.0 * M_PI;
+    double       q = rint(a / tp), r = fma(-q, tp, a);
+    r = (r > M_PI) ? fma(-(q + 1.0), tp, a) : ((r < -M_PI) ? fma(-(q - 1.0), tp, a) : r);
+    r = (r == -M_PI) ? M_PI : ((r == 0.0) ? copysign(0.0, a) : r);
+    return (fabs(a) < 0x1p52 * tp) ? r : NAN;
+}
+
+/**
+ * mc_truth - Truth value of a condition (`@test`, `@assert`, `@waitfor`, `if`)
+ * @v: Value of the condition
+ *
+ * A condition is a number: non-zero is true; zero and NaN are false. Shared by the session's
+ * engine and the shell's evaluator (mc_local.c), so both read a condition alike.
+ *
+ * Return: 1 if true, 0 if false, -1 if @v is a string (not a condition)
+ */
+int mc_truth(const mc_val_t *v)
+{
+    if (v->type == MC_VAL_STRING)
+    {
+        return -1;
+    }
+    return (v->type == MC_VAL_LONG) ? (v->lval != 0) : (v->dval != 0.0 && mc_isnan(v->dval) == 0.0);
 }
 
 /**
@@ -198,8 +243,6 @@ static const mc_func_t g_mc_funcs[] = {
       "Base-e exponential" },
     { "exp2", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, exp2, NULL, NULL, "exp2f", "exp2", "exp2(x)",
       "Base-2 exponential" },
-    { "ln", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, log, NULL, NULL, "logf", "log", "ln(x)",
-      "Natural logarithm" },
     { "log", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, log, NULL, NULL, "logf", "log", "log(x)",
       "Natural logarithm" },
     { "log10", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, log10, NULL, NULL, "log10f", "log10", "log10(x)",
@@ -216,14 +259,14 @@ static const mc_func_t g_mc_funcs[] = {
       "Complementary error function" },
     { "abs", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, fabs, NULL, NULL, "fabsf", "fabs", "abs(x)",
       "Absolute value (or complex magnitude)" },
-    { "fabs", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, fabs, NULL, NULL, "fabsf", "fabs", "fabs(x)",
-      "Absolute value" },
     { "ceil", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, ceil, NULL, NULL, "ceilf", "ceil", "ceil(x)",
       "Smallest integer >= x" },
     { "floor", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, floor, NULL, NULL, "floorf", "floor", "floor(x)",
       "Largest integer <= x" },
     { "round", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, round, NULL, NULL, "roundf", "round", "round(x)",
       "Nearest integer" },
+    { "trunc", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, trunc, NULL, NULL, "truncf", "trunc", "trunc(x)",
+      "Integer part, rounded toward zero" },
     { "posi", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, mc_posi, NULL, NULL, "mc_posif", "mc_posid",
       "posi(x)", "Heaviside step (x > 0 ? 1 : 0)" },
     { "sign", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, mc_sign, NULL, NULL, "mc_signf", "mc_signd",
@@ -233,7 +276,7 @@ static const mc_func_t g_mc_funcs[] = {
     { "isfinite", 1, 1, 1, 1, MC_FN_SCALAR, 0, 1, 1, mc_isfinite, NULL, NULL, "mc_isfinitef",
       "mc_isfinited", "isfinite(x)", "IEEE-754 finite test" },
     { "wrap_pi", 1, 1, 1, 1, MC_FN_SCALAR, 0, 0, 0, mc_wrap_pi, NULL, NULL, "mc_wrap_pif",
-      "mc_wrap_pid", "wrap_pi(x)", "Wrap radians into [-pi, pi)" },
+      "mc_wrap_pid", "wrap_pi(x)", "Wrap radians into (-pi, pi]" },
     { "sinc", 1, 1, 1, 1, MC_FN_SCALAR, 0, 0, 0, mc_sinc, NULL, NULL, "mc_sincf", "mc_sincd",
       "sinc(x)", "Normalized sinc sin(pi*x)/(pi*x)" },
 
@@ -266,16 +309,14 @@ static const mc_func_t g_mc_funcs[] = {
       "atan2(y, x)", "Four-quadrant inverse tangent" },
     { "hypot", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, hypot, NULL, "mc_hypotf", "mc_hypotd",
       "hypot(x, y)", "Euclidean norm sqrt(x^2 + y^2)" },
-    { "fmod", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, fmod, NULL, "fmodf", "fmod", "fmod(x, y)",
-      "Floating-point remainder" },
+    { "fmod", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, mc_fmodd, NULL, "mc_fmodf", "mc_fmodd",
+      "fmod(x, y)", "Floating-point remainder" },
     { "min", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, fmin, NULL, "mc_minf", "mc_mind", "min(a, b)",
       "Minimum of a and b" },
     { "max", 2, 2, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, fmax, NULL, "mc_maxf", "mc_maxd", "max(a, b)",
       "Maximum of a and b" },
     { "clamp", 3, 3, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, NULL, mc_clamp, "mc_clampf", "mc_clampd",
       "clamp(x, lo, hi)", "Clamp x to [lo, hi]" },
-    { "trunc", 3, 3, 1, 1, MC_FN_SCALAR, 0, 1, 1, NULL, NULL, mc_clamp, "mc_clampf", "mc_clampd",
-      "trunc(x, lo, hi)", "Clamp x to [lo, hi] (alias of clamp)" },
     { "where", 3, 3, 1, 1, MC_FN_WHERE, 0, 0, 1, NULL, NULL, NULL, "where", "where",
       "where(c, a, b)", "Conditional select (c != 0 ? a : b)" },
 
@@ -290,12 +331,8 @@ static const mc_func_t g_mc_funcs[] = {
       "itheta(im[, cx, cy])", "Per-pixel polar angle atan2(y - cy, x - cx)" },
     { "rand", 0, 2, 1, 1, MC_FN_PRNG, 0, 0, 1, NULL, NULL, NULL, "mc_rand", "mc_rand",
       "rand([im, s])", "Uniform random numbers in [0, 1)" },
-    { "urand", 0, 2, 1, 1, MC_FN_PRNG, 0, 0, 1, NULL, NULL, NULL, "mc_rand", "mc_rand",
-      "urand([im, s])", "Uniform random numbers in [0, 1)" },
     { "randn", 0, 2, 1, 1, MC_FN_PRNG, 0, 0, 1, NULL, NULL, NULL, "mc_randn", "mc_randn",
       "randn([im, s])", "Standard normal random numbers N(0, 1)" },
-    { "grand", 0, 2, 1, 1, MC_FN_PRNG, 0, 0, 1, NULL, NULL, NULL, "mc_randn", "mc_randn",
-      "grand([im, s])", "Standard normal random numbers N(0, 1)" },
     { "real", 1, 1, 1, 1, MC_FN_CPLX, 0, 0, 1, NULL, NULL, NULL, "crealf", "creal", "real(z)",
       "Real part of complex image" },
     { "imag", 1, 1, 1, 1, MC_FN_CPLX, 0, 0, 1, NULL, NULL, NULL, "cimagf", "cimag", "imag(z)",
@@ -331,7 +368,7 @@ static const mc_func_t g_mc_funcs[] = {
     { "istd", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "istd(im[, mask])",
       "Population standard deviation" },
     { "irms", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "irms(im[, mask])",
-      "Population standard deviation (alias of istd)" },
+      "Root mean square sqrt(mean(x^2))" },
     { "ivar", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "ivar(im[, mask])",
       "Population variance" },
     { "imin", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "imin(im[, mask])",
@@ -340,8 +377,6 @@ static const mc_func_t g_mc_funcs[] = {
       "Maximum pixel value" },
     { "norm", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "norm(im[, mask])",
       "Euclidean L2 norm sqrt(sum(x^2))" },
-    { "nrm2", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "nrm2(im[, mask])",
-      "Euclidean L2 norm (alias of norm)" },
     { "asum", 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "asum(im[, mask])",
       "L1 absolute sum sum(|x|)" },
     { "icount", 1, 2, 1, 1, MC_FN_REDUCE_L, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "icount(im)",
@@ -359,9 +394,9 @@ static const mc_func_t g_mc_funcs[] = {
     { "icentroid", 1, 2, 2, 3, MC_FN_ICENTROID, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
       "icentroid(im[, th])", "Flux-weighted centroid: cx, cy[, flux] = icentroid(im)" },
     { "imedian", 1, 2, 1, 1, MC_FN_EAGER_RED, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "imedian(im[, axis])", "Exact median of pixels" },
+      "imedian(im[, mask])", "Exact median of pixels" },
     { "perc", 2, 3, 1, 1, MC_FN_EAGER_RED, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "perc(im, q[, axis])", "Quantile q in [0, 1]" },
+      "perc(im, q[, mask])", "Quantile q in [0, 1]" },
     { "trace", 1, 1, 1, 1, MC_FN_EAGER_RED, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "trace(im)",
       "Sum of diagonal elements of 2D matrix" },
 
@@ -529,6 +564,63 @@ const mc_func_t *mc_func_find(const char *name)
 }
 
 /**
+ * mc_func_replacement - Name the function that replaced a removed alias
+ * @name: Function identifier string (without `(`)
+ *
+ * Return: The replacement's name, or NULL if @name is not a removed alias
+ */
+const char *mc_func_replacement(const char *name)
+{
+    static const char *const removed[][2] = {
+        { "ln", "log" },      { "fabs", "abs" },  { "urand", "rand" },
+        { "grand", "randn" }, { "nrm2", "norm" },
+    };
+    for (size_t i = 0; name != NULL && i < sizeof(removed) / sizeof(removed[0]); i++)
+    {
+        if (strcmp(name, removed[i][0]) == 0)
+        {
+            return removed[i][1];
+        }
+    }
+    return NULL;
+}
+
+/**
+ * mc_const_removed - Hint for a name that was one of the removed `_PI`-style constants
+ * @name: Bare identifier
+ *
+ * Return: The hint, or NULL if @name was not one of them
+ */
+const char *mc_const_removed(const char *name)
+{
+    static const char *const removed[] = { "_PI", "_e",  "_gamma", "_c", "_h",
+                                           "_k",  "_pc", "_ly",    "_AU" };
+    for (size_t i = 0; name != NULL && i < sizeof(removed) / sizeof(removed[0]); i++)
+    {
+        if (strcmp(name, removed[i]) == 0)
+        {
+            return "the _PI-style constants were removed: use pi, exp(1), or write the value";
+        }
+    }
+    return NULL;
+}
+
+/**
+ * mc_is_reserved_const - Check whether @name is a calculator constant (`pi`, `nan`, `inf`)
+ * @name: Bare identifier
+ *
+ * The constants and the built-in function names are reserved: they cannot be assigned or defined,
+ * so the shell's evaluator and the session's always agree on them.
+ *
+ * Return: 1 if @name is a constant, 0 otherwise
+ */
+int mc_is_reserved_const(const char *name)
+{
+    return name != NULL &&
+           (strcmp(name, "pi") == 0 || strcmp(name, "nan") == 0 || strcmp(name, "inf") == 0);
+}
+
+/**
  * mc_func_table - Return the complete built-in function table and entry count
  * @out_count: Optional output pointer receiving `MC_FUNC_COUNT`
  *
@@ -589,18 +681,18 @@ static const mc_catalog_entry_t g_mc_catalog[] = {
       "fprog_simd", "Hyperbolic functions" },
     { "2. Scalar & Element-Wise Math", "exp(x)  exp2(x)", "TOK_FUNC_D_D", "FI_FN1", "fprog_simd",
       "Base-e and base-2 exponential functions" },
-    { "2. Scalar & Element-Wise Math", "log(x)  ln(x)   log10(x)  log2(x)", "TOK_FUNC_D_D",
-      "FI_FN1", "fprog_simd", "Natural (log, ln), base-10 (log10), and base-2 (log2) logarithms" },
+    { "2. Scalar & Element-Wise Math", "log(x)  log10(x)  log2(x)", "TOK_FUNC_D_D", "FI_FN1",
+      "fprog_simd", "Natural (log), base-10 (log10), and base-2 (log2) logarithms" },
     { "2. Scalar & Element-Wise Math", "sqrt(x) cbrt(x)", "TOK_FUNC_D_D", "FI_FN1", "fprog_simd",
       "Square root and cube root" },
     { "2. Scalar & Element-Wise Math", "erf(x)  erfc(x)", "TOK_FUNC_D_D", "FI_FN1", "fprog_simd",
       "Error function and complementary error function" },
-    { "2. Scalar & Element-Wise Math", "abs(x)  fabs(x)", "TOK_FUNC_D_D", "FI_FN1 / FI_CPART",
-      "fprog_simd", "Absolute value (or complex magnitude |z|)" },
-    { "2. Scalar & Element-Wise Math", "ceil(x) floor(x) round(x)", "TOK_FUNC_D_D", "FI_FN1",
-      "fprog_simd", "Nearest-integer rounding operations" },
+    { "2. Scalar & Element-Wise Math", "abs(x)", "TOK_FUNC_D_D", "FI_FN1 / FI_CPART", "fprog_simd",
+      "Absolute value (or complex magnitude |z|)" },
+    { "2. Scalar & Element-Wise Math", "ceil(x) floor(x) round(x) trunc(x)", "TOK_FUNC_D_D",
+      "FI_FN1", "fprog_simd", "Nearest-integer rounding operations" },
     { "2. Scalar & Element-Wise Math", "posi(x) sign(x) wrap_pi(x) sinc(x)", "TOK_FUNC_D_D",
-      "FI_FN1", "fprog_simd", "Step, signum, phase wrap to [-pi,pi), and normalized sinc" },
+      "FI_FN1", "fprog_simd", "Step, signum, phase wrap to (-pi,pi], and normalized sinc" },
     { "2. Scalar & Element-Wise Math", "isnan(x) isfinite(x)", "TOK_FUNC_D_D", "FI_FN1",
       "fprog_simd", "IEEE-754 NaN and finite checks" },
     { "2. Scalar & Element-Wise Math", "pow(x, y)    atan2(y, x)", "TOK_FUNC_DD_D", "FI_FN2",
@@ -609,8 +701,8 @@ static const mc_catalog_entry_t g_mc_catalog[] = {
       "fprog_simd", "Euclidean norm sqrt(x^2 + y^2) and floating-point modulo" },
     { "2. Scalar & Element-Wise Math", "min(a, b)    max(a, b)", "TOK_FUNC_DD_D", "FI_FN2",
       "fprog_simd", "Per-pixel minimum and maximum" },
-    { "2. Scalar & Element-Wise Math", "clamp(x,lo,hi) trunc(...)", "TOK_FUNC_DDD_D", "FI_FN3",
-      "fprog_simd", "Per-pixel branchless clamp to [lo, hi]" },
+    { "2. Scalar & Element-Wise Math", "clamp(x, lo, hi)", "TOK_FUNC_DDD_D", "FI_FN3", "fprog_simd",
+      "Per-pixel branchless clamp to [lo, hi]" },
     { "2. Scalar & Element-Wise Math", "f32 f64 u8 i8 u16 i16 u32 i32 u64 i64", "TOK_FUNC_D_D",
       "FI_FN1 (cast)", "fprog_simd", "Explicit scalar and image datatype casts" },
     { "3. Coordinates, PRNG & Complex", "ix iy ir itheta(im[, cx, cy])", "TOK_FUNC_COORD",
@@ -641,7 +733,7 @@ static const mc_catalog_entry_t g_mc_catalog[] = {
       "AX_KIND_SEG", "prestage", "Segment-mean projection and annular radial profile" },
     { "6. Reductions & Multi-Output Unpacking", "itot imean istd irms ivar imin imax",
       "TOK_FUNC_IM_D", "FI_RED (SUM)", "fused_reduce", "Fused reductions (optional mask or axis)" },
-    { "6. Reductions & Multi-Output Unpacking", "norm nrm2 asum icount iargmax iargmin iamax",
+    { "6. Reductions & Multi-Output Unpacking", "norm asum icount iargmax iargmin iamax",
       "TOK_FUNC_IM_L", "FI_RED (ARG*)", "fused_reduce",
       "Norms, non-zero count, and argmax/argmin (with 2D/3D unpacking)" },
     { "6. Reductions & Multi-Output Unpacking", "dot(im1, im2)", "TOK_FUNC_IMIM_D", "FI_RED (DOT)",

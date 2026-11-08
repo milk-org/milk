@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "milk_argval.h"
 #include "milk_runnable.h"
 #include "milk_unit.h"
 
@@ -460,4 +461,72 @@ int milk_unit_create(const milk_unit_args *a, const FPS_APP_INFO *app, FPS_CLI_B
         fps_disconnect(&fps);
     }
     return 0;
+}
+
+/**
+ * milk_unit_declare - Declare unit parameters: blank-separated "name:type[=default][:help]" in @text
+ * @tag:  The unit, for messages ("milk.calc")
+ * @text: The declarations
+ * @bind: Binds parameter @name of @type (a writable input) and returns where its value lives, or
+ *        NULL after reporting why it cannot
+ *
+ * Each value starts at its default, read as on the unit's command line (milk_argval_parse()).
+ *
+ * Return: 0, or -1 on a bad declaration or a failed bind
+ */
+int milk_unit_declare(const char *tag,
+                      const char *text,
+                      void *(*bind)(const char *name, uint64_t type, const char *help))
+{
+    char *buf = strdup((text != NULL) ? text : "");
+    char *save;
+    int   rc = (buf == NULL) ? -1 : 0;
+
+    for (char *t = strtok_r(buf, " \t\n", &save); t != NULL && rc == 0;
+         t       = strtok_r(NULL, " \t\n", &save))
+    {
+        milk_argspec_t d;
+        CLICMDARGDATA  ad;
+        void          *p = NULL;
+        char           spec[FUNCTION_PARAMETER_STRMAXLEN * 4];
+        snprintf(spec, sizeof(spec), "%s", t); /* milk_argspec_parse() cuts @t */
+        memset(&ad, 0, sizeof(ad));
+        if (milk_argspec_parse(t, &d) != 0 ||
+            (d.def != NULL &&
+             (milk_argval_parse(d.type, d.def, &ad) != 0 ||
+              (FPTYPE_IS_STRING(d.type) && strlen(d.def) >= FUNCTION_PARAMETER_STRMAXLEN))))
+        {
+            fprintf(stderr,
+                    "%s: bad parameter '%s': name:type[=default][:help], type int uint float bool "
+                    "str stream fits\n",
+                    tag, spec);
+            rc = -1;
+        }
+        else if ((p = bind(d.name, d.type, d.help)) == NULL)
+        {
+            rc = -1;
+        }
+        else if (d.type == FPTYPE_INT64)
+        {
+            *(int64_t *) p = ad.val.i64;
+        }
+        else if (d.type == FPTYPE_UINT64)
+        {
+            *(uint64_t *) p = ad.val.ui64;
+        }
+        else if (d.type == FPTYPE_FLOAT64)
+        {
+            *(double *) p = ad.val.f64;
+        }
+        else if (d.type == FPTYPE_ONOFF)
+        {
+            *(int32_t *) p = (ad.val.i64 != 0);
+        }
+        else
+        {
+            snprintf((char *) p, FUNCTION_PARAMETER_STRMAXLEN, "%s", (d.def != NULL) ? d.def : "");
+        }
+    }
+    free(buf);
+    return rc;
 }

@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "bash/milk_shell_lex.h"
 #include "cli_treesitter.h"
 
 #ifdef USE_TREESITTER
@@ -36,6 +37,8 @@ typedef struct
 } HighlightSpan;
 
 /* ---- Lexical helpers (cli_treesitter_lexical.c) ---- */
+
+unsigned char *cli_ts_shell_ctx(const char *s, size_t len);
 
 int cli_ts_check_prefix_or_boundary_mode(const char *line, int start, const char *text);
 

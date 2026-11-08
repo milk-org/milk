@@ -7,8 +7,8 @@
  * @brief Public C SDK for user-defined `milk.calc` / `@calc` kernels and operators (Tiers 1 & 2).
  *
  * Allows users to bring compiled C functions into `milk.calc` and `@calc` via `-l <file.c|file.so>`:
- *   - Tier 1a (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`): 1D per-pixel SIMD block kernels
- *     fused directly into the OpenMP L1 cache tile loop (`FUSE_BLK = 1024`).
+ *   - Tier 1a (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`): 1D per-pixel SIMD block kernels, run
+ *     on blocks of the image in parallel as a step of their own (not inside the fused pass).
  *   - Tier 1b (`MILK_CALC_REG_STENCIL`): 2D neighborhood row-strip kernels receiving `2*R + 1`
  *     pre-clamped row pointers of length `N + 2*R` (`R` in 1..3).
  *   - Tier 1c (`MILK_CALC_REG_IMG`): Single-function whole-image kernels (`IMAGE *out`,
@@ -32,7 +32,7 @@ extern "C"
 {
 #endif
 
-#define MILK_CALC_EXT_ABI_VERSION 1
+#define MILK_CALC_EXT_ABI_VERSION 2
 #define MILK_CALC_MAX_PORTS 8
 #define MILK_CALC_MAX_PARAMS 16
 #define MILK_CALC_PARAM_BYTES 256 /* largest parameter struct the engine packs for a kernel */
@@ -126,13 +126,9 @@ typedef struct
     MILK_CALC_FDEF_PICK_(__VA_ARGS__, MILK_CALC_PSPEC6_, MILK_CALC_PSPEC5_)(__VA_ARGS__)
 
 /**
- * MILK_CALC_PARAMS - Define typed parameter `struct <name>_par` (and `struct <name>`) and its FPS table
+ * MILK_CALC_PARAMS - Define typed parameter `struct <name>_par` and its FPS table
  */
 #define MILK_CALC_PARAMS(name, PARAM_MACRO)                                                  \
-    struct name                                                                              \
-    {                                                                                        \
-        PARAM_MACRO(MILK_CALC_FIELD_DEF_)                                                    \
-    };                                                                                       \
     struct name##_par                                                                        \
     {                                                                                        \
         PARAM_MACRO(MILK_CALC_FIELD_DEF_)                                                    \
@@ -174,12 +170,8 @@ typedef enum
     MILK_PORT_SCALAR = 2
 } milk_calc_port_kind_t;
 
-/* Port synchronization and optionality flags */
-#define MILK_PORT_TRIGGER 0x01u
-#define MILK_PORT_LATEST 0x02u
+/* Port flag: the input port may be left out of the call */
 #define MILK_PORT_OPT 0x04u
-#define MILK_POST_EVERY 0x10u
-#define MILK_POST_ON_CHANGE 0x20u
 
 /**
  * struct milk_calc_port_spec_t - Metadata for one named operator port
@@ -243,7 +235,6 @@ typedef struct milk_calc_op_ctx_s
     const milk_calc_op_ports_t *ports;
     const IMAGE                *in_img[MILK_CALC_MAX_PORTS];
     double                      in_scalar[MILK_CALC_MAX_PORTS];
-    int                         in_bound[MILK_CALC_MAX_PORTS];
     IMAGE                      *out_img[MILK_CALC_MAX_PORTS];
     double                      out_scalar[MILK_CALC_MAX_PORTS];
     uint8_t                     out_naxis[MILK_CALC_MAX_PORTS];
@@ -369,27 +360,13 @@ static inline void milk_op_set_out_shape3d_(milk_calc_op_ctx_t *ctx,
     }
 }
 
-static inline void milk_op_set_out_datatype_(milk_calc_op_ctx_t *ctx,
-                                             const char         *tok,
-                                             uint8_t             dtype)
-{
-    int idx = milk_calc_out_idx_(ctx, tok);
-    if (idx >= 0 && idx < MILK_CALC_MAX_PORTS)
-    {
-        ctx->out_dtype[idx] = dtype;
-    }
-}
-
 #define MILK_IN(ctx, port) milk_calc_op_in_((ctx), #port)
 #define MILK_IN_SCALAR(ctx, port) milk_calc_op_in_scalar_((ctx), #port)
 #define MILK_OUT(ctx, port) milk_calc_op_out_((ctx), #port)
 #define MILK_OUT_SCALAR(ctx, port) (*milk_calc_op_out_scalar_((ctx), #port))
-#define MILK_OUT_SCALAR_PTR(ctx, port) milk_calc_op_out_scalar_((ctx), #port)
-#define milk_op_set_out_shape1d(ctx, port, nx) milk_op_set_out_shape_((ctx), #port, (nx), 0)
 #define milk_op_set_out_shape(ctx, port, nx, ny) milk_op_set_out_shape_((ctx), #port, (nx), (ny))
 #define milk_op_set_out_shape3d(ctx, port, nx, ny, nz) \
     milk_op_set_out_shape3d_((ctx), #port, (nx), (ny), (nz))
-#define milk_op_set_out_datatype(ctx, port, dt) milk_op_set_out_datatype_((ctx), #port, (dt))
 
 /* Kernel and operator callback function pointer types */
 typedef void (*milk_calc_blk1_fn_t)(float *restrict out,
@@ -514,7 +491,7 @@ typedef struct
         __milk_calc_ext_list                                                                     \
     }
 
-/* Core-tier in-memory kernel and operator registry (implemented in COREMOD_arith) */
+/* In-memory kernel and operator registry (mc_ext_registry.c) */
 int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t errsz);
 
 int milk_calc_ext_register_table(const milk_calc_ext_table_t *tbl, char *err, size_t errsz);

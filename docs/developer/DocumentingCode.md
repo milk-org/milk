@@ -161,7 +161,7 @@ doxygen Doxyfile
 
 > [!NOTE]
 > The MkDocs documentation site (`mkdocs.yml`) is built and deployed to GitHub Pages by
-> `.github/workflows/docs-deploy.yaml` on pushes to `framework-dev`.
+> `.github/workflows/docs.yml` on pushes to `framework-dev`.
 
 ---
 

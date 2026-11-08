@@ -367,45 +367,25 @@ static bool find_match_pair_ast(TSNode          root,
 }
 
 /**
- * @brief Neutralize non-alphanumeric characters of an RHS expression up to `;`, `\n`, or `#`.
+ * @brief Neutralize non-alphanumeric characters of an RHS expression up to `;`, `\n`, or a comment.
  */
-static size_t mask_rhs_statement(const char *line, char *norm, size_t len, size_t start_r)
+static size_t mask_rhs_statement(const char          *line,
+                                 const unsigned char *ctx,
+                                 char                *norm,
+                                 size_t               len,
+                                 size_t               r)
 {
-    size_t r  = start_r;
-    int    sq = 0;
-    int    dq = 0;
-    while (r < len)
+    for (; r < len && ctx[r] != MSL_COMMENT; r++)
     {
-        char rc = line[r];
-        if (rc == '\\' && !sq && r + 1 < len)
+        int quoted = (ctx[r] == MSL_SQ || ctx[r] == MSL_ANSI || ctx[r] == MSL_DQ);
+        if (!quoted && (line[r] == '\n' || line[r] == ';'))
         {
-            r += 2;
-            continue;
+            break;
         }
-        if (rc == '\'' && !dq)
+        if (!quoted && !isspace((unsigned char) line[r]) && !isalnum((unsigned char) line[r]))
         {
-            sq = !sq;
-            r++;
-            continue;
+            norm[r] = '_';
         }
-        if (rc == '"' && !sq)
-        {
-            dq = !dq;
-            r++;
-            continue;
-        }
-        if (!sq && !dq)
-        {
-            if (rc == '\n' || rc == ';' || (rc == '#' && isspace((unsigned char) line[r - 1])))
-            {
-                break;
-            }
-            if (!isspace((unsigned char) rc) && !isalnum((unsigned char) rc))
-            {
-                norm[r] = '_';
-            }
-        }
-        r++;
     }
     return r;
 }
@@ -422,54 +402,32 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
         return NULL;
     }
 
-    char *norm = (char *) malloc(len + 1);
-    if (!norm)
+    char          *norm = (char *) malloc(len + 1);
+    unsigned char *ctx  = cli_ts_shell_ctx(line, len);
+    if (!norm || !ctx)
     {
+        free(norm);
+        free(ctx);
         return ts_parser_parse_string(ts_parser, NULL, line, (uint32_t) len);
     }
     memcpy(norm, line, len);
     norm[len] = '\0';
 
-    int in_sq         = 0;
-    int in_dq         = 0;
-    int in_comment    = 0;
     int at_stmt_start = 1;
 
     for (size_t i = 0; i < len; i++)
     {
         char c = line[i];
-        if (in_comment)
+        if (ctx[i] == MSL_COMMENT || ctx[i] == MSL_HEREDOC)
         {
-            if (c == '\n')
-            {
-                in_comment    = 0;
-                at_stmt_start = 1;
-            }
             continue;
         }
-        if (c == '\\' && !in_sq && i + 1 < len)
+        if (ctx[i] == MSL_SQ || ctx[i] == MSL_ANSI || (ctx[i] == MSL_DQ && c == '"'))
         {
-            i++;
             at_stmt_start = 0;
             continue;
         }
-        if (c == '\'' && !in_dq)
-        {
-            in_sq         = !in_sq;
-            at_stmt_start = 0;
-            continue;
-        }
-        if (c == '"' && !in_sq)
-        {
-            in_dq         = !in_dq;
-            at_stmt_start = 0;
-            continue;
-        }
-        if (in_sq)
-        {
-            continue;
-        }
-        if (in_dq)
+        if (ctx[i] == MSL_DQ)
         {
             if (c == '@' && i + 1 < len && line[i + 1] == '{')
             {
@@ -503,12 +461,6 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
         if (c == ';' || c == '\n' || c == '|' || c == '&' || c == '(' || c == '{')
         {
             at_stmt_start = 1;
-            continue;
-        }
-        if (c == '#' && (i == 0 || isspace((unsigned char) line[i - 1]) ||
-                         strchr(";|(&{", line[i - 1]) != NULL))
-        {
-            in_comment = 1;
             continue;
         }
 
@@ -578,7 +530,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
                 if (sp < len && line[sp] == '=')
                 {
                     norm[sp] = '_';
-                    k        = mask_rhs_statement(line, norm, len, sp + 1);
+                    k        = mask_rhs_statement(line, ctx, norm, len, sp + 1);
                 }
             }
             i             = (k > i) ? (k - 1) : i;
@@ -645,7 +597,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
                                                     (sp + 1 < len && line[sp + 1] == '(')));
                 if (is_shorthand_assign)
                 {
-                    k = mask_rhs_statement(line, norm, len, sp);
+                    k = mask_rhs_statement(line, ctx, norm, len, sp);
                 }
                 else if (is_eq_op && sp == k)
                 {
@@ -664,6 +616,7 @@ TSTree *cli_ts_parse_normalized_tree(const char *line, size_t len)
 
     TSTree *tree = ts_parser_parse_string(ts_parser, NULL, norm, (uint32_t) len);
     free(norm);
+    free(ctx);
     return tree;
 }
 
@@ -676,29 +629,14 @@ static void collect_at_token_spans(const char    *line,
                                    int           *num_spans,
                                    int            max_spans)
 {
-    int         in_sq     = 0;
-    int         in_dq     = 0;
-    const char *mod_color = (color_level >= 2) ? "\033[38;5;214m" : "\033[33m";
-    const char *cmd_color = (color_level >= 2) ? "\033[1;38;5;39m" : "\033[1;36m";
+    const char    *mod_color = (color_level >= 2) ? "\033[38;5;214m" : "\033[33m";
+    const char    *cmd_color = (color_level >= 2) ? "\033[1;38;5;39m" : "\033[1;36m";
+    unsigned char *ctx       = cli_ts_shell_ctx(line, (size_t) len);
 
-    for (int i = 0; i < len && *num_spans < max_spans; i++)
+    for (int i = 0; ctx != NULL && i < len && *num_spans < max_spans; i++)
     {
-        if (line[i] == '\\' && !in_sq && i + 1 < len)
-        {
-            i++;
-            continue;
-        }
-        if (line[i] == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-            continue;
-        }
-        if (line[i] == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-            continue;
-        }
-        if (in_sq || line[i] != '@' ||
+        if (ctx[i] == MSL_SQ || ctx[i] == MSL_ANSI || ctx[i] == MSL_COMMENT ||
+            ctx[i] == MSL_HEREDOC || line[i] != '@' ||
             !(i == 0 || isspace((unsigned char) line[i - 1]) ||
               strchr(";|(&=", line[i - 1]) != NULL))
         {
@@ -766,6 +704,7 @@ static void collect_at_token_spans(const char    *line,
             i = j - 1;
         }
     }
+    free(ctx);
 }
 
 /**

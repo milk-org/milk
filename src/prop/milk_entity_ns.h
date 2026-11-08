@@ -174,4 +174,13 @@ static inline void milk_normalize_entity_spec(const char *in, char *out, size_t 
     snprintf(out, outsz, "%s", in);
 }
 
+/** milk_is_entity_path() - 1 if @s names an entity property (`s.cam.cnt0`, `@S:cam.cnt0`, `f.x.p`). */
+static inline int milk_is_entity_path(const char *s)
+{
+    char        norm[256];
+    const char *rest = norm;
+    milk_normalize_entity_spec(s, norm, sizeof(norm));
+    return milk_entity_ns_kind(norm, &rest) != MILK_NS_NONE && strchr(rest, '.') != NULL;
+}
+
 #endif /* MILK_ENTITY_NS_H */

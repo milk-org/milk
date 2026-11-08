@@ -20,6 +20,7 @@ slices `im[a:b]`.
 
 - `src/engine/libfps/io/fps_streamname_parse.c` — the one parser: an optional `@XY:` prefix before
   the name (location `S` shared, `L` local, `F`; `E` must exist; `N` must be new; `T<type>` such as
-  `@TF32:`) or an `s.`/`l.` namespace prefix. Returns the bare name without allocating.
+  `@TF32:`) or an `s.`/`l.` namespace prefix. Returns the bare name without allocating;
+  `fps_streamname_modifier()` lists the modifiers for completion and help.
 - `src/engine/libfps/IMGID.h` — `IMGID`, the image handle (name, template, connection).
-- `src/calc/mc_slice.c` — slices in calculator expressions.
+- `src/calc/mc_views.c` — slices in calculator expressions.

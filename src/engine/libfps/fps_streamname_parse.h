@@ -14,14 +14,13 @@
  *   F  Load from ./conf/shmim.<name>.fits
  *   E  Must exist (error if not found)
  *   N  Must not exist (error if found)
- *   T<type>  Pixel data type:
- *            TU8, TU16, TU32, TU64 (unsigned int)
- *            TI8, TI16, TI32, TI64 (signed int)
- *            TF16, TF32, TF64 (float16/32/64)
- *            TC64, TC128 (complex float32/64)
+ *   T<type>  Pixel data type: TU8 TI8 TU16 TI16 TU32 TI32 TU64 TI64
+ *            TF16 TF32 TF64 TC64 TC128; TUI8, TSI8, TUI16 ... TSI64
+ *            are read too
  *
  * Letters are stackable: "@LTF64:myimg" means local +
- * float64.  E and N are mutually exclusive.
+ * float64.  E and N are mutually exclusive.  Completion and help
+ * list the modifiers through fps_streamname_modifier().
  */
 
 #ifndef FPS_STREAMNAME_PARSE_H
@@ -60,6 +59,14 @@ typedef struct
  * @return     Parsed result
  */
 FPS_STREAMNAME_PARSED fps_streamname_parse(const char *raw);
+
+/**
+ * @brief Write modifier prefix @p i into @p buf: "@L:" "@S:" "@F:" "@E:" "@N:", then "@T<type>:" for
+ *        each canonical type ("@TU8:" ... "@TC128:"); the list completion and help show.
+ *
+ * @return 1 if modifier @p i exists, else 0
+ */
+int fps_streamname_modifier(int i, char *buf, int bufsz);
 
 /**
  * @brief Human-readable label for a modifier set.

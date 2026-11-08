@@ -399,8 +399,13 @@ void update_hint_area(void)
         {
             char cmdname[128] = "";
             int  argidx       = 0;
-            cli_ts_determine_completion_mode(rl_line_buffer, rl_point, "", cmdname, sizeof(cmdname),
-                                             &argidx);
+            int  wstart       = rl_point; /* the start of the word at the cursor */
+            while (wstart > 0 && rl_line_buffer[wstart - 1] != ' ')
+            {
+                wstart--;
+            }
+            cli_ts_determine_completion_mode(rl_line_buffer, wstart, rl_line_buffer + wstart,
+                                             cmdname, sizeof(cmdname), &argidx);
 
             if (cmdname[0] != '\0')
             {
@@ -647,8 +652,8 @@ void CLI_redisplay(void)
     /* Determine matching mode using tree-sitter AST & boundary classifier */
     char cmdname[128] = "";
     int  argidx       = 0;
-    int  mode         = cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname,
-                                                         sizeof(cmdname), &argidx);
+    (void) cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname, sizeof(cmdname),
+                                            &argidx);
 
     int cmdimatch = (cmdname[0] != '\0') ? find_command_match(cmdname) : -1;
 
@@ -713,89 +718,9 @@ void CLI_redisplay(void)
         }
     }
 
-    if (mode >= 0)
-    {
-        data.CLImatchMode = mode;
-    }
-    else
-    {
-        if (text[0] == '.' && text[1] != '/' && text[1] != '.')
-        {
-            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
-        }
-        else if (strcmp(cmdname, "loadfits") == 0 || strcmp(cmdname, "savefits") == 0 ||
-                 strcmp(cmdname, "saveFITS") == 0 || strcmp(cmdname, "source") == 0 ||
-                 strcmp(cmdname, ".") == 0 || strcmp(cmdname, "cat") == 0 ||
-                 strcmp(cmdname, "cd") == 0 || strcmp(cmdname, "ls") == 0 ||
-                 strcmp(cmdname, "vi") == 0 || strcmp(cmdname, "vim") == 0 ||
-                 strcmp(cmdname, "nano") == 0 || strcmp(cmdname, "head") == 0 ||
-                 strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
-                 strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
-                 strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "savescript") == 0 || strcmp(cmdname, "run") == 0)
-        {
-            data.CLImatchMode = CLICOMPLETIONMODE_FILES;
-        }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fpsload") == 0 ||
-                 strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
-                 strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
-        {
-            data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
-        }
-        else if (strcmp(cmdname, "export") == 0 || strcmp(cmdname, "readonly") == 0 ||
-                 strcmp(cmdname, "unset") == 0 || strcmp(cmdname, "local") == 0 ||
-                 strcmp(cmdname, "declare") == 0)
-        {
-            data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
-        }
-        else
-        {
-            int matched_mode = -1;
-
-            if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
-            {
-                int cli_ai = 0;
-                for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
-                {
-                    if (data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
-                    {
-                        if (cli_ai == argidx)
-                        {
-                            uint64_t atype = data.cmd[cmdimatch].argdata[ai].type;
-                            if (atype == CLIARG_FILENAME || atype == CLIARG_FITSFILENAME)
-                            {
-                                matched_mode = CLICOMPLETIONMODE_FILES;
-                            }
-                            else if (atype == CLIARG_FPSNAME)
-                            {
-                                matched_mode = CLICOMPLETIONMODE_FPSPARAMS;
-                            }
-                            else if (atype == CLIARG_IMG || atype == CLIARG_STREAM)
-                            {
-                                matched_mode = CLICOMPLETIONMODE_IMAGES;
-                            }
-                            break;
-                        }
-                        cli_ai++;
-                    }
-                }
-            }
-
-            if (matched_mode >= 0)
-            {
-                data.CLImatchMode = matched_mode;
-            }
-            else
-            {
-                data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
-            }
-        }
-    }
-
-    /* Get best match */
-    char *match = (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
-                      ? rl_filename_completion_function(text, 0)
-                      : CLI_generator(text, 0);
+    /* Get best match: the first completion TAB would give */
+    cli_comp_start = start;
+    char *match    = CLI_generator(text, 0);
 
     if (match)
     {
@@ -855,6 +780,9 @@ void CLI_configure_readline()
      * from splitting on @ and $, ensuring full variable tokens
      * (e.g. @fps.run or ${s.sz}) reach the completion generator. */
     rl_completer_word_break_characters = " \t\n\"\\'<>=;|&(";
+    /* Inside an open quote, the word is the quoted text so far (`@calc "a = sq`), and a quote is
+     * closed after a single match unless the generator says not to (a call, a path) */
+    rl_completer_quote_characters = "\"'";
 
     /* Bind Right Arrow to accept suggestion */
     rl_bind_keyseq("\\e[C", accept_suggestion);

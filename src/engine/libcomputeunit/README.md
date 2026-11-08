@@ -12,6 +12,7 @@ dependency. Umbrella header: `computeunit.h`.
 | `core/fps_lifecycle.c`                  | generic init / conf / run / stop                                                  |
 | `cli/fps_cli_init.c`                    | create FPS entries from bindings; fill CLI examples                               |
 | `cli/fps_cli_sync.c`                    | standalone argv to FPS to module variables                                        |
+| `core/milk_unit.c`                      | harness of the code-free units (`milk.calc`, `milk.script`): options, `-p` declarations |
 | `params/fps_modulevars_resync.c`        | FPS to module-local variable sync via bindings                                    |
 | `core/fps_unit.c`                       | unit lifecycle (`fps_unit.h`): start, stop, environment, front-end tools, scripts |
 | `state/fps_CONF*.c`, `fps_FPCONF*.c`    | conf process start/stop/setup/loop/exit                                           |

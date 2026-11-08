@@ -186,10 +186,7 @@ static const dt_info_t *get_dt_info(uint8_t dt)
  *                    before the inner SIMD `x` loop
  * @wt:               Real working C type (`"float"` or `"double"`)
  * @ct:               Complex working C type (`"float _Complex"` or `"double _Complex"`)
- * @def_stk:          Stack of active user-defined `def` functions
- * @def_args:         Stack of argument expression arrays for active `def` calls
  * @sub_t0:           Reserved sub-expression pointer
- * @def_depth:        Current `def` expansion nesting depth
  * @cur_out_idx:      Index in `pass->outs[]` currently being emitted
  * @chain_seq:        Monotonic counter for unique local variable names (`_ch`, `_sh`)
  * @fast_x_interior:  1 when emitting the unit-stride interior `x` SIMD loop
@@ -206,10 +203,7 @@ typedef struct
     emit_buf_t         *pre_eb;
     const char         *wt;
     const char         *ct;
-    const mcalc_udef_t *def_stk[4];
-    mc_expr_t *const   *def_args[4];
     const mc_expr_t    *sub_t0;
-    int                 def_depth;
     int                 cur_out_idx;
     int                 chain_seq;
     int                 fast_x_interior;
@@ -257,13 +251,6 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e);
  */
 static void emit_scalar_arg(emit_ctx_t *c, const mc_expr_t *e, int is_int)
 {
-    if (e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 && c->def_depth > 0)
-    {
-        c->def_depth--;
-        emit_scalar_arg(c, c->def_args[c->def_depth][e->u.ident.def_param_idx], is_int);
-        c->def_depth++;
-        return;
-    }
     int k = mc_find_scalar_op(c->pass, e, NULL, -1);
     if (k >= 0)
     {
@@ -309,20 +296,13 @@ static void emit_im_read(emit_ctx_t *c, int op_idx)
 /**
  * resolve_im_arg_op - Find the pass operand index corresponding to an image argument
  * @c:   Active emit context
- * @arg: Image argument AST node (unwrapping `def` parameters if needed)
+ * @arg: Image argument AST node
  * @tbl: 1 if looking up a table/source argument (`is_table_arg`), 0 otherwise
  *
  * Return: Operand index in `c->pass->ops[]`, or -1 if not found
  */
 static int resolve_im_arg_op(emit_ctx_t *c, const mc_expr_t *arg, int tbl)
 {
-    if (arg->kind == MC_EXPR_IDENT && arg->u.ident.def_param_idx >= 0 && c->def_depth > 0)
-    {
-        c->def_depth--;
-        int r = resolve_im_arg_op(c, c->def_args[c->def_depth][arg->u.ident.def_param_idx], tbl);
-        c->def_depth++;
-        return r;
-    }
     int eim = mc_find_im_op(c->pass, -1, 0, arg, tbl, 1);
     if (eim >= 0 || (arg->kind != MC_EXPR_SLICE && arg->kind != MC_EXPR_IDENT))
     {
@@ -404,28 +384,17 @@ static int is_const_num(const mc_expr_t *e, double *out_v)
  * @c: Active emit context
  * @e: `MC_EXPR_CALL` AST node
  *
- * Handles inline expansion of user-defined `def` functions, `where()`, complex
+ * Handles `where()`, complex
  * constructors/projections (`real`, `imag`, `conj`, `cplx`, `expi`, `arg`),
  * pixel coordinate generators (`ix`, `iy`, `ir`, `ia`), PRNG calls (`rand`,
  * `randn`), `shift`/`roll` (hoisting `_sh` row base offsets in the interior
- * SIMD loop), 1D/2D `lut`/`pixremap`/`interp2` table lookups, inline 3x3/5x5/7x7
- * median/min/max stencils, and algebraic `pow(x, c)` specializations.
+ * SIMD loop), 1D/2D `lut`/`pixremap`/`interp2` table lookups, and algebraic
+ * `pow(x, c)` specializations.
  *
  * Return: void
  */
 static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 {
-    if (e->u.call.udef_id >= 0)
-    {
-        c->def_stk[c->def_depth]    = mcalc_udef_get(e->u.call.udef_id);
-        c->def_args[c->def_depth++] = e->u.call.args;
-        eb_printf(c->eb, "(");
-        emit_expr(c, e->u.call.udef_body);
-        eb_printf(c->eb, ")");
-        c->def_depth--;
-        return;
-    }
-
     const mc_func_t *fn    = e->u.call.fn;
     int              nargs = e->u.call.nargs;
     int              wd    = c->pass->work_double;
@@ -492,9 +461,8 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 
     case MC_FN_PRNG:
         eb_printf(c->eb, "%s(_i, (double)_sc%d)",
-                  (strcmp(fn->name, "randn") == 0 || strcmp(fn->name, "grand") == 0)
-                      ? (wd ? "mc_grandd" : "mc_grandf")
-                      : (wd ? "mc_urandd" : "mc_urandf"),
+                  (strcmp(fn->name, "randn") == 0) ? (wd ? "mc_grandd" : "mc_grandf")
+                                                   : (wd ? "mc_urandd" : "mc_urandf"),
                   mc_find_scalar_op(c->pass, NULL, e, -1));
         return;
 
@@ -574,27 +542,10 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         return;
     }
 
-    case MC_FN_STENCIL_LIB:
-    {
-        c->used_spatial    = 1;
-        int         op_idx = resolve_im_arg_op(c, e->u.call.args[0], 0);
-        const char *sfx =
-            get_dt_info((op_idx >= 0) ? c->pass->ops[op_idx].dt : _DATATYPE_FLOAT)->sfx;
-        int is_mf = (strncmp(fn->name, "medfilt", 7) == 0);
-        int r     = (strcmp(fn->name, "medfilt3") == 0)   ? 1
-                    : (strcmp(fn->name, "medfilt5") == 0) ? 2
-                                                          : 3;
-        eb_printf(c->eb, "((%s)mc_%s_%s(&ops[%d], x, y, z, %d))", c->wt,
-                  is_mf ? "medfilt" : "minmax3", sfx, op_idx,
-                  is_mf ? r : (strcmp(fn->name, "imax3") == 0));
-        return;
-    }
-
     default:
     {
         double exp_v = 0.0;
-        if ((strcmp(fn->name, "abs") == 0 || strcmp(fn->name, "fabs") == 0) &&
-            is_complex_dt(e->u.call.args[0]->res_dt))
+        if (strcmp(fn->name, "abs") == 0 && is_complex_dt(e->u.call.args[0]->res_dt))
         {
             c->used_complex = 1;
             cfn             = wd ? "mc_cabsd" : "mc_cabsf";
@@ -637,12 +588,21 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     eb_printf(c->eb, ")");
 }
 
+/* The literal c (0 <= c < 2^31) of `x & c` or `c & x`, or NULL */
+static const mc_expr_t *band_mask(const mc_expr_t *e)
+{
+    const mc_expr_t *k = (e->u.binary.right->kind == MC_EXPR_LONG)  ? e->u.binary.right
+                         : (e->u.binary.left->kind == MC_EXPR_LONG) ? e->u.binary.left
+                                                                    : NULL;
+    return (k != NULL && k->u.lval >= 0 && k->u.lval <= INT32_MAX) ? k : NULL;
+}
+
 /**
  * emit_expr - Recursively emit a C expression for an AST node inside a pass kernel
  * @c: Active emit context
  * @e: Expression AST node to emit
  *
- * Handles parameter substitution for `def` functions, comprehension generator
+ * Handles comprehension generator
  * coordinates (`_g_start + coord * _g_step`), pre-evaluated image and scalar
  * operands, constants (`pi`, `nan`, `inf`), earlier-in-pass register forwarding
  * (`_v<k>`), unary/binary/chained relational operators (using GCC statement
@@ -656,14 +616,6 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
     if (e == NULL)
     {
         eb_printf(c->eb, "((%s)0)", c->wt);
-        return;
-    }
-    if (e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 && c->def_depth > 0)
-    {
-        const mc_expr_t *sub = c->def_args[c->def_depth - 1][e->u.ident.def_param_idx];
-        c->def_depth--;
-        emit_expr(c, sub);
-        c->def_depth++;
         return;
     }
     for (int g = 0; c->pass->is_comp && e->kind == MC_EXPR_IDENT && c->pass->comp_expr != NULL &&
@@ -775,7 +727,7 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
         }
         else if (op == MC_TOK_MOD)
         {
-            snprintf(pre, sizeof(pre), "%s(", wd ? "fmod" : "fmodf");
+            snprintf(pre, sizeof(pre), "%s(", wd ? "mc_fmodd" : "mc_fmodf");
             snprintf(mid, sizeof(mid), ", ");
             post = ")";
         }
@@ -787,6 +739,15 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
             snprintf(mid, sizeof(mid), is_log ? ") != 0) %s ((" : ") %s (",
                      is_log ? ((op == MC_TOK_AND) ? "&" : "|") : rel_op_str(op));
             post = is_log ? ") != 0)))" : ")))";
+        }
+        else if (op == MC_TOK_BAND && band_mask(e) != NULL)
+        {
+            /* x & c with 0 <= c < 2^31: 32-bit integers, which vectorize, give the same bits */
+            const mc_expr_t *k = band_mask(e);
+            eb_printf(c->eb, "((%s)mc_band32((", c->wt);
+            emit_expr(c, (k == e->u.binary.right) ? e->u.binary.left : e->u.binary.right);
+            eb_printf(c->eb, "), %ld))", k->u.lval);
+            return;
         }
         else
         {

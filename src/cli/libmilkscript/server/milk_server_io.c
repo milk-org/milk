@@ -7,15 +7,18 @@
  * @brief Tab-completion handler for the milk-cli server.
  *
  * Role & Goal:
- *   `milk_server_handle_complete()` services `MILK_MSG_COMPLETE` requests for command names
- *   (`comp_type == "cmd"`: `@keywords` and `module.command`s) and command arguments (modifiers
- *   `@T*:`, local images, SHM streams, `s.<stream>.`, `f.<fps>.`).
+ *   `milk_complete()` is the one completion engine: bash (`milkcomplete`, through
+ *   `milk_server_handle_complete()`) and the milk-cli prompt use it. It completes command names
+ *   (`comp_type == "cmd"`: `@keywords` and `module.command`s), command arguments (modifiers `@T*:`,
+ *   local images, SHM streams, `s.<stream>.`, `f.<fps>.`, keyword options and words from the
+ *   lexicon) and calculator text (function, variable and image names).
  */
 
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
 
+#include <ctype.h>
 #include <dirent.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,12 +28,16 @@
 #include "milk_lexicon.h"
 #include "milk_cmd_index.h"
 #include "CLIcore.h"
+#include "CLIcore_script.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps.h"
+#include "fps_streamname_parse.h"
 #include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
 #include "milk_shm_prop.h"
+#include "milk_stream_props.h"
+#include "mc_func.h"
 
 /**
  * @brief Append command-name completions of @prefix into @out: `@keywords`, or `module.command`s.
@@ -80,11 +87,7 @@ static void complete_stream_attrs_ns(const char *lead,
                                      size_t      outsz,
                                      size_t     *pos_io)
 {
-    static const char *const sattrs[] = { "xsize", "ysize",     "zsize",    "naxis", "nelement",
-                                          "dtype", "typename",  "cnt0",     "cnt1",  "shared",
-                                          "sem",   "owner_pid", "location", "inode", "age",
-                                          "fps",   "summary",   "list",     "kw.",   NULL };
-    size_t                   pos      = *pos_io;
+    size_t pos = *pos_io;
 
     if (strncmp(sub, "kw.", 3) == 0)
     {
@@ -118,11 +121,14 @@ static void complete_stream_attrs_ns(const char *lead,
         return;
     }
 
-    for (int a = 0; sattrs[a] != NULL; a++)
+    for (int a = 0; milk_stream_props[a].name != NULL; a++)
     {
-        if (strncmp(sattrs[a], sub, slen) == 0)
+        /* kw.* is offered as kw., which then completes the stream's own keywords */
+        const char *nm =
+            (strcmp(milk_stream_props[a].name, "kw.*") == 0) ? "kw." : milk_stream_props[a].name;
+        if (strncmp(nm, sub, slen) == 0)
         {
-            int n = snprintf(out + pos, outsz - pos, "%s%s.%s.%s\n", lead, ns, sname, sattrs[a]);
+            int n = snprintf(out + pos, outsz - pos, "%s%s.%s.%s\n", lead, ns, sname, nm);
             if (n > 0 && pos + (size_t) n < outsz)
             {
                 pos += (size_t) n;
@@ -142,16 +148,12 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
 
     if (prefix[0] == '@')
     {
-        static const char *const mods[] = {
-            "@TF32:", "@TF64:", "@TF16:", "@TU8:",  "@TU16:",  "@TU32:",  "@TU64:",
-            "@TI8:",  "@TI16:", "@TI32:", "@TI64:", "@TC64:",  "@TC128:", "@L:",
-            "@S:",    "@N:",    "@E:",    "@F:",    "@LTF32:", "@STF32:", NULL
-        };
-        for (int i = 0; mods[i] != NULL; i++)
+        char mod[16];
+        for (int i = 0; fps_streamname_modifier(i, mod, (int) sizeof(mod)); i++)
         {
-            if (strncmp(mods[i], prefix, plen) == 0)
+            if (strncmp(mod, prefix, plen) == 0)
             {
-                int n = snprintf(out + pos, outsz - pos, "%s\n", mods[i]);
+                int n = snprintf(out + pos, outsz - pos, "%s\n", mod);
                 if (n > 0 && pos + (size_t) n < outsz)
                 {
                     pos += (size_t) n;
@@ -767,16 +769,12 @@ static size_t complete_images_only(const char *prefix, char *out, size_t outsz)
 
     if (prefix[0] == '@')
     {
-        static const char *const mods[] = {
-            "@TF32:", "@TF64:", "@TF16:", "@TU8:",  "@TU16:",  "@TU32:",  "@TU64:",
-            "@TI8:",  "@TI16:", "@TI32:", "@TI64:", "@TC64:",  "@TC128:", "@L:",
-            "@S:",    "@N:",    "@E:",    "@F:",    "@LTF32:", "@STF32:", NULL
-        };
-        for (int i = 0; mods[i] != NULL; i++)
+        char mod[16];
+        for (int i = 0; fps_streamname_modifier(i, mod, (int) sizeof(mod)); i++)
         {
-            if (strncmp(mods[i], prefix, plen) == 0)
+            if (strncmp(mod, prefix, plen) == 0)
             {
-                int n = snprintf(out + pos, outsz - pos, "%s\n", mods[i]);
+                int n = snprintf(out + pos, outsz - pos, "%s\n", mod);
                 if (n > 0 && pos + (size_t) n < outsz)
                 {
                     pos += (size_t) n;
@@ -842,26 +840,185 @@ static size_t complete_images_only(const char *prefix, char *out, size_t outsz)
     return pos;
 }
 
-/**
- * @brief Handle a `MILK_MSG_COMPLETE` request and send candidates back to @client_fd.
- *
- * @param client_fd Connected client socket fd
- * @param prefix    Token prefix to complete
- * @param comp_type `"cmd"`, `"sig[:<cmd>[:<argidx>]]"`, or `"arg[:<cmd>:<cword>]"`
- */
-void milk_server_handle_complete(int client_fd, const char *prefix, const char *comp_type)
+/** add_word() - append @head and the @n bytes at @w as a candidate line to @out at *@pos. */
+static void add_word(const char *head,
+                     const char *w,
+                     size_t      n,
+                     char       *out,
+                     size_t      outsz,
+                     size_t     *pos)
 {
-    char   out[32768];
+    int k = snprintf(out + *pos, outsz - *pos, "%s%.*s\n", head, (int) n, w);
+    if (k > 0 && *pos + (size_t) k < outsz)
+    {
+        *pos += (size_t) k;
+    }
+}
+
+/**
+ * complete_keyword - Complete argument @cword of keyword @k from its lexicon lists
+ * @k:      Keyword
+ * @prefix: Word being completed
+ * @cword:  Its position (1: the first argument)
+ * @prev:   The word before it
+ * @out:    Output buffer
+ * @outsz:  Its size
+ *
+ * An option (`-...`) from `k->options`; otherwise the words of `k->words` for that position: its
+ * first line for the first argument, the line `<prev>: ...` after the word @prev, else `*: ...` for
+ * the second argument.
+ *
+ * Return: the length written to @out (0: no list applies)
+ */
+static size_t complete_keyword(const milk_keyword_t *k,
+                               const char           *prefix,
+                               int                   cword,
+                               const char           *prev,
+                               char                 *out,
+                               size_t                outsz)
+{
+    const char *list = NULL;
+    size_t      llen = 0;
+    if (prefix[0] == '-' && k->options != NULL)
+    {
+        list = k->options;
+        llen = strlen(list);
+    }
+    for (const char *ln = (prefix[0] != '-') ? k->words : NULL; ln != NULL && list == NULL;
+         ln             = (ln[strcspn(ln, "\n")] != '\0') ? ln + strcspn(ln, "\n") + 1 : NULL)
+    {
+        size_t      n     = strcspn(ln, "\n");
+        const char *colon = memchr(ln, ':', n);
+        size_t      wl    = (colon != NULL) ? (size_t) (colon - ln) : 0;
+        const char *ws    = (colon != NULL) ? colon + 1 + (colon[1] == ' ') : ln;
+        if ((colon == NULL && cword == 1) ||
+            (colon != NULL && cword >= 2 && strlen(prev) == wl && strncmp(ln, prev, wl) == 0) ||
+            (colon != NULL && cword == 2 && wl == 1 && ln[0] == '*'))
+        {
+            list = ws;
+            llen = (size_t) (ln + n - ws);
+        }
+    }
+    size_t pos  = 0;
+    size_t plen = strlen(prefix);
+    for (size_t i = 0; list != NULL && i < llen;)
+    {
+        size_t n = strcspn(list + i, " \n");
+        n        = (i + n > llen) ? llen - i : n;
+        if (n > 0 && n >= plen && strncmp(list + i, prefix, plen) == 0)
+        {
+            add_word("", list + i, n, out, outsz, &pos);
+        }
+        i += n + 1;
+    }
+    return pos;
+}
+
+/**
+ * complete_calc - Complete the name that ends word @prefix of calculator text
+ * @prefix: The word (`sq`, `"a = sq`, `im[0, s.cam.`, ...)
+ * @out:    Output buffer
+ * @outsz:  Its size
+ *
+ * A function of the calculator (with its `(`), an image, a variable (a number or a string), or an
+ * entity path; each candidate is the whole word.
+ *
+ * Return: the length written to @out
+ */
+static size_t complete_calc(const char *prefix, char *out, size_t outsz)
+{
+    size_t plen = strlen(prefix);
+    size_t b    = plen;
+    while (b > 0 && (isalnum((unsigned char) prefix[b - 1]) || prefix[b - 1] == '_' ||
+                     prefix[b - 1] == '.' || prefix[b - 1] == '-'))
+    {
+        b--;
+    }
+    char head[512];
+    snprintf(head, sizeof(head), "%.*s", (int) b, prefix);
+    const char *id   = prefix + b;
+    size_t      ilen = plen - b;
+    size_t      pos  = 0;
+
+    if (strchr(id, '.') != NULL) /* an entity path */
+    {
+        char   ent[16384];
+        size_t n = complete_arguments(id, ent, sizeof(ent));
+        for (size_t i = 0; i < n;)
+        {
+            size_t l = strcspn(ent + i, "\n");
+            add_word(head, ent + i, l, out, outsz, &pos);
+            i += l + 1;
+        }
+        return pos;
+    }
+    int              nf = 0;
+    const mc_func_t *ft = mc_func_table(&nf);
+    for (int i = 0; i < nf; i++)
+    {
+        char call[96]; /* a call: the name and its '(' */
+        if (strncmp(ft[i].name, id, ilen) == 0 &&
+            snprintf(call, sizeof(call), "%s(", ft[i].name) < (int) sizeof(call))
+        {
+            add_word(head, call, strlen(call), out, outsz, &pos);
+        }
+    }
+    for (long i = 0; data.core.image != NULL && i < data.core.NB_MAX_IMAGE; i++)
+    {
+        if (data.core.image[i].used == 1 && strncmp(data.core.image[i].name, id, ilen) == 0)
+        {
+            add_word(head, data.core.image[i].name, strlen(data.core.image[i].name), out, outsz,
+                     &pos);
+        }
+    }
+    for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
+    {
+        if (data.core.variable[i].used && strncmp(data.core.variable[i].name, id, ilen) == 0)
+        {
+            add_word(head, data.core.variable[i].name, strlen(data.core.variable[i].name), out,
+                     outsz, &pos);
+        }
+    }
+    for (int i = 0; i < CLI_MAX_VARS; i++)
+    {
+        if (cli_vars[i].used && strncmp(cli_vars[i].name, id, ilen) == 0)
+        {
+            add_word(head, cli_vars[i].name, strlen(cli_vars[i].name), out, outsz, &pos);
+        }
+    }
+    return pos;
+}
+
+/**
+ * milk_complete - The completion candidates of word @prefix, one per line, into @out
+ * @prefix:    The word being completed
+ * @comp_type: `"cmd"`, `"sig[:<cmd>[:<argidx>]]"`, `"arg[:<cmd>:<cword>[:<previous word>]]"`, or
+ *             `"calc"` (a word of calculator text)
+ * @out:       Output buffer
+ * @outsz:     Its size
+ *
+ * The one completion engine, for bash (milk_server_handle_complete()) and the milk-cli prompt. A
+ * line `__MILK_COMPLETE_FILES__` or `__MILK_COMPLETE_FITS__` asks the caller for file names.
+ *
+ * Return: the length written to @out
+ */
+size_t milk_complete(const char *prefix, const char *comp_type, char *out, size_t outsz)
+{
     size_t pos = 0;
     out[0]     = '\0';
+    prefix     = (prefix != NULL) ? prefix : "";
 
     if (comp_type != NULL && strcmp(comp_type, "cmd") == 0)
     {
-        pos = complete_commands(prefix, out, sizeof(out));
+        pos = complete_commands(prefix, out, outsz);
+    }
+    else if (comp_type != NULL && strcmp(comp_type, "calc") == 0)
+    {
+        pos = complete_calc(prefix, out, outsz);
     }
     else if (comp_type != NULL && strcmp(comp_type, "sig") == 0)
     {
-        pos = format_cmd_signature(prefix, -1, out, sizeof(out));
+        pos = format_cmd_signature(prefix, -1, out, outsz);
     }
     else if (comp_type != NULL && strncmp(comp_type, "sig:", 4) == 0)
     {
@@ -878,25 +1035,34 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
         {
             argidx = atoi(prefix) - 1;
         }
-        pos = format_cmd_signature(cbuf, argidx, out, sizeof(out));
+        pos = format_cmd_signature(cbuf, argidx, out, outsz);
     }
     else if (comp_type != NULL && strncmp(comp_type, "arg:", 4) == 0)
     {
         char cbuf[256];
         snprintf(cbuf, sizeof(cbuf), "%s", comp_type + 4);
-        int   cword = 1;
-        char *colon = strrchr(cbuf, ':');
+        int         cword = 1;
+        const char *prev  = ""; /* <cmd>:<cword>[:<previous word>] */
+        char       *colon = strchr(cbuf, ':');
         if (colon != NULL)
         {
-            *colon = '\0';
-            cword  = atoi(colon + 1);
-            if (cword < 1)
-            {
-                cword = 1;
-            }
+            *colon     = '\0';
+            cword      = atoi(colon + 1);
+            cword      = (cword < 1) ? 1 : cword;
+            char *pcol = strchr(colon + 1, ':');
+            prev       = (pcol != NULL) ? pcol + 1 : "";
         }
-        int         argidx = cword - 1;
-        const char *bcmd   = cbuf + (cbuf[0] == '@');
+        int                   argidx = cword - 1;
+        const milk_keyword_t *kw     = (cbuf[0] == '@') ? milk_lexicon_keyword(cbuf) : NULL;
+        if (kw != NULL && (pos = complete_keyword(kw, prefix, cword, prev, out, outsz)) > 0)
+        {
+            return pos;
+        }
+        if (kw != NULL && milk_lexicon_takes_expr(kw) && prefix[0] != '-')
+        {
+            return complete_calc(prefix, out, outsz);
+        }
+        const char *bcmd = cbuf + (cbuf[0] == '@');
 
         const char *bpref          = (prefix[0] == '@') ? (prefix + 1) : prefix;
         int         is_entity_pref = (milk_entity_ns_kind(bpref, NULL) != MILK_NS_NONE);
@@ -905,42 +1071,42 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
 
         if (strcmp(bcmd, "help") == 0 && argidx == 0)
         {
-            pos = complete_commands(prefix, out, sizeof(out));
+            pos = complete_commands(prefix, out, outsz);
         }
         else if (prefix[0] == '.' && prefix[1] != '/' && prefix[1] != '.' && cmdidx >= 0)
         {
-            pos = complete_cmd_dot_tags(cmdidx, prefix, out, sizeof(out));
+            pos = complete_cmd_dot_tags(cmdidx, prefix, out, outsz);
         }
         else if (is_entity_pref)
         {
-            pos = complete_arguments(prefix, out, sizeof(out));
+            pos = complete_arguments(prefix, out, outsz);
         }
         else if (((strcmp(bcmd, "loadfits") == 0 || strcmp(bcmd, "iofits.loadfits") == 0) &&
                   argidx == 0) ||
                  ((strcmp(bcmd, "saveFITS") == 0 || strcmp(bcmd, "iofits.saveFITS") == 0) &&
                   argidx == 1))
         {
-            pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FITS__\n");
+            pos = (size_t) snprintf(out, outsz, "__MILK_COMPLETE_FITS__\n");
         }
         else if ((strcmp(bcmd, "loadfits") == 0 || strcmp(bcmd, "iofits.loadfits") == 0) &&
                  argidx == 1)
         {
-            pos = complete_images_only(prefix, out, sizeof(out));
+            pos = complete_images_only(prefix, out, outsz);
         }
         else if ((strcmp(bcmd, "saveFITS") == 0 || strcmp(bcmd, "iofits.saveFITS") == 0) &&
                  argidx == 0)
         {
-            pos = complete_images_only(prefix, out, sizeof(out));
+            pos = complete_images_only(prefix, out, outsz);
         }
         else if (strcmp(bcmd, "source") == 0)
         {
-            pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FILES__\n");
+            pos = (size_t) snprintf(out, outsz, "__MILK_COMPLETE_FILES__\n");
         }
         else if (strcmp(bcmd, "fpsCTRL") == 0 || strcmp(bcmd, "fpsconf") == 0 ||
                  strcmp(bcmd, "fpsrun") == 0 || strcmp(bcmd, "fpsstop") == 0 ||
                  strcmp(bcmd, "waitfor_fps") == 0)
         {
-            pos = complete_fps_only(prefix, out, sizeof(out));
+            pos = complete_fps_only(prefix, out, outsz);
         }
         else if (cmdidx >= 0)
         {
@@ -949,19 +1115,19 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
             {
                 if (argd->type == CLIARG_FITSFILENAME)
                 {
-                    pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FITS__\n");
+                    pos = (size_t) snprintf(out, outsz, "__MILK_COMPLETE_FITS__\n");
                 }
                 else if (argd->type == CLIARG_FILENAME)
                 {
-                    pos = (size_t) snprintf(out, sizeof(out), "__MILK_COMPLETE_FILES__\n");
+                    pos = (size_t) snprintf(out, outsz, "__MILK_COMPLETE_FILES__\n");
                 }
                 else if (argd->type == CLIARG_FPSNAME)
                 {
-                    pos = complete_fps_only(prefix, out, sizeof(out));
+                    pos = complete_fps_only(prefix, out, outsz);
                 }
                 else if (argd->type == CLIARG_IMG || argd->type == CLIARG_STREAM)
                 {
-                    pos = complete_images_only(prefix, out, sizeof(out));
+                    pos = complete_images_only(prefix, out, outsz);
                 }
                 else if (argd->type == CLIARG_ONOFF)
                 {
@@ -970,8 +1136,8 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
                     {
                         if (strncmp(onoff[i], prefix, strlen(prefix)) == 0)
                         {
-                            int n = snprintf(out + pos, sizeof(out) - pos, "%s\n", onoff[i]);
-                            if (n > 0 && pos + (size_t) n < sizeof(out))
+                            int n = snprintf(out + pos, outsz - pos, "%s\n", onoff[i]);
+                            if (n > 0 && pos + (size_t) n < outsz)
                             {
                                 pos += (size_t) n;
                             }
@@ -982,37 +1148,52 @@ void milk_server_handle_complete(int client_fd, const char *prefix, const char *
                 {
                     if (prefix[0] == '\0' && argd->example[0] != '\0')
                     {
-                        int n = snprintf(out + pos, sizeof(out) - pos, "%s\n", argd->example);
-                        if (n > 0 && pos + (size_t) n < sizeof(out))
+                        int n = snprintf(out + pos, outsz - pos, "%s\n", argd->example);
+                        if (n > 0 && pos + (size_t) n < outsz)
                         {
                             pos += (size_t) n;
                         }
                     }
                     else
                     {
-                        pos = complete_arguments(prefix, out, sizeof(out));
+                        pos = complete_arguments(prefix, out, outsz);
                     }
                 }
             }
             else
             {
-                pos = complete_arguments(prefix, out, sizeof(out));
+                pos = complete_arguments(prefix, out, outsz);
             }
         }
         else
         {
-            pos = complete_arguments(prefix, out, sizeof(out));
+            pos = complete_arguments(prefix, out, outsz);
         }
     }
     else
     {
-        pos = complete_arguments(prefix, out, sizeof(out));
+        pos = complete_arguments(prefix, out, outsz);
     }
 
+    return pos;
+}
+
+/**
+ * @brief Handle a `MILK_MSG_COMPLETE` request and send candidates back to @client_fd.
+ *
+ * @param client_fd Connected client socket fd
+ * @param keep      1: the connection stays open (milk_server_send_done())
+ * @param prefix    Token prefix to complete
+ * @param comp_type As for milk_complete()
+ */
+void milk_server_handle_complete(int client_fd, int keep, const char *prefix, const char *comp_type)
+{
+    char   out[32768];
+    size_t pos = milk_complete(prefix, comp_type, out, sizeof(out));
     if (pos > 0)
     {
         milk_proto_send(client_fd, MILK_MSG_VALUE, 0, out, (uint32_t) (pos + 1));
     }
     int32_t rc = 0;
-    milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+    milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
 }

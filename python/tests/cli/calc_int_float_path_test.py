@@ -31,7 +31,7 @@ perf_timing = pytest.mark.skipif(
 
 SETUP = (
     'mem.mk2Dim "@S:cam" 64 48 >/dev/null; mem.mk2Dim dark 64 48 >/dev/null\n'
-    '@calc "cam = 1000 + 3000 * urand(cam, 3); dark = 100 * urand(dark, 5); g = 2.5"\n'
+    '@calc "cam = 1000 + 3000 * rand(cam, 3); dark = 100 * rand(dark, 5); g = 2.5"\n'
     '@calc "camu = u16(cam); darku = u16(dark); cami = i16(cam - 2000); cam8 = u8(cam / 20); cams8 = i8(cam / 40 - 100)"\n'
 )
 
@@ -98,7 +98,7 @@ def test_u16_statement_costs_about_the_float_statement(tmp_path: Path):
             "mem.mk2Dim imA 2048 2048",
             "mem.mk2Dim imB 2048 2048",
             "mem.mk2Dim imC 2048 2048",
-            '@calc "imA = 1000 + 2000 * urand(imA, 7); imB = 500 * urand(imB, 13)"',
+            '@calc "imA = 1000 + 2000 * rand(imA, 7); imB = 500 * rand(imB, 13)"',
             '@calc "uA = u16(imA); uB = u16(imB)"',
             '@calc "imC = exp(imA * 1e-4) * sqrt(imB)"',
             '@calc "imD = exp(uA * 1e-4) * sqrt(uB)"',

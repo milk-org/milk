@@ -24,6 +24,10 @@ Options:
   -v, --verbose Print the compiler invocation
   -h, --help    Show this help message
 
+Environment:
+  MILK_CALC_CC     C compiler (default: the compiler milk was built with)
+  MILK_INSTALLDIR  milk installation prefix (default: this script's ../)
+
 Examples:
   milk-cc shwfs_cog.c                    # -> ./milk-fpsexec-milk-shwfs-cog
   milk-cc shwfs_cog.c -lblas -llapack    # -> link extra libraries
@@ -93,7 +97,10 @@ if [[ ! -d "$PREFIX/include" && ! -d "$PREFIX/lib" ]]; then
     exit 1
 fi
 
-CC_BIN="${CC:-gcc}"
+CC_BIN="${MILK_CALC_CC:-@CMAKE_C_COMPILER@}"
+# The calculator's run-time compile flags (MILK_CC_FLAGS in CMakeLists.txt, written in at configure
+# time): .so files built here match `@calc -l file.c` and the JIT
+read -r -a CC_FLAGS <<< "@MILK_CC_FLAGS@"
 
 # Collect include directories under $PREFIX/include
 INC_FLAGS=("-I$PREFIX/include")
@@ -117,7 +124,7 @@ if [[ "$FORCE_SHARED" -eq 1 || -z "$EXPORT_LINE" ]]; then
     fi
     CMD=(
         "$CC_BIN"
-        -O3 -march=native -ffast-math -fopenmp-simd
+        "${CC_FLAGS[@]}"
         -shared -fPIC
         -Wall -Wextra -Wno-unused-parameter
         "${INC_FLAGS[@]}"
@@ -178,7 +185,7 @@ LIB_FLAGS+=("-lm" "-lpthread" "-ldl" "-lrt")
 
 CMD=(
     "$CC_BIN"
-    -O3 -march=native -ffast-math -fopenmp
+    "${CC_FLAGS[@]}" -fopenmp
     -DMILK_NO_CLI
     -Wall -Wextra -Wno-unused-parameter
     "${INC_FLAGS[@]}"

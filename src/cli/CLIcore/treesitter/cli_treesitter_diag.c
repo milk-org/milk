@@ -538,82 +538,51 @@ int cli_ts_get_diagnostic(const char *line, CLI_SYNTAX_DIAG *diag)
         return 0;
     }
 
-    int in_dquote = 0;
-    int in_squote = 0;
-    int q_start   = -1;
-    for (int i = 0; line[i] != '\0'; i++)
+    msl_map_t m;
+    size_t    n = strlen(line);
+    if (msl_scan(line, n, &m) != 0)
     {
-        if (line[i] == '\\' && line[i + 1] != '\0' && !in_squote)
-        {
-            i++;
-            continue;
-        }
-        if (line[i] == '"' && !in_squote)
-        {
-            if (!in_dquote)
-            {
-                q_start = i;
-            }
-            in_dquote = !in_dquote;
-        }
-        else if (line[i] == '\'' && !in_dquote)
-        {
-            if (!in_squote)
-            {
-                q_start = i;
-            }
-            in_squote = !in_squote;
-        }
+        return 0;
     }
-    if (in_dquote || in_squote)
+    int    open_ctx = m.unterminated ? m.open_ctx : MSL_CODE;
+    size_t open_at  = m.open_at;
+    msl_free(&m);
+    if (open_ctx == MSL_SQ || open_ctx == MSL_ANSI || open_ctx == MSL_DQ)
     {
+        int dq           = (open_ctx == MSL_DQ);
         diag->severity   = CLI_DIAG_SEVERITY_INFO;
-        diag->start_byte = (uint32_t) q_start;
-        diag->end_byte   = (uint32_t) strlen(line);
+        diag->start_byte = (uint32_t) (open_at - 1);
+        diag->end_byte   = (uint32_t) n;
         snprintf(diag->message, sizeof(diag->message),
-                 in_dquote ? "unclosed double quote \"" : "unclosed single quote '");
-        snprintf(diag->token, sizeof(diag->token), in_dquote ? "\"" : "'");
+                 dq ? "unclosed double quote \"" : "unclosed single quote '");
+        snprintf(diag->token, sizeof(diag->token), dq ? "\"" : "'");
         return 1;
     }
 
-    /* Unclosed '@{' inline calculator expression outside single quotes */
+    /* Unclosed '@{' inline calculator expression outside single quotes and comments */
     {
-        int sq       = 0;
-        int at_start = -1;
-        int at_depth = 0;
-        for (int i = 0; line[i] != '\0'; i++)
+        unsigned char *ctx      = cli_ts_shell_ctx(line, n);
+        int            at_start = -1;
+        int            at_depth = 0;
+        for (size_t i = 0; ctx != NULL && i < n; i++)
         {
-            if (line[i] == '\\' && line[i + 1] != '\0' && !sq)
+            if (ctx[i] == MSL_SQ || ctx[i] == MSL_ANSI || ctx[i] == MSL_COMMENT ||
+                ctx[i] == MSL_HEREDOC)
             {
+                continue;
+            }
+            if (at_depth == 0 && line[i] == '@' && line[i + 1] == '{')
+            {
+                at_start = (int) i;
+                at_depth = 1;
                 i++;
-                continue;
             }
-            if (line[i] == '\'')
+            else if (at_depth > 0)
             {
-                sq = !sq;
-                continue;
-            }
-            if (!sq)
-            {
-                if (at_depth == 0 && line[i] == '@' && line[i + 1] == '{')
-                {
-                    at_start = i;
-                    at_depth = 1;
-                    i++;
-                }
-                else if (at_depth > 0)
-                {
-                    if (line[i] == '{')
-                    {
-                        at_depth++;
-                    }
-                    else if (line[i] == '}')
-                    {
-                        at_depth--;
-                    }
-                }
+                at_depth += (line[i] == '{') - (line[i] == '}');
             }
         }
+        free(ctx);
         if (at_depth > 0 && at_start >= 0)
         {
             diag->severity   = CLI_DIAG_SEVERITY_INFO;
@@ -831,9 +800,9 @@ int cli_ts_determine_completion_mode(const char *line,
                         }
                         argi++;
                     }
-                    if (out_argidx)
+                    if (out_argidx) /* the arguments before the word: its index */
                     {
-                        *out_argidx = (argi > 0) ? (argi - 1) : 0;
+                        *out_argidx = argi;
                     }
                     ts_tree_delete(tree);
                     return -1;

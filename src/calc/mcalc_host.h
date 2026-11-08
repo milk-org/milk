@@ -8,7 +8,7 @@
  *
  * Allows the upper CLI/scripting tier (`libmilkscript`) to register its variable
  * table callbacks (`cli_var_get` / `cli_var_set`) without introducing an upward link
- * dependency from `libmilkcalc` (Core tier) to `libmilkscript` (CLI tier). When no
+ * dependency from `libmilkcalc` (Calculator tier) to `libmilkscript` (CLI tier). When no
  * host is registered (e.g. in standalone `milk-fpsexec-milk-calc`), `libmilkcalc`
  * falls back to its own process-local string variable table.
  */
@@ -29,13 +29,11 @@ void mcalc_set_host(const mcalc_host_ops *ops);
 /** mc_host_str_get() - look up string variable @name via the host or internal fallback table. */
 const char *mc_host_str_get(const char *name);
 
-/** mc_host_str_set() - store string variable @name via the host or internal fallback table. */
+/** mc_host_str_set() - store string variable @name via the host or internal fallback table;
+ * a NULL @val removes it. */
 void mc_host_str_set(const char *name, const char *val);
 
 /** mc_host_str_clear() - clear the internal fallback string variable table. */
 void mc_host_str_clear(void);
-
-/** mc_host_has_str_sink() - return 1 if an external host string sink is registered. */
-int mc_host_has_str_sink(void);
 
 #endif /* MILK_MCALC_HOST_H */

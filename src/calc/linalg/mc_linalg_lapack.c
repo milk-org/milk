@@ -81,20 +81,13 @@ __attribute__((format(printf, 3, 4))) static int lap_err(char       *err,
 /**
  * unwrap_trans - Follow user-function parameter bindings and strip an outer `transpose(X)`
  * @e:         Operand expression to inspect
- * @call_site: Enclosing user-defined function call site for parameter substitution (or NULL)
  * @out_trans: Output flag set to 1 if an outer `transpose(...)` wrapper was stripped, else 0
  *
  * Return: Underlying operand expression inside `transpose(...)`, or @e (after param resolution)
  */
-static const mc_expr_t *unwrap_trans(const mc_expr_t *e, const mc_expr_t *call_site, int *out_trans)
+static const mc_expr_t *unwrap_trans(const mc_expr_t *e, int *out_trans)
 {
     *out_trans = 0;
-    while (e != NULL && e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 &&
-           call_site != NULL && call_site->kind == MC_EXPR_CALL &&
-           e->u.ident.def_param_idx < call_site->u.call.nargs)
-    {
-        e = call_site->u.call.args[e->u.ident.def_param_idx];
-    }
     if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.fn != NULL &&
         strcmp(e->u.call.fn->name, "transpose") == 0 && e->u.call.nargs == 1)
     {
@@ -107,7 +100,6 @@ static const mc_expr_t *unwrap_trans(const mc_expr_t *e, const mc_expr_t *call_s
 /**
  * eval_flag_char - Evaluate a string argument and extract a 1-character uppercase LAPACK option
  * @e:         Expression node expected to evaluate to a single-character option string
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @c1:        First allowed uppercase option character (e.g. `'U'`, `'N'`, `'L'`)
  * @c2:        Second allowed uppercase option character (e.g. `'L'`, `'U'`, `'R'`)
  * @fn:        Calling function name for diagnostic messages
@@ -118,7 +110,6 @@ static const mc_expr_t *unwrap_trans(const mc_expr_t *e, const mc_expr_t *call_s
  * Return: 0 on success, -1 if @e is not a string matching @c1 or @c2 (case-insensitive)
  */
 static int eval_flag_char(const mc_expr_t *e,
-                          const mc_expr_t *call_site,
                           char             c1,
                           char             c2,
                           const char      *fn,
@@ -128,7 +119,7 @@ static int eval_flag_char(const mc_expr_t *e,
 {
     mc_val_t v  = { 0 };
     int      tr = 0;
-    e           = unwrap_trans(e, call_site, &tr);
+    e           = unwrap_trans(e, &tr);
     if (tr || mc_scalar_eval_expr(e, &v, err, errsz) != 0 || v.type != MC_VAL_STRING ||
         v.sval[0] == '\0')
     {
@@ -281,7 +272,6 @@ static int solve_tri_col_d(uint64_t N, const double *A, int transA, char uplo, c
  * @slot:      Destination slot to receive the solved vector or matrix
  * @rhs:       Call expression node for `trsv` or `trsm`
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -296,7 +286,6 @@ static int solve_tri_col_d(uint64_t N, const double *A, int transA, char uplo, c
 static int exec_trsv_or_trsm(mc_slot_t       *slot,
                              const mc_expr_t *rhs,
                              imageID          avoid_id,
-                             const mc_expr_t *call_site,
                              int              in_unit,
                              char            *err,
                              size_t           errsz)
@@ -305,30 +294,26 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
     int              is_sm  = (strcmp(fn, "trsm") == 0);
     int              nargs  = rhs->u.call.nargs;
     int              transA = 0, transB = 0;
-    const mc_expr_t *eA = unwrap_trans(rhs->u.call.args[0], call_site, &transA);
-    const mc_expr_t *eB =
-        is_sm ? unwrap_trans(rhs->u.call.args[1], call_site, &transB) : rhs->u.call.args[1];
-    char   uplo  = 'U';
-    char   diag  = 'N';
-    char   side  = 'L';
-    double alpha = 1.0;
+    const mc_expr_t *eA = unwrap_trans(rhs->u.call.args[0], &transA);
+    const mc_expr_t *eB = is_sm ? unwrap_trans(rhs->u.call.args[1], &transB) : rhs->u.call.args[1];
+    char             uplo  = 'U';
+    char             diag  = 'N';
+    char             side  = 'L';
+    double           alpha = 1.0;
 
-    if ((nargs >= 3 &&
-         eval_flag_char(rhs->u.call.args[2], call_site, 'U', 'L', fn, &uplo, err, errsz) != 0) ||
-        (nargs >= 4 &&
-         eval_flag_char(rhs->u.call.args[3], call_site, 'N', 'U', fn, &diag, err, errsz) != 0) ||
-        (is_sm && nargs >= 5 &&
-         mc_eval_scalar_d(rhs->u.call.args[4], call_site, &alpha, err, errsz) != 0) ||
+    if ((nargs >= 3 && eval_flag_char(rhs->u.call.args[2], 'U', 'L', fn, &uplo, err, errsz) != 0) ||
+        (nargs >= 4 && eval_flag_char(rhs->u.call.args[3], 'N', 'U', fn, &diag, err, errsz) != 0) ||
+        (is_sm && nargs >= 5 && mc_eval_scalar_d(rhs->u.call.args[4], &alpha, err, errsz) != 0) ||
         (is_sm && nargs >= 6 &&
-         eval_flag_char(rhs->u.call.args[5], call_site, 'L', 'R', fn, &side, err, errsz) != 0))
+         eval_flag_char(rhs->u.call.args[5], 'L', 'R', fn, &side, err, errsz) != 0))
     {
         return -1;
     }
 
     imageID idA = -1, idB = -1;
     int     tmpA = 0, tmpB = 0, rc = 0;
-    if (mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
-        mc_resolve_or_eval_im(eB, call_site, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
+    if (mc_resolve_or_eval_im(eA, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
+        mc_resolve_or_eval_im(eB, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
         if (tmpA)
         {
@@ -801,7 +786,6 @@ static int solve_linear_d(const char *fn,
  * @slot:      Destination slot to receive the `N x M` inverse or pseudoinverse
  * @rhs:       Call expression node for `inv` or `pinv`
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -816,7 +800,6 @@ static int solve_linear_d(const char *fn,
 static int exec_pinv_or_inv(mc_slot_t       *slot,
                             const mc_expr_t *rhs,
                             imageID          avoid_id,
-                            const mc_expr_t *call_site,
                             int              in_unit,
                             char            *err,
                             size_t           errsz)
@@ -824,12 +807,12 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
     const char      *fn     = rhs->u.call.fn->name;
     int              is_inv = (strcmp(fn, "inv") == 0);
     int              transA = 0, tmpA = 0, rc = 0;
-    const mc_expr_t *eA    = unwrap_trans(rhs->u.call.args[0], call_site, &transA);
+    const mc_expr_t *eA    = unwrap_trans(rhs->u.call.args[0], &transA);
     double           rcond = -1.0;
     imageID          idA   = -1;
     if ((!is_inv && rhs->u.call.nargs == 2 &&
-         mc_eval_scalar_d(rhs->u.call.args[1], call_site, &rcond, err, errsz) != 0) ||
-        mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0)
+         mc_eval_scalar_d(rhs->u.call.args[1], &rcond, err, errsz) != 0) ||
+        mc_resolve_or_eval_im(eA, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0)
     {
         return -1;
     }
@@ -937,7 +920,6 @@ done:
  * @prog:      Compiled calculator program holding the slot table
  * @cs:        Constructor step descriptor to execute
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -948,33 +930,32 @@ done:
  *
  * Return: 0 on success, -1 on error
  */
-int mc_exec_lapack_call(mcalc_prog_t    *prog,
-                        mc_ctor_step_t  *cs,
-                        imageID          avoid_id,
-                        const mc_expr_t *call_site,
-                        int              in_unit,
-                        char            *err,
-                        size_t           errsz)
+int mc_exec_lapack_call(mcalc_prog_t   *prog,
+                        mc_ctor_step_t *cs,
+                        imageID         avoid_id,
+                        int             in_unit,
+                        char           *err,
+                        size_t          errsz)
 {
     mc_slot_t       *slot = &prog->slots[cs->slot_idx];
-    const mc_expr_t *rhs  = call_site ? cs->rhs_expr->u.call.udef_body : cs->rhs_expr;
+    const mc_expr_t *rhs  = cs->rhs_expr;
     const char      *fn   = rhs->u.call.fn->name;
 
     if (strcmp(fn, "trsv") == 0 || strcmp(fn, "trsm") == 0)
     {
-        return exec_trsv_or_trsm(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+        return exec_trsv_or_trsm(slot, rhs, avoid_id, in_unit, err, errsz);
     }
     if (strcmp(fn, "inv") == 0 || strcmp(fn, "pinv") == 0)
     {
-        return exec_pinv_or_inv(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+        return exec_pinv_or_inv(slot, rhs, avoid_id, in_unit, err, errsz);
     }
     if (strcmp(fn, "svd") == 0 || strcmp(fn, "eigh") == 0)
     {
         int     is_eigh = (strcmp(fn, "eigh") == 0);
         int     tmpA = 0, rc = 0;
         imageID idA = -1;
-        if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &idA, &tmpA,
-                                  err, errsz) != 0)
+        if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &idA, &tmpA, err,
+                                  errsz) != 0)
         {
             return -1;
         }
@@ -1014,14 +995,14 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
 
     /* Linear system solvers: gesv, posv, gels, solve */
     int              transA = 0, transB = 0;
-    const mc_expr_t *eA   = unwrap_trans(rhs->u.call.args[0], call_site, &transA);
-    const mc_expr_t *eB   = unwrap_trans(rhs->u.call.args[1], call_site, &transB);
+    const mc_expr_t *eA   = unwrap_trans(rhs->u.call.args[0], &transA);
+    const mc_expr_t *eB   = unwrap_trans(rhs->u.call.args[1], &transB);
     char             uplo = 'L';
     double           reg  = 0.0;
     if ((strcmp(fn, "posv") == 0 && rhs->u.call.nargs == 3 &&
-         eval_flag_char(rhs->u.call.args[2], call_site, 'L', 'U', fn, &uplo, err, errsz) != 0) ||
+         eval_flag_char(rhs->u.call.args[2], 'L', 'U', fn, &uplo, err, errsz) != 0) ||
         (strcmp(fn, "solve") == 0 && rhs->u.call.nargs == 3 &&
-         mc_eval_scalar_d(rhs->u.call.args[2], call_site, &reg, err, errsz) != 0) ||
+         mc_eval_scalar_d(rhs->u.call.args[2], &reg, err, errsz) != 0) ||
         reg < 0.0)
     {
         return (reg < 0.0) ? lap_err(err, errsz, "solve: regularization lambda must be >= 0") : -1;
@@ -1029,8 +1010,8 @@ int mc_exec_lapack_call(mcalc_prog_t    *prog,
 
     imageID idA = -1, idB = -1;
     int     tmpA = 0, tmpB = 0, rc = 0;
-    if (mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
-        mc_resolve_or_eval_im(eB, call_site, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
+    if (mc_resolve_or_eval_im(eA, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
+        mc_resolve_or_eval_im(eB, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
         if (tmpA)
         {
@@ -1186,7 +1167,7 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
     int              tmpA = 0, rc = 0;
     imageID          idA = -1;
 
-    if (mc_resolve_or_eval_im(rhs->u.call.args[0], NULL, -1, in_unit, &idA, &tmpA, err, errsz) != 0)
+    if (mc_resolve_or_eval_im(rhs->u.call.args[0], -1, in_unit, &idA, &tmpA, err, errsz) != 0)
     {
         return -1;
     }

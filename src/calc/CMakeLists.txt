@@ -24,19 +24,24 @@ set(SOURCEFILES
     mc_eval.c
     linalg/mc_linalg_blas.c
     linalg/mc_linalg_lapack.c
-    linalg/mc_fft_stack.c
-    milk_argval.c
-    units/milk_unit.c)
+    linalg/mc_fft_stack.c)
 
 set(INCLUDEFILES
     mcalc.h
     mcalc_host.h
-    milk_calc_ext.h
-    milk_argval.h
-    units/milk_unit.h)
+    milk_calc_ext.h)
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 milk_apply_extensions(${LIBNAME})
+
+# Scalar evaluation keeps the IEEE NaN semantics of the JIT kernels (mc_cc.c): under -Ofast,
+# -ffinite-math-only folds `nan == nan` to 1 and `nan >= 1` to !(nan < 1). libmilkbash compiles
+# mc_local.c with the same flag. The reduction kernels test NaN bit by bit (arith_isnan_d) and keep
+# -Ofast's finite math: it makes icentroid 8% and istd 3% faster.
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+  target_compile_options(${LIBNAME} PRIVATE -fno-finite-math-only)
+  set_source_files_properties(mc_reduce.c PROPERTIES COMPILE_OPTIONS -ffinite-math-only)
+endif()
 
 find_package(OpenMP)
 if(OpenMP_C_FOUND)
@@ -52,13 +57,21 @@ if(PKG_CONFIG_FOUND)
     target_include_directories(${LIBNAME} PRIVATE ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS})
     target_link_directories(${LIBNAME} PRIVATE ${FFTW_LIBRARY_DIRS} ${FFTWF_LIBRARY_DIRS})
     target_link_libraries(${LIBNAME} PRIVATE ${FFTW_LIBRARIES} ${FFTWF_LIBRARIES})
+    # With the threads libraries, FFT plans run on the calculator's thread team
+    find_library(FFTW_THREADS_LIB fftw3_threads HINTS ${FFTW_LIBRARY_DIRS})
+    find_library(FFTWF_THREADS_LIB fftw3f_threads HINTS ${FFTWF_LIBRARY_DIRS})
+    if(FFTW_THREADS_LIB AND FFTWF_THREADS_LIB)
+      target_compile_definitions(${LIBNAME} PRIVATE HAVE_FFTW3_THREADS=1)
+      target_link_libraries(${LIBNAME} PRIVATE ${FFTW_THREADS_LIB} ${FFTWF_THREADS_LIB})
+    endif()
   endif()
 endif()
 
 target_compile_definitions(
   ${LIBNAME}
   PRIVATE MILK_NO_CLI
-          MILK_DEFAULT_CC="${CMAKE_C_COMPILER}")
+          MILK_DEFAULT_CC="${CMAKE_C_COMPILER}"
+          MILK_CC_FLAGS="${MILK_CC_FLAGS}")
 
 target_include_directories(
   ${LIBNAME}

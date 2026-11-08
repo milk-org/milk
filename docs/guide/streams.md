@@ -10,7 +10,8 @@ tags:
 
 `milk` is built around a low-latency, zero-copy architecture designed for high-performance
 pipelines. This core feature is powered by `ImageStreamIO` which allocates streams (n-dimensional
-tensors, typically images or data cubes) directly in the Linux tmpfs (`/dev/shm/`).
+tensors, typically images or data cubes) directly in a tmpfs directory (`$MILK_SHM_DIR`, by default
+`/milk/shm`).
 
 See also: [FPS](fps.md) · [Process Info](procinfo.md) · [CLI Reference](CLIcore.md) ·
 [Scripts Reference](scripts.md)
@@ -24,7 +25,7 @@ latencies.
 ```mermaid
 sequenceDiagram
     participant Writer as Compute Unit A (Writer)
-    participant SHM as /dev/shm (ImageStreamIO)
+    participant SHM as MILK_SHM_DIR (ImageStreamIO)
     participant Reader as Compute Unit B (Reader)
 
     Note over Writer, Reader: Zero-copy shared memory architecture
@@ -56,15 +57,16 @@ Every stream contains more than just pixel values. It includes a comprehensive m
 ## 3. Stream Modifiers
 
 When interacting with streams on the CLI or within `milk` algorithms, standard modifiers are
-supported directly inside the stream string. E.g. passing `myImage@L:` to a module.
+supported directly inside the stream string, as a prefix: e.g. passing `@L:myImage` to a module.
+`@help streams` lists them, and TAB completes them.
 
-- `@S:` (Shared): Expected to reside in `/dev/shm/`. This is the default if no modifier is given.
+- `@S:` (Shared): Expected to reside in `$MILK_SHM_DIR`. This is the default if no modifier is given.
 - `@L:` (Local): Allocated in private local process memory. Used for internal buffering that doesn't
   need to be visible externally.
 - `@E:` (Exists): The stream must already exist. Returns an error if not found.
 - `@N:` (New): The stream must **not** exist. Returns an error if it already exists.
-- `@F:<path>`: Connect to or create a FITS-backed image at `<path>`.
-- `@T<type>:`: Set creation data type (e.g., `@TF32:im1`, `@TUI16:im2`, `@TCF32:im3`).
+- `@F:` (FITS): Load the image from `./conf/shmim.<name>.fits`.
+- `@T<type>:`: Set creation data type (e.g., `@TF32:im1`, `@TU16:im2`, `@TC64:im3`).
 
 Entity-path prefixes are also recognized in stream names: `s.im1` or `stream.im1` selects shared
 memory (`@S:`), while `l.im1` or `local.im1` selects local process memory (`@L:`).
@@ -83,28 +85,30 @@ automatically alerts the user and aborts the module spin-up to prevent silent fa
 
 The `@T<type>:` modifier embeds creation type hints directly in the stream name string:
 
-| Modifier               | Example      | Data Type             |
-| ---------------------- | ------------ | --------------------- |
-| `@TUI8:` / `@TUINT8:`  | `@TUI8:im1`  | `uint8`               |
-| `@TI8:` / `@TINT8:`    | `@TI8:im1`   | `int8`                |
-| `@TUI16:` / `@TUINT16:`| `@TUI16:im1` | `uint16`              |
-| `@TI16:` / `@TINT16:`  | `@TI16:im1`  | `int16`               |
-| `@TUI32:` / `@TUINT32:`| `@TUI32:im1` | `uint32`              |
-| `@TI32:` / `@TINT32:`  | `@TI32:im1`  | `int32`               |
-| `@TUI64:` / `@TUINT64:`| `@TUI64:im1` | `uint64`              |
-| `@TI64:` / `@TINT64:`  | `@TI64:im1`  | `int64`               |
-| `@TF16:`               | `@TF16:im1`  | `float16` (half)      |
-| `@TF32:` / `@TFLOAT:`  | `@TF32:im1`  | `float32`             |
-| `@TF64:` / `@TDOUBLE:` | `@TF64:im1`  | `float64` (double)    |
-| `@TCF32:`              | `@TCF32:im1` | `complex_float`       |
-| `@TCF64:`              | `@TCF64:im1` | `complex_double`      |
+| Modifier  | Example      | Data Type          |
+| --------- | ------------ | ------------------ |
+| `@TU8:`   | `@TU8:im1`   | `uint8`            |
+| `@TI8:`   | `@TI8:im1`   | `int8`             |
+| `@TU16:`  | `@TU16:im1`  | `uint16`           |
+| `@TI16:`  | `@TI16:im1`  | `int16`            |
+| `@TU32:`  | `@TU32:im1`  | `uint32`           |
+| `@TI32:`  | `@TI32:im1`  | `int32`            |
+| `@TU64:`  | `@TU64:im1`  | `uint64`           |
+| `@TI64:`  | `@TI64:im1`  | `int64`            |
+| `@TF16:`  | `@TF16:im1`  | `float16` (half)   |
+| `@TF32:`  | `@TF32:im1`  | `float32`          |
+| `@TF64:`  | `@TF64:im1`  | `float64` (double) |
+| `@TC64:`  | `@TC64:im1`  | `complex_float`    |
+| `@TC128:` | `@TC128:im1` | `complex_double`   |
+
+`@TUI8:` … `@TUI64:` and `@TSI8:` … `@TSI64:` are read as the unsigned and signed types too.
 
 > [!NOTE]
 > The legacy `t<type>>` prefix syntax (e.g., `tf32>im1`) is deprecated; use `@T<type>:im1` instead.
 
 These are parsed by `imgid_make_from_name()`. Keyword count and circular buffer size are set via
-`mdt->NBkw` and `mdt->CBsize` before calling `imgid_mkimage()`. Shared memory is the default; use
-`@S:` for explicit shared-memory annotation if needed.
+`mdt->NBkw` and `mdt->CBsize` before the image is created ([§5](#5-c-api-imgid)). Shared memory is the
+default; use `@S:` for explicit shared-memory annotation if needed.
 
 ## 4. Introspection
 
@@ -134,7 +138,7 @@ images and streams as function arguments.
     )
     ```
 
-    Creating a new stream in shared memory:
+    Creating a new stream in shared memory, in milk's image table:
 
     ```c
     IMGID img = imgid_make_from_name("im1");
@@ -143,11 +147,18 @@ images and streams as function arguments.
     img.mdt->size[1] = 128;
     img.mdt->shared = 1; // 1 = SHM, 0 = local
 
-    imgid_mkimage(&img);
-
-    // When done:
-    imgid_free(&img);
+    imgid_create_registered(&img);
     ```
+
+    Three functions create the image an `IMGID`'s template (`mdt`) describes:
+
+    | Function | In the image table | Use |
+    | -------- | ------------------ | --- |
+    | `imgid_create_registered(&img)` | yes | module code; a compatible image of the same name is reused and cleared |
+    | `imcreateIMGID(&img)` | yes | the same, but nothing happens if `img` already resolved to an image, and a reused image keeps its pixels |
+    | `imgid_mkimage(&img)` | no | an owner that keeps the image to itself, or engine code without the table: allocate `img.im` first; `RegisterIMGID()` adds it to the table |
+
+    Other commands find an image by name only if it is in the table.
 
 === "Connect"
 

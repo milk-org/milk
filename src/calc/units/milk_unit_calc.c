@@ -8,7 +8,8 @@
  *
  * .unit.expr (or the file .unit.file names) is compiled once and run on each frame of
  * .unit.trigger, else on each tick of the delay loop; a new .unit.expr or .unit.file is compiled
- * at the next frame. .unit.params declares parameters, "name:type[=default][:help] ...", as
+ * at the next frame, and if it does not compile the previous statements keep running (stderr and
+ * the process message say why). .unit.params declares parameters, "name:type[=default][:help] ...", as
  * calculator variables that @set changes live; a statement that assigns one writes it back to the
  * FPS. Names in the statements are shared streams, and a new image target becomes one. An error
  * stops the loop and is kept in .unit.error.
@@ -257,58 +258,23 @@ static void on_ext_scalar_out(const char *var_name, const char *descr, void *ud)
     }
 }
 
+/** bind_declared() - milk_unit_declare()'s bind: a writable input, valued in pval[]. */
+static void *bind_declared(const char *name, uint64_t type, const char *help)
+{
+    return (bind(name, type, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, help) == 0)
+               ? (void *) &pval[nbind - CALC_NFIXED - 1]
+               : NULL;
+}
+
 /** declare() - bind the parameters of @text ("name:type[=default][:help]", blank-separated) and of -l. */
 static int declare(const char *text)
 {
-    char *buf = strdup((text != NULL) ? text : "");
-    char *save;
-    int   rc = (buf == NULL) ? -1 : 0;
-
-    for (char *t = strtok_r(buf, " \t\n", &save); t != NULL && rc == 0;
-         t       = strtok_r(NULL, " \t\n", &save))
-    {
-        milk_argspec_t d;
-        CLICMDARGDATA  ad;
-        char           spec[FUNCTION_PARAMETER_STRMAXLEN * 4];
-        snprintf(spec, sizeof(spec), "%s", t); /* milk_argspec_parse() cuts @t */
-        memset(&ad, 0, sizeof(ad));
-        if (milk_argspec_parse(t, &d) != 0 || (d.def != NULL && d.type != FPTYPE_STRING &&
-                                               milk_argval_parse(d.type, d.def, &ad) != 0))
-        {
-            fprintf(
-                stderr,
-                "milk.calc: bad parameter '%s': name:type[=default][:help], type int uint float "
-                "bool str stream fits\n",
-                spec);
-            rc = -1;
-        }
-        else if ((rc = bind(d.name, d.type, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, d.help)) == 0)
-        {
-            int k = nbind - CALC_NFIXED - 1;
-            switch (d.type)
-            {
-            case FPTYPE_INT64:
-                pval[k].i = ad.val.i64;
-                break;
-            case FPTYPE_UINT64:
-                pval[k].u = ad.val.ui64;
-                break;
-            case FPTYPE_FLOAT64:
-                pval[k].f = ad.val.f64;
-                break;
-            case FPTYPE_ONOFF:
-                pval[k].b = (ad.val.i64 != 0);
-                break;
-            default:
-                snprintf(pval[k].s, sizeof(pval[k].s), "%s", (d.def != NULL) ? d.def : "");
-            }
-        }
-    }
-    free(buf);
+    int rc = milk_unit_declare("milk.calc", text, bind_declared);
 
     if (rc == 0 && (libs[0] != '\0' || mcalc_ext_count() > 0))
     {
         char err[512] = "";
+        int  nbuiltin = mcalc_ext_count(); /* the built-in kernels: parameters only when called */
         if (libs[0] != '\0' && mcalc_ext_load_list(libs, err, sizeof(err)) != 0)
         {
             fprintf(stderr, "milk.calc: %s\n", err);
@@ -322,7 +288,7 @@ static int declare(const char *text)
         if (itext == NULL && etext == NULL && libs[0] != '\0')
         {
             int next = mcalc_ext_count();
-            for (int i = 0; i < next && rc == 0; i++)
+            for (int i = nbuiltin; i < next && rc == 0; i++)
             {
                 const milk_calc_ext_entry_t *e = mcalc_ext_get(i);
                 const milk_calc_param_set_t *ps =
@@ -370,7 +336,7 @@ static int find_params(const char *name)
         char err[512] = "";
         if (mcalc_ext_load_list(fps.parray[pl].val.string[0], err, sizeof(err)) != 0)
         {
-            fprintf(stderr, "milk.calc: %s\n", err);
+            fprintf(stderr, "milk.calc %s: %s\n", name, err);
             fps_disconnect(&fps);
             return -1;
         }
@@ -545,12 +511,29 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
     }
     if (ctx->prog == NULL || stream_changed || pe_cnt != ctx->built[0] || pf_cnt != ctx->built[1])
     {
-        char *text = source_text(expr, file, err, errsz);
-        mcalc_prog_free(ctx->prog);
-        ctx->prog = (text != NULL)
-                        ? mcalc_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
-                        : NULL;
-        mcalc_prog_set_processinfo(ctx->prog, processinfo);
+        /* build, then swap: a change that does not compile leaves the running statements */
+        char       *text = source_text(expr, file, err, errsz);
+        mcalc_prog *prog = (text != NULL)
+                               ? mcalc_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
+                               : NULL;
+        if (prog != NULL || ctx->prog == NULL)
+        {
+            mcalc_prog_free(ctx->prog);
+            ctx->prog = prog;
+            mcalc_prog_set_processinfo(ctx->prog, processinfo);
+        }
+        else
+        {
+            char msg[600];
+            snprintf(msg, sizeof(msg), "not applied, still running the previous statements: %s",
+                     err);
+            fprintf(stderr, "milk.calc %s: %s\n", dcfpsptr->md->name, msg);
+            if (processinfo != NULL)
+            {
+                processinfo_WriteMessage(processinfo, msg);
+            }
+            err[0] = '\0';
+        }
         ctx->built[0] = pe_cnt;
         ctx->built[1] = pf_cnt;
         for (int k = 0; k < ctx->npar; k++)
@@ -701,15 +684,18 @@ int main(int argc, char **argv)
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "--list") == 0 || strcmp(argv[i], "--engines") == 0 ||
-            strcmp(argv[i], "--tokens") == 0)
+        if (strcmp(argv[i], "--engines") == 0 || strcmp(argv[i], "--tokens") == 0)
+        {
+            fprintf(stderr, "milk.calc: '%s' was removed: use --list\n", argv[i]);
+            return 2;
+        }
+        if (strcmp(argv[i], "--list") == 0)
         {
             int         json_mode = 0;
             const char *pat       = NULL;
             for (int j = 1; j < argc; j++)
             {
-                if (j == i || strcmp(argv[j], "--list") == 0 || strcmp(argv[j], "--engines") == 0 ||
-                    strcmp(argv[j], "--tokens") == 0)
+                if (j == i || strcmp(argv[j], "--list") == 0)
                 {
                     continue;
                 }

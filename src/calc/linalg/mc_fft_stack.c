@@ -4,24 +4,21 @@
 
 /**
  * @file mc_fft_stack.c
- * @brief FFT, array stacking/concatenation, 90-degree rotation, 2D convolution, and top-level
- *        constructor dispatch for `libmilkcalc`.
+ * @brief FFT, array stacking/concatenation, 90-degree rotation, and top-level constructor
+ *        dispatch for `libmilkcalc`.
  *
- * This module implements the Fourier transform, spatial filtering, array reshaping/concatenation,
+ * This module implements the Fourier transform, array reshaping/concatenation,
  * and top-level linear-algebra/extension constructor dispatcher for `libmilkcalc`:
  *
  * - **1D/2D/3D Discrete Fourier Transforms (`fft`, `ifft`, `fftshift`)**: executes forward and
- *   normalized (`1/N`) inverse complex DFTs using a mutex-protected, ring-buffer cache of 16
- *   FFTW3 guru/unaligned plans (`FFTW_ESTIMATE | FFTW_UNALIGNED`) for both single-precision
- *   (`fftwf`) and double-precision (`fftw`) transforms, with a separable 1D DFT fallback when
- *   compiled without `HAVE_FFTW3`. `fftshift` circularly shifts the zero-frequency component to
+ *   normalized (`1/N`) inverse DFTs with a 16-slot cache of FFTW3 plans (`FFTW_MEASURE` in compute
+ *   units, `FFTW_ESTIMATE` at the prompt) in single (`fftwf`) or double (`fftw`) precision: real-to-complex for real input (half the work), in
+ *   64-byte aligned scratch (SIMD), threaded on the calculator's thread team when the FFTW threads
+ *   libraries are present; a separable 1D DFT fallback when compiled without `HAVE_FFTW3`. `fftshift` circularly shifts the zero-frequency component to
  *   the center of the spectrum across all active axes.
  * - **Array stacking, concatenation, and rotation (`hstack`, `vstack`, `dstack`, `cat`, `rot90`)**:
  *   concatenates arbitrary sequences of images along axis 0, 1, or 2 with automatic real/complex
  *   and float32/float64 promotion, and rotates 2D images by `k * 90` degrees.
- * - **2D spatial filtering (`conv2`, `boxmean`)**: executes clamped-boundary 2D kernel convolution
- *   (odd kernel dimensions up to 31x31) and `(2r + 1) x (2r + 1)` box-car averaging in parallel
- *   across image rows via `arith_team_run()`.
  * - **Top-level constructor dispatcher (`mc_exec_linalg_or_ext`)**: routes `MC_STEP_CTOR` plan
  *   steps to multi-LHS handlers, C/FPS extension operators, FFT/stack helpers, LAPACK solvers,
  *   or BLAS routines.
@@ -42,6 +39,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
+#include "COREMOD_arith/image_elem_block.h"
 #include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/image_ID.h"
 #include "linalg/mc_linalg.h"
@@ -82,127 +80,210 @@ __attribute__((format(printf, 3, 4))) static int fs_err(char       *err,
 
 #ifdef HAVE_FFTW3
 /**
- * struct fft_cache_entry_t - Cached FFTW3/FFTW3F out-of-place DFT plan entry
- * @naxis:  Transform dimensionality (1, 2, or 3)
- * @sz:     Transform dimensions `[nx, ny, nz]` in ImageStreamIO column-major order
- * @is_dbl: Non-zero for double-precision (`fftw_plan`), 0 for single-precision (`fftwf_plan`)
- * @sign:   Transform direction (`FFTW_FORWARD` = -1 or `FFTW_BACKWARD` = +1)
- * @plan:   Opaque `fftw_plan` or `fftwf_plan` handle created with `FFTW_UNALIGNED`
+ * struct fft_cache_entry_t - Cached FFTW3/FFTW3F plan
+ * @naxis:  Transform rank (1, 2, or 3)
+ * @sz:     Transform dimensions `[nx, ny, nz]` in ImageStreamIO order
+ * @is_dbl: Non-zero for double precision (`fftw_plan`), 0 for single precision (`fftwf_plan`)
+ * @kind:   `FFT_R2C` (forward, real input), `FFT_FWD` or `FFT_INV` (in-place complex)
+ * @nth:    Number of threads the plan runs on
+ * @measure: Planned with `FFTW_MEASURE` (a unit's), else `FFTW_ESTIMATE`
+ * @plan:   Opaque `fftw_plan` or `fftwf_plan`, made for 64-byte aligned buffers
  */
 typedef struct
 {
     uint8_t  naxis;
     uint32_t sz[3];
     int      is_dbl;
-    int      sign;
+    int      kind;
+    int      nth;
+    int      measure;
     void    *plan;
 } fft_cache_entry_t;
+
+enum
+{
+    FFT_R2C,
+    FFT_FWD,
+    FFT_INV
+};
 
 #    define FFT_CACHE_CAP 16
 static fft_cache_entry_t g_fft_cache[FFT_CACHE_CAP];
 static int               g_fft_cache_n    = 0;
 static int               g_fft_cache_next = 0;
-static pthread_mutex_t   g_fft_lock       = PTHREAD_MUTEX_INITIALIZER;
+/* FFTW's planner is not thread-safe, and plans run on the calculator's thread team, which serves
+ * one caller at a time: plans are made and executed under this lock. */
+static pthread_mutex_t g_fft_lock = PTHREAD_MUTEX_INITIALIZER;
+
+#    ifdef HAVE_FFTW3_THREADS
+/**
+ * struct fft_loop_t - One FFTW parallel loop: `work(jobdata + i * elsize)` for each job `i`
+ * @work:    FFTW job function
+ * @jobdata: First job's data
+ * @elsize:  Size of one job's data
+ */
+typedef struct
+{
+    void *(*work)(char *);
+    char  *jobdata;
+    size_t elsize;
+} fft_loop_t;
+
+/* Set while this thread runs FFTW jobs: a loop FFTW nests in a job runs here, since the team
+ * serves one caller at a time */
+static __thread int t_in_fft_job;
+
+/** fft_loop_job - Team job: run FFTW jobs [@lo, @hi). */
+static void fft_loop_job(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
+{
+    const fft_loop_t *l = (const fft_loop_t *) ctx;
+    (void) tid;
+    (void) nth;
+    t_in_fft_job = 1;
+    for (uint64_t i = lo; i < hi; i++)
+    {
+        l->work(l->jobdata + i * l->elsize);
+    }
+    t_in_fft_job = 0;
+}
+
+/** fft_parallel_loop - FFTW threads callback: run @njobs FFTW jobs on the calculator's team. */
+static void fft_parallel_loop(void *(*work)(char *),
+                              char  *jobdata,
+                              size_t elsize,
+                              int    njobs,
+                              void  *data)
+{
+    fft_loop_t l = { work, jobdata, elsize };
+    (void) data;
+    if (t_in_fft_job)
+    {
+        fft_loop_job(&l, 0, 1, 0, (uint64_t) njobs);
+        t_in_fft_job = 1;
+        return;
+    }
+    arith_team_run(njobs, (uint64_t) njobs, fft_loop_job, &l);
+}
+
+static pthread_once_t g_fft_threads_once = PTHREAD_ONCE_INIT;
+
+/** fft_threads_init - Make FFTW's threaded plans use the calculator's thread team. */
+static void fft_threads_init(void)
+{
+    fftw_init_threads();
+    fftwf_init_threads();
+    fftw_threads_set_callback(fft_parallel_loop, NULL);
+    fftwf_threads_set_callback(fft_parallel_loop, NULL);
+}
+#    endif
 
 /**
- * run_fftw_cached - Look up or create a cached FFTW3 plan and execute it on (@in_buf, @out_buf)
- * @naxis:   Transform dimensionality (1, 2, or 3)
- * @sz:      Transform dimensions `[nx, ny, nz]` (fast axis `nx = sz[0]`, slow axis `nz = sz[2]`)
- * @is_dbl:  Non-zero for `complex_double`, 0 for `complex_float`
- * @sign:    `-1` for forward DFT, `+1` for inverse DFT
- * @in_buf:  Input interleaved complex buffer
- * @out_buf: Output interleaved complex buffer
+ * fft_plan - Look up or make the plan of a transform on (@in, @out)
+ * @naxis:  Transform rank (1, 2, or 3)
+ * @sz:     Transform dimensions `[nx, ny, nz]` (fast axis `nx = sz[0]`)
+ * @is_dbl: Non-zero for double precision
+ * @kind:   `FFT_R2C`, `FFT_FWD` or `FFT_INV`
+ * @nth:    Number of threads
+ * @measure: Non-zero in a compute unit: plan with `FFTW_MEASURE` (it times candidate algorithms on
+ *          scratch buffers, up to seconds once per shape), else `FFTW_ESTIMATE` (instant)
+ * @in:     Input buffer (64-byte aligned)
+ * @out:    Output buffer (64-byte aligned; @in for the in-place complex kinds)
  *
- * Because FFTW planner routines are not thread-safe and plan creation is costly
- * inside real-time loops, plans are created with `FFTW_ESTIMATE | FFTW_UNALIGNED`
- * under `g_fft_lock`, stored in a 16-slot FIFO ring cache, and executed via the
- * new-array interface `fftw_execute_dft()`. Note that ImageStreamIO dimensions
- * `(nx, ny, nz)` map to row-major FFTW dimensions `(ny, nx)` in 2D and `(nz, ny, nx)`
- * in 3D.
+ * Context: caller holds `g_fft_lock`. Plans are kept in a 16-slot FIFO cache; a measured plan also
+ * serves the prompt, an estimated one never serves a unit. ImageStreamIO `(nx, ny, nz)` is FFTW's
+ * row-major `(ny, nx)` or `(nz, ny, nx)`.
  *
- * Return: 0 on success, -1 if FFTW plan creation failed
+ * Return: The plan, or NULL if FFTW could not make it
  */
-static int run_fftw_cached(uint8_t        naxis,
-                           const uint32_t sz[3],
-                           int            is_dbl,
-                           int            sign,
-                           void          *in_buf,
-                           void          *out_buf)
+static void *fft_plan(uint8_t        naxis,
+                      const uint32_t sz[3],
+                      int            is_dbl,
+                      int            kind,
+                      int            nth,
+                      int            measure,
+                      void          *in,
+                      void          *out)
 {
-    pthread_mutex_lock(&g_fft_lock);
-    void *plan = NULL;
     for (int i = 0; i < g_fft_cache_n; i++)
     {
         const fft_cache_entry_t *e = &g_fft_cache[i];
-        if (e->naxis == naxis && e->sz[0] == sz[0] && e->sz[1] == sz[1] && e->sz[2] == sz[2] &&
-            e->is_dbl == is_dbl && e->sign == sign)
+        if (e->naxis == naxis && memcmp(e->sz, sz, sizeof(e->sz)) == 0 && e->is_dbl == is_dbl &&
+            e->kind == kind && e->nth == nth && e->measure >= measure)
         {
-            plan = e->plan;
-            break;
+            return e->plan;
         }
     }
+    /* FFTW_MEASURE overwrites the arrays it plans on: plan on scratch of the same sizes and
+     * 64-byte alignment, which the plan then runs on the caller's buffers with */
+    void *scratch = NULL;
+    if (measure)
+    {
+        size_t   el    = is_dbl ? sizeof(double) : sizeof(float);
+        uint64_t nel   = (uint64_t) sz[0] * sz[1] * sz[2];
+        size_t   a_in  = ((size_t) nel * el * (kind == FFT_R2C ? 1 : 2) + 63) & ~(size_t) 63;
+        size_t   n_out = (kind == FFT_R2C) ? 2 * (size_t) (sz[0] / 2 + 1) * sz[1] * sz[2] * el : 0;
+        if (posix_memalign(&scratch, 64, a_in + n_out) != 0)
+        {
+            return NULL;
+        }
+        in  = scratch;
+        out = (kind == FFT_R2C) ? (char *) scratch + a_in : scratch;
+    }
+    unsigned flags = measure ? FFTW_MEASURE : FFTW_ESTIMATE;
+    int      dims[3];
+    for (int a = 0; a < naxis; a++)
+    {
+        dims[a] = (int) sz[naxis - 1 - a];
+    }
+#    ifdef HAVE_FFTW3_THREADS
+    pthread_once(&g_fft_threads_once, fft_threads_init);
+    fftw_plan_with_nthreads(nth);
+    fftwf_plan_with_nthreads(nth);
+#    endif
+    int   sign = (kind == FFT_INV) ? FFTW_BACKWARD : FFTW_FORWARD;
+    void *plan = NULL;
+    if (is_dbl)
+    {
+        plan = (kind == FFT_R2C) ? (void *) fftw_plan_dft_r2c(naxis, dims, (double *) in,
+                                                              (fftw_complex *) out, flags)
+                                 : (void *) fftw_plan_dft(naxis, dims, (fftw_complex *) in,
+                                                          (fftw_complex *) out, sign, flags);
+    }
+    else
+    {
+        plan = (kind == FFT_R2C) ? (void *) fftwf_plan_dft_r2c(naxis, dims, (float *) in,
+                                                               (fftwf_complex *) out, flags)
+                                 : (void *) fftwf_plan_dft(naxis, dims, (fftwf_complex *) in,
+                                                           (fftwf_complex *) out, sign, flags);
+    }
+    free(scratch);
     if (plan == NULL)
     {
-        unsigned flags = FFTW_ESTIMATE | FFTW_UNALIGNED;
-        int      nx = (int) sz[0], ny = (int) sz[1], nz = (int) sz[2];
-        if (is_dbl)
-        {
-            plan = (naxis == 1) ? (void *) fftw_plan_dft_1d(nx, (fftw_complex *) in_buf,
-                                                            (fftw_complex *) out_buf, sign, flags)
-                   : (naxis == 2)
-                       ? (void *) fftw_plan_dft_2d(ny, nx, (fftw_complex *) in_buf,
-                                                   (fftw_complex *) out_buf, sign, flags)
-                       : (void *) fftw_plan_dft_3d(nz, ny, nx, (fftw_complex *) in_buf,
-                                                   (fftw_complex *) out_buf, sign, flags);
-        }
-        else
-        {
-            plan = (naxis == 1) ? (void *) fftwf_plan_dft_1d(nx, (fftwf_complex *) in_buf,
-                                                             (fftwf_complex *) out_buf, sign, flags)
-                   : (naxis == 2)
-                       ? (void *) fftwf_plan_dft_2d(ny, nx, (fftwf_complex *) in_buf,
-                                                    (fftwf_complex *) out_buf, sign, flags)
-                       : (void *) fftwf_plan_dft_3d(nz, ny, nx, (fftwf_complex *) in_buf,
-                                                    (fftwf_complex *) out_buf, sign, flags);
-        }
-        if (plan != NULL)
-        {
-            int slot         = (g_fft_cache_n < FFT_CACHE_CAP) ? g_fft_cache_n++ : g_fft_cache_next;
-            g_fft_cache_next = (slot + 1) % FFT_CACHE_CAP;
-            if (g_fft_cache[slot].plan != NULL)
-            {
-                if (g_fft_cache[slot].is_dbl)
-                {
-                    fftw_destroy_plan((fftw_plan) g_fft_cache[slot].plan);
-                }
-                else
-                {
-                    fftwf_destroy_plan((fftwf_plan) g_fft_cache[slot].plan);
-                }
-            }
-            g_fft_cache[slot] = (fft_cache_entry_t) {
-                .naxis  = naxis,
-                .sz     = { sz[0], sz[1], sz[2] },
-                .is_dbl = is_dbl,
-                .sign   = sign,
-                .plan   = plan,
-            };
-        }
+        return NULL;
     }
-    if (plan != NULL)
+    int slot         = (g_fft_cache_n < FFT_CACHE_CAP) ? g_fft_cache_n++ : g_fft_cache_next;
+    g_fft_cache_next = (slot + 1) % FFT_CACHE_CAP;
+    if (g_fft_cache[slot].plan != NULL)
     {
-        if (is_dbl)
+        if (g_fft_cache[slot].is_dbl)
         {
-            fftw_execute_dft((fftw_plan) plan, (fftw_complex *) in_buf, (fftw_complex *) out_buf);
+            fftw_destroy_plan((fftw_plan) g_fft_cache[slot].plan);
         }
         else
         {
-            fftwf_execute_dft((fftwf_plan) plan, (fftwf_complex *) in_buf,
-                              (fftwf_complex *) out_buf);
+            fftwf_destroy_plan((fftwf_plan) g_fft_cache[slot].plan);
         }
     }
-    pthread_mutex_unlock(&g_fft_lock);
-    return (plan != NULL) ? 0 : -1;
+    g_fft_cache[slot] = (fft_cache_entry_t) {
+        .naxis   = naxis,
+        .sz      = { sz[0], sz[1], sz[2] },
+        .is_dbl  = is_dbl,
+        .kind    = kind,
+        .nth     = nth,
+        .measure = measure,
+        .plan    = plan,
+    };
+    return plan;
 }
 #endif
 
@@ -293,6 +374,138 @@ static void write_pix_any(IMAGE *out, uint8_t dt, uint64_t idx, double re, doubl
     }
 }
 
+#ifdef HAVE_FFTW3
+/**
+ * fft_load - Copy @nel pixels of @src into transform buffer @buf: reals (@real) or complex pairs
+ * @src:    Source image (any real or complex type)
+ * @sdt:    Datatype of @src
+ * @buf:    Destination buffer (float or double elements)
+ * @nel:    Number of pixels
+ * @is_dbl: Non-zero for double elements
+ * @real:   Non-zero to copy reals (real-to-complex input), else complex pairs
+ *
+ * Return: void
+ */
+static void fft_load(const IMAGE *src, uint8_t sdt, void *buf, uint64_t nel, int is_dbl, int real)
+{
+    if (real)
+    {
+        for (uint64_t off = 0; off < nel; off += ARITH_ELEM_BLK)
+        {
+            int len = (int) ((nel - off < ARITH_ELEM_BLK) ? nel - off : ARITH_ELEM_BLK);
+            if (is_dbl)
+            {
+                arith_load_block_d_inline(src, off, len, (double *) buf + off);
+            }
+            else
+            {
+                arith_load_block_f_inline(src, off, len, (float *) buf + off);
+            }
+        }
+        return;
+    }
+    if (sdt == (is_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT))
+    {
+        memcpy(buf, src->array.raw, 2 * (size_t) nel * (is_dbl ? sizeof(double) : sizeof(float)));
+        return;
+    }
+    for (uint64_t i = 0; i < nel; i++)
+    {
+        double re = 0.0, im_p = 0.0;
+        read_pix_any(src, sdt, i, &re, &im_p);
+        if (is_dbl)
+        {
+            ((double *) buf)[2 * i]     = re;
+            ((double *) buf)[2 * i + 1] = im_p;
+        }
+        else
+        {
+            ((float *) buf)[2 * i]     = (float) re;
+            ((float *) buf)[2 * i + 1] = (float) im_p;
+        }
+    }
+}
+
+/**
+ * struct fft_store_t - Copy of a transform result into the complex output image
+ * @out:    Output image pixels (complex float or complex double)
+ * @buf:    Transform result: half spectrum `(nz, ny, nx / 2 + 1)` (@r2c), else full spectrum
+ * @nx:     X size
+ * @ny:     Y size
+ * @nz:     Z size
+ * @is_dbl: Non-zero for double precision
+ * @r2c:    Non-zero when @buf holds the half spectrum of a real input
+ * @scale:  Factor applied when copying a full spectrum (`1 / N` for `ifft`)
+ */
+typedef struct
+{
+    void       *out;
+    const void *buf;
+    int64_t     nx;
+    int64_t     ny;
+    int64_t     nz;
+    int         is_dbl;
+    int         r2c;
+    double      scale;
+} fft_store_t;
+
+/** FFT_STORE_ROW - write output row @r: a scaled copy, or the half spectrum and its mirror. */
+#    define FFT_STORE_ROW(FT)                                                               \
+        {                                                                                   \
+            FT *o = (FT *) s->out + 2 * (int64_t) r * nx;                                   \
+            if (!s->r2c)                                                                    \
+            {                                                                               \
+                const FT *b = (const FT *) s->buf + 2 * (int64_t) r * nx;                   \
+                const FT  k = (FT) s->scale;                                                \
+                _Pragma("omp simd") for (int64_t i = 0; i < 2 * nx; i++)                    \
+                {                                                                           \
+                    o[i] = k * b[i];                                                        \
+                }                                                                           \
+            }                                                                               \
+            else                                                                            \
+            {                                                                               \
+                const int64_t z = (int64_t) r / ny;                                         \
+                const int64_t y = (int64_t) r % ny;                                         \
+                const FT     *h = (const FT *) s->buf + 2 * (int64_t) r * nhx;              \
+                const FT     *mr =                                                          \
+                    (const FT *) s->buf + 2 * (((nz - z) % nz) * ny + (ny - y) % ny) * nhx; \
+                memcpy(o, h, 2 * (size_t) nhx * sizeof(FT));                                \
+                for (int64_t kx = nhx; kx < nx; kx++)                                       \
+                {                                                                           \
+                    o[2 * kx]     = mr[2 * (nx - kx)];                                      \
+                    o[2 * kx + 1] = -mr[2 * (nx - kx) + 1];                                 \
+                }                                                                           \
+            }                                                                               \
+        }
+
+/**
+ * fft_store_job - Team job writing output rows [@lo, @hi) (Hermitian symmetry for real input:
+ * X[kz][ky][kx] = conj(X[-kz][-ky][-kx]))
+ */
+static void fft_store_job(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
+{
+    const fft_store_t *s   = (const fft_store_t *) ctx;
+    const int64_t      nx  = s->nx;
+    const int64_t      ny  = s->ny;
+    const int64_t      nz  = s->nz;
+    const int64_t      nhx = nx / 2 + 1;
+    (void) tid;
+    (void) nth;
+    for (uint64_t r = lo; r < hi; r++)
+    {
+        if (s->is_dbl)
+        {
+            FFT_STORE_ROW(double)
+        }
+        else
+        {
+            FFT_STORE_ROW(float)
+        }
+    }
+}
+#    undef FFT_STORE_ROW
+#endif
+
 /* ============================================================================
  * FFT, IFFT, FFTShift, Stacking, Concatenation, and 90-Degree Rotation
  * ============================================================================ */
@@ -300,32 +513,32 @@ static void write_pix_any(IMAGE *out, uint8_t dt, uint64_t idx, double re, doubl
 /**
  * exec_fft_or_ifft - Execute `fft(im)` or `ifft(im)` on a 1D, 2D, or 3D image into @slot
  * @slot:      Destination slot to receive the complex frequency/spatial output image
- * @rhs:       Call expression node for `fft` or `ifft`
+ * @cs:        Constructor step (`fft` or `ifft` call; its scratch buffer is reused across frames)
  * @avoid_id:  Image ID to avoid clobbering when evaluating the input sub-expression
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
  *
  * Promotes `float64` / `complex_double` inputs to `_DATATYPE_COMPLEX_DOUBLE` and
  * all other types to `_DATATYPE_COMPLEX_FLOAT`. For `ifft`, normalizes the output
- * by `1 / nelement`.
+ * by `1 / nelement`. An existing real shared stream cannot take the complex result.
  *
  * Return: 0 on success, -1 on rank error, allocation failure, or FFT execution failure
  */
-static int exec_fft_or_ifft(mc_slot_t       *slot,
-                            const mc_expr_t *rhs,
-                            imageID          avoid_id,
-                            const mc_expr_t *call_site,
-                            int              in_unit,
-                            char            *err,
-                            size_t           errsz)
+static int exec_fft_or_ifft(mc_slot_t      *slot,
+                            mc_ctor_step_t *cs,
+                            imageID         avoid_id,
+                            int             in_unit,
+                            char           *err,
+                            size_t          errsz)
 {
+    const mc_expr_t *rhs = cs->rhs_expr;
+
     int     is_ifft = (strcmp(rhs->u.call.fn->name, "ifft") == 0);
     int     src_tmp = 0, rc = 0;
     imageID src_id = -1;
-    if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
-                              err, errsz) != 0)
+    if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &src_id, &src_tmp, err,
+                              errsz) != 0)
     {
         return -1;
     }
@@ -350,6 +563,15 @@ static int exec_fft_or_ifft(mc_slot_t       *slot,
     uint8_t  out_dt =
         mc_select_ctor_out_dt(slot, is_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT);
     is_dbl = (out_dt == _DATATYPE_COMPLEX_DOUBLE);
+    if (out_dt != _DATATYPE_COMPLEX_FLOAT && out_dt != _DATATYPE_COMPLEX_DOUBLE)
+    {
+        if (src_tmp)
+        {
+            mc_tmp_release(src_id);
+        }
+        return fs_err(err, errsz, "%s: '%s' is a real stream; the result is complex",
+                      rhs->u.call.fn->name, slot->bare);
+    }
 
     imageID oid = mc_out_prepare(slot, naxis, sz, out_dt, in_unit, err, errsz);
     if (oid < 0)
@@ -364,51 +586,76 @@ static int exec_fft_or_ifft(mc_slot_t       *slot,
     int    sign = is_ifft ? 1 : -1;
 
 #ifdef HAVE_FFTW3
-    size_t elem_sz = is_dbl ? (2 * sizeof(double)) : (2 * sizeof(float));
-    void  *in_buf  = malloc(elem_sz * (size_t) (nel > 0 ? nel : 1));
-    if (in_buf == NULL)
+    /* Real input: a real-to-complex transform of half the spectrum, mirrored into the other half;
+     * complex input and ifft: an in-place complex transform. Both run in 64-byte aligned scratch,
+     * kept by the step, so FFTW's SIMD code applies. */
+    (void) sign;
+    int      r2c  = !is_ifft && sdt != _DATATYPE_COMPLEX_FLOAT && sdt != _DATATYPE_COMPLEX_DOUBLE;
+    size_t   el   = is_dbl ? sizeof(double) : sizeof(float);
+    uint64_t nh   = (uint64_t) (sz[0] / 2 + 1) * sz[1] * sz[2];
+    size_t   a_in = ((size_t) nel * el * (r2c ? 1 : 2) + 63) & ~(size_t) 63;
+    size_t   need = a_in + (r2c ? 2 * (size_t) nh * el : 0) + 64;
+    if (cs->scratch_cap < need)
     {
-        if (src_tmp)
+        double *nb = realloc(cs->scratch_buf, need);
+        if (nb == NULL)
         {
-            mc_tmp_release(src_id);
+            if (src_tmp)
+            {
+                mc_tmp_release(src_id);
+            }
+            return fs_err(err, errsz, "%s: out of memory", rhs->u.call.fn->name);
         }
-        return fs_err(err, errsz, "%s: out of memory", rhs->u.call.fn->name);
+        cs->scratch_buf = nb;
+        cs->scratch_cap = need;
     }
-    for (uint64_t i = 0; i < nel; i++)
+    char *in   = (char *) (((uintptr_t) cs->scratch_buf + 63) & ~(uintptr_t) 63);
+    char *res  = r2c ? in + a_in : in;
+    int   nth  = milk_omp_team_size(nel, 65536);
+    int   kind = r2c ? FFT_R2C : (is_ifft ? FFT_INV : FFT_FWD);
+    fft_load(src, sdt, in, nel, is_dbl, r2c);
+
+    pthread_mutex_lock(&g_fft_lock);
+    void *plan = fft_plan(naxis, sz, is_dbl, kind, nth, in_unit != 0, in, res);
+    if (plan != NULL && is_dbl)
     {
-        double re = 0.0, im_p = 0.0;
-        read_pix_any(src, sdt, i, &re, &im_p);
-        if (is_dbl)
+        if (r2c)
         {
-            ((double *) in_buf)[2 * i]     = re;
-            ((double *) in_buf)[2 * i + 1] = im_p;
+            fftw_execute_dft_r2c((fftw_plan) plan, (double *) in, (fftw_complex *) res);
         }
         else
         {
-            ((float *) in_buf)[2 * i]     = (float) re;
-            ((float *) in_buf)[2 * i + 1] = (float) im_p;
+            fftw_execute_dft((fftw_plan) plan, (fftw_complex *) in, (fftw_complex *) res);
         }
     }
-    rc = run_fftw_cached(naxis, sz, is_dbl, sign, in_buf,
-                         is_dbl ? (void *) out->array.CD : (void *) out->array.CF);
-    if (rc == 0 && is_ifft)
+    else if (plan != NULL)
     {
-        double inv_n = 1.0 / (double) nel;
-        for (uint64_t i = 0; i < nel; i++)
+        if (r2c)
         {
-            if (is_dbl)
-            {
-                out->array.CD[i].re *= inv_n;
-                out->array.CD[i].im *= inv_n;
-            }
-            else
-            {
-                out->array.CF[i].re *= (float) inv_n;
-                out->array.CF[i].im *= (float) inv_n;
-            }
+            fftwf_execute_dft_r2c((fftwf_plan) plan, (float *) in, (fftwf_complex *) res);
+        }
+        else
+        {
+            fftwf_execute_dft((fftwf_plan) plan, (fftwf_complex *) in, (fftwf_complex *) res);
         }
     }
-    free(in_buf);
+    pthread_mutex_unlock(&g_fft_lock);
+    if (plan == NULL)
+    {
+        rc = fs_err(err, errsz, "%s: FFTW cannot plan this transform", rhs->u.call.fn->name);
+    }
+    else
+    {
+        fft_store_t st = { is_dbl ? (void *) out->array.CD : (void *) out->array.CF,
+                           res,
+                           sz[0],
+                           sz[1],
+                           sz[2],
+                           is_dbl,
+                           r2c,
+                           is_ifft ? 1.0 / (double) nel : 1.0 };
+        arith_team_run(nth, (uint64_t) sz[1] * sz[2], fft_store_job, &st);
+    }
 #else
     double  *re    = calloc((size_t) nel, sizeof(double));
     double  *im    = calloc((size_t) nel, sizeof(double));
@@ -499,7 +746,6 @@ static int exec_fft_or_ifft(mc_slot_t       *slot,
  * @slot:      Destination slot to receive the shifted image
  * @rhs:       Call expression node for `fftshift`
  * @avoid_id:  Image ID to avoid clobbering when evaluating the input sub-expression
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -513,15 +759,14 @@ static int exec_fft_or_ifft(mc_slot_t       *slot,
 static int exec_fftshift(mc_slot_t       *slot,
                          const mc_expr_t *rhs,
                          imageID          avoid_id,
-                         const mc_expr_t *call_site,
                          int              in_unit,
                          char            *err,
                          size_t           errsz)
 {
     imageID src_id  = -1;
     int     src_tmp = 0;
-    if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
-                              err, errsz) != 0)
+    if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &src_id, &src_tmp, err,
+                              errsz) != 0)
     {
         return -1;
     }
@@ -585,7 +830,6 @@ static int exec_fftshift(mc_slot_t       *slot,
  * @slot:      Destination slot to receive the concatenated tensor
  * @rhs:       Call expression node
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -600,7 +844,6 @@ static int exec_fftshift(mc_slot_t       *slot,
 static int exec_stack_or_cat(mc_slot_t       *slot,
                              const mc_expr_t *rhs,
                              imageID          avoid_id,
-                             const mc_expr_t *call_site,
                              int              in_unit,
                              char            *err,
                              size_t           errsz)
@@ -611,7 +854,7 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
     if (is_cat)
     {
         double axd = 0.0;
-        if (mc_eval_scalar_d(rhs->u.call.args[0], call_site, &axd, err, errsz) != 0)
+        if (mc_eval_scalar_d(rhs->u.call.args[0], &axd, err, errsz) != 0)
         {
             return -1;
         }
@@ -632,7 +875,7 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
     for (int i = 0; i < nin; i++)
     {
         ids[i] = -1;
-        if (mc_resolve_or_eval_im(rhs->u.call.args[arg0 + i], call_site, avoid_id, in_unit, &ids[i],
+        if (mc_resolve_or_eval_im(rhs->u.call.args[arg0 + i], avoid_id, in_unit, &ids[i],
                                   &is_tmp[i], err, errsz) != 0)
         {
             rc = -1;
@@ -738,7 +981,6 @@ done:
  * @slot:      Destination slot to receive the rotated 2D image
  * @rhs:       Call expression node for `rot90`
  * @avoid_id:  Image ID to avoid clobbering when evaluating the input sub-expression
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -751,22 +993,20 @@ done:
 static int exec_rot90(mc_slot_t       *slot,
                       const mc_expr_t *rhs,
                       imageID          avoid_id,
-                      const mc_expr_t *call_site,
                       int              in_unit,
                       char            *err,
                       size_t           errsz)
 {
     double kd = 1.0;
-    if (rhs->u.call.nargs == 2 &&
-        mc_eval_scalar_d(rhs->u.call.args[1], call_site, &kd, err, errsz) != 0)
+    if (rhs->u.call.nargs == 2 && mc_eval_scalar_d(rhs->u.call.args[1], &kd, err, errsz) != 0)
     {
         return -1;
     }
     int     k       = (int) (((llround(kd) % 4) + 4) % 4);
     imageID src_id  = -1;
     int     src_tmp = 0;
-    if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
-                              err, errsz) != 0)
+    if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &src_id, &src_tmp, err,
+                              errsz) != 0)
     {
         return -1;
     }
@@ -814,266 +1054,6 @@ static int exec_rot90(mc_slot_t       *slot,
 }
 
 /* ============================================================================
- * 2D Convolution (conv2) and Box-Car Averaging (boxmean)
- * ============================================================================ */
-
-/**
- * struct conv_box_job_t - Thread-team work descriptor for `conv2` and `boxmean`
- * @src:    Resolved 2D input source descriptor
- * @out:    Destination 2D output image
- * @out_dt: Output ImageStreamIO datatype code
- * @nx:     Image width (axis 0)
- * @ny:     Image height (axis 1)
- * @kx:     Kernel width for `conv2` (odd, `1..31`)
- * @ky:     Kernel height for `conv2` (odd, `1..31`)
- * @kern:   Flattened `kx * ky` convolution kernel weights (`NULL` for `boxmean`)
- * @box_r:  Half-window radius `r` for `(2r + 1) x (2r + 1)` `boxmean`
- */
-typedef struct
-{
-    const mc_red_src_t *src;
-    IMAGE              *out;
-    uint8_t             out_dt;
-    uint32_t            nx, ny;
-    int                 kx, ky;
-    const double       *kern;
-    int                 box_r;
-} conv_box_job_t;
-
-/**
- * clamp_i - Clamp signed coordinate @v to the valid index range `[0, n - 1]`
- * @v: Signed pixel coordinate (may be negative or `>= n` near borders)
- * @n: Axis length (`> 0`)
- *
- * Return: Clamped unsigned coordinate in `[0, n - 1]`
- */
-static inline uint32_t clamp_i(int v, uint32_t n)
-{
-    return (v < 0) ? 0 : ((uint32_t) v >= n) ? (n - 1) : (uint32_t) v;
-}
-
-/**
- * read_red_src_2d - Read pixel `(x, y)` from a 2D reduction source @s as `double`
- * @s: 2D reduction source descriptor
- * @x: Column coordinate (`0 <= x < s->ishape[0]`)
- * @y: Row coordinate (`0 <= y < s->ishape[1]`)
- *
- * Return: Pixel value at `(x, y)` promoted to `double`
- */
-static inline double read_red_src_2d(const mc_red_src_t *s, uint32_t x, uint32_t y)
-{
-    return arith_read_im_pix(s->im, s->dt, (uint64_t) y * s->ishape[0] + x);
-}
-
-/**
- * conv2_team_cb - Worker callback computing 2D convolution over row range `[lo, hi)`
- * @ctx: Pointer to the shared `conv_box_job_t` descriptor
- * @tid: Thread index within the team (unused)
- * @nth: Total number of threads in the team (unused)
- * @lo:  First output row `y` (inclusive) assigned to this worker
- * @hi:  Last output row `y` (exclusive) assigned to this worker
- *
- * Evaluates true 2D convolution (with flipped kernel indices `rx - dx, ry - dy`)
- * and edge-clamped boundary conditions.
- *
- * Return: void
- */
-static void conv2_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
-{
-    (void) (tid + nth);
-    const conv_box_job_t *j  = (const conv_box_job_t *) ctx;
-    int                   rx = j->kx / 2;
-    int                   ry = j->ky / 2;
-    for (uint64_t y = lo; y < hi; y++)
-    {
-        for (uint32_t x = 0; x < j->nx; x++)
-        {
-            double acc = 0.0;
-            for (int dy = -ry; dy <= ry; dy++)
-            {
-                uint32_t sy   = clamp_i((int) y + dy, j->ny);
-                int      ky_i = ry - dy;
-                for (int dx = -rx; dx <= rx; dx++)
-                {
-                    uint32_t sx   = clamp_i((int) x + dx, j->nx);
-                    int      kx_i = rx - dx;
-                    acc += read_red_src_2d(j->src, sx, sy) * j->kern[ky_i * j->kx + kx_i];
-                }
-            }
-            mc_write_im_pix(j->out, j->out_dt, y * (uint64_t) j->nx + x, acc);
-        }
-    }
-}
-
-/**
- * boxmean_team_cb - Worker callback computing `(2r + 1) x (2r + 1)` box average over `[lo, hi)`
- * @ctx: Pointer to the shared `conv_box_job_t` descriptor
- * @tid: Thread index within the team (unused)
- * @nth: Total number of threads in the team (unused)
- * @lo:  First output row `y` (inclusive) assigned to this worker
- * @hi:  Last output row `y` (exclusive) assigned to this worker
- *
- * Uses edge-clamped boundary coordinates matching `conv2`.
- *
- * Return: void
- */
-static void boxmean_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
-{
-    (void) (tid + nth);
-    const conv_box_job_t *j   = (const conv_box_job_t *) ctx;
-    int                   r   = j->box_r;
-    double                inv = 1.0 / (double) ((2 * r + 1) * (2 * r + 1));
-    for (uint64_t y = lo; y < hi; y++)
-    {
-        for (uint32_t x = 0; x < j->nx; x++)
-        {
-            double acc = 0.0;
-            for (int dy = -r; dy <= r; dy++)
-            {
-                uint32_t sy = clamp_i((int) y + dy, j->ny);
-                for (int dx = -r; dx <= r; dx++)
-                {
-                    uint32_t sx = clamp_i((int) x + dx, j->nx);
-                    acc += read_red_src_2d(j->src, sx, sy);
-                }
-            }
-            mc_write_im_pix(j->out, j->out_dt, y * (uint64_t) j->nx + x, acc * inv);
-        }
-    }
-}
-
-/**
- * mc_exec_conv2_or_boxmean - Execute `conv2(im, K)` or `boxmean(im, r)` into @slot
- * @slot:      Destination slot to receive the filtered 2D image
- * @rhs:       Call expression node for `conv2` or `boxmean`
- * @call_site: Enclosing user-defined function call site (or NULL)
- * @s1:        Resolved first argument (2D input image descriptor)
- * @out_dt:    Selected output datatype (`_DATATYPE_FLOAT` or `_DATATYPE_DOUBLE`)
- * @avoid_id:  Image ID to avoid clobbering when evaluating kernel argument `K`
- * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
- * @err:       Error message buffer
- * @errsz:     Capacity of @err in bytes
- *
- * Validates that `@s1` is 2D, checks radius `r` in `[1, 64]` for `boxmean` or odd
- * kernel dimensions in `[1, 31]` for `conv2`, and dispatches row-parallel worker
- * teams via `arith_team_run()`.
- *
- * Return: 0 on success, -1 on validation or output preparation failure
- */
-int mc_exec_conv2_or_boxmean(mc_slot_t          *slot,
-                             const mc_expr_t    *rhs,
-                             const mc_expr_t    *call_site,
-                             const mc_red_src_t *s1,
-                             uint8_t             out_dt,
-                             imageID             avoid_id,
-                             int                 in_unit,
-                             char               *err,
-                             size_t              errsz)
-{
-    const char *fn = rhs->u.call.fn->name;
-    if (s1->naxis != 2)
-    {
-        return fs_err(err, errsz, "%s: expected 2D image", fn);
-    }
-    uint32_t sz[3] = { s1->ishape[0], s1->ishape[1], 1 };
-
-    if (strcmp(fn, "boxmean") == 0)
-    {
-        double rd = 0.0;
-        if (mc_eval_scalar_d(rhs->u.call.args[1], call_site, &rd, err, errsz) != 0)
-        {
-            return -1;
-        }
-        long r = llround(rd);
-        if (r < 1 || r > 64)
-        {
-            return fs_err(err, errsz, "boxmean: radius r must be in [1, 64]");
-        }
-        imageID oid = mc_out_prepare(slot, 2, sz, out_dt, in_unit, err, errsz);
-        if (oid < 0)
-        {
-            return -1;
-        }
-        conv_box_job_t job = {
-            .src    = s1,
-            .out    = &milk_data.image[oid],
-            .out_dt = out_dt,
-            .nx     = sz[0],
-            .ny     = sz[1],
-            .box_r  = (int) r,
-        };
-        int nth =
-            milk_omp_team_size((uint64_t) sz[0] * (uint64_t) sz[1] * (uint64_t) (2 * r + 1), 65536);
-        if (nth <= 1)
-        {
-            boxmean_team_cb(&job, 0, 1, 0, sz[1]);
-        }
-        else
-        {
-            arith_team_run(nth, sz[1], boxmean_team_cb, &job);
-        }
-        mc_out_post(oid);
-        return 0;
-    }
-
-    imageID kid   = -1;
-    int     k_tmp = 0;
-    if (mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit, &kid, &k_tmp, err,
-                              errsz) != 0)
-    {
-        return -1;
-    }
-    const IMAGE *kim = &milk_data.image[kid];
-    uint32_t     kx  = kim->md[0].size[0];
-    uint32_t     ky  = (kim->md[0].naxis > 1) ? kim->md[0].size[1] : 1;
-    if (kim->md[0].naxis != 2 || kx < 1 || kx > 31 || ky < 1 || ky > 31 || (kx & 1) == 0 ||
-        (ky & 1) == 0)
-    {
-        if (k_tmp)
-        {
-            mc_tmp_release(kid);
-        }
-        return fs_err(err, errsz, "conv2: kernel K must be 2D with odd dimensions in [1, 31]");
-    }
-    double kern[31 * 31];
-    for (uint32_t i = 0; i < kx * ky; i++)
-    {
-        kern[i] = arith_read_im_pix(kim, kim->md[0].datatype, i);
-    }
-    if (k_tmp)
-    {
-        mc_tmp_release(kid);
-    }
-
-    imageID oid = mc_out_prepare(slot, 2, sz, out_dt, in_unit, err, errsz);
-    if (oid < 0)
-    {
-        return -1;
-    }
-    conv_box_job_t job = {
-        .src    = s1,
-        .out    = &milk_data.image[oid],
-        .out_dt = out_dt,
-        .nx     = sz[0],
-        .ny     = sz[1],
-        .kx     = (int) kx,
-        .ky     = (int) ky,
-        .kern   = kern,
-    };
-    int nth = milk_omp_team_size((uint64_t) sz[0] * (uint64_t) sz[1] * (uint64_t) (kx * ky), 65536);
-    if (nth <= 1)
-    {
-        conv2_team_cb(&job, 0, 1, 0, sz[1]);
-    }
-    else
-    {
-        arith_team_run(nth, sz[1], conv2_team_cb, &job);
-    }
-    mc_out_post(oid);
-    return 0;
-}
-
-/* ============================================================================
  * Public Constructor Dispatchers
  * ============================================================================ */
 
@@ -1082,38 +1062,36 @@ int mc_exec_conv2_or_boxmean(mc_slot_t          *slot,
  * @prog:      Compiled calculator program holding the slot table
  * @cs:        Constructor step descriptor to execute
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
  *
  * Return: 0 on success, -1 on error
  */
-int mc_exec_fft_or_stack(mcalc_prog_t    *prog,
-                         mc_ctor_step_t  *cs,
-                         imageID          avoid_id,
-                         const mc_expr_t *call_site,
-                         int              in_unit,
-                         char            *err,
-                         size_t           errsz)
+int mc_exec_fft_or_stack(mcalc_prog_t   *prog,
+                         mc_ctor_step_t *cs,
+                         imageID         avoid_id,
+                         int             in_unit,
+                         char           *err,
+                         size_t          errsz)
 {
     mc_slot_t       *slot = &prog->slots[cs->slot_idx];
-    const mc_expr_t *rhs  = call_site ? cs->rhs_expr->u.call.udef_body : cs->rhs_expr;
+    const mc_expr_t *rhs  = cs->rhs_expr;
     const char      *fn   = rhs->u.call.fn->name;
 
     if (strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0)
     {
-        return exec_fft_or_ifft(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+        return exec_fft_or_ifft(slot, cs, avoid_id, in_unit, err, errsz);
     }
     if (strcmp(fn, "fftshift") == 0)
     {
-        return exec_fftshift(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+        return exec_fftshift(slot, rhs, avoid_id, in_unit, err, errsz);
     }
     if (strcmp(fn, "rot90") == 0)
     {
-        return exec_rot90(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+        return exec_rot90(slot, rhs, avoid_id, in_unit, err, errsz);
     }
-    return exec_stack_or_cat(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+    return exec_stack_or_cat(slot, rhs, avoid_id, in_unit, err, errsz);
 }
 
 /**
@@ -1121,7 +1099,6 @@ int mc_exec_fft_or_stack(mcalc_prog_t    *prog,
  * @prog:      Compiled calculator program holding the slot table
  * @cs:        Constructor step descriptor to execute
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -1136,40 +1113,39 @@ int mc_exec_fft_or_stack(mcalc_prog_t    *prog,
  *
  * Return: 0 on success, -1 on execution error
  */
-int mc_exec_linalg_or_ext(mcalc_prog_t    *prog,
-                          mc_ctor_step_t  *cs,
-                          imageID          avoid_id,
-                          const mc_expr_t *call_site,
-                          int              in_unit,
-                          char            *err,
-                          size_t           errsz)
+int mc_exec_linalg_or_ext(mcalc_prog_t   *prog,
+                          mc_ctor_step_t *cs,
+                          imageID         avoid_id,
+                          int             in_unit,
+                          char           *err,
+                          size_t          errsz)
 {
     if (cs->multi_stmt != NULL)
     {
         return mc_exec_multi_linalg_or_ext(prog, cs, cs->multi_stmt, in_unit, NULL, err, errsz);
     }
-    const mc_expr_t *rhs = call_site ? cs->rhs_expr->u.call.udef_body : cs->rhs_expr;
+    const mc_expr_t *rhs = cs->rhs_expr;
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.ext_id >= 0)
     {
-        return mc_exec_ext_ctor(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+        return mc_exec_ext_ctor(prog, cs, avoid_id, in_unit, err, errsz);
     }
     if (rhs->kind != MC_EXPR_CALL || rhs->u.call.fn == NULL)
     {
-        return mc_exec_blas_call(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+        return mc_exec_blas_call(prog, cs, avoid_id, in_unit, err, errsz);
     }
     const char *fn = rhs->u.call.fn->name;
     if (strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0 || strcmp(fn, "fftshift") == 0 ||
         strcmp(fn, "hstack") == 0 || strcmp(fn, "vstack") == 0 || strcmp(fn, "dstack") == 0 ||
         strcmp(fn, "cat") == 0 || strcmp(fn, "rot90") == 0)
     {
-        return mc_exec_fft_or_stack(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+        return mc_exec_fft_or_stack(prog, cs, avoid_id, in_unit, err, errsz);
     }
     if (strcmp(fn, "trsv") == 0 || strcmp(fn, "trsm") == 0 || strcmp(fn, "gesv") == 0 ||
         strcmp(fn, "posv") == 0 || strcmp(fn, "gels") == 0 || strcmp(fn, "solve") == 0 ||
         strcmp(fn, "inv") == 0 || strcmp(fn, "pinv") == 0 || strcmp(fn, "svd") == 0 ||
         strcmp(fn, "eigh") == 0)
     {
-        return mc_exec_lapack_call(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+        return mc_exec_lapack_call(prog, cs, avoid_id, in_unit, err, errsz);
     }
-    return mc_exec_blas_call(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+    return mc_exec_blas_call(prog, cs, avoid_id, in_unit, err, errsz);
 }

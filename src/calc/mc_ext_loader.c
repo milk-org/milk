@@ -9,17 +9,18 @@
  * Implements two subsystems supporting user-defined C extensions (`milk_calc_ext.h`):
  *   1. **Dynamic compilation and loading (`mcalc_ext_load`, `mcalc_ext_load_list`)**:
  *      Accepts either pre-compiled shared objects (`.so`) or raw `.c` source files (via `-l`,
- *      `loadlib`, or `MILK_CALC_LIBS`). Raw `.c` files are hashed with 64-bit FNV-1a over the ABI
- *      version, compiler name, and file contents, compiled once via `fork`/`execvp` (`gcc -O3
- *      -march=native -ffast-math -fopenmp-simd -shared -fPIC`) into
- *      `${TMPDIR:-/tmp}/milk-calc-cache-<uid>/ext_<hash>.so`, and loaded via `dlopen`. The exported
- *      `__milk_calc_ext_table` symbol is then registered in the global extension registry.
- *   2. **Static call-site scanner (`mcalc_ext_scan_source`)**:
- *      Tokenizes a `milk.calc` unit program before execution to discover every call to a
- *      registered extension (`func(...)` or `func:label(...)`). For any extension parameter not
- *      bound inline at the call site, invokes `param_cb` so the `milk.calc` FPS setup stage can
- *      auto-expose `<label>.<param>` in the unit's FPS parameter table, and invokes `scalar_out_cb`
- *      for scalar output ports unpacked on the LHS.
+ *      `loadlib`, or `MILK_CALC_LIBS`). Raw `.c` files are compiled once, like the JIT's kernels
+ *      (mc_cc_build(): same compiler, flags and checked cache directory), into
+ *      `ext_<key>.so`, keyed on the ABI version, path and file contents, and loaded via `dlopen`.
+ *      The exported `__milk_calc_ext_table` symbol is then registered in the global extension
+ *      registry.
+ *   2. **Call arguments (`mc_ext_bind_args`) and the static call-site scanner
+ *      (`mcalc_ext_scan_source`)**: one binder, used by the runtime and by the scanner, decides
+ *      which argument of a call binds each input and parameter. The scanner lexes a `milk.calc`
+ *      unit program before execution to find every call to a registered extension (`func(...)` or
+ *      `func:label(...)`); for each parameter no argument binds, it invokes `param_cb` so the unit
+ *      exposes `<label>.<param>` in its FPS, and `scalar_out_cb` for scalar output ports unpacked
+ *      on the LHS.
  */
 
 #define _GNU_SOURCE
@@ -32,13 +33,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #include "mc_ast.h"
+#include "mc_plan.h"
 #include "mcalc.h"
+#include "milk_argval.h"
 #include "milk_calc_ext.h"
 
 /* Maximum number of canonical library paths tracked for idempotent loading. */
@@ -48,48 +49,46 @@ static char loaded_libs[CALC_EXT_MAX_LIBS][PATH_MAX];
 static int  n_loaded_libs = 0;
 
 /* ============================================================================================== */
-/* Content Hashing and On-Demand `.c` -> `.so` Compilation                                        */
+/* On-Demand `.c` -> `.so` Compilation                                                            */
 /* ============================================================================================== */
 
 /**
- * fnv1a_bytes - Update a 64-bit FNV-1a hash state over a byte buffer
- * @h:   Initial or running 64-bit FNV-1a hash state
- * @buf: Input byte buffer
- * @len: Number of bytes in @buf
+ * add_prefix_dirs - Add `<prefix>/include` and its `milkcalc/` and `libfps/` (fps_types.h) to @inc
+ * @prefix: Installation prefix
+ * @inc:    Include directory list
+ * @n_inc:  Count of populated entries in @inc (updated)
  *
- * Return: Updated 64-bit FNV-1a hash value
+ * Return: void
  */
-static uint64_t fnv1a_bytes(uint64_t h, const void *buf, size_t len)
+static void add_prefix_dirs(const char *prefix, char inc[8][PATH_MAX], int *n_inc)
 {
-    const unsigned char *p = (const unsigned char *) buf;
-    for (size_t i = 0; i < len; i++)
+    static const char *const sub[] = { "", "/milkcalc", "/libfps" };
+    for (int i = 0; i < 3 && *n_inc < 8; i++)
     {
-        h = (h ^ (uint64_t) p[i]) * 1099511628211ULL;
+        snprintf(inc[(*n_inc)++], PATH_MAX, "%s/include%s", prefix, sub[i]);
     }
-    return h;
 }
 
 /**
  * find_milk_include_dirs - Discover `-I` header search paths for compiling `.c` extensions
- * @inc_dirs: Output array of up to 6 directory path strings
+ * @inc_dirs: Output array of up to 8 directory path strings
  * @n_inc:    Output count of populated entries in @inc_dirs
  *
  * Collects include directories from three sources in order:
- *   1. `$MILK_INSTALLDIR/include` and `$MILK_INSTALLDIR/include/milkcalc`.
- *   2. The prefix adjacent to `libmilkcalc.so` discovered via `dladdr(&mcalc_ext_load)`.
+ *   1. The `$MILK_INSTALLDIR` prefix (add_prefix_dirs()).
+ *   2. The prefix of `libmilkcalc.so`, discovered via `dladdr(&mcalc_ext_load)`.
  *   3. The source tree directory containing `mc_ext_loader.c` and `../engine/libfps` (for
  *      in-tree unit tests before install).
  *
  * Return: void
  */
-static void find_milk_include_dirs(char inc_dirs[6][PATH_MAX], int *n_inc)
+static void find_milk_include_dirs(char inc_dirs[8][PATH_MAX], int *n_inc)
 {
     *n_inc          = 0;
     const char *env = getenv("MILK_INSTALLDIR");
     if (env != NULL && env[0] != '\0')
     {
-        snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include", env);
-        snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include/milkcalc", env);
+        add_prefix_dirs(env, inc_dirs, n_inc);
     }
     Dl_info dli;
     if (dladdr((void *) &mcalc_ext_load, &dli) != 0 && dli.dli_fname != NULL)
@@ -104,27 +103,20 @@ static void find_milk_include_dirs(char inc_dirs[6][PATH_MAX], int *n_inc)
             if (p2 != NULL && strcmp(p2 + 1, "lib") == 0)
             {
                 *p2 = '\0';
-                if (*n_inc < 6)
-                {
-                    snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include", rp);
-                }
-                if (*n_inc < 6)
-                {
-                    snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s/include/milkcalc", rp);
-                }
+                add_prefix_dirs(rp, inc_dirs, n_inc);
             }
         }
     }
     char src_file[PATH_MAX];
     snprintf(src_file, sizeof(src_file), "%s", __FILE__);
     char *last_sl = strrchr(src_file, '/');
-    if (last_sl != NULL && *n_inc < 6)
+    if (last_sl != NULL && *n_inc < 8)
     {
         *last_sl = '\0';
         snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s", src_file);
         char repo_inc[PATH_MAX];
         snprintf(repo_inc, sizeof(repo_inc), "%s/../engine/libfps", src_file);
-        if (access(repo_inc, R_OK) == 0 && *n_inc < 6)
+        if (access(repo_inc, R_OK) == 0 && *n_inc < 8)
         {
             snprintf(inc_dirs[(*n_inc)++], PATH_MAX, "%s", repo_inc);
         }
@@ -133,16 +125,16 @@ static void find_milk_include_dirs(char inc_dirs[6][PATH_MAX], int *n_inc)
 
 /**
  * compile_c_to_so - Compile a user `.c` extension source file into a cached `.so` shared library
- * @c_path:    Path to the `.c` extension source file
+ * @c_path:    Canonical path to the `.c` extension source file
  * @so_out:    Output buffer receiving the compiled `.so` path
  * @so_out_sz: Capacity of @so_out in bytes
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
  *
- * Hashes the ABI version, source path, compiler binary (`$CC` or `"gcc"`), and file bytes to
- * derive a content-addressed cache path `ext_<hash>.so`. If the cached `.so` already exists on
- * disk, returns immediately; otherwise compiles to a PID-qualified temporary file and atomically
- * renames it into place.
+ * Keys `ext_<key>.so` in the kernel cache directory on the ABI version, the path (relative
+ * `#include`s) and the file bytes; mc_cc_key() adds compiler, flags and CPU. A cached `.so` is
+ * reused; otherwise mc_cc_build() compiles it as it compiles JIT kernels, with the milk include
+ * directories.
  *
  * Return: 0 on success, -1 on file I/O or compilation error
  */
@@ -152,80 +144,60 @@ static int compile_c_to_so(const char *c_path,
                            char       *err,
                            size_t      errsz)
 {
-    const char *cc_env = getenv("CC");
-    const char *cc     = (cc_env != NULL && cc_env[0] != '\0') ? cc_env : "gcc";
-    FILE       *fp     = fopen(c_path, "rb");
+    FILE *fp = fopen(c_path, "rb");
     if (fp == NULL)
     {
         snprintf(err, errsz, "cannot open '%s': %s", c_path, strerror(errno));
         return -1;
     }
-    uint32_t      abi = MILK_CALC_EXT_ABI_VERSION;
-    uint64_t      h   = fnv1a_bytes(14695981039346656037ULL, &abi, sizeof(abi));
-    unsigned char buf[4096];
-    size_t        nread;
-    h = fnv1a_bytes(fnv1a_bytes(h, c_path, strlen(c_path)), cc, strlen(cc));
-    while ((nread = fread(buf, 1, sizeof(buf), fp)) > 0)
+    char  *text = NULL;
+    size_t tlen = 0;
+    FILE  *ms   = open_memstream(&text, &tlen);
+    if (ms != NULL)
     {
-        h = fnv1a_bytes(h, buf, nread);
+        char   buf[4096];
+        size_t nread;
+        fprintf(ms, "milk_calc_ext %u %s\n", (unsigned) MILK_CALC_EXT_ABI_VERSION, c_path);
+        while ((nread = fread(buf, 1, sizeof(buf), fp)) > 0)
+        {
+            fwrite(buf, 1, nread, ms);
+        }
+        fclose(ms);
     }
     fclose(fp);
 
-    const char *tmpdir = getenv("TMPDIR");
-    tmpdir             = (tmpdir != NULL && tmpdir[0] != '\0') ? tmpdir : "/tmp";
-    char cache_dir[PATH_MAX];
-    char tmp_so[PATH_MAX];
-    snprintf(cache_dir, sizeof(cache_dir), "%s/milk-calc-cache-%u", tmpdir, (unsigned) getuid());
-    (void) mkdir(cache_dir, 0700);
-    snprintf(so_out, so_out_sz, "%s/ext_%016llx.so", cache_dir, (unsigned long long) h);
+    char dir[384];
+    char key[33];
+    if (text == NULL)
+    {
+        snprintf(err, errsz, "cannot read '%s'", c_path);
+        return -1;
+    }
+    if (mc_cc_cache_dir(dir, sizeof(dir), err, errsz) != 0)
+    {
+        free(text);
+        return -1;
+    }
+    mc_cc_key(text, key);
+    free(text);
+    snprintf(so_out, so_out_sz, "%s/ext_%s.so", dir, key);
     if (access(so_out, R_OK) == 0)
     {
         return 0;
     }
-    snprintf(tmp_so, sizeof(tmp_so), "%s/ext_%016llx.%d.tmp.so", cache_dir, (unsigned long long) h,
-             (int) getpid());
 
-    char inc_dirs[6][PATH_MAX];
-    char inc_flags[6][PATH_MAX + 4];
-    int  n_inc = 0;
-    int  ac    = 0;
+    char        inc_dirs[8][PATH_MAX];
+    char        inc_flags[8][PATH_MAX + 2];
+    const char *args[9];
+    int         n_inc = 0;
     find_milk_include_dirs(inc_dirs, &n_inc);
-    const char *argv[32] = {
-        cc,        "-O3",   "-march=native", "-ffast-math", "-fopenmp-simd",
-        "-shared", "-fPIC", "-Wall",         "-Wextra",     "-Wno-unused-parameter"
-    };
-    ac = 10;
     for (int i = 0; i < n_inc; i++)
     {
         snprintf(inc_flags[i], sizeof(inc_flags[i]), "-I%s", inc_dirs[i]);
-        argv[ac++] = inc_flags[i];
+        args[i] = inc_flags[i];
     }
-    argv[ac++] = c_path;
-    argv[ac++] = "-o";
-    argv[ac++] = tmp_so;
-    argv[ac++] = "-lm";
-    argv[ac]   = NULL;
-
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        snprintf(err, errsz, "fork failed while compiling '%s'", c_path);
-        return -1;
-    }
-    if (pid == 0)
-    {
-        execvp(cc, (char *const *) argv);
-        _exit(127);
-    }
-    int status = 0;
-    if (waitpid(pid, &status, 0) < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0 ||
-        rename(tmp_so, so_out) != 0)
-    {
-        unlink(tmp_so);
-        snprintf(err, errsz, "compilation of '%s' failed", c_path);
-        return -1;
-    }
-    return 0;
+    args[n_inc] = NULL;
+    return mc_cc_build(c_path, so_out, args, err, errsz);
 }
 
 /* ============================================================================================== */
@@ -354,144 +326,175 @@ const milk_calc_ext_entry_t *mcalc_ext_get(int idx)
 }
 
 /* ============================================================================================== */
-/* Static Source Call-Site Scanner for FPS Parameter Discovery                                    */
+/* Call Arguments and the Static Call-Site Scanner                                                */
 /* ============================================================================================== */
 
 /**
- * split_ext_call_name - Split an extension call token `"func:label"` into function name and label
- * @raw:       Raw identifier token from lexer (e.g. `"bblur1pix:wfs"` or `"bblur1pix"`)
- * @func_out:  Output buffer receiving the base extension function name
- * @fsz:       Capacity of @func_out in bytes
- * @label_out: Output buffer receiving the instance label (defaults to @func_out if no `:` present)
- * @lsz:       Capacity of @label_out in bytes
+ * mc_ext_bind_args - Which argument of a call binds each input and each parameter of an extension
+ * @ext_id:  Registered extension index
+ * @nargs:   Number of call arguments
+ * @kw:      Keyword of each argument (`name` of `name=value`), or "" for a positional one
+ * @in_arg:  Out: the argument of each input (image inputs, or operator input ports), or -1
+ * @par_arg: Out: the argument of each parameter, or -1
+ * @err:     Message buffer
+ * @errsz:   Size of @err
  *
- * Return: void
+ * The module-command rules (milk_args_bind()): keyword arguments bind by name (an operator port
+ * also as `<op>_<port>`), the others fill the inputs, then the parameters, not named, in order.
+ * The runtime and the unit's FPS parameters (mcalc_ext_scan_source()) both bind with it.
+ *
+ * Return: the number of inputs, or -1 with @err (unknown name, name given twice, too many)
  */
-static void split_ext_call_name(const char *raw,
-                                char       *func_out,
-                                size_t      fsz,
-                                char       *label_out,
-                                size_t      lsz)
+int mc_ext_bind_args(int ext_id,
+                     int nargs,
+                     const char (*kw)[64],
+                     int   *in_arg,
+                     int   *par_arg,
+                     char  *err,
+                     size_t errsz)
 {
-    const char *colon = (raw != NULL) ? strchr(raw, ':') : NULL;
-    if (colon == NULL)
+    const milk_calc_ext_entry_t *e = milk_calc_ext_get(ext_id);
+    if (e == NULL || nargs > MC_MAX_ARGS)
     {
-        snprintf(func_out, fsz, "%s", (raw != NULL) ? raw : "");
-        snprintf(label_out, lsz, "%s", (raw != NULL) ? raw : "");
-        return;
+        snprintf(err, errsz, "%s: too many arguments", (e != NULL) ? e->name : "extension");
+        return -1;
     }
-    size_t flen = (size_t) (colon - raw);
-    if (flen >= fsz)
+    const milk_calc_param_set_t *ps = (e->get_params != NULL) ? e->get_params() : NULL;
+    const milk_calc_op_ports_t  *pts =
+        (e->kind == MILK_EXT_OP && e->get_ports != NULL) ? e->get_ports() : NULL;
+    int            nin  = (pts != NULL) ? pts->nin : (e->kind == MILK_EXT_BLK2) ? 2 : 1;
+    int            npar = (ps != NULL) ? ps->nparams : 0;
+    int            npos = 0;
+    milk_argslot_t slots[MILK_CALC_MAX_PORTS + MILK_CALC_MAX_PARAMS];
+    const char    *val[MILK_CALC_MAX_PORTS + MILK_CALC_MAX_PARAMS];
+    int            word[MILK_CALC_MAX_PORTS + MILK_CALC_MAX_PARAMS];
+    char           wbuf[MC_MAX_ARGS][72];
+    char          *w[MC_MAX_ARGS];
+    char           msg[160];
+
+    for (int p = 0; p < nin; p++)
     {
-        flen = fsz - 1;
+        slots[p] = (milk_argslot_t) { (pts != NULL) ? pts->in_ports[p].name : "", 1 };
     }
-    memcpy(func_out, raw, flen);
-    func_out[flen] = '\0';
-    snprintf(label_out, lsz, "%s", (colon[1] != '\0') ? (colon + 1) : func_out);
+    for (int k = 0; k < npar; k++)
+    {
+        const char *n  = ps->specs[k].name;
+        slots[nin + k] = (milk_argslot_t) { n + (n[0] == '.'), 1 };
+    }
+    for (int i = 0; i < nargs; i++)
+    {
+        const char *k = kw[i] + (kw[i][0] == '.');
+        for (int p = 0; pts != NULL && p < nin; p++)
+        {
+            k = milk_calc_port_match_(e->name, pts->in_ports[p].name, k) ? pts->in_ports[p].name
+                                                                         : k;
+        }
+        npos += (k[0] == '\0');
+        snprintf(wbuf[i], sizeof(wbuf[i]), (k[0] != '\0') ? ".%s=" : "%s",
+                 (k[0] != '\0') ? k : "_");
+        w[i] = wbuf[i];
+    }
+    if (npos > nin + npar - (nargs - npos))
+    {
+        snprintf(err, errsz, "%s: too many arguments (at most %d)", e->name, nin + npar);
+        return -1;
+    }
+    if (milk_args_bind(nargs, w, nargs, nin + npar, slots, val, word, msg, sizeof(msg)) != 0)
+    {
+        snprintf(err, errsz, "%s: %s", e->name, msg);
+        return -1;
+    }
+    for (int p = 0; p < nin; p++)
+    {
+        in_arg[p] = word[p];
+    }
+    for (int k = 0; k < npar; k++)
+    {
+        par_arg[k] = word[nin + k];
+    }
+    return nin;
 }
 
 /**
- * scan_one_ext_call - Inspect one extension call token sequence and report unbound FPS parameters
- * @toks:          Token array for the current statement
- * @ntok:          Total number of tokens in @toks
- * @call_idx:      Index of the function identifier token in @toks (`toks[call_idx + 1]` is `(`)
- * @ndst:          Number of LHS assignment target identifiers on this statement
- * @lhs:           Array of LHS target identifier strings
- * @param_cb:      Callback invoked for each extension parameter not bound inline at the call site
- * @scalar_out_cb: Callback invoked for each LHS target bound to a `MILK_PORT_SCALAR` output port
- * @ud:            Opaque user data pointer forwarded to @param_cb and @scalar_out_cb
+ * scan_call - Report the parameters and scalar outputs of the extension call at @toks[@at]
+ * @toks:          Tokens of the program
+ * @ntok:          Number of tokens
+ * @at:            Index of the call's name (`toks[at + 1]` is its `(`)
+ * @ndst:          Number of assignment targets of the statement
+ * @lhs:           The targets
+ * @param_cb:      Called for each parameter no argument binds
+ * @scalar_out_cb: Called for each target that receives a `MILK_PORT_SCALAR` output port
+ * @ud:            Passed to the callbacks
  *
- * Walks the argument tokens between `(` and its matching `)` to determine which parameters in
- * `e->get_params()` are bound either by keyword (`param = val`) or by positional scalar argument.
- * Any remaining unbound parameters are reported via `param_cb(label, &pset->specs[p], is_op, ud)`.
- *
- * Return: void
+ * Splits the arguments at the call's top-level commas and binds them with mc_ext_bind_args(), as
+ * the runtime does. A call that does not bind (too many arguments, ...) reports nothing: it fails
+ * when the program runs.
  */
-static void scan_one_ext_call(const mc_tok_t           *toks,
-                              int                       ntok,
-                              int                       call_idx,
-                              int                       ndst,
-                              char                      lhs[][256],
-                              mcalc_ext_param_cb_t      param_cb,
-                              mcalc_ext_scalar_out_cb_t scalar_out_cb,
-                              void                     *ud)
+static void scan_call(const mc_tok_t           *toks,
+                      int                       ntok,
+                      int                       at,
+                      int                       ndst,
+                      const char               *lhs[],
+                      mcalc_ext_param_cb_t      param_cb,
+                      mcalc_ext_scalar_out_cb_t scalar_out_cb,
+                      void                     *ud)
 {
-    char func_name[64];
-    char label[64];
-    split_ext_call_name(toks[call_idx].sval, func_name, sizeof(func_name), label, sizeof(label));
-    int                          ext_id = milk_calc_ext_find(func_name);
+    char        func[64];
+    char        label[64];
+    const char *colon = strchr(toks[at].sval, ':');
+    size_t      flen  = (colon != NULL) ? (size_t) (colon - toks[at].sval) : strlen(toks[at].sval);
+    snprintf(func, sizeof(func), "%.*s", (int) flen, toks[at].sval);
+    snprintf(label, sizeof(label), "%s", (colon != NULL && colon[1] != '\0') ? colon + 1 : func);
+    int                          ext_id = milk_calc_ext_find(func);
     const milk_calc_ext_entry_t *e      = milk_calc_ext_get(ext_id);
     if (e == NULL)
     {
         return;
     }
 
-    const milk_calc_param_set_t *pset = e->get_params ? e->get_params() : NULL;
-    int                          bound[MILK_CALC_MAX_PARAMS] = { 0 };
-    int                          nin_img                     = (e->kind == MILK_EXT_BLK2) ? 2 : 1;
-    int                          depth                       = 1;
-    int                          arg_idx                     = 0;
-    int                          arg_beg                     = call_idx + 2;
-
-    for (int i = call_idx + 2; i < ntok && depth > 0; i++)
+    char kw[MC_MAX_ARGS][64];
+    int  nargs = 0;
+    int  depth = 1;
+    int  beg   = at + 2;
+    for (int i = at + 2; i < ntok && depth > 0; i++)
     {
         mc_tok_type_t tt = toks[i].type;
-        if (tt == MC_TOK_LPAREN || tt == MC_TOK_LBRACK)
+        depth += (tt == MC_TOK_LPAREN || tt == MC_TOK_LBRACK);
+        depth -= (tt == MC_TOK_RPAREN || tt == MC_TOK_RBRACK);
+        if ((tt == MC_TOK_COMMA && depth == 1) || depth == 0)
         {
-            depth++;
-            continue;
-        }
-        if ((tt == MC_TOK_RPAREN || tt == MC_TOK_RBRACK) && --depth > 0)
-        {
-            continue;
-        }
-        if ((tt == MC_TOK_COMMA && depth == 1) || (tt == MC_TOK_RPAREN && depth == 0))
-        {
-            if (i > arg_beg)
+            if (i > beg && nargs < MC_MAX_ARGS)
             {
-                int is_kw = (arg_beg + 1 < i && toks[arg_beg].type == MC_TOK_IDENT &&
-                             toks[arg_beg + 1].type == MC_TOK_ASSIGN);
-                if (is_kw && pset != NULL)
-                {
-                    for (int p = 0; p < pset->nparams && p < MILK_CALC_MAX_PARAMS; p++)
-                    {
-                        if (strcmp(toks[arg_beg].sval, pset->specs[p].name) == 0)
-                        {
-                            bound[p] = 1;
-                        }
-                    }
-                }
-                else if (!is_kw && e->kind != MILK_EXT_OP && pset != NULL && arg_idx >= nin_img)
-                {
-                    int p = arg_idx - nin_img;
-                    if (p >= 0 && p < pset->nparams && p < MILK_CALC_MAX_PARAMS)
-                    {
-                        bound[p] = 1;
-                    }
-                }
-                arg_idx++;
+                int named = (i > beg + 1 && toks[beg].type == MC_TOK_IDENT &&
+                             toks[beg + 1].type == MC_TOK_ASSIGN);
+                snprintf(kw[nargs++], sizeof(kw[0]), "%s", named ? toks[beg].sval : "");
             }
-            arg_beg = i + 1;
+            beg = i + 1;
         }
     }
 
-    if (pset != NULL && param_cb != NULL)
+    const milk_calc_param_set_t *ps = (e->get_params != NULL) ? e->get_params() : NULL;
+    int                          in_arg[MILK_CALC_MAX_PORTS];
+    int                          par_arg[MILK_CALC_MAX_PARAMS];
+    char                         err[256];
+    if (mc_ext_bind_args(ext_id, nargs, (const char (*)[64]) kw, in_arg, par_arg, err,
+                         sizeof(err)) < 0)
     {
-        int is_op = (e->kind == MILK_EXT_OP);
-        for (int p = 0; p < pset->nparams && p < MILK_CALC_MAX_PARAMS; p++)
+        return;
+    }
+    for (int k = 0; ps != NULL && param_cb != NULL && k < ps->nparams; k++)
+    {
+        if (par_arg[k] < 0)
         {
-            if (!bound[p])
-            {
-                param_cb(label, &pset->specs[p], is_op, ud);
-            }
+            param_cb(label, &ps->specs[k], e->kind == MILK_EXT_OP, ud);
         }
     }
-    if (e->kind == MILK_EXT_OP && e->get_ports != NULL && scalar_out_cb != NULL && ndst > 0)
+    if (e->kind == MILK_EXT_OP && e->get_ports != NULL && scalar_out_cb != NULL)
     {
         const milk_calc_op_ports_t *ports = e->get_ports();
         for (int j = 0; j < ndst && j < ports->nout; j++)
         {
-            if (ports->out_ports[j].kind == MILK_PORT_SCALAR && lhs[j][0] != '\0')
+            if (ports->out_ports[j].kind == MILK_PORT_SCALAR)
             {
                 scalar_out_cb(lhs[j], ports->out_ports[j].descr, ud);
             }
@@ -500,152 +503,74 @@ static void scan_one_ext_call(const mc_tok_t           *toks,
 }
 
 /**
- * scan_statement_tokens - Lex a single statement slice and scan all function calls within it
- * @st:            Pointer to statement start in source text
- * @len:           Length of the statement in bytes
- * @param_cb:      Callback for unbound extension parameters
- * @scalar_out_cb: Callback for scalar output ports unpacked into LHS variables
- * @ud:            Opaque user data pointer
- *
- * Extracts any comma-separated LHS target identifiers preceding `=` and invokes
- * `scan_one_ext_call()` on every `IDENT(` token pair in the statement.
- *
- * Return: void
- */
-static void scan_statement_tokens(const char               *st,
-                                  size_t                    len,
-                                  mcalc_ext_param_cb_t      param_cb,
-                                  mcalc_ext_scalar_out_cb_t scalar_out_cb,
-                                  void                     *ud)
-{
-    if (len == 0 || len >= 4096)
-    {
-        return;
-    }
-    char line[4096];
-    memcpy(line, st, len);
-    line[len] = '\0';
-
-    mc_tok_list_t *tl = calloc(1, sizeof(*tl));
-    if (tl == NULL || mc_lex(line, tl) != 0)
-    {
-        free(tl);
-        return;
-    }
-
-    char lhs[MILK_CALC_MAX_PORTS][256];
-    int  ndst = 0;
-    int  pos  = 0;
-    memset(lhs, 0, sizeof(lhs));
-    if (pos < tl->ntok && tl->toks[pos].type == MC_TOK_IDENT &&
-        strcmp(tl->toks[pos].sval, "local") == 0)
-    {
-        pos++;
-    }
-    while (ndst < MILK_CALC_MAX_PORTS && pos < tl->ntok)
-    {
-        if (tl->toks[pos].type != MC_TOK_IDENT)
-        {
-            ndst = 0;
-            break;
-        }
-        snprintf(lhs[ndst++], sizeof(lhs[0]), "%s", tl->toks[pos].sval);
-        pos++;
-        if (pos < tl->ntok && tl->toks[pos].type == MC_TOK_COMMA)
-        {
-            pos++;
-        }
-        else
-        {
-            break;
-        }
-    }
-    if (pos >= tl->ntok || tl->toks[pos].type != MC_TOK_ASSIGN)
-    {
-        ndst = 0;
-    }
-
-    for (int i = 0; i + 1 < tl->ntok; i++)
-    {
-        if (tl->toks[i].type == MC_TOK_IDENT && tl->toks[i].no_space_after &&
-            tl->toks[i + 1].type == MC_TOK_LPAREN)
-        {
-            scan_one_ext_call(tl->toks, tl->ntok, i, ndst, lhs, param_cb, scalar_out_cb, ud);
-        }
-    }
-    free(tl);
-}
-
-/**
- * mcalc_ext_scan_source - Scan program source @src for extension calls and unbound FPS parameters
+ * mcalc_ext_scan_source - Report the extension parameters and scalar outputs of program @src
  * @src:           Program source text
- * @param_cb:      Callback invoked for each unbound extension parameter
- * @scalar_out_cb: Callback invoked for each LHS variable receiving a scalar operator output port
- * @ud:            Opaque user data pointer passed to callbacks
+ * @param_cb:      Called for each parameter of an extension call that no argument binds
+ * @scalar_out_cb: Called for each assignment target that receives a scalar operator output
+ * @ud:            Passed to the callbacks
  *
- * Splits @src into individual statements (respecting quotes, comments, parentheses, and braces)
- * and delegates each statement to `scan_statement_tokens()`.
- *
- * Return: void
+ * Lexes @src with the calculator lexer and walks its statements (split at top-level newlines,
+ * `;`, `{` and `}`): the targets of `[local] a[, b ...] =` and every `name(` call to a registered
+ * extension. A program that does not lex reports nothing: it fails when it runs.
  */
 void mcalc_ext_scan_source(const char               *src,
                            mcalc_ext_param_cb_t      param_cb,
                            mcalc_ext_scalar_out_cb_t scalar_out_cb,
                            void                     *ud)
 {
-    if (src == NULL || src[0] == '\0' || milk_calc_ext_count() == 0)
+    mc_tok_list_t tl = { 0 };
+    if (src == NULL || milk_calc_ext_count() == 0 || mc_lex(src, &tl) != 0)
     {
+        mc_tok_list_free(&tl);
         return;
     }
-    for (const char *p = src; *p != '\0';)
+    for (int st = 0; st < tl.ntok;)
     {
-        while (*p != '\0' && (isspace((unsigned char) *p) || *p == ';'))
+        int end   = st;
+        int depth = 0;
+        for (; end < tl.ntok && tl.toks[end].type != MC_TOK_EOF; end++)
         {
-            p++;
-        }
-        if (*p == '#')
-        {
-            while (*p != '\0' && *p != '\n')
-            {
-                p++;
-            }
-            continue;
-        }
-        if (*p == '\0')
-        {
-            break;
-        }
-        const char *st    = p;
-        int         depth = 0;
-        char        q     = 0;
-        for (; *p != '\0'; p++)
-        {
-            if (q != 0)
-            {
-                q = (*p == q) ? 0 : q;
-            }
-            else if (*p == '"' || *p == '\'')
-            {
-                q = *p;
-            }
-            else if (*p == '(' || *p == '[')
-            {
-                depth++;
-            }
-            else if ((*p == ')' || *p == ']') && depth > 0)
-            {
-                depth--;
-            }
-            else if (*p == '#' ||
-                     (depth == 0 && (*p == ';' || *p == '\n' || *p == '{' || *p == '}')))
+            mc_tok_type_t tt = tl.toks[end].type;
+            depth += (tt == MC_TOK_LPAREN || tt == MC_TOK_LBRACK);
+            depth -= (depth > 0 && (tt == MC_TOK_RPAREN || tt == MC_TOK_RBRACK));
+            if (depth == 0 && (tt == MC_TOK_NEWLINE || tt == MC_TOK_SEMI || tt == MC_TOK_LBRACE ||
+                               tt == MC_TOK_RBRACE))
             {
                 break;
             }
         }
-        scan_statement_tokens(st, (size_t) (p - st), param_cb, scalar_out_cb, ud);
-        if (*p == '{' || *p == '}')
+
+        const char *lhs[MILK_CALC_MAX_PORTS];
+        int         ndst = 0;
+        int         pos  = st;
+        if (pos < end && tl.toks[pos].type == MC_TOK_IDENT &&
+            strcmp(tl.toks[pos].sval, "local") == 0)
         {
-            p++;
+            pos++;
         }
+        while (ndst < MILK_CALC_MAX_PORTS && pos < end && tl.toks[pos].type == MC_TOK_IDENT)
+        {
+            lhs[ndst++] = tl.toks[pos++].sval;
+            if (pos >= end || tl.toks[pos].type != MC_TOK_COMMA)
+            {
+                break;
+            }
+            pos++;
+        }
+        if (pos >= end || tl.toks[pos].type != MC_TOK_ASSIGN)
+        {
+            ndst = 0;
+        }
+
+        for (int i = st; i + 1 < end; i++)
+        {
+            if (tl.toks[i].type == MC_TOK_IDENT && tl.toks[i].no_space_after &&
+                tl.toks[i + 1].type == MC_TOK_LPAREN)
+            {
+                scan_call(tl.toks, end, i, ndst, lhs, param_cb, scalar_out_cb, ud);
+            }
+        }
+        st = end + 1;
     }
+    mc_tok_list_free(&tl);
 }

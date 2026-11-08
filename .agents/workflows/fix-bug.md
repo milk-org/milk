@@ -10,10 +10,10 @@ and documentation.
 
 ## 1. Reproduce the Bug
 
-Confirm the bug exists with a minimal reproducer:
+Confirm the bug exists with a minimal reproducer, with the install on `PATH`
+([tooling.md §6.1](../../docs/developer/tooling.md#61-install-and-use)):
 
 ```bash
-source ~/src/milk/local/bin/milk-setup.bash
 echo "trigger_command" | milk-cli 2>&1
 echo "Exit code: $?"
 ```
@@ -32,7 +32,7 @@ Determine which subsystem is affected:
 
 | Symptom           | Component     | Key Files                   |
 | ----------------- | ------------- | --------------------------- |
-| CLI crash/error   | CLIcore       | `src/cli/CLIcore/`          |
+| CLI crash/error   | CLI           | `src/cli/` (`CLIcore/`, `libmilkscript/`) |
 | Stream corruption | ImageStreamIO | `src/engine/ImageStreamIO/` |
 | FPS sync issue    | libfps        | `src/engine/libfps/`        |
 | Standalone crash  | fpsexec unit  | Module source               |
@@ -46,11 +46,9 @@ Determine which subsystem is affected:
   `diagnose-build-failure` skill.
 - For **computation errors**: add temporary debug
   output guarded by `if (VERBOSE > 0)`.
-- For **crashes**: get a backtrace:
-  ```bash
-  echo "command" | gdb -batch \
-    -ex run -ex bt --args milk-cli 2>&1
-  ```
+- For **crashes**: get a backtrace as
+  [tooling.md §7](../../docs/developer/tooling.md#7-debugging-a-crashing-fpsexec-gdb-and-valgrind)
+  and [debugging.md §3](../../docs/operations/debugging.md#3-gdb-debugging) show.
 
 ## 4. Fix the Bug
 
@@ -59,42 +57,17 @@ Apply the minimal fix. Follow coding style rules.
 ## 5. Add Regression Test
 
 **Always** add a test that would have caught the
-bug:
-
-- For CLI bugs: add to
-  `tests/cli/cli_robustness_tests.milk`
-- For computation bugs: add a ctest case
-- Use `#EXPECT:ERR` for bugs where error detection
-  was missing, `#EXPECT:OK` for bugs where valid
-  input was rejected.
+bug: a pytest case under `python/tests/`
+([tooling.md §4.2](../../docs/developer/tooling.md#42-pytest)). For CLI bugs, the
+`cli-test-writer` skill says where; in `cli_robustness_test.py`, use `TESTLIST_EXPECT_ERROR`
+when error detection was missing and `TESTLIST_EXPECT_OK` when valid input was rejected.
 
 ## 6. Verify
 
-// turbo-all
+1. Run the [`/compile-test`](compile-test.md) workflow (build, local install, tests), including
+   the regression test of step 5.
 
-1. Compile:
-
-```bash
-cd /home/oguyon/src/milk/_build && \
-cmake --build . -- -j$(nproc)
-```
-
-2. Run tests:
-
-```bash
-cd /home/oguyon/src/milk/_build && \
-ctest --output-on-failure
-```
-
-3. Run CLI tests (if CLI-related):
-
-```bash
-cd /home/oguyon/src/milk && \
-bash tests/cli/run_cli_robustness_tests.sh \
-  --verbose
-```
-
-4. Verify the original reproducer no longer
+2. Verify the original reproducer no longer
    triggers the bug.
 
 ## 7. Documentation

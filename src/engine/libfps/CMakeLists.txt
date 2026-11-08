@@ -21,6 +21,7 @@ set(SOURCEFILES
     io/fps_streamname_parse.c
     io/fps_local_store.c
     params/fps_add_entry.c
+    params/milk_argval.c
     params/fps_SetParamCLIindex.c
     params/fps_print_info.c
     params/fps_checkparameter.c

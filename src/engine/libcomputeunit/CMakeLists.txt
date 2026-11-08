@@ -9,6 +9,7 @@ set(SOURCEFILES
     core/fps_unit.c
     core/milk_runnable.c
     core/milk_runnable_main.c
+    core/milk_unit.c
     params/fps_modulevars_resync.c
     procinfo/fps_processinfo.c
     procinfo/fps_processinfo_entries.c

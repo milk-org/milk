@@ -34,6 +34,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "milk_lexicon.h"
 #include "milk_ipc_common.h"
 #include "milk_detach.h"
 #include "milk_srvlog.h"
@@ -781,21 +782,7 @@ static void format_entry_line(const milk_srvlog_entry_t *e, int json_mode, int c
  */
 static void print_log_help(void)
 {
-    printf("Usage: @log [options] [pattern]\n");
-    printf("   or: @session log [options] [pattern]\n\n");
-    printf("Inspect, search, or live-tail the session's shared-memory command & output log.\n\n");
-    printf("Options:\n");
-    printf("  -n, --last <N>        Show last N matching entries (default: 20)\n");
-    printf("  -a, --all             Show all available entries in the ring buffer\n");
-    printf("  -g, --grep <regex>    Case-insensitive POSIX extended regex on cmd & output\n");
-    printf("  -e, --errors          Show only failed commands (rc != 0)\n");
-    printf("      --slow <ms>       Show only commands slower than <ms> milliseconds\n");
-    printf("      --since <spec>    Filter since relative time (30s, 5m, 1h) or HH:MM:SS\n");
-    printf("  -f, --follow          Live-tail new commands and outputs in real time\n");
-    printf("  -s, --session <name>  Query the log of session <name>\n");
-    printf("      --json            Output matching entries as JSON Lines\n");
-    printf("      --clear           Clear all entries in the session's ring buffer\n");
-    printf("  -h, --help            Show this help message\n");
+    milk_lexicon_print_help(milk_lexicon_keyword("log"), stdout);
 }
 
 /**

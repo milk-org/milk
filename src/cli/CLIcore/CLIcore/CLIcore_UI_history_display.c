@@ -24,6 +24,7 @@
 #include <fnmatch.h>
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "milk_server.h"
 
 /* Forward declaration — defined in
  * CLIcore_UI_history.c */
@@ -124,8 +125,9 @@ static int parse_time_arg(const char *s, time_t *out)
  * @brief Split data.CLIcmdline into argv tokens.
  *
  * The calc parser mangles flags like -n, --since
- * (treats '-' as arithmetic minus), so parse
- * data.CLIcmdline directly instead.
+ * (treats '-' as arithmetic minus), so split
+ * data.CLIcmdline as the shell does instead
+ * (milk_server_split_words()).
  *
  * @param[out] argc_out  Number of tokens.
  * @param[out] argv_out  Heap-allocated (argc+1)
@@ -134,69 +136,17 @@ static int parse_time_arg(const char *s, time_t *out)
  */
 static void cmdline_split(int *argc_out, char ***argv_out)
 {
-    char buf[STRINGMAXLEN_CLICMDLINE];
-    strncpy(buf, data.CLIcmdline, sizeof(buf) - 1);
-    buf[sizeof(buf) - 1] = '\0';
-
 #define HIST_ARGV_MAX 64
+    char  arena[STRINGMAXLEN_CLICMDLINE];
     char *tokens[HIST_ARGV_MAX];
-    int   ntok = 0;
-
-    const char *p = buf;
-    while (*p != '\0' && ntok < HIST_ARGV_MAX - 1)
-    {
-        while (*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        if (*p == '\0')
-        {
-            break;
-        }
-        char tmp[STRINGMAXLEN_CLICMDLINE];
-        int  j = 0;
-
-        if (*p == '"')
-        {
-            p++;
-            while (*p != '"' && *p != '\0' && j < (int) sizeof(tmp) - 1)
-            {
-                tmp[j++] = *p++;
-            }
-            if (*p == '"')
-            {
-                p++;
-            }
-        }
-        else if (*p == '\'')
-        {
-            p++;
-            while (*p != '\'' && *p != '\0' && j < (int) sizeof(tmp) - 1)
-            {
-                tmp[j++] = *p++;
-            }
-            if (*p == '\'')
-            {
-                p++;
-            }
-        }
-        else
-        {
-            while (*p != ' ' && *p != '\t' && *p != '\0' && j < (int) sizeof(tmp) - 1)
-            {
-                tmp[j++] = *p++;
-            }
-        }
-        tmp[j]       = '\0';
-        tokens[ntok] = strdup(tmp);
-        ntok++;
-    }
+    int   ntok =
+        milk_server_split_words(data.CLIcmdline, tokens, HIST_ARGV_MAX - 1, arena, sizeof(arena));
 
     *argc_out = ntok;
     *argv_out = (char **) malloc((size_t) (ntok + 1) * sizeof(char *));
     for (int i = 0; i < ntok; i++)
     {
-        (*argv_out)[i] = tokens[i];
+        (*argv_out)[i] = strdup(tokens[i]);
     }
     (*argv_out)[ntok] = NULL;
 }

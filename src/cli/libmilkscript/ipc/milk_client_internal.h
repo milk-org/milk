@@ -32,11 +32,20 @@ int milk_client_connect_or_start(const milk_client_hooks_t *hooks,
                                  char                      *sockpath_out,
                                  size_t                     sockpath_sz);
 
+/** milk_client_connect() - this process's connection to @sockpath, kept between requests; -1. */
+int milk_client_connect(const char *sockpath);
+
+/** milk_client_end() - end the request on @fd: keep the connection if its reply said so. */
+void milk_client_end(int fd);
+
 void milk_client_close_owner_pipe(void);
 
 void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
                                      const milk_client_hooks_t *hooks,
                                      const char                *s);
+
+/** milk_client_pack_digits() - pack the shell's MILK_DPDIGITS: the session prints with its digits. */
+void milk_client_pack_digits(milk_packed_vars_t *pv, const milk_client_hooks_t *hooks);
 
 int milk_client_await_response(int                        fd,
                                const char                *sockpath,
@@ -60,7 +69,5 @@ int milk_client_capture_array(int (*fn)(int, char **, const milk_client_hooks_t 
                               char                     **argv,
                               const char                *extra,
                               const milk_client_hooks_t *hooks);
-
-int milk_client_is_entity_spec_token(const char *s);
 
 #endif /* MILK_CLIENT_INTERNAL_H */

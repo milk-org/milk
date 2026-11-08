@@ -10,26 +10,30 @@ Run this workflow after **any** source code change in the milk (or cacao) tree.
 
 // turbo-all
 
-1. Run the incremental build from the existing `_build` directory:
+1. From the repository root, run the incremental build in the existing `_build` directory:
 
 ```bash
-cd /home/oguyon/src/milk/_build && cmake --build . -- -j$(nproc)
+cmake --build _build -- -j$(nproc)
 ```
 
-2. Install so standalone executables and libraries
-   are available:
+2. Install so standalone executables and libraries are available, under `_build/_install` and
+   never the system prefix
+   ([tooling.md §6](../../docs/developer/tooling.md#6-dev-installs-without-sudo)):
 
 ```bash
-cd /home/oguyon/src/milk/_build && make install
+cmake --install _build --prefix "$PWD/_build/_install"
 ```
 
 3. If the build **fails**, read the compiler errors, fix them, and re-run
    step 1 until the build succeeds.
 
-4. After a successful build, run the test suite:
+4. After a successful build, run the tests (the whole suite, or the files covering the change) as
+   [tooling.md §4.2](../../docs/developer/tooling.md#42-pytest) shows, with the install of step 2
+   first on `PATH` (otherwise the tests run an older install):
 
 ```bash
-cd /home/oguyon/src/milk/_build && ctest --output-on-failure
+export MILK_INSTALLDIR="$PWD/_build/_install" PATH="$PWD/_build/_install/bin:$PATH"
+cd python && pytest -q --color=no --tb=short
 ```
 
 5. If any tests fail, investigate and fix.
@@ -37,7 +41,7 @@ cd /home/oguyon/src/milk/_build && ctest --output-on-failure
 6. Run pre-commit formatting checks on changed files:
 
 ```bash
-cd /home/oguyon/src/milk && pre-commit run clang-format --all-files
+pre-commit run clang-format --files <changed files>
 ```
 
 If clang-format reports failures, the files have been

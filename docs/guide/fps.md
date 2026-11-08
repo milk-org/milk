@@ -225,7 +225,8 @@ go before the command, the command goes last.
 
 </details>
 
-The words after the command set FPS parameters, as the arguments of module commands do:
+The words after the command set FPS parameters, as the arguments of module commands do
+([Arguments](scripting.md#arguments): the same values, numbers and bools, and the same rules):
 
 | Value | Sets |
 | --- | --- |
@@ -234,9 +235,9 @@ The words after the command set FPS parameters, as the arguments of module comma
 | `.` | nothing: the parameter keeps its value (also `.name=.`) |
 
 Positional values fill the indexed parameters that are not set by name. Negative numbers (`-0.5`)
-are values, and options such as `-loopd 0.5` may also come after the command. An unknown parameter,
-a value that does not parse for its type (number, integer, `on`/`off`), or one value too many is a
-usage error (exit status 2) and changes nothing:
+are values, options such as `-loopd 0.5` may also come after the command, and after `--` every word
+is a value. An unknown parameter, a value that does not parse for its type, a parameter given twice,
+or one value too many is a usage error (exit status 2) and changes nothing:
 
 ```bash
 milk-fpsexec-clitest -n f00 fpsinit 42 .p_float64=-1.5   # p_int32=42, p_float64=-1.5

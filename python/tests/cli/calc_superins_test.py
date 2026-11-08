@@ -86,7 +86,7 @@ def test_superinstructions_match_fallback(tmp_path):
     ]
     lines = [
         "mem.mk2Dim a 64 48 >/dev/null; mem.mk2Dim b 64 48 >/dev/null; mem.mk2Dim row 64 1 >/dev/null\n"
-        '@calc "a = 1 + 5 * urand(a, 3); b = 2 + 5 * urand(b, 5); row = urand(row, 7); u = u16(a * 1000)"\n'
+        '@calc "a = 1 + 5 * rand(a, 3); b = 2 + 5 * rand(b, 5); row = rand(row, 7); u = u16(a * 1000)"\n'
     ]
     for i, (e, s_) in enumerate(exprs):
         lines.append(

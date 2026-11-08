@@ -40,6 +40,9 @@ typedef struct
     const char    *summary;
     const char    *details;  /* "" when none */
     const char    *examples; /* "" when none */
+    const char    *options;  /* completion: its options, "-v --json ..." (NULL: none) */
+    const char    *words;    /* completion: the words of its first argument, then "<w>: ..." lines:
+                                the words after <w> ("*:" after any other first argument) */
 } milk_keyword_t;
 
 /** Language keywords, terminated by an entry with name == NULL. Functions, not exported arrays: an
@@ -55,9 +58,20 @@ unsigned milk_lexicon_frontend(const char *engine);
 /** milk_lexicon_print_help() - the help of keyword @k (`@help <kw>`, `@<kw> --help`). */
 void milk_lexicon_print_help(const milk_keyword_t *k, FILE *fp);
 
+/** milk_lexicon_print_list() - the keywords, one per line: name and summary, or (@synopsis) synopsis and
+ * summary; @callable_only: those milk-call implements. */
+void milk_lexicon_print_list(FILE *fp, int callable_only, int synopsis);
+
+/** milk_lexicon_usage() - print "usage: <synopsis>" of keyword @name (a usage error); return 2. */
+int milk_lexicon_usage(const char *name, FILE *fp);
+
 /** milk_lexicon_help_arg() - 1 if @arg asks keyword @k for its help: `--help`, or `-h` unless @k takes an
  * expression (`@calc -h` computes -h). */
 int milk_lexicon_help_arg(const milk_keyword_t *k, const char *arg);
+
+/** milk_lexicon_takes_expr() - 1 if the arguments of keyword @k are calculator text (@calc @test
+ * @assert). */
+int milk_lexicon_takes_expr(const milk_keyword_t *k);
 
 /** Bash reserved words and builtins that the REPL highlights and completes, NULL-terminated. */
 const char *const *milk_lexicon_bash_words(void);

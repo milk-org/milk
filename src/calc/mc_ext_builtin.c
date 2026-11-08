@@ -225,7 +225,7 @@ long mc_resolve_or_autoconnect_image(const char *name)
 /**
  * mc_parse_ident_streamname - Expand `FPTYPE_STREAMNAME` variable aliases and parse `@S:`/`@L:`
  * @name: In/out buffer of size `MC_TOK_STR_MAX` holding the raw identifier (updated if aliased)
- * @bare: Output buffer of size `MC_TOK_STR_MAX` receiving the bare stream/variable name
+ * @bare: Output buffer of size `MC_IDENT_MAX` receiving the bare stream/variable name
  * @loc:  Optional output character receiving `'S'`, `'L'`, or `'\0'`
  *
  * When @name matches a bound `FPTYPE_STREAMNAME` variable (`type == 3`) in `milk_data.variable[]`,
@@ -247,7 +247,7 @@ void mc_parse_ident_streamname(char *name, char *bare, char *loc)
     {
         *loc = sp.loc;
     }
-    snprintf(bare, MC_TOK_STR_MAX, "%s",
+    snprintf(bare, MC_IDENT_MAX, "%s",
              (!sp.error && sp.name != NULL && sp.name[0] != '\0') ? sp.name : name);
 }
 

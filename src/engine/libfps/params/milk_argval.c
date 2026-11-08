@@ -4,7 +4,8 @@
 
 /**
  * @file milk_argval.c
- * @brief Typed argument values (see milk_argval.h): no engine state, so the bash client uses them too.
+ * @brief Argument values and words (see milk_argval.h): one reading of text values for module commands,
+ *        unit command lines, `@args` and `@set`, and one rule binding words to parameters.
  */
 
 #include <ctype.h>
@@ -123,21 +124,55 @@ int milk_argval_set_number(uint64_t type, double v, CLICMDARGDATA *ad)
 }
 
 /**
+ * argval_int_literal - Read @s as an integer literal of the calculator: decimal (leading zeros allowed),
+ * 0x hexadecimal, 0o octal or 0b binary, with an optional sign
+ * @s:   Text
+ * @neg: Out: 1 if the sign is minus
+ * @mag: Out: the magnitude
+ *
+ * Return: 0, or -1 if @s is not such a literal or does not fit 64 bits
+ */
+static int argval_int_literal(const char *s, int *neg, unsigned long long *mag)
+{
+    int   base = 10;
+    char *end  = NULL;
+
+    *neg = (s[0] == '-');
+    s += (s[0] == '-' || s[0] == '+');
+    if (s[0] == '0' &&
+        (s[1] == 'x' || s[1] == 'X' || s[1] == 'o' || s[1] == 'O' || s[1] == 'b' || s[1] == 'B'))
+    {
+        base = (s[1] == 'x' || s[1] == 'X') ? 16 : (s[1] == 'o' || s[1] == 'O') ? 8 : 2;
+        s += 2;
+    }
+    if (!isalnum((unsigned char) s[0]))
+    {
+        return -1;
+    }
+    errno = 0;
+    *mag  = strtoull(s, &end, base);
+    return (end != s && *end == '\0' && errno == 0) ? 0 : -1;
+}
+
+/**
  * milk_argval_parse - Parse a text token into a typed CLI argument value
  * @type: Target `FPTYPE_*` parameter type
  * @s:    Input NUL-terminated string to parse
  * @ad:   Destination argument data structure
  *
- * Parses @s according to @type: copies bounded strings for string types, accepts
- * `on`/`off`/`true`/`false` for `FPTYPE_ONOFF`, uses 64-bit integer parsers to preserve
- * full integer precision, and falls back to `strtod` + `milk_argval_set_number`.
+ * Reads @s as the calculator reads a literal: integers in decimal (`010` is 10), `0x`, `0o` or `0b`,
+ * exactly over 64 bits; other numbers with `strtod` (an integer type takes `1e3`, not `1.5`); bools as
+ * `on`/`off`/`true`/`false` (any case) or 1/0. Strings are copied (bounded). An empty number or one out
+ * of the type's range is invalid.
  *
  * Return: 0 on success, -1 if @s is NULL, malformed, or out of range for @type
  */
 int milk_argval_parse(uint64_t type, const char *s, CLICMDARGDATA *ad)
 {
-    char  *end;
-    double v;
+    char              *end;
+    double             v;
+    int                neg = 0;
+    unsigned long long mag = 0;
 
     if (s == NULL)
     {
@@ -169,27 +204,27 @@ int milk_argval_parse(uint64_t type, const char *s, CLICMDARGDATA *ad)
         return 0;
     }
 
-    /* integers exactly (beyond double precision), then any number */
-    errno = 0;
-    if (type == FPTYPE_UINT64 && s[0] != '-')
+    if (argval_int_literal(s, &neg, &mag) == 0)
     {
-        unsigned long long u = strtoull(s, &end, 10);
-
-        if (*end == '\0' && errno == 0)
+        if (type == FPTYPE_UINT64)
         {
-            ad->val.ui64 = u;
+            if (neg && mag != 0)
+            {
+                return -1;
+            }
+            ad->val.ui64 = mag;
             return 0;
         }
-    }
-    else if (type == FPTYPE_INT64 || type == FPTYPE_PID)
-    {
-        long long l = strtoll(s, &end, 10);
-
-        if (*end == '\0' && errno == 0)
+        if (type == FPTYPE_INT64 || type == FPTYPE_PID)
         {
-            ad->val.i64 = l;
+            if (mag > (unsigned long long) INT64_MAX + (unsigned long long) neg)
+            {
+                return -1;
+            }
+            ad->val.i64 = neg ? (int64_t) (0ULL - mag) : (int64_t) mag;
             return 0;
         }
+        return milk_argval_set_number(type, neg ? -(double) mag : (double) mag, ad);
     }
     errno = 0;
     v     = strtod(s, &end);
@@ -201,7 +236,7 @@ int milk_argval_parse(uint64_t type, const char *s, CLICMDARGDATA *ad)
 }
 
 /**
- * format_real - Format a float or double with the shortest exact decimal representation
+ * argval_format_real - Format a float or double with the shortest exact decimal representation
  * @v:      Floating-point value to format
  * @single: Non-zero for 32-bit float precision (`%.6g`/`%.9g`), 0 for 64-bit (`%.15g`/`%.17g`)
  * @buf:    Destination character buffer
@@ -212,7 +247,7 @@ int milk_argval_parse(uint64_t type, const char *s, CLICMDARGDATA *ad)
  *
  * Return: void
  */
-static void format_real(double v, int single, char *buf, size_t sz)
+static void argval_format_real(double v, int single, char *buf, size_t sz)
 {
     snprintf(buf, sz, "%.*g", single ? 6 : 15, v);
     double back = strtod(buf, NULL);
@@ -238,11 +273,11 @@ void milk_argval_format(const CLICMDARGDATA *ad, char *buf, size_t sz)
     switch (ad->type)
     {
     case FPTYPE_FLOAT32:
-        format_real(ad->val.f32, 1, buf, sz);
+        argval_format_real(ad->val.f32, 1, buf, sz);
         break;
     case FPTYPE_FLOAT64:
     case FPTYPE_TIMESPEC:
-        format_real(ad->val.f64, 0, buf, sz);
+        argval_format_real(ad->val.f64, 0, buf, sz);
         break;
     case FPTYPE_INT32:
         snprintf(buf, sz, "%" PRId32, ad->val.i32);
@@ -270,10 +305,10 @@ static const struct
 {
     const char *name;
     uint64_t    type;
-} spec_types[] = { { "int", FPTYPE_INT64 },         { "uint", FPTYPE_UINT64 },
-                   { "float", FPTYPE_FLOAT64 },     { "bool", FPTYPE_ONOFF },
-                   { "str", FPTYPE_STRING },        { "stream", FPTYPE_STREAMNAME },
-                   { "fits", FPTYPE_FITSFILENAME }, { NULL, 0 } };
+} argval_spec_types[] = { { "int", FPTYPE_INT64 },         { "uint", FPTYPE_UINT64 },
+                          { "float", FPTYPE_FLOAT64 },     { "bool", FPTYPE_ONOFF },
+                          { "str", FPTYPE_STRING },        { "stream", FPTYPE_STREAMNAME },
+                          { "fits", FPTYPE_FITSFILENAME }, { NULL, 0 } };
 
 /**
  * milk_argspec_parse - Parse an `@args` parameter declaration string in place
@@ -325,14 +360,150 @@ int milk_argspec_parse(char *s, milk_argspec_t *a)
         *d++   = '\0';
         a->def = d;
     }
-    for (int i = 0; spec_types[i].name != NULL; i++)
+    for (int i = 0; argval_spec_types[i].name != NULL; i++)
     {
-        if (strcmp(t, spec_types[i].name) == 0)
+        if (strcmp(t, argval_spec_types[i].name) == 0)
         {
-            a->tname = spec_types[i].name;
-            a->type  = spec_types[i].type;
+            a->tname = argval_spec_types[i].name;
+            a->type  = argval_spec_types[i].type;
             return 0;
         }
     }
     return -1;
+}
+
+/**
+ * milk_args_named - Check whether argument word @s is a `.name=value` word
+ * @s: Candidate word
+ *
+ * Return: 1 if @s is `.` and a name (`[A-Za-z_][A-Za-z0-9_.]*`) followed by `=`, 0 otherwise
+ */
+int milk_args_named(const char *s)
+{
+    if (s == NULL || s[0] != '.' || !(isalpha((unsigned char) s[1]) || s[1] == '_'))
+    {
+        return 0;
+    }
+    for (s += 2; *s != '='; s++)
+    {
+        if (!isalnum((unsigned char) *s) && *s != '_' && *s != '.')
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * argval_find_slot - Index of the parameter named by the @len characters at @name, or -1
+ */
+static int argval_find_slot(const milk_argslot_t *slots, int ns, const char *name, size_t len)
+{
+    for (int i = 0; i < ns; i++)
+    {
+        if (strncmp(slots[i].name, name, len) == 0 && slots[i].name[len] == '\0')
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * milk_args_bind - Bind argument words to parameters by the module-command rules
+ * @nw:      Number of words
+ * @w:       Words, after the command name and the caller's own options
+ * @posonly: Index of the first word that can only be positional, or -1 to end at a "--" word
+ * @ns:      Number of parameters
+ * @slots:   Parameters
+ * @val:     Out: the value text of parameter i (after the `=` of a `.name=value` word), or NULL
+ * @word:    Out: the index in @w of that word, or -1 (may be NULL)
+ * @err:     Message buffer
+ * @errsz:   Size of @err
+ *
+ * `.name=value` words before the boundary bind by name; the other words, and every word after it, fill
+ * the positional parameters not named, in order. A value "." keeps the current value, for the caller.
+ *
+ * Return: 0, or -1 with @err: an unknown name, a name given twice, `.name VALUE` (removed), too many
+ * values
+ */
+int milk_args_bind(int                   nw,
+                   char *const          *w,
+                   int                   posonly,
+                   int                   ns,
+                   const milk_argslot_t *slots,
+                   const char          **val,
+                   int                  *word,
+                   char                 *err,
+                   size_t                errsz)
+{
+    int dashdash = -1;
+    int boundary = (posonly >= 0) ? posonly : nw;
+    int i        = 0;
+
+    for (int t = 0; posonly < 0 && t < nw; t++)
+    {
+        if (strcmp(w[t], "--") == 0)
+        {
+            dashdash = boundary = t;
+            break;
+        }
+    }
+    for (int k = 0; k < ns; k++)
+    {
+        val[k] = NULL;
+        if (word != NULL)
+        {
+            word[k] = -1;
+        }
+    }
+    for (int t = 0; t < boundary; t++)
+    {
+        const char *eq = strchr(w[t], '=');
+        if (milk_args_named(w[t]))
+        {
+            int k = argval_find_slot(slots, ns, w[t] + 1, (size_t) (eq - w[t] - 1));
+            if (k < 0 || val[k] != NULL)
+            {
+                snprintf(err, errsz,
+                         (k < 0) ? "unknown parameter %.*s" : "parameter %.*s given twice",
+                         (int) (eq - w[t]), w[t]);
+                return -1;
+            }
+            val[k] = eq + 1;
+            if (word != NULL)
+            {
+                word[k] = t;
+            }
+        }
+        else if (w[t][0] == '.' && w[t][1] != '\0' &&
+                 argval_find_slot(slots, ns, w[t] + 1, strlen(w[t] + 1)) >= 0)
+        {
+            snprintf(err, errsz, "'%s VALUE' was removed: use %s=VALUE", w[t], w[t]);
+            return -1;
+        }
+    }
+    for (int t = 0; t < nw; t++)
+    {
+        if (t == dashdash || (t < boundary && milk_args_named(w[t])))
+        {
+            continue;
+        }
+        while (i < ns && (!slots[i].positional || val[i] != NULL))
+        {
+            i++;
+        }
+        if (i >= ns)
+        {
+            snprintf(err, errsz, "unexpected argument '%s'", w[t]);
+            return -1;
+        }
+        val[i] = w[t];
+        if (word != NULL)
+        {
+            word[i] = t;
+        }
+        i++;
+    }
+    return 0;
 }

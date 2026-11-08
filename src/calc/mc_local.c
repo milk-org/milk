@@ -244,7 +244,7 @@ const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t 
         err = (rv == 0.0) ? "Division by zero" : NULL;
         break;
     case MC_TOK_MOD:
-        res = mk_d((rv == 0.0) ? 0.0 : fmod(lv, rv));
+        res = mk_d((rv == 0.0) ? 0.0 : mc_fmodd(lv, rv));
         err = (rv == 0.0) ? "Modulo by zero" : NULL;
         break;
     case MC_TOK_LT:
@@ -307,8 +307,7 @@ void mc_val_to_str(const mc_val_t *v, char *buf, size_t bufsz, int use_float_dig
 {
     if (v->type == MC_VAL_STRING)
     {
-        const char *cv = mc_host_str_get(v->sval);
-        snprintf(buf, bufsz, "%s", (cv != NULL) ? cv : v->sval);
+        snprintf(buf, bufsz, "%s", v->sval);
     }
     else if (v->type == MC_VAL_LONG)
     {
@@ -588,44 +587,29 @@ static size_t match_local_fn(const char *p, const mc_func_t **out_fn)
  * @p: Input pointer positioned at candidate dotted entity reference
  * @x: Target local token stream receiving the resolved numeric literal token(s)
  *
- * Queries `milk_shm_prop_get()` for shared-memory stream/FPS/process properties
- * (`s.`, `f.`, `p.`) and pushes the parsed numeric value directly into @x.
+ * Reads a numeric shared-memory stream/FPS/process property (`s.`, `f.`, `p.`) as the session's
+ * resolver does: the same path rule (mc_scan_ident()) and typed reader (milk_shm_prop_get_num()).
  *
  * Return: Number of bytes consumed from @p, or 0 if not a numeric SHM property
  */
 static size_t lex_local_entity(const char *p, mc_lexp_t *x)
 {
-    size_t e     = 0;
-    int    ndots = 0;
-    while (isalnum((unsigned char) p[e]) || p[e] == '_' || p[e] == '.' || p[e] == '-')
-    {
-        ndots += (p[e++] == '.');
-    }
-    while (e > 0 && p[e - 1] == '.')
-    {
-        e--;
-        ndots--;
-    }
-    char tok[256];
-    char val[512];
-    if (ndots < 2 || e >= sizeof(tok))
+    size_t e = mc_scan_ident(p);
+    char   tok[256];
+    if (e == 0 || e >= sizeof(tok))
     {
         return 0;
     }
     memcpy(tok, p, e);
-    tok[e]           = '\0';
-    milk_ns_kind_t k = milk_entity_ns_kind(tok, NULL);
-    if (k == MILK_NS_NONE || k == MILK_NS_LOCAL || milk_shm_prop_get(tok, val, sizeof(val)) != 0)
-    {
-        return 0;
-    }
-    const char   *v = val + (val[0] == '-');
-    mc_tok_type_t type;
-    long          l = 0;
-    double        d = 0.0;
-    size_t        n = mc_scan_number(v, &type, &l, &d);
-    if (n == 0 || v[n] != '\0' || (val[0] == '-' && lpush(x, MC_TOK_MINUS, 0, 0.0, NULL) != 0) ||
-        lpush(x, type, l, d, NULL) != 0)
+    tok[e]             = '\0';
+    const char    *d1  = strchr(tok, '.');
+    milk_ns_kind_t k   = milk_entity_ns_kind(tok, NULL);
+    double         d   = 0.0;
+    long           l   = 0;
+    int            isl = 0;
+    if (d1 == NULL || strchr(d1 + 1, '.') == NULL || k == MILK_NS_NONE || k == MILK_NS_LOCAL ||
+        milk_shm_prop_get_num(tok, &d, &l, &isl) != 0 ||
+        lpush(x, isl ? MC_TOK_LONG : MC_TOK_DOUBLE, l, d, NULL) != 0)
     {
         return 0;
     }
@@ -934,7 +918,7 @@ int mcalc_local(const char *expr, int digits, char *out, size_t outsz, int *trut
     {
         if (truth != NULL)
         {
-            *truth = (v.lval != 0);
+            *truth = mc_truth(&v);
         }
         snprintf(out, outsz, "%ld", v.lval);
     }
@@ -942,7 +926,7 @@ int mcalc_local(const char *expr, int digits, char *out, size_t outsz, int *trut
     {
         if (truth != NULL)
         {
-            *truth = (v.dval != 0.0 && mc_isnan(v.dval) == 0.0);
+            *truth = mc_truth(&v);
         }
         snprintf(out, outsz, "%.*g", digits, v.dval);
     }

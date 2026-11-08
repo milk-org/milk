@@ -17,7 +17,7 @@ interactive CLI execution pipeline for the `milk` framework.
    `@{...}` inline syntax, providing loadable GNU Bash builtins, and
    synchronizing state with a persistent Bash coprocess.
 
-Shared-memory property & action access (`s.NAME.*`, `f.NAME.*`, `q.NAME.*`,
+Shared-memory property & action access (`s.NAME.*`, `l.NAME.*`, `f.NAME.*`,
 `p.NAME.*`) lives in `src/prop/` (`libmilkprop`), and the expression/image
 calculator, `milk_calc_ext.h` C extension SDK, and `milk-fpsexec-milk-calc`
 compute unit live in `src/calc/` (`libmilkcalc`).
@@ -49,19 +49,18 @@ src/cli/libmilkscript/
   PID liveness probing, and bounded `read_all` / `write_all` I/O helpers.
 - `milk_proto.h` — Wire format: frame header, message types, `sendmsg`/`recvmsg` with fd passing.
 - `milk_client_internal.h` — Internal declarations shared across client files.
-- `milk_client_conn.c` — Socket connection, `MILK_SERVER` resolution, and
-  auto-daemon spawning.
-- `milk_client_ops.c` — Client RPC operations (`EVAL`, `CALL`, `GET`, `SET`,
-  `WAITFOR`, `WAITANY`, `GRAB`, `PING`, `SHUTDOWN`) and streaming response reader.
+- `milk_client_conn.c` — Socket connection (one kept per process, reused by its requests),
+  `MILK_SERVER` resolution, and auto-daemon spawning.
+- `milk_client_ops.c` — Client RPC operations (`CALL`, `GET`, `SET`, `CALC`, `TEST`, `PING`,
+  `SHUTDOWN`; the message types are in `milk_proto.h`) and streaming response reader.
 - `milk_client_ext.c` — Client-side synchronization (`@waitfor`, `@waitany`, `@sleep`),
-  stream capture (`@grab`), tab completion (`@complete`), sessions (`@session`,
-  `@shutdown`, `@log`), and entity/keyword discovery (`@ls`).
+  stream capture (`@grab`), tab completion (`milkcomplete`), sessions (`@session`, `@log`,
+  server shutdown), and entity/keyword discovery (`@ls`, `milkls --keywords`).
 - `milk_client_args.c` — Client-side argument validation and help formatting.
 - `milk_waitfor.h` / `milk_waitfor.c` — Shared `@waitfor` target parser, process-state
   aliasing, and stream/property wait loops used by both client and server.
-- `milk_call_main.c` — Standalone `milk-call` binary entry point (`call`, `batch`,
-  `pipe`, `get`, `set`, `calc`, `test`, `exists`, `waitfor`, `waitany`, `grab`,
-  `replay`, `complete`, `translate`, `session`, `log`, `shutdown`).
+- `milk_call_main.c` — Standalone `milk-call` binary entry point (`call`, `complete`,
+  `translate`, `shutdown`, and the callable `@` keywords of the lexicon).
 - `milk_srvlog_shm.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
   high-resolution timestamped entry recording, and log querying (`--log`).
 - `milk_srv_manager.c` — Server session discovery (`--list`), status dashboard
@@ -69,22 +68,24 @@ src/cli/libmilkscript/
 
 ### 2. `server/` — Daemon Server & RPC Dispatch
 
-- `milk_server.h` — Server lifecycle API (`milk_server_start`, `milk_server_stop`,
-  `milk_server_run`).
+- `milk_server.h` — Server entry points (`milk_server_run`, `milk_server_create_listener`,
+  `milk_server_accept_and_handle`) and session hooks.
 - `milk_server_internal.h` — Internal session state and handler prototypes.
-- `milk_server.c` — Accept loop, thread/blocking orchestration, and socket cleanup.
-- `milk_server_session.c` — Session state, client connection handling, and stdio/cwd
-  context switching.
+- `milk_server.c` — Accept loop and kept connections, client connection handling and stdio/cwd
+  redirection, the output capture thread, thread/blocking orchestration,
+  `PING`/`SHUTDOWN`/`GET`/`COMPLETE`/`EXISTS`, and socket cleanup.
+- `milk_server_session.c` — `@module`, `@config`, the subcommands of `@history`, and
+  `@session save`.
 - `milk_server_eval.c` — In-process calculator and command evaluation handlers.
-- `milk_server_vars.c` — Server-side scalar variable and `IMGID` pool management.
+- `milk_server_vars.c` — Sync of bash variables with the session's calculator variables.
 - `milk_server_stream.c` — Stream synchronization, ring-buffer capture, and
   playback commands (`@waitfor`, `@waitany`, `@grab [--fits|--timestamps]`,
   `@replay [--fps|--count|--loop]`, `@grab --stdout`, `@replay --stdin`).
 - `milk_server_io.c` — Command catalog dumping, `CLICMDARGDEF` type-aware
   argument tab-completion, and `@hc --sig` signature formatting.
-- `milk_server_dispatch.c` — Request line parser and RPC verb handlers (`PING`,
-  `SHUTDOWN`, `GET`, `SET`, `CALC`, `TEST`, `CALL`, including single-RPC
-  `@pipe` execution).
+- `milk_server_dispatch.c` — `CALL` and `SET` handlers: command lookup, argument tokens, and
+  running a command under the request guards (`@calc`, `@test`, `@assert` and `@pipe` are
+  evaluated in `milk_server_eval.c`).
 
 ### 3. `bash/` — Bash Coprocess, `@{...}` Translation & Loadable Builtins
 
@@ -127,8 +128,9 @@ src/cli/libmilkscript/
 - `CLIcore_inspect.c` — Inspection and process-control commands (`@ls`, `procctl`, `procwait`,
   `procstat`, `dpdigits`, JSON introspection).
 - `CLIcore_script.h` / `CLIcore_vars.c` — CLI variable table and its sync with the environment.
-- `milk_lexicon.h` / `milk_lexicon.c` — The one list of `@` primitives, prompt-only commands and
-  bash words, for completion, highlighting and the `milk-call` symlinks.
+- `milk_lexicon.h` / `milk_lexicon.c` — The one list of `@` keywords (synopsis, summary, help)
+  and bash words: help, usage errors, the bash builtins' help, completion, highlighting and the
+  `milk-call` links.
 - `milk_catalog.h` / `milk_catalog.c` / `milk_catalog_build.c` — Install-time and runtime
   module command catalog.
 - `milk_cmd_args.{c,h}` / `milk_cmd_index.{c,h}` — Command table indexing and argument metadata.
@@ -139,7 +141,7 @@ src/cli/libmilkscript/
 
 - `milk_unit_script.c` — `milk-fpsexec-milk-script` (`milk.script`): executes bash/milk script
   snippets or files (`.unit.cmd` / `.unit.file`) per frame in a persistent bash coprocess
-  (using `milk_unit` and `milk_argval` from `src/calc/`, where `milk-fpsexec-milk-calc` lives).
+  (using `milk_unit` from libcomputeunit and `milk_argval` from libfps, as `milk-fpsexec-milk-calc` does).
 
 ## Build Tier
 

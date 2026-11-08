@@ -192,7 +192,7 @@ def test_calc_fused_reductions_math_and_complex_kernels(tmp_path):
         "@calc 'a = ix(a); b = iy(a)'\n"
         "@calc -v tot,mn,sd,vr 'itot(a - b); imean(a + b); irms(a - b); ivar(a - b)'\n"
         "@calc -v mn0,mx0,cnt,dt 'imin(a + b); imax(a + b); icount((a >= 0) && (b >= 0)); dot(a + 1, b + 1)'\n"
-        "@calc -v mtot,mstd 'itot(a, (a > -2) && (b == 0)); irms(a, b == 0)'\n"
+        "@calc -v mtot,mstd 'itot(a, (a > -2) && (b == 0)); istd(a, b == 0)'\n"
         "@calc 'c = where((a >= 0) || (b >= 0), posi(a) + sign(b), -10)'\n"
         "@calc -v ctot 'itot(c)'\n"
         "@calc 'h = hypot(a, b); r = ir(a); th = itheta(a); at = atan2(b, a)'\n"
@@ -228,7 +228,7 @@ def test_calc_fused_reductions_math_and_complex_kernels(tmp_path):
 def test_calc_blas_levels_1_2_3_and_algebraic_fusion(tmp_path):
     res = milk_cli_script(
         "@calc 'v = vec(1, -4, 2, 3); x = vec(1, 2, 3); y = vec(4, 5, 6); xs = vec(1, 2, 3); vy = vec(4, 5, 6)'\n"
-        "@calc -v l1,l2,idx,fl1 'asum(v); nrm2(v); iamax(v); asum(v * 2)'\n"
+        "@calc -v l1,l2,idx,fl1 'asum(v); norm(v); iamax(v); asum(v * 2)'\n"
         "@calc 'axpy(2.0, x, vy); scal(3.0, xs)'\n"
         "@calc -v vy_tot,vs_tot 'itot(vy); itot(xs)'\n"
         "@calc 'I3 = eye(3); I23 = eye(2, 3); D = diag(x); D1 = diag(vec(1, 2), 1)'\n"
@@ -311,10 +311,10 @@ def test_calc_lapack_solvers_and_inverses(tmp_path):
 def test_calc_simd_random_generators(tmp_path):
     res = milk_cli_script(
         "mem.mk2Dim u 256 256 >/dev/null; mem.mk2Dim g 256 256 >/dev/null\n"
-        "@calc -v sr0,sr1,sg0 'rand(42); urand(42); randn(42)'\n"
-        "@calc 'u = rand(u, 123); u2 = urand(u, 123); u3 = rand(u)'\n"
+        "@calc -v sr0,sr1,sg0 'rand(42); rand(42); randn(42)'\n"
+        "@calc 'u = rand(u, 123); u2 = rand(u, 123); u3 = rand(u)'\n"
         "@calc -v umin,umax,umean,ustd,urep,udiff 'imin(u); imax(u); imean(u); istd(u); imax(abs(u - u2)); imax(abs(u - u3))'\n"
-        "@calc 'g = 10.0 + 2.5 * randn(g, 99); g2 = 10.0 + 2.5 * grand(g, 99); g3 = randn(g)'\n"
+        "@calc 'g = 10.0 + 2.5 * randn(g, 99); g2 = 10.0 + 2.5 * randn(g, 99); g3 = randn(g)'\n"
         "@calc -v gmean,gstd,grep,gdiff 'imean(g); istd(g); imax(abs(g - g2)); imax(abs(g3 - randn(g)))'\n"
         'echo "s=$sr0 $sr1 $sg0"\n'
         'echo "u=$umin $umax $umean $ustd $urep $udiff"\n'

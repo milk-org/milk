@@ -119,7 +119,7 @@ static int milkset_builtin(WORD_LIST *list)
     if (argc < 1 || argv == NULL)
     {
         free(argv);
-        fprintf(stderr, "Usage: @set <entity> [=] [value] [comment] [...]\n");
+        milk_lexicon_usage("set", stderr);
         return EXECUTION_FAILURE;
     }
 
@@ -426,26 +426,11 @@ static int milkls_builtin(WORD_LIST *list)
  *  Builtin Registration Structs for `enable -f`
  * ============================================================ */
 
-static char *const milkcall_doc[]    = { "Dispatch a milk command to milk-cli --server.", NULL };
-static char *const milkget_doc[]     = { "Query a milk stream/FPS/procinfo/seq property.", NULL };
-static char *const milkset_doc[]     = { "Set a milk FPS parameter or stream FITS keyword.", NULL };
-static char *const milkcalc_doc[]    = { "Evaluate a milk @calc expression.", NULL };
-static char *const milktest_doc[]    = { "Evaluate a milk @test boolean expression.", NULL };
-static char *const milkexists_doc[]  = { "Check if a milk entity exists or is running.", NULL };
-static char *const milkwaitfor_doc[] = { "Wait for stream frames or an entity condition.", NULL };
-static char *const milkwaitany_doc[] = { "Wait for any listed stream to update.", NULL };
-static char *const milkgrab_doc[] = { "Capture consecutive stream frames into a 3D cube.", NULL };
-static char *const milkcomplete_doc[] = { "Query milk tab-completion candidates.", NULL };
-static char *const milkshutdown_doc[] = { "Shut down the session milk-cli --server.", NULL };
-static char *const milksession_doc[]  = { "Manage milk sessions (@session).", NULL };
-static char *const milklog_doc[]   = { "Inspect or search the milk server SHM log (@log).", NULL };
-static char *const milkls_doc[]    = { "List active milk entities (@ls).", NULL };
-static char *const milkdefer_doc[] = { "Run a command when the calling function or file returns.",
-                                       NULL };
-static char *const milkargs_doc[]  = { "Declare and check the arguments of a function or script.",
-                                       NULL };
-static char *const milkcloexec_doc[] = { "Mark file descriptors close-on-exec.", NULL };
-static char *const milksleep_doc[]   = { "Sleep for SECONDS (fractional) without forking.", NULL };
+static char *const milkcall_doc[]      = { "Dispatch a milk command to milk-cli --server.", NULL };
+static char *const milkcomplete_doc[]  = { "Query milk tab-completion candidates.", NULL };
+static char *const milkshutdown_doc[]  = { "Shut down the session milk-cli --server.", NULL };
+static char *const milksession_doc[]   = { "Manage milk sessions (@session).", NULL };
+static char *const milkcloexec_doc[]   = { "Mark file descriptors close-on-exec.", NULL };
 static char *const milktranslate_doc[] = { "Translate a milk script to source, or a typed line.",
                                            NULL };
 
@@ -503,24 +488,32 @@ static int keyword_builtin(const char *kw, sh_builtin_func_t *fn, WORD_LIST *lis
     return fn(list);
 }
 
+/* The keywords bash runs as builtins, the lexicon's MILK_KW_BUILTIN entries: X(name, function) makes
+ * milk<name> and the keyword builtin @<name>, whose help bash's `help` shows comes from the lexicon */
+#define MILK_BUILTIN_KEYWORDS(X)          \
+    X(calc, milkcalc_builtin_entry)       \
+    X(test, milktest_builtin_entry)       \
+    X(get, milkget_builtin_entry)         \
+    X(set, milkset_builtin_entry)         \
+    X(exists, milkexists_builtin_entry)   \
+    X(ls, milkls_builtin_entry)           \
+    X(waitfor, milkwaitfor_builtin_entry) \
+    X(waitany, milkwaitany_builtin_entry) \
+    X(sleep, milksleep_builtin_entry)     \
+    X(grab, milkgrab_builtin_entry)       \
+    X(log, milklog_builtin_entry)         \
+    X(defer, milkdefer_builtin)           \
+    X(args, milkargs_builtin)
+
 #define MILK_KEYWORD_BUILTIN(kw, fn)                 \
     static int kw##_keyword_builtin(WORD_LIST *list) \
     {                                                \
         return keyword_builtin(#kw, fn, list);       \
     }
-MILK_KEYWORD_BUILTIN(calc, milkcalc_builtin_entry)
-MILK_KEYWORD_BUILTIN(test, milktest_builtin_entry)
-MILK_KEYWORD_BUILTIN(get, milkget_builtin_entry)
-MILK_KEYWORD_BUILTIN(set, milkset_builtin_entry)
-MILK_KEYWORD_BUILTIN(exists, milkexists_builtin_entry)
-MILK_KEYWORD_BUILTIN(ls, milkls_builtin_entry)
-MILK_KEYWORD_BUILTIN(waitfor, milkwaitfor_builtin_entry)
-MILK_KEYWORD_BUILTIN(waitany, milkwaitany_builtin_entry)
-MILK_KEYWORD_BUILTIN(sleep, milksleep_builtin_entry)
-MILK_KEYWORD_BUILTIN(grab, milkgrab_builtin_entry)
-MILK_KEYWORD_BUILTIN(log, milklog_builtin_entry)
-MILK_KEYWORD_BUILTIN(defer, milkdefer_builtin)
-MILK_KEYWORD_BUILTIN(args, milkargs_builtin)
+MILK_BUILTIN_KEYWORDS(MILK_KEYWORD_BUILTIN)
+
+/* until the constructor below sets the lexicon's text */
+static char *const lexicon_doc_pending[] = { "A milk @ keyword (@help <keyword>).", NULL };
 
 /* Built with hidden visibility: bash finds each builtin by its `<name>_struct` symbol */
 #pragma GCC visibility push(default)
@@ -531,51 +524,6 @@ struct builtin milkcall_struct = { "milkcall",
                                    "milkcall [--async] [--engine] [--nowait] <cmd> [args...]",
                                    0 };
 
-struct builtin milkget_struct = { "milkget",
-                                  milkget_builtin_entry,
-                                  BUILTIN_ENABLED,
-                                  milkget_doc,
-                                  "milkget [-v var|-a arr|-A assoc|--json] <spec>",
-                                  0 };
-
-struct builtin milkset_struct = { "milkset",
-                                  milkset_builtin_entry,
-                                  BUILTIN_ENABLED,
-                                  milkset_doc,
-                                  "milkset <entity> [val] [comment]",
-                                  0 };
-
-struct builtin milkcalc_struct = { "milkcalc",   milkcalc_builtin_entry,     BUILTIN_ENABLED,
-                                   milkcalc_doc, "milkcalc [-v var] <expr>", 0 };
-
-struct builtin milktest_struct = { "milktest",   milktest_builtin_entry, BUILTIN_ENABLED,
-                                   milktest_doc, "milktest <expr>",      0 };
-
-struct builtin milkexists_struct = { "milkexists",   milkexists_builtin_entry,   BUILTIN_ENABLED,
-                                     milkexists_doc, "milkexists [-r] <entity>", 0 };
-
-struct builtin milkwaitfor_struct = { "milkwaitfor",
-                                      milkwaitfor_builtin_entry,
-                                      BUILTIN_ENABLED,
-                                      milkwaitfor_doc,
-                                      "milkwaitfor <target> [nframes] [--timeout <sec>]",
-                                      0 };
-
-struct builtin milkwaitany_struct = { "milkwaitany",
-                                      milkwaitany_builtin_entry,
-                                      BUILTIN_ENABLED,
-                                      milkwaitany_doc,
-                                      "milkwaitany <s1> <s2> [...] [--timeout <sec>]",
-                                      0 };
-
-struct builtin milkgrab_struct = {
-    "milkgrab",
-    milkgrab_builtin_entry,
-    BUILTIN_ENABLED,
-    milkgrab_doc,
-    "milkgrab [--fits <f>] [--timestamps <t>] <stream> [nframes] [out_img] [--timeout <sec>]",
-    0
-};
 
 struct builtin milkcomplete_struct = {
     "milkcomplete",   milkcomplete_builtin_entry,        BUILTIN_ENABLED,
@@ -589,33 +537,6 @@ struct builtin milkshutdown_struct = { "milkshutdown",  milkshutdown_builtin_ent
 struct builtin milksession_struct = { "milksession",   milksession_builtin_entry, BUILTIN_ENABLED,
                                       milksession_doc, "milksession [verb ...]",  0 };
 
-struct builtin milklog_struct = { "milklog",   milklog_builtin_entry,  BUILTIN_ENABLED,
-                                  milklog_doc, "milklog [options...]", 0 };
-
-struct builtin milkls_struct = { "milkls",
-                                 milkls_builtin_entry,
-                                 BUILTIN_ENABLED,
-                                 milkls_doc,
-                                 "milkls [-l|-q|--json|--local] [pat]",
-                                 0 };
-
-struct builtin milkargs_struct = {
-    "milkargs", milkargs_builtin, BUILTIN_ENABLED, milkargs_doc, "milkargs SPEC... -- VALUE...", 0
-};
-
-struct builtin milkdefer_struct = { "milkdefer",
-                                    milkdefer_builtin,
-                                    BUILTIN_ENABLED,
-                                    milkdefer_doc,
-                                    "milkdefer [--exit] CMD... | --restore SPEC...",
-                                    0 };
-
-struct builtin milksleep_struct = { "milksleep",
-                                    milksleep_builtin_entry,
-                                    BUILTIN_ENABLED,
-                                    milksleep_doc,
-                                    "milksleep SECONDS | --every T|--hz F [--late L] VAR",
-                                    0 };
 
 struct builtin milkcloexec_struct = { "milkcloexec",
                                       milkcloexec_builtin,
@@ -631,25 +552,44 @@ struct builtin milktranslate_struct = { "milktranslate",
                                         "milktranslate -v VAR FILE | -s VAR TEXT | --done PATH",
                                         0 };
 
-/* the keyword builtins: `@<kw>`, loaded as kw<kw> (bash takes the name from the struct) */
-#define MILK_KEYWORD_STRUCT(name, doc)                                     \
-    struct builtin kw##name##_struct = { "@" #name,                        \
-                                         name##_keyword_builtin,           \
-                                         BUILTIN_ENABLED,                  \
-                                         doc,                              \
-                                         "@" #name " (@" #name " --help)", \
-                                         0 }
-MILK_KEYWORD_STRUCT(calc, milkcalc_doc);
-MILK_KEYWORD_STRUCT(test, milktest_doc);
-MILK_KEYWORD_STRUCT(get, milkget_doc);
-MILK_KEYWORD_STRUCT(set, milkset_doc);
-MILK_KEYWORD_STRUCT(exists, milkexists_doc);
-MILK_KEYWORD_STRUCT(ls, milkls_doc);
-MILK_KEYWORD_STRUCT(waitfor, milkwaitfor_doc);
-MILK_KEYWORD_STRUCT(waitany, milkwaitany_doc);
-MILK_KEYWORD_STRUCT(sleep, milksleep_doc);
-MILK_KEYWORD_STRUCT(grab, milkgrab_doc);
-MILK_KEYWORD_STRUCT(log, milklog_doc);
-MILK_KEYWORD_STRUCT(defer, milkdefer_doc);
-MILK_KEYWORD_STRUCT(args, milkargs_doc);
+/* milk<kw> and the keyword builtin @<kw>, loaded as kw<kw> (bash takes the name from the struct) */
+#define MILK_KEYWORD_STRUCTS(name, fn)                                                         \
+    struct builtin milk##name##_struct = { "milk" #name,        fn,           BUILTIN_ENABLED, \
+                                           lexicon_doc_pending, "milk" #name, 0 };             \
+    struct builtin kw##name##_struct   = { "@" #name,       name##_keyword_builtin,            \
+                                           BUILTIN_ENABLED, lexicon_doc_pending,               \
+                                           "@" #name,       0 };
+MILK_BUILTIN_KEYWORDS(MILK_KEYWORD_STRUCTS)
 #pragma GCC visibility pop
+
+/**
+ * lexicon_doc - Give builtins @plain (milk<kw>) and @kw (@<kw>) the lexicon's summary and synopsis
+ * @plain: Plain builtin
+ * @kw:    Keyword builtin
+ * @name:  Keyword name
+ * @doc:   Two-entry storage for the long help ({summary, NULL})
+ *
+ * Return: void
+ */
+static void lexicon_doc(struct builtin *plain, struct builtin *kw, const char *name, char *doc[2])
+{
+    const milk_keyword_t *k = milk_lexicon_keyword(name);
+    if (k != NULL)
+    {
+        doc[0]          = (char *) k->summary;
+        doc[1]          = NULL;
+        plain->long_doc = kw->long_doc = doc;
+        plain->short_doc = kw->short_doc = k->synopsis;
+    }
+}
+
+/* bash's `help @get` and `help milkget` print the lexicon's text: set before bash reads the structs */
+#define MILK_KEYWORD_DOC(name, fn)                                         \
+    {                                                                      \
+        static char *doc[2];                                               \
+        lexicon_doc(&milk##name##_struct, &kw##name##_struct, #name, doc); \
+    }
+__attribute__((constructor)) static void builtin_docs_from_lexicon(void)
+{
+    MILK_BUILTIN_KEYWORDS(MILK_KEYWORD_DOC)
+}

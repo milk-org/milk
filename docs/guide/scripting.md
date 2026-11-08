@@ -80,10 +80,13 @@ log they come from, `~/.milk_history_log`, is never trimmed: delete it to start 
 
 `@help` with no argument lists them; `@help <keyword>` and `<keyword> --help` describe one. The
 keywords that read or write shared memory and evaluate scalars are bash builtins (`type -t @get`),
-so a call costs no shell function; the others are functions.
+so a call costs no shell function; the others are functions. The builtins come from
+`libmilkbash.so`: when it cannot load (missing, or milk reinstalled under a running shell), milk.bash
+says why and loads nothing.
 `@help -k <regex>` searches commands, keywords and topics. The expression keywords (`@calc`,
-`@test`, `@assert`) take `--help` only, as `-h` is a valid expression. `@history` and the REPL
-settings of `@config` exist only at the milk-cli prompt.
+`@test`, `@assert`) take `--help` only, as `-h` is a valid expression. The prompt parts of `@history`
+(`search`, `save`, `--stats`, `--tui`) and the REPL settings of `@config` exist only at the milk-cli
+prompt.
 
 ## Module Commands
 
@@ -115,17 +118,24 @@ mem.mk2Dim --no-run im 64 64       # print the resolved call, run nothing
   over from one call to the next, and two shells never share argument state.
 - A value is taken from, first to last: `.tag=value` or its position, the `--load` preset, the
   session default, the declared default.
-- A missing, invalid or extra value is a usage error: the command does not run and exits with
-  status 2. `-0.5` is a value: `-h` is the only short option, and after `--` every word is a value.
-- A number argument is a literal or a calculator expression (`2*n0`, with calculator variables).
-  It never reads bash variables: write `$n`.
+- A missing, invalid or extra value, or a parameter given twice, is a usage error: the command does
+  not run and exits with status 2. `-0.5` is a value: `-h` is the only short option, and after `--`
+  every word is a value.
+- A number is read as the calculator reads it: `010` is ten, `0x1f`, `0o17` and `0b101` are hex,
+  octal and binary, and an integer takes `1e3` (not `1.5`); a value out of the type's range is
+  invalid. A bool is `on`/`off`, `true`/`false` or `1`/`0`. A number argument may also be a
+  calculator expression (`2*n0`, with calculator variables); it never reads bash variables: write
+  `$n`.
+- Unit command lines (`milk-fpsexec-*`, [Function Parameter Structures](fps.md)), `@args` and `@set`
+  read values and bind words by these rules too.
 - Presets are files under `${XDG_STATE_HOME:-~/.local/state}/milk/args/<command>/<NAME>`, one
   `.tag=value` per line.
 - In an image argument, `"@L:name"` makes a local image and `"@S:name"` a shared stream.
 
 ### Your Own Commands
 
-`@args` declares the arguments of a function or script; they are checked as a module command's are:
+`@args` declares the arguments of a function or script; they are bound and checked as a module
+command's are ([Arguments](#arguments)):
 
 ```bash
 # Average frames of a camera
@@ -142,8 +152,6 @@ cam.average -h               # the usage, from the declaration
   1 or 0), `str`, `stream` or `fits`. Without a default a value is required.
 - The names become local variables of the function (globals at a script's top level). After `-h`,
   or a missing, invalid or extra value, the function returns (status 0 or 2); a script ends.
-- Without the libmilkbash builtins (`MILK_NO_BUILTINS=1`), `@args` assigns plain variables and
-  only returns its status: write `@args ... -- "$@" || return`, and declare the names `local`.
 - `*.bash` files in `$MILK_INSTALLDIR/share/milk/commands.d` and
   `${XDG_CONFIG_HOME:-~/.config}/milk/commands.d` are loaded with milk.bash (in plain bash, milk-cli
   and milk-script). The `module.cmd` functions they define are commands like the others: completion,
@@ -181,14 +189,17 @@ echo "\@{s.cam.xsize}"             # escaped: printed as is
 
 Common properties:
 
-- streams (`s.`, `l.`): `xsize` `ysize` `zsize` `naxis` `nelem` `type` `typename` `cnt0` `cnt1`
-  `sem` `shared` `age` `fps` `ownerPID` `kw.<KEY>` (or `k.<KEY>`, FITS keyword), `kw.*`, `list`,
-  `summary`, and the pixel statistics `min` `max` `mean` `std` `var` `tot` `count` (non-zero
-  pixels), `stats` (all of them, plus `torn`, 1 when three attempts 20 µs apart all overlapped a
-  write and the values come from the last one; computed in one SIMD pass with a `(cnt0, write)`
-  torn-frame guard and cached per `(inode, cnt0, 16-pixel sample)` so reading several properties
-  on the same frame scans the pixels only once: a writer that changes pixels in place without
-  advancing `cnt0` or the write time can get a cached value when those 16 pixels did not change);
+- streams (`s.`, `l.`; `@help streams` and `@get s.<name>.list` list them): `xsize` `ysize`
+  `zsize` `naxis` `nelement` `dtype` `typename` `type` `cnt0` `cnt1` `sem` `pid` `owner_pid`
+  `shared` `NBkw` `location` `loc` `inode` `age` `fps` `summary`; the pixel statistics `min` `max`
+  `mean` `std` `var` `tot` `count` (non-zero pixels), the calculator's `imin` … `icount` of the
+  frame, and `stats` (all of them, plus `torn`, 1 when every read overlapped a write under the
+  [torn-frame rule](calculator.md#compute-units-without-c) and the values come from the last one;
+  cached per `(inode, cnt0, 16-pixel sample)` so reading several properties on the same frame scans
+  the pixels only once: a writer that changes pixels in place without advancing `cnt0` or the write
+  time can get a cached value when those 16 pixels did not change); `kw.<KEY>` (or `k.<KEY>`, a
+  FITS keyword) and `kw.*`; `kv`; `json`; `list`. `nelem`, `ownerPID`, `size0` … `size2`, `typeid`
+  and `storage` are accepted too;
 - FPS (`f.`): any parameter (`f.loop.gain`), plus `status` (or `run`) and `conf`, the state of the
   unit's run and conf processes: `stopped` `starting` `running` `stopping` `exited` `failed`;
   `session`; `run.out` and `conf.out`, the last 20 lines the unit wrote (`milk-fps-log` shows more);
@@ -254,35 +265,9 @@ sweep_gain() {
 
 ## Calculator
 
-```bash
-@calc "cam = cam * 0 + 5"          # image arithmetic, in place
-@calc -v m "imean(cam)"            # bind the result to a bash variable
-@calc -v rms,ptv 'istd(cam); imax(cam) - imin(cam)'   # the values of the last statements
-@calc -a row "cam[*, 10]"          # the pixels of an image into a bash array
-@calc "m, s, lo, hi = istats(cam)" # single-pass mean, std, min, max unpacking
-@calc "z = (cam - imean(cam)) / istd(cam)"            # multi-reduction in one fused expression
-@calc "clean = medfilt3(cam - dark)"                  # exact 3x3 SIMD median filter
-@calc "dm = 0.99 * dm - 0.3 * matmul(Cmat, wfs)"      # lowered to single in-place BLAS gemv
-@calc "cam[0:31, 0:31] = 0"        # slices: see slicing.md
-echo "mean=@{imean(cam)}"          # inline
-if @test "imean(cam) > 1"; then echo bright; fi        # status 0 if true, 1 if false
-@pipe "mem.mk2Dim p 32 32 |> _ = 4 |> _ *= 2.5"       # chain stages in one request
-```
-
-- Names in an expression are images, calculator variables, and bash variables. A bash variable wins
-  over a calculator variable of the same name; its value is data (`s="sqrt(16)"` is the string, not
-  `4`). Calculator variables come back to bash only through `-v` (or `@{…}`): after `@calc "x = 5"`,
-  bash has no `$x` — write `@calc -v x "5"` or `x=@{5}`.
-- Scalar-only expressions (numbers, math functions, `s.`/`f.`/`p.` properties) evaluate in-process
-  in the shell (~2 µs); image expressions execute in a single fused SIMD/OpenMP pass or in-place
-  BLAS/LAPACK call in the session server.
-- New images produced by an expression are `FLOAT` (or `DOUBLE` when an operand is `f64(...)`);
-  in-place updates (`+=`, scalar fill, or writing an existing shared stream) preserve the
-  destination's datatype.
-
-For the complete operator table, function reference (math, reductions, `istats`/`icentroid`, axis
-reductions, `shift`/`lut`, `medfilt3/5/7`, `gauss`, `interp2`, `pixremap`/`pixunmap`, `rprof`,
-BLAS/LAPACK solvers, complex images, and `def` inline functions), and more examples, see
+`@calc` evaluates image and scalar expressions (`-v` binds results to bash variables), `@test`
+tests one (status 0 if true), `@{expr}` puts a value inside a word, and `@pipe` chains stages in
+one request. The language, its functions and examples, and the cost of each form are in
 **[Calculator & Scripted Compute Units](calculator.md#calculator-calc-test-pipe)**.
 
 ## Waiting, Events and Cleanup
@@ -325,9 +310,7 @@ keyword (`s.<cube>.kw.DROPPED` or `s.<cube>.k.DROPPED`). With `--`, `@on` runs t
 as a command; use the quoted form when the command refers to `$MILK_TRIGGER`. `@on --when` fires
 when the expression turns true, also when it is already true at the start, then again once it has
 been false. A watcher ends with the shell, or subshell, that started it, also when that shell is
-killed; a watcher that must outlive its shell is a unit (`milk.script`). This takes milk.bash's
-builtins (libmilkbash, loaded unless `MILK_NO_BUILTINS=1`): without them, a watcher outlives its
-shell.
+killed; a watcher that must outlive its shell is a unit (`milk.script`).
 
 `@defer` runs a command when the function or `@source`'d file that registered it returns, last
 registered first:
@@ -357,31 +340,8 @@ measure() {
 
 ## Compute Units Without C
 
-Two compute units run on each frame of a trigger stream (or on a `-loopd SEC` timer) without C
-code: `milk-fpsexec-milk-calc` runs compiled calculator programs, and `milk-fpsexec-milk-script`
-runs a bash snippet.
-
-```bash
-# out = (cam - dark) * gain on each frame of cam; gain is a parameter of FPS dsub, set to 2.5
-milk-fpsexec-milk-calc -n dsub -t cam -p "gain:float=1" -e "out = (cam - dark) * gain" fpsinit 2.5
-milk-fpsexec-milk-calc -n dsub runstart         # in the background, returns once the loop runs
-milk-fpsexec-milk-calc -n dsub set 3.0          # read by the next frame (same as @set f.dsub.gain=3)
-@set f.dsub.unit.expr="out = cam * gain"        # compiled at the next frame (or: -e "..." set)
-@get f.dsub.unit.error                          # why the loop stopped (empty while it runs)
-milk-fpsexec-milk-calc -n dsub runstop
-
-# one-time initialization (-i) before frame 0, then per-frame leaky integrator, in this terminal
-milk-fpsexec-milk-calc -n ema -t cam -p "a:float=0.1" -i "acc = cam * 0" \
-    -e "acc = (1 - a) * acc + a * cam" exec .a=0.05
-
-# a bash snippet on each frame of cam, in a shell that loaded milk.bash once
-milk-fpsexec-milk-script -n mon -t cam -c '@get s.cam.mean >> cam.log' fpsinit
-milk-fpsexec-milk-script -n mon runstart
-```
-
-For the full `.unit.*` option table, per-frame variables (`_n`, `_t`, `_dt`, `_cnt0`, `_ts`,
-`_missed`, `_torn`), torn-frame protection, `.calc` program constructs (`if`, `for`, `local`,
-`def`, `hist`/`prev`, `skip`, `post`, `zeros`), and OpenMP/deadline tuning, see
+`milk-fpsexec-milk-calc` runs compiled calculator programs, and `milk-fpsexec-milk-script` a bash
+snippet, on each frame of a trigger stream or on a timer, without C code: see
 **[Calculator & Scripted Compute Units — Compute Units Without C](calculator.md#compute-units-without-c)**.
 
 ## State, Assertions and Logs
@@ -422,10 +382,16 @@ for `@restore --undo`, `@session save`, and `@log` details.
   expansion failed` for an entity, the calculator's error for an expression. An assignment such as
   `x=@{s.cam.xsize}` also returns its status. With `MILK_STRICT=1`
   the failure ends the script with that status, as with `set -u`; at a prompt it is only reported.
-- Calculator errors are printed even in quiet mode (`milk: calc error: ... in '<expr>'`).
+- Calculator errors are printed even in quiet mode (`milk: calc error: ... in '<expr>'`, with the
+  line in text of several lines). `@calc` exits 1 when the calculation fails (sizes that do not
+  match, ...) and 2 for a syntax error, an unknown name or a wrong number of arguments; `@test`
+  exits 2 for any error, since 1 means false.
 - Ctrl-C interrupts the running command line, including a milk command executing inside milk-cli.
   Shell variables, functions and background jobs survive. A script that sets its own `trap ... INT`
   handles Ctrl-C itself.
+- A `@calc` stops at its next statement or loop iteration (one long kernel finishes first). A crash
+  inside a milk command or a calculator statement ends that command only, with status 1; the session
+  and its images remain.
 - If the bash process dies (killed, or recursion deeper than `FUNCNEST`, 5000 by default), milk-cli
   says so. A script stops there; at the prompt, the next command starts a new bash, without the
   previous shell state.
@@ -444,8 +410,8 @@ Measured on a recent desktop machine (see `test_perf_latency_ceilings` in
 | `f() { @defer …; }; f`                | ~15 µs        | registered, then run when `f` returns    |
 | `x=@{s.cam.xsize}`, `y=@{1+2}`        | ~2–3 µs       | a statement of its own: bound with `-v`  |
 | `"frame @{s.cam.cnt0}"` (in a word)   | ~15 µs        | bash's `${\| …; }` substitution, no fork |
-| `@calc "cam = cam * 2"` (images)      | ~30 µs        | one request to the server (32-entry LRU statement cache) |
-| `mem.listim`, other milk commands     | ~75 µs        | one request to the server                |
+| `@calc "cam = cam * 2"` (images)      | ~30 µs        | one request to the server (64-entry LRU statement cache) |
+| `mem.listim`, other milk commands     | ~40 µs        | one request to the server                |
 | `y=$(@calc 1+2)`                      | ~0.8 ms       | `$( )` forks a subshell: avoid in loops  |
 
 Prefer `-v`, `-a`, `-A` and `NAME=@{…}` over `$(…)` and over `@{…}` inside longer words in loops,
@@ -480,7 +446,11 @@ this list:
 - `@mload`, `@mloadas` → `@module load [--as]`; `@dpdigits` → `@config digits`; the history and
   help words → `@history`, `@help`, `-h`;
 - `include_once` → `@source --once`, `source x.milk` → `@source x.milk`, `exitCLI` → `exit`;
-- `cmd .tag value` → `cmd --default .tag=value`.
+- `cmd .tag value` → `cmd --default .tag=value`;
+- in calculator text: `ln` → `log`, `fabs` → `abs`, `urand` → `rand`, `grand` → `randn`, `nrm2` →
+  `norm`, `trunc(x, lo, hi)` → `clamp(x, lo, hi)`, `_PI` → `pi` (the other `_`-constants: write the
+  value), `if ... end` and `for ... end` → braces, `listengines` and `--engines` → `@calc --list`;
+  `irms` is now the root mean square (`istd` is the standard deviation).
 
 ### From milk-seq
 
@@ -645,20 +615,8 @@ generator script after installing new milk modules:
 
 ## Bringing Your Own Compiled C Code (`milk_calc_ext.h` & `milk-cc`)
 
-Users can extend `@calc` and `milk-fpsexec-milk-calc` with compiled C code (`-l <file.c|file.so>`)
-or compile standalone `MILK_RUNNABLE` compute units with a single command (`milk-cc <unit.c>`),
-without editing CMake files.
-
-| Tier | Registration Macro | Best For |
-| ---- | ------------------ | -------- |
-| **1a: 1D SIMD Block Kernel** | `MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2` | Per-pixel non-linearities, LUTs, 2-image blends fused into the L1 tile loop (`FUSE_BLK = 1024`) |
-| **1b: 2D Neighborhood Stencil** | `MILK_CALC_REG_STENCIL` | $(2R+1)\times(2R+1)$ local neighborhood filters ($R \in \{1,2,3\}$) with pre-clamped row pointers |
-| **1c: Whole-Image Kernel** | `MILK_CALC_REG_IMG` | Single-function 1-in / 1-out global image algorithms (column/row de-meaning, custom transforms) |
-| **2: Stateful Multi-Port Operator** | `MILK_CALC_OP_DECLARE`, `MILK_CALC_REG_OP` | Multi-input / multi-output algorithms with `init` / `exec` / `free` state and custom output shapes |
-| **3: Standalone `MILK_RUNNABLE`** | `milk-cc <unit.c>` | Full standalone `milk-fpsexec-*` binary with custom semaphore triggering |
-
-For auto-compilation/caching (`-l`), `MILK_CALC_PARAMS` exposure rules, and full C examples of each
-tier, see **[C Extensions (`milk_calc_ext.h` & `milk-cc`)](calc_c_extensions.md)**.
+`@calc -l file.c` and `milk-fpsexec-milk-calc -l` load C extensions, and `milk-cc unit.c` builds a
+standalone unit: see **[C Extensions (`milk_calc_ext.h` & `milk-cc`)](calc_c_extensions.md)**.
 
 ---
 

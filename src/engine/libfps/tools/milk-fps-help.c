@@ -105,19 +105,8 @@ int main(int argc, char *argv[])
            "  Up to 64 local FPS instances can"
            " coexist per process.\n" C_NOTE "  Note:" C_RST " Local FPS are not visible to"
            " milk-fps-list, milk-fps-info,\n"
-           "  or milk-fpsCTRL. Use the " C_BOLD "?" C_RST " query within the milk CLI.\n\n");
-
-    printf(C_HDR "CLI Interaction (within milk)\n" C_RST);
-    printf("  The milk CLI syntax for FPS is:"
-           "  cmdkey:" C_FPS "fpsname" C_RST ":action\n"
-           "  If " C_FPS "fpsname" C_RST " is omitted, a default name is"
-           " assigned.\n"
-           "  Actions: " C_BOLD "init" C_RST ", " C_BOLD "initp" C_RST
-           " (with processinfo), " C_BOLD "?" C_RST " (query)\n"
-           "  Example:\n"
-           "    milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":init\n" C_RST
-           "    milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":?\n" C_RST
-           "    milk > " C_CMD "modex.fpsclitest .gain 1.5\n" C_RST "\n");
+           "  or milk-fpsCTRL: " C_CMD "<command> ?" C_RST
+           " lists a command's own within milk.\n\n");
 
     printf(C_NOTE "Run " C_CMD "milk-fpsexec-help" C_NOTE " for a user guide to"
                   " standalone FPS executables.\n" C_RST "\n");

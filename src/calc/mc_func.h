@@ -63,11 +63,23 @@ typedef struct
 /** mc_func_find() - look up a built-in function by exact name (without '('). */
 const mc_func_t *mc_func_find(const char *name);
 
+/** mc_func_replacement() - the function that replaced removed alias @name, or NULL. */
+const char *mc_func_replacement(const char *name);
+
+/** mc_const_removed() - hint when @name is one of the removed `_PI`-style constants, or NULL. */
+const char *mc_const_removed(const char *name);
+
+/** mc_is_reserved_const() - 1 if @name is the constant pi, nan or inf (reserved names). */
+int mc_is_reserved_const(const char *name);
+
 /** mc_func_find_len() - look up a built-in function by name slice (@name, @len). */
 const mc_func_t *mc_func_find_len(const char *name, size_t len);
 
 /** mc_func_table() - return the built-in function table and write its length to @out_count. */
 const mc_func_t *mc_func_table(int *out_count);
+
+/** mc_fmodd() - fmod(@x, @y) by the kernels' exact FMA formula; NaN when |@x / @y| >= 2^52. */
+double mc_fmodd(double x, double y);
 
 /** mc_isnan() - IEEE-754 bit-level NaN check (returns 1.0 if @a is NaN, else 0.0). */
 double mc_isnan(double a);
@@ -81,7 +93,7 @@ double mc_posi(double a);
 /** mc_sign() - signum (-1.0, 0.0, or +1.0). */
 double mc_sign(double a);
 
-/** mc_wrap_pi() - wrap angle @a (radians) into [-pi, pi). */
+/** mc_wrap_pi() - wrap angle @a (radians) into (-pi, pi]; NaN when |@a| >= 2^52 * 2 pi. */
 double mc_wrap_pi(double a);
 
 /** mc_sinc() - normalized sinc sin(pi*x)/(pi*x), with mc_sinc(0) == 1.0. */

@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include "milk_detach.h"
+#include "milk_entity_ns.h"
 #include "milk_ipc_common.h"
 #include "milk_os.h"
 #include "milk_proto.h"
@@ -828,4 +829,37 @@ int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_
         spawn_print_tail(out);
     }
     return -1;
+}
+
+/**
+ * milk_set_item - Read the `@set` item at @argv[*@i] and move *@i past it
+ * @argc: Number of words
+ * @argv: Words after `@set` and its options
+ * @i:    In: the item's first word; out: the next item's
+ * @it:   Out: the item
+ *
+ * The grammar of `@set` in the shell and in the session: `name=value`, `name = value`, `name value`
+ * or `name` alone (an action), each followed by an optional comment. A value or a comment is a
+ * word that is not an entity path (milk_is_entity_path()).
+ */
+void milk_set_item(int argc, char *const *argv, int *i, milk_set_item_t *it)
+{
+    it->spec    = argv[(*i)++];
+    it->val     = NULL;
+    it->comment = NULL;
+    if (strchr(it->spec, '=') == NULL && *i < argc)
+    {
+        if (strcmp(argv[*i], "=") == 0)
+        {
+            it->val = (++*i < argc) ? argv[(*i)++] : NULL;
+        }
+        else if (!milk_is_entity_path(argv[*i]))
+        {
+            it->val = argv[(*i)++];
+        }
+    }
+    if (*i < argc && !milk_is_entity_path(argv[*i]))
+    {
+        it->comment = argv[(*i)++];
+    }
 }

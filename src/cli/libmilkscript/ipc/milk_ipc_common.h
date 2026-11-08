@@ -141,4 +141,15 @@ int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_
  * this process (a builtin) or its parent (milk-call). */
 pid_t milk_ipc_shell_pid(const milk_client_hooks_t *hooks);
 
+/* One `@set` item and its comment */
+typedef struct
+{
+    const char *spec;    /* `name` or `name=value` */
+    const char *val;     /* the value of `name [=] value`, or NULL */
+    const char *comment; /* or NULL */
+} milk_set_item_t;
+
+/** milk_set_item() - read the `@set` item at @argv[*@i] into @it and move *@i past it. */
+void milk_set_item(int argc, char *const *argv, int *i, milk_set_item_t *it);
+
 #endif /* MILK_IPC_COMMON_H */

@@ -1,4 +1,5 @@
-"""30-case calculator engine micro-benchmark at 256^2 and 2048^2 (§5 Phase 3, §6.4)."""
+"""30-case calculator engine micro-benchmark at 256^2 and 2048^2 (§5 Phase 3, §6.4), plus spatial
+kernels at 256^2 and library kernels (order statistics, argmax, FFT) at 256^2 and 2048^2."""
 
 from __future__ import annotations
 
@@ -61,6 +62,27 @@ BENCH_CASES: list[tuple[int, str, str, int]] = [
         1000,
     ),
     (30, "elementwise", "local tmp = A - B; C = tmp * tmp + 0.5 * tmp", 2000),
+]
+
+# Stencil and library kernels, 256^2 only (medfilt7 alone takes ~83 ms per call there). Report
+# only: the old-engine baseline has no spatial cases.
+SPATIAL_CASES: list[tuple[int, str, str, int]] = [
+    (31, "spatial", "C = medfilt3(A)", 20),
+    (32, "spatial", "C = medfilt5(A)", 5),
+    (33, "spatial", "C = medfilt7(A)", 5),
+    (34, "spatial", "C = boxmean(A, 2)", 20),
+    (35, "spatial", "C = conv2(A, K)", 20),
+    (36, "spatial", "C = imin3(A)", 50),
+    (37, "spatial", "C = gauss(A, 2.0)", 50),
+]
+
+# Order statistics, argmax and FFT, 256^2 and 2048^2. Report only.
+LIBRARY_CASES: list[tuple[int, str, str, int]] = [
+    (38, "library", "v = imedian(A)", 20),
+    (39, "library", "v = perc(A, 0.9)", 20),
+    (40, "library", "px, py = iargmax(A)", 200),
+    (41, "library", "F = fft(A)", 20),
+    (42, "library", "R = ifft(F)", 20),
 ]
 
 # Phase 9 old-engine reference baseline (us, single-thread pinned, best of 7 runs)
@@ -255,12 +277,14 @@ def _setup_bench_dataset(script_so: ctypes.CDLL, size: int) -> None:
     for idx, name in enumerate(("A", "B", "C", "D", "G", "O", "M", "U", "V"), start=1):
         _eval_stmt(script_so, f"{name} = zeros({size}, {size})")
         if name in ("A", "B", "C", "D"):
-            _eval_stmt(script_so, f"{name} = 0.1 + 0.8 * urand({name}, {idx})")
+            _eval_stmt(script_so, f"{name} = 0.1 + 0.8 * rand({name}, {idx})")
         elif name == "G":
-            _eval_stmt(script_so, f"G = 0.5 + 0.5 * urand(G, {idx})")
+            _eval_stmt(script_so, f"G = 0.5 + 0.5 * rand(G, {idx})")
         elif name == "O":
-            _eval_stmt(script_so, f"O = 0.1 * urand(O, {idx})")
+            _eval_stmt(script_so, f"O = 0.1 * rand(O, {idx})")
     _eval_stmt(script_so, "M = where(A > 0.3, 1.0, 0.0)")
+    _eval_stmt(script_so, "K = zeros(5, 5)")
+    _eval_stmt(script_so, "K = K + 0.04")
     script_so.mcalc_udef_try_parse(b"def soft_thresh(x, t) = where(abs(x) > t, x, 0.0)")
 
 
@@ -271,15 +295,17 @@ def _geomean(vals: list[float]) -> float:
     return math.exp(sum(math.log(v) for v in vals) / len(vals))
 
 
-def run_bench_suite(size: int) -> dict[int, float]:
-    """Run all 30 benchmark cases at @size on `libmilkcalc`; return `{case_id: us}`."""
+def run_bench_suite(
+    size: int, cases: list[tuple[int, str, str, int]] = BENCH_CASES
+) -> dict[int, float]:
+    """Run benchmark @cases at @size on `libmilkcalc`; return `{case_id: us}`."""
     script_so, helper_so = _get_bench_libs()
     _setup_bench_dataset(script_so, size)
 
     scale = (256.0 / float(size)) ** 2
     times: dict[int, float] = {}
     err = ctypes.create_string_buffer(256)
-    for cid, _, stmt, base_iters in BENCH_CASES:
+    for cid, _, stmt, base_iters in cases:
         iters = max(5, int(base_iters * scale))
         if "local " not in stmt:
             for seg in stmt.split(";"):
@@ -368,6 +394,25 @@ def test_single_cli_bench_invocation():
 
 
 @perf_timing
+def test_calc_spatial_bench():
+    """Time the spatial kernels at 256^2 and print them (no reference to compare against)."""
+    times = run_bench_suite(256, SPATIAL_CASES)
+    print("\n=== Spatial kernels (256x256 float32, best of 7 runs, us) ===")
+    for cid, _, stmt, _ in SPATIAL_CASES:
+        print(f"{cid:2d} | {stmt:54.54} | {times[cid]:10.3f}")
+
+
+@perf_timing
+@pytest.mark.parametrize("size", [256, 2048])
+def test_calc_library_bench(size: int):
+    """Time order statistics, argmax and FFT and print them (no reference to compare against)."""
+    times = run_bench_suite(size, LIBRARY_CASES)
+    print(f"\n=== Library kernels ({size}x{size} float32, best of 7 runs, us) ===")
+    for cid, _, stmt, _ in LIBRARY_CASES:
+        print(f"{cid:2d} | {stmt:54.54} | {times[cid]:10.3f}")
+
+
+@perf_timing
 @pytest.mark.parametrize("size", [256, 2048])
 def test_calc_engine_bench(size: int):
     """Run all 30 benchmark cases at 256^2 and 2048^2 and compare against reference."""
@@ -427,3 +472,26 @@ def test_runtime_bounds_and_offsets_compile_single_kernel(tmp_path):
     assert (
         len(so_shift) == 1
     ), f"Expected 1 .so for 50 shift/roll offsets, got {len(so_shift)}: {so_shift}"
+
+
+def test_kernel_cache_is_shared_across_cores(tmp_path):
+    """One statement run pinned to two different CPUs compiles one .so (the key has no APIC ID)."""
+    cpus = sorted(os.sched_getaffinity(0))
+    if len(cpus) < 2:
+        pytest.skip("needs two CPUs")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    saved = os.sched_getaffinity(0)
+    try:
+        for cpu in cpus[:2]:
+            os.sched_setaffinity(0, {cpu})
+            res = milk_bash(
+                'mem.mk2Dim a 64 64 >/dev/null; @calc "o = a * 3.0 + 1.0"',
+                tmp_path,
+                extra_env={"MILK_CALC_CACHE": str(cache)},
+            )
+            assert res.returncode == 0, res.stdout + res.stderr
+    finally:
+        os.sched_setaffinity(0, saved)
+    so = list(cache.glob("*.so"))
+    assert len(so) == 1, f"Expected 1 .so on CPUs {cpus[:2]}, got {len(so)}: {so}"

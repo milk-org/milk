@@ -88,15 +88,15 @@ def test_C2_local_read_by_merged_statement_is_written(tmp_path):
 def test_C3_axis0_reduction_is_placed_on_its_axis(tmp_path):
     """Row means come off every row of a 16x8 image and of an 8x8 one; shapes of plain results stay squeezed."""
     res = milk_bash(
-        'mem.mk2Dim im3 16 8 >/dev/null; @calc "im3 = iy(im3)*10 + ix(im3) + urand(im3, 3)"\n'
+        'mem.mk2Dim im3 16 8 >/dev/null; @calc "im3 = iy(im3)*10 + ix(im3) + rand(im3, 3)"\n'
         '@calc "d0 = im3 - imean(im3, 0)"; echo "rc0=$?"\n'
         '@calc -v s0,n0 "imax(abs(itot(d0, 0))); irms(d0)"; echo "s0=$s0"; echo "n0=$n0"\n'
         '@calc "d0r = imean(im3, 0) - im3"; @calc -v e0r "imax(abs(d0r + d0))"; echo "e0r=$e0r"\n'
         '@calc "p0 = imean(im3, 0)"; echo "sh0=$(@get s.p0.naxis):$(@get s.p0.xsize)"\n'
         '@calc "d1 = im3 - imean(im3, 1)"; @calc -v s1 "imax(abs(itot(d1, 1)))"; echo "s1=$s1"\n'
-        'mem.mk2Dim sq 8 8 >/dev/null; @calc "sq = iy(sq)*10 + ix(sq) + urand(sq, 5)"\n'
+        'mem.mk2Dim sq 8 8 >/dev/null; @calc "sq = iy(sq)*10 + ix(sq) + rand(sq, 5)"\n'
         '@calc "dsq = sq - imean(sq, 0)"; @calc -v ssq "imax(abs(itot(dsq, 0)))"; echo "ssq=$ssq"\n'
-        'mem.mk3Dim cube3 6 4 3 >/dev/null; @calc "cube3 = urand(cube3, 7)"\n'
+        'mem.mk3Dim cube3 6 4 3 >/dev/null; @calc "cube3 = rand(cube3, 7)"\n'
         '@calc "c1 = cube3 - imean(cube3, 1)"; echo "rc1=$?"; @calc -v sc1 "imax(abs(itot(c1, 1)))"; echo "sc1=$sc1"\n'
         '@calc "m1 = imean(cube3, 1)"; echo "shm1=$(@get s.m1.naxis):$(@get s.m1.xsize)x$(@get s.m1.ysize)"\n'
         'mem.mk2Dim m1e 6 3 >/dev/null; @calc "m1e = imean(cube3, 1)"; @calc -v e1e "imax(abs(m1e - m1))"; echo "e1e=$e1e"\n'
@@ -199,7 +199,7 @@ def test_C6_stencils_on_broadcast_or_sliced_operands_match_eager(tmp_path):
     medfilt used a window size the tokenizer never set."""
     res = milk_bash(
         "mem.mk2Dim a6 8 6 >/dev/null; mem.mk3Dim cube6 8 6 3 >/dev/null\n"
-        '@calc "a6 = urand(a6, 11); cube6 = urand(cube6, 12)"\n'
+        '@calc "a6 = rand(a6, 11); cube6 = rand(cube6, 12)"\n'
         '@calc "s6 = shift(a6, 1, 0); m6 = medfilt3(a6); m5 = medfilt5(a6)"\n'
         'chk() { @calc -v e "imax(abs($1[:,:,$2] - cube6[:,:,$2] - $3))"; echo "$1=$e"; }\n'
         '@calc "o1 = shift(a6, 1, 0) + cube6"; echo "rc1=$?"; chk o1 2 s6\n'

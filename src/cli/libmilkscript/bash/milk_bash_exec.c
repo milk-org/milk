@@ -106,7 +106,7 @@ int milk_bash_engine_exec_raw(const char *cmdline, int *out_exit_req)
 }
 
 /**
- * trim_calc_line - Strip unquoted `#` comment and leading/trailing whitespace in-place
+ * trim_calc_line - Strip the shell comment and the leading/trailing whitespace of @s in-place
  * @s: Writable line buffer
  *
  * Return: Pointer to the first non-whitespace character in @s
@@ -117,34 +117,22 @@ static char *trim_calc_line(char *s)
     {
         s++;
     }
-    int in_sq = 0;
-    int in_dq = 0;
-    for (size_t i = 0; s[i] != '\0'; i++)
+    size_t    len = strlen(s);
+    msl_map_t m;
+    if (msl_scan(s, len, &m) == 0)
     {
-        if (s[i] == '\\' && !in_sq && s[i + 1] != '\0')
+        len = 0;
+        while (s[len] != '\0' && m.ctx[len] != MSL_COMMENT)
         {
-            i++;
-            continue;
+            len++;
         }
-        if (s[i] == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-        }
-        else if (s[i] == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (s[i] == '#' && !in_sq && !in_dq)
-        {
-            s[i] = '\0';
-            break;
-        }
+        msl_free(&m);
     }
-    size_t len = strlen(s);
     while (len > 0 && (s[len - 1] == ' ' || s[len - 1] == '\t' || s[len - 1] == '\r'))
     {
-        s[--len] = '\0';
+        len--;
     }
+    s[len] = '\0';
     return s;
 }
 
@@ -193,6 +181,26 @@ static int cmdline_has_bare_calc(const char *cmdline)
 }
 
 /**
+ * is_one_quoted_word - 1 if the @n bytes at @s are one quoted shell word ("a + b" or 'a + b')
+ */
+static int is_one_quoted_word(const char *s, size_t n)
+{
+    msl_map_t m;
+    int       one = 0;
+    if (n >= 2 && (s[0] == '"' || s[0] == '\'') && msl_scan(s, n - 1, &m) == 0)
+    {
+        one = m.unterminated && m.open_at == 1; /* its first quote is open up to the last byte */
+        msl_free(&m);
+    }
+    if (one)
+    {
+        one = (msl_scan(s, n, &m) == 0 && !m.unterminated); /* which closes it */
+        msl_free(&m);
+    }
+    return one;
+}
+
+/**
  * exec_calc_repl_expr - Evaluate @expr in-process when eligible, else via `@calc --repl`
  * @expr:         Calculator expression string
  * @out_exit_req: Optional output set if bash requested exit
@@ -202,34 +210,14 @@ static int cmdline_has_bare_calc(const char *cmdline)
 static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
 {
     size_t elen = strlen(expr);
-    if (elen >= 2 &&
-        ((expr[0] == '"' && expr[elen - 1] == '"') || (expr[0] == '\'' && expr[elen - 1] == '\'')))
+    if (is_one_quoted_word(expr, elen))
     {
-        char   q      = expr[0];
-        int    closed = 0;
-        size_t k      = 1;
-        for (; k + 1 < elen; k++)
+        char *inner = strndup(expr + 1, elen - 2);
+        if (inner != NULL)
         {
-            if (expr[k] == '\\' && q == '"' && k + 2 < elen)
-            {
-                k++;
-                continue;
-            }
-            if (expr[k] == q)
-            {
-                closed = 1;
-                break;
-            }
-        }
-        if (!closed)
-        {
-            char *inner = strndup(expr + 1, elen - 2);
-            if (inner != NULL)
-            {
-                int rc = exec_calc_repl_expr(inner, out_exit_req);
-                free(inner);
-                return rc;
-            }
+            int rc = exec_calc_repl_expr(inner, out_exit_req);
+            free(inner);
+            return rc;
         }
     }
 

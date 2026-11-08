@@ -37,11 +37,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/eventfd.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "mc_ast.h"
 #include "milk_client.h"
 #include "milk_client_internal.h"
 #include "milk_entity_ns.h"
@@ -196,8 +198,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
 
     if (target == NULL || target[0] == '\0')
     {
-        fprintf(stderr, "Usage: @waitfor [-t|--timeout <sec>] [-s <sem>] [--cnt <target>] "
-                        "<stream|condition> [nframes] | @waitfor [--next] \"<expr>\"\n");
+        milk_lexicon_usage("waitfor", stderr);
         return 1;
     }
     const char *gone = milk_entity_ns_removed(target);
@@ -229,8 +230,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     {
         char val[256];
         here = (milk_shm_prop_get(wt.lhs, val, sizeof(val)) == 0) ||
-               (milk_client_is_entity_spec_token(wt.lhs) &&
-                milk_entity_ns_kind(wt.lhs, NULL) != MILK_NS_LOCAL);
+               (milk_is_entity_path(wt.lhs) && milk_entity_ns_kind(wt.lhs, NULL) != MILK_NS_LOCAL);
     }
     if (here)
     {
@@ -269,7 +269,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     uint8_t *buf = (uint8_t *) malloc(tot);
     if (buf == NULL)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
     memcpy(buf, target, l1);
@@ -280,12 +280,12 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
     free(buf);
     if (sret != 0)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    close(fd);
+    milk_client_end(fd);
     return rc;
 }
 
@@ -420,37 +420,27 @@ static void sem_waiters_stop(sem_waiters_t *sw, IMAGE *imgs)
  * @imgs:  Output array of opened `IMAGE` structures (up to `WAIT_EXPR_MAXS`)
  * @other: Output flag set to 1 if @expr also references non-stream entities (FPS, proc, local)
  *
- * Scans @expr for stream identifiers so `client_wait_expr()` can sleep directly on
- * their semaphores instead of busy-polling when the predicate depends only on streams.
+ * Finds the stream names in @expr (its calculator tokens) so `client_wait_expr()` can sleep
+ * directly on their semaphores instead of busy-polling when the predicate depends only on streams.
  *
  * Return: Number of streams opened into @imgs.
  */
 static int expr_streams(const char *expr, IMAGE *imgs, int *other)
 {
-    int n  = 0;
-    *other = 0;
-    for (const char *p = expr; *p != '\0';)
+    int           n  = 0;
+    mc_tok_list_t tl = { 0 };
+    *other           = (mc_lex(expr, &tl) != 0); /* it fails when evaluated: poll */
+    for (int t = 0; t < tl.ntok; t++)            /* the lexer adds EOF tokens: t + 1 is one */
     {
-        if (*p == '"' || *p == '\'') /* a string literal */
+        if (tl.toks[t].type != MC_TOK_IDENT)
         {
-            const char *q = strchr(p + 1, *p);
-            p             = (q != NULL) ? q + 1 : p + strlen(p);
             continue;
         }
-        if (!(isalpha((unsigned char) *p) || *p == '_') ||
-            (p > expr && (isalnum((unsigned char) p[-1]) || p[-1] == '.')))
-        {
-            p++;
-            continue;
-        }
-        char   id[160];
-        size_t len = strspn(p, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.");
-        snprintf(id, sizeof(id), "%.*s", (int) ((len < sizeof(id)) ? len : sizeof(id) - 1), p);
-        p += len;
-        const char    *after = p + strspn(p, " \t");
-        const char    *rest  = id;
-        milk_ns_kind_t k     = milk_entity_ns_kind(id, &rest);
-        if (*after == '(' || (k == MILK_NS_NONE && strchr(id, '.') != NULL))
+        char id[160];
+        milk_normalize_entity_spec(tl.toks[t].sval, id, sizeof(id));
+        const char    *rest = id;
+        milk_ns_kind_t k    = milk_entity_ns_kind(id, &rest);
+        if (tl.toks[t + 1].type == MC_TOK_LPAREN || (k == MILK_NS_NONE && strchr(id, '.') != NULL))
         {
             continue; /* a function, or not an entity */
         }
@@ -479,6 +469,7 @@ static int expr_streams(const char *expr, IMAGE *imgs, int *other)
             }
         }
     }
+    mc_tok_list_free(&tl);
     return n;
 }
 
@@ -643,7 +634,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
 
     if (nstreams == 0)
     {
-        fprintf(stderr, "Usage: @waitany <stream1> <stream2> ... [--timeout <sec>]\n");
+        milk_lexicon_usage("waitany", stderr);
         return 1;
     }
 
@@ -853,8 +844,16 @@ static int sleep_until(int64_t dl, const milk_client_hooks_t *hooks)
     sigemptyset(&sa.sa_mask);
     g_sleep_int = 0;
     sigaction(SIGINT, &sa, &old);
+    /* 1 us timer slack while sleeping, as processtools_trigger.c (the default wakes ~50 us late);
+     * restored after so the shell's children keep the default */
+    int slack = prctl(PR_GET_TIMERSLACK);
+    (void) prctl(PR_SET_TIMERSLACK, 1000UL);
     while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) == EINTR && !g_sleep_int)
     {
+    }
+    if (slack > 0)
+    {
+        (void) prctl(PR_SET_TIMERSLACK, (unsigned long) slack);
     }
     sigaction(SIGINT, &old, NULL);
     if (!g_sleep_int)
@@ -907,8 +906,6 @@ static double sleep_seconds(const char *s)
  */
 int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    static const char usage[] =
-        "Usage: @sleep <seconds> | @sleep --every <seconds>|--hz <rate> [--late <var>] <var>\n";
     double      per  = -1.0;
     const char *var  = NULL;
     const char *late = NULL;
@@ -927,7 +924,7 @@ int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hoo
             i++;
             if (per <= 0.0)
             {
-                fputs(usage, stderr);
+                milk_lexicon_usage("sleep", stderr);
                 return 2;
             }
         }
@@ -941,24 +938,22 @@ int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hoo
         }
         else
         {
-            fputs(usage, stderr);
+            milk_lexicon_usage("sleep", stderr);
             return 2;
         }
     }
     if (per <= 0.0 || var == NULL || !milk_ipc_is_identifier(var) ||
         (late != NULL && !milk_ipc_is_identifier(late)))
     {
-        fputs(usage, stderr);
+        milk_lexicon_usage("sleep", stderr);
         return 2;
     }
 
-    /* the deadline: VAR (ns), or one period from now; without the shell's variables (milk-call), the
-     * fallback shim passes VAR's value as __MILK_SLEEP_VAR */
+    /* the deadline: VAR (ns), or one period from now */
     int64_t     p   = (int64_t) llround(per * 1.0e9);
     int64_t     now = mono_ns();
     int64_t     dl  = now + p;
-    const char *cur = (hooks != NULL && hooks->get_var != NULL) ? milk_ipc_get_var(hooks, var)
-                                                                : getenv("__MILK_SLEEP_VAR");
+    const char *cur = milk_ipc_get_var(hooks, var);
     if (p < 1)
     {
         p = 1;
@@ -1105,9 +1100,7 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     if (sname == NULL || nframes == NULL || outname == NULL ||
         (outname[0] == '\0' && fits_raw == NULL))
     {
-        fprintf(stderr,
-                "Usage: @grab [-t|--timeout <sec>] [--fits <out.fits>] [--timestamps <out.txt>] "
-                "<stream> [nframes] [out_img]\n");
+        milk_lexicon_usage("grab", stderr);
         return 1;
     }
 
@@ -1134,7 +1127,7 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     uint8_t *buf = (uint8_t *) malloc(tot);
     if (buf == NULL)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
     memcpy(buf, sname, l1);
@@ -1148,12 +1141,12 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     free(buf);
     if (sret != 0)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
     int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    close(fd);
+    milk_client_end(fd);
     return rc;
 }
 
@@ -1270,7 +1263,7 @@ int milk_client_complete(const char                *prefix,
     uint8_t *buf = (uint8_t *) malloc(tot);
     if (buf == NULL)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
     memcpy(buf, prefix, l1);
@@ -1280,14 +1273,14 @@ int milk_client_complete(const char                *prefix,
     free(buf);
     if (sret != 0)
     {
-        close(fd);
+        milk_client_end(fd);
         return 1;
     }
 
     char out[32768];
     int  got_val = 0;
     int  rc      = milk_client_await_response(fd, sockpath, hooks, out, sizeof(out), &got_val);
-    close(fd);
+    milk_client_end(fd);
     if (rc == 0 && got_val)
     {
         if (strncmp(out, "__MILK_COMPLETE_FITS__", 22) == 0)

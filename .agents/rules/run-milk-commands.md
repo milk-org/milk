@@ -34,11 +34,11 @@ source <install-dir>/bin/milk.bash
    milk-cli -c 'mem.mk2Dim im 64 64; @calc -v m "imean(im)"'
    ```
 
-2. **Shared memory isolation** — streams and FPS live in `$MILK_SHM_DIR` (`/dev/shm` by default). To
-   clean stale FPS instances or streams, use `milk-fps-rm -f NAME` or `milk-stream-rm NAME`.
+2. **Stale streams and FPS instances** — remove them as
+   [Debugging §4.2](../../docs/operations/debugging.md#42-shared-memory-leaks) shows.
 
-3. **Units** — `runstart` starts a unit's loop in the background and returns once it runs. Use
-   `@ls 'f.*'` (or `milk-fps-list`) to inspect states, `@get f.NAME.run.out` (or
-   `milk-fps-log NAME`) for output, and `@set f.NAME.run=stop` (or `milk-fps-rm -f NAME`) to stop.
+3. **Units** — start, inspect and stop them, and read their output, as
+   [FPS §3](../../docs/guide/fps.md#3-running-units) shows (from a script: the `f.` entity,
+   [Scripting — Entities](../../docs/guide/scripting.md#entities)).
 
 4. **Build directory** — always build from `_build/`, never in-source.

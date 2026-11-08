@@ -37,7 +37,7 @@ def test_team_results_match_one_thread(tmp_path):
     """Reductions, a centroid, an axis reduction, a Gaussian and a fill agree between a 1-thread and
     a 4-thread team on an image large enough to engage it."""
     script = (
-        'mem.mk2Dim a 1024 1024 >/dev/null; @calc "a = 50 + 10 * urand(a, 5)"\n'
+        'mem.mk2Dim a 1024 1024 >/dev/null; @calc "a = 50 + 10 * rand(a, 5)"\n'
         '@calc -v s,m,x "irms(a - imean(a)); imax(a); istd(a)"; echo "red=$s,$m,$x"\n'
         '@calc "cx, cy = icentroid(a - 40)"; @calc -v cx,cy "cx; cy"; echo "cent=$cx,$cy"\n'
         '@calc "o = a - imean(a, 1); g = gauss(a, 2.0)"; @calc -v so,sg "itot(o); itot(g)"; echo "pre=$so,$sg"\n'
@@ -69,7 +69,7 @@ def _exectime_us(tmp_path: Path, extra: dict[str, str], period: str = "0.001") -
             [script, "-q", "-"],
             env,
             timeout=30,
-            stdin='mem.mk2Dim big 1024 1024\nmem.mk2Dim bigout 1024 1024\n@calc "big = urand(big, 3)"\n',
+            stdin='mem.mk2Dim big 1024 1024\nmem.mk2Dim bigout 1024 1024\n@calc "big = rand(big, 3)"\n',
         )
         proc = subprocess.Popen(
             [

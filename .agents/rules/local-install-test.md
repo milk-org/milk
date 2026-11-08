@@ -1,20 +1,12 @@
+---
+description: Install and test milk without root, under _build/.
+---
+
 # Local Install and Test
 
-**Never** attempt to install to the system prefix
-(`/usr/local/`, `/usr/`, etc.). The agent does not
-have root privileges and `sudo` is not available.
+**Never** install to the system prefix (`/usr/local/`, `/usr/`, etc.): the agent has no root
+privileges and `sudo` is not available. Do not use `sudo`, and do not copy binaries into system
+directories.
 
-## How to install and test locally
-
-Follow [Local install without sudo](../../docs/developer/tooling.md#6-local-install-without-sudo)
-(install, environment variables, cleanup).
-
-## Key points
-
-- Do **not** run `make install` or
-  `cmake --install` without `--prefix`.
-- Do **not** use `sudo`.
-- Do **not** run `milk-setup-caps` when testing without `sudo`, as it requires root privileges
-  to set capabilities.
-- Do **not** copy binaries into system directories.
-- Always use a local `--prefix` under `_build/`.
+Install and test as [Dev installs without sudo](../../docs/developer/tooling.md#6-dev-installs-without-sudo)
+says (prefix under `_build/`, environment variables, cleanup).

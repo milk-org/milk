@@ -21,6 +21,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "milk_entity_ns.h"
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -959,8 +960,7 @@ int milk_ls_exec(int argc, char **argv)
         }
         else if (strcmp(tok, "-h") == 0 || strcmp(tok, "--help") == 0)
         {
-            printf("Usage: @ls [-l] [-q] [--json] [--local] "
-                   "[s.<pat>|f.<pat>|p.<pat>|l.<pat>|<pat>]\n");
+            milk_lexicon_print_help(milk_lexicon_keyword("ls"), stdout);
             return 0;
         }
         else if (raw_pat == NULL)

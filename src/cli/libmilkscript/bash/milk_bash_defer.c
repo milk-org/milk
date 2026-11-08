@@ -24,6 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "milk_bash_defer.h"
 
 /* the members of bash's SHELL_VAR, unchanged since bash 3 */
@@ -481,7 +482,7 @@ int milk_bash_defer_argv(int argc, char **argv)
     }
     else if (argc > 0 && argv[0][0] == '-' && argv[0][1] != '\0')
     {
-        fprintf(stderr, "Usage: @defer [--exit] <command...> | @defer --restore <spec>...\n");
+        milk_lexicon_usage("defer", stderr);
         return 2;
     }
     if (argc == 0)

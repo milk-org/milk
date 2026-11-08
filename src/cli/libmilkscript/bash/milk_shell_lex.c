@@ -283,6 +283,15 @@ int msl_scan(const char *src, size_t len, msl_map_t *m)
     }
     const frame_t *t = &L->f[0];
     m->unterminated  = (L->nf > 1 || L->overflow > 0);
+    if (m->unterminated)
+    {
+        static const unsigned char open_ctx[] = { [F_CODE] = MSL_OPEN,   [F_SQ] = MSL_SQ,
+                                                  [F_DQ] = MSL_DQ,       [F_ANSI] = MSL_ANSI,
+                                                  [F_PARAM] = MSL_PARAM, [F_ARITH] = MSL_ARITH };
+        const frame_t             *o = (L->overflow > 0) ? &L->ovf_frame : &L->f[L->nf - 1];
+        m->open_ctx                  = open_ctx[o->type];
+        m->open_at                   = o->start;
+    }
     if (m->unterminated || t->nest > 0 || t->inline_brace > 0 || t->nkw > 0 || L->trailing_op)
     {
         m->incomplete = 1;

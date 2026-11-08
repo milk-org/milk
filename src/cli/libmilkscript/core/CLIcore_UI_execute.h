@@ -40,11 +40,14 @@ extern int  ghost_chars_on_line;
 #ifdef USE_READLINE
 int   cli_accept_line(int count, int key);
 char *CLI_generator(const char *text, int state);
-int   levenshtein_distance(const char *s1, const char *s2);
+
+/* The word CLI_generator() completes starts at rl_line_buffer[cli_comp_start] */
+extern int cli_comp_start;
+extern int cli_comp_end;
+int        levenshtein_distance(const char *s1, const char *s2);
 #endif
 
 /* CLIcore_UI_highlight.c */
-int cli_is_command(const char *word);
 #ifdef USE_READLINE
 void cli_highlight_redisplay(void);
 #endif

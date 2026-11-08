@@ -36,7 +36,7 @@ PARITY = """
 mem.mk2Dim a2 1024 1024
 mem.mk3Dim cube 256 256 12
 mem.mk2Dim map 1024 1024
-@calc "a2 = 100 + 10 * urand(a2, 7); cube = urand(cube, 9) - 0.5; map = floor(ir(a2) / 8)"
+@calc "a2 = 100 + 10 * rand(a2, 7); cube = rand(cube, 9) - 0.5; map = floor(ir(a2) / 8)"
 @calc "a2[3,5] = sqrt(-1); cube[7,9,2] = sqrt(-1)"
 for op in itot imean imin imax istd ivar norm asum; do
   for ax in 0 1 2; do
@@ -95,7 +95,7 @@ def test_prestages_scale_with_threads(tmp_path: Path):
 mem.mk2Dim a2 2048 2048
 mem.mk3Dim cube 1024 1024 8
 mem.mk2Dim map 2048 2048
-@calc "a2 = 100 + 10 * urand(a2, 7); cube = urand(cube, 9); map = floor(ir(a2) / 4)"
+@calc "a2 = 100 + 10 * rand(a2, 7); cube = rand(cube, 9); map = floor(ir(a2) / 4)"
 @calc "m2 = imean(cube, 2); m0 = istd(cube, 0); g2 = gauss(a2, 3.0); r2 = pixunmap(a2 - 50, map)"
 bench() { best=1e9; for rep in 1 2 3; do t0=$EPOCHREALTIME; for ((i=0; i<3; i++)); do @calc "$2"; done; t1=$EPOCHREALTIME; @calc -v best "min($best, ($t1 - $t0) * 1e3 / 3)"; done; echo "t_$1=$best"; }
 bench ax2 "m2 = imean(cube, 2)"

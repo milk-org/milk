@@ -29,6 +29,7 @@
  *     partition the 1024-element tiles across `arith_team_run()`.
  */
 
+#include <float.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -38,6 +39,7 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "libmilkcommon/milkDebugTools.h"
+#include "libmilkdata/milk_type_dispatch.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
 #include "COREMOD_arith/image_coord.h"
@@ -108,42 +110,23 @@ static inline int is_complex_dt(uint8_t dt)
  */
 int mc_map_reduce_op(const char *name)
 {
-    return (strcmp(name, "itot") == 0)                                ? ARITH_RED_SUM
-           : (strcmp(name, "imean") == 0)                             ? ARITH_RED_MEAN
-           : (strcmp(name, "imin") == 0)                              ? ARITH_RED_MIN
-           : (strcmp(name, "imax") == 0)                              ? ARITH_RED_MAX
-           : (strcmp(name, "istd") == 0 || strcmp(name, "irms") == 0) ? ARITH_RED_STD
-           : (strcmp(name, "ivar") == 0)                              ? ARITH_RED_VAR
-           : (strcmp(name, "norm") == 0 || strcmp(name, "nrm2") == 0) ? ARITH_RED_NORM
-           : (strcmp(name, "asum") == 0)                              ? ARITH_RED_ASUM
-           : (strcmp(name, "icount") == 0)                            ? ARITH_RED_COUNT
-           : (strcmp(name, "dot") == 0)                               ? ARITH_RED_DOT
-                                                                      : ARITH_RED_ALL;
-}
-
-/**
- * unwrap_def_arg - Substitute a `def` formal parameter with its caller argument expression
- * @e:         Expression node inside a `def` body (or normal expression)
- * @call_site: Enclosing `MC_EXPR_CALL` node when evaluating an inlined `def` function, or NULL
- *
- * When a user-defined function `def f(x) = ...` calls a reduction or pre-stage on `x`, the formal
- * identifier carries `def_param_idx >= 0`. This helper resolves it to `call_site->u.call.args[i]`.
- *
- * Return: Substituted argument expression, or @e unchanged if not a bound formal parameter
- */
-static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call_site)
-{
-    return (e != NULL && e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 &&
-            call_site != NULL && call_site->kind == MC_EXPR_CALL &&
-            e->u.ident.def_param_idx < call_site->u.call.nargs)
-               ? call_site->u.call.args[e->u.ident.def_param_idx]
-               : e;
+    return (strcmp(name, "itot") == 0)     ? ARITH_RED_SUM
+           : (strcmp(name, "imean") == 0)  ? ARITH_RED_MEAN
+           : (strcmp(name, "imin") == 0)   ? ARITH_RED_MIN
+           : (strcmp(name, "imax") == 0)   ? ARITH_RED_MAX
+           : (strcmp(name, "istd") == 0)   ? ARITH_RED_STD
+           : (strcmp(name, "irms") == 0)   ? ARITH_RED_RMS
+           : (strcmp(name, "ivar") == 0)   ? ARITH_RED_VAR
+           : (strcmp(name, "norm") == 0)   ? ARITH_RED_NORM
+           : (strcmp(name, "asum") == 0)   ? ARITH_RED_ASUM
+           : (strcmp(name, "icount") == 0) ? ARITH_RED_COUNT
+           : (strcmp(name, "dot") == 0)    ? ARITH_RED_DOT
+                                           : ARITH_RED_ALL;
 }
 
 /**
  * mc_eval_scalar_d - Evaluate a scalar argument expression to double precision
  * @e:         Scalar AST expression to evaluate
- * @call_site: Optional enclosing `def` call site for formal parameter substitution
  * @out:       Output pointer receiving the evaluated double value
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -153,15 +136,10 @@ static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call
  *
  * Return: 0 on success, -1 on evaluation error or non-numeric result
  */
-int mc_eval_scalar_d(const mc_expr_t *e,
-                     const mc_expr_t *call_site,
-                     double          *out,
-                     char            *err,
-                     size_t           errsz)
+int mc_eval_scalar_d(const mc_expr_t *e, double *out, char *err, size_t errsz)
 {
     mc_val_t v;
-    if (mc_scalar_eval_expr(unwrap_def_arg(e, call_site), &v, err, errsz) != 0 ||
-        v.type == MC_VAL_STRING)
+    if (mc_scalar_eval_expr(e, &v, err, errsz) != 0 || v.type == MC_VAL_STRING)
     {
         return (v.type == MC_VAL_STRING) ? red_err(err, errsz, "expected numeric argument") : -1;
     }
@@ -323,7 +301,6 @@ static int fill_red_src_im(mc_red_src_t *out, imageID id, char *err, size_t errs
 /**
  * mc_prepare_red_src - Prepare an image or compound expression for block-wise reduction
  * @e:              Image argument AST expression
- * @call_site:      Optional enclosing `def` call site for formal parameter substitution
  * @avoid_id:       Output `imageID` to clone away from if aliased, or -1 if none
  * @allow_sub_pass: 1 if L1 tile-streamed evaluation (`out->pass != NULL`) is permitted
  * @out:            Output reduction source descriptor
@@ -343,7 +320,6 @@ static int fill_red_src_im(mc_red_src_t *out, imageID id, char *err, size_t errs
  * Return: 0 on success, -1 on error
  */
 int mc_prepare_red_src(const mc_expr_t *e,
-                       const mc_expr_t *call_site,
                        imageID          avoid_id,
                        int              allow_sub_pass,
                        mc_red_src_t    *out,
@@ -353,7 +329,7 @@ int mc_prepare_red_src(const mc_expr_t *e,
     out->im     = NULL;
     out->pass   = NULL;
     out->tmp_id = -1;
-    e           = unwrap_def_arg(e, call_site);
+    e           = e;
     if (e == NULL)
     {
         return red_err(err, errsz, "null image expression");
@@ -415,8 +391,7 @@ int mc_prepare_red_src(const mc_expr_t *e,
                                          ? (double) arith_next_rng_seed()
                                          : 0.0;
                 if ((d->scalar_expr != NULL &&
-                     mc_eval_scalar_d(d->scalar_expr, NULL, &out->ops[i].scalar, err, errsz) !=
-                         0) ||
+                     mc_eval_scalar_d(d->scalar_expr, &out->ops[i].scalar, err, errsz) != 0) ||
                     (d->check_div_kind != 0 && out->ops[i].scalar == 0.0))
                 {
                     if (d->check_div_kind != 0 && out->ops[i].scalar == 0.0)
@@ -527,7 +502,7 @@ static inline void eval_src_block_f(const mc_red_src_t *s,
  * @dst: Destination double buffer of length at least @len
  *
  * Supports both double-precision and single-precision L1 sub-passes, direct `memcpy` for
- * `_DATATYPE_DOUBLE` images, and scalar conversion for integer/float datatypes.
+ * `_DATATYPE_DOUBLE` images, and a vectorized conversion for integer/float datatypes.
  *
  * Return: void
  */
@@ -551,11 +526,20 @@ void mc_eval_src_block_d(const mc_red_src_t *s, uint64_t off, int len, double *r
         }
         return;
     }
-    if (s->dt == _DATATYPE_DOUBLE)
-    {
-        memcpy(dst, s->im->array.D + off, (size_t) len * sizeof(double));
-        return;
+    /* A typed load per datatype vectorizes; complex pixels keep arith_read_im_pix() */
+#define SRC_BLOCK_BODY(MBR)                                                           \
+    {                                                                                 \
+        const __typeof__(s->im->array.MBR[0]) *restrict src = s->im->array.MBR + off; \
+        _Pragma("omp simd") for (int i = 0; i < len; i++)                             \
+        {                                                                             \
+            dst[i] = (double) src[i];                                                 \
+        }                                                                             \
+        return;                                                                       \
     }
+    MILK_FOR_EACH_DATATYPE(s->dt, SRC_BLOCK_BODY,
+                           memcpy(dst, s->im->array.D + off, (size_t) len * sizeof(double));
+                           return;)
+#undef SRC_BLOCK_BODY
     for (int i = 0; i < len; i++)
     {
         dst[i] = arith_read_im_pix(s->im, s->dt, off + (uint64_t) i);
@@ -882,7 +866,9 @@ static void argext_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
 {
     (void) tid;
     (void) nth;
-    argext_job_t           *j = (argext_job_t *) ctx;
+    argext_job_t           *j        = (argext_job_t *) ctx;
+    const int               mode     = j->mode;
+    const int               has_mask = (j->s2 != NULL);
     MILK_ALIGNED(64) double b1[MC_RED_BLK];
     MILK_ALIGNED(64) double b2[MC_RED_BLK];
     double                  bv = 0.0;
@@ -897,18 +883,29 @@ static void argext_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
         {
             mc_eval_src_block_d(j->s2, off, len, b2);
         }
+        /* SIMD maximum of the counted pixels (b2 becomes the count flag; -inf is taken as -DBL_MAX,
+         * since this file assumes finite math), then the first index at that maximum when it beats
+         * this thread's best */
+        double m   = -DBL_MAX;
+        int    cnt = 0;
+#pragma omp simd reduction(max : m) reduction(+ : cnt)
         for (int q = 0; q < len; q++)
         {
             double raw = b1[q];
-            if (arith_isnan_d(raw) || (j->s2 != NULL && (b2[q] == 0.0 || arith_isnan_d(b2[q]))))
+            int ok = !arith_isnan_d(raw) && (!has_mask || (b2[q] != 0.0 && !arith_isnan_d(b2[q])));
+            double v = (mode == 2) ? fabs(raw) : (mode == 1) ? -raw : raw;
+            b1[q]    = (ok && v > -DBL_MAX) ? v : -DBL_MAX;
+            b2[q]    = ok;
+            m        = (b1[q] > m) ? b1[q] : m;
+            cnt += ok;
+        }
+        for (int q = 0; cnt > 0 && (bi < 0 || m > bv) && q < len; q++)
+        {
+            if (b2[q] != 0.0 && b1[q] >= m)
             {
-                continue;
-            }
-            double v = (j->mode == 2) ? fabs(raw) : (j->mode == 1) ? -raw : raw;
-            if (bi < 0 || v > bv)
-            {
-                bv = v;
+                bv = b1[q];
                 bi = (int64_t) (off + (uint64_t) q);
+                break;
             }
         }
     }
@@ -958,6 +955,28 @@ static int run_argext_reduce(const mc_red_src_t *s1,
 /* ============================================================================================== */
 
 /**
+ * mc_percentile - `perc`/`imedian` of @s1 (where @mask != 0), selecting in a pooled scratch image
+ * @s1:   Materialized source
+ * @mask: Mask image of the source's size, or NULL
+ * @frac: Fraction in [0, 1]
+ *
+ * Return: The value (arith_image_percentile_im()), NaN when no pixel counts.
+ */
+static double mc_percentile(const mc_red_src_t *s1, const IMAGE *mask, double frac)
+{
+    uint32_t sz[3] = { (uint32_t) s1->nel, 1, 1 };
+    uint8_t  dt  = (s1->im->md[0].datatype == _DATATYPE_FLOAT) ? _DATATYPE_FLOAT : _DATATYPE_DOUBLE;
+    imageID  wid = (s1->nel <= UINT32_MAX) ? mc_tmp_image(1, sz, dt) : -1;
+    void    *buf = (wid >= 0) ? milk_data.image[wid].array.raw : NULL;
+    double   res = arith_image_percentile_im(s1->im, mask, frac, buf);
+    if (wid >= 0)
+    {
+        mc_tmp_release(wid);
+    }
+    return res;
+}
+
+/**
  * mc_exec_reduce_scalar - Evaluate a scalar-returning image reduction call
  * @call_expr: `MC_EXPR_CALL` AST node for the reduction function
  * @out:       Output scalar value (`MC_VAL_DOUBLE` or `MC_VAL_LONG`)
@@ -985,7 +1004,7 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
     /* Family 1: median, percentile, and matrix trace (require materialized `s1.im`). */
     if (strcmp(fn, "imedian") == 0 || strcmp(fn, "perc") == 0 || strcmp(fn, "trace") == 0)
     {
-        if (mc_prepare_red_src(call_expr->u.call.args[0], NULL, -1, 0, &s1, err, errsz) != 0)
+        if (mc_prepare_red_src(call_expr->u.call.args[0], -1, 0, &s1, err, errsz) != 0)
         {
             return -1;
         }
@@ -998,7 +1017,7 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
             res = arith_image_reduce_lane(s1.im, s1.dt, 0, (M < N) ? M : N, M + 1, ARITH_RED_SUM);
         }
         else if (strcmp(fn, "perc") == 0 &&
-                 mc_eval_scalar_d(call_expr->u.call.args[1], NULL, &frac, err, errsz) != 0)
+                 mc_eval_scalar_d(call_expr->u.call.args[1], &frac, err, errsz) != 0)
         {
             rc = -1;
         }
@@ -1006,20 +1025,20 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
                  (strcmp(fn, "perc") == 0 && nargs == 3))
         {
             const mc_expr_t *mk_e = call_expr->u.call.args[(strcmp(fn, "perc") == 0) ? 2 : 1];
-            if (mc_prepare_red_src(mk_e, NULL, -1, 0, &s2, err, errsz) != 0 ||
-                s1.naxis != s2.naxis || memcmp(s1.ishape, s2.ishape, 12) != 0)
+            if (mc_prepare_red_src(mk_e, -1, 0, &s2, err, errsz) != 0 || s1.naxis != s2.naxis ||
+                memcmp(s1.ishape, s2.ishape, 12) != 0)
             {
                 rc = (err[0] == '\0') ? red_err(err, errsz, "The mask must have the image's size")
                                       : -1;
             }
             else
             {
-                res = arith_image_reduce_masked_im(s1.im, s2.im, ARITH_RED_PERC, frac);
+                res = mc_percentile(&s1, s2.im, frac);
             }
         }
         else
         {
-            res = arith_image_percentile(s1.im->name, frac);
+            res = mc_percentile(&s1, NULL, frac);
         }
         mc_release_red_src(&s1);
         mc_release_red_src(&s2);
@@ -1028,12 +1047,12 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
         return rc;
     }
 
-    if (mc_prepare_red_src(call_expr->u.call.args[0], NULL, -1, 1, &s1, err, errsz) != 0)
+    if (mc_prepare_red_src(call_expr->u.call.args[0], -1, 1, &s1, err, errsz) != 0)
     {
         return -1;
     }
     int has_im2 = (nargs >= 2 && call_expr->u.call.args[1]->res_kind == MC_RES_IMAGE);
-    if (has_im2 && mc_prepare_red_src(call_expr->u.call.args[1], NULL, -1, 1, &s2, err, errsz) != 0)
+    if (has_im2 && mc_prepare_red_src(call_expr->u.call.args[1], -1, 1, &s2, err, errsz) != 0)
     {
         mc_release_red_src(&s1);
         return -1;
@@ -1041,8 +1060,7 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
     if (!has_im2 && nargs >= 2)
     {
         double axd = 0.0;
-        if (mc_eval_scalar_d(call_expr->u.call.args[1], NULL, &axd, err, errsz) != 0 ||
-            llround(axd) != 0)
+        if (mc_eval_scalar_d(call_expr->u.call.args[1], &axd, err, errsz) != 0 || llround(axd) != 0)
         {
             mc_release_red_src(&s1);
             return (err[0] == '\0') ? red_err(err, errsz, "Axis out of range") : -1;
@@ -1108,7 +1126,7 @@ int mc_exec_reduce_pair(const mc_expr_t *c0,
     mc_red_src_t     s1;
     arith_stat_acc_t acc;
     s1.tmp_id = -1;
-    if (mc_prepare_red_src(c0->u.call.args[0], NULL, -1, 1, &s1, err, errsz) != 0)
+    if (mc_prepare_red_src(c0->u.call.args[0], -1, 1, &s1, err, errsz) != 0)
     {
         return -1;
     }
@@ -1278,14 +1296,13 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
     s1.tmp_id = -1;
     s2.tmp_id = -1;
 
-    if (mc_prepare_red_src(call->u.call.args[0], NULL, -1, 1, &s1, err, errsz) != 0)
+    if (mc_prepare_red_src(call->u.call.args[0], -1, 1, &s1, err, errsz) != 0)
     {
         return -1;
     }
     if (strcmp(fn, "istats") == 0)
     {
-        if (nargs == 2 &&
-            mc_prepare_red_src(call->u.call.args[1], NULL, -1, 1, &s2, err, errsz) != 0)
+        if (nargs == 2 && mc_prepare_red_src(call->u.call.args[1], -1, 1, &s2, err, errsz) != 0)
         {
             mc_release_red_src(&s1);
             return -1;
@@ -1303,7 +1320,7 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
     else if (strcmp(fn, "icentroid") == 0)
     {
         double th = 0.0;
-        if (nargs == 2 && mc_eval_scalar_d(call->u.call.args[1], NULL, &th, err, errsz) != 0)
+        if (nargs == 2 && mc_eval_scalar_d(call->u.call.args[1], &th, err, errsz) != 0)
         {
             mc_release_red_src(&s1);
             return -1;
@@ -1324,8 +1341,7 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
     else
     {
         if (nlhs > (int) s1.naxis ||
-            (nargs == 2 &&
-             mc_prepare_red_src(call->u.call.args[1], NULL, -1, 1, &s2, err, errsz) != 0))
+            (nargs == 2 && mc_prepare_red_src(call->u.call.args[1], -1, 1, &s2, err, errsz) != 0))
         {
             mc_release_red_src(&s1);
             return (nlhs > (int) s1.naxis)

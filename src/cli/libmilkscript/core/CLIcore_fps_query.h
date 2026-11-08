@@ -12,7 +12,7 @@
 
 #include "fps_cli_binding.h"
 
-/** @brief Name of the last FPS used by a CLI command (local or shared). */
+/** @brief Name of the (local) FPS last used by a CLI command. */
 extern char fps_last_used_name[200];
 
 /** @brief fps_name of the command that last set fps_last_used_name. */
@@ -21,8 +21,8 @@ extern char fps_last_used_cmdkey[200];
 /**
  * @brief Print FPS info when user types "command ?"
  *
- * Lists local and shared FPS instances, then prints
- * parameter values from the most recent FPS or defaults.
+ * Lists the command's local FPS instances, then prints parameter values from the most recent one,
+ * the shared FPS of a unit of the same name, or the defaults.
  *
  * @param app_info  Application identity
  * @param bindings  Parameter bindings

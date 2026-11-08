@@ -24,6 +24,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "CLIcore_memory.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -43,18 +44,15 @@ extern int cli_float_digits;
  * @out:     Output buffer receiving the formatted scalar value
  * @outsz:   Capacity of @out in bytes
  *
- * Expands any entity references in @subexpr, evaluates it quietly into a temporary
- * variable (`_milk_asrt_tmp`), and formats the resulting integer, string, or float
+ * Evaluates @subexpr quietly into a temporary variable (`_milk_asrt_tmp`), and formats the resulting integer, string, or float
  * so `@assert` can report `(actual: LHS vs RHS)` on failure.
  *
  * Return: 0 on success, -1 if @subexpr could not be evaluated to a scalar.
  */
 static int eval_scalar_subexpr(const char *subexpr, char *out, size_t outsz)
 {
-    char expanded[4096];
-    milk_server_expand_entities_in_expr(subexpr, expanded, sizeof(expanded));
     char assign[4200];
-    snprintf(assign, sizeof(assign), "_milk_asrt_tmp = (%s)", expanded);
+    snprintf(assign, sizeof(assign), "_milk_asrt_tmp = (%s)", subexpr);
     int eval_rc        = 2;
     int saved_q        = dcquiet;
     dcquiet            = 1;
@@ -161,26 +159,19 @@ static unsigned char *top_level_mask(const char *s, size_t n, int parens)
 }
 
 /**
- * split_top_level - Invoke @fn on each top-level statement in @s
- * @s:      Input string containing one or more statements
- * @parens: Non-zero to treat `(` `)` as nested when scanning for separators
- * @pipe:   Non-zero to treat `|>` as a statement separator in addition to `;` and `\n`
- * @fn:     Callback invoked for each NUL-terminated statement segment
- * @ctx:    Opaque context pointer forwarded to @fn
+ * split_pipe_stages - Invoke @fn on each stage of a `@pipe` script
+ * @s:   Script: stages separated by unquoted top-level `;`, newlines or `|>`
+ * @fn:  Callback invoked for each NUL-terminated stage
+ * @ctx: Opaque context pointer forwarded to @fn
  *
- * Splits compound `@calc` expressions or `@pipe` scripts at unquoted top-level
- * separators and stops at the first non-zero status returned by @fn.
+ * Stops at the first non-zero status returned by @fn.
  *
- * Return: 0 if all segments succeeded, or the first non-zero return value from @fn.
+ * Return: 0 if all stages succeeded, or the first non-zero return value from @fn.
  */
-static int split_top_level(const char *s,
-                           int         parens,
-                           int         pipe,
-                           int (*fn)(char *seg, void *ctx),
-                           void *ctx)
+static int split_pipe_stages(const char *s, int (*fn)(char *seg, void *ctx), void *ctx)
 {
     size_t         n  = strlen(s);
-    unsigned char *tl = top_level_mask(s, n, parens);
+    unsigned char *tl = top_level_mask(s, n, 0);
     if (tl == NULL)
     {
         return 1;
@@ -191,24 +182,8 @@ static int split_top_level(const char *s,
     {
         int top = (i < n && tl[i] == TL_TOP);
         int sep = (i == n || (top && (s[i] == ';' || s[i] == '\n'))) ? 1
-                  : (pipe && top && !strncmp(s + i, "|>", 2))        ? 2
+                  : (top && !strncmp(s + i, "|>", 2))                ? 2
                                                                      : 0;
-        if (sep == 1 && i < n && parens)
-        {
-            size_t k = i + 1;
-            while (k < n && (s[k] == ' ' || s[k] == '\t' || s[k] == ';' || s[k] == '\n' ||
-                             tl[k] == TL_COMMENT))
-            {
-                k++;
-            }
-            if ((k + 4 <= n && strncmp(s + k, "elif", 4) == 0 &&
-                 (isspace((unsigned char) s[k + 4]) || s[k + 4] == '(')) ||
-                (k + 4 <= n && strncmp(s + k, "else", 4) == 0 &&
-                 (isspace((unsigned char) s[k + 4]) || s[k + 4] == '{')))
-            {
-                sep = 0;
-            }
-        }
         if (sep == 0)
         {
             continue;
@@ -443,9 +418,7 @@ int milk_server_assert(int argc, char **argv)
                     dim_spec != NULL);
     if (npos == 0)
     {
-        fprintf(stderr, "Usage: @assert [-m <msg>] \"<boolean-expr>\" [<msg>]\n"
-                        "   or: @assert [--exists|-e] [--running|-r] [--fps-min <hz>] "
-                        "[--max-age <sec>] [--cnt-min <N>] [--dim <WxH[xD]>] <entity> [<msg>]\n");
+        milk_lexicon_usage("assert", stderr);
         return 2;
     }
 
@@ -610,11 +583,9 @@ int milk_server_assert(int argc, char **argv)
         }
     }
 
-    char expanded[8192];
-    milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
     int eval_rc        = 2;
     mcalc_float_digits = cli_float_digits;
-    mcalc_eval_bash(expanded, 1, &eval_rc);
+    mcalc_eval_bash(expr, 1, &eval_rc);
     if (eval_rc == 0)
     {
         return 0;
@@ -633,127 +604,6 @@ int milk_server_assert(int argc, char **argv)
         fprintf(stderr, "ASSERT FAILED: %s%s%s\n", expr, m_sep, m_txt);
     }
     return (eval_rc == 2) ? 2 : 1;
-}
-
-/**
- * try_exec_entity_lhs_assignment - Handle `@f.fps.param = rhs_expr` inside `@calc`
- * @expr:   Single calculator statement
- * @out_rc: Receives 0 on success or 1 on property write error
- *
- * Allows `@calc` statements to assign computed scalar or string expressions
- * directly to shared-memory entity properties (`s.<im>.kw.<k>`, `f.<fps>.<param>`).
- *
- * Return: 1 if @expr was an entity property assignment, 0 otherwise.
- */
-static int try_exec_entity_lhs_assignment(const char *expr, int *out_rc)
-{
-    const char *p = expr;
-    while (*p == ' ' || *p == '\t')
-    {
-        p++;
-    }
-    const char *lstart = (*p == '@') ? (p + 1) : p;
-    const char *le     = lstart;
-    int         ndots  = 0;
-    while (*le != '\0' && (isalnum((unsigned char) *le) || *le == '_' || *le == '.' || *le == '-'))
-    {
-        if (*le == '.')
-        {
-            ndots++;
-        }
-        le++;
-    }
-    const char *dot1  = strchr(lstart, '.');
-    size_t      nslen = (dot1 != NULL && dot1 < le) ? (size_t) (dot1 - lstart) : 0;
-    if (ndots < 2 || (size_t) (le - lstart) >= 256 || !milk_is_entity_ns_prefix(lstart, nslen))
-    {
-        return 0;
-    }
-
-    const char *eq = le;
-    while (*eq == ' ' || *eq == '\t')
-    {
-        eq++;
-    }
-    if (*eq != '=' || eq[1] == '=')
-    {
-        return 0;
-    }
-
-    char lhs[256];
-    memcpy(lhs, lstart, (size_t) (le - lstart));
-    lhs[le - lstart] = '\0';
-    const char *rhs  = eq + 1;
-    while (*rhs == ' ' || *rhs == '\t')
-    {
-        rhs++;
-    }
-    char exp_rhs[4096];
-    milk_server_expand_entities_in_expr(rhs, exp_rhs, sizeof(exp_rhs));
-    size_t rlen = strlen(exp_rhs);
-    while (rlen > 0 && (exp_rhs[rlen - 1] == ' ' || exp_rhs[rlen - 1] == '\t'))
-    {
-        exp_rhs[--rlen] = '\0';
-    }
-    if (rlen >= 2 && ((exp_rhs[0] == '"' && exp_rhs[rlen - 1] == '"') ||
-                      (exp_rhs[0] == '\'' && exp_rhs[rlen - 1] == '\'')))
-    {
-        exp_rhs[rlen - 1] = '\0';
-        *out_rc           = (milk_shm_prop_set(lhs, exp_rhs + 1, NULL) == 0) ? 0 : 1;
-        if (*out_rc == 0 && mcalc_out_mode == MCALC_OUT_REPL)
-        {
-            printf("%s %s\n", lhs, exp_rhs + 1);
-            fflush(stdout);
-        }
-        return 1;
-    }
-
-    char assign_expr[4200];
-    snprintf(assign_expr, sizeof(assign_expr), "_milk_ent_rhs = %s", exp_rhs);
-    int eval_rc        = 2;
-    int saved_q        = dcquiet;
-    int saved_om       = mcalc_out_mode;
-    dcquiet            = 1;
-    mcalc_out_mode     = MCALC_OUT_VALUES;
-    mcalc_float_digits = cli_float_digits;
-    mcalc_eval_bash(assign_expr, 0, &eval_rc);
-    mcalc_out_mode = saved_om;
-    dcquiet        = saved_q;
-    long vidx      = variable_ID("_milk_ent_rhs");
-    if (eval_rc == 0 && vidx != -1)
-    {
-        char vbuf[128];
-        if (data.core.variable[vidx].type == 1)
-        {
-            snprintf(vbuf, sizeof(vbuf), "%ld", data.core.variable[vidx].value.l);
-        }
-        else if (data.core.variable[vidx].type == 2)
-        {
-            snprintf(vbuf, sizeof(vbuf), "%s", data.core.variable[vidx].value.s);
-        }
-        else
-        {
-            snprintf(vbuf, sizeof(vbuf), "%.*g", cli_float_digits,
-                     data.core.variable[vidx].value.f);
-        }
-        data.core.variable[vidx].used = 0;
-        *out_rc                       = (milk_shm_prop_set(lhs, vbuf, NULL) == 0) ? 0 : 1;
-        if (*out_rc == 0 && mcalc_out_mode == MCALC_OUT_REPL)
-        {
-            printf("%s %s\n", lhs, vbuf);
-            fflush(stdout);
-        }
-    }
-    else
-    {
-        *out_rc = (milk_shm_prop_set(lhs, exp_rhs, NULL) == 0) ? 0 : 1;
-        if (*out_rc == 0 && mcalc_out_mode == MCALC_OUT_REPL)
-        {
-            printf("%s %s\n", lhs, exp_rhs);
-            fflush(stdout);
-        }
-    }
-    return 1;
 }
 
 /**
@@ -818,42 +668,35 @@ static void substitute_underscore_token(const char *in,
  */
 static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, size_t last_img_sz)
 {
-    int rc = 0;
-    if (is_test || !try_exec_entity_lhs_assignment(expr, &rc))
+    int rc             = 2;
+    mcalc_float_digits = cli_float_digits;
+    mcalc_eval_bash(expr, is_test, &rc);
+    if (rc == 0 && !is_test)
     {
-        char expanded[8192];
-        milk_server_expand_entities_in_expr(expr, expanded, sizeof(expanded));
-        int eval_rc        = 2;
-        mcalc_float_digits = cli_float_digits;
-        mcalc_eval_bash(expanded, is_test, &eval_rc);
-        rc = eval_rc;
-        if (rc == 0 && !is_test)
+        const char *p = expr;
+        while (*p == ' ' || *p == '\t')
         {
-            const char *p = expanded;
-            while (*p == ' ' || *p == '\t')
-            {
-                p++;
-            }
-            char   lhs[128];
-            size_t l = 0;
-            while (p[l] != '\0' && (isalnum((unsigned char) p[l]) || p[l] == '_') &&
-                   l + 1 < sizeof(lhs))
-            {
-                lhs[l] = p[l];
-                l++;
-            }
-            lhs[l] = '\0';
-            if (l > 0 && image_ID(lhs, data.core.image, data.core.NB_MAX_IMAGE) != -1)
-            {
-                snprintf(last_img, last_img_sz, "%s", lhs);
-            }
+            p++;
+        }
+        char   lhs[128];
+        size_t l = 0;
+        while (p[l] != '\0' && (isalnum((unsigned char) p[l]) || p[l] == '_') &&
+               l + 1 < sizeof(lhs))
+        {
+            lhs[l] = p[l];
+            l++;
+        }
+        lhs[l] = '\0';
+        if (l > 0 && image_ID(lhs, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+        {
+            snprintf(last_img, last_img_sz, "%s", lhs);
         }
     }
     return rc;
 }
 
 /**
- * tokenize_step_line - Split a `@pipe` command step into unquoted words
+ * milk_server_split_words - Split a command line (a `@pipe` step, ...) into unquoted words
  * @step:     Step line to tokenize
  * @argv_out: Output pointer array receiving word pointers into @arena
  * @max_args: Maximum number of entries in @argv_out
@@ -865,11 +708,11 @@ static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, s
  *
  * Return: Number of words placed in @argv_out.
  */
-static int tokenize_step_line(const char *step,
-                              char      **argv_out,
-                              int         max_args,
-                              char       *arena,
-                              size_t      arena_sz)
+int milk_server_split_words(const char *step,
+                            char      **argv_out,
+                            int         max_args,
+                            char       *arena,
+                            size_t      arena_sz)
 {
     size_t         n  = strlen(step);
     unsigned char *tl = top_level_mask(step, n, 0);
@@ -987,7 +830,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
 
     char *s_argv[64];
     char  arena[4096];
-    int   s_argc = tokenize_step_line(step_buf, s_argv, 64, arena, sizeof(arena));
+    int   s_argc = milk_server_split_words(step_buf, s_argv, 64, arena, sizeof(arena));
     if (s_argc <= 0)
     {
         return 0;
@@ -1163,7 +1006,7 @@ int milk_server_batch_or_pipe(int argc, char **argv)
         snprintf(last_img, sizeof(last_img), "%s", data.core.variable[vidx_last].value.s);
     }
 
-    int rc = split_top_level(script, 0, 1, batch_step_cb, last_img);
+    int rc = split_pipe_stages(script, batch_step_cb, last_img);
 
     if (last_img[0] != '\0')
     {
@@ -1174,46 +1017,37 @@ int milk_server_batch_or_pipe(int argc, char **argv)
     return rc;
 }
 
-/**
- * calc_stmt_cb - `split_top_level()` callback that evaluates one `@calc`/`@test` statement
- * @seg: Single semicolon-separated statement
- * @ctx: Pointer to `int is_test`
- *
- * Return: 0 on success, non-zero on error or false `@test`.
- */
-static int calc_stmt_cb(char *seg, void *ctx)
+typedef struct
 {
-    int    is_test = *(const int *) ctx;
-    int    rc      = 0;
-    size_t len     = strlen(seg);
-    while (len > 0 && (seg[len - 1] == ' ' || seg[len - 1] == '\t'))
+    const char *expr;
+    int         is_test;
+    uint8_t     flags;
+} calc_req_t;
+
+/* The body of a CALC or TEST request (milk_server_run_guarded()) */
+static int calc_body(void *arg)
+{
+    calc_req_t *r      = (calc_req_t *) arg;
+    mcalc_float_digits = cli_float_digits;
+    if (!r->is_test && (r->flags & MILK_FLAG_EXPLAIN))
     {
-        seg[--len] = '\0';
+        int xrc = mcalc_prog_explain(r->expr, stdout);
+        fflush(stdout);
+        return xrc;
     }
-    seg += strspn(seg, " \t");
-    if (seg[0] == '\0')
-    {
-        return 0;
-    }
-    if (strlen(seg) >= 4096)
-    {
-        seg[4095] = '\0';
-    }
-    if (is_test || !try_exec_entity_lhs_assignment(seg, &rc))
-    {
-        char expanded[8192];
-        milk_server_expand_entities_in_expr(seg, expanded, sizeof(expanded));
-        int eval_rc        = 2;
-        mcalc_float_digits = cli_float_digits;
-        mcalc_eval_bash(expanded, is_test, &eval_rc);
-        rc = eval_rc;
-    }
+    mcalc_out_mode = (r->flags & MILK_FLAG_PIXELS) ? MCALC_OUT_PIXELS
+                     : (r->flags & MILK_FLAG_BIND) ? MCALC_OUT_BIND
+                     : (r->flags & MILK_FLAG_REPL) ? MCALC_OUT_REPL
+                                                   : MCALC_OUT_VALUES;
+    int rc         = 2;
+    mcalc_eval_bash(r->expr, r->is_test, &rc);
     return rc;
 }
 
 /**
  * milk_server_exec_calc_or_test - Execute a `MILK_MSG_CALC` (`@calc`) or `MILK_MSG_TEST` (`@test`) payload
- * @client_fd:  Client socket descriptor (unused; scalar bindings return on stdout)
+ * @client_fd:  Client socket, watched for Ctrl-C while the statements run (-1: in-process)
+ * @listen_fd:  Listening socket: other shells' requests are served or queued meanwhile; or -1
  * @is_test:    Non-zero for boolean `@test` evaluation
  * @flags:      Output mode flags (`MILK_FLAG_PIXELS`, `MILK_FLAG_BIND`, `MILK_FLAG_REPL`)
  * @payload:    NUL-terminated expression followed by packed bash variable bindings
@@ -1222,11 +1056,14 @@ static int calc_stmt_cb(char *seg, void *ctx)
  * @log_cmd_sz: Capacity of @log_cmd in bytes
  *
  * Synchronizes referenced bash scalars into `data.core.variable[]`, splits the
- * expression on top-level semicolons/newlines, and evaluates each statement.
+ * expression on top-level semicolons/newlines, and evaluates each statement under
+ * milk_server_run_guarded().
  *
- * Return: 0 on success (or true `@test`), 1 on false `@test` or runtime error, 2 on syntax error.
+ * Return: 0 on success (or true `@test`), 1 on false `@test` or runtime error, 2 on syntax error,
+ * 130 if interrupted.
  */
 int milk_server_exec_calc_or_test(int            client_fd,
+                                  int            listen_fd,
                                   int            is_test,
                                   uint8_t        flags,
                                   const uint8_t *payload,
@@ -1250,20 +1087,8 @@ int milk_server_exec_calc_or_test(int            client_fd,
         milk_server_sync_bash_vars(payload, len, nvars, &off, (flags & MILK_FLAG_REPL) != 0);
     }
 
-    (void) client_fd; /* calc variables reach bash only through -v (its output) */
-    if (!is_test && strncmp(expr, "__explain ", 10) == 0)
-    {
-        /* `@calc --explain`: the whole text is one program, not split at `;` */
-        mcalc_float_digits = cli_float_digits;
-        int xrc            = mcalc_prog_explain(expr + 10, stdout);
-        fflush(stdout);
-        return xrc;
-    }
-    mcalc_out_mode = (flags & MILK_FLAG_PIXELS) ? MCALC_OUT_PIXELS
-                     : (flags & MILK_FLAG_BIND) ? MCALC_OUT_BIND
-                     : (flags & MILK_FLAG_REPL) ? MCALC_OUT_REPL
-                                                : MCALC_OUT_VALUES;
-    int rc         = split_top_level(expr, 1, 0, calc_stmt_cb, &is_test);
+    calc_req_t req = { expr, is_test, flags }; /* calc variables reach bash only through -v */
+    int        rc  = milk_server_run_guarded(client_fd, listen_fd, log_cmd, calc_body, &req);
     mcalc_out_mode = MCALC_OUT_VALUES;
     if (!is_test)
     {
@@ -1298,8 +1123,8 @@ int milk_server_exec_calc_repl_inproc(const char *expr)
 
     char     log_cmd[MILK_SRVLOG_CMD_MAX] = "";
     uint32_t len                          = (uint32_t) strlen(expr) + 1;
-    int      rc = milk_server_exec_calc_or_test(-1, 0, MILK_FLAG_REPL, (const uint8_t *) expr, len,
-                                                log_cmd, sizeof(log_cmd));
+    int rc = milk_server_exec_calc_or_test(-1, -1, 0, MILK_FLAG_REPL, (const uint8_t *) expr, len,
+                                           log_cmd, sizeof(log_cmd));
     fflush(stdout);
     fflush(stderr);
 

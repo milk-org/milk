@@ -4,11 +4,11 @@
 
 /**
  * @file mc_linalg.h
- * @brief Internal interface for linear algebra, FFT, stacking, and spatial convolution in `libmilkcalc`.
+ * @brief Internal interface for linear algebra, FFT, and stacking in `libmilkcalc`.
  *
  * Declares shape/type resolution (`mc_resolve_linalg_call`) and runtime execution entry
  * points (`mc_exec_blas_call`, `mc_exec_lapack_call`, `mc_exec_fft_or_stack`,
- * `mc_exec_conv2_or_boxmean`, `mc_exec_ext_ctor`, `mc_exec_multi_linalg_or_ext`) for
+ * `mc_exec_ext_ctor`, `mc_exec_multi_linalg_or_ext`) for
  * non-elementwise constructor steps.
  */
 
@@ -26,7 +26,6 @@ void mc_write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v);
 
 /** mc_resolve_or_eval_im() - resolve identifier or evaluate sub-expression @e into an image ID. */
 int mc_resolve_or_eval_im(const mc_expr_t *e,
-                          const mc_expr_t *call_site,
                           imageID          avoid_id,
                           int              in_unit,
                           imageID         *out_id,
@@ -56,60 +55,44 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz);
 int mc_is_blas_or_linalg_ctor(const mc_expr_t *rhs, const mc_expr_t *target, mc_tok_type_t aop);
 
 /** mc_exec_linalg_or_ext() - execute a BLAS, LAPACK, FFT, stack, or extension constructor step. */
-int mc_exec_linalg_or_ext(mcalc_prog_t    *prog,
-                          mc_ctor_step_t  *cs,
-                          imageID          avoid_id,
-                          const mc_expr_t *call_site,
-                          int              in_unit,
-                          char            *err,
-                          size_t           errsz);
+int mc_exec_linalg_or_ext(mcalc_prog_t   *prog,
+                          mc_ctor_step_t *cs,
+                          imageID         avoid_id,
+                          int             in_unit,
+                          char           *err,
+                          size_t          errsz);
 
 /** mc_exec_blas_call() - execute a direct or algebraic-lowered BLAS / einsum constructor step. */
-int mc_exec_blas_call(mcalc_prog_t    *prog,
-                      mc_ctor_step_t  *cs,
-                      imageID          avoid_id,
-                      const mc_expr_t *call_site,
-                      int              in_unit,
-                      char            *err,
-                      size_t           errsz);
+int mc_exec_blas_call(mcalc_prog_t   *prog,
+                      mc_ctor_step_t *cs,
+                      imageID         avoid_id,
+                      int             in_unit,
+                      char           *err,
+                      size_t          errsz);
 
 /** mc_exec_lapack_call() - execute a LAPACK solver, inverse, SVD, or symmetric eigensolver step. */
-int mc_exec_lapack_call(mcalc_prog_t    *prog,
-                        mc_ctor_step_t  *cs,
-                        imageID          avoid_id,
-                        const mc_expr_t *call_site,
-                        int              in_unit,
-                        char            *err,
-                        size_t           errsz);
+int mc_exec_lapack_call(mcalc_prog_t   *prog,
+                        mc_ctor_step_t *cs,
+                        imageID         avoid_id,
+                        int             in_unit,
+                        char           *err,
+                        size_t          errsz);
 
 /** mc_exec_fft_or_stack() - execute fft, ifft, fftshift, hstack, vstack, dstack, cat, or rot90. */
-int mc_exec_fft_or_stack(mcalc_prog_t    *prog,
-                         mc_ctor_step_t  *cs,
-                         imageID          avoid_id,
-                         const mc_expr_t *call_site,
-                         int              in_unit,
-                         char            *err,
-                         size_t           errsz);
-
-/** mc_exec_conv2_or_boxmean() - execute 2D conv2(im, K) or separable boxmean(im, r) into @slot. */
-int mc_exec_conv2_or_boxmean(mc_slot_t          *slot,
-                             const mc_expr_t    *rhs,
-                             const mc_expr_t    *call_site,
-                             const mc_red_src_t *s1,
-                             uint8_t             out_dt,
-                             imageID             avoid_id,
-                             int                 in_unit,
-                             char               *err,
-                             size_t              errsz);
+int mc_exec_fft_or_stack(mcalc_prog_t   *prog,
+                         mc_ctor_step_t *cs,
+                         imageID         avoid_id,
+                         int             in_unit,
+                         char           *err,
+                         size_t          errsz);
 
 /** mc_exec_ext_ctor() - execute a Tier 1a/1b/1c/2 user or module extension step. */
-int mc_exec_ext_ctor(mcalc_prog_t    *prog,
-                     mc_ctor_step_t  *cs,
-                     imageID          avoid_id,
-                     const mc_expr_t *call_site,
-                     int              in_unit,
-                     char            *err,
-                     size_t           errsz);
+int mc_exec_ext_ctor(mcalc_prog_t   *prog,
+                     mc_ctor_step_t *cs,
+                     imageID         avoid_id,
+                     int             in_unit,
+                     char           *err,
+                     size_t          errsz);
 
 /** mc_exec_multi_linalg_or_ext() - execute a multi-LHS svd, eigh, or MILK_EXT_OP statement @s. */
 int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,

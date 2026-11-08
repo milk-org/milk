@@ -61,7 +61,10 @@ def test_explain_reports_how_each_statement_runs(tmp_path):
     z = _line_after(res.stdout, "z = cplx(out, out)")
     s = _line_after(res.stdout, "s = out[::2b]")
     assert z.startswith("kept: fused pass over 64x64x1") and "complex float32" in z, out
-    assert s.startswith("kept: fused pass over 32x64x1") and "float32" in s, out
+    # out does not exist until statement 1 runs, and --explain runs nothing
+    assert (
+        s.startswith("kept: fused pass over a shape set at run time") and "float32" in s
+    ), out
     assert _line_after(res.stdout, "x = n > 0 ? 1/n : -1").startswith(
         "kept: scalar tape"
     ), out
@@ -79,15 +82,14 @@ def test_explain_names_limits_and_compile_errors(tmp_path):
     res = milk_bash(
         'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 1"\n'
         '@calc --explain "a1, a2, a3, a4, a5 = im, im, im, im, im"; echo "rc1=$?"\n'
-        'mem.mk2Dim small 4 4 >/dev/null; @calc "small = 1"\n'
-        '@calc --explain "bad = im + small" 2>err.log; echo "rc2=$?"',
+        '@calc --explain "bad = im +" 2>err.log; echo "rc2=$?"',
         tmp_path,
     )
     out = res.stdout + res.stderr
     assert value(res.stdout, "rc1") == "0", out
     assert "more than 4 targets (FUSE_MAXDST)" in res.stdout, out
     assert value(res.stdout, "rc2") != "0", out
-    assert "milk.calc:" in (tmp_path / "err.log").read_text() + res.stdout, out
+    assert "milk: calc error:" in (tmp_path / "err.log").read_text() + res.stdout, out
 
 
 def test_unit_notes_each_text_statement_once(tmp_path):

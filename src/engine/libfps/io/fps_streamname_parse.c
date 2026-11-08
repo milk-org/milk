@@ -22,42 +22,76 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "fps_streamname_parse.h"
 
+/* The @T<type> tokens: the canonical ones (fps_streamname_modifier(), labels) first, then the
+ * longer spellings the parser also reads */
+static const struct
+{
+    const char *tok;
+    uint8_t     dt;
+} type_tokens[] = {
+    { "U8", _DATATYPE_UINT8 },
+    { "I8", _DATATYPE_INT8 },
+    { "U16", _DATATYPE_UINT16 },
+    { "I16", _DATATYPE_INT16 },
+    { "U32", _DATATYPE_UINT32 },
+    { "I32", _DATATYPE_INT32 },
+    { "U64", _DATATYPE_UINT64 },
+    { "I64", _DATATYPE_INT64 },
+    { "F16", _DATATYPE_HALF },
+    { "F32", _DATATYPE_FLOAT },
+    { "F64", _DATATYPE_DOUBLE },
+    { "C64", _DATATYPE_COMPLEX_FLOAT },
+    { "C128", _DATATYPE_COMPLEX_DOUBLE },
+    { "UI8", _DATATYPE_UINT8 },
+    { "SI8", _DATATYPE_INT8 },
+    { "UI16", _DATATYPE_UINT16 },
+    { "SI16", _DATATYPE_INT16 },
+    { "UI32", _DATATYPE_UINT32 },
+    { "SI32", _DATATYPE_INT32 },
+    { "UI64", _DATATYPE_UINT64 },
+    { "SI64", _DATATYPE_INT64 },
+};
+#define N_TYPE_TOKENS (sizeof(type_tokens) / sizeof(type_tokens[0]))
+#define N_CANONICAL_TYPES 13
+
 /**
- * @brief Return short @T...: token for an ImageStreamIO datatype.
+ * @brief Write modifier prefix @p i into @p buf: "@L:" "@S:" "@F:" "@E:" "@N:", then "@T<type>:" for
+ *        each canonical type ("@TU8:" ... "@TC128:"). Letters stack ("@LTF64:").
+ *
+ * @return 1 if modifier @p i exists, else 0
+ */
+int fps_streamname_modifier(int i, char *buf, int bufsz)
+{
+    static const char letters[] = "LSFEN";
+    const int         nl        = (int) sizeof(letters) - 1;
+    if (i < 0 || i >= nl + N_CANONICAL_TYPES)
+    {
+        return 0;
+    }
+    if (i < nl)
+    {
+        snprintf(buf, (size_t) bufsz, "@%c:", letters[i]);
+    }
+    else
+    {
+        snprintf(buf, (size_t) bufsz, "@T%s:", type_tokens[i - nl].tok);
+    }
+    return 1;
+}
+
+/**
+ * @brief Return the canonical @T token (without the T) for an ImageStreamIO datatype, or NULL.
  */
 static const char *datatype_mod_token(uint8_t dt)
 {
-    switch (dt)
+    for (int i = 0; i < N_CANONICAL_TYPES; i++)
     {
-    case _DATATYPE_UINT8:
-        return "TU8";
-    case _DATATYPE_INT8:
-        return "TI8";
-    case _DATATYPE_UINT16:
-        return "TU16";
-    case _DATATYPE_INT16:
-        return "TI16";
-    case _DATATYPE_UINT32:
-        return "TU32";
-    case _DATATYPE_INT32:
-        return "TI32";
-    case _DATATYPE_UINT64:
-        return "TU64";
-    case _DATATYPE_INT64:
-        return "TI64";
-    case _DATATYPE_HALF:
-        return "TF16";
-    case _DATATYPE_FLOAT:
-        return "TF32";
-    case _DATATYPE_DOUBLE:
-        return "TF64";
-    case _DATATYPE_COMPLEX_FLOAT:
-        return "TC64";
-    case _DATATYPE_COMPLEX_DOUBLE:
-        return "TC128";
-    default:
-        return NULL;
+        if (type_tokens[i].dt == dt)
+        {
+            return type_tokens[i].tok;
+        }
     }
+    return NULL;
 }
 
 static const char *match_ns_stream_prefix(const char *s, char *out_loc)
@@ -200,41 +234,13 @@ FPS_STREAMNAME_PARSED fps_streamname_parse(const char *raw)
             const char *tstr    = &raw[ii + 1];
             int         matched = 0;
 
-            static const struct
+            for (size_t ti = 0; ti < N_TYPE_TOKENS; ti++)
             {
-                const char *tok;
-                int         len;
-                uint8_t     dt;
-            } tmap[] = {
-                { "C128", 4, _DATATYPE_COMPLEX_DOUBLE },
-                { "UI16", 4, _DATATYPE_UINT16 },
-                { "UI32", 4, _DATATYPE_UINT32 },
-                { "UI64", 4, _DATATYPE_UINT64 },
-                { "SI16", 4, _DATATYPE_INT16 },
-                { "SI32", 4, _DATATYPE_INT32 },
-                { "SI64", 4, _DATATYPE_INT64 },
-                { "U16", 3, _DATATYPE_UINT16 },
-                { "U32", 3, _DATATYPE_UINT32 },
-                { "U64", 3, _DATATYPE_UINT64 },
-                { "I16", 3, _DATATYPE_INT16 },
-                { "I32", 3, _DATATYPE_INT32 },
-                { "I64", 3, _DATATYPE_INT64 },
-                { "UI8", 3, _DATATYPE_UINT8 },
-                { "SI8", 3, _DATATYPE_INT8 },
-                { "F16", 3, _DATATYPE_HALF },
-                { "F32", 3, _DATATYPE_FLOAT },
-                { "F64", 3, _DATATYPE_DOUBLE },
-                { "C64", 3, _DATATYPE_COMPLEX_FLOAT },
-                { "U8", 2, _DATATYPE_UINT8 },
-                { "I8", 2, _DATATYPE_INT8 },
-            };
-
-            for (size_t ti = 0; ti < sizeof(tmap) / sizeof(tmap[0]); ti++)
-            {
-                if (rem >= tmap[ti].len && strncmp(tstr, tmap[ti].tok, (size_t) tmap[ti].len) == 0)
+                int len = (int) strlen(type_tokens[ti].tok);
+                if (rem >= len && strncmp(tstr, type_tokens[ti].tok, (size_t) len) == 0)
                 {
-                    datatype = tmap[ti].dt;
-                    ii += tmap[ti].len;
+                    datatype = type_tokens[ti].dt;
+                    ii += len;
                     ntype++;
                     matched = 1;
                     break;
@@ -324,6 +330,7 @@ void fps_streamname_modifier_label(const FPS_STREAMNAME_PARSED *p, char *buf, in
         const char *ttok = datatype_mod_token(p->datatype);
         if (ttok != NULL)
         {
+            inner[pos++] = 'T';
             for (int ti = 0; ttok[ti] != '\0' && pos < (int) sizeof(inner) - 1; ti++)
             {
                 inner[pos++] = ttok[ti];

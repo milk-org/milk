@@ -30,12 +30,13 @@ persistence. No CLI dependency. The runtime that executes compute units lives in
 | `fps_outlog.c`                     | Get FPS log filename                                  |
 | `fps_paramvalue.c`                 | set and get parameter values                          |
 | `fps_print_info.c`                 | Print content of a Function Parameter Structure (FPS) |
+| `milk_argval.c`                    | argument values (calculator literals) and the binding of argument words: module commands, unit command lines, `@args`, `@set` |
 | `fps_printlist.c`                  | print list of parameters                              |
 | `fps_printparameter_valuestring.c` | print parameter value string                          |
 | `fps_save2disk.c`                  | Save FPS content to disk                              |
 | `fps_scan.c`                       | scan and load FPSs                                    |
 | `fps_shmdirname.c`                 | create FPS shared memory directory name               |
-| `fps_streamname_parse.c`           | Parse @X: modifier prefixes from stream names         |
+| `fps_streamname_parse.c`           | Parse @X: modifier prefixes from stream names; the modifier list of completion and help |
 | `fps_struct_create.c`              | create function parameter structure                   |
 | `fps_userinputsetparamvalue.c`     | read user input to set parameter value                |
 | `imgid_slice.c`                    | IMGID slice parsing                                   |

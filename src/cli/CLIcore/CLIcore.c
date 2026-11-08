@@ -873,9 +873,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Initialize tree-sitter parser/query
     cli_ts_init();
 
-    // Enable syntax highlighting by default based on terminal capabilities
-    // (level 2 = 256-color tree-sitter, level 1 = 16-color legacy)
-    data.syntax_highlight = (cli_ts_detect_color_level() >= 2) ? 2 : 1;
+    // Syntax highlighting on (tree-sitter, in the colors the terminal supports)
+    data.syntax_highlight = 1;
 
     // Disable command timing by default
     data.print_cmd_timing = 0;
@@ -1113,9 +1112,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         FD_SET(
             fileno(stdin),
             &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-        if (milk_bash_engine_listen_fd() >= 0)
+        if (milk_bash_engine_ready_fd() >= 0)
         {
-            FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set); // background jobs calling milk
+            FD_SET(milk_bash_engine_ready_fd(), &cli_fdin_set); // background jobs calling milk
         }
 
         if (data.fifoON == 0)
@@ -1169,9 +1168,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             {
                 fdmax = data.fifofd;
             }
-            if (milk_bash_engine_listen_fd() > fdmax)
+            if (milk_bash_engine_ready_fd() > fdmax)
             {
-                fdmax = milk_bash_engine_listen_fd();
+                fdmax = milk_bash_engine_ready_fd();
             }
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
@@ -1186,14 +1185,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     FD_SET(data.fifofd, &cli_fdin_set);
                 }
                 FD_SET(fileno(stdin), &cli_fdin_set);
-                if (milk_bash_engine_listen_fd() >= 0)
+                if (milk_bash_engine_ready_fd() >= 0)
                 {
-                    FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set);
+                    FD_SET(milk_bash_engine_ready_fd(), &cli_fdin_set);
                 }
                 continue;
             }
-            if (n > 0 && milk_bash_engine_listen_fd() >= 0 &&
-                FD_ISSET(milk_bash_engine_listen_fd(), &cli_fdin_set))
+            if (n > 0 && milk_bash_engine_ready_fd() >= 0 &&
+                FD_ISSET(milk_bash_engine_ready_fd(), &cli_fdin_set))
             {
                 milk_bash_engine_serve();
                 if (!FD_ISSET(fileno(stdin), &cli_fdin_set) &&
@@ -1205,7 +1204,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         FD_SET(data.fifofd, &cli_fdin_set);
                     }
                     FD_SET(fileno(stdin), &cli_fdin_set);
-                    FD_SET(milk_bash_engine_listen_fd(), &cli_fdin_set);
+                    FD_SET(milk_bash_engine_ready_fd(), &cli_fdin_set);
                     continue;
                 }
             }

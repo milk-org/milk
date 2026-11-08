@@ -296,94 +296,6 @@ int CLI_checkarg(int CLIargnum, uint32_t funcargtype)
 }
 
 /**
- * @brief Check that input CLI argument matches required argument type - do not print error message
- *
- * @param CLIargnum
- * @param funcargtype
- * @return int
- */
-int CLI_checkarg_noerrmsg(int CLIargnum, uint32_t funcargtype)
-{
-    DEBUG_TRACE_FSTART();
-
-    int rval;
-
-    if (CLIargnum == 1)
-    {
-        argcheck_process_flag = 1;
-    }
-
-    if (argcheck_process_flag == 1)
-    {
-        rval = CLI_checkarg0(CLIargnum, funcargtype, 0);
-    }
-    else
-    {
-        rval = 1;
-    }
-
-    DEBUG_TRACE_FEXIT();
-    return rval;
-}
-
-
-/**
- * sync_fps_to_argdata - Copy an FPS parameter's current value into a CLI argument slot
- * @ptype: Parameter type (`FPTYPE_*`)
- * @fp:    Source FPS parameter structure in shared memory
- * @ad:    Destination CLI argument data structure
- *
- * Transfers the active scalar, timespec, or string value from @fp into @ad when
- * resolving arguments against a shared FPS instance (`cmd:fpsname`).
- *
- * Return: void
- */
-static void sync_fps_to_argdata(uint32_t ptype, FPS_PARAM *fp, CLICMDARGDATA *ad)
-{
-    switch (ptype)
-    {
-    case FPTYPE_FLOAT32:
-        ad->val.f32 = fp->val.f32[0];
-        break;
-    case FPTYPE_FLOAT64:
-        ad->val.f64 = fp->val.f64[0];
-        break;
-    case FPTYPE_INT32:
-        ad->val.i32 = fp->val.i32[0];
-        break;
-    case FPTYPE_UINT32:
-        ad->val.ui32 = fp->val.ui32[0];
-        break;
-    case FPTYPE_INT64:
-        ad->val.i64 = fp->val.i64[0];
-        break;
-    case FPTYPE_UINT64:
-        ad->val.ui64 = fp->val.ui64[0];
-        break;
-    case FPTYPE_ONOFF:
-        ad->val.i64 = fp->val.i32[0];
-        break;
-    case FPTYPE_PID:
-        ad->val.i64 = (int64_t) fp->val.pid[0];
-        break;
-    case FPTYPE_TIMESPEC:
-        ad->val.f64 = (double) fp->val.ts[0].tv_sec + (double) fp->val.ts[0].tv_nsec * 1e-9;
-        break;
-    case FPTYPE_STRING:
-    case FPTYPE_STREAMNAME:
-    case FPTYPE_DIRNAME:
-    case FPTYPE_FILENAME:
-    case FPTYPE_FITSFILENAME:
-    case FPTYPE_EXECFILENAME:
-    case FPTYPE_FPSNAME:
-    case FPTYPE_PROCESS:
-    case FPTYPE_STRING_NOT_STREAM:
-        strncpy(ad->val.s, fp->val.string[0], STRINGMAXLEN_CLICMDARG - 1);
-        break;
-    }
-}
-
-/**
  * raw_arg - Retrieve the unexpanded command-line text for a positional token
  * @call: Active per-call argument state, or NULL-backed fallback
  * @t:    Token index in the current command invocation
@@ -534,15 +446,14 @@ static void store_session_defaults(milk_call_t *call, int n)
 }
 
 /**
- * resolve_args - Resolve named, positional, preset, FPS, and default arguments for a call
+ * resolve_args - Resolve named, positional, preset and default arguments for a call
  * @call: Active per-call argument context
  * @fa:   Array of declared command argument definitions
  * @n:    Number of declared parameters to resolve
  *
  * Populates `data.cmd[call->cmdi].argdata` by layering values in precedence order:
- * declared/session defaults, shared FPS instance state (`cmd:fpsname`), `--load`
- * presets, named `.tag=value` overrides before `--`, and positional arguments for
- * remaining primary inputs. Also handles `--default`, `--save`, and `--no-run`.
+ * declared/session defaults, `--load` presets, named `.tag=value` overrides before `--`,
+ * and positional arguments for remaining primary inputs. Also handles `--default`, `--save`, and `--no-run`.
  *
  * Return: RETURN_CLICHECKARGARRAY_SUCCESS when ready to run, RETURN_CLICHECKARGARRAY_HELP
  *         when execution should be skipped cleanly, or RETURN_CLICHECKARGARRAY_FAILURE on error
@@ -551,28 +462,11 @@ static errno_t resolve_args(milk_call_t *call, CLICMDARGDEF fa[], int n)
 {
     CLICMDARGDATA *ad  = data.cmd[call->cmdi].argdata;
     unsigned char *src = call->src;
-    int            pos[NB_ARG_MAX];
-    int            npos = 0;
 
     for (int i = 0; i < n; i++)
     {
         src[i] =
             (milk_args_session_get(call->cmdi, i) != NULL) ? MILK_ARGSRC_SESSION : MILK_ARGSRC_DECL;
-    }
-
-    /* a call on a shared FPS (cmd:fpsname) starts from the instance's current values */
-    if (dcfpsptr != NULL && dcfpsname[0] != '\0' && dcfpsname[0] != '_')
-    {
-        for (int i = 0; i < n; i++)
-        {
-            long pindex = functionparameter_GetParamIndex(dcfpsptr, fa[i].fpstag);
-            if (pindex != -1)
-            {
-                sync_fps_to_argdata(dcfpsptr->parray[pindex].type, &dcfpsptr->parray[pindex],
-                                    &ad[i]);
-                src[i] = MILK_ARGSRC_FPS;
-            }
-        }
     }
 
     if (call->load[0] != '\0' && milk_args_preset_load(call) != 0)
@@ -581,96 +475,61 @@ static errno_t resolve_args(milk_call_t *call, CLICMDARGDEF fa[], int n)
         return RETURN_CLICHECKARGARRAY_FAILURE;
     }
 
-    /* .tag=value anywhere before "--"; the other tokens are positional */
-    for (int t = 1; t < data.cmdNBarg; t++)
+    /* .tag=value before "--" by name, then the positional values into the primary parameters not
+     * named, in order (milk_args_bind(): the same rules as unit command lines and @args) */
+    char          *w[NB_ARG_MAX];
+    milk_argslot_t slots[NB_ARG_MAX];
+    const char    *val[NB_ARG_MAX];
+    int            word[NB_ARG_MAX];
+    char           msg[256];
+    int            nw = 0;
+    for (int t = 1; t < data.cmdNBarg && nw < NB_ARG_MAX; t++)
     {
-        const char *r = raw_arg(call, t);
-
-        if (t < call->posonly && milk_args_named(r))
-        {
-            const char *eq = strchr(r, '=');
-            int         i  = milk_args_find(call->cmdi, r + 1, (size_t) (eq - r - 1));
-
-            if (i < 0 || i >= n)
-            {
-                return usage_error(call, "unknown parameter %.*s", (int) (eq - r), r);
-            }
-            if (src[i] & MILK_ARGSRC_NAMED)
-            {
-                return usage_error(call, "parameter %.*s given twice", (int) (eq - r), r);
-            }
-            if (strcmp(eq + 1, ".") == 0)
-            {
-                src[i] = MILK_ARGSRC_DOT | MILK_ARGSRC_NAMED;
-            }
-            else if (milk_argval_parse(ad[i].type, eq + 1, &ad[i]) == 0)
-            {
-                src[i] = MILK_ARGSRC_TAG | MILK_ARGSRC_NAMED;
-            }
-            else
-            {
-                return usage_error(call, "invalid %s value '%s' for %.*s",
-                                   CLIargtype_to_string(ad[i].type), eq + 1, (int) (eq - r), r);
-            }
-            continue;
-        }
-        if (t < call->posonly && r[0] == '.' && r[1] != '\0' &&
-            milk_args_find(call->cmdi, r + 1, strlen(r + 1)) >= 0)
-        {
-            return usage_error(
-                call, "'%s VALUE' was removed: use %s=VALUE (this call) or --default %s=VALUE", r,
-                r, r);
-        }
-        if (npos < NB_ARG_MAX)
-        {
-            pos[npos++] = t;
-        }
+        w[nw++] = (char *) raw_arg(call, t);
+    }
+    for (int i = 0; i < n; i++)
+    {
+        slots[i].name       = milk_args_tag(fa[i].fpstag);
+        slots[i].positional = (fa[i].fpflag & FPFLAG_PRIMARY_CLI_INPUT) != 0;
+    }
+    if (milk_args_bind(nw, w, call->posonly - 1, n, slots, val, word, msg, sizeof(msg)) != 0)
+    {
+        return usage_error(call, "%s", msg);
     }
 
-    /* positional values fill the primary parameters not given by name, in order */
-    int k     = 0;
     int iprim = 0;
     for (int i = 0; i < n; i++)
     {
-        if (!(fa[i].fpflag & FPFLAG_PRIMARY_CLI_INPUT))
+        int named = (val[i] != NULL && val[i] != w[word[i]]); /* .tag=value: val is past the '=' */
+        iprim += slots[i].positional;
+        if (val[i] == NULL)
         {
-            continue;
-        }
-        iprim++;
-        if (src[i] & MILK_ARGSRC_NAMED)
-        {
-            continue;
-        }
-        if (k < npos)
-        {
-            int         t = pos[k++];
-            const char *r = raw_arg(call, t);
-
-            if (strcmp(r, ".") == 0)
+            if (slots[i].positional && src[i] == MILK_ARGSRC_DECL && !call->set_default &&
+                !(fa[i].fpflag & FPFLAG_CLI_OPTIONAL))
             {
-                src[i] = MILK_ARGSRC_DOT;
-            }
-            else if (token_value(t, r, &ad[i]) == 0)
-            {
-                src[i] = MILK_ARGSRC_ARG;
-            }
-            else
-            {
-                return usage_error(call, "argument %d (.%s): invalid %s value '%s'", iprim,
-                                   milk_args_tag(fa[i].fpstag), CLIargtype_to_string(ad[i].type),
-                                   r);
+                return usage_error(call, "missing argument %d (.%s: %s)", iprim, slots[i].name,
+                                   fa[i].descr);
             }
         }
-        else if (src[i] == MILK_ARGSRC_DECL && !call->set_default &&
-                 !(fa[i].fpflag & FPFLAG_CLI_OPTIONAL))
+        else if (strcmp(val[i], ".") == 0)
         {
-            return usage_error(call, "missing argument %d (.%s: %s)", iprim,
-                               milk_args_tag(fa[i].fpstag), fa[i].descr);
+            src[i] = MILK_ARGSRC_DOT | (named ? MILK_ARGSRC_NAMED : 0);
         }
-    }
-    if (k < npos)
-    {
-        return usage_error(call, "unexpected argument '%s'", raw_arg(call, pos[k]));
+        else if (named ? milk_argval_parse(ad[i].type, val[i], &ad[i]) == 0
+                       : token_value(word[i] + 1, val[i], &ad[i]) == 0)
+        {
+            src[i] = named ? (MILK_ARGSRC_TAG | MILK_ARGSRC_NAMED) : MILK_ARGSRC_ARG;
+        }
+        else if (named)
+        {
+            return usage_error(call, "invalid %s value '%s' for .%s",
+                               CLIargtype_to_string(ad[i].type), val[i], slots[i].name);
+        }
+        else
+        {
+            return usage_error(call, "argument %d (.%s): invalid %s value '%s'", iprim,
+                               slots[i].name, CLIargtype_to_string(ad[i].type), val[i]);
+        }
     }
 
     if (call->set_default)
@@ -695,8 +554,7 @@ static errno_t resolve_args(milk_call_t *call, CLICMDARGDEF fa[], int n)
  *
  * Each parameter takes the first value found among: the call (`.tag=value` anywhere before `--`,
  * then the positional values in order for the primary parameters; `.` stands for the default),
- * the `--load` preset, the current value of a shared FPS (`cmd:fpsname`), the session default and
- * the declared default. A missing, invalid or extra value is a usage error (exit status 2).
+ * the `--load` preset, the session default and the declared default. A missing, invalid or extra value is a usage error (exit status 2).
  */
 errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
 {

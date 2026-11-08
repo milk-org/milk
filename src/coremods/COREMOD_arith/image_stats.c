@@ -127,6 +127,7 @@ double arith_image_reduce_lane(const IMAGE    *im,
     return arith_stat_finish_inline(&acc, op, op == ARITH_RED_COUNT);
 }
 
+
 /** Resolve @imgin and reduce all elements using @op, returning @err_ret if unresolved. */
 static double reduce_all_imgid(IMGID *imgin, arith_reduce_op op, double err_ret)
 {
@@ -154,7 +155,7 @@ DEF_REDUCE_WRAP(total, ARITH_RED_SUM, RETURN_FAILURE)
 DEF_REDUCE_WRAP(mean, ARITH_RED_MEAN, RETURN_FAILURE)
 DEF_REDUCE_WRAP(min, ARITH_RED_MIN, RETURN_FAILURE)
 DEF_REDUCE_WRAP(max, ARITH_RED_MAX, RETURN_FAILURE)
-DEF_REDUCE_WRAP(rms, ARITH_RED_STD, 0.0)
+DEF_REDUCE_WRAP(rms, ARITH_RED_RMS, 0.0)
 DEF_REDUCE_WRAP(var, ARITH_RED_VAR, 0.0)
 DEF_REDUCE_WRAP(count, ARITH_RED_COUNT, 0.0)
 DEF_REDUCE_WRAP(asum, ARITH_RED_ASUM, 0.0)
@@ -242,6 +243,129 @@ DEF_ARGEXT_WRAP(argmin, -1.0)
 DEF_ARGEXT_WRAP(iamax, 0.0)
 #undef DEF_ARGEXT_WRAP
 
+/** SELECT_KTH - select_kth_<SFX>(a, n, k): move the k-th smallest of a[0 .. n) to a[k] and return it.
+ * Quickselect with a median-of-three pivot (O(n)); bounded scans keep NaN, which sorts anywhere, from
+ * running off the array under -Ofast. */
+#define SELECT_KTH(SFX, FT)                                 \
+    static FT select_kth_##SFX(FT *a, int64_t n, int64_t k) \
+    {                                                       \
+        int64_t lo = 0;                                     \
+        int64_t hi = n - 1;                                 \
+        while (lo < hi)                                     \
+        {                                                   \
+            int64_t mid = lo + (hi - lo) / 2;               \
+            FT      t;                                      \
+            if (a[mid] < a[lo])                             \
+            {                                               \
+                t = a[mid], a[mid] = a[lo], a[lo] = t;      \
+            }                                               \
+            if (a[hi] < a[lo])                              \
+            {                                               \
+                t = a[hi], a[hi] = a[lo], a[lo] = t;        \
+            }                                               \
+            if (a[hi] < a[mid])                             \
+            {                                               \
+                t = a[hi], a[hi] = a[mid], a[mid] = t;      \
+            }                                               \
+            const FT p = a[mid];                            \
+            int64_t  i = lo;                                \
+            int64_t  j = hi;                                \
+            do                                              \
+            {                                               \
+                while (i < hi && a[i] < p)                  \
+                {                                           \
+                    i++;                                    \
+                }                                           \
+                while (j > lo && p < a[j])                  \
+                {                                           \
+                    j--;                                    \
+                }                                           \
+                if (i <= j)                                 \
+                {                                           \
+                    t = a[i], a[i] = a[j], a[j] = t;        \
+                    i++;                                    \
+                    j--;                                    \
+                }                                           \
+            } while (i <= j);                               \
+            if (j < k)                                      \
+            {                                               \
+                lo = i;                                     \
+            }                                               \
+            if (k < i)                                      \
+            {                                               \
+                hi = j;                                     \
+            }                                               \
+        }                                                   \
+        return a[k];                                        \
+    }
+
+SELECT_KTH(f, float)
+SELECT_KTH(d, double)
+#undef SELECT_KTH
+
+/**
+ * arith_image_percentile_im - Pixel value at fraction @frac of the sorted pixels of @im
+ * @im:   Image (any real type)
+ * @mask: Mask of @im's size: only pixels where it is non-zero count; NULL for every pixel
+ * @frac: Fraction in [0, 1]: the element at index floor(@frac * n), clamped to [0, n - 1]
+ * @work: Buffer of nelement floats (float32 @im) or doubles (other types), or NULL to allocate one
+ *
+ * Partial selection, O(n): no full sort. NaN pixels sort anywhere, as in a sort; for an even n,
+ * the median (@frac 0.5) is the upper middle element.
+ *
+ * Return: The value, or NaN when no pixel counts or memory runs out.
+ */
+double arith_image_percentile_im(const IMAGE *im, const IMAGE *mask, double frac, void *work)
+{
+    uint64_t nel    = im->md[0].nelement;
+    uint8_t  dt     = im->md[0].datatype;
+    int      is_flt = (dt == _DATATYPE_FLOAT);
+    void    *local  = NULL;
+    int64_t  n      = 0;
+    if (work == NULL)
+    {
+        work = local = malloc((size_t) nel * (is_flt ? sizeof(float) : sizeof(double)));
+        if (work == NULL)
+        {
+            return NAN;
+        }
+    }
+    if (mask == NULL && is_flt)
+    {
+        memcpy(work, im->array.F, (size_t) nel * sizeof(float));
+        n = (int64_t) nel;
+    }
+    else
+    {
+        uint8_t mdt = (mask != NULL) ? mask->md[0].datatype : 0;
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            if (mask == NULL || arith_read_im_pix(mask, mdt, i) != 0.0)
+            {
+                double v = arith_read_im_pix(im, dt, i);
+                if (is_flt)
+                {
+                    ((float *) work)[n++] = (float) v;
+                }
+                else
+                {
+                    ((double *) work)[n++] = v;
+                }
+            }
+        }
+    }
+    double r = NAN;
+    if (n > 0)
+    {
+        int64_t k = (int64_t) (frac * (double) n);
+        k         = (k < 0) ? 0 : ((k >= n) ? n - 1 : k);
+        r         = is_flt ? (double) select_kth_f((float *) work, n, k)
+                           : select_kth_d((double *) work, n, k);
+    }
+    free(local);
+    return r;
+}
+
 double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
@@ -249,51 +373,11 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
     {
         return RETURN_FAILURE;
     }
-
-    uint64_t nelement = imgin->md[0].nelement;
-    uint8_t  dt       = imgin->md[0].datatype;
-    if (nelement == 0)
+    if (imgin->md[0].nelement == 0)
     {
         return 0.0;
     }
-
-    long idx = (long) (fraction * (double) nelement);
-    if (idx < 0)
-    {
-        idx = 0;
-    }
-    else if ((uint64_t) idx >= nelement)
-    {
-        idx = (long) nelement - 1;
-    }
-
-    if (dt == _DATATYPE_FLOAT)
-    {
-        float *buf = (float *) malloc(sizeof(float) * nelement);
-        if (buf == NULL)
-        {
-            return RETURN_FAILURE;
-        }
-        memcpy(buf, imgin->im->array.F, sizeof(float) * nelement);
-        quick_sort_float(buf, nelement);
-        double value = (double) buf[idx];
-        free(buf);
-        return value;
-    }
-
-    double *buf = (double *) malloc(sizeof(double) * nelement);
-    if (buf == NULL)
-    {
-        return RETURN_FAILURE;
-    }
-    for (uint64_t ii = 0; ii < nelement; ii++)
-    {
-        buf[ii] = arith_read_im_pix(imgin->im, dt, ii);
-    }
-    quick_sort_double(buf, nelement);
-    double value = buf[idx];
-    free(buf);
-    return value;
+    return arith_image_percentile_im(imgin->im, NULL, fraction, NULL);
 }
 
 double arith_image_percentile(const char *ID_name, double fraction)
@@ -440,31 +524,10 @@ double arith_image_reduce_masked_im(const IMAGE    *im,
     uint64_t nel = im->md[0].nelement;
     uint8_t  idt = im->md[0].datatype;
     uint8_t  mdt = mk->md[0].datatype;
-    uint64_t n   = 0;
 
     if (op == ARITH_RED_PERC)
     {
-        double *v = (double *) malloc(sizeof(double) * nel);
-        if (v == NULL)
-        {
-            return NAN;
-        }
-        for (uint64_t i = 0; i < nel; i++)
-        {
-            if (arith_read_im_pix(mk, mdt, i) != 0.0)
-            {
-                v[n++] = arith_read_im_pix(im, idt, i);
-            }
-        }
-        double r = NAN;
-        if (n > 0)
-        {
-            long k = (long) (frac * (double) n);
-            quick_sort_double(v, n);
-            r = v[(k < 0) ? 0 : ((uint64_t) k >= n) ? (long) n - 1 : k];
-        }
-        free(v);
-        return r;
+        return arith_image_percentile_im(im, mk, frac, NULL);
     }
 
     uint64_t         nblk = (nel + STAT_BLK - 1) / STAT_BLK;

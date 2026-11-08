@@ -287,11 +287,11 @@ def test_tier2_stateful_multi_port_operator(tmp_path):
     X(".thresh", thresh, FPTYPE_FLOAT64, 0.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Threshold")
 
 #define SH_PORTS(X) \
-    X(IN,  frame, MILK_PORT_IMAGE,  MILK_PORT_TRIGGER,                "Calibrated WFS image") \
-    X(IN,  flat,  MILK_PORT_IMAGE,  MILK_PORT_LATEST | MILK_PORT_OPT, "Optional flat field") \
-    X(OUT, sx,    MILK_PORT_IMAGE,  MILK_POST_EVERY,                  "X slopes (nsub x nsub)") \
-    X(OUT, sy,    MILK_PORT_IMAGE,  MILK_POST_EVERY,                  "Y slopes (nsub x nsub)") \
-    X(OUT, flux,  MILK_PORT_SCALAR, 0,                                "Total flux")
+    X(IN,  frame, MILK_PORT_IMAGE,  0,             "Calibrated WFS image") \
+    X(IN,  flat,  MILK_PORT_IMAGE,  MILK_PORT_OPT, "Optional flat field") \
+    X(OUT, sx,    MILK_PORT_IMAGE,  0,             "X slopes (nsub x nsub)") \
+    X(OUT, sy,    MILK_PORT_IMAGE,  0,             "Y slopes (nsub x nsub)") \
+    X(OUT, flux,  MILK_PORT_SCALAR, 0,             "Total flux")
 
 MILK_CALC_OP_DECLARE(shs, SH_PARAMS, SH_PORTS);
 
@@ -493,7 +493,7 @@ echo "out=$(@get s.cscale_out.mean)"
 
 
 def test_calc_list_engines(tmp_path):
-    """Verify `@calc --list` / `--engines` / `--tokens` and `milk-fpsexec-milk-calc --list`
+    """Verify `@calc --list` and `milk-fpsexec-milk-calc --list`
     for built-in bytecode engines, filtered patterns, JSON output, and loaded user C extensions.
     """
     c_file = tmp_path / "list_ext.c"
@@ -523,8 +523,8 @@ MILK_CALC_EXT_EXPORT(
     res = milk_bash(
         f"""
 @calc --list | grep -q "FI_INTERP2" && echo "full=ok"
-@calc --engines stencil | grep -q "FI_MEDFILT" && echo "stencil=ok"
-@calc --tokens reduce | grep -q "FI_RED (STATS)" && echo "reduce=ok"
+@calc --list stencil | grep -q "FI_MEDFILT" && echo "stencil=ok"
+@calc --list reduce | grep -q "FI_RED (STATS)" && echo "reduce=ok"
 @calc --list --json interp2 | grep -q '"engine": "FI_INTERP2"' && echo "json=ok"
 @calc -l "{c_file}" --list my_gain_op | grep -q "FI_USER_BLK" && echo "ext_bash=ok"
 milk-fpsexec-milk-calc -l "{c_file}" --list my_gain_op | grep -q "my_gain_op(x)" && echo "ext_unit=ok"

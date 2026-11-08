@@ -86,6 +86,9 @@ on first use. `MILK_QUIET=1` loads silently, and `@unload` removes everything ag
   translates the line before running it (`@config inline off` restores Enter).
 - The shell keeps its own state: `cd`, variables and functions are those of your shell, while
   images and calculator variables live in the server.
+- The shell keeps one connection to its session and sends each command on it (a subshell opens its
+  own). It sits on a descriptor near the open-file limit (768 under `ulimit -n 1024`, else 1000),
+  out of the way of the descriptors scripts open.
 - `@config synhl` and the other settings of `milk-cli`'s line editor do nothing in plain bash, which
   accepts them; `@history` works in both.
 

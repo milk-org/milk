@@ -26,9 +26,9 @@
  *      source pixels.
  *    - Dispatches `pass->fn(ops, lo, hi)` across the persistent `arith_team`
  *      worker pool (`milk_omp_team_size(nelem, 262144)`).
- *    - Detects torn shared-memory frames by sampling `md[0].cnt0` before and
- *      after the kernel (plus `md[0].write`) and retrying up to 4 times with a
- *      100 us backoff while incrementing `g_torn_count`.
+ *    - Reads shared input streams under the torn-frame rule of milk_frame.h:
+ *      a torn pass runs again (up to MILK_FRAME_TRIES times in all) unless it
+ *      reads what it writes, and every torn read increments `g_torn_count`.
  *    - Restores destination pixels from a pre-pass snapshot if a `/=` pass
  *      encounters a zero divisor mid-array.
  */
@@ -43,6 +43,7 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "libmilkcommon/milkDebugTools.h"
+#include "libmilkdata/milk_frame.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
 #include "COREMOD_arith/image_coord.h"
@@ -59,13 +60,12 @@
 static uint64_t g_torn_count = 0;
 
 /**
- * mcalc_torn_count - Return the cumulative count of retried torn shared-memory reads
+ * mcalc_torn_count - Return the cumulative count of torn shared-memory reads
  *
- * Incremented atomically whenever `mc_exec_pass()` detects that a shared input
- * stream's `cnt0` counter or `write` flag changed while a kernel pass was
- * reading it.
+ * Incremented atomically whenever `mc_exec_pass()` finds a read of a shared
+ * input stream torn (milk_frame_clean()), whether or not the pass runs again.
  *
- * Return: Total number of torn-frame retries observed in this process
+ * Return: Total number of torn reads observed in this process
  */
 uint64_t mcalc_torn_count(void)
 {
@@ -240,25 +240,8 @@ static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
 }
 
 /**
- * unwrap_def_arg - Substitute a formal `def` parameter with the caller's argument AST
- * @e:         Expression node (possibly a `def` formal parameter identifier)
- * @call_site: Enclosing `def` call expression (or NULL)
- *
- * Return: Substituted argument expression if @e is a `def` parameter, otherwise @e
- */
-static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call_site)
-{
-    return (e != NULL && e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 &&
-            call_site != NULL && call_site->kind == MC_EXPR_CALL &&
-            e->u.ident.def_param_idx < call_site->u.call.nargs)
-               ? call_site->u.call.args[e->u.ident.def_param_idx]
-               : e;
-}
-
-/**
  * mc_resolve_or_eval_im - Resolve an image identifier or evaluate a compound image expression
  * @e:         Image argument expression
- * @call_site: Enclosing user-defined `def` call expression (or NULL)
  * @avoid_id:  Destination `imageID` to avoid aliasing with (cloned if equal), or -1
  * @in_unit:   1 if executing inside a persistent FPS unit
  * @out_id:    Output `imageID`
@@ -269,7 +252,6 @@ static const mc_expr_t *unwrap_def_arg(const mc_expr_t *e, const mc_expr_t *call
  * Return: 0 on success, -1 on error
  */
 int mc_resolve_or_eval_im(const mc_expr_t *e,
-                          const mc_expr_t *call_site,
                           imageID          avoid_id,
                           int              in_unit,
                           imageID         *out_id,
@@ -277,7 +259,7 @@ int mc_resolve_or_eval_im(const mc_expr_t *e,
                           char            *err,
                           size_t           errsz)
 {
-    e       = unwrap_def_arg(e, call_site);
+    e       = e;
     *out_id = -1;
     *is_tmp = 0;
     if (e == NULL)
@@ -347,33 +329,27 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
 {
     if (cs->multi_stmt != NULL)
     {
-        return mc_exec_linalg_or_ext(prog, cs, -1, NULL, in_unit, err, errsz);
+        return mc_exec_linalg_or_ext(prog, cs, -1, in_unit, err, errsz);
     }
-    mc_slot_t       *slot = &prog->slots[cs->slot_idx];
-    const mc_expr_t *rhs  = cs->rhs_expr;
-    const mc_expr_t *call_site =
-        (rhs->kind == MC_EXPR_CALL && rhs->u.call.udef_id >= 0 && rhs->u.call.udef_body != NULL)
-            ? rhs
-            : NULL;
-    rhs              = call_site ? rhs->u.call.udef_body : rhs;
-    imageID avoid_id = (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
-                        strcmp(milk_data.image[slot->im_id].name, slot->bare) == 0)
-                           ? slot->im_id
-                           : image_ID(slot->bare, milk_data.image, milk_data.NB_MAX_IMAGE);
+    mc_slot_t       *slot     = &prog->slots[cs->slot_idx];
+    const mc_expr_t *rhs      = cs->rhs_expr;
+    imageID          avoid_id = (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
+                                 strcmp(milk_data.image[slot->im_id].name, slot->bare) == 0)
+                                    ? slot->im_id
+                                    : image_ID(slot->bare, milk_data.image, milk_data.NB_MAX_IMAGE);
 
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
         (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_STENCIL_LIB ||
          (rhs->u.call.fn->kind == MC_FN_PROG && strcmp(rhs->u.call.fn->name, "ema") == 0)))
     {
-        return mc_exec_prestage(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+        return mc_exec_prestage(prog, cs, avoid_id, in_unit, err, errsz);
     }
 
     /* Vector literal `[a, b, c]` or multi-scalar `vec(a, b, c)` */
     if (rhs->kind == MC_EXPR_VEC_LIT ||
         (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
          strcmp(rhs->u.call.fn->name, "vec") == 0 &&
-         (rhs->u.call.nargs != 1 ||
-          unwrap_def_arg(rhs->u.call.args[0], call_site)->res_kind != MC_RES_IMAGE)))
+         (rhs->u.call.nargs != 1 || rhs->u.call.args[0]->res_kind != MC_RES_IMAGE)))
     {
         int n = (rhs->kind == MC_EXPR_VEC_LIT) ? rhs->u.vec_lit.nelem : rhs->u.call.nargs;
         mc_expr_t *const *elems =
@@ -381,7 +357,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         double vals[MC_MAX_ARGS];
         for (int i = 0; i < n; i++)
         {
-            if (mc_eval_scalar_d(elems[i], call_site, &vals[i], err, errsz) != 0)
+            if (mc_eval_scalar_d(elems[i], &vals[i], err, errsz) != 0)
             {
                 return -1;
             }
@@ -406,7 +382,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         double v[3] = { 0.0, 0.0, 0.0 };
         for (int i = 0; i < nargs; i++)
         {
-            if (mc_eval_scalar_d(rhs->u.call.args[i], call_site, &v[i], err, errsz) != 0)
+            if (mc_eval_scalar_d(rhs->u.call.args[i], &v[i], err, errsz) != 0)
             {
                 return -1;
             }
@@ -466,7 +442,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
         (strcmp(fn, "vec") != 0 && strcmp(fn, "reshape") != 0 && strcmp(fn, "transpose") != 0 &&
          strcmp(fn, "outer") != 0 && strcmp(fn, "diag") != 0))
     {
-        return mc_exec_linalg_or_ext(prog, cs, avoid_id, call_site, in_unit, err, errsz);
+        return mc_exec_linalg_or_ext(prog, cs, avoid_id, in_unit, err, errsz);
     }
 
     imageID src_id   = -1;
@@ -474,8 +450,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     int     src_tmp  = 0;
     int     src2_tmp = 0;
     int     rc       = 0;
-    if (mc_resolve_or_eval_im(rhs->u.call.args[0], call_site, avoid_id, in_unit, &src_id, &src_tmp,
-                              err, errsz) != 0)
+    if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &src_id, &src_tmp, err,
+                              errsz) != 0)
     {
         return -1;
     }
@@ -495,7 +471,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
             for (int i = 0; i < (int) ndims; i++)
             {
                 double dv = 0.0;
-                if (mc_eval_scalar_d(rhs->u.call.args[i + 1], call_site, &dv, err, errsz) != 0)
+                if (mc_eval_scalar_d(rhs->u.call.args[i + 1], &dv, err, errsz) != 0)
                 {
                     rc = -1;
                     goto done_src;
@@ -552,8 +528,8 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     {
         uint64_t M = 0;
         uint64_t N = 0;
-        if (mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit, &src2_id,
-                                  &src2_tmp, err, errsz) != 0)
+        if (mc_resolve_or_eval_im(rhs->u.call.args[1], avoid_id, in_unit, &src2_id, &src2_tmp, err,
+                                  errsz) != 0)
         {
             rc = -1;
             goto done_src;
@@ -577,8 +553,7 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     else if (strcmp(fn, "diag") == 0)
     {
         double kd = 0.0;
-        if ((nargs == 2 &&
-             mc_eval_scalar_d(rhs->u.call.args[1], call_site, &kd, err, errsz) != 0) ||
+        if ((nargs == 2 && mc_eval_scalar_d(rhs->u.call.args[1], &kd, err, errsz) != 0) ||
             (src->md[0].naxis != 1 && src->md[0].naxis != 2))
         {
             rc = (src->md[0].naxis != 1 && src->md[0].naxis != 2)
@@ -749,8 +724,8 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     imageID    expr_ims[64];
     imageID    snap_ims[64];
     imageID    div_snap[32];
-    uint64_t   cnt0_pre[64];
-    int        rc = 0;
+    milk_frame_mark_t mark[64];
+    int               rc = 0;
 
     if (!ops || !views || pass->nops > 64 || pass->nouts > 32)
     {
@@ -801,7 +776,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         {
             ops[i].scalar =
                 (d->slice_expr != NULL && se == NULL) ? (double) arith_next_rng_seed() : 0.0;
-            if (se != NULL && mc_eval_scalar_d(se, NULL, &ops[i].scalar, err, errsz) != 0)
+            if (se != NULL && mc_eval_scalar_d(se, &ops[i].scalar, err, errsz) != 0)
             {
                 rc = -1;
                 goto cleanup;
@@ -904,9 +879,17 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             }
             for (int j = 0; !d->is_expr_im && j < pass->nouts; j++)
             {
+                /* A tuple (u, v = v, u) reads its targets before it writes any: copy them. Merged
+                 * statements need no copy: mc_can_merge_passes() refuses a later statement writing
+                 * what an earlier one reads, and a statement reads its own target pixel by pixel */
+                int tuple = 0;
+                for (int k = 0; k < pass->nouts; k++)
+                {
+                    tuple |= (k != j && pass->outs[k].stmt_idx == pass->outs[j].stmt_idx);
+                }
                 IMAGE *oim = &milk_data.image[id];
                 if (pass->outs[j].slot_idx == d->slot_idx && !pass->outs[j].is_elided &&
-                    (pass->nouts > 1 || d->has_slice || d->is_non_pointwise ||
+                    (tuple || d->has_slice || d->is_non_pointwise ||
                      pass->outs[j].lhs_slice != NULL ||
                      oim->md[0].datatype != pass->outs[j].out_dt ||
                      (vnaxis > 0 && pass->outs[j].lhs_slice == NULL &&
@@ -1062,6 +1045,12 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             div_snap[j] = clone_to_tmp(prog->slots[out->slot_idx].im_id);
         }
     }
+    /* A pass that reads what it writes (`acc += cam`, `acc = 0.9 * acc + cam`) would apply twice */
+    int rerun_ok = 1;
+    for (int j = 0; j < pass->nouts; j++)
+    {
+        rerun_ok &= (pass->outs[j].is_elided || pass->outs[j].assign_op == MC_TOK_ASSIGN);
+    }
     for (int i = 0; i < pass->nops; i++)
     {
         int is_out_im = 0;
@@ -1070,18 +1059,18 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             is_out_im |= (!pass->outs[j].is_elided &&
                           views[i].im_id == prog->slots[pass->outs[j].slot_idx].im_id);
         }
+        rerun_ok &= !(is_out_im && !pass->ops[i].is_out);
         is_sh_in[i] = (!pass->ops[i].is_scalar && !pass->ops[i].is_out && !is_out_im &&
                        views[i].dt != 0 && milk_data.image[views[i].im_id].md[0].shared == 1);
     }
 
-    for (int attempt = 0; attempt < 4; attempt++)
+    for (int attempt = 0; attempt < MILK_FRAME_TRIES; attempt++)
     {
         for (int i = 0; i < pass->nops; i++)
         {
             if (is_sh_in[i])
             {
-                cnt0_pre[i] =
-                    __atomic_load_n(&milk_data.image[views[i].im_id].md[0].cnt0, __ATOMIC_ACQUIRE);
+                mark[i] = milk_frame_mark(&milk_data.image[views[i].im_id]);
             }
             if (pass->ops[i].is_out)
             {
@@ -1120,17 +1109,18 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         int torn = 0;
         for (int i = 0; i < pass->nops; i++)
         {
-            const IMAGE *vim = is_sh_in[i] ? &milk_data.image[views[i].im_id] : NULL;
-            torn |= (vim != NULL &&
-                     (__atomic_load_n(&vim->md[0].cnt0, __ATOMIC_ACQUIRE) != cnt0_pre[i] ||
-                      __atomic_load_n(&vim->md[0].write, __ATOMIC_ACQUIRE) != 0));
+            torn |= (is_sh_in[i] && !milk_frame_clean(&milk_data.image[views[i].im_id], mark[i]));
         }
-        if (!torn || attempt == 3)
+        if (!torn)
         {
             break;
         }
         __atomic_fetch_add(&g_torn_count, 1, __ATOMIC_RELAXED);
-        nanosleep(&(struct timespec) { .tv_sec = 0, .tv_nsec = 100000 }, NULL);
+        if (!rerun_ok || attempt == MILK_FRAME_TRIES - 1)
+        {
+            break;
+        }
+        milk_frame_wait();
     }
 
     for (int j = 0; j < pass->nouts; j++)

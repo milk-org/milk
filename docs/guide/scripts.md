@@ -30,7 +30,7 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 | ---------------------------- | -------------------------------------------------- |
 | `milk.bash`                  | Sourceable GNU Bash integration layer (module commands, `@` keywords, entities, calculator) |
 | `milk-env.sh`                | Sourceable environment switcher (`fdev`, `dev`, `status`) |
-| `milk-cc`                    | Compile a user C plugin for the `@calc` engine into `~/.milk/plugins/` |
+| `milk-cc`                    | Compile a `@calc` C extension (`.so`) or a `MILK_RUNNABLE` unit (executable) into the current directory |
 | `milk-check`                 | Verify installation (libraries, paths, SHM)        |
 | `milk-argparse`              | Argument parsing helper for milk scripts           |
 | `milk-script-std-config`     | Standard configuration for milk scripts            |

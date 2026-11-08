@@ -4,7 +4,8 @@
 
 /**
  * @file milk_argval.h
- * @brief Typed argument values: text to a value of an FPTYPE parameter and back.
+ * @brief Argument values and words: text to a value of an FPTYPE parameter and back, and the rule that
+ *        binds words to parameters (module commands, unit command lines, `@args`, `@set`).
  */
 
 #ifndef MILK_ARGVAL_H
@@ -40,5 +41,29 @@ typedef struct
 
 /** milk_argspec_parse() - parse "name:type[=default][:help]" in place (the fields point into @s); 0, or -1. */
 int milk_argspec_parse(char *s, milk_argspec_t *a);
+
+/** milk_args_named() - 1 if argument word @s is `.name=value` (name: [A-Za-z_][A-Za-z0-9_.]*). */
+int milk_args_named(const char *s);
+
+/* A parameter that argument words bind to */
+typedef struct
+{
+    const char *name;       /* without the leading dot */
+    int         positional; /* positional words fill it when it is not named */
+} milk_argslot_t;
+
+/** milk_args_bind() - bind words @w to parameters @slots: `.name=value` before @posonly (or before a "--"
+ * word when @posonly < 0) by name, the others into the positional parameters not named, in order.
+ * @val[i]: the value text of parameter i or NULL ("." keeps the current value); @word[i]: its word index
+ * or -1 (@word may be NULL). 0, or -1 with @err (unknown name, given twice, `.name VALUE`, too many). */
+int milk_args_bind(int                   nw,
+                   char *const          *w,
+                   int                   posonly,
+                   int                   ns,
+                   const milk_argslot_t *slots,
+                   const char          **val,
+                   int                  *word,
+                   char                 *err,
+                   size_t                errsz);
 
 #endif

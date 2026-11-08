@@ -28,16 +28,20 @@
 /**
  * @brief Create, bind, and listen on the milk UNIX domain socket.
  *
- * Also sets MILKCLI_SOCK in the environment and snapshots initial dcvar
- * entries into the server cache.
+ * Also sets MILKCLI_SOCK in the environment. Poll milk_server_ready_fd(), not the listening socket:
+ * a shell keeps its connection between requests.
  *
  * @param sockpath Socket path ("@abstract" or "/path/to/sock")
  * @return Listening socket fd (>= 0) on success, -1 on error
  */
 int milk_server_create_listener(const char *sockpath);
 
+/** milk_server_ready_fd() - readable when a shell connects, or sends a request on the connection it
+ * keeps; then call milk_server_accept_and_handle(). -1 before milk_server_create_listener(). */
+int milk_server_ready_fd(void);
+
 /**
- * @brief Accept and service one pending connection on @listen_fd.
+ * @brief Serve what milk_server_ready_fd() reports: new connections and the requests of kept ones.
  *
  * @param listen_fd     Listening UNIX domain socket fd
  * @param shutdown_flag Set to 1 if client requested server shutdown
@@ -78,5 +82,17 @@ void milk_server_reset_bash_epoch(void);
 void milk_server_bump_bash_epoch(void);
 int  milk_server_can_exec_calc_inproc(const char *expr);
 int  milk_server_exec_calc_repl_inproc(const char *expr);
+
+/** milk_complete() - the completion candidates of word @prefix, one per line, into @out, for
+ * @comp_type ("cmd", "arg:<cmd>:<cword>[:<previous word>]", "calc", ...); the length written. */
+size_t milk_complete(const char *prefix, const char *comp_type, char *out, size_t outsz);
+
+/** milk_server_split_words() - split command line @step into at most @max_args unquoted words,
+ * kept in @arena; the number of words. */
+int milk_server_split_words(const char *step,
+                            char      **argv_out,
+                            int         max_args,
+                            char       *arena,
+                            size_t      arena_sz);
 
 #endif /* MILK_SERVER_H */

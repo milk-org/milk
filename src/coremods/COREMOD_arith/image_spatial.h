@@ -107,6 +107,17 @@ void arith_gauss_pass_d(double       *io,
                         const double *wy,
                         int           nth);
 
+/* Whole-image filters (any real types, clamped edges, cubes plane by plane): separable symmetric
+ * filter, Gaussian, box mean, NaN-skipping 3x3 min/max, and small-kernel 2D convolution */
+int arith_image_sepfilt2d_im(const IMAGE  *src,
+                             IMAGE        *dst,
+                             int           Rx,
+                             const double *wx,
+                             int           Ry,
+                             const double *wy,
+                             void        **scratch_buf,
+                             size_t       *scratch_cap);
+
 int arith_image_gauss2d_im(const IMAGE *src,
                            IMAGE       *dst,
                            double       sx,
@@ -114,6 +125,24 @@ int arith_image_gauss2d_im(const IMAGE *src,
                            int          max_R,
                            void       **scratch_buf,
                            size_t      *scratch_cap);
+
+int arith_image_boxmean2d_im(const IMAGE *src,
+                             IMAGE       *dst,
+                             int          r,
+                             void       **scratch_buf,
+                             size_t      *scratch_cap);
+
+int arith_image_minmax3_im(const IMAGE *src,
+                           IMAGE       *dst,
+                           int          is_max,
+                           void       **scratch_buf,
+                           size_t      *scratch_cap);
+
+int arith_image_conv2d_im(const IMAGE *src,
+                          IMAGE       *dst,
+                          const IMAGE *kern,
+                          void       **scratch_buf,
+                          size_t      *scratch_cap);
 
 /* Cumulative sum along axis 0, 1, or 2 in-place on float32/float64 image */
 int arith_image_cumsum_inplace_im(IMAGE *im, int axis);

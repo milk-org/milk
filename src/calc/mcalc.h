@@ -22,6 +22,7 @@
 #ifndef MILK_MCALC_H
 #define MILK_MCALC_H
 
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -41,6 +42,10 @@ extern int  mcalc_out_mode;
 extern int  mcalc_test_image;
 extern int  mcalc_float_digits;
 extern char mcalc_lasterr[256];
+
+/* Set from any thread or a signal handler to stop an evaluation at its next program step or loop
+ * iteration, which then fails with "interrupted"; the host clears it before each request. */
+extern volatile sig_atomic_t mcalc_cancelled;
 
 /** mcalc_eval_bash() - evaluate an expression for @calc or @test in bash mode (1 on ok, 0 on err). */
 int mcalc_eval_bash(const char *input, int is_test, int *out_rc);
@@ -108,7 +113,7 @@ int mcalc_prog_assigns(const mcalc_prog *p, int i);
 /** mcalc_prog_run() - set bound variables, run @p, copy back assigned ones, and post outputs. */
 int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz);
 
-/** mcalc_torn_count() - return cumulative count of detected and retried torn SHM reads (_torn). */
+/** mcalc_torn_count() - return the cumulative count of torn SHM reads (_torn). */
 uint64_t mcalc_torn_count(void);
 
 /** mcalc_prog_set_processinfo() - attach the unit's PROCESSINFO (or NULL) for output stream posts. */
@@ -135,12 +140,14 @@ int mcalc_print_catalog(const char *pattern, int json_mode);
 #define MCALC_UDEF_MAX 64
 #define MCALC_UDEF_MAXARGS 8
 
+struct mc_expr;
+
 typedef struct
 {
-    char name[64];
-    int  nargs;
-    char arg_names[MCALC_UDEF_MAXARGS][64];
-    char body[512];
+    char            name[64];
+    int             nargs;
+    char            arg_names[MCALC_UDEF_MAXARGS][64];
+    struct mc_expr *body; /* parsed once; each call inlines a copy */
 } mcalc_udef_t;
 
 /** mcalc_udef_clear() - clear all registered user-defined inline calculator functions. */
@@ -152,8 +159,8 @@ int mcalc_udef_count(void);
 /** mcalc_udef_get() - return registered user-defined inline function @idx, or NULL. */
 const mcalc_udef_t *mcalc_udef_get(int idx);
 
-/** mcalc_udef_add() - register or overwrite a user-defined inline function. */
-int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], const char *body);
+/** mcalc_udef_add() - register or overwrite a user-defined inline function; takes @body. */
+int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], struct mc_expr *body);
 
 /** mcalc_udef_try_parse() - parse and register a `def f(x, ...) = expr` statement (1/0/-1). */
 int mcalc_udef_try_parse(const char *stmt);

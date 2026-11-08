@@ -16,7 +16,6 @@
 #    define _GNU_SOURCE
 #endif
 
-#include <dirent.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,92 +42,6 @@ __attribute__((constructor(101))) static void milkcall_pre_quiet(void)
 }
 
 /**
- * setup_bin_farm - Populate a directory with symlinks for milk keywords and commands
- * @bin_farm:   Directory path where symlinks should be created
- * @sigil:      Prefix string for symlink names (e.g., `@` or empty)
- * @target_bin: Target executable path (`milk-call`) that symlinks point to
- * @cmd_list:   Optional file path containing newline-delimited command names
- *
- * Cleans up stale symlinks matching @sigil in @bin_farm and creates fresh symlinks
- * for all callable `@` keywords and any commands listed in @cmd_list so external
- * utilities (`xargs`, `find -exec`, `parallel`) can invoke milk commands via PATH.
- *
- * Return: 0 on success, 1 if required arguments are NULL
- */
-static int setup_bin_farm(const char *bin_farm,
-                          const char *sigil,
-                          const char *target_bin,
-                          const char *cmd_list)
-{
-    if (bin_farm == NULL || sigil == NULL || target_bin == NULL)
-    {
-        return 1;
-    }
-    size_t siglen = strlen(sigil);
-    DIR   *dir    = opendir(bin_farm);
-    if (dir != NULL)
-    {
-        struct dirent *de;
-        while ((de = readdir(dir)) != NULL)
-        {
-            if (de->d_name[0] != '.' && strncmp(de->d_name, sigil, siglen) == 0)
-            {
-                char pbuf[1024];
-                snprintf(pbuf, sizeof(pbuf), "%s/%s", bin_farm, de->d_name);
-                unlink(pbuf);
-            }
-        }
-        closedir(dir);
-    }
-
-    for (int i = -1; i < 0 || milk_lexicon_keywords()[i].name != NULL; i++) /* -1: the bare sigil */
-    {
-        if (i >= 0 && !milk_lexicon_keywords()[i].callable)
-        {
-            continue;
-        }
-        char lpath[1024];
-        snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil,
-                 (i < 0) ? "" : milk_lexicon_keywords()[i].name);
-        unlink(lpath);
-        if (symlink(target_bin, lpath) != 0)
-        {
-            /* ignore */
-        }
-    }
-
-    if (cmd_list != NULL && cmd_list[0] != '\0')
-    {
-        FILE *fp = fopen(cmd_list, "r");
-        if (fp != NULL)
-        {
-            char line[256];
-            while (fgets(line, sizeof(line), fp) != NULL)
-            {
-                size_t len = strlen(line);
-                while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
-                {
-                    line[--len] = '\0';
-                }
-                if (len == 0)
-                {
-                    continue;
-                }
-                char lpath[1024];
-                snprintf(lpath, sizeof(lpath), "%s/%s%s", bin_farm, sigil, line);
-                unlink(lpath);
-                if (symlink(target_bin, lpath) != 0)
-                {
-                    /* ignore */
-                }
-            }
-            fclose(fp);
-        }
-    }
-    return 0;
-}
-
-/**
  * print_usage - Print `milk-call` command-line usage and subcommand summary
  * @prog: Program name (`argv[0]`) for the usage header
  *
@@ -145,27 +58,11 @@ static void print_usage(const char *prog)
     printf("                                   (--engine: in milk-cli, its own session; --nowait: "
            "fail\n");
     printf("                                   at once while another shell's command runs)\n");
-    printf("  batch <cmd1; cmd2; ...>          Execute multi-command block in 1 round trip\n");
-    printf("  pipe <cmd1 |> cmd2 |> ...>       Execute |> pipeline in 1 round trip\n");
-    printf("  ls [-l|-q|--json|--local] [pat]  List active streams, FPS, procs\n");
-    printf("  get [--json] <spec>              Query/discover stream/FPS/procinfo property\n");
-    printf("  set <entity> [val] [comment]     Set FPS parameter(s) or stream FITS keyword(s)\n");
-    printf("  snapshot [-o <f>] [<f>] [glob]   Export FPS params & stream keywords to JSON\n");
-    printf("  diff <f.json> [glob...]          Diff live state against snapshot JSON\n");
-    printf("  restore [-n] <f.json> [glob...]  Restore state from snapshot JSON\n");
-    printf("  assert [flags] <expr|entity>     Assert mathematical or stream/FPS condition\n");
-    printf("  calc <expr...>                   Evaluate a @calc expression\n");
-    printf("  test <expr...>                   Evaluate a @test boolean condition\n");
-    printf("  exists [-r] <entity>             Check if entity exists (or -r is running)\n");
-    printf("  waitfor <target> [N] [-t <sec>]  Wait for stream frames or condition\n");
-    printf("  waitany <s1> <s2> ... [-t <sec>] Wait for any listed stream to update\n");
-    printf("  grab [--fits <f>] <s> [N] [out]  Capture 1 or N frames into image/cube/FITS\n");
-    printf("  replay [--fps <hz>] <in> <s_out> Replay 2D/3D cube or FITS into SHM stream\n");
     printf("  complete <prefix> [cmd|arg]      List completion candidates\n");
     printf("  translate [--legacy] <file>      Translate milk-cli shorthands to milk.bash\n");
-    printf("  session [verb ...]               Manage sessions (@session)\n");
-    printf("  log [options...]                 Inspect/search server SHM command log (@log)\n");
     printf("  shutdown                         Shut down session milk-cli --server\n");
+    printf("and these @ keywords, named without the @ (libexec/milk/bin/@<kw> runs them):\n");
+    milk_lexicon_print_list(stdout, 1, 1);
 }
 
 /**
@@ -287,8 +184,7 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "args") ==
         0) /* plain assignments: milk-call cannot make locals or end the caller */
     {
-        const char *fn = getenv("__MILK_ARGS_FNAME"); /* the shim names the caller */
-        return milk_client_args(argc, argv, (fn != NULL && fn[0] != '\0') ? fn : "@args", 0, NULL);
+        return milk_client_args(argc, argv, "@args", 0, NULL);
     }
     if (strcmp(sub, "grab") == 0)
     {
@@ -383,10 +279,6 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
     if (strcmp(sub, "ls") == 0)
     {
         return milk_client_ls(argc, argv, NULL);
-    }
-    if (strcmp(sub, "setup-bin-farm") == 0 && argc >= 3)
-    {
-        return setup_bin_farm(argv[0], argv[1], argv[2], (argc >= 4) ? argv[3] : NULL);
     }
     if (strcmp(sub, "shutdown") == 0 || strcmp(sub, "unload") == 0)
     {

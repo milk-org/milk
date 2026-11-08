@@ -23,6 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "milk_lexicon.h"
 #include "CLIcore.h"
 #include "CLIcore_modules.h"
 #include "CLIcore_script.h"
@@ -118,7 +119,7 @@ int milk_server_module(int argc, char **argv)
         }
         return (load_module_shared(argv[2]) == RETURN_SUCCESS) ? 0 : 1;
     }
-    fprintf(stderr, "usage: @module [list [--all]] | @module load <name|file.so> [--as <short>]\n");
+    milk_lexicon_usage("module", stderr);
     return 2;
 }
 
@@ -359,7 +360,7 @@ int milk_server_history(int argc, char **argv, int *handled)
         int has = (milk_cmd_lookup(cmd) >= 0); // milk-cli's; milk-script reads the log itself
         if (n <= 0 || (end != NULL && *end != '\0') || (!has && first < argc))
         {
-            fprintf(stderr, "Usage: @history [--local|--global] [N]\n");
+            milk_lexicon_usage("history", stderr);
             return 2;
         }
         if (!has)
@@ -391,26 +392,8 @@ int milk_server_history(int argc, char **argv, int *handled)
             return redispatch(repl[i][1], argc - 1, argv + 1);
         }
     }
-    fprintf(stderr,
-            "Usage: @history [--local|--global] [N] | search <text> | save <file> | --stats "
-            "| --tui\n");
+    milk_lexicon_usage("history", stderr);
     return 2;
-}
-
-/* The calculator variables every session starts with (CLIcore_datainit.c): not saved */
-static int predefined_variable(const char *name)
-{
-    static const char *const names[] = { "_PI", "_e",  "_gamma", "_c", "_h",
-                                         "_k",  "_pc", "_ly",    "_AU" };
-
-    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
-    {
-        if (strcmp(name, names[i]) == 0)
-        {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 /* @s as one single-quoted bash word */
@@ -522,7 +505,7 @@ int milk_server_session_save(const char *path)
     for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
     {
         const VARIABLE *v = &data.core.variable[i];
-        if (!v->used || predefined_variable(v->name))
+        if (!v->used)
         {
             continue;
         }
@@ -543,8 +526,7 @@ int milk_server_session_save(const char *path)
     for (int i = 0; i < CLI_MAX_VARS; i++) /* string variables of the calculator live here only */
     {
         const CLI_VAR *cv = &cli_vars[i];
-        if (cv->used && cv->type == 2 && variable_ID(cv->name) < 0 &&
-            !predefined_variable(cv->name))
+        if (cv->used)
         {
             nvar += put_string_var(fp, cv->name, cv->val, fails);
         }

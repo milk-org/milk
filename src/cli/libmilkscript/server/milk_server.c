@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -125,12 +127,162 @@ void milk_server_cmd_unlock(void)
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
+/* ---------------------------------------------------------------------------------------------- */
+/* Connections kept between requests                                                              */
+/* ---------------------------------------------------------------------------------------------- */
+
+/* A shell keeps its connection between requests (milk_client_end()). The listening socket and the
+ * kept connections are in one epoll set, which the loops poll (milk_server_ready_fd()). A kept
+ * connection is armed once (EPOLLONESHOT): its request disarms it, and it is armed again when it is
+ * kept after the reply. g_kept lists the kept ones, which a forked child closes. */
+#define MILK_SERVER_KEPT_MAX 256  /* connections kept at most: others close after their request */
+#define MILK_SERVER_KEPT_FDS 4096 /* and their fd numbers are below this */
+static int      g_epfd = -1;
+static uint64_t g_kept[MILK_SERVER_KEPT_FDS / 64];
+static int      g_nkept = 0;
+
+int milk_server_ready_fd(void)
+{
+    return g_epfd;
+}
+
+int milk_server_can_keep(int fd)
+{
+    return g_epfd >= 0 && fd >= 0 && fd < MILK_SERVER_KEPT_FDS && g_nkept < MILK_SERVER_KEPT_MAX;
+}
+
+void milk_server_send_done(int client_fd, int keep, const void *pl, uint32_t len)
+{
+    milk_proto_send(client_fd, MILK_MSG_DONE, keep ? MILK_FLAG_KEEP : 0, pl, len);
+}
+
+/** conn_arm() - watch @fd in the epoll set: once (@oneshot, a connection), or always (listening). */
+static int conn_arm(int fd, int oneshot)
+{
+    struct epoll_event ev = { .events  = EPOLLIN | (oneshot ? (EPOLLRDHUP | EPOLLONESHOT) : 0),
+                              .data.fd = fd };
+    return (epoll_ctl(g_epfd, EPOLL_CTL_MOD, fd, &ev) == 0 ||
+            (errno == ENOENT && epoll_ctl(g_epfd, EPOLL_CTL_ADD, fd, &ev) == 0))
+               ? 0
+               : -1;
+}
+
+/** conn_take() - kept connection @fd has a request: its handler owns it now. */
+static void conn_take(int fd)
+{
+    if (fd < MILK_SERVER_KEPT_FDS && (g_kept[fd / 64] & (1ULL << (fd % 64))) != 0)
+    {
+        g_kept[fd / 64] &= ~(1ULL << (fd % 64));
+        g_nkept--;
+    }
+}
+
+void milk_server_conn_done(int fd, int outcome)
+{
+    /* kept as the reply said, even when others filled the set meanwhile (milk_server_can_keep()) */
+    if (outcome == MILK_CONN_KEEP && fd < MILK_SERVER_KEPT_FDS && conn_arm(fd, 1) == 0)
+    {
+        g_kept[fd / 64] |= 1ULL << (fd % 64);
+        g_nkept++;
+    }
+    else if (outcome != MILK_CONN_TAKEN)
+    {
+        if (g_epfd >= 0)
+        {
+            epoll_ctl(g_epfd, EPOLL_CTL_DEL, fd, NULL);
+        }
+        close(fd);
+    }
+}
+
+int milk_server_take_ready(int listen_fd, int *fds, int max)
+{
+    struct epoll_event ev[16];
+    int                n = (g_epfd >= 0) ? epoll_wait(g_epfd, ev, (max < 16) ? max : 16, 0) : 0;
+    int                k = 0;
+    for (int i = 0; i < n; i++)
+    {
+        int fd = ev[i].data.fd;
+        if (fd == listen_fd)
+        {
+            fd = accept4(listen_fd, NULL, NULL, SOCK_CLOEXEC);
+            if (fd >= 0 && !milk_ipc_peer_is_self(fd))
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            conn_take(fd);
+        }
+        if (fd >= 0)
+        {
+            fds[k++] = fd;
+        }
+    }
+    return k;
+}
+
+static int g_listen_released; /* the socket name is no longer this server's: do not unlink it */
+
+void milk_server_stop_listening(int listen_fd)
+{
+    if (g_srvlog_shm == NULL || (g_srvlog_shm->flags & MILK_SRVFLAG_INPROC))
+    {
+        return; /* milk-cli's session: the line runs on, its commands sent here, until its prompt */
+    }
+    int d = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    if (listen_fd >= 0 && d >= 0 && g_epfd >= 0)
+    {
+        epoll_ctl(g_epfd, EPOLL_CTL_DEL, listen_fd, NULL);
+        dup3(d, listen_fd, O_CLOEXEC); /* its name is free: the next request starts a new server */
+        if (g_srvlog_sockpath[0] != '@')
+        {
+            unlink(g_srvlog_sockpath); /* now, not at exit, where it may be the new server's */
+        }
+        g_listen_released = 1;
+    }
+    if (d >= 0)
+    {
+        close(d);
+    }
+    for (int w = 0; w < MILK_SERVER_KEPT_FDS / 64; w++) /* the shells see them end */
+    {
+        for (uint64_t b = g_kept[w]; b != 0; b &= b - 1)
+        {
+            milk_server_conn_done(w * 64 + __builtin_ctzll(b), MILK_CONN_CLOSE);
+        }
+        g_kept[w] = 0;
+    }
+    g_nkept = 0;
+}
+
+/** conns_atfork_child() - in a forked child: the kept connections and their set are the parent's. */
+static void conns_atfork_child(void)
+{
+    for (int w = 0; w < MILK_SERVER_KEPT_FDS / 64; w++)
+    {
+        for (uint64_t b = g_kept[w]; b != 0; b &= b - 1)
+        {
+            close(w * 64 + __builtin_ctzll(b));
+        }
+    }
+    memset(g_kept, 0, sizeof(g_kept));
+    g_nkept = 0;
+    if (g_epfd >= 0)
+    {
+        close(g_epfd);
+        g_epfd = -1;
+    }
+}
+
 /**
  * milk_child_reset_omp - Reset OpenMP thread pool and mutex state in forked children
  *
  * Invoked as a `pthread_atfork` child handler so forked `--async` and `@replay`
  * worker processes reset OpenMP to a single thread, reinitialize `g_cmd_mutex`
- * in an unlocked state, and clear inherited watcher state.
+ * in an unlocked state, and clear inherited watcher state and kept connections.
  *
  * Return: void
  */
@@ -142,6 +294,7 @@ static void milk_child_reset_omp(void)
     milk_omp_force_serial(); /* a num_threads() clause would override the line above */
     cmd_mutex_init();        /* the forking thread may not be the one holding it: start unlocked */
     milk_server_watcher_atfork_child();
+    conns_atfork_child();
 }
 
 /** stream_worker() - serve one WAITFOR/GRAB request inline, then close its connection. */
@@ -149,7 +302,7 @@ static void *stream_worker(void *arg)
 {
     int fd    = (int) (intptr_t) arg;
     int dummy = 0;
-    milk_server_handle_client(fd, -1, &dummy);
+    milk_server_handle_client(fd, -1, &dummy, 0);
     close(fd);
     mark_request();
     __atomic_sub_fetch(&g_stream_workers, 1, __ATOMIC_RELEASE);
@@ -301,12 +454,19 @@ typedef struct
 {
     int    out_r;
     int    err_r;
-    int    stop_r;
     int    client_out;
     int    client_err;
     char   cap_buf[MILK_SRVLOG_OUT_MAX];
     size_t cap_len;
 } tee_pump_ctx_t;
+
+/* A CALL whose stdout is no terminal writes into pipes that one thread, for the server's life,
+ * forwards to the client's stdout and stderr, keeping the start for the log. The pipes are the
+ * CALL's own: a process its command left running cannot write into a later CALL's output. */
+static tee_pump_ctx_t g_tee;         /* the CALL being captured */
+static int            g_tee_go = -1; /* eventfd: +1 when a CALL starts, +1 when its command ends */
+static int            g_tee_done = -1; /* eventfd: the pump forwarded the CALL's output */
+static pid_t g_tee_pid = 0; /* the process the pump runs in (a forked child starts its own) */
 
 /**
  * tee_drain_fd - Drain available bytes from a captured pipe into client stdio and the log buffer
@@ -372,46 +532,24 @@ static void tee_drain_fd(int rfd, int wfd, tee_pump_ctx_t *ctx, int *open_flag)
 }
 
 /**
- * @brief Pump stdout/stderr pipes to client fds while capturing output for SHM logging.
+ * tee_pump - Forward a CALL's output pipes to its client while capturing the log snippet
+ * @ctx:   The CALL
+ * @ended: 1 if its command already ended (both g_tee_go signals came at once)
+ *
+ * Forwards until the command ends (g_tee_go: its pipes may reach their end before, when the server
+ * puts its stdio back), then drains what is left.
  */
-static void *tee_pump_thread(void *arg)
+static void tee_pump(tee_pump_ctx_t *ctx, int ended)
 {
-    tee_pump_ctx_t *ctx      = (tee_pump_ctx_t *) arg;
-    int             out_open = (ctx->out_r >= 0) ? 1 : 0;
-    int             err_open = (ctx->err_r >= 0) ? 1 : 0;
+    int out_open = 1;
+    int err_open = 1;
 
-    while (out_open || err_open)
+    while (!ended)
     {
-        struct pollfd pfds[3];
-        int           npfds   = 0;
-        int           out_idx = -1;
-        int           err_idx = -1;
-        int           stp_idx = -1;
-
-        if (out_open)
-        {
-            out_idx               = npfds++;
-            pfds[out_idx].fd      = ctx->out_r;
-            pfds[out_idx].events  = POLLIN;
-            pfds[out_idx].revents = 0;
-        }
-        if (err_open)
-        {
-            err_idx               = npfds++;
-            pfds[err_idx].fd      = ctx->err_r;
-            pfds[err_idx].events  = POLLIN;
-            pfds[err_idx].revents = 0;
-        }
-        if (ctx->stop_r >= 0)
-        {
-            stp_idx               = npfds++;
-            pfds[stp_idx].fd      = ctx->stop_r;
-            pfds[stp_idx].events  = POLLIN | POLLHUP;
-            pfds[stp_idx].revents = 0;
-        }
-
-        int pr = poll(pfds, (nfds_t) npfds, -1);
-        if (pr < 0)
+        struct pollfd pfds[3] = { { out_open ? ctx->out_r : -1, POLLIN, 0 },
+                                  { err_open ? ctx->err_r : -1, POLLIN, 0 },
+                                  { g_tee_go, POLLIN, 0 } };
+        if (poll(pfds, 3, -1) < 0)
         {
             if (errno == EINTR)
             {
@@ -419,30 +557,78 @@ static void *tee_pump_thread(void *arg)
             }
             break;
         }
-
-        if (out_idx >= 0 && (pfds[out_idx].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (pfds[0].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL))
         {
             tee_drain_fd(ctx->out_r, ctx->client_out, ctx, &out_open);
+            out_open = out_open && !(pfds[0].revents & POLLNVAL);
         }
-        if (err_idx >= 0 && (pfds[err_idx].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL))
         {
             tee_drain_fd(ctx->err_r, ctx->client_err, ctx, &err_open);
+            err_open = err_open && !(pfds[1].revents & POLLNVAL);
         }
-        if (stp_idx >= 0 && (pfds[stp_idx].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (pfds[2].revents & POLLIN)
         {
-            if (out_open)
-            {
-                tee_drain_fd(ctx->out_r, ctx->client_out, ctx, &out_open);
-            }
-            if (err_open)
-            {
-                tee_drain_fd(ctx->err_r, ctx->client_err, ctx, &err_open);
-            }
-            break;
+            uint64_t v;
+            ended = (read(g_tee_go, &v, sizeof(v)) == (ssize_t) sizeof(v));
         }
     }
+    if (out_open)
+    {
+        tee_drain_fd(ctx->out_r, ctx->client_out, ctx, &out_open);
+    }
+    if (err_open)
+    {
+        tee_drain_fd(ctx->err_r, ctx->client_err, ctx, &err_open);
+    }
+}
 
+/** tee_main() - the pump thread: serves each captured CALL in turn (tee_pump()). */
+static void *tee_main(void *arg)
+{
+    (void) arg;
+    for (;;)
+    {
+        uint64_t v   = 0;
+        uint64_t one = 1;
+        if (read(g_tee_go, &v, sizeof(v)) != (ssize_t) sizeof(v))
+        {
+            continue;
+        }
+        tee_pump(&g_tee, v > 1);
+        ssize_t w = write(g_tee_done, &one, sizeof(one));
+        (void) w;
+    }
     return NULL;
+}
+
+/** tee_start() - the pump thread of this process, started on first use; 0, or -1 if unavailable. */
+static int tee_start(void)
+{
+    if (g_tee_pid == getpid())
+    {
+        return 0;
+    }
+    if (g_tee_go >= 0) /* a forked child: the parent's */
+    {
+        close(g_tee_go);
+        close(g_tee_done);
+    }
+    g_tee_go   = eventfd(0, EFD_CLOEXEC);
+    g_tee_done = eventfd(0, EFD_CLOEXEC);
+    pthread_t tid;
+    sigset_t  all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
+    sigfillset(&all);
+    pthread_sigmask(SIG_BLOCK, &all, &old);
+    int ok = (g_tee_go >= 0 && g_tee_done >= 0 && pthread_create(&tid, NULL, tee_main, NULL) == 0);
+    pthread_sigmask(SIG_SETMASK, &old, NULL);
+    if (!ok)
+    {
+        return -1;
+    }
+    pthread_detach(tid);
+    g_tee_pid = getpid();
+    return 0;
 }
 
 /**
@@ -501,6 +687,8 @@ static void reap_children(void)
  * @return 1 if message was handled, 0 otherwise
  */
 static int handle_fast_message(int                     client_fd,
+                               int                     listen_fd,
+                               int                     keep,
                                const milk_frame_hdr_t *hdr,
                                const uint8_t          *payload,
                                int                    *shutdown_flag)
@@ -509,14 +697,15 @@ static int handle_fast_message(int                     client_fd,
 
     if (hdr->type == MILK_MSG_PING)
     {
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
         return 1;
     }
 
     if (hdr->type == MILK_MSG_SHUTDOWN)
     {
         *shutdown_flag = 1;
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        milk_server_stop_listening(listen_fd);
+        milk_server_send_done(client_fd, 0, &rc, sizeof(rc));
         return 1;
     }
 
@@ -526,7 +715,7 @@ static int handle_fast_message(int                     client_fd,
         size_t      plen   = strlen(prefix) + 1;
         const char *comp_type =
             (payload != NULL && plen < hdr->len) ? (const char *) (payload + plen) : "arg";
-        milk_server_handle_complete(client_fd, prefix, comp_type);
+        milk_server_handle_complete(client_fd, keep, prefix, comp_type);
         return 1;
     }
 
@@ -542,7 +731,7 @@ static int handle_fast_message(int                     client_fd,
         {
             rc = 1;
         }
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
         return 1;
     }
 
@@ -558,7 +747,7 @@ static int handle_fast_message(int                     client_fd,
         {
             rc = 1;
         }
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
         return 1;
     }
 
@@ -571,6 +760,7 @@ static int handle_fast_message(int                     client_fd,
  * @return 1 if handled, 0 otherwise
  */
 static int handle_wait_or_grab_message(int                     client_fd,
+                                       int                     keep,
                                        pid_t                   client_pid,
                                        const milk_frame_hdr_t *hdr,
                                        const uint8_t          *payload,
@@ -603,7 +793,7 @@ static int handle_wait_or_grab_message(int                     client_fd,
             milk_srvlog_record(g_srvlog_shm, ts_start, diff_timespec_ns(ts_start, &ts_end),
                                client_pid, hdr->type, rc, log_cmd, "");
         }
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
         return 1;
     }
 
@@ -640,7 +830,7 @@ static int handle_wait_or_grab_message(int                     client_fd,
             milk_srvlog_record(g_srvlog_shm, ts_start, diff_timespec_ns(ts_start, &ts_end),
                                client_pid, hdr->type, rc, log_cmd, "");
         }
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &rc, sizeof(rc));
+        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
         return 1;
     }
 
@@ -648,14 +838,16 @@ static int handle_wait_or_grab_message(int                     client_fd,
 }
 
 /**
- * @brief Service a single client connection on @client_fd.
+ * @brief Service the request on client connection @client_fd.
  *
  * @param client_fd     Connected client socket fd
  * @param listen_fd     Server listening socket fd (or -1 to handle everything inline)
  * @param shutdown_flag Set to 1 if client requested server shutdown
- * @return 1 if @client_fd now belongs to a worker thread (the caller must not close it), else 0
+ * @param keep          1: the connection may stay open for the shell's next request
+ * @return MILK_CONN_KEEP (the reply said so), MILK_CONN_TAKEN (a worker thread has @client_fd) or
+ *         MILK_CONN_CLOSE (the caller closes it)
  */
-int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
+int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag, int keep)
 {
     milk_frame_hdr_t hdr;
     uint8_t         *payload     = NULL;
@@ -672,18 +864,23 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         if ((ptype == MILK_MSG_WAITFOR || ptype == MILK_MSG_GRAB) &&
             milk_server_spawn_stream_worker(client_fd) == 0)
         {
-            return 1;
+            return MILK_CONN_TAKEN;
         }
     }
     int rr = milk_proto_recv(client_fd, &hdr, &payload, recv_fds);
     if (rr == -2)
     {
         int32_t vrc = 255; // our version in the reply header tells the client what we speak
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, &vrc, sizeof(vrc));
+        milk_server_send_done(client_fd, 0, &vrc, sizeof(vrc));
     }
     if (rr != 0)
     {
-        return 0;
+        return MILK_CONN_CLOSE; // also the end of a kept connection: the shell closed it
+    }
+    if (hdr.type == MILK_MSG_CANCEL || hdr.type == MILK_MSG_WINCH) // sent as its request ended
+    {
+        free(payload);
+        return keep ? MILK_CONN_KEEP : MILK_CONN_CLOSE;
     }
     if (hdr.type != MILK_MSG_PING && hdr.type != MILK_MSG_SHUTDOWN)
     {
@@ -744,18 +941,20 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
                 }
             }
             free(payload);
-            return 0;
+            return MILK_CONN_CLOSE; // the child answers, and the connection ends with it
         }
         else if (pid == 0)
         {
             is_forked_worker = 1;
+            keep             = 0;
             close(listen_fd);
             listen_fd = -1;
         }
     }
 
     milk_server_cmd_lock();
-    int fast = handle_fast_message(client_fd, &hdr, payload, shutdown_flag);
+    int fast = handle_fast_message(client_fd, listen_fd, keep, &hdr, payload, shutdown_flag);
+    keep     = keep && !*shutdown_flag;
     milk_server_cmd_unlock();
     if (fast)
     {
@@ -765,7 +964,7 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
     struct timespec ts_start;
     clock_gettime(CLOCK_REALTIME, &ts_start);
 
-    if (handle_wait_or_grab_message(client_fd, client_pid, &hdr, payload, &ts_start))
+    if (handle_wait_or_grab_message(client_fd, keep, client_pid, &hdr, payload, &ts_start))
     {
         goto cleanup;
     }
@@ -790,23 +989,13 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
 
         // a terminal stays a terminal (TUIs, isatty checks): only capture output going elsewhere
         // only CALLs are captured for the log (calc/test/set output is small and on the hot path)
-        int use_tee      = (g_srvlog_shm != NULL && hdr.type == MILK_MSG_CALL && !is_streamcat &&
-                            !isatty(recv_fds[1]))
-                               ? 1
-                               : 0;
-        int out_pipe[2]  = { -1, -1 };
-        int err_pipe[2]  = { -1, -1 };
-        int stop_pipe[2] = { -1, -1 };
-        tee_pump_ctx_t tee_ctx;
-        pthread_t      tee_tid;
-        int            tee_running = 0;
-
-        memset(&tee_ctx, 0, sizeof(tee_ctx));
-        tee_ctx.out_r      = -1;
-        tee_ctx.err_r      = -1;
-        tee_ctx.stop_r     = -1;
-        tee_ctx.client_out = -1;
-        tee_ctx.client_err = -1;
+        int use_tee     = (g_srvlog_shm != NULL && hdr.type == MILK_MSG_CALL && !is_streamcat &&
+                           !isatty(recv_fds[1]))
+                              ? 1
+                              : 0;
+        int out_pipe[2] = { -1, -1 };
+        int err_pipe[2] = { -1, -1 };
+        int tee_running = 0;
 
         if (recv_fds[0] >= 0)
         {
@@ -816,10 +1005,9 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             recv_fds[0] = -1;
         }
 
-        if (use_tee && recv_fds[1] >= 0 && recv_fds[2] >= 0 &&
+        if (use_tee && recv_fds[1] >= 0 && recv_fds[2] >= 0 && tee_start() == 0 &&
             pipe2(out_pipe, O_CLOEXEC | O_NONBLOCK) == 0 &&
-            pipe2(err_pipe, O_CLOEXEC | O_NONBLOCK) == 0 &&
-            pipe2(stop_pipe, O_CLOEXEC | O_NONBLOCK) == 0)
+            pipe2(err_pipe, O_CLOEXEC | O_NONBLOCK) == 0)
         {
             fcntl(out_pipe[1], F_SETFL, 0);
             fcntl(err_pipe[1], F_SETFL, 0);
@@ -830,13 +1018,14 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
                 fcntl(recv_fds[1], F_SETPIPE_SZ, 1048576);
             }
 
-            tee_ctx.out_r      = out_pipe[0];
-            tee_ctx.err_r      = err_pipe[0];
-            tee_ctx.stop_r     = stop_pipe[0];
-            tee_ctx.client_out = recv_fds[1];
-            tee_ctx.client_err = recv_fds[2];
-            recv_fds[1]        = -1;
-            recv_fds[2]        = -1;
+            g_tee.out_r      = out_pipe[0];
+            g_tee.err_r      = err_pipe[0];
+            g_tee.client_out = recv_fds[1];
+            g_tee.client_err = recv_fds[2];
+            g_tee.cap_len    = 0;
+            g_tee.cap_buf[0] = '\0';
+            recv_fds[1]      = -1;
+            recv_fds[2]      = -1;
 
             saved_stdout = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 3);
             saved_stderr = fcntl(STDERR_FILENO, F_DUPFD_CLOEXEC, 3);
@@ -847,14 +1036,8 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             out_pipe[1] = -1;
             err_pipe[1] = -1;
 
-            sigset_t all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
-            sigfillset(&all);
-            pthread_sigmask(SIG_BLOCK, &all, &old);
-            if (pthread_create(&tee_tid, NULL, tee_pump_thread, &tee_ctx) == 0)
-            {
-                tee_running = 1;
-            }
-            pthread_sigmask(SIG_SETMASK, &old, NULL);
+            uint64_t one = 1; /* the pump forwards this CALL's output now */
+            tee_running  = (write(g_tee_go, &one, sizeof(one)) == (ssize_t) sizeof(one));
         }
         else
         {
@@ -867,11 +1050,6 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             {
                 close(err_pipe[0]);
                 close(err_pipe[1]);
-            }
-            if (stop_pipe[0] >= 0)
-            {
-                close(stop_pipe[0]);
-                close(stop_pipe[1]);
             }
             if (recv_fds[1] >= 0)
             {
@@ -918,9 +1096,9 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
         }
         else if (hdr.type == MILK_MSG_CALC || hdr.type == MILK_MSG_TEST)
         {
-            rc = milk_server_exec_calc_or_test(client_fd, (hdr.type == MILK_MSG_TEST) ? 1 : 0,
-                                               hdr.flags, payload, hdr.len, log_cmd,
-                                               sizeof(log_cmd));
+            rc = milk_server_exec_calc_or_test(client_fd, listen_fd,
+                                               (hdr.type == MILK_MSG_TEST) ? 1 : 0, hdr.flags,
+                                               payload, hdr.len, log_cmd, sizeof(log_cmd));
         }
         else if (hdr.type == MILK_MSG_CALL)
         {
@@ -947,16 +1125,19 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             close(saved_stderr);
         }
 
-        if (tee_running)
+        if (tee_running) /* the command ended: the pump drains its pipes, then stops */
         {
-            close(stop_pipe[1]);
-            stop_pipe[1] = -1;
-            pthread_join(tee_tid, NULL);
-            close(out_pipe[0]);
-            close(err_pipe[0]);
-            close(stop_pipe[0]);
-            close(tee_ctx.client_out);
-            close(tee_ctx.client_err);
+            uint64_t one = 1;
+            uint64_t v;
+            ssize_t  w = write(g_tee_go, &one, sizeof(one));
+            (void) w;
+            while (read(g_tee_done, &v, sizeof(v)) < 0 && errno == EINTR)
+            {
+            }
+            close(g_tee.out_r);
+            close(g_tee.err_r);
+            close(g_tee.client_out);
+            close(g_tee.client_err);
         }
 
         refresh_log_stats_soon();
@@ -976,14 +1157,17 @@ int milk_server_handle_client(int client_fd, int listen_fd, int *shutdown_flag)
             struct timespec ts_end;
             clock_gettime(CLOCK_REALTIME, &ts_end);
             milk_srvlog_record(g_srvlog_shm, &ts_start, diff_timespec_ns(&ts_start, &ts_end),
-                               client_pid, hdr.type, rc, log_cmd, tee_ctx.cap_buf);
+                               client_pid, hdr.type, rc, log_cmd, tee_running ? g_tee.cap_buf : "");
         }
         milk_server_cmd_unlock();
 
-        /* a CALL also reports the registry generation: shells resync their functions on change */
-        int32_t done[2] = { rc, (int32_t) milk_registry_gen() };
-        milk_proto_send(client_fd, MILK_MSG_DONE, 0, done,
-                        (hdr.type == MILK_MSG_CALL) ? sizeof(done) : sizeof(rc));
+        /* a CALL also reports the registry generation: shells resync their functions on change; the
+         * connection of a request that crashed ends with it (its frames may be cut) */
+        int32_t done[2]       = { rc, (int32_t) milk_registry_gen() };
+        keep                  = keep && !g_milk_server_crashed;
+        g_milk_server_crashed = 0;
+        milk_server_send_done(client_fd, keep, done,
+                              (hdr.type == MILK_MSG_CALL) ? sizeof(done) : sizeof(rc));
     } // SET / CALC / TEST / CALL block
 
 cleanup:
@@ -1001,7 +1185,7 @@ cleanup:
         close(client_fd);
         _exit(0);
     }
-    return 0;
+    return keep ? MILK_CONN_KEEP : MILK_CONN_CLOSE;
 }
 
 /**
@@ -1079,8 +1263,17 @@ int milk_server_create_listener(const char *sockpath)
     }
     g_srvlog_shm = milk_srvlog_server_init(sockpath, 0, srv_flags);
     milk_server_refresh_log_stats();
-    milk_server_init_dcvar_cache();
 
+    if (g_epfd < 0)
+    {
+        g_epfd = epoll_create1(EPOLL_CLOEXEC);
+    }
+    if (g_epfd < 0 || conn_arm(listen_fd, 0) != 0)
+    {
+        perror("milk-cli --server: epoll");
+        close(listen_fd);
+        return -1;
+    }
     return listen_fd;
 }
 
@@ -1092,27 +1285,18 @@ int milk_server_create_listener(const char *sockpath)
  */
 void milk_server_accept_and_handle(int listen_fd, int *shutdown_flag)
 {
-    reap_children();
-
-    int client_fd = accept4(listen_fd, NULL, NULL, SOCK_CLOEXEC);
-    if (client_fd < 0)
-    {
-        return;
-    }
-
-    if (!milk_ipc_peer_is_self(client_fd))
-    {
-        close(client_fd);
-        return;
-    }
-
     int dummy = 0;
-    if (!milk_server_handle_client(client_fd, listen_fd,
-                                   shutdown_flag != NULL ? shutdown_flag : &dummy))
+    int fds[16];
+    shutdown_flag = (shutdown_flag != NULL) ? shutdown_flag : &dummy;
+    reap_children();
+    int n = milk_server_take_ready(listen_fd, fds, 16);
+    for (int i = 0; i < n; i++)
     {
-        close(client_fd);
+        int keep = milk_server_can_keep(fds[i]);
+        milk_server_conn_done(fds[i],
+                              milk_server_handle_client(fds[i], listen_fd, shutdown_flag, keep));
+        milk_server_serve_waiting(listen_fd, shutdown_flag);
     }
-    milk_server_serve_waiting(listen_fd, shutdown_flag != NULL ? shutdown_flag : &dummy);
 }
 
 /* SIGTERM, a service manager's stop (and the second step of @session end's ladder): the loop ends
@@ -1213,7 +1397,7 @@ int milk_server_run(const char *sockpath,
     {
         struct pollfd pfds[2];
         int           npfds = 1;
-        pfds[0].fd          = listen_fd;
+        pfds[0].fd          = g_epfd; // the listening socket and the kept connections
         pfds[0].events      = POLLIN;
         pfds[0].revents     = 0;
 
@@ -1237,7 +1421,7 @@ int milk_server_run(const char *sockpath,
 
         if (npfds == 2 && (pfds[1].revents & (POLLHUP | POLLERR | POLLIN)))
         {
-            struct pollfd drain_pfd = { listen_fd, POLLIN, 0 };
+            struct pollfd drain_pfd = { g_epfd, POLLIN, 0 };
             if (poll(&drain_pfd, 1, 50) <= 0)
             {
                 break;
@@ -1277,7 +1461,7 @@ int milk_server_run(const char *sockpath,
     milk_server_close_log(0);
 
     close(listen_fd);
-    if (sockpath[0] != '@')
+    if (sockpath[0] != '@' && !g_listen_released)
     {
         unlink(sockpath);
     }

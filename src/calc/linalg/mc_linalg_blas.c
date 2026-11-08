@@ -219,7 +219,6 @@ int mc_resolve_linalg_call(mc_expr_t *e,
 /**
  * unwrap_transpose - Follow user-function parameter bindings and strip an outer `transpose(X)`
  * @e:         Operand expression to inspect
- * @call_site: Enclosing user-defined function call site for parameter substitution (or NULL)
  * @out_trans: Output flag set to 1 if an outer `transpose(...)` wrapper was stripped, else 0
  *
  * Allows BLAS routines that accept a transpose flag (`CblasTrans`) to consume
@@ -227,17 +226,9 @@ int mc_resolve_linalg_call(mc_expr_t *e,
  *
  * Return: Underlying operand expression inside `transpose(...)`, or @e (after param resolution)
  */
-static const mc_expr_t *unwrap_transpose(const mc_expr_t *e,
-                                         const mc_expr_t *call_site,
-                                         int             *out_trans)
+static const mc_expr_t *unwrap_transpose(const mc_expr_t *e, int *out_trans)
 {
     *out_trans = 0;
-    while (e != NULL && e->kind == MC_EXPR_IDENT && e->u.ident.def_param_idx >= 0 &&
-           call_site != NULL && call_site->kind == MC_EXPR_CALL &&
-           e->u.ident.def_param_idx < call_site->u.call.nargs)
-    {
-        e = call_site->u.call.args[e->u.ident.def_param_idx];
-    }
     if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.fn != NULL &&
         strcmp(e->u.call.fn->name, "transpose") == 0 && e->u.call.nargs == 1)
     {
@@ -544,7 +535,6 @@ static int finish_inplace_blas(mc_slot_t *slot,
 /**
  * resolve_inplace_target - Resolve the destination image argument of an explicit in-place BLAS call
  * @arg:       AST argument node naming the destination image
- * @call_site: Enclosing user-defined function call site for parameter substitution (or NULL)
  * @fn:        BLAS function name for error reporting
  * @out_id:    Output image ID of the resolved destination image
  * @err:       Error message buffer
@@ -556,18 +546,11 @@ static int finish_inplace_blas(mc_slot_t *slot,
  * Return: 0 on success, -1 if @arg is not an existing image identifier
  */
 static int resolve_inplace_target(const mc_expr_t *arg,
-                                  const mc_expr_t *call_site,
                                   const char      *fn,
                                   imageID         *out_id,
                                   char            *err,
                                   size_t           errsz)
 {
-    while (arg != NULL && arg->kind == MC_EXPR_IDENT && arg->u.ident.def_param_idx >= 0 &&
-           call_site != NULL && call_site->kind == MC_EXPR_CALL &&
-           arg->u.ident.def_param_idx < call_site->u.call.nargs)
-    {
-        arg = call_site->u.call.args[arg->u.ident.def_param_idx];
-    }
     if (arg == NULL || arg->kind != MC_EXPR_IDENT)
     {
         return blas_err(err, errsz, "%s: destination argument must be an existing image", fn);
@@ -587,7 +570,6 @@ static int resolve_inplace_target(const mc_expr_t *arg,
  * @is_anon:   Non-zero if the step target is anonymous (unused; slot is always updated)
  * @m:         Matched algebraic BLAS descriptor (`call`, `alpha`, `beta`, `is_outer`)
  * @avoid_id:  Image ID to avoid clobbering when evaluating sub-expression temporaries
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -604,16 +586,14 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
                               int                     is_anon,
                               const alg_blas_match_t *m,
                               imageID                 avoid_id,
-                              const mc_expr_t        *call_site,
                               int                     in_unit,
                               char                   *err,
                               size_t                  errsz)
 {
     double alpha = 1.0, beta = 1.0;
-    if ((m->alpha_expr != NULL &&
-         mc_eval_scalar_d(m->alpha_expr, call_site, &alpha, err, errsz) != 0) ||
+    if ((m->alpha_expr != NULL && mc_eval_scalar_d(m->alpha_expr, &alpha, err, errsz) != 0) ||
         (m->has_beta && m->beta_expr != NULL &&
-         mc_eval_scalar_d(m->beta_expr, call_site, &beta, err, errsz) != 0))
+         mc_eval_scalar_d(m->beta_expr, &beta, err, errsz) != 0))
     {
         return -1;
     }
@@ -621,16 +601,14 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     beta = m->has_beta ? (beta * m->beta_sign) : 0.0;
 
     int              transA = 0, transB = 0;
-    const mc_expr_t *eA  = m->is_outer
-                               ? m->call->u.call.args[0]
-                               : unwrap_transpose(m->call->u.call.args[0], call_site, &transA);
-    const mc_expr_t *eB  = m->is_outer
-                               ? m->call->u.call.args[1]
-                               : unwrap_transpose(m->call->u.call.args[1], call_site, &transB);
-    imageID          idA = -1, idB = -1;
-    int              tmpA = 0, tmpB = 0, rc = 0;
-    if (mc_resolve_or_eval_im(eA, call_site, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
-        mc_resolve_or_eval_im(eB, call_site, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
+    const mc_expr_t *eA =
+        m->is_outer ? m->call->u.call.args[0] : unwrap_transpose(m->call->u.call.args[0], &transA);
+    const mc_expr_t *eB =
+        m->is_outer ? m->call->u.call.args[1] : unwrap_transpose(m->call->u.call.args[1], &transB);
+    imageID idA = -1, idB = -1;
+    int     tmpA = 0, tmpB = 0, rc = 0;
+    if (mc_resolve_or_eval_im(eA, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
+        mc_resolve_or_eval_im(eB, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
         if (tmpA)
         {
@@ -737,7 +715,6 @@ done:
  * @slot:      Destination slot to receive the contracted output tensor
  * @rhs:       `einsum` call expression node
  * @avoid_id:  Image ID to avoid clobbering when evaluating operand sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -757,7 +734,6 @@ done:
 static int exec_einsum(mc_slot_t       *slot,
                        const mc_expr_t *rhs,
                        imageID          avoid_id,
-                       const mc_expr_t *call_site,
                        int              in_unit,
                        char            *err,
                        size_t           errsz)
@@ -769,10 +745,10 @@ static int exec_einsum(mc_slot_t       *slot,
     }
     int     nin = rhs->u.call.nargs - 1, tmpA = 0, tmpB = 0, rc = 0;
     imageID idA = -1, idB = -1;
-    if (mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, avoid_id, in_unit, &idA, &tmpA, err,
-                              errsz) != 0 ||
-        (nin == 2 && mc_resolve_or_eval_im(rhs->u.call.args[2], call_site, avoid_id, in_unit, &idB,
-                                           &tmpB, err, errsz) != 0))
+    if (mc_resolve_or_eval_im(rhs->u.call.args[1], avoid_id, in_unit, &idA, &tmpA, err, errsz) !=
+            0 ||
+        (nin == 2 && mc_resolve_or_eval_im(rhs->u.call.args[2], avoid_id, in_unit, &idB, &tmpB, err,
+                                           errsz) != 0))
     {
         if (tmpA)
         {
@@ -1100,7 +1076,6 @@ done:
  * @prog:      Compiled calculator program holding the slot table
  * @cs:        Constructor step descriptor to execute
  * @avoid_id:  Image ID to avoid clobbering when evaluating temporary sub-expressions
- * @call_site: Enclosing user-defined function call site (or NULL for top-level steps)
  * @in_unit:   Non-zero when executing inside a persistent FPS compute unit
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
@@ -1113,16 +1088,15 @@ done:
  *
  * Return: 0 on success, -1 on evaluation or BLAS execution failure
  */
-int mc_exec_blas_call(mcalc_prog_t    *prog,
-                      mc_ctor_step_t  *cs,
-                      imageID          avoid_id,
-                      const mc_expr_t *call_site,
-                      int              in_unit,
-                      char            *err,
-                      size_t           errsz)
+int mc_exec_blas_call(mcalc_prog_t   *prog,
+                      mc_ctor_step_t *cs,
+                      imageID         avoid_id,
+                      int             in_unit,
+                      char           *err,
+                      size_t          errsz)
 {
     mc_slot_t       *slot = &prog->slots[cs->slot_idx];
-    const mc_expr_t *rhs  = call_site ? cs->rhs_expr->u.call.udef_body : cs->rhs_expr;
+    const mc_expr_t *rhs  = cs->rhs_expr;
     alg_blas_match_t m;
 
     if (rhs->kind != MC_EXPR_CALL ||
@@ -1138,27 +1112,27 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
         {
             return blas_err(err, errsz, "invalid algebraic BLAS expression");
         }
-        return exec_matmul_or_alg(slot, cs->is_anon, &m, avoid_id, call_site, in_unit, err, errsz);
+        return exec_matmul_or_alg(slot, cs->is_anon, &m, avoid_id, in_unit, err, errsz);
     }
 
     const char *fn = rhs->u.call.fn->name;
     if (strcmp(fn, "einsum") == 0)
     {
-        return exec_einsum(slot, rhs, avoid_id, call_site, in_unit, err, errsz);
+        return exec_einsum(slot, rhs, avoid_id, in_unit, err, errsz);
     }
 
     double  alpha = 0.0, beta = 0.0;
     imageID idA = -1, idB = -1, idC = -1;
     int     tmpA = 0, tmpB = 0, rc = 0;
 
-    if (mc_eval_scalar_d(rhs->u.call.args[0], call_site, &alpha, err, errsz) != 0)
+    if (mc_eval_scalar_d(rhs->u.call.args[0], &alpha, err, errsz) != 0)
     {
         return -1;
     }
 
     if (strcmp(fn, "scal") == 0)
     {
-        if (resolve_inplace_target(rhs->u.call.args[1], call_site, fn, &idC, err, errsz) != 0)
+        if (resolve_inplace_target(rhs->u.call.args[1], fn, &idC, err, errsz) != 0)
         {
             return -1;
         }
@@ -1169,9 +1143,8 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
 
     if (strcmp(fn, "axpy") == 0)
     {
-        if (resolve_inplace_target(rhs->u.call.args[2], call_site, fn, &idC, err, errsz) != 0 ||
-            mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, -1, in_unit, &idA, &tmpA, err,
-                                  errsz) != 0)
+        if (resolve_inplace_target(rhs->u.call.args[2], fn, &idC, err, errsz) != 0 ||
+            mc_resolve_or_eval_im(rhs->u.call.args[1], -1, in_unit, &idA, &tmpA, err, errsz) != 0)
         {
             return -1;
         }
@@ -1188,11 +1161,10 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
 
     if (strcmp(fn, "ger") == 0)
     {
-        if (resolve_inplace_target(rhs->u.call.args[3], call_site, fn, &idC, err, errsz) != 0 ||
-            mc_resolve_or_eval_im(rhs->u.call.args[1], call_site, idC, in_unit, &idA, &tmpA, err,
-                                  errsz) != 0 ||
-            mc_resolve_or_eval_im(rhs->u.call.args[2], call_site, idC, in_unit, &idB, &tmpB, err,
-                                  errsz) != 0)
+        if (resolve_inplace_target(rhs->u.call.args[3], fn, &idC, err, errsz) != 0 ||
+            mc_resolve_or_eval_im(rhs->u.call.args[1], idC, in_unit, &idA, &tmpA, err, errsz) !=
+                0 ||
+            mc_resolve_or_eval_im(rhs->u.call.args[2], idC, in_unit, &idB, &tmpB, err, errsz) != 0)
         {
             if (tmpA)
             {
@@ -1220,10 +1192,10 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
     if (strcmp(fn, "syrk") == 0)
     {
         int              transA = 0;
-        const mc_expr_t *eA     = unwrap_transpose(rhs->u.call.args[1], call_site, &transA);
-        if (mc_eval_scalar_d(rhs->u.call.args[2], call_site, &beta, err, errsz) != 0 ||
-            resolve_inplace_target(rhs->u.call.args[3], call_site, fn, &idC, err, errsz) != 0 ||
-            mc_resolve_or_eval_im(eA, call_site, idC, in_unit, &idA, &tmpA, err, errsz) != 0)
+        const mc_expr_t *eA     = unwrap_transpose(rhs->u.call.args[1], &transA);
+        if (mc_eval_scalar_d(rhs->u.call.args[2], &beta, err, errsz) != 0 ||
+            resolve_inplace_target(rhs->u.call.args[3], fn, &idC, err, errsz) != 0 ||
+            mc_resolve_or_eval_im(eA, idC, in_unit, &idA, &tmpA, err, errsz) != 0)
         {
             return -1;
         }
@@ -1244,14 +1216,14 @@ int mc_exec_blas_call(mcalc_prog_t    *prog,
         int              is_mm   = (strcmp(fn, "gemm") == 0);
         int              is_symv = (strcmp(fn, "symv") == 0);
         int              transA = 0, transB = 0;
-        const mc_expr_t *eA = is_symv ? rhs->u.call.args[1]
-                                      : unwrap_transpose(rhs->u.call.args[1], call_site, &transA);
+        const mc_expr_t *eA =
+            is_symv ? rhs->u.call.args[1] : unwrap_transpose(rhs->u.call.args[1], &transA);
         const mc_expr_t *eB =
-            is_mm ? unwrap_transpose(rhs->u.call.args[2], call_site, &transB) : rhs->u.call.args[2];
-        if (mc_eval_scalar_d(rhs->u.call.args[3], call_site, &beta, err, errsz) != 0 ||
-            resolve_inplace_target(rhs->u.call.args[4], call_site, fn, &idC, err, errsz) != 0 ||
-            mc_resolve_or_eval_im(eA, call_site, idC, in_unit, &idA, &tmpA, err, errsz) != 0 ||
-            mc_resolve_or_eval_im(eB, call_site, idC, in_unit, &idB, &tmpB, err, errsz) != 0)
+            is_mm ? unwrap_transpose(rhs->u.call.args[2], &transB) : rhs->u.call.args[2];
+        if (mc_eval_scalar_d(rhs->u.call.args[3], &beta, err, errsz) != 0 ||
+            resolve_inplace_target(rhs->u.call.args[4], fn, &idC, err, errsz) != 0 ||
+            mc_resolve_or_eval_im(eA, idC, in_unit, &idA, &tmpA, err, errsz) != 0 ||
+            mc_resolve_or_eval_im(eB, idC, in_unit, &idB, &tmpB, err, errsz) != 0)
         {
             if (tmpA)
             {

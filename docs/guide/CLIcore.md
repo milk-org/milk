@@ -137,11 +137,17 @@ milk-cli > <module>.<command> <arg1> <arg2>   # comment
 
 ### Tab Completion
 
-- **First argument:** matches command → image → filename
-- **Additional arguments:** context-aware based on command's parameter types:
+The prompt and bash (after `source milk.bash`) complete with the same engine:
+
+- **First word:** module commands, `@` keywords and bash words
+- **Arguments of a module command:** by the command's parameter types:
   - `FILENAME` / `FITSFILENAME` args → filesystem paths
-  - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
-  - Other args → match image stream names
+  - `FPSNAME` args → FPS instances
+  - Other args → image and stream names, and entity paths (`s.cam.`, `f.loop.`, `p.loop.`)
+- **Arguments of a keyword:** its options after `-`, and its words (`@config` settings, `@session`
+  subcommands); the arguments of `@calc`, `@test`, `@assert`, calc mode lines and `@{...}`
+  complete calculator functions, variables and images
+- **Any other command** completes file names, as in bash
 - Fuzzy (substring) matching automatically kicks in when prefix matching finds nothing
 
 ```text
@@ -181,14 +187,13 @@ milk-cli > arith.imtrunc \
 
 ### Syntax Highlighting
 
-Syntax highlighting defaults to level `2` on 256-color terminals (full tree-sitter bash + milk
-highlighting with live syntax diagnostics), or level `1` (8-color command/argument highlighting).
+Syntax highlighting is on by default: tree-sitter bash + milk highlighting with live syntax
+diagnostics, in 256 colors, or 16 on terminals with fewer. Calc mode lines are not highlighted.
 Configure it with:
 
 ```text
-milk-cli > @config synhl off            # disable (same as 0)
-milk-cli > @config synhl 1              # basic 8-color mode
-milk-cli > @config synhl on             # enable 256-color tree-sitter mode (same as 2, default)
+milk-cli > @config synhl off            # disable
+milk-cli > @config synhl on             # enable (default)
 ```
 
 <!-- prettier-ignore -->

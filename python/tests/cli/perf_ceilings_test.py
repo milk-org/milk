@@ -70,7 +70,7 @@ def test_perf_latency_ceilings(tmp_path: Path):
             '@calc "cal_us = ($t1 - $t0) * 1e6 / 200"',
             'echo "PERF_cal_us=@{cal_us}"',
             # L0 per-call benchmarks (best of 3 batches of 200)
-            "best_calc=1e9; best_get=1e9; best_at=1e9",
+            "best_calc=1e9; best_get=1e9; best_at=1e9; best_sleep=1e9; best_srv=1e9; best_cmd=1e9",
             "for rep in 1 2 3; do",
             "  t0=$EPOCHREALTIME",
             "  for ((i=0; i<200; i++)); do @calc -v a 1+3.2; done",
@@ -84,10 +84,26 @@ def test_perf_latency_ceilings(tmp_path: Path):
             "  for ((i=0; i<200; i++)); do x=@{s.s_im.xsize}; done",
             "  t1=$EPOCHREALTIME",
             '  @calc -v best_at "min($best_at, ($t1 - $t0) * 1e6 / 200)"',
+            "  t0=$EPOCHREALTIME",
+            "  for ((i=0; i<200; i++)); do @sleep 0; done",
+            "  t1=$EPOCHREALTIME",
+            '  @calc -v best_sleep "min($best_sleep, ($t1 - $t0) * 1e6 / 200)"',
+            # one request each, on the shell's kept connection; the command's output is captured
+            "  t0=$EPOCHREALTIME",
+            '  for ((i=0; i<200; i++)); do @calc "s_im = s_im + 1"; done',
+            "  t1=$EPOCHREALTIME",
+            '  @calc -v best_srv "min($best_srv, ($t1 - $t0) * 1e6 / 200)"',
+            "  t0=$EPOCHREALTIME",
+            "  for ((i=0; i<200; i++)); do mem.listim >/dev/null; done",
+            "  t1=$EPOCHREALTIME",
+            '  @calc -v best_cmd "min($best_cmd, ($t1 - $t0) * 1e6 / 200)"',
             "done",
             'echo "PERF_l0_calc=$best_calc"',
             'echo "PERF_l0_get=$best_get"',
             'echo "PERF_l0_at=$best_at"',
+            'echo "PERF_l0_sleep=$best_sleep"',
+            'echo "PERF_l0_srv=$best_srv"',
+            'echo "PERF_l0_cmd=$best_cmd"',
         ]
 
         cur_n = 0
@@ -133,6 +149,13 @@ def test_perf_latency_ceilings(tmp_path: Path):
         assert vals["l0_calc"] <= 15.0, f"@calc -v too slow: {vals['l0_calc']:.1f} us"
         assert vals["l0_get"] <= 15.0, f"@get -v too slow: {vals['l0_get']:.1f} us"
         assert vals["l0_at"] <= 18.0, f"x=@{{...}} too slow: {vals['l0_at']:.1f} us"
+        # the default 50 us timer slack would show here: @sleep sleeps with 1 us slack
+        assert vals["l0_sleep"] <= 20.0, f"@sleep 0 too slow: {vals['l0_sleep']:.1f} us"
+        # one request to the session (~26 and ~47 us when client and session share one core)
+        assert vals["l0_srv"] <= 65.0, f"server @calc too slow: {vals['l0_srv']:.1f} us"
+        assert (
+            vals["l0_cmd"] <= 120.0
+        ), f"milk command too slow: {vals['l0_cmd']:.1f} us"
 
         for key, stmt, n, _count, ceiling in stmts:
             got = vals[key]
@@ -199,7 +222,7 @@ def test_fused_vs_fallback_parity(tmp_path: Path):
             "mem.mk2Dim A 16 16",
             "mem.mk2Dim B 16 16",
             "mem.mk2Dim C 16 16",
-            '@calc "A = 0.2 + 0.8 * urand(A, 11); B = 0.3 + 0.7 * urand(B, 22); C = -0.4 + 0.9 * urand(C, 33)"',
+            '@calc "A = 0.2 + 0.8 * rand(A, 11); B = 0.3 + 0.7 * rand(B, 22); C = -0.4 + 0.9 * rand(C, 33)"',
             '@calc "Ad = f64(A); Bd = f64(B); Cd = f64(C)"',
         ]
 
@@ -275,7 +298,7 @@ def test_milk_calc_threads_scaling(tmp_path: Path):
         "mem.mk2Dim imA 2048 2048",
         "mem.mk2Dim imB 2048 2048",
         "mem.mk2Dim imC 2048 2048",
-        '@calc "imA = 0.5 + 0.5 * urand(imA, 7); imB = 0.2 + 0.5 * urand(imB, 13)"',
+        '@calc "imA = 0.5 + 0.5 * rand(imA, 7); imB = 0.2 + 0.5 * rand(imB, 13)"',
         '@calc "imC = pow(imA, 1.7)"',
         "best_ms=1e9",
         "for rep in 1 2 3; do",
@@ -488,7 +511,9 @@ def test_kept_slash_eq_and_scalar_reductions_and_exprs(tmp_path: Path):
         assert abs(float(out["acc"]) - 0.5) < 1e-6
         assert abs(float(out["out"]) - 2.0) < 1e-6
         assert int(out["k"]) == 2
-        assert abs(float(out["rms"])) < 1e-6
+        assert (
+            abs(float(out["rms"]) - 4.0) < 1e-6
+        )  # irms: root mean square of cam - ref = 4
         assert abs(float(out["dot"]) - float(out["exp_dot"])) < 1e-4
         assert abs(float(out["g"]) - 3.0) < 1e-6
     finally:
@@ -677,8 +702,8 @@ def test_openblas_lapacke_solvers_and_matmul(tmp_path: Path):
             # 1. 64x64 linear systems & SVD pseudo-inverse residual checks
             "mem.mk2Dim A 64 64",
             "mem.mk2Dim B 64 4",
-            '@calc "A = eye(64) * 10.0 + urand(A, 11) * 0.1"',
-            '@calc "B = urand(B, 22)"',
+            '@calc "A = eye(64) * 10.0 + rand(A, 11) * 0.1"',
+            '@calc "B = rand(B, 22)"',
             '@calc "X_lu = gesv(A, B)"',
             '@calc -v err_lu "imax(abs(matmul(A, X_lu) - B))"',
             '@calc "S = matmul(transpose(A), A); X_chol = posv(S, B)"',
@@ -693,7 +718,7 @@ def test_openblas_lapacke_solvers_and_matmul(tmp_path: Path):
             "mem.mk2Dim M1 256 256",
             "mem.mk2Dim M2 256 256",
             "mem.mk2Dim M3 256 256",
-            '@calc "M1 = urand(M1, 1); M2 = urand(M2, 2)"',
+            '@calc "M1 = rand(M1, 1); M2 = rand(M2, 2)"',
             "t0=$EPOCHREALTIME",
             'for ((i=0; i<10; i++)); do @calc "M3 = matmul(M1, M2)"; done',
             "t1=$EPOCHREALTIME",

@@ -25,8 +25,8 @@ Declare the runnable `extern` in the module header.
 
 ## 3. Register
 
-List `&runnable_<module>_<stem>` in the module registry array (`MILK_MODULE_RUNNABLES`), add the
-source to the module's `CMakeLists.txt` and a row to the module `README.md`.
+List `&runnable_<module>_<stem>` in the module registry array (`MILK_MODULE_RUNNABLES`), re-run
+`cmake` (the module's `CMakeLists.txt` globs its sources) and add a row to the module `README.md`.
 
 ## 4. Verify
 
