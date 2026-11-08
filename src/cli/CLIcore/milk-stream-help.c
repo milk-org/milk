@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
            "\n");
 
     printf(C_HDR "File I/O and Conversion\n" C_RST);
-    printf("  " C_CMD "milk-FITS2shm " C_STRM "<file.fits> <stream>" C_RST
+    printf("  " C_CMD "milk-FITS2shm exec " C_STRM "<file.fits> @S:<stream>" C_RST
            " Load a FITS file into a new stream\n"
            "  " C_CMD "milk-shm2FITS " C_STRM "<stream> <file.fits>" C_RST
            " Save a stream snapshot to a FITS file\n"

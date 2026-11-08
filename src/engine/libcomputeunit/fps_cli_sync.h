@@ -25,6 +25,12 @@
  */
 void fps_cli_set_standalone_args(int argc, char **argv);
 
+/**
+ * fps_cli_is_standalone() - Return 1 in a standalone milk-fpsexec-* process, 0 in milk-cli,
+ * where a local image outlives the command
+ */
+int fps_cli_is_standalone(void);
+
 
 /**
  * fps_cli_option_span() - Number of argv words (1 or 2) taken by the fpsexec option at

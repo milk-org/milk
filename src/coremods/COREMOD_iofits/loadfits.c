@@ -534,6 +534,13 @@ static MILK_HOT errno_t loadfits_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_LOOPSTART(self)
     IMGID imgout = imgid_make_from_name(outimname);
     FUNC_CHECK_RETURN(load_fits_into_table(infilename, &imgout, FITSIOerrmode));
+    if (fps_cli_is_standalone() && imgout.md != NULL && imgout.md[0].shared == 0)
+    {
+        /* this process's own memory goes when the command exits */
+        fprintf(stderr, "loadfits: '%s' would be lost when this command exits: name it @S:%s\n",
+                outimname, imgout.name);
+        return RETURN_FAILURE;
+    }
 
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();

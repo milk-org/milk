@@ -56,6 +56,12 @@ void fps_cli_set_standalone_args(int argc, char **argv)
 }
 
 
+int fps_cli_is_standalone(void)
+{
+    return standalone_argv != NULL;
+}
+
+
 /* Own syntax of a unit, for its -h (fps_cli_set_unit_help()) */
 static const char *unit_usage;
 static const char *unit_options;

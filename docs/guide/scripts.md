@@ -120,11 +120,12 @@ milk-script $MILK_INSTALLDIR/share/milk/scripts/makecircleofdisks.milk \
 ### Loading a FITS file into shared memory
 
 ```bash
-$ milk-FITS2shm myimage.fits mystream
+$ milk-FITS2shm exec myimage.fits @S:mystream
 ```
 
 This creates the shared memory stream `mystream` from the FITS file `myimage.fits`. Other processes
-can then connect to `mystream` via `ImageStreamIO`.
+can then connect to `mystream` via `ImageStreamIO`. The `@S:` prefix is required: without it the
+image would stay in the command's own memory, gone when it exits, so the command refuses it.
 
 ### Benchmarking semaphore speed
 
