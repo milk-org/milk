@@ -16,6 +16,33 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-08** — Thirty module commands that crashed at every call run again. They declared their
+  parameters as pointers, but a binding copies each value into its variable: the value landed in
+  the pointer itself (a 64-byte name over its neighbours), and the command crashed before its
+  kernel. They are `arith.immerge`, `arith.multicrop2D`, `iofits.imgs2cube`, the `modex.imsum2` and
+  `modex.streamprocess` examples and 25 milk-extra-src commands. Fourteen of these also read
+  parameters that the March port to FPS (525605b4) had dropped from their tables: the 49 are back
+  with their keywords, types, defaults and positions (`linalg.compSVD` takes
+  `inM outU outS outV svdlim` again, `linalg.sgemm` has `.transpA`, `.transpB` and `.GPUdevice`).
+  The 123 defaults that port had set to 0 or "" are restored (`lintools.mkFouriermodes`
+  `.deltaCPA` is 0.8 again; at 0 its loop never ended). The module template no longer tells authors
+  to declare `char *` parameters. A compute wrapper returns its kernel's status, so `mem.imkwadd`
+  with an unknown keyword type exits 1 `#fps` `#cli`
+- **2026-11-08** — Calculator fixes found while running an AO loop with milk alone. `x += A @ b` and
+  `x -= A @ b` add to `x` instead of replacing it. A calc unit keeps an `@set` made while a frame
+  runs instead of writing the frame's old value back over it (a test lost 19 of 20). A statement
+  that reads a stream an earlier statement of the same run wrote no longer waits out the torn-frame
+  retries: 6.3 µs per tick instead of 457. The calculator page documents the matrix layout
+  (column-major; a cube is an (nx·ny) × nz matrix) and when `@calc` writes a shared stream
+  (`S:name`) `#cli` `#performance` `#docs`
+- **2026-11-08** — Fewer silent failures. A session that had created many local images no longer
+  crashes at its next module command: the server read the image table through a start-up copy that
+  `realloc()` had left stale. `iofits.saveFITS` fails on a missing image, a FITSIO error or a failed
+  rename, and accepts CFITSIO's `!name`; a module command refuses a string argument longer than 63
+  characters instead of cutting it. `milk-FITS2shm` needs `@S:` on its output
+  (`milk-FITS2shm exec image.fits @S:stream`), since a local image goes with the process. The
+  real-time priority warning and the FAQ point to the permissions that work
+  ([Performance Tuning, 3.2](operations/performance.md#32-permissions)) `#cli` `#streams` `#docs`
 - **2026-11-08** — The milkfft transforms work on every image. They took `resolveIMGID()`'s image
   ID for a status, so `fft.dofft`, `fft.do1Dfft`, `fft.do1Drfft` and the commands built on them
   (`imgfilt.fconv`, `fft.fcorrel`, `fft.transl`) did nothing unless their input was the first image
