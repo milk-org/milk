@@ -33,22 +33,23 @@ How fix ????
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inM       = NULL;
-static char    *inU0      = NULL;
-static char    *inU1      = NULL;
-static char    *outM      = NULL;
-static int32_t *GPUdevice = NULL;
+static char    inM[FUNCTION_PARAMETER_STRMAXLEN]  = "inM";
+static char    inU0[FUNCTION_PARAMETER_STRMAXLEN] = "inU0";
+static char    inU1[FUNCTION_PARAMETER_STRMAXLEN] = "inU1";
+static char    outM[FUNCTION_PARAMETER_STRMAXLEN] = "outM";
+static int32_t GPUdevice                          = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                  \
-    X(".inM", &inM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")         \
-    X(".inU0", &inU0, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input space mode")  \
-    X(".inU1", &inU1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output space mode") \
-    X(".outM", &outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output M")
+#define FPS_PARAMS(X)                                                                 \
+    X(".inM", inM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")         \
+    X(".inU0", inU0, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input space mode")  \
+    X(".inU1", inU1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output space mode") \
+    X(".outM", outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output M")              \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -235,7 +236,7 @@ static MILK_HOT errno_t ModalRemap_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        ModalRemap(imginM0, imginU0, imginU1, &imgoutM1, *GPUdevice);
+        ModalRemap(imginM0, imginU0, imginU1, &imgoutM1, GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutM1.im, NULL);
     }
     MILK_PROCINFO_END(self)

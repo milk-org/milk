@@ -18,22 +18,22 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *iminname  = NULL;
-static char     *imoutname = NULL;
-static float    *blurramp  = NULL;
-static uint32_t *NBloop    = NULL;
+static char     iminname[FUNCTION_PARAMETER_STRMAXLEN]  = "inim";
+static char     imoutname[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
+static float    blurramp                                = 1;
+static uint32_t NBloop                                  = 1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                         \
-    X(".iminname", &iminname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image name") \
-    X(".imoutname", &imoutname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")  \
-    X(".blurramp", &blurramp, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,                        \
-      "value of side pixs (total = 1 for 3 pix)")                                             \
-    X(".axis", &NBloop, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT,                               \
+#define FPS_PARAMS(X)                                                                        \
+    X(".iminname", iminname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image name") \
+    X(".imoutname", imoutname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")  \
+    X(".blurramp", &blurramp, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,                       \
+      "value of side pixs (total = 1 for 3 pix)")                                            \
+    X(".axis", &NBloop, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT,                              \
       "number of times operation is performed")
 
 
@@ -93,7 +93,7 @@ static MILK_HOT errno_t im2Dfilter_1pixbblurr_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        imfilter_im2D_1pixblurr(imgin, &imgout, *blurramp, *NBloop);
+        imfilter_im2D_1pixblurr(imgin, &imgout, blurramp, NBloop);
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }

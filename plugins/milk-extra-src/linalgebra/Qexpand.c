@@ -22,18 +22,18 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *incoeffM  = NULL;
-static char    *outcoeffM = NULL;
-static int32_t *axis      = NULL;
+static char    incoeffM[FUNCTION_PARAMETER_STRMAXLEN]  = "inM";
+static char    outcoeffM[FUNCTION_PARAMETER_STRMAXLEN] = "outcA";
+static int32_t axis                                    = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                            \
-    X(".incoeffM", &incoeffM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input coeffs matrix") \
-    X(".outcoeffM", &outcoeffM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs matrix")  \
+#define FPS_PARAMS(X)                                                                           \
+    X(".incoeffM", incoeffM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input coeffs matrix") \
+    X(".outcoeffM", outcoeffM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs matrix")  \
     X(".axis", &axis, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "axis")
 
 
@@ -191,7 +191,7 @@ static MILK_HOT errno_t Qexpand_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        Qexpand(imgincoeffM, &imgoutcoeffM, *axis);
+        Qexpand(imgincoeffM, &imgoutcoeffM, axis);
 
         processinfo_update_output_stream(processinfo, imgoutcoeffM.im, NULL);
     }

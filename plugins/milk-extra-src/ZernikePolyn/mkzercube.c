@@ -28,27 +28,31 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *outzcubename     = NULL;
-static uint32_t *xsize            = NULL;
-static uint32_t *ysize            = NULL;
-static float    *xcent            = NULL;
-static float    *ycent            = NULL;
-static float    *radius           = NULL;
-static float    *radiusmaskfactor = NULL;
-static float    *TTfactor         = NULL;
-static uint32_t *NBzermode        = NULL;
+static char     outzcubename[FUNCTION_PARAMETER_STRMAXLEN] = "zerc";
+static uint32_t xsize                                      = 50;
+static uint32_t ysize                                      = 50;
+static float    xcent                                      = 24.5;
+static float    ycent                                      = 24.5;
+static float    radius                                     = 24.5;
+static float    radiusmaskfactor                           = 1.2;
+static float    TTfactor                                   = 1.0;
+static uint32_t NBzermode                                  = 5;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                        \
-    X(".xsize", &xsize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "X size")    \
-    X(".ysize", &ysize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "Y size")    \
-    X(".xcent", &xcent, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "X center") \
-    X(".ycent", &ycent, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "Y center") \
-    X(".rad", &radius, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "radius")    \
+#define FPS_PARAMS(X)                                                                             \
+    X(".outimg", outzcubename, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")       \
+    X(".xsize", &xsize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "X size")                         \
+    X(".ysize", &ysize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "Y size")                         \
+    X(".xcent", &xcent, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "X center")                      \
+    X(".ycent", &ycent, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "Y center")                      \
+    X(".rad", &radius, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "radius")                         \
+    X(".radmaskfact", &radiusmaskfactor, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,                 \
+      "masking radius factor")                                                                    \
+    X(".TTfactor", &TTfactor, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT, "amplitude factor on TTr") \
     X(".NBzermode", &NBzermode, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "Number modes")
 
 
@@ -64,11 +68,11 @@ static MILK_HOT errno_t mkzercube_compute(const MILK_RUNNABLE *self)
 
     zernike_init();
 
-    IMGID imgout = imgid_make_from_name_3D(outzcubename, *xsize, *ysize, *NBzermode);
+    IMGID imgout = imgid_make_from_name_3D(outzcubename, xsize, ysize, NBzermode);
     createimagefromIMGID(&imgout);
 
-    uint64_t xysize = *xsize;
-    xysize *= *ysize;
+    uint64_t xysize = xsize;
+    xysize *= ysize;
 
     double *polar_r     = (double *) malloc(xysize * sizeof(double));
     double *polar_theta = (double *) malloc(xysize * sizeof(double));
@@ -83,14 +87,14 @@ static MILK_HOT errno_t mkzercube_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     {
-        uint32_t nx     = *xsize;
-        uint32_t ny     = *ysize;
-        uint32_t nmodes = *NBzermode;
-        float    xc     = *xcent;
-        float    yc     = *ycent;
-        double   invrad = 1.0 / (double) (*radius);
-        float    rmask  = (radiusmaskfactor != NULL) ? *radiusmaskfactor : 1.0f;
-        float    ttfact = (TTfactor != NULL) ? *TTfactor : 1.0f;
+        uint32_t nx     = xsize;
+        uint32_t ny     = ysize;
+        uint32_t nmodes = NBzermode;
+        float    xc     = xcent;
+        float    yc     = ycent;
+        double   invrad = 1.0 / (double) (radius);
+        float    rmask  = radiusmaskfactor;
+        float    ttfact = TTfactor;
 
         int nth2d = milk_omp_team_size(xysize, 65536);
 

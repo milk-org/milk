@@ -23,11 +23,11 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *outimname       = NULL;
-static long   *sizeout         = NULL;
-static long   *kmaxval         = NULL;
-static double *radiusval       = NULL;
-static double *radfactorlimval = NULL;
+static char    outimname[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
+static int64_t sizeout                                 = 512;
+static int64_t kmaxval                                 = 100;
+static double  radiusval                               = 160.0;
+static double  radfactorlimval                         = 2.0;
 
 
 /* ================================================================
@@ -35,7 +35,7 @@ static double *radfactorlimval = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                 \
-    X(".outim", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")   \
+    X(".outim", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")    \
     X(".size", &sizeout, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "size")               \
     X(".kmax", &kmaxval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "k max")              \
     X(".radius", &radiusval, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "radius [pix]") \
@@ -137,8 +137,7 @@ static MILK_HOT errno_t makeCosRadModes_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_imtools_makeCosRadModes(outimname, *sizeout, *kmaxval, *radiusval, *radfactorlimval,
-                                   NULL);
+    linopt_imtools_makeCosRadModes(outimname, sizeout, kmaxval, radiusval, radfactorlimval, NULL);
 
     MILK_PROCINFO_END(self)
 

@@ -26,10 +26,10 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inimc0[FUNCTION_PARAMETER_STRMAXLEN]   = "";
-static char inimc1[FUNCTION_PARAMETER_STRMAXLEN]   = "";
-static char inimmask[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char imout[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char inimc0[FUNCTION_PARAMETER_STRMAXLEN]   = "imc0";
+static char inimc1[FUNCTION_PARAMETER_STRMAXLEN]   = "imc1";
+static char inimmask[FUNCTION_PARAMETER_STRMAXLEN] = "immask";
+static char imout[FUNCTION_PARAMETER_STRMAXLEN]    = "outm";
 
 
 /* ================================================================

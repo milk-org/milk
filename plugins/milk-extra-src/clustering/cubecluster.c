@@ -56,14 +56,14 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *farg_inimname = NULL;
-static char     *farg_outdname = NULL;
-static float    *threshold     = NULL;
-static uint32_t *branchB       = NULL;
-static uint32_t *leafposmode   = NULL;
-static uint32_t *NBCFmax       = NULL;
-static int64_t  *optrebuild    = NULL;
-static int64_t  *optcondense   = NULL;
+static char     farg_inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     farg_outdname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static float    threshold                                   = 0.0;
+static uint32_t branchB                                     = 0;
+static uint32_t leafposmode                                 = 0;
+static uint32_t NBCFmax                                     = 0;
+static int32_t  optrebuild                                  = 0;
+static int32_t  optcondense                                 = 0;
 
 
 /* ================================================================
@@ -71,8 +71,8 @@ static int64_t  *optcondense   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                             \
-    X(".in_name", &farg_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube") \
-    X(".outdname", &farg_outdname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                    \
+    X(".in_name", farg_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube")  \
+    X(".outdname", farg_outdname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                     \
       "output directory name")                                                                    \
     X(".T", &threshold, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT, "threshold")                     \
     X(".B", &branchB, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "branch number")                    \
@@ -279,11 +279,11 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
     CLUSTERTREE ctree;
     ctree.xsize            = xsize;
     ctree.ysize            = ysize;
-    ctree.NBCF             = *NBCFmax;
-    ctree.B                = *branchB;
+    ctree.NBCF             = NBCFmax;
+    ctree.B                = branchB;
     ctree.noise2offset     = 0.0;
-    ctree.T                = *threshold;
-    ctree.leafposmode      = *leafposmode;
+    ctree.T                = threshold;
+    ctree.leafposmode      = leafposmode;
     ctree.npix             = CF_npix;
     ctree.stat_compdistcnt = 0;
     ctree_memallocate(&ctree);
@@ -366,11 +366,11 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
             ctree.CFarray[cfi].pathcnt *= pathprobdecay;
         }
     }
-    if (*optrebuild == 1)
+    if (optrebuild == 1)
     {
         CFtree_rebuild(&ctree, frameleafCFindex, NBframe);
     }
-    if (*optcondense == 1)
+    if (optcondense == 1)
     {
         int condensenop = 1;
         while (condensenop > 0)

@@ -32,10 +32,10 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inputimname[FUNCTION_PARAMETER_STRMAXLEN];
-static char inmaskname[FUNCTION_PARAMETER_STRMAXLEN];
-static char mrespimname[FUNCTION_PARAMETER_STRMAXLEN];
-static char outRMimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char inputimname[FUNCTION_PARAMETER_STRMAXLEN] = "im";
+static char inmaskname[FUNCTION_PARAMETER_STRMAXLEN]  = "mask";
+static char mrespimname[FUNCTION_PARAMETER_STRMAXLEN] = "mresp";
+static char outRMimname[FUNCTION_PARAMETER_STRMAXLEN] = "ourRM";
 
 
 /* ================================================================

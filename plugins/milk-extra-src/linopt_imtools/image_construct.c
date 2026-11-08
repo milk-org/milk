@@ -23,9 +23,9 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char modesimname[FUNCTION_PARAMETER_STRMAXLEN];
-static char invecname[FUNCTION_PARAMETER_STRMAXLEN];
-static char outimname[FUNCTION_PARAMETER_STRMAXLEN];
+static char modesimname[FUNCTION_PARAMETER_STRMAXLEN] = "imcmode";
+static char invecname[FUNCTION_PARAMETER_STRMAXLEN]   = "imvec";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN]   = "outim";
 
 
 /* ================================================================

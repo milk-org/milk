@@ -22,8 +22,8 @@
  * ============================================================= */
 
 static char inimname[FUNCTION_PARAMETER_STRMAXLEN]      = "";
-static char outpixiimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char outpixmimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outpixiimname[FUNCTION_PARAMETER_STRMAXLEN] = "out1";
+static char outpixmimname[FUNCTION_PARAMETER_STRMAXLEN] = "out1";
 
 
 /* ================================================================

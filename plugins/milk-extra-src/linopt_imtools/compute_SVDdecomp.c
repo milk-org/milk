@@ -24,9 +24,9 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char imcinname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static char outimname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static char outcoeffname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char imcinname[FUNCTION_PARAMETER_STRMAXLEN]    = "imc";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN]    = "outm";
+static char outcoeffname[FUNCTION_PARAMETER_STRMAXLEN] = "outcoeff";
 
 
 /* ================================================================

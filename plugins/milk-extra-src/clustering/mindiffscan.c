@@ -28,20 +28,19 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *farg_inimname = NULL;
-static char     *farg_outdname = NULL;
-static uint32_t *farg_kNNsize  = NULL;
+static char    farg_inimname[FUNCTION_PARAMETER_STRMAXLEN] = "imc1";
+static char    farg_outdname[FUNCTION_PARAMETER_STRMAXLEN] = "outd";
+static int64_t farg_kNNsize                                = 20;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                             \
-    X(".in_name", &farg_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube") \
-    X(".outdname", &farg_outdname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT,                        \
-      "output directory name")                                                                    \
-    X(".kNNsize", &farg_kNNsize, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT,                           \
+#define FPS_PARAMS(X)                                                                              \
+    X(".in_name", farg_inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image cube")   \
+    X(".outdname", farg_outdname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output directory name") \
+    X(".kNNsize", &farg_kNNsize, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT,                            \
       "number of samples in cluster")
 
 
@@ -400,7 +399,7 @@ static MILK_HOT errno_t mindiffscan_compute(__attribute__((unused)) const MILK_R
 {
     DEBUG_TRACE_FSTART();
 
-    imcube_mindiffscan(imgid_make_from_name(farg_inimname), farg_outdname, *farg_kNNsize);
+    imcube_mindiffscan(imgid_make_from_name(farg_inimname), farg_outdname, farg_kNNsize);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

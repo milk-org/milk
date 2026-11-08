@@ -21,10 +21,10 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inimname[FUNCTION_PARAMETER_STRMAXLEN]      = "";
-static char inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static char inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char outvecname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN]      = "im";
+static char inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "pixi";
+static char inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "pixmult";
+static char outvecname[FUNCTION_PARAMETER_STRMAXLEN]    = "vecim";
 
 
 /* ================================================================

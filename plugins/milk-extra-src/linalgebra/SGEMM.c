@@ -40,22 +40,25 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inmatA    = NULL;
-static char     *inmatB    = NULL;
-static uint64_t *transpA   = NULL;
-static uint64_t *transpB   = NULL;
-static char     *outM      = NULL;
-static int32_t  *GPUdevice = NULL;
+static char    inmatA[FUNCTION_PARAMETER_STRMAXLEN] = "matA";
+static char    inmatB[FUNCTION_PARAMETER_STRMAXLEN] = "matA";
+static int32_t transpA                              = 0;
+static int32_t transpB                              = 0;
+static char    outM[FUNCTION_PARAMETER_STRMAXLEN]   = "out";
+static int32_t GPUdevice                            = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                 \
-    X(".matA", &inmatA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix A") \
-    X(".matB", &inmatB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix B") \
-    X(".outM", &outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")
+#define FPS_PARAMS(X)                                                                \
+    X(".matA", inmatA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix A") \
+    X(".matB", inmatB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix B") \
+    X(".transpA", &transpA, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "transpose A")    \
+    X(".transpB", &transpB, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "transpose B")    \
+    X(".outM", outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")        \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -501,7 +504,7 @@ static MILK_HOT errno_t SGEMM_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        computeSGEMM(imginA, imginB, &imgM, *transpA, *transpB, *GPUdevice);
+        computeSGEMM(imginA, imginB, &imgM, transpA, transpB, GPUdevice);
     }
     MILK_PROCINFO_END(self)
 

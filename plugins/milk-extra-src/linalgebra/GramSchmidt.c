@@ -20,19 +20,22 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inmodes   = NULL;
-static char    *outmodes  = NULL;
-static char    *auxmat    = NULL;
-static int32_t *GPUdevice = NULL;
+static char    inmodes[FUNCTION_PARAMETER_STRMAXLEN]  = "inm";
+static char    outmodes[FUNCTION_PARAMETER_STRMAXLEN] = "outm";
+static char    auxmat[FUNCTION_PARAMETER_STRMAXLEN]   = "auxmat";
+static int32_t GPUdevice                              = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                  \
-    X(".inmodes", &inmodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes") \
-    X(".outmodes", &outmodes, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")
+#define FPS_PARAMS(X)                                                                 \
+    X(".inmodes", inmodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes") \
+    X(".outmodes", outmodes, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")  \
+    X(".auxmat", auxmat, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT,                      \
+      "optional aux matrix, co-transformed")                                          \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -174,7 +177,7 @@ static MILK_HOT errno_t GramSchmidt_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        GramSchmidt(imginm, &imgoutm, imgaux, *GPUdevice);
+        GramSchmidt(imginm, &imgoutm, imgaux, GPUdevice);
     }
     MILK_PROCINFO_END(self)
 

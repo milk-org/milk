@@ -33,24 +33,25 @@ static int fmInit = 0;
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *inimname       = NULL;
-static char   *modesimname    = NULL;
-static char   *maskimname     = NULL;
-static double *SVDeps         = NULL;
-static char   *outcoeffimname = NULL;
-static int    *reuse          = NULL;
+static char    inimname[FUNCTION_PARAMETER_STRMAXLEN]       = "im1";
+static char    modesimname[FUNCTION_PARAMETER_STRMAXLEN]    = "imcmode";
+static char    maskimname[FUNCTION_PARAMETER_STRMAXLEN]     = "immask";
+static double  SVDeps                                       = 0.001;
+static char    outcoeffimname[FUNCTION_PARAMETER_STRMAXLEN] = "immask";
+static int64_t reuse                                        = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                         \
-    X(".inim", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")          \
-    X(".modes", &modesimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes image cube") \
-    X(".mask", &maskimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "mask image")         \
-    X(".SVDeps", &SVDeps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")              \
-    X(".outimcoeff", &outcoeffimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeff image")
+#define FPS_PARAMS(X)                                                                              \
+    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")                \
+    X(".modes", modesimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes image cube")       \
+    X(".mask", maskimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "mask image")               \
+    X(".SVDeps", &SVDeps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")                   \
+    X(".outimcoeff", outcoeffimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeff image") \
+    X(".reuse", &reuse, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT, "reuse configuration flag")
 
 
 /* ================================================================
@@ -162,8 +163,8 @@ static MILK_HOT errno_t image_fitModes_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_imtools_image_fitModes(inimname, modesimname, maskimname, *SVDeps, outcoeffimname,
-                                  *reuse, NULL);
+    linopt_imtools_image_fitModes(inimname, modesimname, maskimname, SVDeps, outcoeffimname, reuse,
+                                  NULL);
 
     MILK_PROCINFO_END(self)
 

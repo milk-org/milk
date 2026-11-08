@@ -21,12 +21,12 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  imvecname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static char  inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static char  inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char  outimname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static long *xsizein                                     = NULL;
-static long *ysizein                                     = NULL;
+static char    imvecname[FUNCTION_PARAMETER_STRMAXLEN]     = "imvec";
+static char    inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "pixi";
+static char    inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "pixmult";
+static char    outimname[FUNCTION_PARAMETER_STRMAXLEN]     = "outim";
+static int64_t xsizein                                     = 512;
+static int64_t ysizein                                     = 512;
 
 
 /* ================================================================
@@ -118,8 +118,8 @@ static MILK_HOT errno_t vec_to_2Dimage_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_imtools_vec_to_2DImage(imvecname, inpixiname, inpixmultname, outimname, *xsizein,
-                                  *ysizein, NULL);
+    linopt_imtools_vec_to_2DImage(imvecname, inpixiname, inpixmultname, outimname, xsizein, ysizein,
+                                  NULL);
 
     MILK_PROCINFO_END(self)
 

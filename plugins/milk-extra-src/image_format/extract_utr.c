@@ -32,19 +32,19 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  *in_imname     = NULL;
-static char  *out_imname    = NULL;
-static float *ptr_sat_value = NULL;
+static char  in_imname[FUNCTION_PARAMETER_STRMAXLEN]  = "im1";
+static char  out_imname[FUNCTION_PARAMETER_STRMAXLEN] = "out2";
+static float ptr_sat_value                            = 0.0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                    \
-    X(".in_name", &in_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".out_name", &out_imname, FPTYPE_STRING_NOT_STREAM, 1, FPFLAG_DEFAULT_INPUT,       \
-      "up-the-ramp image")                                                               \
+#define FPS_PARAMS(X)                                                                   \
+    X(".in_name", in_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".out_name", out_imname, FPTYPE_STRING_NOT_STREAM, 1, FPFLAG_DEFAULT_INPUT,       \
+      "up-the-ramp image")                                                              \
     X(".sat_value", &ptr_sat_value, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "Saturation threshold")
 
 
@@ -409,7 +409,7 @@ static MILK_HOT errno_t extract_utr_compute(const MILK_RUNNABLE *self)
     int warp_offset;
 
     // FIXME FIXME FIXME FIXME
-    PRINT_WARNING("Saturation value: %f", *ptr_sat_value);
+    PRINT_WARNING("Saturation value: %f", ptr_sat_value);
 
     /*
     PROCESSINFO INIT
@@ -540,12 +540,12 @@ static MILK_HOT errno_t extract_utr_compute(const MILK_RUNNABLE *self)
         if (ndr_value > 1 && ndr_value <= 6)
         {
             simple_desat_iterate(last_valid[buf_pp], frame_count[buf_pp], frame_valid[buf_pp],
-                                 *ptr_sat_value, in_img, just_init);
+                                 ptr_sat_value, in_img, just_init);
         }
         else if (ndr_value > 6)
         {
             utr_iterate(sum_x[buf_pp], sum_y[buf_pp], sum_xy[buf_pp], sum_xx[buf_pp],
-                        sum_yy[buf_pp], frame_count[buf_pp], frame_valid[buf_pp], *ptr_sat_value,
+                        sum_yy[buf_pp], frame_count[buf_pp], frame_valid[buf_pp], ptr_sat_value,
                         in_img, just_init);
         }
 

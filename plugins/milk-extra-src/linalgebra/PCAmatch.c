@@ -24,26 +24,27 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *modesA    = NULL;
-static char    *modesB    = NULL;
-static char    *outcoeffA = NULL;
-static char    *outcoeffB = NULL;
-static char    *outimA    = NULL;
-static char    *outimB    = NULL;
-static int32_t *GPUdevice = NULL;
+static char    modesA[FUNCTION_PARAMETER_STRMAXLEN]    = "inmA";
+static char    modesB[FUNCTION_PARAMETER_STRMAXLEN]    = "inmB";
+static char    outcoeffA[FUNCTION_PARAMETER_STRMAXLEN] = "outcA";
+static char    outcoeffB[FUNCTION_PARAMETER_STRMAXLEN] = "outcB";
+static char    outimA[FUNCTION_PARAMETER_STRMAXLEN]    = "outcA";
+static char    outimB[FUNCTION_PARAMETER_STRMAXLEN]    = "outcB";
+static int32_t GPUdevice                               = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                      \
-    X(".modesA", &modesA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes A")     \
-    X(".modesB", &modesB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes B")     \
-    X(".outcoeffA", &outcoeffA, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs A") \
-    X(".outcoeffB", &outcoeffB, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs B") \
-    X(".outimA", &outimA, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image A")        \
-    X(".outimB", &outimB, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image B")
+#define FPS_PARAMS(X)                                                                     \
+    X(".modesA", modesA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes A")     \
+    X(".modesB", modesB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes B")     \
+    X(".outcoeffA", outcoeffA, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs A") \
+    X(".outcoeffB", outcoeffB, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs B") \
+    X(".outimA", outimA, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image A")        \
+    X(".outimB", outimB, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image B")        \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -289,7 +290,7 @@ static MILK_HOT errno_t PCAmatch_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        PCAmatch(imgmodesA, imgmodesB, &imgoutcA, &imgoutcB, &imgoutimA, &imgoutimB, *GPUdevice);
+        PCAmatch(imgmodesA, imgmodesB, &imgoutcA, &imgoutcB, &imgoutimA, &imgoutimB, GPUdevice);
 
         processinfo_update_output_stream(processinfo, imgoutcA.im, NULL);
         processinfo_update_output_stream(processinfo, imgoutcB.im, NULL);
