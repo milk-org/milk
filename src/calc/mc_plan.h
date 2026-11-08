@@ -274,6 +274,9 @@ void mc_post_defer(int on);
 /* Flush all deferred output stream updates in a single batch. */
 void mc_post_flush(void *processinfo);
 
+/* Return 1 if @id was written by this run and its post is still deferred (write flag set). */
+int mc_post_pending(imageID id);
+
 /* Ensure at least one pooled temporary image exists for complex expressions. */
 void mc_ensure_pool_warm(uint8_t naxis, const uint32_t size[3], uint8_t dt);
 

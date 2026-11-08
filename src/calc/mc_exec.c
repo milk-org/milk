@@ -1060,8 +1060,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                           views[i].im_id == prog->slots[pass->outs[j].slot_idx].im_id);
         }
         rerun_ok &= !(is_out_im && !pass->ops[i].is_out);
-        is_sh_in[i] = (!pass->ops[i].is_scalar && !pass->ops[i].is_out && !is_out_im &&
-                       views[i].dt != 0 && milk_data.image[views[i].im_id].md[0].shared == 1);
+        /* an output of an earlier statement keeps its write flag until the run posts it */
+        is_sh_in[i] =
+            (!pass->ops[i].is_scalar && !pass->ops[i].is_out && !is_out_im && views[i].dt != 0 &&
+             milk_data.image[views[i].im_id].md[0].shared == 1 && !mc_post_pending(views[i].im_id));
     }
 
     for (int attempt = 0; attempt < MILK_FRAME_TRIES; attempt++)

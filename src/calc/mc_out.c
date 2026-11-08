@@ -596,6 +596,27 @@ void mc_post_flush(void *processinfo)
     g_post_n = 0;
 }
 
+/**
+ * mc_post_pending - Test whether @id is queued for a deferred post
+ * @id: `imageID` to look up
+ *
+ * A queued stream was written earlier in this run and keeps `md[0].write = 1` until
+ * mc_post_flush(); a later statement reading it must not mistake that for a torn frame.
+ *
+ * Return: 1 if @id is in the deferred-post queue, 0 otherwise
+ */
+int mc_post_pending(imageID id)
+{
+    for (int i = 0; g_post_defer && i < g_post_n; i++)
+    {
+        if (g_post_ids[i] == id)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* ========================================================================== */
 /* CLI Image Summary & Pixel Line Formatting                                  */
 /* ========================================================================== */
