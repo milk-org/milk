@@ -49,6 +49,8 @@
  *
  * All CLI arguments converted to FPS parameters
  *
+ * @return number of arguments written, or -1 (reported on stderr) when a string does
+ *         not fit its FPS parameter
  */
 int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FPS *fps)
 {
@@ -143,10 +145,25 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF fpscliarg[], int nbarg, FPS *fps)
         case FPTYPE_DIRNAME:
         case FPTYPE_EXECFILENAME:
         case FPTYPE_PROCESS:
-            functionparameter_SetParamValue_STRING(fps, fpscliarg[arg].fpstag,
-                                                   data.cmd[cmdi].argdata[arg].val.s);
+        {
+            /* an FPS string holds FUNCTION_PARAMETER_STRMAXLEN - 1 characters: refuse, never cut
+             * (as milk-fpsexec-* does, fps_cli_sync.c) */
+            const char *s   = data.cmd[cmdi].argdata[arg].val.s;
+            const char *tag = fpscliarg[arg].fpstag;
+            if (strlen(s) >= FUNCTION_PARAMETER_STRMAXLEN)
+            {
+                fprintf(
+                    stderr,
+                    "%s: invalid value '%s' for parameter '%s': expected at most %d characters\n",
+                    data.cmd[cmdi].key, s, (tag[0] == '.') ? tag + 1 : tag,
+                    FUNCTION_PARAMETER_STRMAXLEN - 1);
+                DEBUG_TRACE_FEXIT();
+                return -1;
+            }
+            functionparameter_SetParamValue_STRING(fps, tag, s);
             NBarg_processed++;
             break;
+        }
         }
     }
 

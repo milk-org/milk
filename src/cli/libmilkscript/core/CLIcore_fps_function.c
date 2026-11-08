@@ -22,14 +22,20 @@ char fps_last_used_cmdkey[200] = "";
 
 /**
  * @brief Sync CLI argdata into FPS and copy FPS values back into module variables.
+ *
+ * @return RETURN_SUCCESS, or RETURN_FAILURE (reported) when a value does not fit its parameter
  */
-static void fps_process_clidata_and_sync(FPS             *fps,
-                                         CLICMDARGDEF    *farg,
-                                         FPS_CLI_BINDING *bindings,
-                                         int              nb_b)
+static errno_t fps_process_clidata_and_sync(FPS             *fps,
+                                            CLICMDARGDEF    *farg,
+                                            FPS_CLI_BINDING *bindings,
+                                            int              nb_b)
 {
-    CLIargs_to_FPSparams_setval(farg, nb_b, fps);
+    if (CLIargs_to_FPSparams_setval(farg, nb_b, fps) < 0)
+    {
+        return RETURN_FAILURE;
+    }
     fps_to_modulevars_resync_bindings(fps, bindings, nb_b);
+    return RETURN_SUCCESS;
 }
 
 
@@ -139,8 +145,10 @@ errno_t fps_generic_CLIfunction(FPS_APP_INFO    *app_info,
 
     if (retval == RETURN_SUCCESS || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
     {
-        fps_process_clidata_and_sync(&fps, farg, bindings, nb_b);
-
+        retval = fps_process_clidata_and_sync(&fps, farg, bindings, nb_b);
+    }
+    if (retval == RETURN_SUCCESS)
+    {
         cmdata->cmdsettings = &data.cmd[data.cmdindex].cmdsettings;
 
         if (cmdata->cmdsettings->flags & CLICMDFLAG_PROCINFO)
