@@ -502,9 +502,9 @@ int milk_server_session_save(const char *path)
     fprintf(fp, "@config precision %s >/dev/null%s", dcprecision ? "double" : "single", fails);
     fprintf(fp, "@config procinfo %s >/dev/null%s", dcprocinfo ? "on" : "off", fails);
 
-    for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
+    for (long i = 0; dcvar != NULL && i < dcnvar; i++)
     {
-        const VARIABLE *v = &data.core.variable[i];
+        const VARIABLE *v = &dcvar[i];
         if (!v->used)
         {
             continue;
@@ -557,9 +557,9 @@ int milk_server_session_save(const char *path)
         }
     }
 
-    for (long i = 0; data.core.image != NULL && i < data.core.NB_MAX_IMAGE; i++)
+    for (long i = 0; dcimg != NULL && i < dcnimg; i++)
     {
-        const IMAGE *im = &data.core.image[i];
+        const IMAGE *im = &dcimg[i];
         if (!im->used || im->md == NULL || im->md->shared)
         {
             continue;
@@ -597,9 +597,9 @@ int milk_server_session_save(const char *path)
                 "    popd >/dev/null\nelse\n    __milk_restore_rc=1\nfi\nOLDPWD=$__milk_oldpwd\n");
     }
 
-    for (long i = 0; data.core.image != NULL && i < data.core.NB_MAX_IMAGE; i++)
+    for (long i = 0; dcimg != NULL && i < dcnimg; i++)
     {
-        const IMAGE *im = &data.core.image[i];
+        const IMAGE *im = &dcimg[i];
         if (im->used && im->md != NULL && im->md->shared)
         {
             fprintf(fp, "# stream %s: shared memory, not saved\n", im->name);

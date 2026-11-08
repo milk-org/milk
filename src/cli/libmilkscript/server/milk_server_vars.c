@@ -8,7 +8,7 @@
  *
  * Role & Goal:
  *   1. Moves scalar variables between the calling bash environment and milk's variables (a number
- *      in `data.core.variable[]`, text in `cli_vars[]`): the bash variables a calc expression names
+ *      in `dcvar[]`, text in `cli_vars[]`): the bash variables a calc expression names
  *      come in with the request; a command's declared outputs (CLICMDDATA.outvars) that it changed
  *      go back.
  *   2. Expands the entity references (`s.<stream>.<prop>`, `f.<fps>.<param>`, `p.<proc>.<field>`)
@@ -76,7 +76,7 @@ void milk_server_bump_bash_epoch(void)
  * digits) into @buf. */
 static const char *var_text(long vid, char *buf, size_t sz)
 {
-    const VARIABLE *v = &data.core.variable[vid];
+    const VARIABLE *v = &dcvar[vid];
     if (v->type == 1)
     {
         snprintf(buf, sz, "%ld", v->value.l);
@@ -135,7 +135,7 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
             continue;
         }
         /* Do not overwrite an existing image with a scalar variable */
-        if (image_ID(vname, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+        if (image_ID(vname, dcimg, dcnimg) != -1)
         {
             continue;
         }
@@ -225,7 +225,7 @@ static uint64_t outvar_hash(const char *name)
     {
         return 0;
     }
-    const VARIABLE *v = &data.core.variable[vid];
+    const VARIABLE *v = &dcvar[vid];
     uint64_t        h = fnv1a(14695981039346656037ULL, &v->type, sizeof(v->type));
     if (v->type == 0)
     {
@@ -338,7 +338,7 @@ void milk_server_outvars_send(int client_fd)
  * milk_server_mark_expr_vars_synced - Stamp all `dcvar` identifiers in @expr with `g_bash_epoch`
  * @expr: Calculator expression string that was just evaluated
  *
- * Marks each name of @expr (its calculator tokens) that is a variable in `data.core.variable[]`
+ * Marks each name of @expr (its calculator tokens) that is a variable in `dcvar[]`
  * as synchronized for the current `g_bash_epoch`, enabling subsequent Calc mode lines to
  * evaluate in-process.
  *
@@ -370,7 +370,7 @@ void milk_server_mark_expr_vars_synced(const char *expr)
  * Verifies that @expr lexes as calculator text with no shell expansions (`$`, backticks,
  * backslashes, `@{`) and that every name it references is either a function call, a constant,
  * an entity property path (`s.im.xsize`, `f.fps.param`, ...), an existing image in
- * `data.core.image[]`, a variable in `data.core.variable[]` already synchronized at
+ * `dcimg[]`, a variable in `dcvar[]` already synchronized at
  * `g_bash_epoch`, or a new LHS variable when no user bash commands have run yet.
  *
  * Return: 1 if @expr can be evaluated directly in `milk-cli`, 0 if bash sync is required.
@@ -419,8 +419,7 @@ int milk_server_can_exec_calc_inproc(const char *expr)
             else
             {
                 long vid = variable_ID(id);
-                ok = mc_is_reserved_const(id) ||
-                     image_ID(id, data.core.image, data.core.NB_MAX_IMAGE) != -1 ||
+                ok = mc_is_reserved_const(id) || image_ID(id, dcimg, dcnimg) != -1 ||
                      (vid >= 0 && vid < DCVAR_CACHE_MAX && g_var_sync_epoch[vid] == g_bash_epoch);
                 for (int j = 0; j < nlhs && !ok; j++)
                 {

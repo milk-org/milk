@@ -8,8 +8,7 @@
  * @brief data structure init
  *
  * Delegates core array allocation to milk_data_init()
- * and syncs data.core = milk_data so both globals share
- * the same image/variable/FPS arrays.
+ * and copies milk_data into data.core once.
  */
 
 #ifndef _GNU_SOURCE
@@ -37,8 +36,10 @@
  *
  * Core fields (image, variable, FPS arrays) are
  * allocated by milk_data_init(), then copied into
- * data.core so both DATA.core and milk_data refer
- * to the same storage.
+ * data.core. The copy is not kept in step:
+ * memory_re_alloc() grows the image and variable
+ * tables in milk_data only, so code reaches them
+ * through dcimg/dcnimg/dcvar/dcnvar, never data.core.
  *
  * Calls milk_data_init() to allocate core arrays
  * (images, variables, FPS), then creates built-in
@@ -54,7 +55,7 @@ errno_t CLI_data_init()
     /* Allocate core arrays (image, variable, FPS) */
     milk_data_init();
 
-    /* Sync: data.core shares milk_data's arrays */
+    /* A start-up copy: its image/variable pointers go stale when memory_re_alloc() grows them */
     data.core = milk_data;
 
     gettimeofday(&t1, NULL);

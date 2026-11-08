@@ -470,8 +470,8 @@ extern DATA data;
 #        define MILK_NB_LOCAL_IMAGES 0L
 #    else
 __attribute__((weak)) DATA data = { .core = { 0 } };
-#        define MILK_LOCAL_IMAGES (data.core.image)
-#        define MILK_NB_LOCAL_IMAGES (data.core.NB_MAX_IMAGE)
+#        define MILK_LOCAL_IMAGES (dcimg)
+#        define MILK_NB_LOCAL_IMAGES (dcnimg)
 #    endif
 
 #    include "CLIcore_utils.h"

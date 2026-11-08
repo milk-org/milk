@@ -137,8 +137,8 @@ typedef enum
 {
     MC_ID_UNRESOLVED = 0,
     MC_ID_CONST, /* fallback constant pi, nan, inf */
-    MC_ID_VAR,   /* numeric/string variable in data.core.variable or host/env */
-    MC_ID_IMAGE, /* existing image in data.core.image */
+    MC_ID_VAR,   /* numeric/string variable in dcvar or host/env */
+    MC_ID_IMAGE, /* existing image in dcimg */
     MC_ID_PROP,  /* SHM property s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop> */
     MC_ID_NEW    /* new target identifier on LHS */
 } mc_ident_kind_t;

@@ -9,7 +9,7 @@
  * Role & Goal:
  *   Implements the properties listed in milk_stream_props.h (metadata, pixel
  *   statistics), FITS keyword reads/writes (`kw.<KEY>` and `kw.*`), and existence checks
- *   for both local CLI images (`data.core.image[]`) and `/dev/shm/*.im.shm`
+ *   for both local CLI images (`dcimg[]`) and `/dev/shm/*.im.shm`
  *   ImageStreamIO shared-memory streams.
  */
 

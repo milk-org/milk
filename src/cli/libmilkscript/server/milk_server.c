@@ -377,11 +377,11 @@ void milk_server_refresh_log_stats(void)
     }
 
     uint32_t nb_images = 0;
-    if (data.core.image != NULL)
+    if (dcimg != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < dcnimg; i++)
         {
-            if (data.core.image[i].used)
+            if (dcimg[i].used)
             {
                 nb_images++;
             }
@@ -389,11 +389,11 @@ void milk_server_refresh_log_stats(void)
     }
 
     uint32_t nb_vars = 0;
-    if (data.core.variable != NULL)
+    if (dcvar != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_VARIABLE; i++)
+        for (long i = 0; i < dcnvar; i++)
         {
-            if (data.core.variable[i].used)
+            if (dcvar[i].used)
             {
                 nb_vars++;
             }

@@ -707,10 +707,9 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
                 {
                     char shmpath[512];
                     snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, tmpid.name);
-                    if (image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1 ||
+                    if (image_ID(tmpid.name, dcimg, dcnimg) != -1 ||
                         (tmpid.stream_loc != 'L' && access(shmpath, R_OK) == 0 &&
-                         read_sharedmem_image(tmpid.name, data.core.image,
-                                              data.core.NB_MAX_IMAGE) != -1))
+                         read_sharedmem_image(tmpid.name, dcimg, dcnimg) != -1))
                     {
                         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
                     }
@@ -729,8 +728,7 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
             {
                 char shmpath[512];
                 snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, arg);
-                if (access(shmpath, R_OK) == 0 &&
-                    read_sharedmem_image(arg, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+                if (access(shmpath, R_OK) == 0 && read_sharedmem_image(arg, dcimg, dcnimg) != -1)
                 {
                     data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
                 }

@@ -62,19 +62,19 @@ static int eval_scalar_subexpr(const char *subexpr, char *out, size_t outsz)
     long vidx = variable_ID("_milk_asrt_tmp");
     if (eval_rc == 0 && vidx != -1)
     {
-        if (data.core.variable[vidx].type == 1)
+        if (dcvar[vidx].type == 1)
         {
-            snprintf(out, outsz, "%ld", data.core.variable[vidx].value.l);
+            snprintf(out, outsz, "%ld", dcvar[vidx].value.l);
         }
-        else if (data.core.variable[vidx].type == 2)
+        else if (dcvar[vidx].type == 2)
         {
-            snprintf(out, outsz, "%s", data.core.variable[vidx].value.s);
+            snprintf(out, outsz, "%s", dcvar[vidx].value.s);
         }
         else
         {
-            snprintf(out, outsz, "%.*g", cli_float_digits, data.core.variable[vidx].value.f);
+            snprintf(out, outsz, "%.*g", cli_float_digits, dcvar[vidx].value.f);
         }
-        data.core.variable[vidx].used = 0;
+        dcvar[vidx].used = 0;
         return 0;
     }
     return -1;
@@ -456,7 +456,7 @@ int milk_server_assert(int argc, char **argv)
         int exists = milk_shm_prop_exists(clean, 0);
         if (!exists && (ck == MILK_NS_STREAM || strchr(clean, '.') == NULL))
         {
-            if (image_ID(sname, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+            if (image_ID(sname, dcimg, dcnimg) != -1)
             {
                 exists = 1;
             }
@@ -687,7 +687,7 @@ static int exec_batch_calc_expr(const char *expr, int is_test, char *last_img, s
             l++;
         }
         lhs[l] = '\0';
-        if (l > 0 && image_ID(lhs, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+        if (l > 0 && image_ID(lhs, dcimg, dcnimg) != -1)
         {
             snprintf(last_img, last_img_sz, "%s", lhs);
         }
@@ -874,7 +874,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
         {
             IMGID tmpid = imgid_make_from_name(s_argv[k]);
             if (!tmpid.stream_parse_error && tmpid.name[0] != '\0' &&
-                image_ID(tmpid.name, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+                image_ID(tmpid.name, dcimg, dcnimg) != -1)
             {
                 snprintf(last_img, last_img_sz, "%s", tmpid.name);
             }
@@ -1001,9 +1001,9 @@ int milk_server_batch_or_pipe(int argc, char **argv)
 
     char last_img[256] = "";
     long vidx_last     = variable_ID("_last_img");
-    if (vidx_last != -1 && data.core.variable[vidx_last].type == 2)
+    if (vidx_last != -1 && dcvar[vidx_last].type == 2)
     {
-        snprintf(last_img, sizeof(last_img), "%s", data.core.variable[vidx_last].value.s);
+        snprintf(last_img, sizeof(last_img), "%s", dcvar[vidx_last].value.s);
     }
 
     int rc = split_pipe_stages(script, batch_step_cb, last_img);
@@ -1055,7 +1055,7 @@ static int calc_body(void *arg)
  * @log_cmd:    Output buffer receiving the human-readable command for the server log
  * @log_cmd_sz: Capacity of @log_cmd in bytes
  *
- * Synchronizes referenced bash scalars into `data.core.variable[]`, splits the
+ * Synchronizes referenced bash scalars into `dcvar[]`, splits the
  * expression on top-level semicolons/newlines, and evaluates each statement under
  * milk_server_run_guarded().
  *

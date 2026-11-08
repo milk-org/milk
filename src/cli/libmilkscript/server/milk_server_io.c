@@ -166,15 +166,15 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
     const char *bpref = (prefix[0] == '@') ? (prefix + 1) : prefix;
     size_t      blen  = strlen(bpref);
 
-    if (data.core.image != NULL)
+    if (dcimg != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < dcnimg; i++)
         {
-            if (data.core.image[i].used != 1)
+            if (dcimg[i].used != 1)
             {
                 continue;
             }
-            const char *iname = data.core.image[i].name;
+            const char *iname = dcimg[i].name;
             if (prefix[0] != '@' && strncmp(iname, prefix, plen) == 0)
             {
                 int n = snprintf(out + pos, outsz - pos, "%s\n", iname);
@@ -186,7 +186,7 @@ static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
             const char *ns_pair[2] = { "l", "s" };
             for (int np = 0; np < 2; np++)
             {
-                if (np == 1 && data.core.image[i].shmfd < 0)
+                if (np == 1 && dcimg[i].shmfd < 0)
                 {
                     continue;
                 }
@@ -784,15 +784,15 @@ static size_t complete_images_only(const char *prefix, char *out, size_t outsz)
         return pos;
     }
 
-    if (data.core.image != NULL)
+    if (dcimg != NULL)
     {
-        for (long i = 0; i < data.core.NB_MAX_IMAGE; i++)
+        for (long i = 0; i < dcnimg; i++)
         {
-            if (data.core.image[i].used != 1)
+            if (dcimg[i].used != 1)
             {
                 continue;
             }
-            const char *iname = data.core.image[i].name;
+            const char *iname = dcimg[i].name;
             if (strncmp(iname, prefix, plen) == 0)
             {
                 int n = snprintf(out + pos, outsz - pos, "%s\n", iname);
@@ -963,20 +963,18 @@ static size_t complete_calc(const char *prefix, char *out, size_t outsz)
             add_word(head, call, strlen(call), out, outsz, &pos);
         }
     }
-    for (long i = 0; data.core.image != NULL && i < data.core.NB_MAX_IMAGE; i++)
+    for (long i = 0; dcimg != NULL && i < dcnimg; i++)
     {
-        if (data.core.image[i].used == 1 && strncmp(data.core.image[i].name, id, ilen) == 0)
+        if (dcimg[i].used == 1 && strncmp(dcimg[i].name, id, ilen) == 0)
         {
-            add_word(head, data.core.image[i].name, strlen(data.core.image[i].name), out, outsz,
-                     &pos);
+            add_word(head, dcimg[i].name, strlen(dcimg[i].name), out, outsz, &pos);
         }
     }
-    for (long i = 0; data.core.variable != NULL && i < data.core.NB_MAX_VARIABLE; i++)
+    for (long i = 0; dcvar != NULL && i < dcnvar; i++)
     {
-        if (data.core.variable[i].used && strncmp(data.core.variable[i].name, id, ilen) == 0)
+        if (dcvar[i].used && strncmp(dcvar[i].name, id, ilen) == 0)
         {
-            add_word(head, data.core.variable[i].name, strlen(data.core.variable[i].name), out,
-                     outsz, &pos);
+            add_word(head, dcvar[i].name, strlen(dcvar[i].name), out, outsz, &pos);
         }
     }
     for (int i = 0; i < CLI_MAX_VARS; i++)

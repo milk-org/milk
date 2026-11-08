@@ -709,7 +709,7 @@ static void refresh_shared_image_arg(IMAGE *im)
 
 static imageID resolve_arg_image(const char *name, int allow_autoconnect)
 {
-    if (data.core.image == NULL || data.core.NB_MAX_IMAGE <= 0)
+    if (dcimg == NULL || dcnimg <= 0)
     {
         return -1;
     }
@@ -719,10 +719,10 @@ static imageID resolve_arg_image(const char *name, int allow_autoconnect)
         return -1;
     }
     const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
-    imageID     id   = image_ID(bare, data.core.image, data.core.NB_MAX_IMAGE);
+    imageID     id   = image_ID(bare, dcimg, dcnimg);
     if (id != -1)
     {
-        refresh_shared_image_arg(&data.core.image[id]);
+        refresh_shared_image_arg(&dcimg[id]);
     }
     if (id != -1 || !allow_autoconnect || sp.loc == 'L')
     {
@@ -739,8 +739,8 @@ static imageID resolve_arg_image(const char *name, int allow_autoconnect)
             id = next_avail_image_ID(-1);
             if (id != -1)
             {
-                memcpy(&data.core.image[id], &tmp_im, sizeof(IMAGE));
-                data.core.image[id].used = 1;
+                memcpy(&dcimg[id], &tmp_im, sizeof(IMAGE));
+                dcimg[id].used = 1;
             }
             else
             {
@@ -809,29 +809,27 @@ void milk_cmd_classify_arg(const char *arg, int is_slice)
         }
 
         long svid = variable_ID(sbuf);
-        if (svid != -1 && data.core.variable[svid].type == 3 &&
-            data.core.variable[svid].value.s[0] != '\0')
+        if (svid != -1 && dcvar[svid].type == 3 && dcvar[svid].value.s[0] != '\0')
         {
-            snprintf(sbuf, sizeof(sbuf), "%s", data.core.variable[svid].value.s);
+            snprintf(sbuf, sizeof(sbuf), "%s", dcvar[svid].value.s);
             svid = variable_ID(sbuf);
         }
 
-        if (svid != -1 && data.core.variable[svid].type != 3)
+        if (svid != -1 && dcvar[svid].type != 3)
         {
-            if (data.core.variable[svid].type == 1)
+            if (dcvar[svid].type == 1)
             {
                 tok->type     = CMDARGTOKEN_TYPE_LONG;
-                tok->val.numl = data.core.variable[svid].value.l;
+                tok->val.numl = dcvar[svid].value.l;
             }
-            else if (data.core.variable[svid].type == 2)
+            else if (dcvar[svid].type == 2)
             {
-                snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
-                         data.core.variable[svid].value.s);
+                snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", dcvar[svid].value.s);
             }
             else
             {
                 tok->type     = CMDARGTOKEN_TYPE_FLOAT;
-                tok->val.numf = data.core.variable[svid].value.f;
+                tok->val.numf = dcvar[svid].value.f;
             }
             return;
         }
@@ -895,10 +893,9 @@ void milk_cmd_classify_arg(const char *arg, int is_slice)
         memcpy(bare, arg, bn);
         bare[bn]  = '\0';
         long bvid = variable_ID(bare);
-        if (bvid != -1 && data.core.variable[bvid].type == 3 &&
-            data.core.variable[bvid].value.s[0] != '\0')
+        if (bvid != -1 && dcvar[bvid].type == 3 && dcvar[bvid].value.s[0] != '\0')
         {
-            snprintf(bare, sizeof(bare), "%s", data.core.variable[bvid].value.s);
+            snprintf(bare, sizeof(bare), "%s", dcvar[bvid].value.s);
         }
         if (resolve_arg_image(bare, 1) == -1)
         {
@@ -932,8 +929,7 @@ void milk_cmd_classify_arg(const char *arg, int is_slice)
         char outbuf[256];
         outbuf[0] = '\0';
         int ok    = mcalc_eval_str(sbuf, 0, &eval_rc, outbuf, sizeof(outbuf));
-        if (ok && eval_rc == 0 && outbuf[0] != '\0' &&
-            image_ID(outbuf, data.core.image, data.core.NB_MAX_IMAGE) != -1)
+        if (ok && eval_rc == 0 && outbuf[0] != '\0' && image_ID(outbuf, dcimg, dcnimg) != -1)
         {
             tok->type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
             snprintf(tok->val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", outbuf);

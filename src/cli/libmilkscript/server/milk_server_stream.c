@@ -308,8 +308,8 @@ static inline void write_typed_elem(IMAGE *im, uint8_t dt, uint64_t idx, double 
 /** grab_image_alive() - index of the image @im was copied from, or -1 if it was deleted (lock held). */
 static imageID grab_image_alive(const IMAGE *im)
 {
-    imageID id = image_ID(im->name, data.core.image, data.core.NB_MAX_IMAGE);
-    return (id >= 0 && data.core.image[id].md == im->md) ? id : -1;
+    imageID id = image_ID(im->name, dcimg, dcnimg);
+    return (id >= 0 && dcimg[id].md == im->md) ? id : -1;
 }
 
 /** set_image_kw_long() - set or insert integer FITS keyword @kname on @im. */
@@ -467,9 +467,9 @@ int milk_server_grab(int         client_fd,
         return 1;
     }
 
-    IMAGE   cube     = data.core.image[out_img.ID]; /* shallow copies: see above */
+    IMAGE   cube     = dcimg[out_img.ID]; /* shallow copies: see above */
     IMAGE   in       = *in_im;
-    int     in_local = !need_close; /* in_im is an entry of data.core.image */
+    int     in_local = !need_close; /* in_im is an entry of dcimg */
     uint8_t out_dt   = cube.md->datatype;
     size_t  out_elsz = ImageStreamIO_typesize(out_dt);
     imgid_free(&out_img);
@@ -649,9 +649,9 @@ int milk_server_grab(int         client_fd,
     imageID cid = grab_image_alive(&cube);
     if (cid >= 0)
     {
-        set_image_kw_long(&data.core.image[cid], "DROPPED", (int64_t) dropped,
+        set_image_kw_long(&dcimg[cid], "DROPPED", (int64_t) dropped,
                           "Missed stream frames during grab");
-        processinfo_update_output_stream(NULL, &data.core.image[cid], NULL);
+        processinfo_update_output_stream(NULL, &dcimg[cid], NULL);
     }
 
     if (rc == 0 && cid >= 0 && fits_path != NULL && fits_path[0] != '\0')
@@ -1031,7 +1031,7 @@ int milk_server_streamwrite(int argc, char **argv)
             imgid_free(&out_img);
             return 1;
         }
-        im = &data.core.image[out_img.ID];
+        im = &dcimg[out_img.ID];
         imgid_free(&out_img);
         npos = 0;
     }
@@ -1321,7 +1321,7 @@ int milk_server_replay(int argc, char **argv)
             }
             return 1;
         }
-        dst_im = &data.core.image[dst_img.ID];
+        dst_im = &dcimg[dst_img.ID];
         imgid_free(&dst_img);
     }
 

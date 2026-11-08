@@ -208,7 +208,8 @@ typedef struct
  * @brief Global core data instance
  *
  * In standalone programs, this is the primary global.
- * In CLI programs, data.core aliases this via macro.
+ * In CLI programs, data.core is a start-up copy of it that does not follow
+ * reallocations of the image and variable tables: use the dc* macros.
  */
 extern MILK_DATA milk_data;
 
