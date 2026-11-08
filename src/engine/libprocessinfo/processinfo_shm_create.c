@@ -74,11 +74,16 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
 
         DEBUG_TRACEPOINT("SM_fname = %s", SM_fname);
 
-        umask(0);
         SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
         if (SM_fd == -1)
         {
             PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
+            goto fail;
+        }
+        /* FILEMODE whatever the umask, which stays as the process set it */
+        if (fchmod(SM_fd, (mode_t) FILEMODE) != 0)
+        {
+            PRINT_ERROR("fchmod(%s) failed: %s", SM_fname, strerror(errno));
             goto fail;
         }
 
