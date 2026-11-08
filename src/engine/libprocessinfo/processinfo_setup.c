@@ -139,11 +139,12 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
                     "WARNING: RT priority %d requested"
                     " but sched_setscheduler failed:"
                     " %s\n"
-                    "  Run 'sudo milk-setup-caps' to"
-                    " grant CAP_SYS_NICE.\n",
+                    "  Allow it with an rtprio limit, LimitRTPRIO= in a systemd unit,"
+                    " or a root-owned milk-makecsetandrt\n"
+                    "  (docs/operations/performance.md, 3.2 Permissions).\n",
                     processinfo->RT_priority, strerror(errno));
             processinfo_WriteMessage(processinfo, "RT prio failed - "
-                                                  "run milk-setup-caps");
+                                                  "no rtprio permission");
         }
     }
 

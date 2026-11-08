@@ -93,15 +93,27 @@ Priority range: 1 (lowest) to 99 (highest). Avoid 99 which is reserved for kerne
 
 ### 3.2. Permissions
 
-To allow non-root real-time scheduling:
+A process needs permission to use real-time priorities, and to lock its streams in RAM. Any one of
+these routes gives it:
 
-```bash
-# /etc/security/limits.d/milk.conf
-@realtime  -  rtprio  95
-@realtime  -  memlock unlimited
-```
+- An `rtprio` limit for the user:
 
-Add users to the `realtime` group.
+  ```bash
+  # /etc/security/limits.d/milk.conf
+  @realtime  -  rtprio  95
+  @realtime  -  memlock unlimited
+  ```
+
+  Add users to the `realtime` group.
+
+- A system-level systemd unit with `LimitRTPRIO=` and `LimitMEMLOCK=` (see
+  [User and System Units](systemd.md#4-user-and-system-units)).
+- A root-owned setuid `milk-makecsetandrt`, which applies a unit's `.procinfo.RTprio` and
+  `.procinfo.cset` when it starts (see
+  [Global install without sudo](../developer/tooling.md#62-global-install-without-sudo)).
+
+`milk-setup-caps` does not grant real-time priority: it only grants the perf-counter capability to
+`milk-CTRL`.
 
 ---
 

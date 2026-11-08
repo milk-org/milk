@@ -187,15 +187,15 @@ See also: [CLI Reference](../guide/CLIcore.md)
 
 ??? faq "Real-time scheduling"
 
-    For latency-critical applications (AO loops), configure real-time scheduling:
+    For latency-critical applications (AO loops), give a unit a real-time priority with
+    `.procinfo.RTprio`, or start a shell with one:
 
     ```bash
-    milk-makecsetandrt           # (1)!
-    milk-cli -p 90               # (2)!
+    milk-cli -p 90
     ```
 
-    1. Create cpuset, enable RT
-    2. Launch with high priority
+    Either needs a permission milk cannot grant itself: see
+    [Performance Tuning, 3.2 Permissions](../operations/performance.md#32-permissions).
 
 ??? faq "Semaphore loop speed"
 
