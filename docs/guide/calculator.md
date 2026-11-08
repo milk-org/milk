@@ -63,6 +63,11 @@ if @test "imean(cam) > 1"; then echo bright; fi        # status 0 if true, 1 if 
   assignment into a shared stream keep the image's type: values are truncated toward zero and
   integers wrap (300 in a UINT8 image reads 44). `@config precision` sets the precision of the
   images that module commands create, not the calculator's.
+- An image `@calc` makes is local to the session; `S:name = <expr>` (or `@S:name = <expr>`) makes or
+  writes the shared stream `name` instead, which other processes can read. In a
+  [unit](#compute-units-without-c) it is the reverse: names are shared streams and `L:name` is
+  private. Module-command image arguments take the same prefixes as `@S:name` and `@L:name`
+  ([scripting](scripting.md)).
 - `if <cond>: <statement>`, `if <cond> { ... } elif <cond> { ... } else { ... }` and
   `for k = start:stop[:step] { ... }` work in `@calc` as in a [unit](#compute-units-without-c).
 - `@calc` alone on a line switches `milk-cli` to calc mode: each line is then a calculator
@@ -147,6 +152,10 @@ norm asum`) and `perc(im, f, mask)` reduce over the pixels where the mask is not
 gives NaN, or 0 for `itot`/`asum`/`norm`. A number instead is an axis. On the left-hand side of an
 assignment, `im[mask] = expr` (and `+=` `-=` `*=` `/=`) writes only the pixels where `mask` (an
 image or boolean expression of `im`'s shape) is non-zero, leaving other pixels untouched.
+Matrices are column-major: a 2-D image is a matrix with `size[0]` (x) rows and `size[1]` (y)
+columns, so `A[i, j]` is row `i`, column `j`; a 1-D image is a column vector; and a cube
+(nx, ny, nz) is an (nx·ny) × nz matrix whose columns are its planes (`reshape(cube, nx*ny, nz)` is
+the same matrix as a 2-D image).
 `matmul` (or `@`), `gemm`, `gemv`, `syrk`, `trsv`, `trsm`, `gesv`, `gels`, `solve`, `inv`, and
 `pinv` fold a top-level `transpose(A)` or `A.T` directly into the BLAS/LAPACK kernel without
 allocating an intermediate transposed image. The BLAS routines (`scal`, `axpy`, `gemv`, `symv`,

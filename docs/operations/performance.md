@@ -175,8 +175,9 @@ $ make -j$(nproc)
 
 ### 5.2. GPU Memory Pinning
 
-Use `cudaHostRegister()` to pin shared memory buffers for zero-copy GPU access. This is handled
-automatically by GPU-enabled modules (e.g., `linalgebra` with cuBLAS).
+No milk module pins stream buffers with `cudaHostRegister()`, so GPU-enabled modules (e.g.,
+`linalgebra` with cuBLAS) have no zero-copy access to shared memory: they copy stream data to and
+from the GPU.
 
 ### 5.3. Multi-GPU
 
