@@ -1102,7 +1102,9 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
     if (rhs->kind != MC_EXPR_CALL ||
         (rhs->u.call.fn != NULL && strcmp(rhs->u.call.fn->name, "matmul") == 0))
     {
-        if (rhs->kind == MC_EXPR_CALL)
+        /* `x += matmul(A, B)` / `x -= ...` accumulate into x: match_alg_blas() sets beta */
+        if (rhs->kind == MC_EXPR_CALL && cs->assign_op != MC_TOK_ADD_ASSIGN &&
+            cs->assign_op != MC_TOK_SUB_ASSIGN)
         {
             memset(&m, 0, sizeof(m));
             m.call       = rhs;
