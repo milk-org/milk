@@ -464,8 +464,8 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
         {
             if (assigned[k])
             {
-                sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
-                                  &bindings[CALC_NFIXED + k]);
+                /* guarded: a value set by another process (@set) since the frame read it wins */
+                fpsresync_modvar_to_fps(dcfpsptr, &bindings[CALC_NFIXED + k], 1);
             }
         }
     }
@@ -554,8 +554,8 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
     {
         if (mcalc_prog_assigns(ctx->prog, k))
         {
-            sync_local_to_fps(dcfpsptr, bindings[CALC_NFIXED + k]._fps_pindex,
-                              &bindings[CALC_NFIXED + k]);
+            /* guarded: a value set by another process (@set) since the frame read it wins */
+            fpsresync_modvar_to_fps(dcfpsptr, &bindings[CALC_NFIXED + k], 1);
         }
     }
     frame_n++;
