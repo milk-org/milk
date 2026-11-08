@@ -36,14 +36,14 @@ errno_t images_to_cube(const char *restrict img_name,
 // FPS V2
 // ==========================================
 
-static char    *imgname;
-static int64_t *nbframes;
-static char    *cubename;
+static char    imgname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static int64_t nbframes                               = 0;
+static char    cubename[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
-#define FPS_PARAMS(X)                                                                          \
-    X(".imgname", &imgname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input image name format") \
-    X(".nbframes", &nbframes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of frames")       \
-    X(".cubename", &cubename, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output cube name")
+#define FPS_PARAMS(X)                                                                         \
+    X(".imgname", imgname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "input image name format") \
+    X(".nbframes", &nbframes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "number of frames")      \
+    X(".cubename", cubename, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output cube name")
 
 MILK_PARAMS_DEFINE(images2cube, FPS_PARAMS);
 
@@ -51,7 +51,7 @@ MILK_PARAMS_DEFINE(images2cube, FPS_PARAMS);
 static MILK_HOT errno_t images2cube_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    return images_to_cube(imgname, *nbframes, cubename);
+    return images_to_cube(imgname, nbframes, cubename);
 }
 
 const MILK_RUNNABLE runnable_COREMOD_iofits_images2cube = {
