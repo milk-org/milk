@@ -402,20 +402,24 @@ MILK_PARAMS_DEFINE(fpscli, FPS_PARAMS);
  *
  * Called by both the standalone lifecycle and the
  * milk CLI.  Do NOT call fpsexec() directly from
+ *
+ * Returns the status of the last fpsexec() call,
+ * so the command fails when fpsexec() fails.
  * outside this file — always go through
  * fpscli_compute() to get proper processinfo
  * tracking.
+    errno_t rc = RETURN_SUCCESS;
  */
 static MILK_HOT errno_t fpscli_compute(const MILK_RUNNABLE *self)
 {
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    fpsexec();
+    rc = fpsexec();
 
     MILK_PROCINFO_END(self)
 
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 

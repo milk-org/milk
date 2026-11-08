@@ -180,13 +180,14 @@ static MILK_HOT errno_t image_multicrop2D_compute(const MILK_RUNNABLE *self)
     IMGID out = stream_connect_create_2D(multicrop_outsname, *multicrop_outxsize,
                                          *multicrop_outysize, in.md->datatype);
 
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec(in.im, out.im);
+    rc = fpsexec(in.im, out.im);
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
     MILK_PROCINFO_END(self)
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 

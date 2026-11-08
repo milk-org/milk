@@ -129,20 +129,21 @@ static MILK_HOT errno_t image_merge3D_compute(const MILK_RUNNABLE *self)
 {
     IMGID id0 = imgid_make_from_name(immerge_inimname0);
     resolveIMGID(&id0, ERRMODE_ABORT, dcimg, dcnimg);
+    errno_t rc = RETURN_SUCCESS;
     IMGID id1 = imgid_make_from_name(immerge_inimname1);
     resolveIMGID(&id1, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID idout = imgid_make_from_name(immerge_outimname);
 
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec(&id0, &id1, &idout);
+    rc = fpsexec(&id0, &id1, &idout);
     processinfo_update_output_stream(processinfo, idout.im, id0.im);
 
     MILK_PROCINFO_END(self)
     imgid_free(&id0);
     imgid_free(&id1);
     imgid_free(&idout);
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 
