@@ -9,6 +9,7 @@
  * Compiled into libcomputeunit; has no CLI dependency.
  */
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -288,6 +289,37 @@ static void fps_sync_and_override_by_name(const char      *fps_name,
         fps_apply_cli_sync_and_loop_overrides(&fps, bindings, nb_b, use_loop, loop_delay);
         fps_disconnect(&fps);
     }
+}
+
+/**
+ * @brief chdir to the FPS workdir so that relative datadir/confdir resolve against it.
+ *
+ * Local ('_'-prefixed) and not-yet-created FPS are left untouched.
+ *
+ * @return 0 on success or if skipped, -1 if chdir fails
+ */
+static int fps_chdir_workdir(const char *fps_name)
+{
+    if (fps_name[0] == '_')
+    {
+        return 0;
+    }
+
+    FPS fps = { 0 };
+    if (fps_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1)
+    {
+        return 0;
+    }
+
+    int rc = 0;
+    if (chdir(fps.md->workdir) != 0)
+    {
+        fprintf(stderr, "Error: cannot chdir to FPS '%s' workdir \"%s\": %s\n", fps_name,
+                fps.md->workdir, strerror(errno));
+        rc = -1;
+    }
+    fps_disconnect(&fps);
+    return rc;
 }
 
 /** @brief For 'exec': create the FPS if missing, reuse it otherwise (printing NEW/REUSE). */
@@ -722,6 +754,10 @@ int fpsexec_main_function(int              argc,
         free(keywnode);
         free(fpsarray);
         return 0;
+    }
+    if (strcmp(command, "fpsinit") != 0 && fps_chdir_workdir(fps_name) != 0)
+    {
+        return 1;
     }
     if (strcmp(command, "fpsinit") == 0)
     {

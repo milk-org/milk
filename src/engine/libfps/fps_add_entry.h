@@ -141,7 +141,7 @@ int function_parameter_add_entry(FPS        *fps,
     long fp_##key = 0;                                                                             \
     do                                                                                             \
     {                                                                                              \
-        function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT64, FPFLAG_DEFAULT_OUTPUT, \
+        function_parameter_add_entry(&fps, (pname), (pdescr), FPTYPE_INT32, FPFLAG_DEFAULT_OUTPUT, \
                                      NULL, &fp_##key);                                             \
         (void) fp_##key;                                                                           \
     } while (0)

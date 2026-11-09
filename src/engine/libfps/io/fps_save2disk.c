@@ -8,6 +8,8 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
+#include <string.h>
 #include <sys/stat.h>    // fstat
 #include <sys/syscall.h> // needed for tid = syscall(SYS_gettid);
 
@@ -227,6 +229,7 @@ errno_t functionparameter_write_archivescript(FPS *fps)
  * imagename is the in-memory image to be saved to disk, written as
  * outname.fits.
  *
+ * @return RETURN_SUCCESS, or RETURN_FAILURE if the outlog cannot be opened
  */
 errno_t fps_write_RUNoutput_image(FPS *fps, const char *imagename, const char *outname)
 {
@@ -248,6 +251,11 @@ errno_t fps_write_RUNoutput_image(FPS *fps, const char *imagename, const char *o
         char ffname[STRINGMAXLEN_FULLFILENAME];
         WRITE_FULLFILENAME(ffname, "%s/%s.fits.outlog", fps->md->datadir, outname);
         fpout = fopen(ffname, "w");
+        if (fpout == NULL)
+        {
+            PRINT_ERROR("Cannot open \"%s\": %s", ffname, strerror(errno));
+            return RETURN_FAILURE;
+        }
     }
     fprintf(fpout, "%s %s %s fits %s %s fits\n", timestring, timestringnow, outname, fps->md->name,
             outname);
@@ -261,7 +269,7 @@ errno_t fps_write_RUNoutput_image(FPS *fps, const char *imagename, const char *o
  *
  * Standard function to save output of FPS RUN function.
  *
- *
+ * @return Open file handle, or NULL if the file or its outlog cannot be opened
  */
 FILE *fps_write_RUNoutput_file(FPS *fps, const char *filename, const char *extension)
 {
@@ -278,6 +286,11 @@ FILE *fps_write_RUNoutput_file(FPS *fps, const char *filename, const char *exten
         char ffname[STRINGMAXLEN_FULLFILENAME];
         WRITE_FULLFILENAME(ffname, "%s/%s.%s", fps->md->datadir, filename, extension);
         fp = fopen(ffname, "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("Cannot open \"%s\": %s", ffname, strerror(errno));
+            return NULL;
+        }
     }
 
     FILE *fpout;
@@ -285,6 +298,12 @@ FILE *fps_write_RUNoutput_file(FPS *fps, const char *filename, const char *exten
         char ffname[STRINGMAXLEN_FULLFILENAME];
         WRITE_FULLFILENAME(ffname, "%s/%s.%s.outlog", fps->md->datadir, filename, extension);
         fpout = fopen(ffname, "w");
+        if (fpout == NULL)
+        {
+            PRINT_ERROR("Cannot open \"%s\": %s", ffname, strerror(errno));
+            fclose(fp);
+            return NULL;
+        }
     }
     fprintf(fpout, "%s %s %s %s %s %s %s\n", timestring, timestringnow, filename, extension,
             fps->md->name, filename, extension);

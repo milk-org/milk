@@ -3,6 +3,9 @@ set(LIBNAME "milkcommon")
 add_library(
   ${LIBNAME} SHARED milk_compiler.c milk_omp_team.c milk_rt.c milk_path.c milk_spawn.c
                     milk_syscalls_linux.c milk_detach.c milk_sdnotify.c)
+set_target_properties(${LIBNAME} PROPERTIES UNITY_BUILD ON)
+# milk_syscalls_linux.c defines _GNU_SOURCE before its first include: it needs its own translation unit
+set_source_files_properties(milk_syscalls_linux.c PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 target_include_directories(
   ${LIBNAME}
