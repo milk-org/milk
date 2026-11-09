@@ -18,7 +18,14 @@ The default build is the **Full build**, but without extra dependencies.
 | **Plugins**          | `milk-extra` and `cacao` plugins + standalone `fpsexec` compute units                                             | Per-plugin deps (see [CMake system](../developer/dependency_system.md))          |
 | **Core + FITS**      | `COREMOD_iofits`                                                                                                  | cfitsio                                                                          |
 | **Core**             | `COREMOD_memory`, `COREMOD_arith`, `COREMOD_tools`                                                                |                                                                                  |
-| **Engine**           | `ImageStreamIO`, `libmilkcommon`, `libprocessinfo`, `libfps`, `libcomputeunit`, `libmilkdata`, standalone tools (`milk-fps-*`, `milk-fpsCTRL`, `milk-procCTRL`) | All POSIX-only                                                                   |
+| **Engine**           | `ImageStreamIO`, `libmilkcommon`, `libprocessinfo`, `libfps`, `libcomputeunit`, `libmilkdata`, standalone tools (`milk-fps-*`, `milk-fpsCTRL`, `milk-procCTRL`) | Linux, see [Engine portability](#engine-portability)                             |
+
+## Engine portability
+
+The engine needs Linux. Its libraries keep to POSIX.1-2024 with XSI, except the files listed in
+`MILK_ENGINE_NONPOSIX_SOURCES` in `cmake/milk_layer_guards.cmake`, which use Linux or GNU calls.
+CI checks this with a strict POSIX build (`-DMILK_STRICT_POSIX=ON`). The strict flags do not
+apply to `ImageStreamIO`, a separate repository, or to the standalone tools.
 
 ## Optional dependencies
 

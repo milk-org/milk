@@ -62,7 +62,7 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
 
 
 !!! tip
-    For a minimal POSIX-only build, all optional dependencies can be skipped. See
+    For a minimal build, all optional dependencies can be skipped. See
     [Build Tiers](build_tiers.md) for details.
 
 ??? abstract "GPU acceleration (optional)"

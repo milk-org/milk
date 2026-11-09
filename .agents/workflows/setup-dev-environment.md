@@ -11,11 +11,7 @@ development environment.
 
 Install the system dependencies and clone the repository with its submodules (`ImageStreamIO`
 and others) as [compile.md §1](../../docs/quickstart/compile.md#1-download-and-install-milk)
-shows. On macOS (Homebrew):
-
-```bash
-brew install cmake cfitsio ncurses openblas git tmux pkg-config
-```
+shows.
 
 ## 2. Checkout the Development Branch
 

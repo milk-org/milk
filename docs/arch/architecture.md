@@ -95,7 +95,7 @@ ones.
 │  COREMOD_arith · COREMOD_memory                        │
 │  COREMOD_tools · COREMOD_iofits (USE_CFITSIO)          │
 ├────────────────────────────────────────────────────────┤
-│                 Engine (POSIX only)                    │
+│                     Engine (Linux)                     │
 │  ImageStreamIO · milkcommon · milkfps                  │
 │  milkcomputeunit · milkprocessinfo · milkdata          │
 │  milk-fps-* · milk-fpsCTRL · milk-procCTRL             │

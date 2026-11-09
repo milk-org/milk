@@ -76,7 +76,7 @@ never takes down others, and its output stays in
 ```
 milk/
 ├── src/
-│   ├── engine/                    ← Core libraries (POSIX only, no CLI)
+│   ├── engine/                    ← Core libraries (Linux, no CLI)
 │   │   ├── ImageStreamIO/         ← Zero-copy shared memory streams
 │   │   ├── libfps/                ← FPS core (parameter management)
 │   │   ├── libcomputeunit/        ← FPS runtime (standalone main, units, conf/run)

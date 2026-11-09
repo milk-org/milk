@@ -30,7 +30,7 @@ graph TD
     NCURSES["ncurses"]:::ext
     TREESITTER["tree-sitter"]:::ext
 
-    subgraph engine ["Engine Tier — POSIX only"]
+    subgraph engine ["Engine Tier — Linux"]
         ISIO["ImageStreamIO"]:::core
         COMMON["milkcommon"]:::core
         PROCINFO["milkprocessinfo"]:::core
@@ -428,7 +428,7 @@ flowchart LR
 
 ```text
 cfitsio (headers only, optional)
-  ╌╌ ImageStreamIO                    ← Engine (POSIX-only)
+  ╌╌ ImageStreamIO                    ← Engine (Linux)
        ├─ milkdata      (+ milkcommon)
        └─ milkprocessinfo (+ milkcommon)
             └─ milkfps

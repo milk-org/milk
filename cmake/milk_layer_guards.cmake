@@ -13,7 +13,8 @@ set(MILK_LAYER_GUARD_EXCEPTIONS
     "coremods/COREMOD_memory/stream_TCP_receive.c:CLIcore.h"
     "coremods/COREMOD_memory/stream_UDP_receive.c:CLIcore.h")
 
-set(MILK_ENGINE_DIRS libmilkcommon libprocessinfo libfps libcomputeunit)
+# The MILK_STRICT_POSIX loop below names the same libraries by target
+set(MILK_ENGINE_DIRS libmilkcommon libprocessinfo libfps libcomputeunit libmilkdata)
 
 # Engine files that use GNU, BSD or Linux calls; with MILK_STRICT_POSIX=ON every other engine source
 # compiles with -D_XOPEN_SOURCE=800 -U_GNU_SOURCE
@@ -140,7 +141,7 @@ if(MILK_STRICT_POSIX)
     message(FATAL_ERROR "MILK_STRICT_POSIX needs CMake 3.18 or newer")
   endif()
   set(_engine_dir "${CMAKE_SOURCE_DIR}/src/engine")
-  foreach(_tgt milkcommon milkprocessinfo milkfps milkcomputeunit)
+  foreach(_tgt milkcommon milkprocessinfo milkfps milkcomputeunit milkdata)
     get_target_property(_srcs ${_tgt} SOURCES)
     get_target_property(_sdir ${_tgt} SOURCE_DIR)
     foreach(_src ${_srcs})
