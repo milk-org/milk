@@ -70,6 +70,9 @@ errno_t milkscript_init(int argc, char **argv)
     // Setup SHM dir
     setSHMdir();
 
+    // Setup install and source directories before loading modules
+    setInstallDir();
+
     // Initialize Data Arrays (Variables, FPS, etc) and RNG
     CLI_data_init();
 

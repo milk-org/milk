@@ -14,5 +14,6 @@
 #define CLICORE_SETSHMDIR_H
 
 errno_t setSHMdir();
+errno_t setInstallDir(void);
 
 #endif

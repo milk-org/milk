@@ -436,35 +436,8 @@ errno_t CLI_startup()
 
     dcprogstatus = 0;
 
-    // Initialize installdir
-    char *installdir_env = getenv("MILK_INSTALLDIR");
-    if (installdir_env != NULL)
-    {
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, installdir_env);
-    }
-    else
-    {
-#ifdef INSTALLDIR
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, INSTALLDIR);
-#else
-        milkpath_resolve_realpath(dcinstalldir, STRINGMAXLEN_DIRNAME, "/usr/local/milk");
-#endif
-    }
-
-    // Initialize sourcedir
-    char *sourcedir_env = getenv("MILK_SOURCEDIR");
-    if (sourcedir_env != NULL)
-    {
-        strncpy(dcsourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
-    }
-    else
-    {
-#ifdef SOURCEDIR
-        strncpy(dcsourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
-#else
-        strncpy(dcsourcedir, "", STRINGMAXLEN_DIRNAME - 1);
-#endif
-    }
+    // Initialize installdir and sourcedir
+    setInstallDir();
 
 
     dcdebug     = 0;
