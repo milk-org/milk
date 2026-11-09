@@ -673,7 +673,7 @@ int main(int argc, char **argv)
             "  -I, --initfile FILE   init statements from FILE instead of -i (.unit.initfile)\n"
             "  -l, --lib FILE        load user C (.c) or shared object (.so) extension "
             "(.unit.libs)\n"
-            "      --list [PATTERN]  list pre-compiled bytecode engines, tokens & C extensions\n"
+            "      --list [PATTERN]  list built-in operators and functions & C extensions\n"
             "  fpsinit and exec create the FPS from them; on an existing FPS, -e -t -f -i -I -l\n"
             "  update .unit.* (a running unit recompiles at its next frame) and -p cannot\n"
             "  change. Why the loop stopped is recorded in .unit.error.\n"
@@ -684,7 +684,7 @@ int main(int argc, char **argv)
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "--engines") == 0 || strcmp(argv[i], "--tokens") == 0)
+        if (strcmp(argv[i], "--tokens") == 0)
         {
             fprintf(stderr, "milk.calc: '%s' was removed: use --list\n", argv[i]);
             return 2;

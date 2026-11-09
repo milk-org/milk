@@ -147,7 +147,7 @@ static const cat_ent_t *find_key(const char *key)
  * milk_catalog_has - Check whether a command key is present in the install-time catalog
  * @key: Full `<module>.<cmd>` command name to query
  *
- * Used by both the thin bash client and the engine to test whether a command belongs
+ * Used by both the thin bash client and the server to test whether a command belongs
  * to an installed module without loading shared libraries first.
  *
  * Return: 1 if @key exists in the catalog, 0 otherwise
@@ -161,7 +161,7 @@ int milk_catalog_has(const char *key)
  * milk_catalog_module - Return the module load name that provides a catalogued command
  * @key: Full `<module>.<cmd>` command name to query
  *
- * Looks up @key in the install-time catalog so the engine can autoload the owning
+ * Looks up @key in the install-time catalog so the server can autoload the owning
  * module on first use.
  *
  * Return: Module load name string (e.g. `"milkfft"`), or NULL if @key is not catalogued

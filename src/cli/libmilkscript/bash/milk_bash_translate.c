@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "milk_bash_engine_internal.h"
+#include "milk_bash_internal.h"
 #include "milk_entity_ns.h"
 #include "milk_shell_lex.h"
 

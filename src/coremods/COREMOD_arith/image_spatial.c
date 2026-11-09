@@ -35,7 +35,7 @@
 #include "libmilkdata/milk_type_dispatch.h"
 
 /* =========================================================================
- * 1. CSR Map (`pixunmap`) and Radial Profile (`rprof`) Engine
+ * 1. CSR Map (`pixunmap`) and Radial Profile (`rprof`) kernels
  * ========================================================================= */
 
 /**

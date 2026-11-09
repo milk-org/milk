@@ -4,10 +4,10 @@ Tests for the exact 64-bit scalar lane, the fused index reductions and `cumsum` 
 
 A kept scalar statement used to compute in double, so `k * 3 % 1000` with `k = 2^53 + 1` gave 976 in a
 unit and 979 on the text path. The scalar tape now carries an `int64_t` lane next to the double one
-and evaluates integer operands with the text engine's `cli_calc_long_binop`, including its overflow
+and evaluates integer operands with the old text calculator's `cli_calc_long_binop`, including its overflow
 fallback to double and its shift semantics. `iargmax`, `iargmin` and `iamax` are fused reductions
 (the guide said so; they fell back to text), and `cumsum(expr[, axis])` is a pre-stage that the guide
-listed but the engine did not have.
+listed but the calculator did not have.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """
 Comprehensive integration tests for the milk.bash GNU Bash integration layer
-and the milk-cli bash engine (milk.bash primitives and milk-cli shorthands).
+and the milk-cli bash co-process (milk.bash primitives and milk-cli shorthands).
 """
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
 """
-Regression tests for spatial, remapping, and domain kernels in the milk.calc / @calc engine:
+Regression tests for spatial, remapping, and domain kernels of milk.calc / @calc:
 - medfilt3(im), medfilt5(im), medfilt7(im): exact 2D SIMD median filters (3x3, 5x5, 7x7)
 - pixremap(im, map[, fill]): fused indexed gather
 - pixunmap(im, map[, n]): fused segmented-mean reduction with CSR gather cache

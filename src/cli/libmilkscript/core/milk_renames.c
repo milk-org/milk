@@ -29,7 +29,7 @@ typedef struct
 #define SERVER_GONE \
     "@session (start -> new or use, list -> ls, local -> leave, stop -> end, attach -> log -f)"
 
-/* Command words: bare engine names moved to module `milk`, removed aliases, and words replaced
+/* Command words: bare built-in names moved to module `milk`, removed aliases, and words replaced
  * by the 27 keywords */
 static const rename_t cmd_renames[] = {
     { "@ci", "milk.ci", W },

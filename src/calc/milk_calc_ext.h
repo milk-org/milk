@@ -35,7 +35,7 @@ extern "C"
 #define MILK_CALC_EXT_ABI_VERSION 2
 #define MILK_CALC_MAX_PORTS 8
 #define MILK_CALC_MAX_PARAMS 16
-#define MILK_CALC_PARAM_BYTES 256 /* largest parameter struct the engine packs for a kernel */
+#define MILK_CALC_PARAM_BYTES 256 /* largest parameter struct milk.calc packs for a kernel */
 
 /**
  * enum milk_calc_ext_kind_t - Extension entry kind

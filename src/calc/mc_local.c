@@ -898,9 +898,9 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
  *
  * Evaluates @expr on the stack without touching `milk_data` or heap memory. If
  * @expr uses variables, images, strings, assignments, or non-local functions,
- * returns 0 so the caller can fall back to the full calculator engine.
+ * returns 0 so the caller can fall back to the full calculator.
  *
- * Return: 1 if evaluated locally into @out, 0 if caller must use the full engine
+ * Return: 1 if evaluated locally into @out, 0 if the caller must use the full calculator
  */
 int mcalc_local(const char *expr, int digits, char *out, size_t outsz, int *truth)
 {

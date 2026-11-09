@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 
 static char  g_cmddir[256]  = { '\0' }; /* private dir holding the command files */
 static pid_t g_cmddir_owner = 0;        /* forked children must not remove the parent's dir */
@@ -45,7 +45,7 @@ static void rm_dir_files(const char *dir)
     rmdir(dir);
 }
 
-/** sweep_stale_cmddirs() - remove milk-engine-<pid>-* directories of processes that are gone. */
+/** sweep_stale_cmddirs() - remove milk-cmdfiles-<pid>-* directories of processes that are gone. */
 static void sweep_stale_cmddirs(const char *base)
 {
     DIR *bd = opendir(base);
@@ -57,7 +57,7 @@ static void sweep_stale_cmddirs(const char *base)
     while ((de = readdir(bd)) != NULL)
     {
         long pid = 0;
-        if (sscanf(de->d_name, "milk-engine-%ld-", &pid) == 1 && pid > 0 &&
+        if (sscanf(de->d_name, "milk-cmdfiles-%ld-", &pid) == 1 && pid > 0 &&
             kill((pid_t) pid, 0) != 0 && errno == ESRCH)
         {
             char path[512];
@@ -97,7 +97,7 @@ static int make_cmddir(void)
         base = "/tmp";
     }
     sweep_stale_cmddirs(base);
-    snprintf(g_cmddir, sizeof(g_cmddir), "%s/milk-engine-%ld-XXXXXX", base, (long) getpid());
+    snprintf(g_cmddir, sizeof(g_cmddir), "%s/milk-cmdfiles-%ld-XXXXXX", base, (long) getpid());
     if (mkdtemp(g_cmddir) == NULL)
     {
         g_cmddir[0] = '\0';
@@ -155,7 +155,7 @@ int milk_bash_cmdfile_owned(const char *path)
  * milk_bash_cmdfile_cleanup - Remove the process-private translated command directory
  *
  * Unlinks all remaining translated command files in `g_cmddir` and removes the
- * directory itself during engine shutdown when called by the owning process.
+ * directory itself during co-process shutdown when called by the owning process.
  *
  * Return: void
  */

@@ -26,7 +26,7 @@
 #endif
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milk_server.h"
 
 /**
@@ -93,7 +93,7 @@ void cli_history_save(void)
 const char *cli_history_session(void)
 {
     static char own[16];
-    const char *s = milk_bash_engine_session(); // the session milk-cli's bash uses
+    const char *s = milk_bash_session(); // the session milk-cli's bash uses
     if (s[0] == '\0')
     {
         s = milk_server_session_name(); // this process's own

@@ -1008,16 +1008,9 @@ static mc_stmt_t *parse_stmt_tokens(mc_parse_ctx_t *ctx)
     }
 
     if (t->type == MC_TOK_IDENT && ctx->nest == 0 &&
-        (strcmp(t->sval, "loadlib") == 0 || strcmp(t->sval, "listengines") == 0 ||
-         strcmp(t->sval, "__list_engines") == 0))
+        (strcmp(t->sval, "loadlib") == 0 || strcmp(t->sval, "__list_catalog") == 0))
     {
         const mc_tok_t *nx = &ctx->tl->toks[ctx->tl->pos + 1];
-        if (!mc_is_assign_tok(nx->type) && nx->type != MC_TOK_COMMA && nx->type != MC_TOK_LPAREN &&
-            strcmp(t->sval, "listengines") == 0)
-        {
-            parse_err(ctx, t, "'listengines' was removed: use @calc --list");
-            return NULL;
-        }
         if (!mc_is_assign_tok(nx->type) && nx->type != MC_TOK_COMMA && nx->type != MC_TOK_LPAREN)
         {
             mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));

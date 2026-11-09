@@ -26,7 +26,7 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
   execution, and Levenshtein command suggestions.
 - `CLIcore/CLIcore_UI_completion_tab.c` — Tab completion and the hint line's
   suggestion (`CLI_generator()`, `CLI_completion()`): the word's context picks
-  what to ask `milk_complete()`, the completion engine bash uses too.
+  what to ask `milk_complete()`, the completer bash uses too.
 - `CLIcore/CLIcore_UI_completion_menu.c` — Interactive Zsh-style grid menu for
   navigating multiple tab-completion matches (`cli_menu_display_matches()`).
 - `CLIcore/CLIcore_UI_highlight.c` — Readline redisplay hook that draws the
@@ -56,7 +56,7 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
 
 ## Related Components
 
-- **libmilkscript** (`src/cli/libmilkscript/`): Scripting engine, `milk-cli`
+- **libmilkscript** (`src/cli/libmilkscript/`): Scripting, `milk-cli`
   session server (`server/`), IPC client (`ipc/`) and Bash coprocess bridge
   (`bash/`). The shared-memory property accessor is `src/prop/` (`libmilkprop`)
   and the calculator `src/calc/` (`libmilkcalc`).

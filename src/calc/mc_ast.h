@@ -298,7 +298,7 @@ typedef enum
     MC_STMT_SKIP,         /* skip (inside unit program) */
     MC_STMT_IF,           /* if / elif / else */
     MC_STMT_FOR,          /* for var = start:stop[:step] ... end */
-    MC_STMT_DIRECTIVE     /* @calc only, at top level: loadlib "f", listengines [...] */
+    MC_STMT_DIRECTIVE     /* @calc only, at top level: loadlib "f", __list_catalog [...] */
 } mc_stmt_kind_t;
 
 typedef struct mc_stmt mc_stmt_t;
@@ -316,7 +316,7 @@ struct mc_stmt
     int            line;
     int            col;
     int            is_local;     /* leading 'local' keyword */
-    int            needs_image;  /* 1 if statement requires image engine */
+    int            needs_image;  /* 1 if statement needs image execution */
     int            is_hist_stmt; /* 1 if appended by hist() ring rewriter */
     int            src_off;      /* byte span of the statement in the lexed text */
     int            src_end;

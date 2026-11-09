@@ -150,7 +150,7 @@ double mc_wrap_pi(double a)
  * @v: Value of the condition
  *
  * A condition is a number: non-zero is true; zero and NaN are false. Shared by the session's
- * engine and the shell's evaluator (mc_local.c), so both read a condition alike.
+ * calculator and the shell's evaluator (mc_local.c), so both read a condition alike.
  *
  * Return: 1 if true, 0 if false, -1 if @v is a string (not a condition)
  */
@@ -644,7 +644,7 @@ const mc_func_t *mc_func_table(int *out_count)
  * @category: Section heading grouping related operators/functions
  * @syntax:   Human-readable syntax summary
  * @token:    Legacy/symbolic token classification label
- * @engine:   Execution opcode or engine family name
+ * @opcode:   Execution opcode (`FI_BIN`, ...)
  * @stage:    Execution pipeline stage (`fprog_simd`, `prestage`, `fused_reduce`, etc.)
  * @descr:    Concise description of behavior
  */
@@ -653,7 +653,7 @@ typedef struct
     const char *category;
     const char *syntax;
     const char *token;
-    const char *engine;
+    const char *opcode;
     const char *stage;
     const char *descr;
 } mc_catalog_entry_t;
@@ -814,12 +814,12 @@ static int catalog_entry_matches(const mc_catalog_entry_t *e, const char *pat)
         return 1;
     }
     return str_contains_ci(e->category, pat) || str_contains_ci(e->syntax, pat) ||
-           str_contains_ci(e->token, pat) || str_contains_ci(e->engine, pat) ||
+           str_contains_ci(e->token, pat) || str_contains_ci(e->opcode, pat) ||
            str_contains_ci(e->stage, pat) || str_contains_ci(e->descr, pat);
 }
 
 /**
- * ext_kind_opcode - Map a user C extension tier to its display engine opcode name
+ * ext_kind_opcode - Map a user C extension tier to its displayed opcode name
  * @kind: Extension kind enum (`MILK_EXT_BLK1` .. `MILK_EXT_OP`)
  *
  * Return: Static opcode label string for catalog display
@@ -976,7 +976,7 @@ int mcalc_print_catalog(const char *pattern, int json_mode)
     if (json_mode)
     {
         int matched = 0;
-        printf("{\n  \"engines\": [\n");
+        printf("{\n  \"builtins\": [\n");
         for (int i = 0; g_mc_catalog[i].category != NULL; i++)
         {
             const mc_catalog_entry_t *e = &g_mc_catalog[i];
@@ -994,8 +994,8 @@ int mcalc_print_catalog(const char *pattern, int json_mode)
             json_escape(e->syntax);
             printf(", \"token\": ");
             json_escape(e->token);
-            printf(", \"engine\": ");
-            json_escape(e->engine);
+            printf(", \"opcode\": ");
+            json_escape(e->opcode);
             printf(", \"stage\": ");
             json_escape(e->stage);
             printf(", \"description\": ");
@@ -1023,7 +1023,7 @@ int mcalc_print_catalog(const char *pattern, int json_mode)
             json_escape(e->name);
             printf(", \"signature\": ");
             json_escape(sig);
-            printf(", \"token\": \"TOK_FUNC_USER\", \"engine\": ");
+            printf(", \"token\": \"TOK_FUNC_USER\", \"opcode\": ");
             json_escape(ext_kind_opcode(e->kind));
             printf(", \"description\": ");
             json_escape(desc);
@@ -1048,10 +1048,10 @@ int mcalc_print_catalog(const char *pattern, int json_mode)
         if (last_cat == NULL || strcmp(last_cat, e->category) != 0)
         {
             printf("\n%s\n", e->category);
-            printf("  %-29s %-18s %s\n", "TOKEN / SYNTAX", "ENGINE", "DESCRIPTION");
+            printf("  %-29s %-18s %s\n", "TOKEN / SYNTAX", "OPCODE", "DESCRIPTION");
             last_cat = e->category;
         }
-        printf("  %-29s %-18s %s\n", e->syntax, e->engine, e->descr);
+        printf("  %-29s %-18s %s\n", e->syntax, e->opcode, e->descr);
         matched++;
     }
 
@@ -1066,7 +1066,7 @@ int mcalc_print_catalog(const char *pattern, int json_mode)
         if (umatched == 0)
         {
             printf("\n9. Loaded User C Extensions (-l / loadlib)\n");
-            printf("  %-29s %-18s %s\n", "TOKEN / SYNTAX", "ENGINE", "DESCRIPTION");
+            printf("  %-29s %-18s %s\n", "TOKEN / SYNTAX", "OPCODE", "DESCRIPTION");
         }
         char sig[64];
         char desc[256];

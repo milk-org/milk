@@ -117,7 +117,7 @@ void runCLI_cmd_init(void)
     data.moduleindex   = -1;
     milk_help_tui_hook = cli_fhelp; /* @help --tui */
 
-    milk_module_begin(); /* milk.<name>: engine utilities of the milk-cli front-end */
+    milk_module_begin(); /* milk.<name>: built-in utilities of the milk-cli front end */
     milk_register_runnable(&unit_name);
     milk_register_runnable(&unit_fpsload);
     milk_register_runnable(&unit_fifo);

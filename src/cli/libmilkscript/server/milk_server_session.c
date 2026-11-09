@@ -4,7 +4,7 @@
 
 /**
  * @file milk_server_session.c
- * @brief The session keywords served by the engine: @module, @config, @history's subcommands, and
+ * @brief The session keywords the server runs: @module, @config, @history's subcommands, and
  *        @session save.
  */
 
@@ -124,13 +124,13 @@ int milk_server_module(int argc, char **argv)
 }
 
 /**
- * repl_setting - Map a `@config` REPL setting name to its underlying CLI engine command
+ * repl_setting - Map a `@config` REPL setting name to the CLI command behind it
  * @key: Setting key name (e.g., `synhl`, `indent`, `prompt`)
  *
  * Translates user-facing `@config` keys into the internal `CLIcore` command names
  * registered by the interactive `milk-cli` REPL.
  *
- * Return: Internal engine command name, or NULL if @key is not a REPL setting
+ * Return: Internal command name, or NULL if @key is not a REPL setting
  */
 static const char *repl_setting(const char *key)
 {
@@ -152,8 +152,8 @@ static const char *repl_setting(const char *key)
 }
 
 /**
- * redispatch - Dispatch an internal engine command with trailing arguments
- * @cmd:  Engine command name to invoke as `av[0]`
+ * redispatch - Dispatch an internal command with trailing arguments
+ * @cmd:  Command name to invoke as `av[0]`
  * @argc: Number of elements in @argv (where `argv[1..argc-1]` are forwarded)
  * @argv: Original argument vector
  *
@@ -183,7 +183,7 @@ static int redispatch(const char *cmd, int argc, char **argv)
  *
  * Queries or updates session settings (`digits`, `precision`, `procinfo`, `calc`)
  * or forwards REPL-specific settings (`synhl`, `syndiag`, `indent`, `showmatch`,
- * `prompt`, `sessionlog`) to their engine commands.
+ * `prompt`, `sessionlog`) to their commands.
  *
  * Return: 0 on success, 2 on invalid key or value
  */
@@ -382,7 +382,7 @@ int milk_server_history(int argc, char **argv, int *handled)
     {
         if (strcmp(a1, repl[i][0]) == 0)
         {
-            const char *fe = getenv("_MILK_ENGINE");
+            const char *fe = getenv("_MILK_FRONTEND");
             if (g_srvlog_shm == NULL || !(g_srvlog_shm->flags & MILK_SRVFLAG_INPROC) ||
                 (fe != NULL && strcmp(fe, "cli") != 0))
             {

@@ -149,7 +149,7 @@ install(
         ipc/milk_srvlog.h
         ipc/milk_client.h
         server/milk_server.h
-        bash/milk_bash_engine.h
+        bash/milk_bash.h
         standalone_dependencies.h
         script_includes.h
         milkscript.h
@@ -164,7 +164,7 @@ target_include_directories(
 install(TARGETS milk-script DESTINATION bin)
 
 # Loadable GNU Bash builtin module (enable -f libmilkbash.so ...): the thin client every user shell
-# loads. IPC, shm properties, @{...} translation and the in-shell scalar calculator, without the engine
+# loads. IPC, shm properties, @{...} translation and the in-shell scalar calculator, without the server
 # (no cfitsio, OpenMP or module code); it exports only the builtins.
 add_library(
   milkbash SHARED

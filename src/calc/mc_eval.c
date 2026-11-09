@@ -513,7 +513,7 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
         }
         return 1;
     }
-    if (strncmp(lp, "__list_engines", 14) == 0 &&
+    if (strncmp(lp, "__list_catalog", 14) == 0 &&
         (lp[14] == '\0' || isspace((unsigned char) lp[14])))
     {
         lp += 14;
@@ -873,7 +873,7 @@ static void store_stmt_cache(const char   *input,
  *
  * Execution pipeline:
  *   1. Auto-loads any extension libraries listed in `MILK_CALC_LIBS`.
- *   2. Checks special directives (`loadlib`, `listengines`, `def`, `if`, `for`).
+ *   2. Checks special directives (`loadlib`, `__list_catalog`, `def`, `if`, `for`).
  *   3. Probes the 64-entry LRU statement cache (`try_stmt_cache_hit`).
  *   4. Lexes, parses, and resolves a single statement (`mc_parse_stmt`, `mc_resolve_stmt`).
  *   5. Routes image-producing or image-consuming statements through `mcalc_prog_new` /

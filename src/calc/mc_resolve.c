@@ -11,7 +11,7 @@
  * every identifier, slice, and function call to concrete runtime entities and
  * to annotate every `mc_expr_t` and `mc_stmt_t` node with its resolved value
  * category (`res_kind`), image datatype (`res_dt`), dimensions (`res_naxis`,
- * `res_size`), and whether it requires the image execution engine
+ * `res_size`), and whether it needs image execution
  * (`needs_image`).
  *
  * Key responsibilities:
@@ -370,7 +370,7 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
  * and classifies the slice into one of three modes:
  * 1. LHS boolean mask indexing (`im[mask] = rhs`, `is_mask_index = 1`).
  * 2. Scalar single-pixel indexing (`im[x, y]`, `is_single_pixel = 1`, evaluated
- *    without the full image engine when on the RHS).
+ *    without image execution when on the RHS).
  * 3. Sub-tensor range slice (`im[0:10, :]`, `res_kind = MC_RES_IMAGE`).
  *
  * Return: 0 on success, -1 on error

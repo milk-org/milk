@@ -562,17 +562,17 @@ static int stop_one_server(const char *sockpath)
     return 0;
 }
 
-/* engine_sock() - socket of milk-cli's session when running in its bash coprocess, else NULL */
-static const char *engine_sock(const milk_client_hooks_t *hooks)
+/* frontend_sock() - own session of the front end (milk-cli, milk-script) running this bash, or NULL */
+static const char *frontend_sock(const milk_client_hooks_t *hooks)
 {
-    const char *s = milk_ipc_get_var(hooks, "_MILK_ENGINE_SOCK");
+    const char *s = milk_ipc_get_var(hooks, "_MILK_FRONTEND_SOCK");
     return (s != NULL && s[0] != '\0') ? s : NULL;
 }
 
 /* home_sock() - the session a shell returns to: milk-cli's own one, else the shell's own one */
 static const char *home_sock(const milk_client_hooks_t *hooks)
 {
-    const char *s = engine_sock(hooks);
+    const char *s = frontend_sock(hooks);
     return (s != NULL) ? s : milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
 }
 
@@ -1032,7 +1032,7 @@ static int cmd_leave(const milk_client_hooks_t *hooks)
     }
     session_attach(hooks, sock, "");
     printf("This shell uses %s session again (%s).\n",
-           (engine_sock(hooks) != NULL) ? "milk-cli's" : "its own", sock);
+           (frontend_sock(hooks) != NULL) ? "milk-cli's" : "its own", sock);
     return 0;
 }
 
@@ -1092,7 +1092,7 @@ static int cmd_who(const char *arg, const milk_client_hooks_t *hooks)
 static int cmd_end(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     const char *arg   = NULL;
-    const char *esock = engine_sock(hooks);
+    const char *fsock = frontend_sock(hooks);
     int         all   = 0;
     int         units = 0;
     char        cur[256];
@@ -1135,7 +1135,7 @@ static int cmd_end(int argc, char **argv, const milk_client_hooks_t *hooks)
             snprintf(full, sizeof(full), "%s/%s", dirpath, de->d_name);
             if (len <= plen + 8 || strncmp(de->d_name, pfx, plen) != 0 ||
                 strcmp(de->d_name + len - 8, ".log.shm") != 0 || !session_read_log(full, &si) ||
-                (esock != NULL && strcmp(si.sockpath, esock) == 0))
+                (fsock != NULL && strcmp(si.sockpath, fsock) == 0))
             {
                 continue;
             }
@@ -1154,7 +1154,7 @@ static int cmd_end(int argc, char **argv, const milk_client_hooks_t *hooks)
     }
 
     session_target(hooks, arg, sock, sizeof(sock), name, sizeof(name));
-    if (esock != NULL && strcmp(sock, esock) == 0)
+    if (fsock != NULL && strcmp(sock, fsock) == 0)
     {
         fprintf(stderr, "@session end: milk-cli's session ends with milk-cli (exit)\n");
         return 1;

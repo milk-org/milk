@@ -153,7 +153,7 @@ static int autostart_server(const milk_client_hooks_t *hooks, const char *sockpa
     return rc;
 }
 
-/* The connections of this process to its sessions (the shell's and milk-cli's engine), kept
+/* The connections of this process to its sessions (the shell's and its front end's), kept
  * between requests while the replies say MILK_FLAG_KEEP: a request then costs no connect() and no
  * accept(). A forked subshell opens its own: two processes must not mix their frames on one. The
  * connection is close-on-exec, which makes it one of the shell's own fds for bash: bash undoes a

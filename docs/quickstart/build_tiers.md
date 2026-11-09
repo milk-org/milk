@@ -31,7 +31,7 @@ Some optional dependencies are detected by MILK and enable additional features:
 | `USE_TREESITTER` | ON      | Enable tree-sitter syntax highlighting in CLI              |
 | `USE_CFITSIO`    | ON      | Enable FITS file I/O (`COREMOD_iofits`)                    |
 | `USE_PLUGINS`    | ON      | Build plugin modules (`plugins/*`) and their `fpsexec`s    |
-| `USE_CALC`       | ON      | Build calculator & JIT engine (`milkprop`, `milkcalc`)     |
+| `USE_CALC`       | ON      | Build the calculator and its JIT (`milkprop`, `milkcalc`)  |
 | `USE_OPENBLAS`   | ON      | BLAS: multicore linear algebra on CPU (if found)           |
 | `USE_LAPACKE`    | ON      | LAPACKE linear algebra routines (if found)                 |
 | `USE_MKL`        | OFF     | Intel MKL compute library                                  |

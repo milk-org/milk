@@ -4,7 +4,7 @@
 
 /**
  * @file mc_exec.c
- * @brief Runtime execution engine for constructors and elementwise passes in libmilkcalc.
+ * @brief Runtime execution of constructors and elementwise passes in libmilkcalc.
  *
  * Implements the runtime execution of `MC_STEP_CTOR` (`mc_exec_ctor`) and
  * `MC_STEP_PASS` (`mc_exec_pass`) steps inside a planned program:

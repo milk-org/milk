@@ -4,12 +4,12 @@
 
 /**
  * @file CLIcore_UI_completion_tab.c
- * @brief Readline tab-completion for the milk-cli prompt, over the shared completion engine.
+ * @brief Readline tab-completion for the milk-cli prompt, over the shared completer.
  *
  * Role & Goal:
  *   Implements `CLI_generator()` and `CLI_completion()` for the `milk-cli` interactive prompt
  *   (TAB and the hint line). The context of the word (cli_ts_determine_completion_mode()) picks
- *   what to ask milk_complete(), the engine bash uses too: command names, arguments, keyword
+ *   what to ask milk_complete(), which bash uses too: command names, arguments, keyword
  *   options and words, calculator text. Shell variables (`$name`) and file names are completed
  *   here; a command that is not milk's completes file names, as in bash. When nothing matches, a
  *   fuzzy pass keeps the candidates that contain the word.

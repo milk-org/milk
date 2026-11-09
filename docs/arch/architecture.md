@@ -137,7 +137,7 @@ milk/
 │   ├── calc/                          ← Calculator, C-codegen JIT & milk.calc unit (milkcalc)
 │   │
 │   ├── cli/                           ← User-facing tools
-│   │   ├── libmilkscript/             Scripting, sessions & bash engine
+│   │   ├── libmilkscript/             Scripting, sessions & bash co-process
 │   │   ├── CLIcore/                   Interactive shell framework & milk-termview
 │   │   └── overview/                  milk-CTRL dashboard (milk-streamCTRL opens it on F3)
 │   │

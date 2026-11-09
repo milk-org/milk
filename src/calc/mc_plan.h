@@ -379,7 +379,7 @@ void mc_prog_load_vars(mcalc_prog_t *p);
  * one holds the other kind (a string for a number parameter). */
 int mc_prog_store_vars(mcalc_prog_t *p, char *err, size_t errsz);
 
-/* 1 if engine variable @vid is bound to a unit parameter (it keeps its place). */
+/* 1 if variable @vid is bound to a unit parameter (it keeps its place). */
 int mc_var_bound(long vid);
 
 /* Return 1 if all image slots in @p still match their planned datatype and shape. */

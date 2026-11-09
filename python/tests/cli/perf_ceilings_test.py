@@ -231,7 +231,7 @@ def test_fused_vs_fallback_parity(tmp_path: Path):
             if not any(v in expr for v in ("A", "B", "C")):
                 expr = f"(A + ({expr}))"
             # Replace A/B/C on the fallback side with A[::1b]: a bin-1 slice copies the image (plain
-            # slices are read as views by the fused engine), so the expression takes the
+            # slices are read as views by fused passes), so the expression takes the
             # per-operator path
             fb_expr = (
                 expr.replace("ix(A)", "ix(__A)")

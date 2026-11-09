@@ -7,7 +7,7 @@
  * @brief Temporary image pool, output image preparation, semaphore batching, and formatting.
  *
  * Manages image allocation, reuse, publication, and CLI result formatting for
- * the `libmilkcalc` execution engine:
+ * `libmilkcalc` program execution:
  *
  * 1. **Temporary Image Pool (`_tmpcalcpool0..3`)**: Maintains a 4-slot, 256 MiB
  *    pool of local `IMAGE` buffers (`mc_tmp_image`, `mc_tmp_release`) so

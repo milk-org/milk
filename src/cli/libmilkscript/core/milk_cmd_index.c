@@ -116,7 +116,7 @@ static int valid_part(const char *s, size_t n)
 /**
  * milk_cmd_key_check - Validate a command key and check for duplicate registrations
  * @key:  Full command key (`<module>.<name>` or root command name)
- * @midx: Owning module index in `data.module[]`, or -1 for engine root commands
+ * @midx: Owning module index in `data.module[]`, or -1 for root commands
  *
  * Ensures module commands have a valid module shortname, a `<module>.<name>` dot
  * separator with `[A-Za-z0-9_]` characters, and have not already been registered.

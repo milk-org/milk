@@ -52,8 +52,8 @@ const milk_keyword_t *milk_lexicon_keywords(void);
 /** milk_lexicon_keyword() - the keyword called @name (with or without the sigil), or NULL. */
 const milk_keyword_t *milk_lexicon_keyword(const char *name);
 
-/** milk_lexicon_frontend() - MILK_KW_* bit of the running front-end, from $_MILK_ENGINE (cli|script). */
-unsigned milk_lexicon_frontend(const char *engine);
+/** milk_lexicon_frontend() - MILK_KW_* bit of the running front-end, from $_MILK_FRONTEND (cli|script). */
+unsigned milk_lexicon_frontend(const char *frontend);
 
 /** milk_lexicon_print_help() - the help of keyword @k (`@help <kw>`, `@<kw> --help`). */
 void milk_lexicon_print_help(const milk_keyword_t *k, FILE *fp);

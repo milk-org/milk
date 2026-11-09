@@ -49,7 +49,7 @@
 #include <string.h>
 
 #include "CLIcore_script.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milk_os.h"
 #include "milkscript.h"
 
@@ -197,7 +197,7 @@ static int sbuf_add_quoted(struct sbuf *b, const char *arg)
 }
 
 /**
- * script_prologue() - set $0, $1..$N (and set -x) in the bash engine before the script runs.
+ * script_prologue() - set $0, $1..$N (and set -x) in the bash co-process before the script runs.
  */
 static int script_prologue(int argc, char **argv, int xtrace)
 {
@@ -216,7 +216,7 @@ static int script_prologue(int argc, char **argv, int xtrace)
     }
     if (rc == 0)
     {
-        rc = milk_bash_engine_exec(b.s, NULL);
+        rc = milk_bash_exec(b.s, NULL);
     }
     free(b.s);
     return rc;
@@ -228,7 +228,7 @@ static int script_prologue(int argc, char **argv, int xtrace)
  * @argv: Command-line argument vector
  *
  * Parses interpreter options (`-e`, `-x`, `-E`, `-q`, `-d`, `-n`), initializes
- * `libmilkscript`, forwards positional arguments into the Bash engine, and executes
+ * `libmilkscript`, forwards positional arguments into the bash co-process, and executes
  * the target script file or standard input.
  *
  * Return: Exit code of the executed script
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    setenv("_MILK_ENGINE", "script", 1); /* front-end of the bash engine: picks the keyword set */
+    setenv("_MILK_FRONTEND", "script", 1); /* this front end: picks the keyword set */
     milkos_malloc_keep(); /* temporaries freed and allocated again are not faulted in each time */
 
     int         opt_errexit = 0;

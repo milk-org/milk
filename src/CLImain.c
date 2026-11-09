@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    setenv("_MILK_ENGINE", "cli", 1); /* front-end of the bash engine: picks the keyword set */
+    setenv("_MILK_FRONTEND", "cli", 1); /* this front end: picks the keyword set */
     milkos_malloc_keep(); /* temporaries freed and allocated again are not faulted in each time */
 
     char AppName[STRINGMAXLEN_APPNAME] = { 0 };

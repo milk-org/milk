@@ -60,7 +60,7 @@ fi
 set -u
 
 SF="${SFDIR}/milkCLIstartup.${pname}.$$"
-# the bash engine parses the string itself (';' inside quotes stays literal)
+# the bash co-process parses the string itself (';' inside quotes stays literal)
 printf '%s\nexit\n' "${cmdstring}" > "${SF}"
 #cp ${SF} test.txt
 

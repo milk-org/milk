@@ -1,6 +1,6 @@
 # libmilkcalc (`src/calc/`)
 
-Single-engine expression and n-dimensional image calculator, C extension SDK (`milk_calc_ext.h`),
+Expression and n-dimensional image calculator, C extension SDK (`milk_calc_ext.h`),
 and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk` framework.
 
 ## Purpose

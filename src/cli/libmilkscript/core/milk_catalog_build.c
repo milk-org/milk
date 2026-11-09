@@ -31,7 +31,7 @@
 typedef struct
 {
     const char *key;
-    const char *load; /* module load name ("milk": built into the engine) */
+    const char *load; /* module load name ("milk": built in) */
     char        info[256];
 } entry_t;
 

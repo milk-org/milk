@@ -93,7 +93,7 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milk_catalog.h"
 #include "milk_server.h"
 #include "milk_srvlog.h"
@@ -553,7 +553,7 @@ static int handle_fifo_input(const char *prompt)
             cli_history_log_prompt(data.CLIcmdline);
             {
                 int exit_req = 0;
-                int rc       = milk_bash_engine_exec(acc, &exit_req);
+                int rc       = milk_bash_exec(acc, &exit_req);
                 if (exit_req || (dcerrorexit && rc != 0))
                 {
                     data.CLIloopON = 0;
@@ -604,9 +604,9 @@ static void print_non_tty_prompt(const char *prompt)
     fflush(stdout);
 }
 
-/** batch_tail_bash() - 1 if @batch leaves the engine in bash mode, with @tail at the start of its last
+/** batch_tail_bash() - 1 if @batch leaves the co-process in bash mode, with @tail at the start of its last
  * bash-mode run: only there can an unfinished construct hold the batch back (a bare `@calc` line
- * toggles, `exit`/`quit` leave calc mode, as the engine does). */
+ * toggles, `exit`/`quit` leave calc mode, as milk_bash_exec() does). */
 static int batch_tail_bash(const char *batch, const char **tail)
 {
     int mode = cli_calc_mode;
@@ -651,7 +651,7 @@ static int batch_tail_bash(const char *batch, const char **tail)
  *
  * Drains all currently readable bytes from `STDIN_FILENO` in 64 KiB chunks and
  * dispatches complete lines (or the entire remaining buffer at EOF) to
- * `milk_bash_engine_exec()` in a single batch, bypassing per-character readline
+ * `milk_bash_exec()` in a single batch, bypassing per-character readline
  * callbacks and per-line IPC round-trips.
  *
  * Return: void
@@ -784,7 +784,7 @@ static void handle_non_tty_stdin(char *promptstring, char *prompt)
         cli_fault_isolation_arm();
         if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
         {
-            rc = milk_bash_engine_exec(batch, &exit_req);
+            rc = milk_bash_exec(batch, &exit_req);
         }
         else
         {
@@ -792,7 +792,7 @@ static void handle_non_tty_stdin(char *promptstring, char *prompt)
             dcsigSEGV = 0;
             dcsigBUS  = 0;
             dcsigABRT = 0;
-            milk_bash_engine_abort();
+            milk_bash_abort();
         }
         cli_fault_isolation_disarm();
         if (exit_req || (dcerrorexit && rc != 0))
@@ -845,7 +845,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     int initstartup = 0; /// becomes 1 after startup
 
     int blockCLIinput = 0;
-    /* select() timeout of the input loop: input, the bash engine and signals wake it at once, so
+    /* select() timeout of the input loop: input, the bash co-process and signals wake it at once, so
      * this only bounds how late a dynamically opened fifo is picked up */
     int            cliwaitus = 50000;
     struct timeval tv;
@@ -958,7 +958,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         {
             exit(jrc);
         }
-        milk_bash_engine_set_session(sock);
+        milk_bash_set_session(sock);
     }
 
     if (server_sockpath[0] != '\0')
@@ -1046,7 +1046,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if (single_command_flag)
             {
                 int exit_req   = 0;
-                int rc         = milk_bash_engine_exec(single_command_string, &exit_req);
+                int rc         = milk_bash_exec(single_command_string, &exit_req);
                 dcexitcode     = rc;
                 data.CLIloopON = 0;
                 break;
@@ -1078,7 +1078,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 if (fp != NULL)
                 {
                     fclose(fp);
-                    milk_bash_engine_exec_file(CLIstartupfilename, NULL);
+                    milk_bash_exec_file(CLIstartupfilename, NULL);
                 }
                 else
                 {
@@ -1112,9 +1112,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         FD_SET(
             fileno(stdin),
             &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-        if (milk_bash_engine_ready_fd() >= 0)
+        if (milk_bash_ready_fd() >= 0)
         {
-            FD_SET(milk_bash_engine_ready_fd(), &cli_fdin_set); // background jobs calling milk
+            FD_SET(milk_bash_ready_fd(), &cli_fdin_set); // background jobs calling milk
         }
 
         if (data.fifoON == 0)
@@ -1140,7 +1140,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 // stop CLI input loop
                 data.CLIloopON = 0;
             }
-            if (milk_bash_engine_ended())
+            if (milk_bash_ended())
             {
                 fprintf(stderr, "\nmilk-cli: this session was ended (@session end)\n");
                 data.CLIloopON = 0;
@@ -1168,9 +1168,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             {
                 fdmax = data.fifofd;
             }
-            if (milk_bash_engine_ready_fd() > fdmax)
+            if (milk_bash_ready_fd() > fdmax)
             {
-                fdmax = milk_bash_engine_ready_fd();
+                fdmax = milk_bash_ready_fd();
             }
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
@@ -1185,16 +1185,15 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     FD_SET(data.fifofd, &cli_fdin_set);
                 }
                 FD_SET(fileno(stdin), &cli_fdin_set);
-                if (milk_bash_engine_ready_fd() >= 0)
+                if (milk_bash_ready_fd() >= 0)
                 {
-                    FD_SET(milk_bash_engine_ready_fd(), &cli_fdin_set);
+                    FD_SET(milk_bash_ready_fd(), &cli_fdin_set);
                 }
                 continue;
             }
-            if (n > 0 && milk_bash_engine_ready_fd() >= 0 &&
-                FD_ISSET(milk_bash_engine_ready_fd(), &cli_fdin_set))
+            if (n > 0 && milk_bash_ready_fd() >= 0 && FD_ISSET(milk_bash_ready_fd(), &cli_fdin_set))
             {
-                milk_bash_engine_serve();
+                milk_bash_serve();
                 if (!FD_ISSET(fileno(stdin), &cli_fdin_set) &&
                     !(data.fifoON == 1 && data.fifofd >= 0 && FD_ISSET(data.fifofd, &cli_fdin_set)))
                 {
@@ -1204,7 +1203,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         FD_SET(data.fifofd, &cli_fdin_set);
                     }
                     FD_SET(fileno(stdin), &cli_fdin_set);
-                    FD_SET(milk_bash_engine_ready_fd(), &cli_fdin_set);
+                    FD_SET(milk_bash_ready_fd(), &cli_fdin_set);
                     continue;
                 }
             }
@@ -1277,7 +1276,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                 cli_fault_isolation_arm();
                                 if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
                                 {
-                                    rc = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+                                    rc = milk_bash_exec(data.CLIcmdline, &exit_req);
                                 }
                                 else
                                 {
@@ -1285,7 +1284,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                     dcsigSEGV = 0;
                                     dcsigBUS  = 0;
                                     dcsigABRT = 0;
-                                    milk_bash_engine_abort();
+                                    milk_bash_abort();
                                 }
                                 cli_fault_isolation_disarm();
                                 if (exit_req || (dcerrorexit && rc != 0))
@@ -1317,7 +1316,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     cli_set_interactive_mode(0);
 
-    milk_bash_engine_shutdown();
+    milk_bash_shutdown();
 
     cli_ts_cleanup();
 

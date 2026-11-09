@@ -362,11 +362,11 @@ static int scan_assigned_stmts(mcalc_prog_t *p, const mc_stmt_t *s, char *err, s
     return 0;
 }
 
-/* The number of live programs that bind each engine variable to a unit parameter */
+/* The number of live programs that bind each variable to a unit parameter */
 static int *g_bound  = NULL;
 static long g_nbound = 0;
 
-/** bound_add() - count @d more (or fewer) programs that bind engine variable @vid. */
+/** bound_add() - count @d more (or fewer) programs that bind variable @vid. */
 static void bound_add(long vid, int d)
 {
     if (vid >= g_nbound)
@@ -388,7 +388,7 @@ static void bound_add(long vid, int d)
 }
 
 /**
- * mc_var_bound - 1 if engine variable @vid is bound to a unit parameter
+ * mc_var_bound - 1 if variable @vid is bound to a unit parameter
  * @vid: Index in `milk_data.variable[]`
  *
  * A bound variable keeps its place whatever is assigned to it (mc_store_scalar_var()).

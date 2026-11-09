@@ -154,7 +154,7 @@ Working example with several units per file: `plugins/test-src/runnabletest`.
 - `src/tui/`: Engine-tier terminal UIs (`fpsCTRL`, `procCTRL`) and the shared `milkTUI_compat.h`.
 - `src/prop/`: Shared-memory entity property library (`milkprop`: `s.<stream>.<prop>`, `f.<fps>.<param>`,
   `p.<proc>.<prop>`), layered on the engine tier without CLI dependencies.
-- `src/calc/`: Calculator engine and C extension SDK (`milkcalc`, `milk_calc_ext.h`), layered on
+- `src/calc/`: Calculator and C extension SDK (`milkcalc`, `milk_calc_ext.h`), layered on
   `src/engine/` (argument values: `milk_argval` in libfps; code-free unit harness: `milk_unit` in
   libcomputeunit), `src/coremods/`, and `src/prop/`.
 - `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter),

@@ -172,7 +172,7 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ["while [ 0 -eq 1 ]; do echo never; done"],
     ["@calc -v _neg \"-5 + 3\"", "echo $_neg"],
     ["@config precision double", "mem.mk2Dim _dbl_test 4 4", "@calc \"_dbl_test = _dbl_test * 0.0 + 1.5\"", "mem.rm _dbl_test", "@config precision single"],
-    # --- Compound assignment (@calc engine) ---
+    # --- Compound assignment (@calc) ---
     ["@calc -v _ca \"10\"", "@calc -v _ca \"_ca + (5)\"", "echo $_ca"],
     ["@calc -v _cs \"20\"", "@calc -v _cs \"_cs - (3)\"", "echo $_cs"],
     ["@calc -v _cm \"4\"", "@calc -v _cm \"_cm * (3)\"", "echo $_cm"],
@@ -188,7 +188,7 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     ['_str="hello"', '@calc "_sl = strlen(\\"hello\\")"', "echo $_sl"],
     # --- until loop ---
     ["_uc=0", "until [ $_uc -ge 3 ]; do _uc=$(( $_uc + 1 )); done", "echo $_uc"],
-    # --- Bitwise operators (@calc engine) ---
+    # --- Bitwise operators (@calc) ---
     ["@calc -v _ba \"0xff & 0x0f\"", "echo $_ba"],
     ["@calc -v _bo \"0x0f | 0xf0\"", "echo $_bo"],
     ["@calc -v _bx \"0xff ^^ 0x0f\"", "echo $_bx"],

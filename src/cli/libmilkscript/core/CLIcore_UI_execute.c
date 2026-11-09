@@ -13,10 +13,10 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 
 /**
- * @brief Central command dispatcher — delegates execution to the bash co-process engine.
+ * @brief Central command dispatcher — delegates execution to the bash co-process.
  *
  * @return RETURN_SUCCESS on success, or RETURN_FAILURE on error
  */
@@ -25,7 +25,7 @@ errno_t CLI_execute_line()
     DEBUG_TRACE_FSTART();
 
     int exit_req = 0;
-    int rc       = milk_bash_engine_exec(data.CLIcmdline, &exit_req);
+    int rc       = milk_bash_exec(data.CLIcmdline, &exit_req);
     if (exit_req || (dcerrorexit && rc != 0))
     {
         data.CLIloopON = 0;

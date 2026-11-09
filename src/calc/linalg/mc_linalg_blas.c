@@ -8,7 +8,7 @@
  *        `libmilkcalc`.
  *
  * This module implements the BLAS and tensor contraction tier of the `milk.calc` expression
- * engine (`libmilkcalc`):
+ * calculator (`libmilkcalc`):
  *
  * - **Compile-time call validation and type inference** (`mc_resolve_linalg_call()`,
  *   `mc_multi_lhs_is_image()`): checks argument counts, result kinds, and promotes output

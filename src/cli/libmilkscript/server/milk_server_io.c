@@ -7,7 +7,7 @@
  * @brief Tab-completion handler for the milk-cli server.
  *
  * Role & Goal:
- *   `milk_complete()` is the one completion engine: bash (`milkcomplete`, through
+ *   `milk_complete()` is the one completer: bash (`milkcomplete`, through
  *   `milk_server_handle_complete()`) and the milk-cli prompt use it. It completes command names
  *   (`comp_type == "cmd"`: `@keywords` and `module.command`s), command arguments (modifiers `@T*:`,
  *   local images, SHM streams, `s.<stream>.`, `f.<fps>.`, keyword options and words from the
@@ -995,7 +995,7 @@ static size_t complete_calc(const char *prefix, char *out, size_t outsz)
  * @out:       Output buffer
  * @outsz:     Its size
  *
- * The one completion engine, for bash (milk_server_handle_complete()) and the milk-cli prompt. A
+ * The one completer, for bash (milk_server_handle_complete()) and the milk-cli prompt. A
  * line `__MILK_COMPLETE_FILES__` or `__MILK_COMPLETE_FITS__` asks the caller for file names.
  *
  * Return: the length written to @out

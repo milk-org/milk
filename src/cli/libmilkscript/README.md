@@ -1,6 +1,6 @@
 # libmilkscript
 
-Scripting engine, daemon server, IPC client, bash coprocess bridge, and
+Scripting, daemon server, IPC client, bash co-process bridge, and
 interactive CLI execution pipeline for the `milk` framework.
 
 ## Purpose
@@ -13,7 +13,7 @@ interactive CLI execution pipeline for the `milk` framework.
 2. **The `milk-cli` Unix-domain socket daemon server (`server/`) and IPC client
    (`ipc/`)** — enabling persistent module state, stream pools, and high-speed
    shared-memory command logging across external processes and bash shells.
-3. **The Bash integration engine (`bash/` and `milkbash`)** — translating
+3. **The bash integration (`bash/` and `milkbash`)** — translating
    `@{...}` inline syntax, providing loadable GNU Bash builtins, and
    synchronizing state with a persistent Bash coprocess.
 
@@ -89,8 +89,8 @@ src/cli/libmilkscript/
 
 ### 3. `bash/` — Bash Coprocess, `@{...}` Translation & Loadable Builtins
 
-- `milk_bash_engine.h` — Public API for Bash coprocess execution and `@{...}` translation.
-- `milk_bash_engine_internal.h` — Shared string-buffer helpers (`sbuf_t`) and coprocess
+- `milk_bash.h` — Public API for Bash coprocess execution and `@{...}` translation.
+- `milk_bash_internal.h` — Shared string-buffer helpers (`sbuf_t`) and coprocess
   declarations.
 - `milk_shell_lex.h` / `milk_shell_lex_internal.h` / `milk_shell_lex.c` / `milk_shell_lex_code.c` —
   Bash-aware scanner: context (code, quotes, quotes, here-doc, substitution, arithmetic) of every

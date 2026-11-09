@@ -539,7 +539,7 @@ _milk_on_cond() {
 }
 
 _milk_config_impl() {
-    if [[ "${1:-}" == prompt && "${_MILK_ENGINE:-}" != cli ]]; then
+    if [[ "${1:-}" == prompt && "${_MILK_FRONTEND:-}" != cli ]]; then
         shift
         _milk_prompt_impl "$@"
         return $?
@@ -550,13 +550,13 @@ _milk_config_impl() {
         return $?
     fi
     case ${1-} in # the REPL's own settings go to milk-cli, whichever session its bash uses
-        synhl | syndiag | indent | showmatch | prompt | sessionlog | calc) milkcall --engine config "$@" ;;
+        synhl | syndiag | indent | showmatch | prompt | sessionlog | calc) milkcall --frontend config "$@" ;;
         *) milkcall config "$@" ;;
     esac
 }
 
 # @history: milk-cli's REPL history, whichever session its bash uses
-_milk_history_impl() { milkcall --engine history "$@"; }
+_milk_history_impl() { milkcall --frontend history "$@"; }
 
 # @config inline on: Enter first translates the @{...} of the line typed at this interactive prompt
 # (milk-cli and @source always translate). Lines still incomplete (open quote, `do` ...) run as typed.
@@ -574,7 +574,7 @@ _milk_inline_impl() {
         echo "inline ${_MILK_INLINE:-off}"
         ;;
     on | off)
-        if [[ "${_MILK_ENGINE:-}" == cli ]]; then
+        if [[ "${_MILK_FRONTEND:-}" == cli ]]; then
             [[ "$1" == on ]] && return 0
             echo "milk: @config inline: milk-cli always expands @{...}" >&2
             return 2
@@ -902,7 +902,7 @@ command_not_found_handle() {
 # ---------------------------------------------------------------------------
 # 8. Programmable Bash Tab-Completion
 # ---------------------------------------------------------------------------
-# the server's completion engine (milk_complete): command names, arguments, the keywords' options and
+# the server's completer (milk_complete): command names, arguments, the keywords' options and
 # words (milk_lexicon.c), calculator text
 _milk_complete() {
     local cur="${COMP_WORDS[COMP_CWORD]}"

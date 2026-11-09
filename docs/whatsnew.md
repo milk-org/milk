@@ -65,7 +65,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   takes 20 µs instead of 23, a milk command with its output in a file or a pipe 36–40 µs instead of
   52–56. A `milk-cli --server` session ended by `milkshutdown` or `@session end` releases its socket
   before it answers, so the shell's next command starts a new session `#performance` `#cli`
-- **2026-11-08** — One copy of each piece. Bash and the milk-cli prompt complete with one engine:
+- **2026-11-08** — One copy of each piece. Bash and the milk-cli prompt complete with one completer:
   keyword options and words come from the keyword table, `@calc`, `@test`, `@assert`, calc mode and
   `@{...}` complete function names (with their `(`), variables and images, also inside quotes, and
   every argument after the first is completed as itself. Syntax highlighting is tree-sitter only:
@@ -233,8 +233,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   - Every stream a kept statement reads is covered by a torn-frame guard: a pass is re-run when an
     input's counter moved under it or a writer started a frame during it (at most three passes),
     and a writer caught mid-frame is given 100 µs to finish; `_torn` counts both in a unit.
-  - `imin`, `imax` and the axis forms skip NaN pixels (NaN only when every pixel is NaN) in every
-    engine; before, a NaN first pixel gave NaN for small images and the finite extreme for large.
+  - `imin`, `imax` and the axis forms skip NaN pixels (NaN only when every pixel is NaN) on every
+    path; before, a NaN first pixel gave NaN for small images and the finite extreme for large.
   - A kept scalar statement types its variable as the interactive calculator does (`n = icount(a) + 1`
     stays `int`; comparisons are `int`; `/` and functions give `float`), and checks the identity of
     the variables it reads by name, not only by slot.
@@ -246,8 +246,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   - `randn` images no longer depend on the block size they were generated with; rows wider than
     2^31 pixels no longer overflow the coordinate kernels.
   - `milk-cli` and `milk-script` set `MILK_INSTALLDIR` from their own path when it is unset, so the
-    modules they load, the `milk.bash` the engine sources and the units it launches come from the
-    install the binary belongs to, whatever `PATH` holds (the tests' `milk-cli` helpers use the
+    modules they load, the `milk.bash` their bash co-process sources and the units they launch come
+    from the install the binary belongs to, whatever `PATH` holds (the tests' `milk-cli` helpers use the
     install under test too)
     `#cli` `#fps` `#performance`
 
@@ -290,7 +290,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
     asserts the loop floor, a 128² kept statement and a 1024² statement under the policy
     `#cli` `#fps` `#performance`
 
-- **2026-10-23** — Engine review fixes for compute units, the calculator and the client:
+- **2026-10-23** — Review fixes for compute units, the calculator and the client:
   - **Threads and affinity:** `milk_omp_team_size()` no longer changes the calling thread's CPU
     affinity (a unit launched under `taskset` keeps its mask), `OMP_NUM_THREADS` lowers the team
     but never widens it past the physical cores, forked `--async`/`@replay` children never build an
@@ -403,7 +403,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   pixels as integers; string variables evaluate to their value; `>` on images is now strict (it
   was `>=`). Operator and function tables in [Scripting](guide/scripting.md#calculator) `#cli`
 
-- **2026-10-16** — Scripting engine rework (`feat/bash-engine`): bash-aware translator, one
+- **2026-10-16** — Scripting rework (`feat/bash-engine`): bash-aware translator, one
   command rule everywhere (`module.command` or `@name`), in-process `source`, loud errors and
   real exit status, Ctrl-C that keeps the shell, threaded `@waitfor`/`@grab`, and per-call cost
   down to a few µs (`@calc` 92→4 µs, `@get` ~6 µs). See the migration table below and

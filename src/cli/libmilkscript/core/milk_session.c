@@ -4,7 +4,7 @@
 
 /**
  * @file milk_session.c
- * @brief Built-in module `milk`, engine root commands and default modules (see milk_session.h).
+ * @brief Built-in module `milk`, root commands and default modules (see milk_session.h).
  */
 
 #include <stdio.h>
@@ -61,7 +61,7 @@ void milk_module_begin(void)
         strncpy(data.moduleshortname, "milk", STRINGMAXLEN_MODULE_SHORTNAME - 1);
         strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING - 1);
         strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING - 1);
-        RegisterModule(__FILE__, "milk", "milk engine utilities", MILK_VERSION_MAJOR,
+        RegisterModule(__FILE__, "milk", "milk built-in utilities", MILK_VERSION_MAJOR,
                        MILK_VERSION_MINOR, MILK_VERSION_PATCH);
         g_milk_midx = (int) data.moduleindex;
     }
@@ -86,14 +86,14 @@ void milk_module_end(void)
 }
 
 /**
- * milk_session_register_engine - Register built-in `milk.*` and root engine commands
+ * milk_register_builtin_commands - Register built-in `milk.*` and root commands
  *
  * Registers `milk.ci`, `milk.fpsdump`, and the root `help` command shared across
  * all CLI and scripting front-ends via `MILK_RUNNABLE` descriptors.
  *
  * Return: void
  */
-void milk_session_register_engine(void)
+void milk_register_builtin_commands(void)
 {
     milk_module_begin();
     milk_register_runnable(&unit_ci);

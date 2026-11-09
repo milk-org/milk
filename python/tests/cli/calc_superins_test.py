@@ -1,5 +1,5 @@
 """
-Tests for the fused engine's superinstructions (P2 of the 2026-10-27 engine review).
+Tests for the superinstructions of fused passes (P2 of the 2026-10-27 engine review).
 
 The compiler's peephole folds an image load with the operator that follows it: `img op c` and
 `c op img` (FI_IMGC), `img op img` (FI_IMGIMG), and `top op img * c` (FI_VIMGC), so `a*2.5 + b*0.5`

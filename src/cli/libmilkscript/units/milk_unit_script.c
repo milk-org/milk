@@ -33,7 +33,7 @@
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "milk_argval.h"
-#include "milk_bash_engine_internal.h"
+#include "milk_bash_internal.h"
 #include "milk_unit.h"
 #include "processinfo_signals.h"
 

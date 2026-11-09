@@ -492,9 +492,9 @@ echo "out=$(@get s.cscale_out.mean)"
     )
 
 
-def test_calc_list_engines(tmp_path):
+def test_calc_list(tmp_path):
     """Verify `@calc --list` and `milk-fpsexec-milk-calc --list`
-    for built-in bytecode engines, filtered patterns, JSON output, and loaded user C extensions.
+    for built-in functions, filtered patterns, JSON output, and loaded user C extensions.
     """
     c_file = tmp_path / "list_ext.c"
     c_file.write_text(r"""
@@ -525,7 +525,7 @@ MILK_CALC_EXT_EXPORT(
 @calc --list | grep -q "FI_INTERP2" && echo "full=ok"
 @calc --list stencil | grep -q "FI_MEDFILT" && echo "stencil=ok"
 @calc --list reduce | grep -q "FI_RED (STATS)" && echo "reduce=ok"
-@calc --list --json interp2 | grep -q '"engine": "FI_INTERP2"' && echo "json=ok"
+@calc --list --json interp2 | grep -q '"opcode": "FI_INTERP2"' && echo "json=ok"
 @calc -l "{c_file}" --list my_gain_op | grep -q "FI_USER_BLK" && echo "ext_bash=ok"
 milk-fpsexec-milk-calc -l "{c_file}" --list my_gain_op | grep -q "my_gain_op(x)" && echo "ext_unit=ok"
 """,

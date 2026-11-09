@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_bash_engine_internal.h
+ * @file milk_bash_internal.h
  * @brief Internal declarations shared across `bash/` translator and co-process files.
  *
  * Role & Goal:
@@ -12,14 +12,14 @@
  *   `milk_bash_exec.c`.
  */
 
-#ifndef MILK_BASH_ENGINE_INTERNAL_H
-#define MILK_BASH_ENGINE_INTERNAL_H
+#ifndef MILK_BASH_INTERNAL_H
+#define MILK_BASH_INTERNAL_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milk_shell_lex.h"
 
 /* ============================================================
@@ -151,8 +151,8 @@ static inline void sbuf_append_dq_escaped(sbuf_t *b, const char *s, size_t n)
 /** Check whether bash 5.3+ `${| ...; }` function substitution is unavailable. */
 int milk_bash_funsub_disabled(void);
 
-/** Set the command-file label used by `milk_bash_engine_exec_raw()` for diagnostics. */
-void milk_bash_engine_set_label(const char *label);
+/** Set the command-file label used by `milk_bash_exec_raw()` for diagnostics. */
+void milk_bash_set_label(const char *label);
 
 /** Ensure the bash co-process is alive, restarting it if needed. */
 int milk_bash_coproc_ensure(void);
@@ -161,8 +161,8 @@ int milk_bash_coproc_ensure(void);
 int milk_bash_coproc_run(char *translated, int *out_exit_req, int *out_lost);
 
 /** Translate and execute a raw bash command block in the supervised bash co-process. */
-int milk_bash_engine_exec_raw(const char *cmdline, int *out_exit_req);
+int milk_bash_exec_raw(const char *cmdline, int *out_exit_req);
 
 extern int g_milk_bash_exec_depth;
 
-#endif /* MILK_BASH_ENGINE_INTERNAL_H */
+#endif /* MILK_BASH_INTERNAL_H */

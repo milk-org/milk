@@ -819,7 +819,7 @@ static const struct
                     { "variables", "Variables, arrays, arithmetic, entity properties" },
                     { "flowcontrol", "if/while/for/case/functions and event triggers" },
                     { "scripting", "Script files, I/O, pipes, builtins" },
-                    { "commands", "Engine commands (milk.ci, mem.listim, iofits.loadfits ...)" },
+                    { "commands", "Module commands (milk.ci, mem.listim, iofits.loadfits ...)" },
                     { "syntax", "Interactive REPL features, tab completion, piping" },
                     { "cmdopts", "milk-cli command-line flags (-h, -s, -n ...)" },
                     { "readline", "Key bindings of the milk-cli prompt" },
@@ -907,7 +907,7 @@ void print_milk_top_help(void)
     printf("                     Exposes all milk commands & primitives with the " C_CMD "@" C_RST
            " prefix.\n");
     printf("  " C_CMD "milk-cli" C_RST
-           "           Launch standalone interactive milk REPL & script engine.\n");
+           "           Launch the interactive milk shell, or run a script.\n");
     printf("\n");
     printf(C_HDR "Essential Help & Discovery Commands:\n" C_RST);
     printf("  " C_CMD "@help [topic]     " C_RST
@@ -959,7 +959,7 @@ void print_milk_cli_help(void)
     printf(C_TITLE "========================================\n" C_RST);
     printf("\n");
     printf(C_BOLD "NAME\n" C_RST);
-    printf("  milk-cli \xe2\x80\x94 interactive shell and scripting engine\n");
+    printf("  milk-cli \xe2\x80\x94 interactive shell and script runner\n");
     printf("           for the milk real-time imaging framework\n");
     printf("\n");
     printf(C_BOLD "SYNOPSIS\n" C_RST);

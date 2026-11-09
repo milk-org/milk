@@ -129,8 +129,8 @@ static int client_call_sync(int argc, char **argv, const milk_client_hooks_t *ho
 }
 
 /**
- * milk_client_call_as - Dispatch `@cmd args` as engine command @as with option @opt stripped
- * @as:         Target engine command name (`streamcat`, `streamwrite`, `fparam`)
+ * milk_client_call_as - Dispatch `@cmd args` as server command @as with option @opt stripped
+ * @as:         Target server command name (`streamcat`, `streamwrite`, `fparam`)
  * @argc:       Source argument count
  * @argv:       Source argument vector
  * @opt:        Option flag to strip (`--stdout`, `--stdin`, `--tui`)
@@ -139,7 +139,7 @@ static int client_call_sync(int argc, char **argv, const milk_client_hooks_t *ho
  * @hooks:      Optional shell variable hooks
  *
  * Translates high-level CLI flags (`@grab --stdout`, `@replay --stdin`, `@set --tui`)
- * into their underlying engine command invocations.
+ * into their underlying server commands.
  *
  * Return: Command exit status.
  */
@@ -200,7 +200,7 @@ int milk_client_has_arg(int argc, char **argv, const char *opt)
  * milk_client_call - Dispatch a CLI command to `milk-cli --server` with caller stdio/cwd fds
  * @argc:       Argument count (`argv[0]` is the command name)
  * @argv:       Argument vector
- * @flags:      MILK_CALL_ASYNC (run asynchronously on the server), MILK_CALL_ENGINE, MILK_CALL_NOWAIT
+ * @flags:      MILK_CALL_ASYNC (run asynchronously on the server), MILK_CALL_FRONTEND, MILK_CALL_NOWAIT
  * @hooks:      Optional shell variable hooks
  *
  * Packs `argv`, propagated environment variables, and referenced shell variables
@@ -238,7 +238,7 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
 
     char        sockpath[256];
     const char *esock =
-        (flags & MILK_CALL_ENGINE) ? milk_ipc_get_var(hooks, "_MILK_ENGINE_SOCK") : NULL;
+        (flags & MILK_CALL_FRONTEND) ? milk_ipc_get_var(hooks, "_MILK_FRONTEND_SOCK") : NULL;
     int fd;
     if (esock != NULL && esock[0] != '\0')
     {
@@ -1655,7 +1655,7 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
             explain = 1;
             i++;
         }
-        else if (strcmp(argv[i], "--engines") == 0 || strcmp(argv[i], "--tokens") == 0)
+        else if (strcmp(argv[i], "--tokens") == 0)
         {
             fprintf(stderr, "milk: @calc: '%s' was removed: use --list\n", argv[i]);
             return 2;
@@ -1759,7 +1759,7 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
             }
         }
         size_t cur = strlen(expr);
-        snprintf(expr + cur, tot - cur, "%s__list_engines%s%s%s", (cur > 0) ? "; " : "",
+        snprintf(expr + cur, tot - cur, "%s__list_catalog%s%s%s", (cur > 0) ? "; " : "",
                  json_mode ? " --json" : "", (pat != NULL) ? " " : "", (pat != NULL) ? pat : "");
     }
     else

@@ -449,7 +449,7 @@ this list:
 - `cmd .tag value` → `cmd --default .tag=value`;
 - in calculator text: `ln` → `log`, `fabs` → `abs`, `urand` → `rand`, `grand` → `randn`, `nrm2` →
   `norm`, `trunc(x, lo, hi)` → `clamp(x, lo, hi)`, `_PI` → `pi` (the other `_`-constants: write the
-  value), `if ... end` and `for ... end` → braces, `listengines` and `--engines` → `@calc --list`;
+  value), `if ... end` and `for ... end` → braces;
   `irms` is now the root mean square (`istd` is the standard deviation).
 
 ### From milk-seq

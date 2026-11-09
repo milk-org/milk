@@ -50,7 +50,7 @@ typedef struct
     mc_fn_kind_t kind;             /* semantic category */
     uint8_t      cast_dt;          /* _DATATYPE_* for explicit cast functions, else 0 */
     uint8_t      in_local;         /* 1 if supported by mcalc_local() fast path */
-    uint8_t      in_old;           /* 1 if supported by the legacy engine (for diff generator) */
+    uint8_t      in_old;           /* 1 if the old calculator supported it (diff generator) */
     double (*fn1)(double);         /* unary scalar C implementation, if any */
     double (*fn2)(double, double); /* binary scalar C implementation, if any */
     double (*fn3)(double, double, double); /* ternary scalar C implementation, if any */

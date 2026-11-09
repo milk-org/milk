@@ -85,7 +85,7 @@ milk/
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
 │   ├── tui/                       ← Engine-tier TUIs (fpsCTRL, procCTRL)
 │   ├── prop/                      ← Shared-memory entity property library (milkprop)
-│   ├── calc/                      ← Calculator engine, C extensions & milk.calc unit (milkcalc)
+│   ├── calc/                      ← Calculator, C extensions & milk.calc unit (milkcalc)
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework

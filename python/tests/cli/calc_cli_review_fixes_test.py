@@ -20,7 +20,7 @@ Request-level robustness:
 - A live unit edit that does not compile leaves the previous statements running.
 
 One calculator front end:
-- The engine parses the whole `@calc` text: a syntax error anywhere runs nothing, blocks may span
+- The calculator parses the whole `@calc` text: a syntax error anywhere runs nothing, blocks may span
   lines, and properties are read when a statement runs and assigned like variables (`+=`).
 - Entity paths may hold `-` in a stream name (`s.my-cam.cnt0`).
 - A `def` call is inlined: reductions and divisions by a reduction of a parameter work; a random
@@ -50,7 +50,7 @@ Language rules:
 - A failure exits 1, a syntax, name or argument error 2 (`@test`: 2 for any error); errors in text of
   several lines name the line; a `def` body is checked when defined at `@calc`.
 - Removed spellings fail naming the replacement: ln, fabs, urand, grand, nrm2, trunc(x, lo, hi), the
-  `_PI`-style constants, `if`/`for` ... `end`, `listengines`, `--engines`, `--tokens`.
+  `_PI`-style constants, `if`/`for` ... `end`, `--tokens`.
 
 Kernel speed, same results:
 - `%`, `fmod` and `wrap_pi` vectorize and still equal C's fmod/remainder (NaN beyond |x/y| = 2^52).
@@ -67,7 +67,7 @@ One copy of each piece:
   comment is cut but not a `#` in a string, and one quoted word is unwrapped, not `"4" + "5"`.
 - A variable is in one store, a number or a string, whichever was assigned last; a unit's string
   parameter takes a string assignment, and a number parameter refuses one.
-- One completion engine for bash and the prompt: keyword options and words come from the lexicon;
+- One completer for bash and the prompt: keyword options and words come from the lexicon;
   calculator text completes function names (with their `(`), also inside quotes and `@{...}`.
 
 Request path:
@@ -617,9 +617,9 @@ def test_error_status_position_and_def_checks(tmp_path):
 def test_removed_spellings_name_their_replacement(tmp_path):
     res = milk_bash(
         CAM + 'for t in "ln(1)" "fabs(-1)" "rand() + urand()" "grand()" "nrm2(cam)" '
-        '"trunc(5, 0, 3)" "_PI" "listengines"; do @calc -v z "$t" 2>>e.txt; echo "rc=$?"; done\n'
+        '"trunc(5, 0, 3)" "_PI"; do @calc -v z "$t" 2>>e.txt; echo "rc=$?"; done\n'
         "@calc $'if 1\\nz = 2\\nend' 2>>e.txt; @calc 'for k = 1:2; z = k; end' 2>>e.txt\n"
-        "for o in --engines --tokens; do @calc $o 2>>e.txt; milk-fpsexec-milk-calc $o 2>>e.txt; done; true",
+        "for o in --tokens; do @calc $o 2>>e.txt; milk-fpsexec-milk-calc $o 2>>e.txt; done; true",
         tmp_path,
     )
     out = res.stdout + res.stderr
@@ -633,14 +633,11 @@ def test_removed_spellings_name_their_replacement(tmp_path):
         "use norm",
         "use clamp(x, lo, hi)",
         "use pi, exp(1)",
-        "use @calc --list",
         "'if ... end' was removed",
         "'for ... end' was removed",
-        "'--engines' was removed: use --list",
         "'--tokens' was removed: use --list",
     ):
         assert hint in err, err
-    assert err.count("'--engines' was removed") == 2, err
     assert err.count("'--tokens' was removed") == 2, err
 
 
@@ -838,7 +835,7 @@ def test_a_variable_holds_what_was_assigned_last(tmp_path):
     assert value(res.stdout, "refused") == "1", out
 
 
-def test_one_completion_engine_for_bash_and_the_prompt(tmp_path):
+def test_one_completer_for_bash_and_the_prompt(tmp_path):
     res = milk_bash(
         'echo "opt=$(milkcomplete --li "arg:@calc:1:@calc" | tr "\\n" " ")"\n'
         'echo "set=$(milkcomplete sy "arg:@config:1:@config" | tr "\\n" " ")"\n'

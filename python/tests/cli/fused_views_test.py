@@ -1,9 +1,9 @@
 """
 Fused views and axis reductions (plan 'the-new-milk-cli-calc' step 3): slices, strided and reversed
-slices, broadcasting and axis reductions run in the one-pass fused engine, as operands and as sliced
+slices, broadcasting and axis reductions run in one fused pass, as operands and as sliced
 destinations, in one-shot statements and in kept unit programs.
 
-The per-operator path is forced with a bin-1 slice (`im[::1b]`): an exact copy that the fused engine does
+The per-operator path is forced with a bin-1 slice (`im[::1b]`): an exact copy that a fused pass does
 not read as a view. Coordinate images are centred on n/2, so expected pixel values account for that.
 """
 
@@ -330,7 +330,7 @@ def test_phase7_library_and_spatial_ops(tmp_path):
 
 
 def test_datasets_and_generated_expressions(tmp_path):
-    """Verify §6.2 datasets and §6.3 expression generator on the calculator engine."""
+    """Verify §6.2 datasets and §6.3 expression generator on the calculator."""
     ids = all_dataset_ids(include_large=True)
     for expected in ("default", "random", "offset_0", "offset_3e4", "cubes"):
         assert expected in DATASETS and expected in ids

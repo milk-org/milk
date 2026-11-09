@@ -4,7 +4,7 @@
 
 /**
  * @file milkscript_api.c
- * @brief Public API implementation for the scripting engine
+ * @brief Public API implementation of milk scripting (libmilkscript)
  */
 
 #ifndef _GNU_SOURCE
@@ -23,7 +23,7 @@
 #include "CLIcore_datainit.h"
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milkscript.h"
 #include "milk_session.h"
 
@@ -51,7 +51,7 @@ errno_t milkscript_init(int argc, char **argv)
     setSHMdir();
     CLI_data_init();
 
-    milk_session_register_engine(); /* the reserved module `milk` comes first */
+    milk_register_builtin_commands(); /* the reserved module `milk` comes first */
     milk_session_load_modules();
 
     return RETURN_SUCCESS;
@@ -72,7 +72,7 @@ errno_t milkscript_execute(const char *cmdline)
 }
 
 /**
- * @brief Run a milk script stream in the bash co-process engine.
+ * @brief Run a milk script stream in the bash co-process.
  */
 errno_t milkscript_run(FILE *fp)
 {
@@ -124,21 +124,21 @@ errno_t milkscript_run(FILE *fp)
     buf[len] = '\0';
 
     int exit_req = 0;
-    int rc       = milk_bash_engine_exec(buf, &exit_req);
+    int rc       = milk_bash_exec(buf, &exit_req);
     free(buf);
     dcexitcode = rc;
     return (rc == 0) ? 0 : 1;
 }
 
 /**
- * milkscript_cleanup - Shut down the milk scripting engine and its Bash co-process
+ * milkscript_cleanup - Shut down milk scripting and its bash co-process
  *
- * Terminates the persistent Bash co-process engine and releases associated IPC
+ * Terminates the persistent bash co-process and releases associated IPC
  * resources prior to process exit.
  *
  * Return: void
  */
 void milkscript_cleanup(void)
 {
-    milk_bash_engine_shutdown();
+    milk_bash_shutdown();
 }

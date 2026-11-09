@@ -56,9 +56,9 @@ static int milkcall_builtin(WORD_LIST *list)
         {
             flags |= MILK_CALL_ASYNC;
         }
-        else if (strcmp(argv[start_idx], "--engine") == 0)
+        else if (strcmp(argv[start_idx], "--frontend") == 0)
         {
-            flags |= MILK_CALL_ENGINE;
+            flags |= MILK_CALL_FRONTEND;
         }
         else if (strcmp(argv[start_idx], "--nowait") == 0)
         {
@@ -521,7 +521,7 @@ struct builtin milkcall_struct = { "milkcall",
                                    milkcall_builtin_entry,
                                    BUILTIN_ENABLED,
                                    milkcall_doc,
-                                   "milkcall [--async] [--engine] [--nowait] <cmd> [args...]",
+                                   "milkcall [--async] [--frontend] [--nowait] <cmd> [args...]",
                                    0 };
 
 

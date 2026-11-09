@@ -137,7 +137,7 @@ milk-cli > <module>.<command> <arg1> <arg2>   # comment
 
 ### Tab Completion
 
-The prompt and bash (after `source milk.bash`) complete with the same engine:
+The prompt and bash (after `source milk.bash`) complete with the same completer:
 
 - **First word:** module commands, `@` keywords and bash words
 - **Arguments of a module command:** by the command's parameter types:

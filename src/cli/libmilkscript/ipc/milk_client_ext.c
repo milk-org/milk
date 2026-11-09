@@ -1384,12 +1384,12 @@ static const char *kw_where(unsigned avail)
  * print_keywords - Write the `@` keyword table or bash function wrappers to @fp
  * @fp:    Output stream
  * @bash:  Non-zero to emit `function @<name> { ... }` definitions for `milk.bash`
- * @hooks: Optional shell variable hooks (used to read `_MILK_ENGINE`)
+ * @hooks: Optional shell variable hooks (used to read `_MILK_FRONTEND`)
  */
 static void print_keywords(FILE *fp, int bash, const milk_client_hooks_t *hooks)
 {
     static const char *const impl_names[] = { "builtin", "shell", "server" };
-    unsigned                 fe = milk_lexicon_frontend(milk_ipc_get_var(hooks, "_MILK_ENGINE"));
+    unsigned                 fe = milk_lexicon_frontend(milk_ipc_get_var(hooks, "_MILK_FRONTEND"));
 
     for (const milk_keyword_t *k = milk_lexicon_keywords(); k->name != NULL; k++)
     {

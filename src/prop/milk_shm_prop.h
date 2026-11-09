@@ -15,7 +15,7 @@
  *     - Processinfo telemetry  : @p.<name>.<prop> / @proc.<name>.<prop>
  *
  *   Used by:
- *     - The bash engine's in-process C builtins (`milk_get`, `milk_set`,
+ *     - The loadable bash builtins of libmilkbash (`milk_get`, `milk_set`,
  *       `milk_exists`) and the milk UNIX domain socket server.
  *     - The legacy `.milk` script `@` variable expander
  *       (`CLIcore_script_expand_fps.c`) and `fpsset` CLI command.

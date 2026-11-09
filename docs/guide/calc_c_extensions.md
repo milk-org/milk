@@ -76,7 +76,7 @@ the same math written inline.
 - **Tier 1a (`MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2`)**: 1-input or 2-input 1D SIMD block kernels,
   called on blocks of the image in parallel.
 - **Tier 1b (`MILK_CALC_REG_STENCIL`)**: 2D $(2R+1)\times(2R+1)$ neighborhood kernels
-  ($R \in \{1, 2, 3\}$). The engine pre-clamps row and column boundaries into thread-local strip
+  ($R \in \{1, 2, 3\}$). milk.calc pre-clamps row and column boundaries into thread-local strip
   buffers and passes `const float *const *rows` (`2*R + 1` row pointers, each of length
   `len + 2*R`). For horizontal output index `i` (`0 <= i < len`), the center pixel is
   `rows[R][i + R]` and its `(dy, dx)` neighbor (`-R <= dy, dx <= R`) is

@@ -27,7 +27,7 @@ project(milk LANGUAGES C)
 # (plugins/milk-extra-src, plugins/cacao-src) and their fpsexec binaries.
 #
 # USE_CALC (default ON, requires USE_COREMODS): Build the calculator and JIT
-# engine (milkprop, milkcalc, milk-fpsexec-milk-calc).
+# (milkprop, milkcalc, milk-fpsexec-milk-calc).
 #
 
 # Build tiers (see docs/quickstart/build_tiers.md):
@@ -56,7 +56,7 @@ project(milk LANGUAGES C)
 option(USE_COREMODS "Build core modules (COREMOD_*)" ON)
 option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
 option(USE_PLUGINS "Build plugin modules (plugins/*)" ON)
-option(USE_CALC "Build calculator and JIT engine (milkcalc)" ON)
+option(USE_CALC "Build the calculator and its JIT (milkcalc)" ON)
 option(USE_CLI "Build interactive CLI (milk-cli)" ON)
 option(USE_NCURSES "Enable ncurses support" ON)
 option(USE_READLINE "Enable readline support" ON)

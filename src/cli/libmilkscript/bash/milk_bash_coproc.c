@@ -28,8 +28,8 @@
 #include "CLIcore_datainit.h"
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
-#include "milk_bash_engine.h"
-#include "milk_bash_engine_internal.h"
+#include "milk_bash.h"
+#include "milk_bash_internal.h"
 #include "milk_server.h"
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"
@@ -46,7 +46,7 @@ static char           g_cmdfile[300]   = { '\0' }; /* translated command file so
 static char           g_cmdfile_sent[300] = { '\0' }; /* path last sent to current bash */
 static char           g_label[64]         = "milk";   /* command-file name shown in bash errors */
 static int            g_bash_pidfd        = -1;       /* readable once bash exits (-1: waitpid) */
-static pid_t          g_engine_owner      = 0;        /* process that started bash (atexit guard) */
+static pid_t          g_coproc_owner      = 0;        /* process that started bash (atexit guard) */
 static int            g_inflight          = 0;        /* command sent and status not yet received */
 static int            g_tty_handoff       = 0;        /* bash's process group owns the terminal */
 static struct termios g_tty_modes;                    /* terminal modes saved before handoff */
@@ -98,10 +98,10 @@ static const char BASH_COPROC_LOOP_SCRIPT[] =
     "done\n";
 
 /**
- * milk_bash_engine_set_label - Set the command-file label used for bash error messages
+ * milk_bash_set_label - Set the command-file label used for bash error messages
  * @label: Basename label (or NULL/"milk" for default)
  */
-void milk_bash_engine_set_label(const char *label)
+void milk_bash_set_label(const char *label)
 {
     snprintf(g_label, sizeof(g_label), "%s", (label != NULL && label[0] != '\0') ? label : "milk");
 }
@@ -176,9 +176,9 @@ static void serve_one(int *shutdown_flag)
 }
 
 /**
- * close_engine_fds - Close all co-process pipe, pidfd, and listener descriptors
+ * close_coproc_fds - Close all co-process pipe, pidfd, and listener descriptors
  */
-static void close_engine_fds(void)
+static void close_coproc_fds(void)
 {
     int *fds[] = { &g_cmd_pipe_w, &g_status_pipe_r, &g_listen_fd, &g_bash_pidfd };
     for (size_t i = 0; i < sizeof(fds) / sizeof(fds[0]); i++)
@@ -222,7 +222,7 @@ static int bash_lost(void)
     g_bash_pid = -1;
     g_inflight = 0;
     tty_take();
-    close_engine_fds();
+    close_coproc_fds();
     int rc = WIFEXITED(st) ? WEXITSTATUS(st) : 128 + WTERMSIG(st);
     if (WIFSIGNALED(st))
     {
@@ -237,11 +237,11 @@ static int bash_lost(void)
 }
 
 /**
- * engine_atexit - Terminate the bash co-process if the parent exits without shutdown
+ * coproc_atexit - Terminate the bash co-process if the parent exits without shutdown
  */
-static void engine_atexit(void)
+static void coproc_atexit(void)
 {
-    if (getpid() == g_engine_owner && g_bash_pid > 0)
+    if (getpid() == g_coproc_owner && g_bash_pid > 0)
     {
         tty_take();
         kill(g_bash_pid, SIGHUP);
@@ -249,10 +249,10 @@ static void engine_atexit(void)
 }
 
 /**
- * milk_bash_engine_init - Initialize the in-process socket server and bash co-process
+ * milk_bash_init - Initialize the in-process socket server and bash co-process
  * Return: 0 on success, -1 on error
  */
-int milk_bash_engine_init(void)
+int milk_bash_init(void)
 {
     if (g_listen_fd >= 0 && g_bash_pid > 0)
     {
@@ -268,12 +268,12 @@ int milk_bash_engine_init(void)
     {
         return -1;
     }
-    const char *fe = getenv("_MILK_ENGINE");
+    const char *fe = getenv("_MILK_FRONTEND");
     milk_server_set_log_flags(
         MILK_SRVFLAG_INPROC |
         ((fe != NULL && strcmp(fe, "script") == 0) ? MILK_SRVFLAG_SCRIPT : 0));
     // bash starts on the session it used last (a restart), or that milk-cli --session named
-    const char *session = milk_bash_engine_session();
+    const char *session = milk_bash_session();
     setenv("MILKCLI_SOCK", (session[0] != '\0') ? g_bash_sock : g_sockpath, 1);
     if (session[0] != '\0')
     {
@@ -283,7 +283,7 @@ int milk_bash_engine_init(void)
     {
         unsetenv("_MILK_SERVER_NAME");
     }
-    setenv("_MILK_ENGINE_SOCK", g_sockpath, 1);
+    setenv("_MILK_FRONTEND_SOCK", g_sockpath, 1);
     CLI_export_own_installdir();
 
     int   cmd_pipe[2]    = { -1, -1 };
@@ -325,14 +325,14 @@ int milk_bash_engine_init(void)
 #ifdef SYS_pidfd_open
     g_bash_pidfd = (int) syscall(SYS_pidfd_open, pid, 0);
 #endif
-    if (g_engine_owner != getpid())
+    if (g_coproc_owner != getpid())
     {
-        g_engine_owner = getpid();
-        atexit(engine_atexit);
+        g_coproc_owner = getpid();
+        atexit(coproc_atexit);
     }
     milk_server_reset_bash_epoch();
     int dummy_exit = 0;
-    milk_bash_engine_exec_raw(":", &dummy_exit);
+    milk_bash_exec_raw(":", &dummy_exit);
     return 0;
 }
 
@@ -498,7 +498,7 @@ static int await_coproc_status(char *sbuf, size_t sbufsz, int *out_exit_req, int
  */
 int milk_bash_coproc_ensure(void)
 {
-    if ((g_listen_fd < 0 || g_bash_pid <= 0) && milk_bash_engine_init() != 0)
+    if ((g_listen_fd < 0 || g_bash_pid <= 0) && milk_bash_init() != 0)
     {
         return -1;
     }
@@ -506,11 +506,11 @@ int milk_bash_coproc_ensure(void)
     {
         waitpid(g_bash_pid, NULL, 0);
         g_bash_pid = -1;
-        close_engine_fds();
+        close_coproc_fds();
         fprintf(
             stderr,
             "milk: bash co-process had exited; starting a new one (shell variables are lost)\n");
-        if (milk_bash_engine_init() != 0)
+        if (milk_bash_init() != 0)
         {
             return -1;
         }
@@ -574,19 +574,19 @@ int milk_bash_coproc_run(char *translated, int *out_exit_req, int *out_lost)
 }
 
 /**
- * milk_bash_engine_ready_fd - The fd to poll for requests to the engine (milk_server_ready_fd())
+ * milk_bash_ready_fd - The fd to poll for requests to the in-process server (milk_server_ready_fd())
  *
  * Return: readable when a shell connects or sends a request; -1 if not initialized
  */
-int milk_bash_engine_ready_fd(void)
+int milk_bash_ready_fd(void)
 {
     return (g_listen_fd >= 0) ? milk_server_ready_fd() : -1;
 }
 
 /**
- * milk_bash_engine_serve - Serve the pending requests on the engine socket (new and kept connections)
+ * milk_bash_serve - Serve the pending requests on the in-process server (new and kept connections)
  */
-void milk_bash_engine_serve(void)
+void milk_bash_serve(void)
 {
     int shutdown_flag = 0;
     if (g_listen_fd >= 0)
@@ -595,12 +595,12 @@ void milk_bash_engine_serve(void)
     }
 }
 
-void milk_bash_engine_set_session(const char *sockpath)
+void milk_bash_set_session(const char *sockpath)
 {
     snprintf(g_bash_sock, sizeof(g_bash_sock), "%s", (sockpath != NULL) ? sockpath : "");
 }
 
-const char *milk_bash_engine_session(void)
+const char *milk_bash_session(void)
 {
     static char  name[64];
     unsigned int uid = 0;
@@ -614,17 +614,17 @@ const char *milk_bash_engine_session(void)
 }
 
 /**
- * milk_bash_engine_ended - 1 once a client asked this session to end (@session end), else 0
+ * milk_bash_ended - 1 once a client asked this session to end (@session end), else 0
  */
-int milk_bash_engine_ended(void)
+int milk_bash_ended(void)
 {
     return g_milk_server_stop != 0;
 }
 
 /**
- * milk_bash_engine_shutdown - Shut down the bash co-process and close the socket server
+ * milk_bash_shutdown - Shut down the bash co-process and close the socket server
  */
-void milk_bash_engine_shutdown(void)
+void milk_bash_shutdown(void)
 {
     if (g_cmd_pipe_w >= 0)
     {
@@ -681,13 +681,13 @@ void milk_bash_engine_shutdown(void)
     milk_bash_cmdfile_cleanup();
     g_cmdfile[0] = '\0';
     milk_server_close_log(1);
-    close_engine_fds();
+    close_coproc_fds();
 }
 
 /**
- * milk_bash_engine_abort - Abort an in-flight bash command after SIGINT or siglongjmp
+ * milk_bash_abort - Abort an in-flight bash command after SIGINT or siglongjmp
  */
-void milk_bash_engine_abort(void)
+void milk_bash_abort(void)
 {
     g_milk_bash_exec_depth = 0;
     cli_set_sigint_forward(0);

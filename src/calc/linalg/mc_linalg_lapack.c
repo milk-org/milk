@@ -8,7 +8,7 @@
  *        for `libmilkcalc`.
  *
  * This module implements the higher-level matrix decompositions and linear system solvers for
- * the `milk.calc` expression engine (`libmilkcalc`):
+ * the `milk.calc` expression calculator (`libmilkcalc`):
  *
  * - **Triangular solvers (`trsv`, `trsm`)**: solves `op(A) * x = b` or `op(A) * X = alpha * B`
  *   (and right-sided `X * op(A) = alpha * B`) using `cblas_dtrsv()` / `cblas_dtrsm()` when

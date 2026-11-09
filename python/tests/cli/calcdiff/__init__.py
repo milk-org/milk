@@ -1,1 +1,1 @@
-"""Differential test harness package for calculator engine verification."""
+"""Differential test harness package for calculator verification."""

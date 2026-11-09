@@ -7,7 +7,7 @@
  * @brief Public API for the milk expression and image calculator (`libmilkcalc`).
  *
  * Role & Goal:
- *   Exposes the single-engine calculator entry points used by `milk-cli`, `milk-call`,
+ *   Exposes the calculator entry points used by `milk-cli`, `milk-call`,
  *   `libmilkbash.so`, `libmilkscript`, and the standalone `milk-fpsexec-milk-calc`
  *   compute unit:
  *     - Interactive and bash-mode expression evaluation (`mcalc_eval_bash`,

@@ -15,14 +15,14 @@
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include <glob.h>
 #include <sys/wait.h>
 
 #include "timeutils.h"
 #include "treesitter/cli_treesitter.h"
 
-/** cli_milkrc_load() - source ~/.milkrc in the bash engine, if it exists (interactive startup only). */
+/** cli_milkrc_load() - source ~/.milkrc in the bash co-process, if it exists (interactive startup only). */
 void cli_milkrc_load(void)
 {
     const char *home = getenv("HOME");
@@ -37,7 +37,7 @@ void cli_milkrc_load(void)
     {
         return;
     }
-    milk_bash_engine_exec_file(rcpath, NULL);
+    milk_bash_exec_file(rcpath, NULL);
 }
 
 /**

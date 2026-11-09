@@ -7,7 +7,7 @@
  * @brief AST evaluator for scalar expressions, reductions, and control flow in libmilkcalc.
  *
  * When `mc_resolve.c` determines that an expression or statement produces a
- * scalar or string value without requiring the per-pixel SIMD image engine
+ * scalar or string value without the per-pixel SIMD image path
  * (`needs_image == 0`), execution dispatches directly to this tree-walking
  * evaluator (`mc_scalar_eval_expr`, `mc_scalar_exec_stmt`,
  * `mc_scalar_exec_prog`).
@@ -1090,7 +1090,7 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
 }
 
 /**
- * mc_scalar_exec_prog - Execute a resolved statement list or delegate to image engine
+ * mc_scalar_exec_prog - Execute a resolved statement list or hand it to image execution
  * @prog:  Head of resolved statement list
  * @err:   Output buffer for runtime error message (may be NULL)
  * @errsz: Size of @err buffer in bytes

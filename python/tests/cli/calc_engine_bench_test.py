@@ -1,4 +1,4 @@
-"""30-case calculator engine micro-benchmark at 256^2 and 2048^2 (§5 Phase 3, §6.4), plus spatial
+"""30-case calculator micro-benchmark at 256^2 and 2048^2 (§5 Phase 3, §6.4), plus spatial
 kernels at 256^2 and library kernels (order statistics, argmax, FFT) at 256^2 and 2048^2."""
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ BENCH_CASES: list[tuple[int, str, str, int]] = [
 ]
 
 # Stencil and library kernels, 256^2 only (medfilt7 alone takes ~83 ms per call there). Report
-# only: the old-engine baseline has no spatial cases.
+# only: the old-calculator baseline has no spatial cases.
 SPATIAL_CASES: list[tuple[int, str, str, int]] = [
     (31, "spatial", "C = medfilt3(A)", 20),
     (32, "spatial", "C = medfilt5(A)", 5),
@@ -85,7 +85,7 @@ LIBRARY_CASES: list[tuple[int, str, str, int]] = [
     (42, "library", "R = ifft(F)", 20),
 ]
 
-# Phase 9 old-engine reference baseline (us, single-thread pinned, best of 7 runs)
+# Phase 9 old-calculator reference baseline (us, single-thread pinned, best of 7 runs)
 OLD_REF_TIMES_US: dict[int, dict[int, float]] = {
     256: {
         1: 6.738,
@@ -414,7 +414,7 @@ def test_calc_library_bench(size: int):
 
 @perf_timing
 @pytest.mark.parametrize("size", [256, 2048])
-def test_calc_engine_bench(size: int):
+def test_calc_bench(size: int):
     """Run all 30 benchmark cases at 256^2 and 2048^2 and compare against reference."""
     old_times = OLD_REF_TIMES_US[size]
     new_times = run_bench_suite(size)

@@ -32,11 +32,12 @@ typedef struct
     void *ctx;
 } milk_client_hooks_t;
 
-/* milk_client_call() flags: ASYNC runs in a fork of the server, while it goes on; ENGINE, in milk-cli,
- * goes to its own session (_MILK_ENGINE_SOCK) whichever its bash uses; NOWAIT fails at once while
- * another shell's command runs, rather than wait for it */
+/* milk_client_call() flags: ASYNC runs in a fork of the server, while it goes on; FRONTEND goes
+ * to the session of the front end (milk-cli or milk-script) that runs this bash, named by
+ * _MILK_FRONTEND_SOCK, whichever session the bash uses; NOWAIT fails at once while another
+ * shell's command runs, rather than wait for it */
 #define MILK_CALL_ASYNC 1
-#define MILK_CALL_ENGINE 2
+#define MILK_CALL_FRONTEND 2
 #define MILK_CALL_NOWAIT 4
 
 /**

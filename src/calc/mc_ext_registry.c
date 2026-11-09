@@ -92,7 +92,7 @@ static int check_param_set(const char                  *cname,
     {
         if (err != NULL && errsz > 0)
         {
-            snprintf(err, errsz, "'%s': %d parameters, the engine packs at most %d", cname,
+            snprintf(err, errsz, "'%s': %d parameters, milk.calc packs at most %d", cname,
                      ps->nparams, MILK_CALC_MAX_PARAMS);
         }
         return -1;
@@ -101,7 +101,7 @@ static int check_param_set(const char                  *cname,
     {
         if (err != NULL && errsz > 0)
         {
-            snprintf(err, errsz, "'%s': parameter struct of %zu bytes, the engine packs at most %d",
+            snprintf(err, errsz, "'%s': parameter struct of %zu bytes, milk.calc packs at most %d",
                      cname, ps->struct_size, MILK_CALC_PARAM_BYTES);
         }
         return -1;
@@ -116,7 +116,7 @@ static int check_param_set(const char                  *cname,
             if (err != NULL && errsz > 0)
             {
                 snprintf(err, errsz,
-                         "'%s': parameter '%s' has a type the engine cannot pack (numeric only)",
+                         "'%s': parameter '%s' has a type milk.calc cannot pack (numeric only)",
                          cname, pn);
             }
             return -1;

@@ -3,20 +3,20 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_bash_engine.h
- * @brief Supervised bash co-process and `@{...}` inline translator engine.
+ * @file milk_bash.h
+ * @brief Supervised bash co-process and `@{...}` inline translator.
  *
  * Role & Goal:
- *   Provides the public interface for milk-cli's bash execution engine:
+ *   Provides the public interface of milk-cli's bash co-process:
  *   1. `milk_translate_shorthand_to_bash()`: Translates inline `@{...}` entity/calculator
  *      expansions and `\@` escapes into `milk.bash` syntax while preserving 1:1 line numbers.
- *   2. `milk_bash_engine_*()`: Manages the persistent supervised bash co-process
+ *   2. `milk_bash_*()`: Manages the persistent supervised bash co-process
  *      and in-process UNIX domain socket server used by interactive `milk-cli`
  *      and `milk-cli <script.milk>`.
  */
 
-#ifndef MILK_BASH_ENGINE_H
-#define MILK_BASH_ENGINE_H
+#ifndef MILK_BASH_H
+#define MILK_BASH_H
 
 #include <stddef.h>
 
@@ -37,7 +37,7 @@ char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy);
  *
  * @return 0 on success, -1 on error
  */
-int milk_bash_engine_init(void);
+int milk_bash_init(void);
 
 /**
  * @brief Translate and execute a command or multi-line block in the bash co-process.
@@ -50,7 +50,7 @@ int milk_bash_engine_init(void);
  * @param out_exit_req Optional: set to 1 if script invoked `exit`/`quit`
  * @return Exit status of the bash command (0 = success)
  */
-int milk_bash_engine_exec(const char *cmdline, int *out_exit_req);
+int milk_bash_exec(const char *cmdline, int *out_exit_req);
 
 /**
  * @brief Read, translate, and execute a script file in the bash co-process.
@@ -59,35 +59,35 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req);
  * @param out_exit_req Optional: set to 1 if script invoked `exit`/`quit`
  * @return Exit status of the script (0 = success)
  */
-int milk_bash_engine_exec_file(const char *filename, int *out_exit_req);
+int milk_bash_exec_file(const char *filename, int *out_exit_req);
 
 /** The in-process server's requests to poll (-1 before start), for the REPL's idle select():
  * new connections and kept ones (milk_server_ready_fd()). */
-int milk_bash_engine_ready_fd(void);
+int milk_bash_ready_fd(void);
 
 /** Serve the pending requests of the in-process server while the prompt is idle. */
-void milk_bash_engine_serve(void);
+void milk_bash_serve(void);
 
 /** 1 once a client asked milk-cli's session to end (`@session end` from another shell). */
-int milk_bash_engine_ended(void);
+int milk_bash_ended(void);
 
 /** The session milk-cli's bash starts on (`milk-cli --session NAME`): its socket. */
-void milk_bash_engine_set_session(const char *sockpath);
+void milk_bash_set_session(const char *sockpath);
 
 /** The session milk-cli's bash uses, as of its last command: its name, or "" for milk-cli's own. */
-const char *milk_bash_engine_session(void);
+const char *milk_bash_session(void);
 
 /**
  * @brief Shut down the supervised bash co-process (running EXIT/defer traps)
  *        and close the in-process socket server.
  */
-void milk_bash_engine_shutdown(void);
+void milk_bash_shutdown(void);
 
 /**
  * @brief Abort an in-flight bash co-process command after a signal interrupt
  *        or fault-isolation `siglongjmp`.
  */
-void milk_bash_engine_abort(void);
+void milk_bash_abort(void);
 
 /**
  * @brief Build the path of a private command file named @label in this process's own
@@ -111,4 +111,4 @@ void milk_bash_cmdfile_cleanup(void);
  */
 int milk_shell_incomplete(const char *src);
 
-#endif /* MILK_BASH_ENGINE_H */
+#endif /* MILK_BASH_H */

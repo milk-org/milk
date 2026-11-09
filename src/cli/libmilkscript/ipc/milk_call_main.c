@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #include "milk_lexicon.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milk_client.h"
 #include "milkdata.h"
 
@@ -53,9 +53,9 @@ static void print_usage(const char *prog)
 {
     printf("Usage: %s <subcommand> [args...]\n\n", prog);
     printf("Subcommands:\n");
-    printf("  call [--async] [--engine] [--nowait] <cmd> [args...]  Execute a registered milk "
+    printf("  call [--async] [--frontend] [--nowait] <cmd> [args...]  Execute a registered milk "
            "command\n");
-    printf("                                   (--engine: in milk-cli, its own session; --nowait: "
+    printf("                                   (--frontend: the front end's own session; --nowait: "
            "fail\n");
     printf("                                   at once while another shell's command runs)\n");
     printf("  complete <prefix> [cmd|arg]      List completion candidates\n");
@@ -119,12 +119,12 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
         int flags     = 0;
         int start_idx = 0;
         for (; start_idx < argc && (strcmp(argv[start_idx], "--async") == 0 ||
-                                    strcmp(argv[start_idx], "--engine") == 0 ||
+                                    strcmp(argv[start_idx], "--frontend") == 0 ||
                                     strcmp(argv[start_idx], "--nowait") == 0);
              start_idx++)
         {
             flags |= (argv[start_idx][2] == 'a')   ? MILK_CALL_ASYNC
-                     : (argv[start_idx][2] == 'e') ? MILK_CALL_ENGINE
+                     : (argv[start_idx][2] == 'f') ? MILK_CALL_FRONTEND
                                                    : MILK_CALL_NOWAIT;
         }
         return milk_client_call(argc - start_idx, argv + start_idx, flags, NULL);

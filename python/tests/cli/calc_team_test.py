@@ -1,7 +1,7 @@
 """
 Tests for the calculator's persistent worker team (P3 of the 2026-10-27 engine review).
 
-Every block loop of the fused engine (statements, reductions, axis and segmented reductions, the
+Every block loop of the fused passes (statements, reductions, axis and segmented reductions, the
 Gaussian) used to open an OpenMP parallel region of its own, so a multi-region tick paid several
 fork/joins, and a unit ticking slower than libgomp's spin window paid a ~100 µs wake-up per region.
 The team is created once, dispatched per block loop with the caller as thread 0, and its workers

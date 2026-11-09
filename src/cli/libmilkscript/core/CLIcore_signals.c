@@ -336,7 +336,7 @@ int cli_is_fault_isolation_armed(void)
     return cli_fault_isolation_active;
 }
 
-/** cli_set_sigint_forward() - while on, SIGINT only sets dcsigINT and mcalc_cancelled; the bash engine
+/** cli_set_sigint_forward() - while on, SIGINT only sets dcsigINT and mcalc_cancelled; the bash co-process
  * passes it on to bash, the calculator stops at its next step or loop iteration. */
 void cli_set_sigint_forward(int on)
 {

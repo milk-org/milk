@@ -4,13 +4,13 @@
 
 /**
  * @file milk_bash_exec.c
- * @brief High-level command/file execution and `@calc` REPL mode dispatch for the bash engine.
+ * @brief High-level command/file execution and `@calc` REPL mode dispatch for the bash co-process.
  *
  * Role & Goal:
- *   Provides `milk_bash_engine_exec()` and `milk_bash_engine_exec_file()`, handling
+ *   Provides `milk_bash_exec()` and `milk_bash_exec_file()`, handling
  *   re-entrancy guards, bare `@calc` REPL mode toggles, in-process calculator
  *   fast-paths, and multi-line bash block accumulation before delegating raw
- *   shell execution to `milk_bash_engine_exec_raw()`.
+ *   shell execution to `milk_bash_exec_raw()`.
  */
 
 #ifndef _GNU_SOURCE
@@ -24,19 +24,19 @@
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
-#include "milk_bash_engine.h"
-#include "milk_bash_engine_internal.h"
+#include "milk_bash.h"
+#include "milk_bash_internal.h"
 #include "milk_server.h"
 #include "milk_shell_lex.h"
 
 /**
- * milk_bash_engine_exec_raw - Translate and execute a raw bash block in the co-process
+ * milk_bash_exec_raw - Translate and execute a raw bash block in the co-process
  * @cmdline:      Command line or multi-line script text
  * @out_exit_req: Optional output set to 1 if script invoked `exit`
  *
  * Return: Exit status of the bash command (0 = success)
  */
-int milk_bash_engine_exec_raw(const char *cmdline, int *out_exit_req)
+int milk_bash_exec_raw(const char *cmdline, int *out_exit_req)
 {
     if (out_exit_req != NULL)
     {
@@ -221,8 +221,7 @@ static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
         }
     }
 
-    if (!dcerrorexit && milk_bash_engine_session()[0] == '\0' &&
-        milk_server_can_exec_calc_inproc(expr))
+    if (!dcerrorexit && milk_bash_session()[0] == '\0' && milk_server_can_exec_calc_inproc(expr))
     {
         int rc          = milk_server_exec_calc_repl_inproc(expr);
         cli_last_retval = rc;
@@ -246,7 +245,7 @@ static int exec_calc_repl_expr(const char *expr, int *out_exit_req)
     }
     cmd[pos++] = '"';
     cmd[pos]   = '\0';
-    int rc     = milk_bash_engine_exec_raw(cmd, out_exit_req);
+    int rc     = milk_bash_exec_raw(cmd, out_exit_req);
     free(cmd);
     return rc;
 }
@@ -278,15 +277,14 @@ static int exec_calc_mode_line(const char *trimmed, int *out_exit_req)
             if (strncmp(rest, "-h", 2) == 0 || strncmp(rest, "--help", 6) == 0 ||
                 strncmp(rest, "-v", 2) == 0 || strncmp(rest, "-a", 2) == 0 ||
                 strncmp(rest, "-l", 2) == 0 || strncmp(rest, "--lib", 5) == 0 ||
-                strncmp(rest, "--list", 6) == 0 || strncmp(rest, "--engines", 9) == 0 ||
-                strncmp(rest, "--tokens", 8) == 0 || strncmp(rest, "--repl", 6) == 0 ||
-                strncmp(rest, "--explain", 9) == 0)
+                strncmp(rest, "--list", 6) == 0 || strncmp(rest, "--tokens", 8) == 0 ||
+                strncmp(rest, "--repl", 6) == 0 || strncmp(rest, "--explain", 9) == 0)
             {
-                return milk_bash_engine_exec_raw(trimmed, out_exit_req);
+                return milk_bash_exec_raw(trimmed, out_exit_req);
             }
             return exec_calc_repl_expr(rest, out_exit_req);
         }
-        return milk_bash_engine_exec_raw(trimmed, out_exit_req);
+        return milk_bash_exec_raw(trimmed, out_exit_req);
     }
     return exec_calc_repl_expr(trimmed, out_exit_req);
 }
@@ -306,7 +304,7 @@ static int flush_bash_buf(sbuf_t *bash_buf, int *rc, int *out_exit_req)
         return 0;
     }
     int exreq         = 0;
-    *rc               = milk_bash_engine_exec_raw(bash_buf->data, &exreq);
+    *rc               = milk_bash_exec_raw(bash_buf->data, &exreq);
     bash_buf->len     = 0;
     bash_buf->data[0] = '\0';
     if (exreq && out_exit_req != NULL)
@@ -317,18 +315,18 @@ static int flush_bash_buf(sbuf_t *bash_buf, int *rc, int *out_exit_req)
 }
 
 /**
- * milk_bash_engine_exec - Execute a command line or script block in the bash co-process
+ * milk_bash_exec - Execute a command line or script block in the bash co-process
  * @cmdline:      Command string or multi-line script to execute
  * @out_exit_req: Optional output flag set to 1 if `exit` or `quit` was requested
  *
  * Guards against recursive shell invocation from inside a milk command handler,
  * dispatches bare `@calc` mode toggles and calculator REPL lines when active,
  * accumulates contiguous non-`@calc` bash lines so multi-line constructs remain
- * intact, and delegates shell execution to `milk_bash_engine_exec_raw()`.
+ * intact, and delegates shell execution to `milk_bash_exec_raw()`.
  *
  * Return: Exit status of the executed command (0 on success)
  */
-int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
+int milk_bash_exec(const char *cmdline, int *out_exit_req)
 {
     if (g_milk_bash_exec_depth > 0)
     {
@@ -353,7 +351,7 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
     int rc = 0;
     if (!cli_calc_mode && !cmdline_has_bare_calc(cmdline))
     {
-        rc = milk_bash_engine_exec_raw(cmdline, out_exit_req);
+        rc = milk_bash_exec_raw(cmdline, out_exit_req);
         g_milk_bash_exec_depth--;
         dcexitcode = rc;
         return rc;
@@ -422,13 +420,13 @@ int milk_bash_engine_exec(const char *cmdline, int *out_exit_req)
 }
 
 /**
- * milk_bash_engine_exec_file - Read, translate, and execute a script file in the bash co-process
+ * milk_bash_exec_file - Read, translate, and execute a script file in the bash co-process
  * @filename:     Path to script file
  * @out_exit_req: Optional: set to 1 if script invoked `exit`/`quit`
  *
  * Return: Exit status of the script (0 = success)
  */
-int milk_bash_engine_exec_file(const char *filename, int *out_exit_req)
+int milk_bash_exec_file(const char *filename, int *out_exit_req)
 {
     if (filename == NULL || filename[0] == '\0')
     {
@@ -465,9 +463,9 @@ int milk_bash_engine_exec_file(const char *filename, int *out_exit_req)
     fclose(fp);
 
     const char *base = strrchr(filename, '/');
-    milk_bash_engine_set_label((base != NULL) ? base + 1 : filename);
-    int rc = milk_bash_engine_exec(buf, out_exit_req);
-    milk_bash_engine_set_label("milk");
+    milk_bash_set_label((base != NULL) ? base + 1 : filename);
+    int rc = milk_bash_exec(buf, out_exit_req);
+    milk_bash_set_label("milk");
     free(buf);
     return rc;
 }

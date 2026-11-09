@@ -46,7 +46,7 @@
 
 #include "CLIcore.h"
 
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "CLIcore_script.h"
 #include "CLIcore_signals.h"
 #include "CLIcore_UI_execute.h"
@@ -154,7 +154,7 @@ int cli_accept_line(int count, int key)
  * @buffer: NUL-terminated single- or multi-line command string to execute
  *
  * Arms CLI signal fault isolation (SIGINT, SIGSEGV, SIGBUS, SIGABRT) around
- * milk_bash_engine_exec() so that fatal signals or user interrupts abort only
+ * milk_bash_exec() so that fatal signals or user interrupts abort only
  * the running command and return cleanly to the interactive prompt.
  *
  * Return: void
@@ -166,7 +166,7 @@ static void cli_execute_multiline(const char *buffer)
     cli_fault_isolation_arm();
     if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
     {
-        rc = milk_bash_engine_exec(buffer, &exit_req);
+        rc = milk_bash_exec(buffer, &exit_req);
     }
     else
     {
@@ -174,7 +174,7 @@ static void cli_execute_multiline(const char *buffer)
         dcsigSEGV = 0;
         dcsigBUS  = 0;
         dcsigABRT = 0;
-        milk_bash_engine_abort();
+        milk_bash_abort();
         rl_on_new_line();
     }
     cli_fault_isolation_disarm();
@@ -553,7 +553,7 @@ void cli_set_active_prompt(const char *prompt)
  */
 const char *cli_get_active_prompt(void)
 {
-    const char *session = milk_bash_engine_session();
+    const char *session = milk_bash_session();
 
     if (cli_base_prompt[0] == '\0')
     {

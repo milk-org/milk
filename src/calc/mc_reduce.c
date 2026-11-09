@@ -547,7 +547,7 @@ void mc_eval_src_block_d(const mc_red_src_t *s, uint64_t off, int len, double *r
 }
 
 /* ============================================================================================== */
-/* Parallel Statistical and Extremum Reduction Engines                                            */
+/* Parallel Statistical and Extremum Reductions                                                   */
 /* ============================================================================================== */
 
 /**

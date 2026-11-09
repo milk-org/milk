@@ -26,7 +26,7 @@ static const milk_keyword_t keywords[] = {
       "one)\n"
       "  -a <arr>    bind the pixels of an image result into an indexed array\n"
       "  -l, --lib <file>  load user C extension (.c or .so) into the session\n"
-      "  --list [p]  list pre-compiled bytecode engines, tokens & loaded C extensions\n"
+      "  --list [p]  list built-in operators and functions & loaded C extensions\n"
       "              (add --json for JSON output)\n"
       "  --explain   compile the statements as a unit would and print how each one runs\n"
       "              (kept fused pass, merged, scalar tape, or text and why; new targets run "
@@ -370,21 +370,21 @@ const milk_keyword_t *milk_lexicon_keyword(const char *name)
 }
 
 /**
- * milk_lexicon_frontend - Map a front-end engine name to its `MILK_KW_*` bitmask flag
- * @engine: Engine identifier string (`"cli"`, `"script"`, or `"bash"`/NULL)
+ * milk_lexicon_frontend - Map a front-end name to its `MILK_KW_*` bitmask flag
+ * @frontend: Front-end name (`"cli"`, `"script"`, or `"bash"`/NULL)
  *
  * Translates the current front-end identifier into a bitmask used to check whether
  * a keyword (such as `@history` or `@unload`) is supported in that environment.
  *
  * Return: `MILK_KW_CLI`, `MILK_KW_SCRIPT`, or `MILK_KW_BASH`
  */
-unsigned milk_lexicon_frontend(const char *engine)
+unsigned milk_lexicon_frontend(const char *frontend)
 {
-    if (engine != NULL && strcmp(engine, "cli") == 0)
+    if (frontend != NULL && strcmp(frontend, "cli") == 0)
     {
         return MILK_KW_CLI;
     }
-    if (engine != NULL && strcmp(engine, "script") == 0)
+    if (frontend != NULL && strcmp(frontend, "script") == 0)
     {
         return MILK_KW_SCRIPT;
     }

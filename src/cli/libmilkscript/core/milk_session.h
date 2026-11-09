@@ -4,7 +4,7 @@
 
 /**
  * @file milk_session.h
- * @brief The built-in module `milk`, the engine-level root commands and the default module set:
+ * @brief The built-in module `milk`, the root commands and the default module set:
  *        the same in milk-cli, milk-script and a milk-cli server.
  */
 
@@ -17,8 +17,8 @@ void milk_module_begin(void);
 /** milk_module_end() - back to registering root commands. */
 void milk_module_end(void);
 
-/** milk_session_register_engine() - register the milk.* engine commands and the help commands. */
-void milk_session_register_engine(void);
+/** milk_register_builtin_commands() - register the built-in milk.* commands and the help commands. */
+void milk_register_builtin_commands(void);
 
 /** milk_session_load_modules() - load the core modules, then $MILKCLI_ADD_LIBS (default list; "none"). */
 void milk_session_load_modules(void);

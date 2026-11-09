@@ -464,7 +464,7 @@ typedef struct
 
 } DATA;
 
-#    ifdef MILK_BASH_CLIENT /* libmilkbash, the bash client: no engine state, no images of its own */
+#    ifdef MILK_BASH_CLIENT /* libmilkbash, the bash client: no server state, no images of its own */
 extern DATA data;
 #        define MILK_LOCAL_IMAGES ((IMAGE *) NULL)
 #        define MILK_NB_LOCAL_IMAGES 0L

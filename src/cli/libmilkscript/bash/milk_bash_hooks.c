@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 #include "milk_bash_defer.h"
-#include "milk_bash_engine.h"
+#include "milk_bash.h"
 #include "milk_client.h"
 #include "milk_client_internal.h"
 #include "milkdata.h"
@@ -286,7 +286,7 @@ static int watcher_init(WORD_LIST *arg)
  * milkcloexec_builtin - Mark file descriptors close-on-exec (`milkcloexec` builtin)
  * @list: File descriptor numbers passed as a Bash `WORD_LIST`, or `--watcher PARENT`
  *
- * Marks the engine's pipe file descriptors `FD_CLOEXEC` so child processes spawned
+ * Marks the co-process's pipe file descriptors `FD_CLOEXEC` so child processes spawned
  * by Bash do not inherit them.
  *
  * Return: 0 if all file descriptors were updated, 1 if any failed

@@ -39,7 +39,7 @@ extern errno_t      processinfo_procdirname(char *procdname);
 /**
  * get_shmdir_local - Resolve the active shared memory directory path
  *
- * Checks the `MILK_SHM_DIR` environment variable first, then the engine's
+ * Checks the `MILK_SHM_DIR` environment variable first, then the process's
  * configured `dcshmdir`, and finally falls back to `/dev/shm`.
  *
  * Return: Pointer to the NUL-terminated shared memory directory path
@@ -392,7 +392,7 @@ static int emit_fps_json_body(const char *pat, int indent)
  * ============================================================
  */
 
-#ifndef MILK_BASH_CLIENT /* an engine command: reads its arguments from the engine */
+#ifndef MILK_BASH_CLIENT /* a server command: reads its arguments from the server */
 /**
  * @brief fpsdump command — dump all FPS parameters
  */
