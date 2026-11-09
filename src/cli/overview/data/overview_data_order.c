@@ -26,7 +26,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#define OV_RANK_SLOTS 4096 /* power of two; < OV_MAX_STREAMS: 4096+ entries hang the probe loops */
+/* Power of two, at least twice the entries of a panel (at most OV_MAX_NODES), so the probe loops
+ * always reach an empty slot */
+#define OV_RANK_SLOTS 32768
+_Static_assert((OV_RANK_SLOTS & (OV_RANK_SLOTS - 1)) == 0 && OV_RANK_SLOTS >= 2 * OV_MAX_NODES,
+               "OV_RANK_SLOTS: a power of two, at least twice OV_MAX_NODES");
 #define OV_RANK_NONE INT32_MAX
 
 typedef struct
