@@ -462,7 +462,9 @@ static void readline_lazy_init(const char *prompt, int *flag)
  * @prompt:  CLI prompt string (printed after execution for feedback)
  *
  * Reads bytes one at a time from data.fifofd until a newline is
- * received, then calls CLI_execute_line() on the accumulated buffer.
+ * received. Once the lines read so far form a complete command (an
+ * open here-document, if/for block or quote waits for the rest), runs
+ * them in the bash co-process with milk_bash_exec().
  * Returns 1 if a line was consumed, 0 if the FIFO fd was not set.
  *
  * Extracted from runCLI() to reduce depth-8 nesting.
@@ -825,8 +827,8 @@ static void handle_non_tty_stdin(char *promptstring, char *prompt)
  * 1. Environment initialization (signals, paths, shared memory).
  * 2. Loading of user config, aliases, and history.
  * 3. Loading of core and dynamically requested modules.
- * 4. The main REPL: reading input (from stdin, readline, or FIFO),
- *    parsing it, and executing commands via `CLI_execute_line()`.
+ * 4. The main REPL: reading input (from stdin, readline, or FIFO)
+ *    and running it in the bash co-process via `milk_bash_exec()`.
  *
  * @param argc          Number of command-line arguments passed to the host process
  * @param argv          Array of command-line arguments

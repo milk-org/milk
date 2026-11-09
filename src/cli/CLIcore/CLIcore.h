@@ -482,8 +482,6 @@ void sig_handler(int signo);
 
 errno_t runCLI(int argc, char *argv[], char *promptstring);
 
-errno_t CLI_execute_line();
-
 #endif /* !MILK_NO_CLI — full CLI mode */
 
 #endif /* _CLICORE_H */

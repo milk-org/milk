@@ -19,7 +19,6 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
-#include "CLIcore_UI_execute.h"
 #include "CLIcore_datainit.h"
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
@@ -55,20 +54,6 @@ errno_t milkscript_init(int argc, char **argv)
     milk_session_load_modules();
 
     return RETURN_SUCCESS;
-}
-
-/**
- * @brief Execute a single milk script command string.
- */
-errno_t milkscript_execute(const char *cmdline)
-{
-    if (!cmdline)
-    {
-        return -1;
-    }
-    strncpy(data.CLIcmdline, cmdline, STRINGMAXLEN_CLICMDLINE - 1);
-    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    return CLI_execute_line();
 }
 
 /**

@@ -115,8 +115,8 @@ src/cli/libmilkscript/
 
 ### 4. `core/` — Core CLI Execution Pipeline, Modules & Help
 
-- `CLIcore_UI_execute.h` / `CLIcore_UI_execute.c` — Top-level `CLI_execute_line()`
-  pipeline.
+- `CLIcore_UI_execute.h` / `CLIcore_UI_execute.c` — User input and interactive UI
+  declarations; `handle_did_you_mean()` suggests close command names for an unknown command.
 - `CLIcore_UI_execute_debug.c` — Execution tracing and timing diagnostics.
 - `CLIcore_checkargs.h` / `CLIcore_checkargs.c` — CLI argument type validation.
 - `CLIcore_checkargs_fps.c` — FPS-backed CLI argument binding.

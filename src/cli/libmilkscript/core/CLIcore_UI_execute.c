@@ -5,7 +5,7 @@
 /**
  * @file CLIcore_UI_execute.c
  *
- * @brief Core CLI command dispatcher and typo-suggestion helper.
+ * @brief Typo suggestions for an unknown command.
  */
 
 #include <stdio.h>
@@ -13,27 +13,6 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
-#include "milk_bash.h"
-
-/**
- * @brief Central command dispatcher — delegates execution to the bash co-process.
- *
- * @return RETURN_SUCCESS on success, or RETURN_FAILURE on error
- */
-errno_t CLI_execute_line()
-{
-    DEBUG_TRACE_FSTART();
-
-    int exit_req = 0;
-    int rc       = milk_bash_exec(data.CLIcmdline, &exit_req);
-    if (exit_req || (dcerrorexit && rc != 0))
-    {
-        data.CLIloopON = 0;
-    }
-
-    DEBUG_TRACE_FEXIT();
-    return (rc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
-}
 
 /**
  * cmd_levenshtein_distance - Compute bounded Levenshtein edit distance between two strings

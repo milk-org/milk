@@ -7,8 +7,8 @@
  * @brief Public API for the milk scripting engine
  *
  * This header exposes the minimal API needed to
- * initialize the milk scripting engine, execute
- * commands, and run a non-interactive REPL loop.
+ * initialize the milk scripting engine, run a
+ * script in the bash co-process, and clean up.
  *
  * The scripting engine has NO dependency on readline
  * or ncurses. It is the foundation on which the
@@ -30,7 +30,7 @@ typedef int errno_t;
  * Sets up signals, shared memory directory, PID,
  * random number generator, core modules, data
  * structures, and command table. After this call,
- * `milkscript_execute()` is ready to use.
+ * `milkscript_run()` is ready to use.
  *
  * @param argc  Argument count (from main)
  * @param argv  Argument vector (from main)
@@ -39,27 +39,13 @@ typedef int errno_t;
 errno_t milkscript_init(int argc, char **argv);
 
 /**
- * @brief Execute a single command line string.
+ * @brief Run a milk script stream in the bash co-process.
  *
- * Copies @p cmdline into the engine's command buffer
- * and runs the full processing pipeline: variable
- * expansion, flow control, alias lookup, math eval,
- * and native/external command dispatch.
+ * Reads @p fp (typically stdin or a script file) to
+ * EOF, then runs the whole text as one script.
  *
- * @param cmdline  Null-terminated command string
- * @return 0 on success
- */
-errno_t milkscript_execute(const char *cmdline);
-
-/**
- * @brief Run a non-interactive REPL on a FILE stream.
- *
- * Reads lines from @p fp (typically stdin or a script
- * file), executing each via `milkscript_execute()`.
- * Exits when EOF is reached or "exit" is entered.
- *
- * @param fp  Input stream (use stdin for a basic REPL)
- * @return 0 on normal exit
+ * @param fp  Input stream (stdin or a script file)
+ * @return 0 if the script succeeded, non-zero otherwise
  */
 errno_t milkscript_run(FILE *fp);
 

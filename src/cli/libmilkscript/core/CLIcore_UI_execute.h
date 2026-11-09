@@ -21,8 +21,7 @@ errno_t runCLI_prompt(char *promptstring, char *prompt);
 char **CLI_completion(const char *, int, int);
 #endif
 
-errno_t CLI_execute_line();
-void    handle_did_you_mean(const char *input_cmd);
+void handle_did_you_mean(const char *input_cmd);
 
 errno_t write_tracedebugfile();
 
