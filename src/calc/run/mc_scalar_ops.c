@@ -26,8 +26,9 @@
  * See also:    run/mc_scalar_eval.c (the full scalar evaluator); docs/guide/calculator.md,
  *              "Calculator (`@calc`, `@test`, `@pipe`)" and "Operators".
  * Constraints: also compiled into libmilkbash.so, the thin client every shell loads, for
- *              mcalc_local(); both libraries build it with -fno-finite-math-only, so NaN tests
- *              keep IEEE semantics (src/calc/CMakeLists.txt).
+ *              mcalc_local(); mc_val_to_str() and mc_scalar_str_fn() are left out there
+ *              (MILK_BASH_CLIENT). Both libraries build it with -fno-finite-math-only, so NaN
+ *              tests keep IEEE semantics (src/calc/CMakeLists.txt).
  */
 
 #include <ctype.h>
@@ -301,6 +302,11 @@ const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t 
     return err;
 }
 
+/* Not in libmilkbash.so (MILK_BASH_CLIENT): only the scalar evaluator (run/mc_scalar_eval.c) calls
+ * these, and mc_val_to_str() reads mcalc_float_digits (mc_eval.c), which that library does not
+ * contain. */
+#ifndef MILK_BASH_CLIENT
+
 /**
  * mc_val_to_str - Format a runtime `mc_val_t` into a null-terminated string buffer
  * @v:                Scalar or string value to format
@@ -455,6 +461,8 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
     *w = '\0';
     return NULL;
 }
+
+#endif /* !MILK_BASH_CLIENT */
 
 /* ========================================================================= */
 /* Zero-Allocation Stack Evaluator (mcalc_local)                             */

@@ -29,8 +29,6 @@
  * See also:    scripts/milk-cc (builds the same kind of `.so` ahead of time), milk_calc_ext.h;
  *              docs/guide/calculator.md, "Auto-Compilation and Caching (`-l` / `--lib`)";
  *              docs/guide/calc_c_extensions.md, "FPS Parameter Binding Rules".
- * Constraints: also compiled into libmilkbash.so, where nothing calls it (the LTO link drops it);
- *              it calls jit/mc_cc.c, which libmilkbash.so does not include.
  */
 
 #define _GNU_SOURCE

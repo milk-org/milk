@@ -186,7 +186,6 @@ add_library(
   client/milk_sessions.c
   core/milk_keywords.c
   ../../calc/ext/mc_ext_registry.c
-  ../../calc/ext/mc_ext_loader.c
   ../../calc/mc_func.c
   ../../calc/front/mc_lex.c
   ../../calc/run/mc_scalar_ops.c

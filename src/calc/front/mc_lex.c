@@ -29,8 +29,8 @@
  *              (STRINGMAXLEN_IMAGE_NAME), mcalc_sub_prog_free() (run/mc_prog.c).
  * See also:    front/mc_parse.c (the next stage); docs/guide/calculator.md, "Operators".
  * Constraints: also compiled into libmilkbash.so (the thin client every shell loads), which
- *              uses only mc_lex(), the scanners and mc_op_prec(): the AST functions call
- *              mcalc_sub_prog_free(), which is not built there.
+ *              uses only mc_lex(), the scanners and mc_op_prec(); the AST functions are left
+ *              out there (MILK_BASH_CLIENT), as they call mcalc_sub_prog_free().
  */
 
 #include <ctype.h>
@@ -721,6 +721,11 @@ void mc_tok_list_free(mc_tok_list_t *tl)
     tl->ntok     = 0;
 }
 
+/* Not in libmilkbash.so (MILK_BASH_CLIENT): the shell client uses only the lexer and the scanners
+ * above, and freeing an AST frees its sub-programs with mcalc_sub_prog_free() (run/mc_prog.c),
+ * which that library does not contain. */
+#ifndef MILK_BASH_CLIENT
+
 /* ========================================================================= */
 /* AST Memory Deallocation                                                   */
 /* ========================================================================= */
@@ -1033,3 +1038,5 @@ void mc_stmt_free(mc_stmt_t *s)
         s = next;
     }
 }
+
+#endif /* !MILK_BASH_CLIENT */
