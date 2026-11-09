@@ -22,7 +22,9 @@
  */
 int milknotify_open(void);
 
-/** milknotify_send - send @msg (lines "KEY=VALUE\n") on @fd. Return: 0 or -1. */
+/** milknotify_send - write @msg (lines "KEY=VALUE\n") to @fd: the service manager's socket
+ * (milknotify_open) or a ready pipe (milkdetach_notify_fd, milk_detach.h). A reader that is gone
+ * gives -1 with EPIPE, not SIGPIPE. Return: 0 or -1. */
 int milknotify_send(int fd, const char *msg);
 
 /** milknotify_watchdog_usec - $WATCHDOG_USEC if meant for this process ($WATCHDOG_PID unset or ours), else 0; unsets both. */

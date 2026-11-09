@@ -82,11 +82,9 @@ int milkdetach_start(const MILKDETACH_SPEC *spec);
  */
 int milkdetach_wait_ready(int fd, int timeout_ms, MILKDETACH_READY *r);
 
-/** milkdetach_notify_fd - ready pipe named by environment variable @envname, made close-on-exec; unsets it. -1 if none. */
+/** milkdetach_notify_fd - ready pipe named by environment variable @envname, made close-on-exec; unsets it.
+ * Write to it with milknotify_send() (milk_sdnotify.h). Return: fd, or -1 if none. */
 int milkdetach_notify_fd(const char *envname);
-
-/** milkdetach_notify - write the lines @msg (each ending in '\n') to ready pipe @fd. Return: 0 or -1. */
-int milkdetach_notify(int fd, const char *msg);
 
 /**
  * milkdetach_stop - end process @id: wait @first_ms for it to exit on its own (after a request), then

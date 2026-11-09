@@ -1362,7 +1362,7 @@ int milk_server_run(const char *sockpath,
     {
         snprintf(msg, sizeof(msg), "ERRNO=%d\nSTATUS=cannot listen on %s\n",
                  (errno != 0) ? errno : EINVAL, sockpath);
-        milkdetach_notify(ready_fd, msg);
+        milknotify_send(ready_fd, msg);
         milknotify_send(svc, msg);
         return 1;
     }
@@ -1381,7 +1381,7 @@ int milk_server_run(const char *sockpath,
     snprintf(msg, sizeof(msg), "MAINPID=%d\nREADY=1\n", (int) getpid());
     if (ready_fd >= 0)
     {
-        milkdetach_notify(ready_fd, msg);
+        milknotify_send(ready_fd, msg);
         close(ready_fd);
     }
     snprintf(msg, sizeof(msg), "READY=1\nSTATUS=listening on %s\n", sockpath);

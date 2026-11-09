@@ -566,7 +566,6 @@ add_subdirectory(src/engine/libmilkdata)
 add_subdirectory(src/engine/libprocessinfo)
 
 # no shell, no tmux and only listed non-POSIX calls in the engine libraries
-include(cmake/milk_engine_guards.cmake)
 include(cmake/milk_layer_guards.cmake)
 
 # engine-tier TUIs

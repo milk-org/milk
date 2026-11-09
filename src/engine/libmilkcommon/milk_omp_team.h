@@ -4,7 +4,11 @@
 
 /**
  * @file milk_omp_team.h
- * @brief How many OpenMP threads a parallel loop gets: by work size, capped at the P-cores
+ * @brief How many threads a parallel loop gets: by work size, capped at the P-cores
+ *
+ * The count sizes OpenMP parallel regions (num_threads) and the calls to the persistent worker
+ * team of COREMOD_arith (arith_team_run(), arith_team.h), which loops that run on every frame use
+ * to avoid OpenMP's fork/join and sleep/wake costs.
  */
 
 #ifndef MILK_OMP_TEAM_H

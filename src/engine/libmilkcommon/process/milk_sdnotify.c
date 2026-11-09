@@ -10,12 +10,15 @@
 #include "milk_sdnotify.h"
 
 #include <errno.h>
+#include <pthread.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <time.h>
 #include <unistd.h>
 
 int milknotify_open(void)
@@ -56,17 +59,43 @@ int milknotify_open(void)
 
 int milknotify_send(int fd, const char *msg)
 {
-    ssize_t n;
+    sigset_t pipe_set;
+    sigset_t old;
+    size_t   len = strlen(msg);
+    size_t   off = 0;
+    int      rc  = 0;
 
     if (fd < 0)
     {
         return -1;
     }
-    do
+    // a starter that gave up has closed the pipe: EPIPE, not a SIGPIPE that ends the process
+    sigemptyset(&pipe_set);
+    sigaddset(&pipe_set, SIGPIPE);
+    pthread_sigmask(SIG_BLOCK, &pipe_set, &old);
+    while (off < len)
     {
-        n = send(fd, msg, strlen(msg), MSG_NOSIGNAL);
-    } while (n < 0 && errno == EINTR);
-    return (n < 0) ? -1 : 0;
+        ssize_t n = write(fd, msg + off, len - off);
+        if (n < 0 && errno == EINTR)
+        {
+            continue;
+        }
+        if (n < 0)
+        {
+            int             err  = errno;
+            struct timespec zero = { 0, 0 };
+            if (err == EPIPE && !sigismember(&old, SIGPIPE))
+            {
+                sigtimedwait(&pipe_set, NULL, &zero);
+            }
+            errno = err;
+            rc    = -1;
+            break;
+        }
+        off += (size_t) n;
+    }
+    pthread_sigmask(SIG_SETMASK, &old, NULL);
+    return rc;
 }
 
 uint64_t milknotify_watchdog_usec(void)

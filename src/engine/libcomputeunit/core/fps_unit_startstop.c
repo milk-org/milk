@@ -1778,7 +1778,7 @@ void fps_unit_role_end(int code)
         if (!fpsunit_self.failed)
         {
             snprintf(line, sizeof(line), "STATUS=exited with status %d\n", code);
-            milkdetach_notify(fpsunit_self.notify_fd, line);
+            milknotify_send(fpsunit_self.notify_fd, line);
         }
         close(fpsunit_self.notify_fd);
         fpsunit_self.notify_fd = -1;
@@ -1799,7 +1799,7 @@ void fps_unit_notify_connected(void)
     if (fpsunit_self.notify_fd >= 0)
     {
         snprintf(msg, sizeof(msg), "MAINPID=%d\nSTATUS=connected\n", (int) getpid());
-        milkdetach_notify(fpsunit_self.notify_fd, msg);
+        milknotify_send(fpsunit_self.notify_fd, msg);
     }
     milknotify_send(fpsunit_self.svc_fd, "STATUS=connected\n");
 }
@@ -1821,7 +1821,7 @@ void fps_unit_notify_failed(int err, const char *fmt, ...)
     snprintf(msg, sizeof(msg), "ERRNO=%d\nSTATUS=%s\n", err, status);
     if (fpsunit_self.notify_fd >= 0)
     {
-        milkdetach_notify(fpsunit_self.notify_fd, msg);
+        milknotify_send(fpsunit_self.notify_fd, msg);
         fpsunit_self.failed = 1;
     }
     milknotify_send(fpsunit_self.svc_fd, msg);
@@ -1831,7 +1831,7 @@ void fps_unit_notify_ready(void)
 {
     if (fpsunit_self.notify_fd >= 0)
     {
-        milkdetach_notify(fpsunit_self.notify_fd, "READY=1\n");
+        milknotify_send(fpsunit_self.notify_fd, "READY=1\n");
         close(fpsunit_self.notify_fd);
         fpsunit_self.notify_fd = -1;
     }

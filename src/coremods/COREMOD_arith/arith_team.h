@@ -5,6 +5,12 @@
 /**
  * @file arith_team.h
  * @brief Persistent spin-barrier worker team for low-latency parallel block dispatch.
+ *
+ * Runs a loop on threads that stay alive between calls instead of opening an OpenMP parallel
+ * region: no fork/join per call, and the workers spin for MILK_CALC_SPIN_US between jobs before
+ * sleeping, so loops that run on every frame (calculator passes, reductions, spatial kernels)
+ * avoid OpenMP's sleep/wake cost. The caller picks the thread count, usually with
+ * milk_omp_team_size() (libmilkcommon/milk_omp_team.h).
  */
 
 #ifndef COREMOD_ARITH_TEAM_H

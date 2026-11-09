@@ -7,6 +7,7 @@
  * ready pipe), the stop ladder escalates, outputs rotate. */
 
 #include "milk_detach.h"
+#include "milk_sdnotify.h"
 #include "milk_syscalls.h"
 
 #include <errno.h>
@@ -257,10 +258,10 @@ static void test_notify(void)
     setenv("TEST_DETACH_FD", num, 1);
     int fd = milkdetach_notify_fd("TEST_DETACH_FD");
     CHECK(fd == p[1] && getenv("TEST_DETACH_FD") == NULL && (fcntl(fd, F_GETFD) & FD_CLOEXEC));
-    CHECK(milkdetach_notify(fd, "READY=1\n") == 0);
+    CHECK(milknotify_send(fd, "READY=1\n") == 0);
     CHECK(read(p[0], buf, sizeof(buf)) == 8 && memcmp(buf, "READY=1\n", 8) == 0);
     close(p[0]);
-    CHECK(milkdetach_notify(fd, "STATUS=late\n") == -1 && errno == EPIPE); // and no SIGPIPE
+    CHECK(milknotify_send(fd, "STATUS=late\n") == -1 && errno == EPIPE); // and no SIGPIPE
     close(fd);
 
     int nul = open("/dev/null", O_RDONLY);

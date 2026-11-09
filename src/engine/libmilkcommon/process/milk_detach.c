@@ -331,47 +331,6 @@ int milkdetach_notify_fd(const char *envname)
     return fd;
 }
 
-int milkdetach_notify(int fd, const char *msg)
-{
-    sigset_t pipe_set;
-    sigset_t old;
-    size_t   len = strlen(msg);
-    size_t   off = 0;
-    int      rc  = 0;
-
-    if (fd < 0)
-    {
-        return -1;
-    }
-    // a starter that gave up has closed the pipe: EPIPE, not a SIGPIPE that ends the process
-    sigemptyset(&pipe_set);
-    sigaddset(&pipe_set, SIGPIPE);
-    pthread_sigmask(SIG_BLOCK, &pipe_set, &old);
-    while (off < len)
-    {
-        ssize_t n = write(fd, msg + off, len - off);
-        if (n < 0 && errno == EINTR)
-        {
-            continue;
-        }
-        if (n < 0)
-        {
-            int             err  = errno;
-            struct timespec zero = { 0, 0 };
-            if (err == EPIPE && !sigismember(&old, SIGPIPE))
-            {
-                sigtimedwait(&pipe_set, NULL, &zero);
-            }
-            errno = err;
-            rc    = -1;
-            break;
-        }
-        off += (size_t) n;
-    }
-    pthread_sigmask(SIG_SETMASK, &old, NULL);
-    return rc;
-}
-
 static int detach_wait_gone(const MILKDETACH_ID *id, int pfd, int ms)
 {
     if (pfd >= 0)

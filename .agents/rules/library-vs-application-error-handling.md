@@ -98,7 +98,7 @@ and the codes must satisfy
   `system()` return and logs failures via
   `PRINT_ERROR`. Use this by default, in coremods and
   plugins only: engine libraries (`src/engine`) never
-  call `system()` (the `engine_guards` CTest rejects it).
+  call `system()` (the `layer_guards` CTest rejects it).
 - `EXECUTE_SYSTEM_COMMAND_NOCHECK(format, ...)` is the
   opt-in silent variant. Use it only when the exit
   status genuinely doesn't matter (e.g. removing a
