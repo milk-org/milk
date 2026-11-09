@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_notify.h
+ * @file milk_sdnotify.h
  * @brief Messages to a service manager (the sd_notify protocol) without libsystemd
  *
  * A service manager that waits for readiness (systemd's Type=notify) names a datagram socket in
@@ -11,8 +11,8 @@
  * ERRNO=, WATCHDOG=1, STOPPING=1. Knows nothing about FPS.
  */
 
-#ifndef MILK_NOTIFY_H
-#define MILK_NOTIFY_H
+#ifndef MILK_SDNOTIFY_H
+#define MILK_SDNOTIFY_H
 
 #include <stdint.h>
 

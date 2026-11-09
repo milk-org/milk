@@ -26,7 +26,7 @@
  *      source pixels.
  *    - Dispatches `pass->fn(ops, lo, hi)` across the persistent `arith_team`
  *      worker pool (`milk_omp_team_size(nelem, 262144)`).
- *    - Reads shared input streams under the torn-frame rule of milk_frame.h:
+ *    - Reads shared input streams under the torn-frame rule of milkdata_torn_frame.h:
  *      a torn pass runs again (up to MILK_FRAME_TRIES times in all) unless it
  *      reads what it writes, and every torn read increments `g_torn_count`.
  *    - Restores destination pixels from a pre-pass snapshot if a `/=` pass
@@ -42,11 +42,12 @@
 #include <time.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "libmilkcommon/milkDebugTools.h"
-#include "libmilkdata/milk_frame.h"
+#include "libmilkdata/milkdata_torn_frame.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
-#include "COREMOD_arith/image_coord.h"
+#include "COREMOD_arith/image_generate.h"
 #include "COREMOD_arith/image_linalg.h"
 #include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/image_ID.h"

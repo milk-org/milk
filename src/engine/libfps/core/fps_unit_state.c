@@ -14,7 +14,7 @@
 
 #include "fps.h"
 #include "fps_unit_state.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 #include "milk_path.h"
 #include "processinfo_procdirname.h"
 

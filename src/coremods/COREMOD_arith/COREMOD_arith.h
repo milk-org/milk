@@ -15,7 +15,7 @@
 //int init_COREMOD_arith();
 
 #include "COREMOD_arith/arith_team.h"
-#include "COREMOD_arith/image_coord.h"
+#include "COREMOD_arith/image_generate.h"
 #include "COREMOD_arith/image_elem_block.h"
 #include "COREMOD_arith/image_linalg.h"
 #include "COREMOD_arith/image_spatial.h"

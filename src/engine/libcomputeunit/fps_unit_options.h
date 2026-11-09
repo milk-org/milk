@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_unit.h
+ * @file fps_unit_options.h
  * @brief Command lines of the units without C (milk.calc, milk.script).
  *
  * The program of a unit (statements, trigger, declared parameters, files) is given with unit
@@ -11,8 +11,8 @@
  * values after the command word then set the declared parameters, as for any fpsexec.
  */
 
-#ifndef MILK_UNIT_H
-#define MILK_UNIT_H
+#ifndef FPS_UNIT_OPTIONS_H
+#define FPS_UNIT_OPTIONS_H
 
 #include "fps_cli_binding.h"
 #include "fps_types.h"

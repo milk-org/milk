@@ -23,7 +23,7 @@
 
 #include "milk_bash_defer.h"
 #include "milk_client.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 
 /* ============================================================
  *  IPC-Backed Builtin Entry Points

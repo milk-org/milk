@@ -15,6 +15,7 @@
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "image_arith__im_im__im.h"
 #include "imfunctions.h"
 #include "imgid_arith_helpers.h"

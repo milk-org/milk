@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file    image_coord.h
+ * @file    image_generate.h
  * @brief   Pixel coordinate and hash-PRNG image generators
  */
 
-#ifndef COREMOD_ARITH_IMAGE_COORD_H
-#define COREMOD_ARITH_IMAGE_COORD_H
+#ifndef COREMOD_ARITH_IMAGE_GENERATE_H
+#define COREMOD_ARITH_IMAGE_GENERATE_H
 
 #include <math.h>
 #include <stdint.h>
@@ -185,4 +185,4 @@ errno_t arith_image_fill_coord(IMAGE *dst, int kind, double cx, double cy);
 /** Create a 2D `FLOAT` planar slope image with gradients `(@sx, @sy)`. */
 imageID arith_make_slopexy(const char *ID_name, uint32_t l1, uint32_t l2, double sx, double sy);
 
-#endif // COREMOD_ARITH_IMAGE_COORD_H
+#endif // COREMOD_ARITH_IMAGE_GENERATE_H

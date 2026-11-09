@@ -34,7 +34,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "CLIcore.h"
 #include "CLIcore_help.h"
 #include "CLIcore_memory.h"

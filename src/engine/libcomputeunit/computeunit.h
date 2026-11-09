@@ -30,7 +30,7 @@
 
 #include "fps_processinfo.h"
 #include "fps_processinfo_entries.h"
-#include "fps_unit.h"
+#include "fps_unit_startstop.h"
 
 /**
  * @brief Command-line driver of every fpsexec; implemented in core/fps_standalone_main.c.

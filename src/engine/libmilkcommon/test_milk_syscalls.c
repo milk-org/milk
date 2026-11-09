@@ -4,7 +4,7 @@
 
 /* CTest: milkos_* return what they promise; OFD locks conflict within one process, unlike fcntl locks. */
 
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -39,7 +39,7 @@ int main(void)
     int      st;
 
     CHECK(milkos_self_exe(path, sizeof(path)) == 0);
-    CHECK(strstr(path, "test-milk-os") != NULL);
+    CHECK(strstr(path, "test-milk-syscalls") != NULL);
     CHECK(milkos_self_exe(path, 4) == -1 && errno == ENAMETOOLONG);
 
     CHECK(milkos_pipe_cloexec(p) == 0);
@@ -65,7 +65,7 @@ int main(void)
     close(57);
 
     // two open file descriptions of one file: the second lock fails while the first is held
-    char lockname[] = "/tmp/test-milk-os-XXXXXX";
+    char lockname[] = "/tmp/test-milk-syscalls-XXXXXX";
     int  fd1        = mkstemp(lockname);
     int  fd2        = open(lockname, O_RDWR | O_CLOEXEC);
     CHECK(fd1 >= 0 && fd2 >= 0);

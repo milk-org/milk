@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "image_stats.h"
 #include "image_total.h"

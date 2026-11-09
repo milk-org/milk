@@ -28,7 +28,7 @@
 #undef STRINGMAXLEN_COMMAND
 #undef PRINT_ERROR
 #include "fps_types.h"
-#include "fps_unit.h"
+#include "fps_unit_startstop.h"
 
 #define OV_CTRL_JOBS 64 /* unit actions running at once (a batch starts one per mark) */
 

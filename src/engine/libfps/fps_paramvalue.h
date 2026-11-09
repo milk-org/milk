@@ -10,7 +10,7 @@
 #ifndef FPS_PARAMVALUE_H
 #define FPS_PARAMVALUE_H
 
-#include "milk_argval.h"
+#include "fps_args.h"
 
 int64_t *functionparameter_GetParamPtr_generic(FPS *fps, const char *paramname, long *paramindex);
 

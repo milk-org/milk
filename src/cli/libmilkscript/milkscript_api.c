@@ -25,7 +25,7 @@
 #include "CLIcore_setSHMdir.h"
 #include "milk_bash.h"
 #include "milkscript.h"
-#include "milk_session.h"
+#include "milk_builtin_module.h"
 
 /**
  * @brief Initialize the milk scripting engine.

@@ -35,7 +35,7 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_script.h"
 #include "milk_runnable.h"
-#include "milk_session.h"
+#include "milk_builtin_module.h"
 
 /* Forward references to functions in CLIcore.c
  * that are registered as CLI command callbacks.

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_srvlog_shm.c
+ * @file milk_srvlog.c
  * @brief Shared-memory server ring-buffer log (`milk-srv.<uid>.<name>.log.shm`) and `@log` CLI.
  *
  * Role & Goal:
@@ -34,7 +34,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_ipc_common.h"
 #include "milk_detach.h"
 #include "milk_srvlog.h"

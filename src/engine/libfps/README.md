@@ -30,7 +30,7 @@ persistence. No CLI dependency. The runtime that executes compute units lives in
 | `fps_outlog.c`                     | Get FPS log filename                                  |
 | `fps_paramvalue.c`                 | set and get parameter values                          |
 | `fps_print_info.c`                 | Print content of a Function Parameter Structure (FPS) |
-| `milk_argval.c`                    | argument values (calculator literals) and the binding of argument words: module commands, unit command lines, `@args`, `@set` |
+| `fps_args.c`                    | argument values (calculator literals) and the binding of argument words: module commands, unit command lines, `@args`, `@set` |
 | `fps_printlist.c`                  | print list of parameters                              |
 | `fps_printparameter_valuestring.c` | print parameter value string                          |
 | `fps_save2disk.c`                  | Save FPS content to disk                              |

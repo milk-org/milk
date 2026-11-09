@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_os.h
- * @brief The OS services milk needs beyond strict POSIX, behind one interface (milk_os_linux.c)
+ * @file milk_syscalls.h
+ * @brief The OS services milk needs beyond strict POSIX, behind one interface (milk_syscalls_linux.c)
  */
 
-#ifndef MILK_OS_H
-#define MILK_OS_H
+#ifndef MILK_SYSCALLS_H
+#define MILK_SYSCALLS_H
 
 #include <stddef.h>
 #include <stdint.h>
+#include <spawn.h>
 #include <sys/types.h>
 
 /** milkos_self_exe - absolute path of the running executable. Return: 0, or -1 with errno set. */
@@ -75,5 +76,13 @@ int milkos_set_ids(uid_t uid, gid_t gid, const gid_t *groups, int ngroups);
  * Return: 0, 1 if left to GLIBC_TUNABLES, -1 where the C library cannot do it.
  */
 int milkos_malloc_keep(void);
+
+/** milkos_pcore_count - distinct physical P-cores in this process's CPU affinity, E-cores left out
+ * when sysfs lists the P-cores; the affinity is only read. Return: at least 1. */
+int milkos_pcore_count(void);
+
+/** milkos_spawn_closefrom - add "close every descriptor >= @lowfd" to @fa (glibc 2.34 or later).
+ * Return: 0, or an error number (ENOSYS where the C library has no such action). */
+int milkos_spawn_closefrom(posix_spawn_file_actions_t *fa, int lowfd);
 
 #endif

@@ -32,7 +32,7 @@
 #include "computeunit.h"
 #include "fps_connect.h"
 #include "milk_cmd_args.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_entity_ns.h"
 #include "milk_cmd_index.h"
 

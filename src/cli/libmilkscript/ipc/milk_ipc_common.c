@@ -8,8 +8,8 @@
  *
  * Role & Goal:
  *   Implements the common IPC utilities declared in `milk_ipc_common.h` so
- *   that `milk_client_conn.c`, `milk_client_ops.c`, `milk_srvlog_shm.c`, and
- *   `milk_srv_manager.c` share a single implementation of socket addressing,
+ *   that `milk_client_conn.c`, `milk_client_ops.c`, `milk_srvlog.c`, and
+ *   `milk_sessions.c` share a single implementation of socket addressing,
  *   shell variable propagation, server ping/shutdown, and double-fork daemon
  *   launching.
  */
@@ -34,7 +34,7 @@
 #include "milk_detach.h"
 #include "milk_entity_ns.h"
 #include "milk_ipc_common.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 #include "milk_proto.h"
 #include "milk_srvlog.h"
 

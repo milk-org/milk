@@ -18,7 +18,7 @@ The project's help content lives in these locations:
 | 3   | Help executable (C)  | `src/engine/libfps/tools/milk-fpsexec-help.c`       | fpsexec standalone usage         |
 | 4   | Help executable (C)  | `src/engine/libprocessinfo/milk-procinfo-help.c`    | Processinfo & real-time          |
 | 5   | Help executable (C)  | `src/cli/CLIcore/milk-cli-help-synchro.c`           | Synchronization overview         |
-| 6   | In-code help (C)     | `src/cli/libmilkscript/core/CLIcore_help*.c`, `milk_lexicon.c` | Interactive `@help`, `<cmd> -h`, keyword help |
+| 6   | In-code help (C)     | `src/cli/libmilkscript/core/CLIcore_help*.c`, `milk_keywords.c` | Interactive `@help`, `<cmd> -h`, keyword help |
 | 7   | Kernel-Doc / Doxygen | `@brief`/`@file` comments in `.c`/`.h` files        | Per-function API docs            |
 | 8   | Runnable descriptors | `.app.description` of each `MILK_RUNNABLE`          | One-line summaries (`-h1`)       |
 | 9   | Markdown docs        | `docs/guide/*.md` (fps.md, streams.md, procinfo.md) | User/developer reference         |

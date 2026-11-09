@@ -9,7 +9,7 @@
  * Role & Goal:
  *   Consolidates all low-level IPC and shell-hook primitives shared between
  *   the milk client (`milk_client_conn.c`, `milk_client_ops.c`) and the
- *   multi-server lifecycle manager (`milk_srv_manager.c`, `milk_srvlog_shm.c`).
+ *   multi-server lifecycle manager (`milk_sessions.c`, `milk_srvlog.c`).
  *   Eliminates duplicated socket resolution, binary discovery, shell variable
  *   propagation (`MILK_CALL_EVAL_FD`), ping/shutdown handshakes, and
  *   double-fork daemon spawning.

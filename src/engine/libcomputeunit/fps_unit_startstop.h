@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file    fps_unit.h
+ * @file    fps_unit_startstop.h
  * @brief   Unit lifecycle: start a detached worker and wait for its loop, stop it, environment snapshot
  *
  * Front-ends that must not block run the milk-fps-<op> tools through fps_unit_spawn() or the
@@ -12,12 +12,12 @@
  * A unit is an fpsexec binary and its FPS. fps_unit_start() runs `<fpsexec> NAME:<role>start --fg`
  * detached (milk_detach.h) and returns once the loop is active. The worker side (fps_unit_role_*,
  * fps_unit_notify_*) runs in fps_generic_run() and fps_generic_conf_cb(), for foreground runs too,
- * and tells a service manager what it tells a starter (milk_notify.h). A role that systemd runs is
+ * and tells a service manager what it tells a starter (milk_sdnotify.h). A role that systemd runs is
  * started and stopped through systemctl (U17). State and the unit directory: fps_unit_state.h.
  */
 
-#ifndef FPS_UNIT_H
-#define FPS_UNIT_H
+#ifndef FPS_UNIT_STARTSTOP_H
+#define FPS_UNIT_STARTSTOP_H
 
 #include <sys/types.h>
 #include <time.h>

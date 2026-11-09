@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/* CTest milkcommon-notify: messages reach $NOTIFY_SOCKET (a path or an abstract name), the variable is
+/* CTest milkcommon-sdnotify: messages reach $NOTIFY_SOCKET (a path or an abstract name), the variable is
  * gone once read, and $WATCHDOG_USEC counts only for the process $WATCHDOG_PID names. */
 
-#include "milk_notify.h"
+#include "milk_sdnotify.h"
 
 #include <fcntl.h>
 #include <stddef.h>

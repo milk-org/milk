@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_session.c
- * @brief Built-in module `milk`, root commands and default modules (see milk_session.h).
+ * @file milk_builtin_module.c
+ * @brief Built-in module `milk`, root commands and default modules (see milk_builtin_module.h).
  */
 
 #include <stdio.h>
@@ -18,7 +18,7 @@
 #include "milk_cmd_index.h"
 #include "milk_config.h"
 #include "milk_runnable.h"
-#include "milk_session.h"
+#include "milk_builtin_module.h"
 
 /* Loaded in every front-end after the core modules, unless $MILKCLI_ADD_LIBS says otherwise */
 static const char *const default_extra_modules =

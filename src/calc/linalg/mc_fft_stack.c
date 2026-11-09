@@ -37,6 +37,7 @@
 #endif
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
 #include "COREMOD_arith/image_elem_block.h"

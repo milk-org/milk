@@ -17,7 +17,7 @@
  *
  *   Synchronization, capture, completion, and discovery operations (`@waitfor`,
  *   `@waitany`, `@sleep`, `@grab`, `@complete`, `@shutdown`, `@session`, `@log`,
- *   `@ls`) live in `milk_client_ext.c`.
+ *   `@ls`) live in `milk_client_stream.c`.
  */
 
 #ifndef _GNU_SOURCE
@@ -37,7 +37,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "CLIcore_script.h"
 #include "mcalc.h"
 #include "milk_client.h"

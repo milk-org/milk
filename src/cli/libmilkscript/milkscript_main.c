@@ -50,7 +50,7 @@
 
 #include "CLIcore_script.h"
 #include "milk_bash.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 #include "milkscript.h"
 
 /* milkdata_macros.h provides dcquiet, dcdebug, data, etc. */

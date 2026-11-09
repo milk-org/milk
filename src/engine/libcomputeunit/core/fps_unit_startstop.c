@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file    fps_unit.c
- * @brief   Unit lifecycle (fps_unit.h): the starter side (start, stop, environment) and the worker side
+ * @file    fps_unit_startstop.c
+ * @brief   Unit lifecycle (fps_unit_startstop.h): the starter side (start, stop, environment) and the worker side
  */
 
 #include <ctype.h>
@@ -18,10 +18,10 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "computeunit.h"
-#include "fps_unit.h"
+#include "fps_unit_startstop.h"
 #include "milk_detach.h"
-#include "milk_notify.h"
-#include "milk_os.h"
+#include "milk_sdnotify.h"
+#include "milk_syscalls.h"
 #include "milk_spawn.h"
 #include "processinfo_list.h"
 #include "processinfo_procdirname.h"

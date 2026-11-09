@@ -47,7 +47,7 @@ directory. No daemon is involved.
 | U10 | One state definition, `fps_unit_status()`: `stopped` `starting` `running` `stopping` `exited` `failed`, read by `f.X.status`, `@waitfor`, milk-CTRL, fpsCTRL, `milk-fps-list` and Python. | There were four definitions, two of them tmux sessions. |
 | U11 | Verbs: `confstart`/`runstart` in the background, `confstop`/`runstop` synchronous, `run`/`exec` in the foreground (`--fg`, `MILK_UNIT_FG=1`); processinfo on by default (`--no-procinfo`). Tools `milk-fps-{conf,run}{start,stop}`, `milk-fps-log`, `milk-fps-rm`; `@set f.X.{conf,run}={start,stop}`, `f.X.run.out`, `f.X.conf.out`, `f.X.session`; parameter scripts run through `fps_unit_script()` (`exec.out`). `-tmux` fails with status 2. | Start and stop return once the state changed. |
 | U12 | The fpsCTRL command FIFO is gone: its code, the `fpsCTRLfifo*` fields and the task types; fpsCTRL `-f`/`-s` exit with status 2. | One way to command units, with exit statuses. |
-| U13 | No `system()`, `popen()` or tmux in the engine libraries; Linux-only calls live in `milk_os_linux.c` behind `milk_os.h`. Checked by the `engine_guards` CTest and a strict POSIX build (`-D_XOPEN_SOURCE=800`). | Units start without a shell; portability is explicit. |
+| U13 | No `system()`, `popen()` or tmux in the engine libraries; Linux-only calls live in `milk_syscalls_linux.c` behind `milk_syscalls.h`. Checked by the `engine_guards` CTest and a strict POSIX build (`-D_XOPEN_SOURCE=800`). | Units start without a shell; portability is explicit. |
 | U14 | processinfo: the loop macros install the signal handlers; SIGTERM ends a loop; fatal signals record `CRASHED`, then re-raise; a stop request is re-checked after the trigger wait; every exit clears the run flags. | U6 and U10 depend on it; a segfault no longer spins. |
 | U15 | Accepted losses: the exact status after SIGKILL or the OOM killer (`failed`, no exit record); a shell in the unit's window (`run` or `--fg` instead); tmux tooling outside milk (cacao, pyMilk: brought to compliance in their own repositories). | |
 | U16 | Dropped (2026-10-25): milk-cli no longer runs a module command in its own process on a shared FPS, so it needs no lock of its own. | Nothing used it; the CLI unit arguments are gone. |
@@ -72,14 +72,14 @@ directory. No daemon is involved.
 
 | Part | Files |
 | --- | --- |
-| Detached processes, ready pipe, identity, rotation | `src/engine/libmilkcommon/milk_detach.{c,h}`, `milk_spawn.{c,h}`, `milk_os.h`, `milk_os_linux.c` |
+| Detached processes, ready pipe, identity, rotation | `src/engine/libmilkcommon/milk_detach.{c,h}`, `milk_spawn.{c,h}`, `milk_syscalls.h`, `milk_syscalls_linux.c` |
 | Service manager messages | `src/engine/libmilkcommon/milk_notify.{c,h}` |
 | Unit directory and state | `src/engine/libfps/core/fps_unit_state.c`, `fps_unit_state.h` |
-| Start, stop, spawn, env snapshot, lock | `src/engine/libcomputeunit/core/fps_unit.c`, `fps_unit.h` |
+| Start, stop, spawn, env snapshot, lock | `src/engine/libcomputeunit/core/fps_unit_startstop.c`, `fps_unit_startstop.h` |
 | Verbs | `src/engine/libcomputeunit/core/fps_standalone_main.c` |
 | Tools | `milk-fps-log.c`, `milk-fps-rm.c`, `milk-fps-cmd.c` (`milk-fps-run` too; libcomputeunit), `milk-fps-list.c`, `milk-fps-info.c` (libfps) |
 | systemd examples | `scripts/systemd/` (`milk-unit@.service.in`, `milk-unit-rt.conf`, `milk-loop.target`), installed to `share/milk/systemd/` |
 | Signals | `src/engine/libprocessinfo/processinfo_signals.c` |
 | Guards | `cmake/milk_engine_guards.cmake` |
-| milk-cli servers | `src/cli/libmilkscript/ipc/milk_ipc_common.c` (start), `milk_srv_manager.c` (stop), `server/milk_server.c` (readiness) |
-| Tests | `python/tests/cli/unit_lifecycle_test.py`, `unit_removal_test.py`, `unit_systemd_test.py`, `server_lifecycle_test.py`, `python/tests/tui/unit_tui_test.py`, `test_milk_detach.c`, `test_milk_notify.c`, `test_processinfo_signals.c` |
+| milk-cli servers | `src/cli/libmilkscript/ipc/milk_ipc_common.c` (start), `milk_sessions.c` (stop), `server/milk_server.c` (readiness) |
+| Tests | `python/tests/cli/unit_lifecycle_test.py`, `unit_removal_test.py`, `unit_systemd_test.py`, `server_lifecycle_test.py`, `python/tests/tui/unit_tui_test.py`, `test_milk_detach.c`, `test_milk_sdnotify.c`, `test_processinfo_signals.c` |

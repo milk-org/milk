@@ -4,11 +4,11 @@
 
 /**
  * @file milk_detach.c
- * @brief Detached processes (milk_detach.h); the Linux-only calls come from milk_os
+ * @brief Detached processes (milk_detach.h); the Linux-only calls come from milk_syscalls
  */
 
 #include "milk_detach.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 #include <errno.h>
 #include <fcntl.h>

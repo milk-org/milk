@@ -21,6 +21,7 @@
 #endif
 
 #include "image_linalg.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "image_stats.h"
 #include "libmilkcommon/milk_compiler.h"
 #include "libmilkcommon/pixel_dispatch.h"

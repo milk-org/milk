@@ -24,7 +24,7 @@
 #include "CLIcore_modules.h"
 #include "milk_catalog.h"
 #include "milk_cmd_index.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 
 #define CATALOG_PATHMAX 4096
 

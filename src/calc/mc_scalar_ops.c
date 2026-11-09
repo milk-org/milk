@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file mc_local.c
+ * @file mc_scalar_ops.c
  * @brief Scalar arithmetic/string kernels and zero-heap `mcalc_local()` fast path.
  *
  * This module serves two closely related roles in `libmilkcalc`:

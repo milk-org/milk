@@ -4,7 +4,7 @@
 
 /**
  * @file milk_client_internal.h
- * @brief Internal declarations shared across `milk_client_conn.c`, `milk_client_ops.c`, and `milk_client_ext.c`.
+ * @brief Internal declarations shared across `milk_client_conn.c`, `milk_client_ops.c`, and `milk_client_stream.c`.
  *
  * Role & Goal:
  *   Exposes the connection, lazy auto-start, variable-packing, response-loop,

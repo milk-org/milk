@@ -11,7 +11,7 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
    Tokenizes expressions and multi-statement `.calc` programs, builds an AST (`mc_ast.h`), expands
    inline `def` functions and `hist()`/`prev()` ring buffers, and resolves identifiers, types,
    shapes, and slice bounds.
-2. **Scalar & Client-Side Fast Paths (`mc_scalar.c`, `mc_local.c`)**:
+2. **Scalar & Client-Side Fast Paths (`mc_scalar_eval.c`, `mc_scalar_ops.c`)**:
    Evaluates scalar expressions with an exact `int64_t` integer lane and provides the client-side
    zero-RPC evaluator (`mcalc_local`) for numeric and `s.`/`f.`/`p.` expressions in `libmilkbash`.
 3. **Planner, C99 Code Generator & `.so` Cache (`mc_plan.c`, `mc_emit.c`, `mc_cc.c`, `mc_exec.c`)**:
@@ -42,8 +42,8 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 | `mc_lex.c` | Lexical analyzer for calculator expressions and `.calc` programs |
 | `mc_parse.c` | Pratt expression parser and statement/control-flow (`if`/`for`/`def`) parser |
 | `mc_resolve.c` | Identifier binding, inline `def` expansion, and static shape/type inference |
-| `mc_scalar.c` | Scalar AST evaluator (`int64_t` + `double` + string lanes) |
-| `mc_local.c` | Zero-RPC client-side evaluator (`mcalc_local`) and temporal stats (`RunningStat`, `P2`) |
+| `mc_scalar_eval.c` | Scalar AST evaluator (`int64_t` + `double` + string lanes) |
+| `mc_scalar_ops.c` | Zero-RPC client-side evaluator (`mcalc_local`) and temporal stats (`RunningStat`, `P2`) |
 | `mc_views.c` | N-dimensional slice, stride, broadcast, and `::Nb` binned view resolution |
 | `mc_out.c` | Output stream creation/preparation, `_tmpcalc*` scratch pool, and deferred posting |
 | `mc_plan.c` | AST-to-pass planner, basic-block fusion, and local scratch elision |
@@ -53,8 +53,9 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 | `mc_reduce.c` | Single-pass full-image, masked, pair, and tuple (`istats`, `icentroid`, `iarg*`) reductions |
 | `mc_prestage.c` | Axis reductions, `cumsum`, `pixunmap`, `rprof`, `gauss`, `medfilt*`, and `ema` pre-stages |
 | `mc_eval.c` | Top-level `mcalc_eval_bash`, `mcalc_eval_str`, `mcalc_eval_math_to_val`, and `def` table |
-| `mc_prog.c` | Multi-statement program compiler/runner (`mcalc_prog_*`, `--explain`) |
-| `mc_hist.c` | `hist(s, N)` and `prev(s[, k])` ring-buffer stream management and source rewriter |
+| `mc_prog.c` | Multi-statement program compiler/runner (`mcalc_prog_*`) |
+| `mc_history.c` | `hist(s, N)` and `prev(s[, k])` ring-buffer stream management and source rewriter |
+| `mc_explain.c` | `--explain`: how each statement of a program is scheduled (`mcalc_prog_explain`) |
 | `mc_ext_registry.c` | Global registry for loaded Tier 1 and Tier 2 calculator C extensions |
 | `mc_ext_loader.c` | `.c` / `.so` extension loader (compiles through `mc_cc.c`), `dlopen`, the call-argument binder (`mc_ext_bind_args`, shared with `mc_ext_exec.c`) and FPS parameter scanner |
 | `mc_ext_exec.c` | Runtime execution of Tier 1 (block, stencil, whole-image) and Tier 2 (`MILK_EXT_OP`) extensions |

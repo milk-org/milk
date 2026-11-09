@@ -13,7 +13,7 @@
 
 #include "fps.h"
 #include "fps_globals.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 /**
  * @brief Create an FPS shared memory segment.

@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_argval.c
- * @brief Argument values and words (see milk_argval.h): one reading of text values for module commands,
+ * @file fps_args.c
+ * @brief Argument values and words (see fps_args.h): one reading of text values for module commands,
  *        unit command lines, `@args` and `@set`, and one rule binding words to parameters.
  */
 
@@ -19,7 +19,7 @@
 #include <strings.h>
 
 #include "fps_types.h"
-#include "milk_argval.h"
+#include "fps_args.h"
 
 /**
  * milk_argval_is_numeric - Check whether an FPS/CLI parameter type holds a numeric value

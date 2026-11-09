@@ -39,7 +39,7 @@
 #include "mc_ast.h"
 #include "mc_plan.h"
 #include "mcalc.h"
-#include "milk_argval.h"
+#include "fps_args.h"
 #include "milk_calc_ext.h"
 
 /* Maximum number of canonical library paths tracked for idempotent loading. */

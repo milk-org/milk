@@ -34,14 +34,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "CLIcore.h"
 #ifdef USE_CFITSIO
 #    include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "libmilkdata/milk_frame.h"
+#include "libmilkdata/milkdata_torn_frame.h"
 #include "mcalc.h"
 #include "milk_shm_cache.h"
 #include "milk_shm_prop.h"
@@ -571,7 +571,7 @@ int milk_server_grab(int         client_fd,
             milk_server_cmd_unlock(); /* copy a shm frame without holding up other commands */
         }
 
-        /* recopy a frame the writer touched while we copied it (torn frame, milk_frame.h) */
+        /* recopy a frame the writer touched while we copied it (torn frame, milkdata_torn_frame.h) */
         uint64_t frame_cnt = 0;
         for (int tries = 0; tries < MILK_FRAME_TRIES; tries++)
         {

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_server_io.c
+ * @file milk_server_complete.c
  * @brief Tab-completion handler for the milk-cli server.
  *
  * Role & Goal:
@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_cmd_index.h"
 #include "CLIcore.h"
 #include "CLIcore_script.h"

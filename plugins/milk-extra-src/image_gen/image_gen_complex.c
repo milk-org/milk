@@ -19,6 +19,7 @@
 #    include "ImageStreamIO/ImageStreamIO.h"
 #endif
 #include "COREMOD_iofits/COREMOD_iofits.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "computeunit.h"
 #include "COREMOD_memory/COREMOD_memory.h"

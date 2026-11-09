@@ -19,6 +19,7 @@
 #endif
 
 #include "libmilkcommon/milk_compiler.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "libmilkdata/milk_type_dispatch.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "imgid_arith_helpers.h"

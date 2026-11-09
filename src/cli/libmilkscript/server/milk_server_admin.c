@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_server_session.c
+ * @file milk_server_admin.c
  * @brief The session keywords the server runs: @module, @config, @history's subcommands, and
  *        @session save.
  */
@@ -23,7 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "CLIcore.h"
 #include "CLIcore_modules.h"
 #include "CLIcore_script.h"

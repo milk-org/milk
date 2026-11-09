@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"

@@ -8,6 +8,7 @@
  */
 
 #include "computeunit.h"
+#include "libmilkcommon/milk_omp_team.h"
 
 /** @brief Add parameters to FPS for real-time process settings
  *

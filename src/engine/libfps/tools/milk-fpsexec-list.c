@@ -21,7 +21,7 @@
 #include <sys/stat.h>
 
 #include "milk_help.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 #include "milk_spawn.h"
 
 #define FEL_DESC "list installed milk-fpsexec-* standalone compute units"

@@ -8,7 +8,7 @@
  *
  * `@args "name:type[=default][:help]"... -- "$@"`: values in order or as `.name=value`, `.` for the
  * default, `--` before values that start with `.` or `-`; types int uint float bool str (the typed
- * parsing of milk_argval.c). The names are bound in the caller: as locals by the builtin, which also
+ * parsing of fps_args.c). The names are bound in the caller: as locals by the builtin, which also
  * ends the function after -h or a usage error.
  */
 
@@ -20,9 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "fps_types.h"
-#include "milk_argval.h"
+#include "fps_args.h"
 #include "milk_client.h"
 #include "milk_ipc_common.h"
 

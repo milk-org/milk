@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_srv_manager.c
+ * @file milk_sessions.c
  * @brief Sessions: the `@session` keyword (status, ls, new, use, leave, who, end, prune, log).
  *
  * A session is a milk-cli server: a shell's own (named after the shell's PID, started on its first
@@ -32,12 +32,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
-#include "fps_unit.h"
+#include "milk_keywords.h"
+#include "fps_unit_startstop.h"
 #include "fps_unit_state.h"
 #include "milk_detach.h"
 #include "milk_ipc_common.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 #include "milk_srvlog.h"
 
 extern void milk_srvlog_get_dir(char *out, size_t outsz);

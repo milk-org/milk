@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file    image_coord.c
+ * @file    image_generate.c
  * @brief   Pixel coordinate and hash-PRNG image generators
  */
 
@@ -19,7 +19,8 @@
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "image_coord.h"
+#include "libmilkcommon/milk_omp_team.h"
+#include "image_generate.h"
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 _Static_assert(sizeof(IMAGE_METADATA) % 64 == 0,

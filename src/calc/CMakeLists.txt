@@ -9,10 +9,10 @@ set(SOURCEFILES
     mc_lex.c
     mc_parse.c
     mc_resolve.c
-    mc_scalar.c
+    mc_scalar_eval.c
     mc_reduce.c
     mc_prestage.c
-    mc_local.c
+    mc_scalar_ops.c
     mc_cc.c
     mc_views.c
     mc_out.c
@@ -20,7 +20,8 @@ set(SOURCEFILES
     mc_emit.c
     mc_exec.c
     mc_prog.c
-    mc_hist.c
+    mc_history.c
+    mc_explain.c
     mc_eval.c
     linalg/mc_linalg_blas.c
     linalg/mc_linalg_lapack.c
@@ -36,7 +37,7 @@ milk_apply_extensions(${LIBNAME})
 
 # Scalar evaluation keeps the IEEE NaN semantics of the JIT kernels (mc_cc.c): under -Ofast,
 # -ffinite-math-only folds `nan == nan` to 1 and `nan >= 1` to !(nan < 1). libmilkbash compiles
-# mc_local.c with the same flag. The reduction kernels test NaN bit by bit (arith_isnan_d) and keep
+# mc_scalar_ops.c with the same flag. The reduction kernels test NaN bit by bit (arith_isnan_d) and keep
 # -Ofast's finite math: it makes icentroid 8% and istd 3% faster.
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
   target_compile_options(${LIBNAME} PRIVATE -fno-finite-math-only)

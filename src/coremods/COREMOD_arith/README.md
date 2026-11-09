@@ -7,7 +7,7 @@ Image arithmetic, SIMD block kernels, statistical reductions, coordinates, compl
 | File                          | Description                                                            |
 | ----------------------------- | ---------------------------------------------------------------------- |
 | `im_complex.c`                | Complex image conversions, unary/binary ops, and parts extraction      |
-| `image_coord.c` / `.h`        | Coordinate (`ix`, `iy`, `ir`, `itheta`) and PRNG block generators      |
+| `image_generate.c` / `.h`        | Coordinate (`ix`, `iy`, `ir`, `itheta`) and PRNG block generators      |
 | `image_linalg.c` / `.h`       | Tensor shape (`transpose`, `reshape`) and BLAS Level 1-3 kernels       |
 | `image_elem_block.h`          | Shared inline SIMD block kernels and 10-datatype block load/store      |
 | `image_medfilt_block.h`       | Shared 3x3, 5x5, and 7x7 Young-tableau SIMD median filter kernels      |

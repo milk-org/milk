@@ -677,7 +677,7 @@ _milk_unload_impl() {
 
 # ---------------------------------------------------------------------------
 # 6. Language keywords (@calc, @get, ...): one function each, generated from the keyword table
-#    (milk_lexicon.c) for this front-end; shell keywords are implemented by _milk_<name>_impl.
+#    (milk_keywords.c) for this front-end; shell keywords are implemented by _milk_<name>_impl.
 #    With libmilkbash loaded, the builtin keywords are builtins named @<name> instead (section 4).
 # ---------------------------------------------------------------------------
 _milk_running_impl() { milkexists -r "$@"; }
@@ -903,7 +903,7 @@ command_not_found_handle() {
 # 8. Programmable Bash Tab-Completion
 # ---------------------------------------------------------------------------
 # the server's completer (milk_complete): command names, arguments, the keywords' options and
-# words (milk_lexicon.c), calculator text
+# words (milk_keywords.c), calculator text
 _milk_complete() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     if [[ ${COMP_CWORD} -eq 0 ]]; then

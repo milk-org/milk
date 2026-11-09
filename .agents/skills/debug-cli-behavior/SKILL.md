@@ -174,7 +174,7 @@ co-process that sourced `milk.bash`, so from there it runs as in plain bash:
 
 ```
 CLIcore_UI_execute.c → milk_bash_exec.c (translation) → milk_bash_coproc.c (bash co-process)
-  @keyword    → libmilkbash builtin or milk.bash function (milk_lexicon.c says which)
+  @keyword    → libmilkbash builtin or milk.bash function (milk_keywords.c says which)
   module.cmd  → shell function → milkcall → milk_client_ops.c → session server:
                 milk_server_dispatch.c → CLIcore_checkargs.c (arguments: milk_args_bind)
   @calc text  → session server: milk_server_eval.c → src/calc/mc_eval.c
@@ -230,4 +230,4 @@ Key files for CLI debugging:
 | `src/calc/mc_eval.c`                 | Arithmetic expression entry point           |
 | `src/calc/mc_lex.c`                  | Expression tokenizer                        |
 | `src/calc/mc_parse.c`                | Pratt parser                                |
-| `src/calc/mc_scalar.c`               | Built-in scalar math & string functions     |
+| `src/calc/mc_scalar_eval.c`               | Built-in scalar math & string functions     |

@@ -6,7 +6,7 @@
  * @file mc_reduce.c
  * @brief Full-image statistical, extremum, percentile, and centroid reductions for `libmilkcalc`.
  *
- * Implements the whole-image reduction primitives invoked by the scalar evaluator (`mc_scalar.c`)
+ * Implements the whole-image reduction primitives invoked by the scalar evaluator (`mc_scalar_eval.c`)
  * and by pre-stage constructors (`mc_prestage.c`):
  *   - Single-output reductions (`itot`, `imean`, `imin`, `imax`, `istd`, `irms`, `ivar`,
  *     `norm`/`nrm2`, `asum`, `icount`, `dot`, `iargmax`, `iargmin`, `iamax`, `imedian`, `perc`,
@@ -38,11 +38,12 @@
 #include <string.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milk_type_dispatch.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
-#include "COREMOD_arith/image_coord.h"
+#include "COREMOD_arith/image_generate.h"
 #include "COREMOD_arith/image_stats.h"
 #include "mc_plan.h"
 

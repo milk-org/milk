@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_frame.h
+ * @file milkdata_torn_frame.h
  * @brief One torn-frame rule for readers of shared streams (calculator passes, stream statistics,
  *        `@grab`)
  *
@@ -12,8 +12,8 @@
  * times in all, MILK_FRAME_WAIT_NS apart, and then uses the last read.
  */
 
-#ifndef MILK_FRAME_H
-#define MILK_FRAME_H
+#ifndef MILKDATA_TORN_FRAME_H
+#define MILKDATA_TORN_FRAME_H
 
 #include <stdint.h>
 #include <time.h>
@@ -56,4 +56,4 @@ static inline void milk_frame_wait(void)
     nanosleep(&ts, NULL);
 }
 
-#endif /* MILK_FRAME_H */
+#endif /* MILKDATA_TORN_FRAME_H */

@@ -20,6 +20,7 @@
 #endif
 
 #include "COREMOD_arith/image_stats.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "libmilkcommon/milk_compiler.h"
 

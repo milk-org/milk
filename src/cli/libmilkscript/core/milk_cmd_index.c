@@ -15,7 +15,7 @@
 #include "milk_catalog.h"
 #include "milk_cmd_index.h"
 #include "milk_entity_ns.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 
 #define CMD_INDEX_SIZE 4096 /* power of two, > 2 * DATA_NB_MAX_COMMAND */
 

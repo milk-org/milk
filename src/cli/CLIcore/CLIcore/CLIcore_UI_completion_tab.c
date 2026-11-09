@@ -28,7 +28,7 @@
 #    include <readline/readline.h>
 #endif
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"

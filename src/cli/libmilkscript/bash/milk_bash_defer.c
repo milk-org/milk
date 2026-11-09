@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_bash_defer.h"
 
 /* the members of bash's SHELL_VAR, unchanged since bash 3 */

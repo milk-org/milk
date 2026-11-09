@@ -43,6 +43,7 @@
 #endif
 
 #include "CLIcore.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "libmilkcommon/milk_compiler.h"
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
@@ -50,7 +51,7 @@
 #include "milk_catalog.h"
 #include "milk_cmd_index.h"
 #include "milk_detach.h"
-#include "milk_notify.h"
+#include "milk_sdnotify.h"
 #include "milk_server.h"
 #include "milk_server_internal.h"
 #include "milk_srvlog.h"

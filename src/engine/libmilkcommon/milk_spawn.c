@@ -7,9 +7,6 @@
  * @brief Shell-free process spawning: strings from files or shm never reach /bin/sh
  */
 
-#ifndef _GNU_SOURCE
-#    define _GNU_SOURCE
-#endif
 
 #include "milk_spawn.h"
 
@@ -23,7 +20,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 extern char **environ;
 
@@ -71,9 +68,7 @@ pid_t milkspawn_start_env(const char *const argv[], char *const envp[], int out_
     {
         posix_spawn_file_actions_adddup2(&fa, err_fd, STDERR_FILENO);
     }
-#if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34))
-    posix_spawn_file_actions_addclosefrom_np(&fa, STDERR_FILENO + 1);
-#endif
+    milkos_spawn_closefrom(&fa, STDERR_FILENO + 1);
     /* children start with an empty mask and default INT/QUIT/PIPE, even if the caller ignores them */
     sigemptyset(&sigs);
     posix_spawnattr_setsigmask(&at, &sigs);

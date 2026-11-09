@@ -42,24 +42,24 @@ set(MILKSCRIPT_SOURCES
     core/milk_catalog_build.c
     core/milk_cmd_args.c
     core/milk_cmd_index.c
-    core/milk_lexicon.c
+    core/milk_keywords.c
     core/milk_renames.c
-    core/milk_session.c
+    core/milk_builtin_module.c
     ipc/milk_ipc_common.c
     ipc/milk_client_conn.c
     ipc/milk_client_ops.c
-    ipc/milk_client_ext.c
+    ipc/milk_client_stream.c
     ipc/milk_client_args.c
     ipc/milk_waitfor.c
-    ipc/milk_srvlog_shm.c
-    ipc/milk_srv_manager.c
+    ipc/milk_srvlog.c
+    ipc/milk_sessions.c
     server/milk_server.c
     server/milk_server_vars.c
     server/milk_server_stream.c
-    server/milk_server_io.c
+    server/milk_server_complete.c
     server/milk_server_dispatch.c
     server/milk_server_eval.c
-    server/milk_server_session.c
+    server/milk_server_admin.c
     bash/milk_bash_translate.c
     bash/milk_shell_lex.c
     bash/milk_shell_lex_code.c
@@ -177,18 +177,18 @@ add_library(
   bash/milk_bash_cmdfile.c
   ipc/milk_client_conn.c
   ipc/milk_client_ops.c
-  ipc/milk_client_ext.c
+  ipc/milk_client_stream.c
   ipc/milk_client_args.c
   ipc/milk_ipc_common.c
   ipc/milk_waitfor.c
-  ipc/milk_srvlog_shm.c
-  ipc/milk_srv_manager.c
-  core/milk_lexicon.c
+  ipc/milk_srvlog.c
+  ipc/milk_sessions.c
+  core/milk_keywords.c
   ../../calc/mc_ext_registry.c
   ../../calc/mc_ext_loader.c
   ../../calc/mc_func.c
   ../../calc/mc_lex.c
-  ../../calc/mc_local.c
+  ../../calc/mc_scalar_ops.c
   core/milk_renames.c
   core/CLIcore_inspect.c)
 target_include_directories(

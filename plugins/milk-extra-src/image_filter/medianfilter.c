@@ -20,6 +20,7 @@
 #endif
 
 #include "COREMOD_arith/imfunctions.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 #include "libmilkcommon/milk_compiler.h"

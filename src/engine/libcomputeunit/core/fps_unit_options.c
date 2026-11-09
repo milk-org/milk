@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_unit.c
+ * @file fps_unit_options.c
  * @brief Command lines of the units without C (milk.calc, milk.script).
  *
  * A unit's program is given with unit options (-e/-c, -t, -p, -f, ...). They are read and removed
@@ -17,9 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "milk_argval.h"
+#include "fps_args.h"
 #include "milk_runnable.h"
-#include "milk_unit.h"
+#include "fps_unit_options.h"
 
 static int milk_unit_fps_exists(const char *name);
 

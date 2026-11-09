@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "libmilkdata/milk_frame.h"
+#include "libmilkdata/milkdata_torn_frame.h"
 #include "libmilkdata/milk_type_dispatch.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/image_elem_block.h"
@@ -362,7 +362,7 @@ static int stream_stats(const IMAGE *im, stream_stats_t *st)
     }
 
     /* The calculator's statistics (imin, imax, imean, istd, ivar, itot, icount), read under the
-     * torn-frame rule of milk_frame.h */
+     * torn-frame rule of milkdata_torn_frame.h */
     uint64_t clean_cnt0 = 0;
     int      clean      = 0;
     for (int attempt = 0; attempt < MILK_FRAME_TRIES; attempt++)

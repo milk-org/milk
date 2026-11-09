@@ -226,7 +226,7 @@ add_executable(
   ../overview/render/overview_render_subtabs.c
   ../overview/render/overview_render_out.c
   ../overview/render/overview_render_derived.c
-  ../overview/render/overview_render_units.c
+  ../overview/render/overview_render_numfmt.c
   ../overview/render/overview_render_bar.c
   ../overview/render/overview_render_insp.c
   ../overview/render/overview_render_insp_pages.c

@@ -7,7 +7,7 @@
  * ready pipe), the stop ladder escalates, outputs rotate. */
 
 #include "milk_detach.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 #include <errno.h>
 #include <fcntl.h>

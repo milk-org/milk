@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_client_ext.c
+ * @file milk_client_stream.c
  * @brief Client synchronization (`@waitfor`/`@waitany`/`@sleep`), capture (`@grab`), completion, and discovery (`@ls`).
  *
  * Role & Goal:
@@ -49,7 +49,7 @@
 #include "milk_entity_ns.h"
 #include "milk_shm_cache.h"
 #include "milk_ipc_common.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_proto.h"
 #include "milk_renames.h"
 #include "milk_shm_prop.h"

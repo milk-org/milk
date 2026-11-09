@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "stream_sem.h"

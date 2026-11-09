@@ -20,7 +20,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 #include "CLIcore_UI_execute.h"
 

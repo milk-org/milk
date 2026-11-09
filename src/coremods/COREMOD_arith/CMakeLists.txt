@@ -14,7 +14,7 @@ include_directories("${PROJECT_SOURCE_DIR}/..")
 milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} COREMOD)
 milk_add_fpsexec_stubs(${LIBNAME})
 
-# The inline block kernels (image_elem_block.h, image_stats.h, image_coord.h, complex kernels) are
+# The inline block kernels (image_elem_block.h, image_stats.h, image_generate.h, complex kernels) are
 # instantiated in several of these sources; under -Ofast GCC would vectorize float division and
 # 1/sqrt with approximate reciprocals in some of them and not others. One flag for the whole module
 # keeps IEEE division and square root everywhere, so the calculator's fused and fallback paths agree.

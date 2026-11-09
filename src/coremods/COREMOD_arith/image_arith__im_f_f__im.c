@@ -23,6 +23,7 @@
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/milk_omp_team.h"
 
 #include "image_arith__im_f_f__im.h"
 #include "image_elem_block.h"

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file    overview_render_units.c
+ * @file    overview_render_numfmt.c
  * @brief   Number formatting with units, so values keep a bounded width.
  */
 

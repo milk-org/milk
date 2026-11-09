@@ -28,6 +28,7 @@
 #endif
 
 #include "arith_team.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "image_elem_block.h"
 #include "image_spatial.h"
 #include "image_stats.h"

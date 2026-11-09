@@ -29,7 +29,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_help.h"
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_stream_props.h"
 #include "fps_streamname_parse.h"
 

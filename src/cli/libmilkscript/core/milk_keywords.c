@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_lexicon.c
- * @brief Language keywords and bash words (see milk_lexicon.h).
+ * @file milk_keywords.c
+ * @brief Language keywords and bash words (see milk_keywords.h).
  */
 
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 
 #define CLI_ONLY MILK_KW_CLI
 #define NO_SCRIPT (MILK_KW_CLI | MILK_KW_BASH)

@@ -9,7 +9,7 @@
  * Compiled into libcomputeunit; has no CLI dependency.
  */
 
-#include "milk_os.h"
+#include "milk_syscalls.h"
 #include "milk_runnable.h"
 
 int milk_runnable_main(int argc, char *argv[], const MILK_RUNNABLE *r)

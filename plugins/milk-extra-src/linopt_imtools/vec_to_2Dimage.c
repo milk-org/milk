@@ -8,6 +8,7 @@
  */
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "linopt_imtools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 

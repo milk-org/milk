@@ -13,9 +13,7 @@ set(MILK_ENGINE_NONPOSIX_SOURCES
     libfps/io/fps_WriteParameterToDisk.c
     libfps/io/fps_save2disk.c
     libfps/tools/milk-fpsexec-list.c
-    libmilkcommon/milk_compiler.c
-    libmilkcommon/milk_os_linux.c
-    libmilkcommon/milk_spawn.c
+    libmilkcommon/milk_syscalls_linux.c
     libprocessinfo/processinfo_loopstep.c
     libprocessinfo/processtools_trigger.c)
 

@@ -150,7 +150,7 @@ double mc_wrap_pi(double a)
  * @v: Value of the condition
  *
  * A condition is a number: non-zero is true; zero and NaN are false. Shared by the session's
- * calculator and the shell's evaluator (mc_local.c), so both read a condition alike.
+ * calculator and the shell's evaluator (mc_scalar_ops.c), so both read a condition alike.
  *
  * Return: 1 if true, 0 if false, -1 if @v is a string (not a condition)
  */

@@ -11,7 +11,7 @@
  *   command & expression dispatcher (`milk_server_dispatch.c`),
  *   variable synchronization & entity expansion (`milk_server_vars.c`),
  *   blocking stream wait/grab/I/O operations (`milk_server_stream.c`),
- *   and command listing/tab-completion (`milk_server_io.c`).
+ *   and command listing/tab-completion (`milk_server_complete.c`).
  */
 
 #ifndef MILK_SERVER_INTERNAL_H
@@ -70,7 +70,7 @@ int milk_server_streamcat(int argc, char **argv);
 
 int milk_server_streamwrite(int argc, char **argv);
 
-/* --- milk_server_io.c --- */
+/* --- milk_server_complete.c --- */
 
 void milk_server_handle_complete(int         client_fd,
                                  int         keep,

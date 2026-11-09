@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_argval.h
+ * @file fps_args.h
  * @brief Argument values and words: text to a value of an FPTYPE parameter and back, and the rule that
  *        binds words to parameters (module commands, unit command lines, `@args`, `@set`).
  */
 
-#ifndef MILK_ARGVAL_H
-#define MILK_ARGVAL_H
+#ifndef FPS_ARGS_H
+#define FPS_ARGS_H
 
 #include <stddef.h>
 #include <stdint.h>

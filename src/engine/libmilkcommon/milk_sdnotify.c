@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_notify.c
- * @brief Messages to a service manager (milk_notify.h)
+ * @file milk_sdnotify.c
+ * @brief Messages to a service manager (milk_sdnotify.h)
  */
 
-#include "milk_notify.h"
+#include "milk_sdnotify.h"
 
 #include <errno.h>
 #include <fcntl.h>

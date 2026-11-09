@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_lexicon.h
+ * @file milk_keywords.h
  * @brief The language keyword table (`@` words) and the bash words the REPL highlights and completes.
  *
  * Every consumer derives from this table: the milk.bash keyword functions (`milkls --keywords --bash`),
@@ -11,8 +11,8 @@
  * the command registry (data.cmd); entity namespaces from milk_entity_ns.h.
  */
 
-#ifndef MILK_LEXICON_H
-#define MILK_LEXICON_H
+#ifndef MILK_KEYWORDS_H
+#define MILK_KEYWORDS_H
 
 #include <stdio.h>
 
@@ -76,4 +76,4 @@ int milk_lexicon_takes_expr(const milk_keyword_t *k);
 /** Bash reserved words and builtins that the REPL highlights and completes, NULL-terminated. */
 const char *const *milk_lexicon_bash_words(void);
 
-#endif /* MILK_LEXICON_H */
+#endif /* MILK_KEYWORDS_H */

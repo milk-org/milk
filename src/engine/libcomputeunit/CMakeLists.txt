@@ -6,10 +6,10 @@ set(SOURCEFILES
     cli/fps_cli_sync.c
     core/fps_lifecycle.c
     core/fps_standalone_main.c
-    core/fps_unit.c
+    core/fps_unit_startstop.c
     core/milk_runnable.c
     core/milk_runnable_main.c
-    core/milk_unit.c
+    core/fps_unit_options.c
     params/fps_modulevars_resync.c
     procinfo/fps_processinfo.c
     procinfo/fps_processinfo_entries.c

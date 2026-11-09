@@ -10,7 +10,7 @@
  * env (environment snapshot), run.out/conf.out (output, with a .1), run.info/conf.info (KEY=VALUE
  * records of the last process of each role: identity at start, exit or stop lines at the end), and
  * systemd ("<role>=<unit> user|system" for the roles a systemd service runs, U17).
- * Starting and stopping live in libcomputeunit (fps_unit.h).
+ * Starting and stopping live in libcomputeunit (fps_unit_startstop.h).
  */
 
 #ifndef FPS_UNIT_STATE_H

@@ -27,8 +27,8 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "fps_modulevars_resync.h"
 #include "mcalc.h"
-#include "milk_argval.h"
-#include "milk_unit.h"
+#include "fps_args.h"
+#include "fps_unit_options.h"
 
 #define CALC_NFIXED 8
 #define CALC_ERROR 7 /* index of .unit.error */

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file mc_scalar.c
+ * @file mc_scalar_eval.c
  * @brief AST evaluator for scalar expressions, reductions, and control flow in libmilkcalc.
  *
  * When `mc_resolve.c` determines that an expression or statement produces a
@@ -41,7 +41,7 @@
 #include "libmilkdata/milk_type_dispatch.h"
 #include "libmilkdata/milkdata.h"
 #include "libprocessinfo/processinfo.h"
-#include "COREMOD_arith/image_coord.h"
+#include "COREMOD_arith/image_generate.h"
 #include "COREMOD_memory/create_variable.h"
 #include "COREMOD_memory/delete_variable.h"
 #include "COREMOD_memory/image_ID.h"

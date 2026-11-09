@@ -24,7 +24,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "CLIcore.h"
 #include "CLIcore_memory.h"
 #include "COREMOD_memory/COREMOD_memory.h"

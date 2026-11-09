@@ -53,7 +53,7 @@ src/cli/libmilkscript/
   `MILK_SERVER` resolution, and auto-daemon spawning.
 - `milk_client_ops.c` — Client RPC operations (`CALL`, `GET`, `SET`, `CALC`, `TEST`, `PING`,
   `SHUTDOWN`; the message types are in `milk_proto.h`) and streaming response reader.
-- `milk_client_ext.c` — Client-side synchronization (`@waitfor`, `@waitany`, `@sleep`),
+- `milk_client_stream.c` — Client-side synchronization (`@waitfor`, `@waitany`, `@sleep`),
   stream capture (`@grab`), tab completion (`milkcomplete`), sessions (`@session`, `@log`,
   server shutdown), and entity/keyword discovery (`@ls`, `milkls --keywords`).
 - `milk_client_args.c` — Client-side argument validation and help formatting.
@@ -61,9 +61,9 @@ src/cli/libmilkscript/
   aliasing, and stream/property wait loops used by both client and server.
 - `milk_call_main.c` — Standalone `milk-call` binary entry point (`call`, `complete`,
   `translate`, `shutdown`, and the callable `@` keywords of the lexicon).
-- `milk_srvlog_shm.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
+- `milk_srvlog.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
   high-resolution timestamped entry recording, and log querying (`--log`).
-- `milk_srv_manager.c` — Server session discovery (`--list`), status dashboard
+- `milk_sessions.c` — Server session discovery (`--list`), status dashboard
   (`--status`), and shutdown (`--kill`).
 
 ### 2. `server/` — Daemon Server & RPC Dispatch
@@ -74,14 +74,14 @@ src/cli/libmilkscript/
 - `milk_server.c` — Accept loop and kept connections, client connection handling and stdio/cwd
   redirection, the output capture thread, thread/blocking orchestration,
   `PING`/`SHUTDOWN`/`GET`/`COMPLETE`/`EXISTS`, and socket cleanup.
-- `milk_server_session.c` — `@module`, `@config`, the subcommands of `@history`, and
+- `milk_server_admin.c` — `@module`, `@config`, the subcommands of `@history`, and
   `@session save`.
 - `milk_server_eval.c` — In-process calculator and command evaluation handlers.
 - `milk_server_vars.c` — Sync of bash variables with the session's calculator variables.
 - `milk_server_stream.c` — Stream synchronization, ring-buffer capture, and
   playback commands (`@waitfor`, `@waitany`, `@grab [--fits|--timestamps]`,
   `@replay [--fps|--count|--loop]`, `@grab --stdout`, `@replay --stdin`).
-- `milk_server_io.c` — Command catalog dumping, `CLICMDARGDEF` type-aware
+- `milk_server_complete.c` — Command catalog dumping, `CLICMDARGDEF` type-aware
   argument tab-completion, and `@hc --sig` signature formatting.
 - `milk_server_dispatch.c` — `CALL` and `SET` handlers: command lookup, argument tokens, and
   running a command under the request guards (`@calc`, `@test`, `@assert` and `@pipe` are
@@ -128,20 +128,20 @@ src/cli/libmilkscript/
 - `CLIcore_inspect.c` — Inspection and process-control commands (`@ls`, `procctl`, `procwait`,
   `procstat`, `dpdigits`, JSON introspection).
 - `CLIcore_script.h` / `CLIcore_vars.c` — CLI variable table and its sync with the environment.
-- `milk_lexicon.h` / `milk_lexicon.c` — The one list of `@` keywords (synopsis, summary, help)
+- `milk_keywords.h` / `milk_keywords.c` — The one list of `@` keywords (synopsis, summary, help)
   and bash words: help, usage errors, the bash builtins' help, completion, highlighting and the
   `milk-call` links.
 - `milk_catalog.h` / `milk_catalog.c` / `milk_catalog_build.c` — Install-time and runtime
   module command catalog.
 - `milk_cmd_args.{c,h}` / `milk_cmd_index.{c,h}` — Command table indexing and argument metadata.
 - `milk_renames.h` / `milk_renames.c` — Legacy command rename mapping.
-- `milk_session.h` / `milk_session.c` — CLIcore session initialization and module autoloading.
+- `milk_builtin_module.h` / `milk_builtin_module.c` — CLIcore session initialization and module autoloading.
 
 ### 5. `units/` — Scripted Compute Units
 
 - `milk_unit_script.c` — `milk-fpsexec-milk-script` (`milk.script`): executes bash/milk script
   snippets or files (`.unit.cmd` / `.unit.file`) per frame in a persistent bash coprocess
-  (using `milk_unit` from libcomputeunit and `milk_argval` from libfps, as `milk-fpsexec-milk-calc` does).
+  (using `fps_unit_options` from libcomputeunit and `fps_args` from libfps, as `milk-fpsexec-milk-calc` does).
 
 ## Build Tier
 

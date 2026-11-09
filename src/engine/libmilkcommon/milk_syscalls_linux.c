@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * @file milk_os_linux.c
- * @brief Linux implementation of milk_os.h: /proc, OFD locks, pidfd, _Fork, close_range, statfs
+ * @file milk_syscalls_linux.c
+ * @brief Linux implementation of milk_syscalls.h: /proc, OFD locks, pidfd, _Fork, close_range, statfs
  */
 
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
 
-#include "milk_os.h"
+#include "milk_syscalls.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -20,6 +20,8 @@
 #include <malloc.h>
 #include <poll.h>
 #include <pwd.h>
+#include <sched.h>
+#include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -317,5 +319,170 @@ int milkos_malloc_keep(void)
     return 0;
 #else
     return -1;
+#endif
+}
+
+/**
+ * parse_cpulist - Parse a Linux sysfs CPU list file (e.g. "0-15\n") into @out
+ * @path: Sysfs file path
+ * @out:  Output CPU affinity set
+ *
+ * Return: 0 when at least one CPU was parsed, -1 otherwise
+ */
+static int parse_cpulist(const char *path, cpu_set_t *out)
+{
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        return -1;
+    }
+    char buf[256];
+    if (fgets(buf, sizeof(buf), fp) == NULL)
+    {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    CPU_ZERO(out);
+    const char *p = buf;
+    while (*p != '\0' && *p != '\n')
+    {
+        char *end = NULL;
+        long  lo  = strtol(p, &end, 10);
+        if (end == p || lo < 0 || lo >= CPU_SETSIZE)
+        {
+            break;
+        }
+        long hi = lo;
+        p       = end;
+        if (*p == '-')
+        {
+            p++;
+            hi = strtol(p, &end, 10);
+            if (end == p || hi < lo)
+            {
+                break;
+            }
+            if (hi >= CPU_SETSIZE)
+            {
+                hi = CPU_SETSIZE - 1;
+            }
+            p = end;
+        }
+        for (long c = lo; c <= hi; c++)
+        {
+            CPU_SET((int) c, out);
+        }
+        if (*p == ',')
+        {
+            p++;
+        }
+    }
+    return (CPU_COUNT(out) > 0) ? 0 : -1;
+}
+
+/**
+ * read_sysfs_int - Read a single decimal integer from @path, or @defval on failure
+ * @path:   Sysfs file path
+ * @defval: Fallback integer value
+ *
+ * Return: Parsed integer or @defval
+ */
+static int read_sysfs_int(const char *path, int defval)
+{
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        return defval;
+    }
+    int val = defval;
+    if (fscanf(fp, "%d", &val) != 1)
+    {
+        val = defval;
+    }
+    fclose(fp);
+    return val;
+}
+
+/**
+ * milkos_pcore_count - Count the distinct physical P-cores in this process's CPU affinity
+ *
+ * Intersects `sched_getaffinity()` with `/sys/devices/cpu_core/cpus` when present (so hybrid
+ * E-cores are not counted) and counts distinct `(physical_package_id, core_id)` pairs. The
+ * process affinity mask is only read, never changed.
+ *
+ * Return: Number of physical P-cores available ($\ge 1$)
+ */
+int milkos_pcore_count(void)
+{
+    cpu_set_t aff;
+    CPU_ZERO(&aff);
+    if (sched_getaffinity(0, sizeof(aff), &aff) != 0 || CPU_COUNT(&aff) <= 0)
+    {
+        return 1;
+    }
+
+    cpu_set_t cand = aff;
+    cpu_set_t pcores;
+    if (parse_cpulist("/sys/devices/cpu_core/cpus", &pcores) == 0)
+    {
+        cpu_set_t inter;
+        CPU_AND(&inter, &aff, &pcores);
+        int n_inter = CPU_COUNT(&inter);
+        if (n_inter > 0)
+        {
+            cand = inter;
+        }
+    }
+
+    struct
+    {
+        int pkg;
+        int core;
+    } seen[256];
+    int nseen = 0;
+
+    for (int cpu = 0; cpu < CPU_SETSIZE && nseen < 256; cpu++)
+    {
+        if (!CPU_ISSET(cpu, &cand))
+        {
+            continue;
+        }
+        char path[128];
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/topology/core_id", cpu);
+        int core = read_sysfs_int(path, cpu);
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/topology/physical_package_id",
+                 cpu);
+        int pkg = read_sysfs_int(path, 0);
+
+        int dup = 0;
+        for (int i = 0; i < nseen; i++)
+        {
+            if (seen[i].pkg == pkg && seen[i].core == core)
+            {
+                dup = 1;
+                break;
+            }
+        }
+        if (!dup)
+        {
+            seen[nseen].pkg  = pkg;
+            seen[nseen].core = core;
+            nseen++;
+        }
+    }
+
+    return (nseen > 0) ? nseen : CPU_COUNT(&cand);
+}
+
+int milkos_spawn_closefrom(posix_spawn_file_actions_t *fa, int lowfd)
+{
+#if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34))
+    return posix_spawn_file_actions_addclosefrom_np(fa, lowfd);
+#else
+    (void) fa;
+    (void) lowfd;
+    return ENOSYS;
 #endif
 }

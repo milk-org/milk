@@ -22,7 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "milk_lexicon.h"
+#include "milk_keywords.h"
 #include "milk_bash.h"
 #include "milk_client.h"
 #include "milkdata.h"
