@@ -5,6 +5,9 @@
 /**
  * @file milk_keywords.c
  * @brief Language keywords and bash words (see milk_keywords.h).
+ *
+ * The keyword table is one static array of milk_keyword_t (synopsis, help text, examples and
+ * completion words for each keyword); a lookup scans it.
  */
 
 #include <stddef.h>

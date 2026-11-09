@@ -5,12 +5,16 @@
 /**
  * @file milk_bash_defer.c
  * @brief `@defer` in the shell: cleanup entries that a RETURN trap runs when their scope ends
+ *        (see milk_bash_defer.h).
  *
  * A scope is the frame of the function or @source'd file that registered an entry, kept as its
  * height: the length of FUNCNAME seen from that frame. Height 0 is the session, run at EXIT. The
  * entries live here, per process. The RETURN trap calls `milkdefer --return "$_"`, which binds
  * __MILK_DRUN_SH to a script that the trap evaluates in the returning frame (its locals and
- * arguments). scripts/milk.bash has the same logic in bash for shells without this library.
+ * arguments). Bash's variables and traps are reached through bash's own functions, found with
+ * dlsym(). scripts/milk.bash has the bash side (_milk_defer_*): the EXIT trap, `--restore`, and
+ * the run, before each prompt or milk-cli command, of the entries that Ctrl-C or `set -e`
+ * skipped.
  */
 
 #ifndef _GNU_SOURCE

@@ -1,8 +1,28 @@
-"""
-Phase 5 of the unit-lifecycle plan (U18): milk-cli servers start through milk_detach, as units do. A
-server reports READY=1 or why it failed, keeps its output in a file next to its log, stops on its
-shutdown command or else by signals, and tells $NOTIFY_SOCKET when a service manager runs it.
-`@session new --tmux` is gone. The plan's §7 item numbers are in each test's docstring.
+"""Session servers start, report and stop as units do, and a session outlives its commands' errors.
+
+Purpose:     milk-cli servers start through milk_detach, as units do
+             (docs/arch/unit_lifecycle.md, U18): a failed start says why, the output of a crash
+             stays, @session end ends even a server that ignores its shutdown command, and a
+             service manager hears from it. A session must also outlive a crash or a Ctrl-C in a
+             command it runs.
+Does:        a server that cannot listen makes @session new fail with its reason (ERRNO=) and the
+             end of its output, and `@session new --tmux` fails with a hint; a crash message
+             stays in the output file; a server that ignores its shutdown command is ended by
+             signals and its files go; a private server ends with its shell, a named one survives
+             it, and neither keeps the caller's descriptors; $NOTIFY_SOCKET gets READY=1, then
+             STOPPING=1 on SIGTERM; Ctrl-C stops a long @calc while the session answers other
+             requests; a crash in a C extension leaves the session running; a shell keeps one
+             connection between requests and starts the server again after it ended; captured
+             command output is complete.
+Covers:      the server start (libmilkscript/ipc/milk_ipc_common.c, on
+             src/engine/libmilkcommon/process/milk_detach.c), its readiness and accept loop
+             (libmilkscript/server/milk_server.c), the stop (libmilkscript/client/milk_sessions.c),
+             the kept connection (libmilkscript/client/milk_client_conn.c), crash interception
+             (libmilkscript/core/CLIcore_signals.c), milk_sdnotify.c (src/engine/libmilkcommon).
+Uses:        conftest.py: milk_bash, value; the names fixture (servers of the test's own, ended
+             after it) and the FUNCS shell functions (srvpid, srvout).
+See also:    docs/arch/unit_lifecycle.md, "Where It Lives"; docs/guide/sessions.md,
+             "Managing Sessions (`@session`)", "Using milk from Plain Bash"; unit_lifecycle_test.py.
 """
 
 from __future__ import annotations
@@ -62,7 +82,7 @@ def gone(pid: int, timeout: float = 5.0) -> bool:
 
 
 def test_failed_start_reports_why(tmp_path, names):
-    """Item 25: a server that cannot listen (its socket name is taken) makes @session new fail with the
+    """A server that cannot listen (its socket name is taken) makes @session new fail with the
     reason it sent (ERRNO=) and the end of its output; --tmux fails with a hint."""
     name = names()
     holder = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -93,7 +113,7 @@ def test_failed_start_reports_why(tmp_path, names):
 
 
 def test_crash_output_is_kept_and_a_stuck_server_is_signalled(tmp_path, names):
-    """Item 25: a server's crash message stays in its output file; a server that ignores its shutdown
+    """A server's crash message stays in its output file; a server that ignores its shutdown
     command (stopped here) is ended by signals, and its files go."""
     crash, stuck = names(), names()
     res = milk_bash(
@@ -117,7 +137,7 @@ def test_crash_output_is_kept_and_a_stuck_server_is_signalled(tmp_path, names):
 
 
 def test_owners_and_descriptors(tmp_path, names):
-    """Item 26: a private server ends with the shell that owns it, a named one survives it; neither keeps
+    """A private server ends with the shell that owns it, a named one survives it; neither keeps
     the caller's descriptors."""
     name = names()
     res = milk_bash(

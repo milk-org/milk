@@ -6,9 +6,19 @@
  * @file    overview_render_derived.c
  * @brief   Results of graph walks (node depths, stream lineage), cached per model, root and mode.
  *
- * Render and input ask for the same walks many times per frame and on every key; they are recomputed
- * only when the model (its publication number), the root or the mode changes. A model never published
- * (seq 0, e.g. built by a test) is not cached.
+ * Purpose:     the list panels and stream DETAILS ask for the same graph walks at every frame,
+ *              and a frame is drawn at every key; a walk is recomputed only when the model (its
+ *              publication number), the root or the mode changes.
+ * Does:        ov_node_depths() (signed lineage distance of every node from a root, 127 when
+ *              unrelated) and ov_lineage() (the ancestors and descendants of a stream) each keep
+ *              their last 4 results, replaced in turn. A model never published (seq 0, e.g. built
+ *              by a test) is not cached.
+ * Used by:     the ancestry of the processes and FPS lists (render/overview_render_procs.c,
+ *              overview_render_fps.c: ov_node_depths); the streams list and stream DETAILS
+ *              (render/overview_render_streams.c, overview_render_detail_stream.c: ov_lineage).
+ *              Declared in render/overview_render_internal.h.
+ * Uses:        stream_graph.h (sg_compute_node_depths, sg_compute_lineage).
+ * Constraints: UI thread only (static caches); a later call can overwrite a returned result.
  */
 
 #include "overview_render_internal.h"

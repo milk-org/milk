@@ -6,6 +6,23 @@
  * @file milk_proto.h
  * @brief UNIX domain socket wire protocol shared by milk-cli --server,
  *        libmilkbash.so, and milk-call.
+ *
+ * Purpose:     the client and the session read and write one frame format, defined once.
+ * Does:        defines the frame header (magic, version, type, flags, payload length), the
+ *              request and reply types (MILK_MSG_*) and their flags (MILK_FLAG_*); sends a frame
+ *              in one sendmsg(), with up to 4 file descriptors (SCM_RIGHTS); receives one, taking
+ *              the passed descriptors first so that every error path closes them, and tells a
+ *              peer of another protocol version apart (-2).
+ * Used by:     the client (milk_client_conn.c, milk_client_ops.c, milk_client_stream.c),
+ *              milk_ipc_common.c, and the server (milk_server.c, milk_server_complete.c,
+ *              milk_server_dispatch.c, milk_server_eval.c, milk_server_stream.c,
+ *              milk_server_vars.c).
+ * Uses:        libc only (static inline functions).
+ * See also:    milk_ipc_common.h (connect, ping, shutdown); docs/guide/scripting.md, "Errors and
+ *              Exit Status" (255: another protocol version).
+ * Constraints: a change to the header or to a message's payload needs a new MILK_PROTO_VERSION:
+ *              a client and a session of different versions then fail each request (status
+ *              255) instead of misreading it.
  */
 
 #ifndef MILK_PROTO_H

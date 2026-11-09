@@ -6,31 +6,28 @@
  * @file mc_exec.c
  * @brief Runtime execution of constructors and elementwise passes in libmilkcalc.
  *
- * Implements the runtime execution of `MC_STEP_CTOR` (`mc_exec_ctor`) and
- * `MC_STEP_PASS` (`mc_exec_pass`) steps inside a planned program:
- *
- * 1. **Constructor Execution (`mc_exec_ctor`)**: Dispatches vector literals,
- *    `linspace`, `zeros`, `eye`, shape/layout operators (`vec`, `reshape`,
- *    `transpose`, `outer`, `diag`), pre-stage reductions/stencils
- *    (`mc_exec_prestage`), and BLAS/LAPACK/C-extension constructors
- *    (`mc_exec_linalg_or_ext`). Automatically clones aliased source images
- *    when an operation reads and writes the same `imageID`.
- * 2. **Elementwise Pass Execution (`mc_exec_pass`)**:
- *    - Evaluates hoisted scalar expressions (`is_scalar`) before launching the
- *      kernel, fusing pairs of scalar reductions over the same input image into
- *      a single memory traversal (`mc_exec_reduce_pair`) and checking non-zero
- *      divisor constraints.
- *    - Resolves input and output `mc_view_t` slices, infers and broadcasts the
- *      3D iteration space `(vnx, vny, vnz)`, and clones in-place aliased inputs
- *      when non-pointwise, sliced, or type-converting writes would clobber live
- *      source pixels.
- *    - Dispatches `pass->fn(ops, lo, hi)` across the persistent `arith_team`
- *      worker pool (`milk_omp_team_size(nelem, 262144)`).
- *    - Reads shared input streams under the torn-frame rule of milkdata_torn_frame.h:
- *      a torn pass runs again (up to MILK_FRAME_TRIES times in all) unless it
- *      reads what it writes, and every torn read increments `g_torn_count`.
- *    - Restores destination pixels from a pre-pass snapshot if a `/=` pass
- *      encounters a zero divisor mid-array.
+ * Purpose:     run the constructor and pass steps the planner built, so that a statement never
+ *              overwrites an input it still has to read, and reads each shared stream whole.
+ * Does:        mc_exec_ctor() runs a constructor step (vector literals, `linspace`, `zeros`,
+ *              `eye`, `reshape`, `transpose`, `outer`, `diag`, ...) or hands it to
+ *              mc_exec_prestage() or mc_exec_linalg_or_ext(). mc_exec_pass() evaluates the
+ *              scalar operands of a pass (two reductions of one input in one traversal; a zero
+ *              scalar divisor is an error), resolves its views and broadcast 3-D iteration space,
+ *              and runs pass->fn on the arith_team pool. An input that is also a target is cloned
+ *              first when the write is not pointwise, is sliced or changes the type. Shared inputs
+ *              follow the torn-frame rule (milkdata_torn_frame.h): a torn pass runs again, up to
+ *              MILK_FRAME_TRIES reads in all, unless it reads what it writes; each torn read is
+ *              counted (mcalc_torn_count(), `_torn` in a unit). A `/=` with a zero divisor pixel
+ *              fails and leaves its target as it was.
+ * Used by:     run/mc_prog.c (each step of a run); mc_write_im_pix(), mc_resolve_or_eval_im()
+ *              and mc_select_ctor_out_dt() also by run/mc_prestage.c, ext/mc_ext_exec.c and
+ *              linalg/; mcalc_torn_count() by units/milk_unit_calc.c. Declared in
+ *              plan/mc_plan.h, linalg/mc_linalg.h and mcalc.h.
+ * Uses:        plan/mc_views.c (views, broadcast), run/mc_out.c (targets, scratch images,
+ *              posts), run/mc_reduce.c (scalar operands), COREMOD_arith (arith_team.h, image
+ *              kernels), milkdata_torn_frame.h, milk_omp_team.h.
+ * See also:    plan/mc_plan.c (builds the steps), jit/mc_emit.c (writes the pass kernels);
+ *              docs/guide/calculator.md, "Fusion & Cost Model" and "Compute Units Without C".
  */
 
 #include <math.h>
@@ -317,7 +314,7 @@ uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
  * @errsz:   Size of @err in bytes
  *
  * Handles:
- * - Multi-LHS decompositions (`svd`, `eig`, etc.) via `mc_exec_linalg_or_ext()`
+ * - Multi-LHS decompositions (`svd`, `eigh`, etc.) via `mc_exec_linalg_or_ext()`
  * - Pre-staged reductions, separable stencils, and `ema()` via `mc_exec_prestage()`
  * - 1D vector literals (`[e1, e2, ...]`) and scalar `vec(e1, e2, ...)`
  * - Array generators (`linspace`, `zeros`, `eye`)

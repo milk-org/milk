@@ -7,8 +7,14 @@
  * @brief The single list of stream and local-image property names (`s.<name>.<prop>`,
  *        `l.<name>.<prop>`)
  *
- * milkprop serves these (milk_shm_prop_get_stream()), `s.<name>.list` prints them, and completion
- * and `@help streams` read them; docs/guide/scripting.md lists them for users.
+ * Purpose:     the listing, completion and help show, from one table, the names that milkprop
+ *              serves.
+ * Does:        names each property, with the alias also accepted and a one-line summary.
+ * Used by:     milk_shm_prop_stream.c (`s.<name>.list`), the server's milk_server_complete.c
+ *              (completion of `s.<name>.`), CLIcore_help_topics.c (`@help streams`).
+ * See also:    docs/guide/scripting.md, "Reading" (the list for users).
+ * Constraints: the table only names the properties: each one needs its code in
+ *              milk_shm_prop_get_stream() (`json` is built in milk_shm_prop.c).
  */
 
 #ifndef MILK_STREAM_PROPS_H

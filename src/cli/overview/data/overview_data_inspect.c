@@ -4,8 +4,25 @@
 
 /**
  * @file    overview_data_inspect.c
- * @brief   The one stream under inspection: the UI names it, each scan copies its full metadata, semaphore
- *          PIDs and keywords into OV_MODEL.insp (the other streams only carry what the lists show).
+ * @brief   The one stream under inspection: the UI names it, each scan copies its full metadata,
+ *          semaphore PIDs and keywords into OV_MODEL.insp (the other streams only carry what the
+ *          lists show).
+ *
+ * Purpose:     the F3 inspector shows everything about one stream, without every scan copying
+ *              that much for every stream.
+ * Does:        ov_scan_set_inspect() names the stream (from any thread: a mutex guards the name).
+ *              ov_scan_inspect() fills OV_MODEL.insp from the stream cache's mapping: metadata,
+ *              counters, circular buffer, each semaphore's value and last reader and writer PIDs
+ *              (alive or not), the keywords (up to OV_INSP_MAX_KW), and the holders found by the
+ *              last HOLDERS pass with their /proc/<pid>/comm names.
+ * Used by:     tools/milkCTRL.c (ov_scan_set_inspect, for the stream under the F3 cursor;
+ *              declared in overview_data.h); ov_model_full_scan() (overview_data.c), after the
+ *              streams (ov_scan_inspect; declared in overview_data_internal.h). The F3 inspector
+ *              (render/overview_render_insp*.c) draws OV_MODEL.insp. milk-fps-info also compiles
+ *              this file.
+ * Uses:        ImageStreamIO (ImageStreamIO_semvalue), the stream cache (overview_data_cache.c),
+ *              pid_is_alive() (overview_data_pid.c).
+ * See also:    overview_data_holders.c; docs/guide/milk-CTRL.md, "Streams view (F3)".
  */
 
 #include "overview_data_internal.h"

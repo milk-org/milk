@@ -4,7 +4,23 @@
 
 /**
  * @file termview_internal.h
- * @brief milk-termview internals shared by the viewer modules and unit tests.
+ * @brief milk-termview internals shared by its modules, its entry point and its unit test.
+ *
+ * Purpose:     milk-termview is split into small modules (termview.c and the tv_*.c files)
+ *              that share their types and call each other through this header; termview.h
+ *              keeps only the public API (options, termview_run()).
+ * Does:        defines the screen cell (one 64-bit word per terminal cell, compared as an
+ *              integer), the layout and view transform, the image layer, input events, and the
+ *              viewer state with its flow control; inline helpers that guard against NaN and
+ *              Inf (tv_finite(), tv_lut_idx(), tv_parse_double(), tv_view_sanitize()); and the
+ *              interface of each module, in one section per module.
+ * Used by:     termview.c, the tv_*.c modules, milk-termview.c (option parsing, key help) and
+ *              tests/test_termview_unit.c.
+ * Uses:        termview.h (options and their enums), ImageStreamIO/ImageStruct.h (IMAGE).
+ * See also:    README.md in this directory (one line per module); docs/guide/termview.md.
+ * Constraints: the NaN/Inf guards test exponent bits, and the viewer is built with
+ *              -fno-finite-math-only (termview_flags in CMakeLists.txt), so -Ofast cannot fold
+ *              them away.
  */
 
 #ifndef TERMVIEW_INTERNAL_H
@@ -847,7 +863,7 @@ void tv_set_view(tv_state_t *s, double cx, double cy, double zoom);
 /** tv_set_range() - Lock the display range to [@lo, @hi]; caller ensures lo < hi, both finite. */
 void tv_set_range(tv_state_t *s, double lo, double hi);
 
-/* Input handlers, exposed for the unit tests (termview.c) */
+/* Input handlers (termview.c) */
 void tv_handle_key(tv_state_t *s, const tv_event_t *ev);
 void tv_handle_mouse(tv_state_t *s, const tv_event_t *ev);
 void tv_dispatch_input(tv_state_t *s, tv_input_t *in, int64_t now_us, int budget);

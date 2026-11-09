@@ -4,36 +4,33 @@
 
 /**
  * @file mc_cc.c
- * @brief C kernel compiler driver and two-tier (memory + disk) `.so` cache for libmilkcalc.
+ * @brief C compiler driver (JIT kernels and `-l` extensions) and two-tier (memory + disk) `.so`
+ *        cache for libmilkcalc.
  *
- * Compiles generated C11 kernel source strings (`pass->c_src`) into shared
- * libraries (`.so`), loads them with `dlopen(RTLD_LAZY | RTLD_LOCAL)`, and
- * resolves their `mc_k` entry points. mc_cc_build(), mc_cc_cache_dir() and
- * mc_cc_key() are also the compile step, cache and key of `-l` C extensions
- * (mc_ext_loader.c), and `MILK_CC_FLAGS` is the flag list milk-cc uses.
- *
- * Caching and compilation architecture:
- * 1. **Environment-Salted 128-Bit Hashing**: `init_env_hash()` computes a
- *    process-wide seed once via `pthread_once`, mixing `MC_PRELUDE_VERSION`,
- *    the compiler flags (`MILK_CC_FLAGS` and the JIT's own `k_jit_args`), x86
- *    CPUID feature bits (leaves 1 and 7, since `-march=native` is used), and the
- *    compiler binary's `(st_mtime, st_size, st_ino)`. `hash128()` mixes the
- *    C source text (the shared prelude's part computed once) and the compiler
- *    name into a 128-bit FNV-1a/MurmurHash3-fmix digest formatted as a
- *    32-character hex cache key.
- * 2. **Tier-1 In-Memory Cache**: `g_mem_cache` is a 4096-slot, 8-way linear
- *    probing table protected by `g_cc_lock` mapping `(h1, h2)` directly to an
- *    already `dlopen`'d `mc_kernel_fn` pointer in ~20 ns.
- * 3. **Tier-2 On-Disk Cache**: Persists compiled `.so` and `.c` files under
- *    `$MILK_CALC_CACHE` or `$TMPDIR/milk-calc-cache-<euid>` (mode `0700`,
- *    ownership-verified). Uses atomic write-then-rename (`*.tmp.<pid>.<seq>`)
- *    so concurrent processes never observe partially written artifacts, and
- *    prunes the oldest entries once the directory exceeds 4096 `.so` files.
- * 4. **Multi-Pass Batch Compilation**: When a program contains multiple
- *    cache-missing elementwise passes, `mc_cc_compile_prog()` merges their
- *    bodies into a single batch `.c` file (sharing one prelude parse and one
- *    compiler invocation) with `#define mc_k mc_k_<key>`, then hard-links the
- *    resulting `.so` to each individual `<key>.so` cache path.
+ * Purpose:     compile each generated kernel once for a given source, compiler, flags and CPU, and
+ *              reuse it in later runs and in other processes.
+ * Does:        mc_cc_compile_prog() gives each pass of a planned program its kernel: from the
+ *              in-memory table (4096 slots, 8-way probing), from <cache>/<key>.so, or compiled; two
+ *              or more misses are compiled in one batch file (each body under
+ *              `#define mc_k mc_k_<key>`, one compiler run), whose .so is then hard-linked to each
+ *              <key>.so. The key is a 128-bit FNV-1a-style hash (MurmurHash3 finalizer) of the
+ *              source and the compiler name, from a seed computed once: MC_PRELUDE_VERSION,
+ *              MILK_CC_FLAGS, the JIT's own flags, the CPUID feature bits (the flags hold
+ *              -march=native) and the compiler binary's mtime, size and inode; the part of the hash
+ *              over the core prelude, which starts every kernel, is also computed once. The cache
+ *              directory, $MILK_CALC_CACHE or $TMPDIR/milk-calc-cache-<euid>, must be a real
+ *              directory owned by the user (mode 0700); files are written under a temporary name
+ *              and renamed, so no process loads a partial file; beyond 4096 .so files the oldest
+ *              are deleted. mc_cc_build(), mc_cc_cache_dir() and mc_cc_key() are also the compile
+ *              step, cache and key of `-l` C extensions.
+ * Used by:     plan/mc_plan.c (mc_cc_compile_prog(), after code generation), ext/mc_ext_loader.c
+ *              (`-l` extensions). Declared in plan/mc_plan.h.
+ * Uses:        jit/mc_prelude.h (prelude sections, MC_PRELUDE_VERSION), milk_spawn.h (runs the
+ *              compiler without a shell), dlopen(); MILK_CC_FLAGS and MILK_DEFAULT_CC, set by CMake
+ *              ($MILK_CALC_CC overrides the compiler).
+ * See also:    jit/mc_emit.c (writes the sources); scripts/milk-cc (same flags);
+ *              docs/guide/calculator.md, "Fusion & Cost Model" and
+ *              "Auto-Compilation and Caching (`-l` / `--lib`)".
  */
 
 #if defined(__x86_64__) || defined(__i386__)

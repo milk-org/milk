@@ -6,8 +6,18 @@
  * @file tv_input.c
  * @brief Terminal input decoder: bytes plus arrival time in, typed key and mouse events out.
  *
- * Pure (no I/O). A sequence split across reads is decoded once complete; one that stays
- * incomplete for TV_ESC_TIMEOUT_US is resolved (lone ESC) or dropped, never replayed as keys.
+ * Purpose:     a sequence split across reads, or cut short, must not turn into stray keys; the
+ *              flow control needs the terminal's cursor position reports.
+ * Does:        decodes keys (xterm modifiers, SS3 and VT220 forms, the Linux console's F1-F5),
+ *              SGR mouse reports and cursor position reports (answers to CSI 6n). A sequence
+ *              split across reads is decoded once complete; one that stays incomplete for
+ *              TV_ESC_TIMEOUT_US is resolved (lone ESC) or dropped, never replayed as keys.
+ *              Over-long sequences, string sequences (OSC, DCS, APC, PM, SOS), private replies
+ *              and UTF-8 text are skipped.
+ * Used by:     termview.c: the main loop, and the wait for the terminal's last answers when
+ *              leaving. Declared in termview_internal.h.
+ * Uses:        libc only. Pure (no I/O): termview.c reads the terminal and passes the bytes.
+ * See also:    docs/guide/termview.md, "Keys and mouse" and "Slow terminals and ssh".
  */
 
 #include "termview_internal.h"

@@ -6,10 +6,25 @@
  * @file milk_bash_builtins.c
  * @brief Loadable GNU Bash builtins for milk (`enable -f libmilkbash.so ...`)
  *
- * Exports loadable builtins (`milkcall`, `milkget`, `milkset`, `milkcalc`, `milktest`,
- * `milkexists`, `milkwaitfor`, `milkwaitany`, `milkgrab`, `milkcomplete`, `milkshutdown`,
- * `milksession`, `milklog`, `milkls`, `milksleep`, `milkdefer`, `milkargs`, `milkcloexec`,
- * `milktranslate`) and `@<kw>` keyword builtins (`kw<kw>_struct`).
+ * Purpose:     the keywords that read or write shared memory and evaluate scalars, and the calls
+ *              to the session, run in the shell's own process: no fork and no shell function
+ *              per call, and results go straight into shell variables.
+ * Does:        defines the `struct builtin` that bash looks up for each name: milkcall,
+ *              milkcomplete, milkshutdown, milksession, milkcloexec, milktranslate, and, for each
+ *              keyword in MILK_BUILTIN_KEYWORDS, milk<kw> and the keyword builtin @<kw> (loaded
+ *              as kw<kw>), whose --help prints the keyword's help. A SIGINT that the client
+ *              caught is raised again once bash's handler is back. Bash's `help` shows the
+ *              keyword table's summary and synopsis.
+ * Used by:     bash, through `enable -f` in scripts/milk.bash: every shell that sources it,
+ *              including the co-process of milk-cli and milk-script and the milk.script unit.
+ * Uses:        the client calls (milk_client.h), the bash ABI and hooks (milk_bash_defer.h),
+ *              the keyword table (milk_keywords.h).
+ * See also:    milk_bash_hooks.c, milk_bash_defer.c; the milkbash target in
+ *              src/cli/libmilkscript/CMakeLists.txt; docs/guide/scripting.md, "Keywords".
+ * Constraints: compiled into libmilkbash.so only, with hidden visibility: bash finds a builtin
+ *              by its `<name>_struct` symbol, the only ones exported. MILK_BUILTIN_KEYWORDS must
+ *              name the keyword table's MILK_KW_BUILTIN entries, as __MILK_KWBUILTINS in
+ *              milk.bash does.
  */
 
 #ifndef _GNU_SOURCE
@@ -488,8 +503,9 @@ static int keyword_builtin(const char *kw, sh_builtin_func_t *fn, WORD_LIST *lis
     return fn(list);
 }
 
-/* The keywords bash runs as builtins, the lexicon's MILK_KW_BUILTIN entries: X(name, function) makes
- * milk<name> and the keyword builtin @<name>, whose help bash's `help` shows comes from the lexicon */
+/* The keywords bash runs as builtins, the keyword table's MILK_KW_BUILTIN entries: X(name,
+ * function) makes milk<name> and the keyword builtin @<name>, whose help bash's `help` shows comes
+ * from the keyword table */
 #define MILK_BUILTIN_KEYWORDS(X)          \
     X(calc, milkcalc_builtin_entry)       \
     X(test, milktest_builtin_entry)       \
@@ -512,7 +528,7 @@ static int keyword_builtin(const char *kw, sh_builtin_func_t *fn, WORD_LIST *lis
     }
 MILK_BUILTIN_KEYWORDS(MILK_KEYWORD_BUILTIN)
 
-/* until the constructor below sets the lexicon's text */
+/* until the constructor below sets the keyword table's text */
 static char *const lexicon_doc_pending[] = { "A milk @ keyword (@help <keyword>).", NULL };
 
 /* Built with hidden visibility: bash finds each builtin by its `<name>_struct` symbol */
@@ -563,7 +579,7 @@ MILK_BUILTIN_KEYWORDS(MILK_KEYWORD_STRUCTS)
 #pragma GCC visibility pop
 
 /**
- * lexicon_doc - Give builtins @plain (milk<kw>) and @kw (@<kw>) the lexicon's summary and synopsis
+ * lexicon_doc - Give builtins @plain (milk<kw>) and @kw (@<kw>) the keyword's summary and synopsis
  * @plain: Plain builtin
  * @kw:    Keyword builtin
  * @name:  Keyword name
@@ -583,7 +599,8 @@ static void lexicon_doc(struct builtin *plain, struct builtin *kw, const char *n
     }
 }
 
-/* bash's `help @get` and `help milkget` print the lexicon's text: set before bash reads the structs */
+/* bash's `help @get` and `help milkget` print the keyword table's text: set before bash reads the
+ * structs */
 #define MILK_KEYWORD_DOC(name, fn)                                         \
     {                                                                      \
         static char *doc[2];                                               \

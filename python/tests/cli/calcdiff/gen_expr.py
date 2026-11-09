@@ -1,4 +1,15 @@
-"""Seeded random calculator expression generator (§6.3)."""
+"""Seeded random calculator statements: scalar, element-wise and reductions.
+
+Purpose:     random statements reach combinations of operators and functions that
+             hand-written tests miss; a seed makes each case reproducible.
+Does:        generate_cases() yields {dataset, setup, stmt, is_test} cases on the
+             datasets of datasets.py, with an invalid statement every 40th case unless
+             include_errors is False; load_functions() returns the function table the
+             statements draw from; run as a script, prints the cases as JSON lines.
+Used by:     fused_views_test.py.
+Uses:        datasets.py.
+See also:    extract_corpus.py.
+"""
 
 from __future__ import annotations
 
@@ -134,7 +145,7 @@ def _gen_scalar_expr(
             return f"({lhs} / (abs({rhs}) + 0.5))"
         return f"({lhs} {op} {rhs})"
     if choice < 0.62:
-        # Parenthesized binary relational comparison per §6.3
+        # Parenthesized binary relational comparison
         op = rng.choice(REL_OPS)
         lhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
         rhs = _gen_scalar_expr(rng, depth - 1, unary_fns, binary_fns, sc_vars)
@@ -221,7 +232,7 @@ def _gen_image_expr(
             return f"({lhs} / (abs({rhs}) + 0.5))"
         return f"({lhs} {op} {rhs})"
     if choice < 0.60:
-        # Parenthesized binary relational comparison per §6.3
+        # Parenthesized binary relational comparison
         op = rng.choice(REL_OPS)
         lhs = rng.choice(imgs)
         rhs = rng.choice(imgs + ["0.5", "0.25", "-0.25"])

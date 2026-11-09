@@ -4,7 +4,11 @@
 
 /**
  * @file overview_input_keys.c
- * @brief Key binding context and first-match dispatch.
+ * @brief Key binding context and first-match dispatch (see overview_input_keys.h).
+ *
+ * ov_key_ctx() derives every OV_CTX_* bit from the layout on each call, with no cache, so a
+ * binding always sees the current view, focus, CONTROL mode, freeze, inspector and FPS marks.
+ * ov_key_dispatch() computes the context once per call, then scans its table in order.
  */
 
 #include "overview_input_internal.h"

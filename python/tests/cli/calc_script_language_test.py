@@ -1,19 +1,21 @@
-"""
-Regression tests for the milk.calc / @calc Avenue 2 scripting language features
-and Track A bytecode compiler upgrades:
-- A1: Multi-reductions (up to 4 per expression), sub-expression deduplication,
-      and reentrant nested reductions (`irms(im - imean(im))`).
-- A2/A3: Multi-threaded float-fast-path axis reductions and compute-weighted OMP scaling.
-- A4/B2: Cross-statement Paradigm (1) cache-resident block fusion and `local` / `L:` / `@L:`
-         process-private scratch images.
-- B1: Fused bitwise & integer operators (`&`, `|`, `^^`, `~`, `<<`, `>>`).
-- B3: Option 2 brace-delimited `if { ... } elif { ... } else { ... }` and
-      `for k = a:b[:s] { ... }` loops.
-- B4: Live SHM entity bindings (`s.`, `f.`, `p.`) in expressions and LHS assignments.
-- B5: 2D relative neighbor stencils (`shift(im, dx[, dy])`) including in-place aliasing safety.
-- B6: Multi-output unpacking (`a, b = expr1, expr2` and `m, s[, lo, hi] = istats(im)`).
-- B7: Inline user functions (`def f(x, a) = <expr>`) on scalars and images.
-- B8: 1D lookup table linear interpolation (`lut(expr, tbl[, x0, dx])`).
+"""The calculator language: reductions, operators, control flow, functions, names and errors.
+
+Purpose:     scripts and units rely on these rules: what a name refers to, what a condition is,
+             and how numbers, strings, images and errors behave, in @calc and in units.
+Does:        checks multiple, nested and istats reductions; bitwise operators; brace if/elif/else
+             blocks and for loops; shift and in-place aliasing; def and lut; entity properties,
+             multiple assignment and local images in a unit; negative indices; imag and arg of a
+             real image; strings and NaN comparisons; identifier limits, dashed stream names,
+             name lookup and `end`; reserved constants and per-shell digits; that a text is
+             checked before it runs; order statistics and argmax; number and image conditions;
+             exit statuses and error positions; zero divisors; failed image assignments.
+Covers:      the calculator (src/calc: front/, run/mc_scalar_eval.c, run/mc_scalar_ops.c,
+             mc_eval.c, mc_func.c, and plan/ and jit/ for image statements); @calc, @test,
+             @assert and @waitfor (src/cli/libmilkscript: client/, server/milk_server_eval.c);
+             milk-fpsexec-milk-calc.
+Uses:        conftest.py: milk_bash, _run_bash, milk_cli_script, value, CAM.
+See also:    docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)", "Operators" and
+             "Functions"; docs/guide/scripting.md, "Errors and Exit Status".
 """
 
 from __future__ import annotations
@@ -36,7 +38,7 @@ pytestmark = [
 
 
 def test_multi_and_nested_reductions_and_istats(tmp_path):
-    """A1 & B6: Multi-reductions in one expression, nested reductions, and istats() unpacking."""
+    """Multi-reductions in one expression, nested reductions, and istats() unpacking."""
     res = milk_bash(
         "mem.mk2Dim a 16 16 >/dev/null\n"
         '@calc "a = ix(a) * 1.5 - iy(a) * 0.7 + 3.2"\n'
@@ -74,7 +76,7 @@ def test_multi_and_nested_reductions_and_istats(tmp_path):
 
 
 def test_bitwise_operators_scalars_and_images(tmp_path):
-    """B1: Bitwise &, |, ^^, ~, <<, >> on scalars and images, including >2^24 precision."""
+    """Bitwise &, |, ^^, ~, <<, >> on scalars and images, including >2^24 precision."""
     res = milk_bash(
         '@calc -v b1,b2,b3,b4,b5,b6 "0xff & 0x0f; 0xf0 | 0x05; 0xff ^^ 0x0f; ~0; 1 << 10; 1024 >> 3"\n'
         '@calc -v big "((1 << 28) + 7) & ((1 << 28) + 3)"\n'
@@ -100,7 +102,7 @@ def test_bitwise_operators_scalars_and_images(tmp_path):
 
 
 def test_brace_if_elif_else_and_for_loops(tmp_path):
-    """B3: Option 2 C-style brace blocks for if/elif/else and bounded for loops."""
+    """C-style brace blocks for if/elif/else and bounded for loops."""
     res = milk_bash(
         'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 1"\n'
         '@calc "mode = 2; if mode == 1 { im = im + 10 } elif mode == 2 { im = im + 20 } else { im = im + 30 }"\n'
@@ -127,7 +129,7 @@ def test_brace_if_elif_else_and_for_loops(tmp_path):
 
 
 def test_shift_stencil_and_inplace_aliasing(tmp_path):
-    """B5: 2D neighbor stencil shift(im, dx, dy) with edge clamping and self-aliasing protection."""
+    """2D neighbor stencil shift(im, dx, dy) with edge clamping and self-aliasing protection."""
     res = milk_bash(
         "mem.mk2Dim a 8 6 >/dev/null\n"
         '@calc "a = (ix(a) + 4) + 10 * (iy(a) + 3)"\n'
@@ -154,7 +156,7 @@ def test_shift_stencil_and_inplace_aliasing(tmp_path):
 
 
 def test_user_defined_functions_and_lut(tmp_path):
-    """B7 & B8: Inline def f(x, ...) = expr user functions and 1D lut() interpolation."""
+    """Inline def f(x, ...) = expr user functions and 1D lut() interpolation."""
     res = milk_bash(
         '@calc "def clamp_pos(x, thr, hi) = where(x > thr, min(x, hi), 0)"\n'
         '@calc "def sq_plus(x, c) = x * x + c"\n'
@@ -191,7 +193,7 @@ def test_user_defined_functions_and_lut(tmp_path):
 
 
 def test_shm_live_bindings_and_multi_assign_and_local_fusion(tmp_path):
-    """A4, B2, B4, B6: SHM property reads/writes, multi-image unpacking, and local scratch fusion."""
+    """SHM property reads/writes, multi-image unpacking, and local scratch fusion."""
     (tmp_path / "fusion.calc").write_text(
         "local tmp = cam * 2 + 1\n"
         "out = tmp + shift(cam, 1, 0)\n"

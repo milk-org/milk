@@ -4,21 +4,27 @@
 
 /**
  * @file milk_shm_prop.h
- * @brief Unified live shared-memory entity resolver for milk-cli and bash.
+ * @brief Reading, writing and testing live entities by path (`s.`, `l.`, `f.`, `p.`): the API of
+ *        libmilkprop.
  *
- * Role & Goal:
- *   Provides a single, canonical implementation for reading, writing, and
- *   querying the existence of live milk shared-memory entities across three
- *   namespaces:
- *     - Streams / local images : @s.<name>.<prop> / @stream.<name>.<prop>
- *     - Function Parameter Sys : @f.<name>.<param> / @fps.<name>.<param>
- *     - Processinfo telemetry  : @p.<name>.<prop> / @proc.<name>.<prop>
- *
- *   Used by:
- *     - The loadable bash builtins of libmilkbash (`milk_get`, `milk_set`,
- *       `milk_exists`) and the milk UNIX domain socket server.
- *     - The legacy `.milk` script `@` variable expander
- *       (`CLIcore_script_expand_fps.c`) and `fpsset` CLI command.
+ * Purpose:     one implementation of entity paths for every front end: `@get`, `@set` and
+ *              `@exists` in a shell, the session server and the calculator read and write the
+ *              same properties the same way, with or without a session.
+ * Does:        reads a property as text (milk_shm_prop_get(), also with a glob or `json:`) or
+ *              as a number (milk_shm_prop_get_num()); writes a value or runs a unit or process
+ *              action (milk_shm_prop_set()); tells whether an entity exists or runs
+ *              (milk_shm_prop_exists()); finds a local image or stream; saves, compares and
+ *              restores FPS parameters and stream keywords (`@snapshot`, `@diff`, `@restore`).
+ * Used by:     the shell client in libmilkbash.so (milk_client_ops.c, milk_client_stream.c,
+ *              milk_waitfor.c); the server (milk_server.c, milk_server_dispatch.c,
+ *              milk_server_eval.c, milk_server_stream.c, milk_server_complete.c); the
+ *              calculator (mc_resolve.c, mc_scalar_eval.c, mc_scalar_ops.c); milk_cmd_args.c
+ *              (an entity path as a command argument).
+ * Uses:        ImageStreamIO, libfps, libcomputeunit (unit actions), libprocessinfo,
+ *              libmilkdata (the local images), milk_shm_cache.h, milk_entity_ns.h, and
+ *              COREMOD_arith's header-only statistics kernels (not linked).
+ * See also:    milk_shm_prop.c; milk_shm_prop_internal.h (one file per namespace);
+ *              src/prop/README.md; docs/guide/scripting.md, "Entities".
  */
 
 #ifndef MILK_SHM_PROP_H
@@ -102,7 +108,7 @@ int milk_shm_prop_get_num(const char *spec, double *out_d, long *out_l, int *is_
  */
 int milk_shm_prop_set(const char *spec, const char *val, const char *comment);
 
-/* milk_shm_prop_set(): a unit start or stop ran and failed; it must not run again elsewhere (D29) */
+/* milk_shm_prop_set(): a unit start or stop ran and failed; it must not run again elsewhere */
 #define MILK_SHM_PROP_ACTION_FAILED (-3)
 
 /**

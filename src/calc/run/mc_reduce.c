@@ -6,27 +6,32 @@
  * @file mc_reduce.c
  * @brief Full-image statistical, extremum, percentile, and centroid reductions for `libmilkcalc`.
  *
- * Implements the whole-image reduction primitives invoked by the scalar evaluator (`mc_scalar_eval.c`)
- * and by pre-stage constructors (`mc_prestage.c`):
- *   - Single-output reductions (`itot`, `imean`, `imin`, `imax`, `istd`, `irms`, `ivar`,
- *     `norm`/`nrm2`, `asum`, `icount`, `dot`, `iargmax`, `iargmin`, `iamax`, `imedian`, `perc`,
- *     `trace`).
- *   - Paired reductions (`mc_exec_reduce_pair`) that fuse two compatible reductions on the same
- *     input (e.g. `(x - imean(x)) / istd(x)`) into a single memory pass.
- *   - Multi-LHS reductions (`istats`, `icentroid`, and coordinate-unpacked `iargmax`/`iargmin`).
- *
- * Key algorithms:
- *   - **L1 sub-pass streaming (`mc_prepare_red_src`)**: When the argument to a reduction is a
- *     compound 1D-contiguous elementwise expression (e.g. `irms(a - b)`), its compiled `mc_pass_t`
- *     kernel is evaluated in 1024-element L1-resident tiles (`MC_RED_BLK`) directly into the
- *     reduction accumulator without allocating or touching a full-frame temporary image.
- *   - **Sterbenz-shifted SIMD + Chan pairwise merge (`stat_block_sterbenz_f`)**: Float variance
- *     and standard deviation accumulate `x - ref` and `(x - ref)^2` around the first sample of
- *     each 128-element sub-block using `#pragma omp simd`, then merge sub-blocks in double
- *     precision via Chan's parallel variance formula. This matches two-pass double accuracy at
- *     single-pass float SIMD bandwidth.
- *   - **Persistent worker team dispatch**: Reductions over images larger than 256 Ki elements
- *     partition the 1024-element tiles across `arith_team_run()`.
+ * Purpose:     reduce an image, or an elementwise expression of images, to numbers in one pass
+ *              over memory and without a temporary image, at float SIMD speed with the accuracy
+ *              of a two-pass computation in double.
+ * Does:        mc_exec_reduce_scalar() computes `itot`, `imean`, `imin`, `imax`, `istd`, `irms`,
+ *              `ivar`, `norm`, `asum`, `icount`, `dot`, `iargmax`, `iargmin`, `iamax`, `imedian`,
+ *              `perc` and `trace`; mc_exec_reduce_pair() computes two reductions of the same input
+ *              in one pass (`(x - imean(x)) / istd(x)`); mc_exec_multi_reduce() unpacks `istats`,
+ *              `icentroid` and the coordinates of `iargmax`/`iargmin`. mc_prepare_red_src() binds
+ *              the argument: an image; a 1-D contiguous elementwise expression, whose compiled
+ *              pass fills 1024-element tiles (MC_RED_BLK) that go straight into the accumulator;
+ *              else the output of a sub-program cached on the AST node
+ *              (mc_get_or_build_sub_prog()). Float variance sums x - ref (exact for nearby
+ *              values, Sterbenz lemma) and its square around the first sample of each
+ *              128-element block in float SIMD, and merges the blocks in double with Chan's
+ *              formula. From 512 Ki elements on, the tiles are split across arith_team_run()
+ *              (milk_omp_team_size(nel, 262144)).
+ * Used by:     run/mc_scalar_eval.c (reductions in scalar statements), run/mc_exec.c (scalar
+ *              operands of a pass), run/mc_prestage.c (tiled sources), ext/mc_ext_exec.c and
+ *              linalg/ (mc_eval_scalar_d()). Declared in plan/mc_plan.h and front/mc_ast.h.
+ * Uses:        COREMOD_arith (image_stats.h accumulators, arith_team.h), run/mc_prog.c,
+ *              plan/mc_plan.c and front/mc_resolve.c (sub-programs), run/mc_scalar_eval.c,
+ *              run/mc_out.c, milk_omp_team.h.
+ * See also:    run/mc_prestage.c (reductions along one axis); docs/guide/calculator.md,
+ *              "Functions" and "Fusion & Cost Model".
+ * Constraints: compiled with -ffinite-math-only for speed (src/calc/CMakeLists.txt): test NaN
+ *              with arith_isnan_d() or arith_isnan_f(), not isnan() or x != x.
  */
 
 #include <float.h>
@@ -559,7 +564,7 @@ void mc_eval_src_block_d(const mc_red_src_t *s, uint64_t off, int len, double *r
  * @len: Number of elements in the tile
  * @acc: Running double-precision statistical accumulator
  *
- * Specializes four high-throughput cases:
+ * Specializes four cases:
  *   1. `ARITH_RED_DOT`: vector dot product `sum(v[j] * m[j])`.
  *   2. Masked sum/mean/count on full 1024-element tiles: branchless SIMD mask weighting.
  *   3. Unmasked `STD`/`VAR`/`ALL`: partitions the tile into 128-float sub-blocks, shifts each
@@ -988,7 +993,7 @@ static double mc_percentile(const mc_red_src_t *s1, const IMAGE *mask, double fr
  *   1. Whole-image materialized reductions (`imedian`, `perc`, `trace`).
  *   2. Index extremum reductions (`iargmax`, `iargmin`, `iamax`) returning `MC_VAL_LONG`.
  *   3. Moment/norm/count/dot reductions (`itot`, `imean`, `imin`, `imax`, `istd`, `irms`, `ivar`,
- *      `norm`, `nrm2`, `asum`, `icount`, `dot`).
+ *      `norm`, `asum`, `icount`, `dot`).
  *
  * Return: 0 on success, -1 on error
  */

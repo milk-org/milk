@@ -6,9 +6,17 @@
  * @file mc_explain.c
  * @brief `--explain`: how the planner schedules each statement of a program (`mcalc_prog_explain`).
  *
- * Compiles a program without running it, then prints, for each statement, whether it is inlined
- * (`def`), fused into an elementwise pass (shape, work type, operands, pre-stages), run as a
- * constructor step, or run on the scalar tape.
+ * Purpose:     show how each statement would run, without running it, so a user sees what fuses, in
+ *              which precision, and what stays scalar.
+ * Does:        compiles the text with mcalc_prog_new() (the defs it registers stay out of the
+ *              session), then prints each statement and how it runs: a def inlined where it is
+ *              called, a fused pass (shape, or a shape set at run time; float32 or double; 1D or
+ *              ND; operands, pre-stages, targets), a statement merged into an earlier pass, a
+ *              constructor or library step, or the scalar tape (operations, reductions).
+ * Used by:     the server's milk_server_eval.c (`@calc --explain`). Declared in mcalc.h.
+ * Uses:        run/mc_prog.c (mcalc_prog_new(), mcalc_prog_free()), mc_eval.c (mc_udef_save(),
+ *              mc_udef_restore()), plan/mc_plan.h (steps and passes).
+ * See also:    docs/guide/calculator.md, "Fusion & Cost Model".
  */
 #include <stdio.h>
 

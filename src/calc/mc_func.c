@@ -4,31 +4,15 @@
 
 /**
  * @file mc_func.c
- * @brief Built-in function registry, scalar math helpers, and `--list` catalog for libmilkcalc.
+ * @brief Built-in function table, scalar math helpers, and the `--list` catalog (see mc_func.h).
  *
- * This module defines the master descriptor table (`g_mc_funcs`) for every
- * built-in calculator function and directive across all execution tiers:
- * - Scalar and elementwise SIMD math (`sin`, `cos`, `pow`, `clamp`, explicit
- *   datatype casts `f32`..`i64`, `where`).
- * - Coordinate generators (`ix`, `iy`, `ir`, `itheta`), PRNGs (`rand`, `randn`),
- *   complex number operations (`real`, `imag`, `arg`, `conj`, `cplx`, `expi`),
- *   and `linspace`.
- * - Spatial shifts (`shift`, `roll`), 1-D lookup tables (`lut`), and gather
- *   interpolation (`pixremap`, `interp2`).
- * - Fused and eager reductions (`itot`, `imean`, `istd`, `imin`, `imax`,
- *   `norm`, `asum`, `icount`, `iargmax`, `iargmin`, `iamax`, `dot`, `istats`,
- *   `icentroid`, `imedian`, `perc`, `trace`).
- * - Neighborhood stencils and spatial pre-stages (`medfilt3/5/7`, `gauss`,
- *   `conv2`, `imin3`, `imax3`, `boxmean`, `cumsum`, `pixunmap`, `rprof`).
- * - CBLAS, LAPACK, FFTW, and tensor constructors (`matmul`, `gemm`, `svd`,
- *   `eigh`, `einsum`, `fft`, `ifft`, `fftshift`, `transpose`, `reshape`, etc.).
- * - String manipulation (`strlen`, `toupper`, `tolower`, `substr`, `replace`,
- *   `hex`, `oct`, `bin`) and temporal unit directives (`post`, `hist`, `prev`,
- *   `ema`).
- *
- * It also provides IEEE-754 bit-level scalar helpers (`mc_isnan`,
- * `mc_isfinite`) that remain valid under `-ffast-math`, and implements
- * `mcalc_print_catalog()` for `@calc --list` / `milk-fpsexec-milk-calc --list`.
+ * One static table, g_mc_funcs, holds an entry per built-in function and directive, grouped by
+ * kind; a lookup scans it. mc_isnan() and mc_isfinite() test the IEEE-754 bits, so they stay
+ * valid under `-ffast-math`; mc_fmodd() and mc_wrap_pi() use the FMA formulas of the kernels, so
+ * `%` and wrap_pi agree on numbers and images, with NaN instead of a wrong value once the
+ * quotient reaches 2^52. mcalc_print_catalog() (`@calc --list`, `milk-fpsexec-milk-calc --list`)
+ * prints a second table, g_mc_catalog, of operators and functions grouped by category, then the
+ * loaded C extensions, as text or as JSON (`--json`).
  */
 
 #ifndef _GNU_SOURCE
@@ -112,9 +96,9 @@ double mc_sign(double a)
  * @x: Dividend
  * @y: Divisor
  *
- * The formula of the generated kernels' `mc_fmodd()` (mc_prelude.h), so `%` on numbers and on
- * images agree, and it vectorizes there: q = trunc(x / y) may be off by one, and the remainder is
- * then recomputed with the neighbouring quotient by an FMA, which is exact.
+ * The formula of the generated kernels' `mc_fmodd()` (jit/mc_prelude.h), so `%` on numbers and
+ * on images agree, and it vectorizes there: q = trunc(x / y) may be off by one, and the remainder
+ * is then recomputed with the neighbouring quotient by an FMA, which is exact.
  *
  * Return: fmod(@x, @y) while |@x / @y| < 2^52, NaN beyond
  */
@@ -131,8 +115,8 @@ double mc_fmodd(double x, double y)
  * mc_wrap_pi - Wrap an angle in radians into the principal interval `(-pi, pi]`
  * @a: Input angle in radians
  *
- * The formula of the generated kernels' `mc_wrap_pid()` (mc_prelude.h), as mc_fmodd() with the
- * quotient rounded to nearest: remainder(@a, 2 pi), with `-pi` mapped to `pi`.
+ * The formula of the generated kernels' `mc_wrap_pid()` (jit/mc_prelude.h), as mc_fmodd() with
+ * the quotient rounded to nearest: remainder(@a, 2 pi), with `-pi` mapped to `pi`.
  *
  * Return: Wrapped angle in `(-pi, pi]` while |@a| < 2^52 * 2 pi, NaN beyond
  */
@@ -150,7 +134,7 @@ double mc_wrap_pi(double a)
  * @v: Value of the condition
  *
  * A condition is a number: non-zero is true; zero and NaN are false. Shared by the session's
- * calculator and the shell's evaluator (mc_scalar_ops.c), so both read a condition alike.
+ * calculator and the shell's evaluator (run/mc_scalar_ops.c), so both read a condition alike.
  *
  * Return: 1 if true, 0 if false, -1 if @v is a string (not a condition)
  */
@@ -636,7 +620,7 @@ const mc_func_t *mc_func_table(int *out_count)
 }
 
 /* ========================================================================= */
-/* Calculator Catalog Display (--list / --list-json)                         */
+/* Calculator Catalog Display (--list, --list --json)                        */
 /* ========================================================================= */
 
 /**
@@ -963,7 +947,7 @@ static void json_escape(const char *s)
 /**
  * mcalc_print_catalog - Print the calculator operator/function catalog to `stdout`
  * @pattern:   Optional case-insensitive substring filter (NULL or `""` for all)
- * @json_mode: Non-zero to emit machine-readable JSON (`--list-json`), 0 for table
+ * @json_mode: Non-zero to emit machine-readable JSON (`--list --json`), 0 for table
  *
  * Lists built-in operators and functions grouped by category along with any
  * dynamically loaded user C extensions (`-l` / `loadlib`).

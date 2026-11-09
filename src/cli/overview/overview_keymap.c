@@ -4,7 +4,12 @@
 
 /**
  * @file    overview_keymap.c
- * @brief   Key table of milk-CTRL and the text generated from it.
+ * @brief   Key table of milk-CTRL, the titles of its -h sections and the status-line hints (see
+ *          overview_keymap.h).
+ *
+ * The rows are #included from overview_keymap_nav.inc and overview_keymap_panels.inc.
+ * ov_key_hints() makes two passes over the table: first the hints tied to the current context (a
+ * non-zero need mask), then the general ones, each in table order.
  */
 
 #include <stdio.h>

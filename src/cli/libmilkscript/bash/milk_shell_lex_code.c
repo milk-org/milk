@@ -4,7 +4,14 @@
 
 /**
  * @file milk_shell_lex_code.c
- * @brief Code-frame, compound-keyword, and here-document scanning for `milk_shell_lex`.
+ * @brief Code-frame, compound-keyword, and here-document scanning for `milk_shell_lex` (see
+ *        milk_shell_lex.h).
+ *
+ * msl_scan_frame_code() takes one step in a code frame. A word is a keyword only in command
+ * position; each code frame keeps a stack of its open compound commands (if, case, the loops,
+ * `{`) as one-letter tags, which fi, esac, done and `}` close. A `<<` queues its delimiter, and
+ * the bodies are read after the end of the line, as bash does. `@{...}` is one word: its braces
+ * open no group, and a `#` in it starts no comment.
  */
 
 #include <ctype.h>

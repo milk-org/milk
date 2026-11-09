@@ -6,9 +6,19 @@
  * @file milk_catalog.h
  * @brief The install-time catalog of module commands (`milk-cli --catalog`) and its reader.
  *
- * Built once at install: share/milk/catalog.d/<module>.tsv (`key<TAB>loadname<TAB>summary`),
- * share/milk/catalog.bash (one function per command, sourced by milk.bash in every front-end)
- * and the read-only libexec/milk/bin farm of milk-call links for external tools.
+ * Purpose:     a shell knows every module command without loading any module, and a session
+ *              loads a module only when one of its commands is first called.
+ * Does:        built once, as the last install step: share/milk/catalog.d/<module>.tsv
+ *              (`key<TAB>loadname<TAB>summary`), share/milk/catalog.bash (one function per
+ *              command, sourced by milk.bash in every front end) and libexec/milk/bin, a
+ *              read-only farm of milk-call links for external tools. At run time, it tells
+ *              which module provides a command and loads that module on first use.
+ * Used by:     CLIcore.c (`milk-cli --catalog`), CLIcore_modules.c, milk_cmd_index.c, and the
+ *              server (milk_server.c, milk_server_admin.c, milk_server_dispatch.c).
+ * Uses:        CLIcore_modules.h (module loading), milk_cmd_index.h (the command registry),
+ *              milk_keywords.h (the keywords milk-call implements get links too).
+ * See also:    milk_catalog.c (reader), milk_catalog_build.c (writer, autoload);
+ *              docs/guide/scripting.md, "Module Commands".
  */
 
 #ifndef MILK_CATALOG_H

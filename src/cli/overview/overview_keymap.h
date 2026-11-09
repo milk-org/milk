@@ -4,7 +4,23 @@
 
 /**
  * @file overview_keymap.h
- * @brief Key table: one entry per documented key; the help overlay, -h and the status-line hints read it
+ * @brief Key table: one entry per documented key; the help overlay, -h and the status-line hints
+ *        read it.
+ *
+ * Purpose:     one source for the documentation of every key, so the help overlay, -h, the
+ *              status-line hints and the key tables of the user guide cannot disagree.
+ * Does:        declares OV_KEYDEF (keys as shown, one-line label, help detail, help section HS_*,
+ *              -h section ov_keygroup_t, OV_KF_* flags, status-line hint OV_KEYHINT), the table
+ *              ov_keys[] (rows in overview_keymap_nav.inc and overview_keymap_panels.inc), and
+ *              the OV_CTX_* context bits that the hints and the key bindings test.
+ * Used by:     the help overlay (render/overview_help_data.c), -h and --keys-markdown
+ *              (tools/milkCTRL_opts.c), the status-line hints (render/overview_render_status.c,
+ *              through render/overview_render_internal.h), the key bindings
+ *              (input/overview_input_keys.h).
+ * See also:    overview_keymap.c; input/overview_input_keys.h (the bindings);
+ *              src/cli/overview/README.md, "Extending milk-CTRL"; docs/guide/milk-CTRL.md, "Keys".
+ * Constraints: after changing a row, regenerate the key tables of docs/guide/milk-CTRL.md with
+ *              `milk-CTRL --keys-markdown`; CTest milkctrl_keys_doc compares them.
  */
 
 #ifndef OVERVIEW_KEYMAP_H

@@ -1,6 +1,22 @@
-"""
-Comprehensive integration tests for the milk.bash GNU Bash integration layer
-and the milk-cli bash co-process (milk.bash primitives and milk-cli shorthands).
+"""milk in bash: keywords, entities, calculator and @{...}, in plain bash and in milk-cli.
+
+Purpose:     a script must behave the same in any bash that sourced milk.bash and in milk-cli,
+             which runs its lines in a bash co-process; these tests run the language end to end.
+Does:        checks what milk.bash defines (builtins, keyword functions, module commands), @help,
+             the banner, the [milk] prompt label and @unload; stream modifiers (@S: @L: @T<type>:);
+             @get and @set on streams, FITS keywords and FPSs; @calc on images, slices and
+             entities; @test, @exists, @waitfor, @waitany, @grab, @on, @source, @defer and
+             pipelines; @{...} in milk-cli -s, -c and piped input, and through CLICommands; calc
+             mode; that milk.bash loads nothing without libmilkbash.so; that waits release the
+             stream's semaphore slots.
+Covers:      scripts/milk.bash; the libmilkbash.so builtins and the client code they call
+             (src/cli/libmilkscript: bash/milk_bash_builtins.c, milk_bash_hooks.c,
+             milk_bash_defer.c, client/, ipc/milk_waitfor.c); the session server (server/);
+             milk-cli's bash co-process (bash/milk_bash_coproc.c, milk_bash_exec.c);
+             milk.cliwrap.CLICommands.
+Uses:        conftest.py: _run_bash, _run_milk_cli, milk_bash, value, _install_dir.
+See also:    docs/guide/scripting.md; docs/guide/sessions.md, "Using milk from Plain Bash";
+             bash_translation_test.py.
 """
 
 from __future__ import annotations

@@ -5,28 +5,19 @@
 /**
  * @file mc_linalg_lapack.c
  * @brief LAPACK-level linear solvers, matrix inverses, SVD, and symmetric eigendecomposition
- *        for `libmilkcalc`.
+ *        for `libmilkcalc` (see mc_linalg.h).
  *
- * This module implements the higher-level matrix decompositions and linear system solvers for
- * the `milk.calc` expression calculator (`libmilkcalc`):
- *
- * - **Triangular solvers (`trsv`, `trsm`)**: solves `op(A) * x = b` or `op(A) * X = alpha * B`
- *   (and right-sided `X * op(A) = alpha * B`) using `cblas_dtrsv()` / `cblas_dtrsm()` when
- *   compiled with BLAS, or an internal forward/backward substitution fallback
- *   (`solve_tri_col_d()`).
- * - **Linear system solvers (`gesv`, `posv`, `gels`, `solve`)**: dispatches square LU
- *   (`LAPACKE_dgesv`), Cholesky (`LAPACKE_dposv`), and QR/LQ least-squares (`LAPACKE_dgels`)
- *   solvers, with an automatic SVD-based minimum-norm solver fallback when compiled without
- *   LAPACKE. Also supports Tikhonov-regularized solving (`solve(A, B, lambda)`), forming the
- *   smaller normal system (`(A^T A + lambda I) X = A^T B` when `M >= N`, or dual
- *   `(A A^T + lambda I) Y = B, X = A^T Y` when `M < N`) and solving via Cholesky.
- * - **Matrix inverse and Moore-Penrose pseudoinverse (`inv`, `pinv`)**: computes exact square
- *   inverses via `gesv(A, I)` and SVD-truncated pseudoinverses `V * diag(1/s_i) * U^T` with
- *   user-supplied or default machine-epsilon `rcond` cutoff.
- * - **Singular value and symmetric eigenvalue decompositions (`svd`, `eigh`)**: supports both
- *   single-LHS value-only calls (`S = svd(A)`, `w = eigh(C)`) and multi-LHS factorizations
- *   (`U, S, Vt = svd(A)`, `w, V = eigh(C)`) via `LAPACKE_dgesdd` / `LAPACKE_dsyevd` with
- *   self-contained one-sided and two-sided Jacobi rotation fallbacks.
+ * Each call copies its operands into column-major double matrices (a top-level transpose() or
+ * `.T` is folded into the copy, except for svd and eigh), works there, and writes the result as
+ * float, or double when an input is double. With HAVE_LAPACKE, gesv, posv, gels, svd and eigh
+ * call LAPACKE (dgesv, dposv, dgels, dgesdd, dsyevd); without it, or when dgesdd or dsyevd
+ * fails, svd and eigh use one-sided and two-sided Jacobi rotations, and the solvers a truncated
+ * SVD (minimum-norm) solve. trsv and trsm use CBLAS with HAVE_BLAS, else forward or backward
+ * substitution. solve(A, B, lambda) solves the smaller Tikhonov system by Cholesky:
+ * (A^T A + lambda I) X = A^T B when M >= N, else (A A^T + lambda I) Y = B and X = A^T Y.
+ * inv(A) solves A X = I; pinv() drops the singular values at or below rcond times the largest
+ * (default: machine epsilon times max(M, N)). The multi-LHS forms (`U, S, Vt = svd(A)`,
+ * `w, V = eigh(C)`) run in mc_exec_multi_svd_or_eigh(), declared by its caller, ext/mc_ext_exec.c.
  */
 
 // MILK_CMAKE_REQUEST_BLAS

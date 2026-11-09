@@ -5,28 +5,18 @@
 /**
  * @file mc_linalg_blas.c
  * @brief BLAS-level linear algebra, algebraic GEMM/GER lowering, and Einstein summation for
- *        `libmilkcalc`.
+ *        `libmilkcalc` (see mc_linalg.h).
  *
- * This module implements the BLAS and tensor contraction tier of the `milk.calc` expression
- * calculator (`libmilkcalc`):
- *
- * - **Compile-time call validation and type inference** (`mc_resolve_linalg_call()`,
- *   `mc_multi_lhs_is_image()`): checks argument counts, result kinds, and promotes output
- *   datatypes (`float32`, `float64`, `complex_float`, `complex_double`) for linear algebra,
- *   FFT, and array-stacking built-in functions.
- * - **Algebraic BLAS pattern recognition** (`mc_is_blas_or_linalg_ctor()`, `match_alg_blas()`):
- *   inspects assignment ASTs (`=`, `+=`, `-=`) to recognize scaled matrix-matrix / matrix-vector
- *   products (`matmul`) and outer products (`outer`) combined with optional destination
- *   accumulation (`C = alpha * op(A) * op(B) + beta * C`). Matched expressions are lowered
- *   directly into single in-place `GEMM`, `SYRK`, or `GER` calls without intermediate temporary
- *   images.
- * - **Direct BLAS built-ins** (`mc_exec_blas_call()`): executes explicit `matmul`, `scal`,
- *   `axpy`, `ger`, `syrk`, `gemv`, `symv`, and `gemm` calls via the `COREMOD_arith` BLAS
- *   wrappers.
- * - **Einstein summation** (`exec_einsum()`): parses NumPy-style subscript specifications
- *   (both explicit `"ij,jk->ik"` and implicit `"ij,jk"` modes) for 1D-3D tensors, fast-pathing
- *   2D matrix products and 3D cube-matrix / cube-vector contractions to `arith_image_gemm_im()`
- *   and falling back to a general stride-based contraction loop for arbitrary index patterns.
+ * The type check of the linear algebra, FFT and stacking calls promotes their output to float,
+ * double or complex as the arguments require. An assignment of a scaled matrix or outer product,
+ * optionally accumulated into its target (`C = alpha * (A @ B) + beta * C`, `C -= outer(x, y)`),
+ * is matched on its AST and runs as one in-place GEMM, SYRK (A times its own transpose) or GER
+ * call through the COREMOD_arith BLAS wrappers, without a temporary image; a top-level
+ * transpose() or `.T` becomes the BLAS transpose flag. The explicit BLAS calls (scal, axpy, ger,
+ * syrk, gemv, symv, gemm) update their destination in place. einsum() reads explicit
+ * (`"ij,jk->ik"`) and implicit (`"ij,jk"`) subscripts on 1-D to 3-D tensors, sends 2-D products
+ * and cube contractions over the first two axes to arith_image_gemm_im(), and runs any other
+ * pattern as a strided loop.
  */
 
 // MILK_CMAKE_REQUEST_BLAS
@@ -468,7 +458,7 @@ static int match_alg_blas(const mc_expr_t  *rhs,
  * @target: Left-hand-side target identifier expression
  * @aop:    Assignment token (`=`, `+=`, `-=`)
  *
- * Called by the planner (`mc_plan.c`) to decide whether an assignment should be
+ * Called by the planner (`plan/mc_plan.c`) to decide whether an assignment should be
  * scheduled as a `MC_STEP_CTOR` BLAS step rather than an element-wise fused kernel.
  *
  * Return: 1 if (@target, @aop, @rhs) matches an algebraic BLAS pattern, 0 otherwise

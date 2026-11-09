@@ -4,17 +4,28 @@
 
 /**
  * @file milk_server_dispatch.c
- * @brief Command resolution, token population, and SET/CALC/TEST/CALL execution.
+ * @brief Command resolution, token population, and SET/CALL execution, and the guarded run of
+ *        every request body.
  *
- * Role & Goal:
- *   1. Resolves canonical (`ns.cmd`) and unambiguous short (`cmd`) command names
- *      in `data.cmd[]` and populates `data.cmdargtoken[]` directly from `argv[]`
- *      without shell re-splitting or `wordexp()`.
- *   2. Executes `MILK_MSG_SET` (`@set`) and `MILK_MSG_CALL` payloads, managing
- *      variable synchronization, fault-isolated command execution (`sigsetjmp`),
- *      dynamic module command notification (`MILK_MSG_DEFCMD`), and concurrent
- *      pipeline/Ctrl-C monitoring. Calculator (`@calc`/`@test`), `@assert`, and
- *      `@pipe` evaluation live in `milk_server_eval.c`.
+ * Purpose:     a command a shell sends runs in the session as if typed there, one at a time, and
+ *              neither a crash nor Ctrl-C in it ends the session.
+ * Does:        runs a SET request, and a CALL request with the environment it carries
+ *              (MILK_SHM_DIR, ...), for that request only; routes the keywords the session runs
+ *              (@ls, @module, @config, @history, @grab --stdout, @replay, @snapshot, @diff,
+ *              @restore, @assert, @set, @pipe, @session, @log) and entity paths; finds a module
+ *              command (loading its module on first use), fills data.cmdargtoken[] from argv[]
+ *              without splitting words again, and runs it; sends back the variables it declares
+ *              as outputs, and DEFCMD when a module loaded. While a request body runs
+ *              (milk_server_run_guarded()), a watcher thread forwards Ctrl-C and window size
+ *              changes and serves other shells: reads alongside, a command that changes the
+ *              session queued until the CALL returns (or refused with --nowait).
+ * Used by:     milk_server.c (CALL and SET requests); milk_server_eval.c (@pipe steps, guarded
+ *              CALC and TEST); milk_server_admin.c. Declared in milk_server_internal.h.
+ * Uses:        CLIcore (data.cmd[], fault isolation), milk_cmd_index.h, milk_catalog.h (autoload),
+ *              milk_cmd_args.h (per-call arguments), milk_shm_prop.h (entities), mcalc.h,
+ *              milk_renames.h (removed spellings), milk_srvlog.h, milk_server_vars.c.
+ * See also:    milk_server_eval.c (@calc, @test, @assert, @pipe); docs/guide/sessions.md,
+ *              "Concurrent Commands Across Shells".
  */
 
 #ifndef _GNU_SOURCE
@@ -141,7 +152,7 @@ static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep)
     free(pl);
 }
 
-/* @cfd waits for the CALL (D38): its client is told, and the main loop serves it once the CALL
+/* @cfd waits for the CALL: its client is told, and the main loop serves it once the CALL
  * returns (milk_server_serve_waiting()). Return: 0, or -1 if the queue is full */
 static int wait_for_call(const call_watcher_ctx_t *ctx, int cfd)
 {
@@ -492,7 +503,7 @@ void milk_server_watcher_atfork_child(void)
 }
 
 /**
- * @brief Resolve a command name: exact `ns.cmd`, or an unambiguous short `cmd` (bare @cmd shims).
+ * @brief Resolve a command name: exact `ns.cmd`, or an unambiguous short `cmd`.
  *
  * @param name      Command name without leading sigil
  * @param out_ambig Set to 1 if multiple modules define the same short name

@@ -5,6 +5,20 @@
 /**
  * @file    milkCTRL_opts_parse.c
  * @brief   Pure command-line parser of milk-CTRL (no output, no environment changes).
+ *
+ * Purpose:     every option and argument is checked before milk-CTRL changes anything: the
+ *              parser only fills OV_OPTS, its caller prints the errors and main() applies the
+ *              result (MILK_SHM_DIR and MILK_PROC_DIR from -d, the terminal).
+ * Does:        ov_opts_parse() reads -d/--shm-dir (an existing directory), -T/--theme (a known
+ *              theme), --view (a view's CLI name), --interval (0.1 to 10 s), --log, --debug
+ *              (needs --log) and PATTERN (an extended regex of at most 63 characters). Started as
+ *              milk-streamCTRL (argv[0]), it opens F3 and accepts -w. Help options are handled
+ *              before it; getopt is reset, so it can run more than once.
+ * Used by:     milkctrl_parse_options() (tools/milkCTRL_opts.c). Declared in milkCTRL_opts.h.
+ * Uses:        getopt_long, POSIX regex, ov_view_by_name() (overview_view.c),
+ *              ov_theme_find_by_id() (render/overview_theme.c).
+ * See also:    tools/milkCTRL_opts.c (help options, usage errors on stderr);
+ *              docs/guide/milk-CTRL.md, "Options".
  */
 
 #include <getopt.h>

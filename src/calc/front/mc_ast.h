@@ -6,11 +6,25 @@
  * @file mc_ast.h
  * @brief Token, AST node, statement, and front-end resolution definitions for `libmilkcalc`.
  *
- * Defines the lexical token types (`mc_tok_type_t`), expression AST (`mc_expr_t`),
- * statement AST (`mc_stmt_t`), and the front-end interfaces for lexing (`mc_lex`),
- * Pratt parsing (`mc_parse_stmt`, `mc_parse_prog`), identifier/type/shape resolution
- * (`mc_resolve_prog_ex`), scalar evaluation (`mc_scalar_*`), and `hist()`/`prev()`
- * source rewriting (`mc_rewrite_history`).
+ * Purpose:     one form of calculator text for every stage: the parser builds it, the resolver adds
+ *              types and shapes to it, the planner and the scalar evaluator read it.
+ * Does:        defines the tokens (mc_tok_t, mc_tok_list_t), the values (mc_val_t), the expression
+ *              nodes (mc_expr_t, with the kind, datatype and shape the resolver finds) and the
+ *              statements (mc_stmt_t, a linked list; each keeps its byte span in the source text).
+ *              Declares the lexer, parser and resolver (front/) and the functions of other stages
+ *              that take these types: the def table (mc_eval.c), scalar evaluation
+ *              (run/mc_scalar_eval.c, run/mc_scalar_ops.c, mc_func.c), sub-programs (run/mc_prog.c,
+ *              run/mc_reduce.c), image lookup (ext/mc_ext_builtin.c), recurrence targets and
+ *              hist()/prev() rings (plan/mc_history.c).
+ * Used by:     the whole calculator: front/, plan/ (also through plan/mc_plan.h), run/, ext/,
+ *              mc_eval.c, mc_func.c; in every shell, milk_client_stream.c (`@waitfor` predicates);
+ *              the server's milk_server_vars.c (calc mode).
+ * Uses:        mc_func.h (mc_func_t, the built-in functions), mcalc.h.
+ * See also:    front/mc_lex.c, front/mc_parse.c, front/mc_resolve.c; plan/mc_plan.h (the planned
+ *              program); docs/guide/calculator.md, "Operators".
+ * Constraints: of the files declared here, libmilkbash.so (the thin client every shell loads)
+ *              compiles only front/mc_lex.c, run/mc_scalar_ops.c and mc_func.c: code that runs
+ *              there may call only their functions.
  */
 
 #ifndef MILK_MC_AST_H
@@ -84,7 +98,7 @@ typedef struct
     int           col;
     int           off;            /* byte offset in the lexed text */
     int           len;            /* byte length in the lexed text */
-    int           no_space_after; /* 1 if immediately followed by '(' without whitespace */
+    int           no_space_after; /* 1 if followed by a non-space character: f(x), im[0] */
     long          lval;
     double        dval;
     char         *sval; /* NUL-terminated token text, in the list's string buffer */
@@ -360,7 +374,7 @@ struct mc_stmt
     } def;
 };
 
-/** mc_op_prec() - return binary/ternary operator precedence (or 0 if not an infix operator). */
+/** mc_op_prec() - return binary/ternary operator precedence (-1 if not an infix operator). */
 int mc_op_prec(mc_tok_type_t t);
 
 /** mc_is_assign_tok() - return 1 if @t is `=`, `+=`, `-=`, `*=`, or `/=`. */

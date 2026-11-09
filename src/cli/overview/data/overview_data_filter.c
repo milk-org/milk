@@ -5,6 +5,19 @@
 /**
  * @file    overview_data_filter.c
  * @brief   Name filtering by regex (substring fallback) with a small compiled-regex cache.
+ *
+ * Purpose:     the list panels filter their entries by a regex the user types (`/`, or PATTERN
+ *              on the command line) without compiling it again on every frame.
+ * Does:        ov_filter_build() returns the indices of the names that match an extended,
+ *              case-insensitive regex; a pattern that does not compile matches as a
+ *              case-insensitive substring. An LRU cache of 4 patterns keeps the compiled regexes,
+ *              and the patterns that failed, so the panels' filters do not evict each other.
+ * Used by:     ov_filter_streams/procs/fps() (render/overview_render_relate.c), which give the
+ *              panels' rows; the `?` jump (input/overview_input_modal_filter.c). Declared in
+ *              overview_data.h.
+ * Uses:        POSIX regex, strcasestr.
+ * See also:    docs/guide/milk-CTRL.md, "Lists".
+ * Constraints: UI thread only: the cache is static and has no lock.
  */
 
 #ifndef _GNU_SOURCE

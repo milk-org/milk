@@ -4,12 +4,24 @@
 
 /**
  * @file milk_entity_ns.h
- * @brief Shared entity namespace and stream-specifier normalization helpers.
+ * @brief The entity namespaces (`s.`, `l.`, `f.`, `p.` and their long names) and the reading of
+ *        the namespace of an entity path.
  *
- * Role & Goal:
- *   Provides a single source of truth for recognizing milk entity namespaces
- *   (`s`/`stream`, `l`/`local`, `f`/`fps`, `p`/`proc`) and normalizing `@S:<name>` / `@L:<name>` modifiers
- *   into canonical `s.<name>` / `l.<name>` entity paths.
+ * Purpose:     one list of namespaces, so that the shell client, the session server, the
+ *              calculator, completion and highlighting all read `s.cam.cnt0` alike.
+ * Does:        maps a namespace name to its kind (stream, local image, FPS, processinfo loop)
+ *              and splits it off an entity path; rewrites the `@S:` and `@L:` stream modifiers
+ *              as `s.` and `l.` paths; tells whether a word is an entity path; gives the hint
+ *              for a removed namespace (`q.`, `seq.`, `fpsseq.`: the sequencer).
+ * Used by:     milkprop (milk_shm_prop.c); the calculator (mc_lex.c, mc_resolve.c,
+ *              mc_scalar_eval.c, mc_scalar_ops.c); the client, server, ipc, core and bash files
+ *              of libmilkscript; milk-cli's cli_treesitter_diag.c and cli_treesitter_lexical.c.
+ *              milk.bash gets the list from `milkls --namespaces` (milk_client_stream.c).
+ * Uses:        libc only.
+ * See also:    docs/guide/scripting.md, "Entities";
+ *              docs/guide/streams.md, "3. Stream Modifiers".
+ * Constraints: header only (a static table and static inline functions); compiled into
+ *              libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef MILK_ENTITY_NS_H

@@ -1,4 +1,15 @@
-"""Extract calculator statements and preceding setup from python/tests/ and docs/guide/."""
+"""Collect the calculator statements written in the tests and the guides, as JSON lines.
+
+Purpose:     the statements that tests and users actually write make a corpus to run calculator
+             changes against, beside the generated ones of gen_expr.py.
+Does:        scans python/tests (the string constants of *.py files, *.calc files) and the code
+             blocks of docs/guide/*.md for @calc, @test, @assert, @{...} and unit -e/-i
+             texts; records the image creations, removals and assignments before each one as
+             its setup; drops duplicates; run as a script, prints one JSON line per statement.
+Used by:     nothing in the repository: run it by hand (python3 extract_corpus.py).
+Uses:        the Python standard library only.
+See also:    gen_expr.py; datasets.py.
+"""
 
 from __future__ import annotations
 

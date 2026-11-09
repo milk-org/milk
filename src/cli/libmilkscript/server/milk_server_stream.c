@@ -4,17 +4,29 @@
 
 /**
  * @file milk_server_stream.c
- * @brief Server-side stream synchronization and I/O commands (@waitfor, @grab [--stdout], @replay --stdin).
+ * @brief Server-side stream synchronization and I/O commands (@waitfor, @grab [--stdout], @replay
+ *        [--stdin]).
  *
- * Role & Goal:
- *   Implements the blocking and streaming primitives exposed to bash and
- *   `.milk` scripts:
- *   - `@waitfor`: Wait for N stream frames (via semaphore) or for an shm_prop/boolean
- *     condition to become true, with timeout and client Ctrl-C cancellation support.
- *   - `@grab`: Capture N consecutive frames from a stream into a 3D image cube.
- *   - `@grab --stdout`: Print all elements of a stream to stdout (one per line).
- *   - `@replay --stdin`: Populate stream elements from command arguments or stdin
- *     and post output stream semaphores.
+ * Purpose:     waits and captures that need the session's state (its local images and
+ *              variables) run in the session, without holding up its other commands.
+ * Does:        @waitfor waits for frames, an entity value or an expression (milk_waitfor.h),
+ *              until its timeout or the client's Ctrl-C; @grab copies N consecutive frames into
+ *              a cube (one frame: an image of the stream's shape), saved as FITS with --fits,
+ *              and records the frames it missed in its DROPPED keyword; @grab --stdout prints a
+ *              stream's values (text, or --raw); @replay --stdin writes values from stdin or
+ *              arguments into a stream, creating it if needed; @replay plays a cube or a FITS
+ *              file into a stream, frame by frame (--fps, --count, --loop).
+ * Used by:     milk_server.c (WAITFOR and GRAB requests, in a stream worker thread);
+ *              milk_server_dispatch.c (@grab --stdout as streamcat, @replay --stdin as
+ *              streamwrite, @replay). Declared in milk_server_internal.h.
+ * Uses:        milk_waitfor.h, ImageStreamIO, milk_shm_cache.h and milk_shm_prop.h
+ *              (libmilkprop), COREMOD_memory (local images), COREMOD_iofits (FITS files),
+ *              milkdata_torn_frame.h (frames written while copied), processinfo.h.
+ * See also:    milk_client_stream.c (the waits a shell does itself); docs/guide/scripting.md,
+ *              "Waiting, Events and Cleanup".
+ * Constraints: @waitfor and @grab run in a thread while other commands go on: they touch milk
+ *              state only under the command lock, which @grab releases between frames (it then
+ *              looks its images up again by name).
  */
 
 #ifndef _GNU_SOURCE

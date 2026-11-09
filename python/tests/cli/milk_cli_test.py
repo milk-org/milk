@@ -1,7 +1,24 @@
-"""
-The milk-cli program itself, and milk-script where they share code: `exit` in subshells,
-traps, terminal controls, piped input, the session log, calc-mode quoting, `milk-cli -h`
-and finding its own install.
+"""The milk-cli program itself, and milk-script where they share code.
+
+Purpose:     milk-cli is both the interactive prompt and a script runner: its exits, traps and
+             Ctrl-C behave as in bash, no piped line is lost or held back, and it finds its own
+             install without any setup.
+Does:        `exit` in a subshell does not end milk-cli, and a bare `exit` keeps the last
+             status; an EXIT trap runs; Ctrl-C at a pty prompt stops a loop and keeps the shell's
+             variables; calc-mode lines follow the shell's quoting and comments and the
+             calculator's strings; `milk-cli -h` lists the options milk-cli takes;
+             `@config sessionlog` logs each line read; 400 000 piped lines all run; piped lines
+             reach the history log, and an unclosed parenthesis in calc mode does not hold the
+             batch; milk-cli and milk-script run by path export their own install.
+Covers:      milk-cli (src/CLImain.c, src/cli/CLIcore/CLIcore.c: options, input loop, piped
+             batches), its help (libmilkscript/core/CLIcore_help_topics.c), cli_sessionlog()
+             (CLIcore/CLIcore_UI_builtins.c), the history log (CLIcore/CLIcore_UI_history.c),
+             CLI_export_own_installdir() (libmilkscript/core/CLIcore_datainit.c), milk-script
+             (libmilkscript/milkscript_main.c).
+Uses:        conftest.py: milk_bash, milk_cli_script, milk_cli_stdin, milk_script, pty_session,
+             value, _run, _isolated_shm_env, _install_dir.
+See also:    docs/guide/CLIcore.md, "Command-Line Options", "Persistent History",
+             "Session Logging"; docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)".
 """
 
 from __future__ import annotations

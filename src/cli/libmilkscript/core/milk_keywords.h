@@ -4,11 +4,24 @@
 
 /**
  * @file milk_keywords.h
- * @brief The language keyword table (`@` words) and the bash words the REPL highlights and completes.
+ * @brief The language keyword table (`@` words) and the bash words the REPL highlights and
+ *        completes.
  *
- * Every consumer derives from this table: the milk.bash keyword functions (`milkls --keywords --bash`),
- * keyword help, completion, highlighting and the exclusion lists. Registered milk commands come from
- * the command registry (data.cmd); entity namespaces from milk_entity_ns.h.
+ * Purpose:     each `@` keyword is defined once (where it works, how it is implemented, its help
+ *              and its completion), and every consumer derives from that one table.
+ * Does:        holds the keyword table and the bash word list; looks keywords up; prints a
+ *              keyword's help, its usage line on a usage error, and the keyword list; tells
+ *              whether a keyword's arguments are calculator text.
+ * Used by:     the milk.bash keyword functions (`milkls --keywords --bash`); help
+ *              (CLIcore_help_command.c, CLIcore_help_topics.c); completion and highlighting
+ *              (milk_server_complete.c, CLIcore_UI_completion_tab.c); the reserved-name check
+ *              (milk_cmd_index.c); milk-call (milk_call_main.c); the libmilkbash builtins and
+ *              client (bash/, client/, ipc/milk_srvlog.c); the server's usage errors.
+ * Uses:        libc only.
+ * See also:    milk_keywords.c; module commands come from the command registry (data.cmd) and
+ *              entity namespaces from milk_entity_ns.h; docs/guide/scripting.md, "Keywords".
+ * Constraints: compiled into libmilkbash.so, the thin client every shell loads: no server code
+ *              or state.
  */
 
 #ifndef MILK_KEYWORDS_H

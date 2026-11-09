@@ -4,10 +4,13 @@
 
 /**
  * @file milk_waitfor.c
- * @brief `@waitfor` target parsing, state aliasing and wait loops shared by the client and the server.
+ * @brief `@waitfor` target parsing, state aliasing and wait loops shared by the client and the
+ *        server (see milk_waitfor.h).
  *
- * Frame waits block on a stream semaphore; a stream that does not exist yet is waited for with
- * inotify on the shm directory. Entity conditions are polled with a short back-off.
+ * Frame waits block on a stream semaphore, pinned in the process's stream cache for the wait, at
+ * most 50 ms at a time so that a timeout or a cancel is seen; a stream that does not exist yet is
+ * waited for with inotify on the shm directory. Entity conditions are polled with a short
+ * back-off (1 ms, then 5 ms).
  */
 
 #ifndef _GNU_SOURCE
@@ -58,7 +61,8 @@ static const char *proc_state_name(const char *st)
     return st;
 }
 
-/** fps_state_word() - unit state (U10) named by @w in any case, or NULL. */
+/** fps_state_word() - unit state (docs/arch/unit_lifecycle.md, U10) named by @w in any case, or
+ * NULL. */
 static const char *fps_state_word(const char *w)
 {
     static const char *const st[] = { "stopped",  "starting", "running",

@@ -5,7 +5,22 @@
 /**
  * @file CLIcore_inspect.c
  *
- * @brief CLI commands for system inspection, JSON introspection, and process control.
+ * @brief `@ls` (streams, FPSs, processes and local images, as text or JSON), milk.fpsdump and
+ *        the `listim` pattern listing.
+ *
+ * Purpose:     list what exists in shared memory from any shell, with or without a session.
+ * Does:        milk_ls_exec() lists streams, FPSs and processinfo entries by reading their
+ *              shared-memory files directly and, in a session, its local images;
+ *              cli_cmd_fpsdump() prints every parameter of every FPS as key=value;
+ *              cli_listim_glob() lists the streams whose names match a pattern.
+ * Used by:     milk_client_ls() (milk_client_stream.c), for `@ls` in a shell: it forwards
+ *              `--local` and `l.*` to the session; the server's milk_server_dispatch.c;
+ *              milk_builtin_module.c (milk.fpsdump). Declared in CLIcore_script.h.
+ * Uses:        ImageStreamIO, libfps (fps_connect.h, fps_printparameter_valuestring.h, ...),
+ *              libprocessinfo, milk_entity_ns.h (namespaces), milk_keywords.h.
+ * See also:    docs/guide/scripting.md, "Existence and Listing".
+ * Constraints: also compiled into libmilkbash.so (MILK_BASH_CLIENT), which leaves out the
+ *              server command milk.fpsdump.
  */
 
 #include <dirent.h>
@@ -182,7 +197,8 @@ static PROCESSINFO *open_proc_shm_local(const char *pdname,
     return NULL;
 }
 
-/** fps_status_str - state of the run process of unit @fps (U10): "stopped", "running", ... */
+/** fps_status_str - state of the run process of unit @fps: "stopped", "running", ...
+ * (docs/arch/unit_lifecycle.md, U10) */
 static const char *fps_status_str(FPS *fps)
 {
     FPS_UNIT_STATUS st;

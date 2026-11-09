@@ -6,15 +6,35 @@
  * @file milk_calc_ext.h
  * @brief Public C SDK for user-defined `milk.calc` / `@calc` kernels and operators (Tiers 1 & 2).
  *
- * Allows users to bring compiled C functions into `milk.calc` and `@calc` via `-l <file.c|file.so>`:
- *   - Tier 1a (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`): 1D per-pixel SIMD block kernels, run
- *     on blocks of the image in parallel as a step of their own (not inside the fused pass).
- *   - Tier 1b (`MILK_CALC_REG_STENCIL`): 2D neighborhood row-strip kernels receiving `2*R + 1`
- *     pre-clamped row pointers of length `N + 2*R` (`R` in 1..3).
- *   - Tier 1c (`MILK_CALC_REG_IMG`): Single-function whole-image kernels (`IMAGE *out`,
- *     `const IMAGE *in`, `const struct par *P`) composable inside expressions.
- *   - Tier 2  (`MILK_CALC_OP_DECLARE` / `MILK_CALC_REG_OP`): Multi-input / multi-output stateful
- *     operators (`init` / `exec` / `free`) with named image and scalar ports.
+ * Purpose:     bring compiled C code into calculator statements without rebuilding milk: a user
+ *              file (`-l <file.c|file.so>`) registers kernels and operators that statements call
+ *              by name; in a unit, their parameters appear in its FPS.
+ * Does:        defines the extension kinds. Tier 1a (MILK_CALC_REG_BLK, MILK_CALC_REG_BLK2): 1D
+ *              per-pixel SIMD block kernels, run on blocks of the image in parallel as a step of
+ *              their own (not inside the fused pass). Tier 1b (MILK_CALC_REG_STENCIL): 2D
+ *              neighborhood row-strip kernels receiving 2*R + 1 pre-clamped row pointers of
+ *              length len + 2*R (R in 1..3). Tier 1c (MILK_CALC_REG_IMG): single-function
+ *              whole-image kernels (IMAGE *out, const IMAGE *in, const struct par *P),
+ *              composable inside expressions. Tier 2 (MILK_CALC_OP_DECLARE, MILK_CALC_REG_OP):
+ *              multi-input, multi-output stateful operators (init, exec, free) with named image
+ *              and scalar ports. MILK_CALC_PARAMS makes a parameter struct and its FPS table
+ *              from one X-macro; MILK_IN*, MILK_OUT* and milk_op_set_out_shape() reach an
+ *              operator's ports; MILK_CALC_EXT_EXPORT exports a file's entries as
+ *              __milk_calc_ext_table, the symbol the loader reads; MILK_CALC_MODULE_EXPORT also
+ *              registers them when the library loads. Declares the registry functions.
+ * Used by:     user extension sources, compiled by ext/mc_ext_loader.c (`-l`, `loadlib`,
+ *              MILK_CALC_LIBS) or by scripts/milk-cc; ext/mc_ext_builtin.c (built-in kernels);
+ *              the calculator's ext/ files, front/mc_resolve.c, linalg/mc_linalg_blas.c,
+ *              mc_func.c (`--list`) and mcalc.h.
+ * Uses:        ImageStreamIO/ImageStruct.h (IMAGE), fps_types.h (FPTYPE_* parameter types).
+ * See also:    ext/mc_ext_registry.c (registry), ext/mc_ext_loader.c (loading, argument
+ *              binding), ext/mc_ext_exec.c (execution); docs/guide/calc_c_extensions.md,
+ *              "`milk_calc_ext.h` Quick Reference".
+ * Constraints: compiled into user code and installed (include/milkcalc, include,
+ *              include/milkscript): a change to the entry or table layout must raise
+ *              MILK_CALC_EXT_ABI_VERSION, which the registry checks and the cache key of a
+ *              compiled `.c` includes. The registry refuses more than MILK_CALC_MAX_PARAMS
+ *              parameters, a parameter struct over MILK_CALC_PARAM_BYTES, or a non-numeric one.
  */
 
 #ifndef MILK_CALC_EXT_H
@@ -491,7 +511,7 @@ typedef struct
         __milk_calc_ext_list                                                                     \
     }
 
-/* In-memory kernel and operator registry (mc_ext_registry.c) */
+/* In-memory kernel and operator registry (ext/mc_ext_registry.c) */
 int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t errsz);
 
 int milk_calc_ext_register_table(const milk_calc_ext_table_t *tbl, char *err, size_t errsz);

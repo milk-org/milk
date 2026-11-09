@@ -4,19 +4,34 @@
 
 /**
  * @file mcalc.h
- * @brief Public API for the milk expression and image calculator (`libmilkcalc`).
+ * @brief Public API of the calculator (`libmilkcalc`): evaluate statements, run compiled
+ *        programs, load C extensions.
  *
- * Role & Goal:
- *   Exposes the calculator entry points used by `milk-cli`, `milk-call`,
- *   `libmilkbash.so`, `libmilkscript`, and the standalone `milk-fpsexec-milk-calc`
- *   compute unit:
- *     - Interactive and bash-mode expression evaluation (`mcalc_eval_bash`,
- *       `mcalc_eval_str`, `mcalc_eval_math_to_val`).
- *     - Client-side zero-RPC fast path for scalar and `s.`/`f.`/`p.` expressions
- *       (`mcalc_local`).
- *     - Multi-statement compiled programs (`mcalc_prog_new`, `mcalc_prog_run`,
- *       `mcalc_prog_explain`) and user-defined inline functions (`mcalc_udef_*`).
- *     - User C extension loading and FPS parameter discovery (`mcalc_ext_*`).
+ * Purpose:     the one interface to the calculator for the programs that use it: the session,
+ *              the shell client in libmilkbash.so and the milk.calc compute unit.
+ * Does:        evaluates statements for @calc, @test and module-command arguments
+ *              (mcalc_eval_*); evaluates expressions of numbers, math functions and s./f./p.
+ *              properties in the shell itself, without a request (mcalc_local()); compiles
+ *              statements into a program that a unit runs on each frame, with variables bound
+ *              to its FPS parameters (mcalc_prog_*), or prints how it would run
+ *              (mcalc_prog_explain()); keeps the def table (mcalc_udef_*); loads C extensions
+ *              and finds the FPS parameters their calls need (mcalc_ext_*); prints the `--list`
+ *              catalog.
+ * Used by:     the session (milk_server_eval.c and other server files: @calc, @test, @assert,
+ *              @pipe, @waitfor); milk_cmd_args.c (an expression as an argument value);
+ *              CLIcore_signals.c (Ctrl-C); the shell client (milk_client_ops.c: mcalc_local(),
+ *              `--list` without a session); units/milk_unit_calc.c; the calculator's own
+ *              files, through front/mc_ast.h; python/tests/cli/calc_bench_test.py (ctypes).
+ * Uses:        milk_calc_ext.h (extension entries and parameter specs).
+ * See also:    mcalc_host.h (string variables); mc_eval.c (statements, def table),
+ *              run/mc_prog.c (programs), run/mc_scalar_ops.c (mcalc_local()),
+ *              ext/mc_ext_loader.c (extensions), mc_func.c (`--list`);
+ *              docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)" and
+ *              "Compute Units Without C".
+ * Constraints: evaluation is not thread-safe (process-wide output mode, last error, def table
+ *              and statement cache): only mcalc_cancelled may be set from another thread or a
+ *              signal handler. libmilkbash.so does not link libmilkcalc but compiles a few of
+ *              its files: the shell client calls only mcalc_local() and mcalc_print_catalog().
  */
 
 #ifndef MILK_MCALC_H
@@ -72,7 +87,7 @@ typedef void (*mcalc_ext_scalar_out_cb_t)(const char *var_name, const char *desc
 /** mcalc_ext_load() - compile (if .c) and load a user C extension into the calculator. */
 int mcalc_ext_load(const char *path, char *err, size_t errsz);
 
-/** mcalc_ext_load_list() - load a comma/colon-separated list of user C extensions. */
+/** mcalc_ext_load_list() - load a list of user C extensions separated by spaces, `,` or `:`. */
 int mcalc_ext_load_list(const char *libs_str, char *err, size_t errsz);
 
 /** mcalc_ext_count() - return the number of registered calculator C extensions. */
@@ -97,7 +112,8 @@ typedef struct
 
 typedef struct mcalc_prog mcalc_prog;
 
-/** mcalc_prog_attach() - in an fpsexec process, work on the runtime's image and variable tables. */
+/** mcalc_prog_attach() - does nothing (kept for compatibility): the calculator works directly on
+ * milk_data, the image and variable tables of the fpsexec process. */
 void mcalc_prog_attach(void);
 
 /** mcalc_prog_new() - compile @text into a reusable calculator program, or NULL on error. */

@@ -4,29 +4,18 @@
 
 /**
  * @file mc_plan.c
- * @brief Execution planner and elementwise pass optimizer for libmilkcalc.
+ * @brief Execution planner and elementwise pass optimizer for libmilkcalc (see mc_plan.h).
  *
- * Translates the resolved abstract syntax tree (`p->ast_head`) produced by the
- * parser and semantic analyzer into a linear sequence of execution steps
- * (`MC_STEP_SCALAR`, `MC_STEP_CTOR`, and `MC_STEP_PASS`):
- *
- * 1. **Slot Discovery & Type Inference**: Registers every referenced or created
- *    image in `p->slots[]`, tracking whether it existed at plan time, its
- *    storage location (`@S:` shared vs `@L:` local), and its planned datatype
- *    and dimensions.
- * 2. **Pass Construction & Pre-staging**: Walks image-producing expressions to
- *    collect input image views and hoisted scalar parameters (`mc_op_desc_t`).
- *    Non-elementwise constructors (`linspace`, BLAS/LAPACK calls, separable
- *    convolutions, axis reductions, `ema`) embedded inside larger expressions
- *    are automatically hoisted into preceding `MC_STEP_CTOR` pre-stage steps
- *    writing into `_tmpcalcpsN` slots.
- * 3. **Pass Fusion & Local Elision**: Consecutive elementwise passes with
- *    compatible loop geometry and no cyclic hazards are fused into a single
- *    multi-output pass (`merge_passes_and_elide_locals`), and intermediate
- *    `local` images that are never read outside their defining pass are elided
- *    into register variables (`mc_elide_unused_locals`).
- * 4. **Code Generation & Compilation**: Invokes `mc_emit_pass()` for each
- *    finalized pass and `mc_cc_compile_prog()` to compile all C kernels.
+ * mc_plan_build() takes the top-level statements in order: statements with no image, control
+ * flow and scalar reductions become scalar steps; a constructor call (vector literal,
+ * linspace, linear algebra, library filter, C extension, axis reduction, ema()) as the whole
+ * right-hand side becomes a constructor step; any other image statement becomes an elementwise
+ * pass. Building a pass registers each image as a slot (shared or local, whether it existed at
+ * plan time, planned type and shape) and as an operand, hoists each scalar sub-expression as a
+ * parameter evaluated before the kernel runs, and moves a constructor call inside the
+ * expression into a constructor step ahead of the pass (a _tmpcalcps<N> slot). Adjacent passes
+ * that mc_can_merge_passes() allows are then fused, `local` outputs no other step reads stay
+ * in registers, and each pass is emitted (jit/mc_emit.c), then all are compiled (jit/mc_cc.c).
  */
 
 #include <ctype.h>

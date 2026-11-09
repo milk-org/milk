@@ -4,7 +4,21 @@
 
 /**
  * @file milk_cmd_index.h
- * @brief Command and module name rules, the hash index of registered commands, the registry generation.
+ * @brief Command and module name rules, the hash index of registered commands, the registry
+ *        generation.
+ *
+ * Purpose:     one place decides which module short names and command keys are valid, and a
+ *              command is found by its key without scanning data.cmd[].
+ * Does:        checks module short names ([a-z][a-z0-9]{1,15}, not a keyword, an entity
+ *              namespace or `milk`) and `module.command` keys; indexes data.cmd[] by key;
+ *              counts the registered commands the catalog lacks, so that connected shells know
+ *              to fetch the new command functions.
+ * Used by:     CLIcore_modules.c (loading a module, registering a command),
+ *              milk_builtin_module.c, milk_catalog_build.c, CLIcore_help_command.c, and the
+ *              server (milk_server.c, milk_server_admin.c, milk_server_complete.c,
+ *              milk_server_dispatch.c).
+ * Uses:        milk_keywords.h and milk_entity_ns.h (reserved names), milk_catalog.h.
+ * See also:    milk_cmd_index.c; docs/guide/CLIcore.md, "Module Loading".
  */
 
 #ifndef MILK_CMD_INDEX_H

@@ -1,10 +1,20 @@
-"""
-Tests for the per-tick overhead work of the 2026-10-27 engine review (P6).
+"""Per-tick costs of kept statements: variable slice bounds, and name checks of cached statements.
 
-Slice bounds that hold variables (`out[k:k+7,:]`, `ring[:,:,_n % 4]`, `prev(cam)`) are compiled into
-the statement's scalar tape and re-placed from it each run, instead of re-tokenizing and re-parsing
-the slice text; a kept program re-validates the names of its images and variables only when the
-image or variable tables changed (a generation counter bumped on create, delete, rename, remap).
+Purpose:     a unit runs its statements every frame, so a slice bound that holds a variable
+             (`out[k:k+7,:]`, `ring[:,:,_n % 4]`) is evaluated from the parsed statement, not
+             re-parsed, and costs about what a literal one does; a cached statement checks its
+             names again only when the image or variable tables changed, and must then see an
+             image that was re-created or that shadows a variable.
+Does:        runs a unit with a parameter bound, a frame-counter ring index and negative and
+             reversed bounds; runs cached statements again after an operand is re-created and
+             after a variable is shadowed by an image; times a self-triggered 128^2 unit with
+             variable bounds against literal ones (within 3x).
+Covers:      the bounds evaluated at each run (mc_view_resolve() in src/calc/plan/mc_views.c,
+             called from src/calc/run/mc_exec.c); the statement cache and its check of
+             milk_table_generation() (src/calc/mc_eval.c); milk-fpsexec-milk-calc.
+Uses:        conftest.py: milk_bash, value, _install_dir, _isolated_shm_env, _run; milk-script.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; fused_views_test.py.
+Constraints: MILK_PERF_TESTS=0 skips the timing test, which also skips itself on a slow host.
 """
 
 from __future__ import annotations

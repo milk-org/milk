@@ -6,8 +6,20 @@
  * @file    overview_data_trace.c
  * @brief   Timing of a stream's trigger chain from its process trace (proctrace).
  *
- * Hop 0 is the process that wrote the stream; hop t+1 wrote the stream that triggered hop t. Times are
- * CLOCK_MILK (realtime) nanoseconds written by processinfo_update_output_stream.
+ * Purpose:     show where time goes along a pipeline: per hop the compute time, the hand-off
+ *              from the previous hop and the lag in frames, and the end-to-end latency.
+ * Does:        ov_stream_add_hop() stores a stream's hops in the model's shared pool
+ *              (OV_MODEL.trace) during the scan; ov_trace_hop() and ov_trace_end_to_end_ns()
+ *              compute the timings from them, -1 when unknown. Hop 0 is the process that wrote
+ *              the stream; hop t+1 wrote the stream that triggered hop t. Times are CLOCK_MILK
+ *              (realtime) nanoseconds written by processinfo_update_output_stream().
+ * Used by:     overview_data_scan_streams.c (ov_stream_add_hop); stream DETAILS, CONNECTIONS
+ *              health and the F3 inspector's TRACE page (render/overview_render_detail_stream.c,
+ *              overview_render_graph_health.c, overview_render_insp_pages.c). Declared in
+ *              overview_data.h. milk-fps-info also compiles this file.
+ * Uses:        ov_find_proc_by_pid() and ov_find_stream_by_inode() (overview_data_graph.c).
+ * See also:    docs/guide/streams.md, "Stream Process Trace (Ancestry)";
+ *              docs/guide/milk-CTRL.md, "Streams view (F3)".
  */
 
 #include "overview_data_internal.h"

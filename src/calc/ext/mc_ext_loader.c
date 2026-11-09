@@ -6,21 +6,31 @@
  * @file mc_ext_loader.c
  * @brief Dynamic `.c` / `.so` extension loader and static call-site scanner for `libmilkcalc`.
  *
- * Implements two subsystems supporting user-defined C extensions (`milk_calc_ext.h`):
- *   1. **Dynamic compilation and loading (`mcalc_ext_load`, `mcalc_ext_load_list`)**:
- *      Accepts either pre-compiled shared objects (`.so`) or raw `.c` source files (via `-l`,
- *      `loadlib`, or `MILK_CALC_LIBS`). Raw `.c` files are compiled once, like the JIT's kernels
- *      (mc_cc_build(): same compiler, flags and checked cache directory), into
- *      `ext_<key>.so`, keyed on the ABI version, path and file contents, and loaded via `dlopen`.
- *      The exported `__milk_calc_ext_table` symbol is then registered in the global extension
- *      registry.
- *   2. **Call arguments (`mc_ext_bind_args`) and the static call-site scanner
- *      (`mcalc_ext_scan_source`)**: one binder, used by the runtime and by the scanner, decides
- *      which argument of a call binds each input and parameter. The scanner lexes a `milk.calc`
- *      unit program before execution to find every call to a registered extension (`func(...)` or
- *      `func:label(...)`); for each parameter no argument binds, it invokes `param_cb` so the unit
- *      exposes `<label>.<param>` in its FPS, and `scalar_out_cb` for scalar output ports unpacked
- *      on the LHS.
+ * Purpose:     let a user bring C kernels into `@calc` and milk.calc with `-l file.c` and no build
+ *              step, and give the run time and the FPS of a unit one rule for which argument
+ *              binds which input or parameter.
+ * Does:        mcalc_ext_load() loads a file once per canonical path. A `.c` file is compiled
+ *              with mc_cc_build() (the compiler, flags and cache directory of the JIT) into
+ *              `ext_<key>.so`, keyed on the ABI version, the path and the file contents
+ *              (mc_cc_key() adds compiler, flags and CPU); a cached `.so` is reused. The
+ *              `__milk_calc_ext_table` of the library (MILK_CALC_EXT_EXPORT) is registered after
+ *              dlopen(). mcalc_ext_load_list() loads a list separated by spaces, `,` or `:`.
+ *              mc_ext_bind_args() binds the arguments of a call with the module-command rules
+ *              (milk_args_bind()): `name=value` by name, the others to the inputs, then to the
+ *              parameters, in order. mcalc_ext_scan_source() lexes a unit program and reports
+ *              each parameter that no argument binds (param_cb: the unit exposes
+ *              `<label>.<param>` in its FPS) and each target of a scalar output port
+ *              (scalar_out_cb).
+ * Used by:     mc_eval.c (`loadlib`, `@calc -l`, MILK_CALC_LIBS), units/milk_unit_calc.c (`-l`,
+ *              `.unit.libs`, the scan), ext/mc_ext_exec.c (mc_ext_bind_args()). Declared in
+ *              mcalc.h and plan/mc_plan.h.
+ * Uses:        jit/mc_cc.c (compile step, cache directory, key), ext/mc_ext_registry.c,
+ *              front/mc_lex.c (mc_lex()), fps_args.h (libfps, milk_args_bind()), libdl.
+ * See also:    scripts/milk-cc (builds the same kind of `.so` ahead of time), milk_calc_ext.h;
+ *              docs/guide/calculator.md, "Auto-Compilation and Caching (`-l` / `--lib`)";
+ *              docs/guide/calc_c_extensions.md, "FPS Parameter Binding Rules".
+ * Constraints: also compiled into libmilkbash.so, where nothing calls it (the LTO link drops it);
+ *              it calls jit/mc_cc.c, which libmilkbash.so does not include.
  */
 
 #define _GNU_SOURCE
@@ -77,8 +87,8 @@ static void add_prefix_dirs(const char *prefix, char inc[8][PATH_MAX], int *n_in
  * Collects include directories from three sources in order:
  *   1. The `$MILK_INSTALLDIR` prefix (add_prefix_dirs()).
  *   2. The prefix of `libmilkcalc.so`, discovered via `dladdr(&mcalc_ext_load)`.
- *   3. The source tree directory containing `mc_ext_loader.c` and `../engine/libfps` (for
- *      in-tree unit tests before install).
+ *   3. The calculator source directory, two levels up from this file (milk_calc_ext.h), and
+ *      its `../engine/libfps` (for in-tree unit tests before install).
  *
  * Return: void
  */

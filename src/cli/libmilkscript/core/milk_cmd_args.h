@@ -4,11 +4,25 @@
 
 /**
  * @file milk_cmd_args.h
- * @brief Per-call command arguments: the call's meta-options, session defaults, presets, typed values.
+ * @brief Per-call command arguments: the call's meta-options, session defaults, presets, typed
+ *        values.
  *
- * Every call starts from the declared defaults overlaid with the session defaults (`cmd --default .tag=v`);
- * nothing carries over from one call to the next. CLI_checkarg_array() maps the call's tokens onto the
- * parameters.
+ * Purpose:     a module command's arguments never carry over from one call to the next, yet a
+ *              user can set session defaults and save named sets of values.
+ * Does:        every call starts from the declared defaults overlaid with the session defaults
+ *              (`cmd --default .tag=v`); takes the call's meta-options (--default, --no-run,
+ *              --save=NAME, --load=NAME, --) out of its arguments; keeps presets in
+ *              ${XDG_STATE_HOME:-~/.local/state}/milk/args/<module>.<command>/; prints a call
+ *              as `key .tag=value ...`; classifies each argument token (a quoted string, a
+ *              calculator variable, an image, a stream property, a calculator expression or a
+ *              plain word) for CLI_checkarg_array(), which maps the tokens onto the parameters.
+ * Used by:     CLIcore_checkargs.c, CLIcore_modules.c (a command is registered),
+ *              CLIcore_help_command.c (presets and session defaults in help), and the server
+ *              (milk_server_dispatch.c brackets each call; milk_server_admin.c).
+ * Uses:        fps_args.h and libmilkdata/milkdata_clicmd.h (parameter types and values),
+ *              COREMOD_memory and ImageStreamIO (image arguments), milk_shm_prop.h (stream
+ *              properties), calc/mcalc.h (calculator variables and expressions).
+ * See also:    milk_cmd_args.c; docs/guide/scripting.md, "Arguments"; docs/guide/sessions.md.
  */
 
 #ifndef MILK_CMD_ARGS_H

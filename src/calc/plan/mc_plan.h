@@ -6,15 +6,27 @@
  * @file mc_plan.h
  * @brief Planner, C kernel ABI, view geometry, and program execution structures for `libmilkcalc`.
  *
- * Defines the intermediate representation lowered from a resolved AST:
- *   - `mc_operand_t`: ABI-stable runtime operand descriptor passed to compiled `.so` kernels.
- *   - `mc_view_t`: Resolved n-D slice/stride/binning geometry for an image operand.
- *   - `mc_pass_t`: Fused elementwise pass (operands, outputs, precision, generated C source,
- *     and `dlopen()`-loaded `mc_kernel_fn`).
- *   - `mc_ctor_step_t`: Whole-image library step (BLAS, LAPACK, FFT, spatial filter, reduction
- *     pre-stage, or user C extension).
- *   - `mcalc_prog_t`: Compiled multi-statement program with image slots, bound FPS variables,
- *     and execution steps.
+ * Purpose:     the form a calculator program takes between resolution and execution: which steps
+ *              run in which order (scalar code, fused pass, library step), on which images, with
+ *              which compiled kernels.
+ * Does:        defines mc_operand_t and mc_kernel_fn (what a compiled kernel is called with: per
+ *              operand a base pointer, strides, view extents, a scalar, a mask and a cnt0
+ *              snapshot), mc_view_t (a slice, stride, broadcast or binned view of an image),
+ *              mc_pass_t (a fused elementwise pass: operands, outputs, precision, C source, loaded
+ *              kernel), mc_ctor_step_t (a whole-image step: BLAS, LAPACK, FFT, spatial filter,
+ *              reduction pre-stage or C extension), mc_step_t, mcalc_prog_t (image slots, steps,
+ *              bound FPS variables) and mc_red_src_t (the source of a reduction). Declares the
+ *              planner (mc_plan_build()) and the functions that plan/, jit/, run/ and
+ *              ext/mc_ext_loader.c share.
+ * Used by:     the planner, the JIT and the run-time (plan/, jit/, run/), mc_eval.c,
+ *              ext/mc_ext_loader.c, linalg/ (through linalg/mc_linalg.h); the server's
+ *              milk_server_vars.c (mc_var_bound()).
+ * Uses:        front/mc_ast.h (the steps point into the AST), ImageStreamIO/ImageStruct.h,
+ *              libmilkdata, mcalc.h.
+ * See also:    plan/mc_plan.c (the planner), plan/mc_views.c, jit/mc_emit.c, jit/mc_cc.c,
+ *              run/mc_exec.c, run/mc_prog.c; docs/guide/calculator.md, "Fusion & Cost Model".
+ * Constraints: mc_operand_t must stay identical to its copy in jit/mc_prelude.h, which is what the
+ *              compiled kernels see.
  */
 
 #ifndef MILK_CALC_MC_PLAN_H
@@ -83,7 +95,7 @@ typedef struct
     int              mask_op_idx; /* index of mask operand in pass->ops[], or -1 */
     int              slot_idx;    /* index in prog->slots[] */
     int              stmt_idx;    /* statement index in program */
-    mc_tok_type_t    assign_op;   /* MC_TOK_ASSIGN, MC_TOK_PLUS_ASSIGN, etc. */
+    mc_tok_type_t    assign_op;   /* MC_TOK_ASSIGN, MC_TOK_ADD_ASSIGN, etc. */
     const mc_expr_t *rhs_expr;    /* RHS expression tree */
     const mc_expr_t *lhs_slice;   /* LHS slice node if slice/mask assignment */
     uint8_t          out_dt;      /* destination datatype */

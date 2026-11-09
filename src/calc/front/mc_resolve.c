@@ -4,36 +4,31 @@
 
 /**
  * @file mc_resolve.c
- * @brief Symbol binding, type/shape inference, and arity validation for libmilkcalc.
+ * @brief Symbol binding, def inlining, type/shape inference, and arity validation for libmilkcalc.
  *
- * This module implements the third stage of the calculator front-end pipeline:
- * walking the AST produced by `mc_parse_stmt()` / `mc_parse_prog()` to bind
- * every identifier, slice, and function call to concrete runtime entities and
- * to annotate every `mc_expr_t` and `mc_stmt_t` node with its resolved value
- * category (`res_kind`), image datatype (`res_dt`), dimensions (`res_naxis`,
- * `res_size`), and whether it needs image execution
- * (`needs_image`).
- *
- * Key responsibilities:
- * - Inlining of `def` calls (`inline_udef_call`), identifier resolution
- *   (`resolve_ident`) across array comprehension loop variables, `milk_data.variable[]` entries, shared
- *   or local ImageStreamIO images (auto-connecting `/dev/shm` streams on
- *   demand), host/bash string variables, numeric environment variables, shared
- *   memory properties (`s.<stream>.<prop>`, `f.<fps>.<prop>`,
- *   `p.<proc>.<prop>`), and built-in constants (`pi`, `nan`, `inf`).
- * - N-D slice and mask-indexing validation (`resolve_slice`), distinguishing
- *   scalar single-pixel reads/writes (`im[i, j]`) from sub-image slices
- *   (`im[0:10, :]`) and boolean mask assignments (`im[mask] = rhs`).
- * - Function call resolution (`resolve_call`) for inline `def` functions
- *   (expanded and resolved recursively up to `MC_UDEF_MAX_DEPTH`), dynamically
- *   loaded user C extensions (`milk_calc_ext`), and the built-in function
- *   table (`mc_func.c` and `linalg/mc_linalg.c`).
- * - Self-initializing recurrence detection (`y = 0.9 * y + 0.1 * x`) inside
- *   `milk.calc` unit programs, automatically creating frame-0 zero-filled
- *   state streams or scalar variables before resolving the RHS.
- * - Tracking newly created images and variables (`created_vars`) across a
- *   multi-statement program so later statements resolve symbols created by
- *   earlier statements in the same pass.
+ * Purpose:     decide, before a statement runs, what each name refers to and what each node
+ *              produces (number, string or image, of which type and shape), so the planner can
+ *              choose scalar code, a fused pass or a library step.
+ * Does:        mc_resolve_prog_ex() walks the statements in order. A name is a constant (pi, nan,
+ *              inf: never shadowed), a comprehension variable, an image (a /dev/shm stream is
+ *              connected on demand; an image an earlier statement creates counts), a variable of
+ *              milk_data.variable[], a host string or numeric environment variable, or an entity
+ *              property (s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop>). An unknown name is an
+ *              error, except where a scalar condition may skip it (if branches, ?:, &&, ||). A
+ *              slice is a pixel, a sub-image or a mask (`im[mask] = ...`). A def call becomes a
+ *              copy of the def's body with the arguments in place (MC_UDEF_MAX_DEPTH levels); other
+ *              calls are checked (arity, operand types) against the built-in table, the C
+ *              extensions or the library functions. In a unit, a new target that its own right-hand
+ *              side reads (`y = 0.9 * y + 0.1 * x`) is first created, zero. mc_def_check() checks
+ *              the body of a def when it is defined.
+ * Used by:     mc_eval.c (`@calc` statements, def checks), run/mc_prog.c (programs, units,
+ *              sub-programs), run/mc_reduce.c (compound reductions). Declared in front/mc_ast.h.
+ * Uses:        COREMOD_memory (image_ID.h, variable_ID.h), milk_shm_prop.h and milk_entity_ns.h
+ *              (properties), mcalc_host.h (host strings), mc_func.h (built-ins); ext/mc_ext_exec.c
+ *              and linalg/mc_linalg_blas.c (extension and library calls), ext/mc_ext_builtin.c
+ *              (image lookup), plan/mc_history.c (self-init targets).
+ * See also:    front/mc_parse.c (the previous stage), plan/mc_plan.c (the next);
+ *              docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)".
  */
 
 #include <math.h>

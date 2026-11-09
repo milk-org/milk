@@ -1,6 +1,18 @@
-"""
-Tab completion: bash and the milk-cli prompt use one completer (milk_complete), and
-completing FPS names keeps one mapping of the FPS.
+"""Tab completion: one completer for bash and the milk-cli prompt, and FPS names.
+
+Purpose:     completion must offer the same candidates in plain bash and at the milk-cli
+             prompt, and completing FPS names must not leave extra mappings of the FPS in the
+             session's processes.
+Does:        asks milkcomplete for keyword options, @config settings and presets, and a
+             calculator function in a quoted @calc text; at a milk-cli prompt on a pty,
+             completes a calculator function, a file name, a stream property and a function
+             in @{...}; presses TAB six times on an FPS path and counts the FPS's mappings.
+Covers:      milk_complete() (src/cli/libmilkscript/server/milk_server_complete.c), the
+             milkcomplete builtin (src/cli/libmilkscript/bash/milk_bash_builtins.c) and the
+             completion function of scripts/milk.bash; TAB at the prompt
+             (src/cli/CLIcore/CLIcore/CLIcore_UI_completion_tab.c).
+Uses:        conftest.py: milk_bash, pty_session, value.
+See also:    docs/guide/CLIcore.md, "Tab Completion".
 """
 
 from __future__ import annotations

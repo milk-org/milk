@@ -1,4 +1,30 @@
-"""Asserted latency ceilings and fused-vs-fallback numerical parity tests."""
+"""Latency ceilings of the shell keywords, the calculator and units; fast paths match plain ones.
+
+Purpose:     scripts are written against the costs in docs/guide/scripting.md, "Cost Model":
+             these ceilings catch a slowdown, and the parity tests check that the caches, pools
+             and fused passes behind those costs compute what the plain paths compute.
+Does:        per-call latency of @calc -v, @get -v, x=@{...}, @sleep 0, a request to the session
+             and a module command, and ceilings on fused statements (about 2.5 times their first
+             measured cost); fused against per-operator results on random expressions; thread
+             scaling (MILK_CALC_THREADS); the statement cache, the temporaries pool, kept `/=` and
+             scalar reductions in milk.calc, the s.X statistics cache, @waitfor's pinned
+             mappings, @grab outside the command lock, piped milk-cli batches, BLAS and LAPACK
+             accuracy, non-power-of-2 sizes and fused complex parts; the tick cost of
+             self-triggered milk.calc units.
+Covers:      milk-script, milk-cli and milk-fpsexec-milk-calc; the calculator (src/calc:
+             mc_eval.c statement cache, run/mc_out.c temporaries pool, linalg/), its thread team
+             (src/engine/libmilkcommon/milk_omp_team.c), src/prop (milk_shm_prop_stream.c
+             statistics cache, milk_shm_cache.c pinned mappings), @waitfor
+             (libmilkscript/ipc/milk_waitfor.c), @grab (libmilkscript/server/milk_server_stream.c).
+Uses:        conftest.py: _run, _isolated_shm_env, _install_dir.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; python/tests/perf/calc_bash_bench.py
+             and unit_tick_bench.py (the same costs as tables); fused_views_test.py.
+Constraints: the times depend on the host: MILK_PERF_TESTS=0 skips the perf_timing tests (latency
+             ceilings, thread scaling, unit ticks), and the latency test skips itself on a loaded
+             host or an unoptimized build; the piped milk-cli and matmul tests keep loose time
+             limits. The latency, piped milk-cli and matmul runs are pinned to one CPU when
+             taskset is installed.
+"""
 
 from __future__ import annotations
 
@@ -40,7 +66,7 @@ def _pinned_argv(exe: str, *args: str) -> list[str]:
 
 @perf_timing
 def test_perf_latency_ceilings(tmp_path: Path):
-    """Verify L0 shell/IPC call latencies and fused calculator statement ceilings (~2.5x Step 0)."""
+    """Verify per-call latencies and fused statement ceilings (~2.5x the costs first measured)."""
     env, shm_dir = _isolated_shm_env({"OMP_NUM_THREADS": "1"})
     try:
         exe = str(_install_dir() / "bin" / "milk-script")
@@ -69,7 +95,7 @@ def test_perf_latency_ceilings(tmp_path: Path):
             "t1=$EPOCHREALTIME",
             '@calc "cal_us = ($t1 - $t0) * 1e6 / 200"',
             'echo "PERF_cal_us=@{cal_us}"',
-            # L0 per-call benchmarks (best of 3 batches of 200)
+            # per-call benchmarks (best of 3 batches of 200)
             "best_calc=1e9; best_get=1e9; best_at=1e9; best_sleep=1e9; best_srv=1e9; best_cmd=1e9",
             "for rep in 1 2 3; do",
             "  t0=$EPOCHREALTIME",

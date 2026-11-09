@@ -1,8 +1,23 @@
-"""
-Removed forms fail with a hint naming their replacement, and the install keeps none of them: the
-sequencer (milk-seq, its commands and the `q.` namespace), and the tmux-era unit interface (the tmux
-API, milk-cli's unit arguments, the command FIFO, the fpslist.txt deployment scripts and the tmux
-fields). The stream logger, which ran in tmux, is a unit.
+"""Removed forms fail with a hint naming their replacement, and the install keeps none of them.
+
+Purpose:     an old script or habit gets its replacement in the error message, not "command not
+             found" or a silent wait; nothing of the removed parts stays installed or linked.
+Does:        the sequencer (milk-seq, `seq.*`, and the `q.` namespace in @get, @exists, @waitfor,
+             @calc and @ls); the tmux-era unit interface: milk-cli's unit arguments (_RUNSTART_,
+             ...), the fpslist.txt deployment and tmux scripts, the FIFO and tmux headers,
+             fpsCTRL's command FIFO options, `p.X.tmux` (now `p.X.unit`); the stream logger, which
+             ran in tmux, runs as a unit; removed calculator spellings (ln, fabs, urand, grand,
+             nrm2, trunc, _PI, `if ... end`, `for ... end`, --tokens).
+Covers:      the rename table (libmilkscript/core/milk_renames.c, `milkls --rename`), the `q.`
+             hint (src/prop/milk_entity_ns.h), the unit-argument check
+             (libmilkscript/core/CLIcore_checkargs_fps.c), src/tui/fpsCTRL/milk-fpsCTRL.c,
+             src/prop/milk_shm_prop_proc.c (p.X.unit), the calculator's hints (src/calc/mc_func.c,
+             front/mc_parse.c, front/mc_resolve.c), milk-streamFITSlog and milk-logshim-ctrl
+             (src/coremods/COREMOD_memory).
+Uses:        conftest.py: milk_bash, milk_cli_script, value, CAM, _install_dir;
+             unit_lifecycle_test.py: FUNCS and the autouse no_worker_left fixture.
+See also:    docs/arch/unit_lifecycle.md, "Removed, with a hint"; docs/guide/scripting.md,
+             "Migrating Old Scripts".
 """
 
 from __future__ import annotations
@@ -51,8 +66,8 @@ GONE_HEADERS = (
 
 
 def test_seq_commands_fail_with_hint(tmp_path: Path):
-    """Item 34: seq.* exit 127 naming a milk script; milk-seq has the same entry (PATH may hold an
-    older install's binary, so the table is asked directly)."""
+    """seq.* exit 127 naming a milk script; milk-seq has the same entry (PATH may hold an older
+    install's binary, so the table is asked directly)."""
     res = milk_bash(
         'seq.list; echo "list=$?"\n'
         'seq.start loop -f a.seq; echo "start=$?"\n'
@@ -68,8 +83,8 @@ def test_seq_commands_fail_with_hint(tmp_path: Path):
 
 
 def test_q_lookups_fail_with_hint(tmp_path: Path):
-    """Item 34: q. lookups fail at once (no wait until the timeout); milk-cli prints the hint once,
-    not once in the prompt and again in its server."""
+    """q. lookups fail at once (no wait until the timeout); milk-cli prints the hint once, not once
+    in the prompt and again in its server."""
     res = milk_cli_script(
         '@get q.x.status; echo "get=$?"\n'
         '@exists q.x; echo "exists=$?"\n'
@@ -93,7 +108,7 @@ def test_q_lookups_fail_with_hint(tmp_path: Path):
 
 
 def test_ls_lists_no_sequencer(tmp_path: Path):
-    """Item 34: @ls ignores a leftover sequencer state file and has no sequencer column."""
+    """@ls ignores a leftover sequencer state file and has no sequencer column."""
     res = milk_bash(
         ': > "$MILK_SHM_DIR/milkseq.oldq.shm"\n'
         "@ls; @ls -l; @ls -1\n"
@@ -112,8 +127,7 @@ def test_ls_lists_no_sequencer(tmp_path: Path):
 
 
 def test_install_has_no_sequencer():
-    """Item 35: no milk-seq file in the install, and milk-cli, milkbash and milk-fpsCTRL do not link
-    it."""
+    """No milk-seq file in the install, and milk-cli, milkbash and milk-fpsCTRL do not link it."""
     inst = _install_dir()
     for rel in (
         "bin/milk-seq",
@@ -142,8 +156,8 @@ def test_install_has_no_sequencer():
 
 
 def test_cli_unit_arguments_fail_with_hint(tmp_path: Path):
-    """milk-cli no longer hosts units (U2): _RUNSTART_, _TMUXSTART_ and the others fail, naming the
-    fpsexec binary."""
+    """milk-cli no longer hosts units (docs/arch/unit_lifecycle.md, U2): _RUNSTART_, _TMUXSTART_
+    and the others fail, naming the fpsexec binary."""
     res = milk_bash(
         'mem.streamdelay _RUNSTART_ sd1; echo "run=$?"\n'
         'mem.streamdelay _TMUXSTART_ sd1; echo "tmux=$?"\n'
@@ -181,8 +195,8 @@ def test_removed_scripts_and_headers(tmp_path: Path):
 
 
 def test_fpsctrl_fifo_options_fail(tmp_path: Path):
-    """fpsCTRL's -f/--fifo and -s/--stdio went with the command FIFO (U12): status 2, naming the tools
-    to use instead."""
+    """fpsCTRL's -f/--fifo and -s/--stdio went with the command FIFO
+    (docs/arch/unit_lifecycle.md, U12): status 2, naming the tools to use instead."""
     res = milk_bash(
         'milk-fpsCTRL -f nofifo; echo "f=$?"\nmilk-fpsCTRL --stdio; echo "s=$?"',
         tmp_path,

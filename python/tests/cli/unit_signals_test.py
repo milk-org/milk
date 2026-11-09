@@ -1,7 +1,17 @@
-"""
-Phase 0 of the unit-lifecycle plan (processinfo runtime fixes, U14), on a real milk.calc unit:
-SIGTERM ends an idle loop, a fault kills the unit as CRASHED instead of being swallowed, and a stop
-request that a frame wakes up ends the loop without computing that frame.
+"""A unit's loop ends on SIGTERM, dies as CRASHED on a fault, and computes no frame after a stop.
+
+Purpose:     a unit is stopped by a request, then by signals, and a fault must kill it rather than
+             be swallowed; the processinfo loop handles both (docs/arch/unit_lifecycle.md, U14).
+Does:        on a real milk.calc unit: SIGTERM ends a loop waiting on its trigger stream, through
+             the loop's own exit (status 0); SIGSEGV ends the unit with that signal and leaves
+             loopstat CRASHED (6) in its processinfo; after `ctrl=stop`, the frame that wakes the
+             loop is not computed.
+Covers:      the loop macros (src/engine/libcomputeunit/fps_procinfo_macros.h),
+             src/engine/libprocessinfo/processinfo_signals.c and processinfo_loopstep.c, as
+             milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c) runs them.
+Uses:        conftest.py: milk_bash, value; the HELPERS shell functions (start_unit, gone_within).
+See also:    docs/arch/unit_lifecycle.md, "Decisions";
+             src/engine/libprocessinfo/tests/test_processinfo_signals.c; unit_lifecycle_test.py.
 """
 
 from __future__ import annotations

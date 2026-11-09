@@ -1,8 +1,17 @@
-"""
-Tests for `@calc --explain` and the one-time "statement not kept" note of milk.calc units (P7 of the
-2026-10-27 engine review): every statement a unit would evaluate as text each tick is named once at
-compile time with the limit or construct that stopped fusion, and `--explain` reports per statement
-whether it is kept (fused pass, merged pass, scalar tape) or evaluated as text and why.
+"""`@calc --explain`: how each statement of a program would run, without running it.
+
+Purpose:     to tune a unit, a user must see whether each statement became a fused pass, a pass
+             merged into an earlier one, a scalar tape or a library step, and which limit applies.
+Does:        checks the report line of each kind (fused pass with its shape and precision, merged
+             pass, scalar tape, def), the FUSE_MAXDST note for more than four targets, a compile
+             error, that --explain changes no image and keeps its defs and history rings out of
+             the session, and that a unit whose statements are all kept prints no "is not kept"
+             note.
+Covers:      mcalc_prog_explain() (src/calc/plan/mc_explain.c), which the session runs for
+             `@calc --explain` (src/cli/libmilkscript/server/milk_server_eval.c);
+             milk-fpsexec-milk-calc.
+Uses:        conftest.py: milk_bash, value, CAM, UNIT_HELPERS.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; calc_superinstructions_test.py.
 """
 
 from __future__ import annotations
@@ -33,7 +42,7 @@ def _line_after(out: str, stmt: str) -> str:
 
 
 def test_explain_reports_how_each_statement_runs(tmp_path):
-    """Fused pass, merged pass, scalar tape, def, and two text fallbacks with their reasons."""
+    """Fused pass, merged pass, scalar tape and def; `cplx` and a binned slice are fused too."""
     res = milk_bash(
         'mem.mk2Dim "@S:cam" 64 64 >/dev/null; mem.mk2Dim dark 64 64 >/dev/null; @calc "cam = 3; dark = 1; g = 2.0; n = 0"\n'
         '@calc --explain "out = (cam - dark) * g; local t = out + 1; out2 = t * 2; m = imean(out); '
@@ -91,7 +100,7 @@ def test_explain_names_limits_and_compile_errors(tmp_path):
 
 
 def test_unit_notes_each_text_statement_once(tmp_path):
-    """A unit says once, at compile, which statement it evaluates as text and why; kept ones are silent."""
+    """A unit whose statements are all kept (`cplx` included) prints no "is not kept" note."""
     (tmp_path / "prog.calc").write_text(
         "out = cam * 2\nz = cplx(out, out)\nok = out + 1\n"
     )

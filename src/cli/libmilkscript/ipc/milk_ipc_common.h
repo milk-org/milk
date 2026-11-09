@@ -6,13 +6,24 @@
  * @file milk_ipc_common.h
  * @brief Shared socket, environment, binary lookup, and daemon-spawning helpers.
  *
- * Role & Goal:
- *   Consolidates all low-level IPC and shell-hook primitives shared between
- *   the milk client (`milk_client_conn.c`, `milk_client_ops.c`) and the
- *   multi-server lifecycle manager (`milk_sessions.c`, `milk_srvlog.c`).
- *   Eliminates duplicated socket resolution, binary discovery, shell variable
- *   propagation (`MILK_CALL_EVAL_FD`), ping/shutdown handshakes, and
- *   double-fork daemon spawning.
+ * Purpose:     the client, the session commands and the log reader find a shell's session, set
+ *              its variables and start or stop a server in one way.
+ * Does:        reads and sets the caller's variables (through the hooks in a builtin, else the
+ *              environment and $MILK_CALL_EVAL_FD), refusing the names that steer the shell;
+ *              runs shell code in the caller; resolves the session a shell uses ($MILKCLI_SOCK,
+ *              the shell's override file that `@session use` writes, else the shell's own);
+ *              finds milk-cli; connects, refusing a socket another user holds; pings and shuts
+ *              down a server; starts `milk-cli -q --server` detached and waits until it is
+ *              ready; reads one `@set` item.
+ * Used by:     the client (milk_client_conn.c, milk_client_ops.c, milk_client_stream.c,
+ *              milk_client_args.c), milk_sessions.c, milk_srvlog.c; the server: milk_server.c
+ *              (milk_ipc_peer_is_self()), milk_server_dispatch.c (milk_set_item()),
+ *              milk_server_admin.c.
+ * Uses:        milk_client.h (the hooks), milk_proto.h, milk_detach.h (starting a server),
+ *              milk_syscalls.h (a process's start time), milk_entity_ns.h, milk_srvlog.h (the
+ *              server's output file).
+ * See also:    milk_ipc_common.c; docs/guide/sessions.md, "Managing Sessions (`@session`)".
+ * Constraints: compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef MILK_IPC_COMMON_H

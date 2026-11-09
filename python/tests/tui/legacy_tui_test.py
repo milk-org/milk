@@ -1,4 +1,18 @@
-"""Consolidated tests for legacy TUIs (milk-fpsCTRL, milk-procCTRL, milk-streamCTRL) and companion tools."""
+"""The legacy TUIs (milk-fpsCTRL, milk-procCTRL), milk-streamCTRL and milk-procinfo-info.
+
+Purpose:     these tools also run from scripts: their exit statuses and the terminal state they
+             leave matter, and looking at a stream must not change it.
+Does:        an unknown option exits 2; milk-streamCTRL and milk-fpsCTRL leave stdin blocking
+             after they quit; milk-procCTRL without its scanner daemon says so and exits 1;
+             milk-streamCTRL inspects a stream without writing to it; milk-procinfo-info shows
+             the state, CTRL and trigger-mode labels of a processinfo entry.
+Covers:      milk-fpsCTRL (src/tui/fpsCTRL), milk-procCTRL (src/tui/procCTRL), milk-streamCTRL
+             (milk-CTRL started under that name: src/cli/overview), milk-procinfo-info
+             (src/cli/overview/tools/milk-procinfo-info.c).
+Uses:        conftest.py: tui_env, legacy_pane, entities.
+See also:    docs/guide/fpsCTRL_reference.md; docs/guide/milk-CTRL.md, "Streams view (F3)";
+             docs/guide/procinfo.md.
+"""
 
 from __future__ import annotations
 

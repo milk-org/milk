@@ -4,7 +4,18 @@
 
 /**
  * @file CLIcore_vars.c
- * @brief CLI variable table and environment synchronization
+ * @brief The calculator's string variables, and their export to the bash co-process.
+ *
+ * Purpose:     the calculator keeps numbers itself (dcvar) and asks its host for string
+ *              variables; this table is that host store in milk-cli, milk-script and a session.
+ * Does:        registers cli_var_get() and cli_var_set() with the calculator when the library
+ *              loads (mcalc_set_host()); creates, updates and removes variables; copies them
+ *              into the environment just before the bash co-process is forked. Also defines
+ *              the globals cli_last_retval, cli_float_digits and cli_calc_mode.
+ * Used by:     the calculator, through mcalc_host.h; milk_server_vars.c (a session sets
+ *              variables); milk_bash_coproc.c (the export); CLIcore_UI_completion.c. Declared
+ *              in CLIcore_script.h.
+ * Uses:        calc/mcalc.h and calc/mcalc_host.h.
  */
 
 #include <stdio.h>

@@ -1,5 +1,22 @@
-"""30-case calculator micro-benchmark at 256^2 and 2048^2 (§5 Phase 3, §6.4), plus spatial
-kernels at 256^2 and library kernels (order statistics, argmax, FFT) at 256^2 and 2048^2."""
+"""Calculator speed: 30 statements against the old calculator's times, and kernel cache reuse.
+
+Purpose:     keep the compiled passes faster than the calculator they replaced, and keep a
+             statement run in a loop from compiling a new kernel at each call.
+Does:        times 30 statements (element-wise, math, reductions) at 256^2 and 2048^2 with
+             mcalc_prog_run() and a C timing helper, prints them next to the old calculator's
+             reference times, and requires a 1.8x geometric-mean speedup on the element-wise
+             ones at 256^2; prints the times of the spatial kernels (256^2) and of order
+             statistics, argmax and FFT (256^2, 2048^2); checks that 50 slice bounds or
+             shift/roll offsets, and runs on two CPUs, compile one cached .so.
+Covers:      libmilkcalc: mcalc_prog_new() and mcalc_prog_run() (src/calc/run/mc_prog.c),
+             mcalc_eval_str() (src/calc/mc_eval.c), the kernel cache (src/calc/jit/mc_cc.c,
+             MILK_CALC_CACHE); @calc.
+Uses:        conftest.py: milk_bash, _install_dir; ctypes on the install's libmilkscript.so;
+             $CC (default gcc) to build the timing helper.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; python/tests/perf/calc_bash_bench.py.
+Constraints: MILK_PERF_TESTS=0 skips the timing tests; the 1.8x check compares with fixed
+             reference times (one thread, pinned, best of 7 runs); 300 s per test.
+"""
 
 from __future__ import annotations
 
@@ -85,7 +102,7 @@ LIBRARY_CASES: list[tuple[int, str, str, int]] = [
     (42, "library", "R = ifft(F)", 20),
 ]
 
-# Phase 9 old-calculator reference baseline (us, single-thread pinned, best of 7 runs)
+# Reference times of the old calculator (us, single thread, pinned, best of 7 runs)
 OLD_REF_TIMES_US: dict[int, dict[int, float]] = {
     256: {
         1: 6.738,

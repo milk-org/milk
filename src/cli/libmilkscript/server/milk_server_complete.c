@@ -6,12 +6,22 @@
  * @file milk_server_complete.c
  * @brief Tab-completion handler for the milk-cli server.
  *
- * Role & Goal:
- *   `milk_complete()` is the one completer: bash (`milkcomplete`, through
- *   `milk_server_handle_complete()`) and the milk-cli prompt use it. It completes command names
- *   (`comp_type == "cmd"`: `@keywords` and `module.command`s), command arguments (modifiers `@T*:`,
- *   local images, SHM streams, `s.<stream>.`, `f.<fps>.`, keyword options and words from the
- *   lexicon) and calculator text (function, variable and image names).
+ * Purpose:     one completer serves every front end, in the process that knows the session's
+ *              commands, images and variables.
+ * Does:        milk_complete() completes command names (`@keywords` and `module.command`s),
+ *              command arguments (modifiers `@T*:`, local images, streams, FPSs and processes in
+ *              shared memory, `s.<stream>.` and `f.<fps>.` properties, `.tag` parameters,
+ *              keyword options and words from the keyword table) and calculator text
+ *              (functions, variables, images, entity paths); leaves file names to the caller,
+ *              which lists its own directory. The `cmd` list also gives a shell the functions
+ *              of new module commands.
+ * Used by:     milk_server.c (COMPLETE requests: bash's `milkcomplete`, and milk_client_conn.c
+ *              after the registry changes); the milk-cli prompt (CLIcore_UI_completion_tab.c).
+ *              Declared in milk_server_internal.h and milk_server.h.
+ * Uses:        milk_keywords.h, milk_cmd_index.h and data.cmd[] (the commands), ImageStreamIO,
+ *              fps.h, milk_shm_prop.h and milk_stream_props.h (entities), mc_func.h (the
+ *              calculator's functions).
+ * See also:    docs/guide/CLIcore.md, "Tab Completion".
  */
 
 #ifndef _GNU_SOURCE
@@ -139,7 +149,8 @@ static void complete_stream_attrs_ns(const char *lead,
 }
 
 /**
- * @brief Append argument completions (modifiers, local images, SHM streams/FPS/proc/seq) matching @prefix.
+ * @brief Append argument completions (modifiers, local images, SHM streams/FPS/proc) matching
+ *        @prefix.
  */
 static size_t complete_arguments(const char *prefix, char *out, size_t outsz)
 {

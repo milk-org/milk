@@ -1,12 +1,35 @@
-"""
-Phase 1 of the unit-lifecycle plan (U3-U11): `runstart` starts a detached worker and returns once its
-loop is active, `runstop` asks it to exit then signals it, and each unit records its processes and
-output in <shm>/<name>.fps.d/. The plan's §7 item numbers are in each test's docstring. Phase 2's
-shell front-end (`@set f.X.run|conf`, the state properties, `@waitfor f.X running|stopped`) is at the
-end.
+"""Units start detached and stop on request, from the tools and from the shell, and record it all.
 
-Units are milk.calc units, or `ltunit`, a C unit built here with milk-cc that sleeps and prints on
-demand. Workers live in their own session: a fixture kills those a test leaves behind.
+Purpose:     units run without tmux or a daemon (docs/arch/unit_lifecycle.md, U1 to U11):
+             `runstart` starts a detached worker and returns once its loop is active, `runstop`
+             asks it to exit, then signals it, and each unit records its processes and output in
+             <shm>/<name>.fps.d/. The shell, the TUIs, scripts and Python rely on these states.
+Does:        runstart readiness; parameter-check and setup failures, a start timeout (124), a
+             missing executable; a stop by request, or by SIGINT without processinfo; workers that
+             outlive their starter and leave no zombie; concurrent starts that make one worker;
+             the environment snapshot and .procinfo.NBthread in the worker; output rotation,
+             the last lines before a crash, removal; no inherited descriptors; the foreground
+             modes and the removed -tmux; a killed worker reads `failed`; a dead worker's
+             processinfo file moved to run.procinfo.1; a stopper with another MILK_PROC_DIR;
+             fpsinit adds processinfo; a unit directory off tmpfs warns; a group-writable FPS is
+             refused. Then the shell side: `@set f.X.run|conf`, the state properties,
+             `@waitfor f.X running|stopped`, f.X.run.out. Last, units at run time: no RT
+             priority by default, a re-created trigger stream remapped, an ON flag by default
+             that reaches the unit, a taskset CPU mask kept.
+Covers:      the unit verbs and tools (src/engine/libcomputeunit: core/fps_standalone_main.c,
+             core/fps_unit_startstop.c, tools/milk-fps-cmd.c, tools/milk-fps-rm.c), the unit
+             directory and states (src/engine/libfps: core/fps_unit_state.c,
+             tools/milk-fps-list.c), the detached-process layer
+             (src/engine/libmilkcommon/process/milk_detach.c), the shell side
+             (src/prop/milk_shm_prop_fps.c, libmilkscript/ipc/milk_waitfor.c), the processinfo
+             loop, milk-fpsexec-milk-calc and milk-cc.
+Uses:        conftest.py: milk_bash, value, UNIT_HELPERS, _run, _isolated_shm_env, _install_dir;
+             the FUNCS and HELPERS shell functions; `ltunit` (LTUNIT_C), a C unit built here with
+             milk-cc that sleeps and prints on demand; the autouse no_worker_left fixture, which
+             kills the workers a test leaves (they live in their own session).
+See also:    docs/arch/unit_lifecycle.md; docs/guide/fps.md, "3. Running Units";
+             removed_forms_test.py, unit_systemd_test.py and python/tests/tui/unit_tui_test.py,
+             which import FUNCS, LTUNIT_C or the fixtures; server_lifecycle_test.py.
 """
 
 from __future__ import annotations
@@ -174,7 +197,7 @@ def out_of(res: subprocess.CompletedProcess[str], tmp_path: Path) -> str:
 
 
 def test_runstart_returns_once_the_loop_runs(tmp_path):
-    """Item 1: runstart returns with the loop active and the process alive; runstop returns once the
+    """runstart returns with the loop active and the process alive; runstop returns once the
     process is gone; run.info has the exit and the stop lines."""
     res = lt_bash(
         "calc_unit l1 o1\n"
@@ -201,7 +224,7 @@ def test_runstart_returns_once_the_loop_runs(tmp_path):
 
 
 def test_parameter_check_failure_is_reported(tmp_path, ltunit):
-    """Item 2: a parameter check failure exits 1 with the messages, leaves no worker, and run.out
+    """A parameter check failure exits 1 with the messages, leaves no worker, and run.out
     says why."""
     res = lt_bash(
         "$LT -n l2 fpsinit .in=nosuch >/dev/null\n"
@@ -223,7 +246,7 @@ def test_parameter_check_failure_is_reported(tmp_path, ltunit):
 
 
 def test_setup_failure_is_never_ready(tmp_path):
-    """Item 3: a compute function that fails in its own setup (missing trigger stream) makes runstart
+    """A compute function that fails in its own setup (missing trigger stream) makes runstart
     fail; it never reports ready."""
     res = lt_bash(
         'milk-fpsexec-milk-calc -n l3 -t nosuch -e "o3 = nosuch * 2" fpsinit >/dev/null\n'
@@ -238,7 +261,7 @@ def test_setup_failure_is_never_ready(tmp_path):
 
 
 def test_slow_start_times_out_then_runs(tmp_path, ltunit):
-    """Item 4: a loop not active within --timeout gives 124 and state starting, then running."""
+    """A loop not active within --timeout gives 124 and state starting, then running."""
     res = lt_bash(
         "$LT -n l4 fpsinit .delay=1.5 >/dev/null\n"
         '$LT -n l4 --timeout 0.3 runstart >start.log 2>&1; echo "start=$?"\n'
@@ -254,7 +277,7 @@ def test_slow_start_times_out_then_runs(tmp_path, ltunit):
 
 
 def test_missing_executable_is_reported(tmp_path, ltunit):
-    """Item 5: a start whose execfullpath is gone reports ENOENT."""
+    """A start whose execfullpath is gone reports ENOENT."""
     res = lt_bash(
         'cp "$LT" ./milk-fpsexec-ltunit\n'
         "./milk-fpsexec-ltunit -n l5 fpsinit >/dev/null\n"
@@ -271,7 +294,7 @@ def test_missing_executable_is_reported(tmp_path, ltunit):
 
 
 def test_idle_loop_stops_on_request(tmp_path):
-    """Item 6: an idle semaphore loop stops through the request in under 1 s, without a signal, and
+    """An idle semaphore loop stops through the request in under 1 s, without a signal, and
     the wake-up does not compute."""
     res = lt_bash(
         "calc_unit l6 o6\n"
@@ -294,7 +317,7 @@ def test_idle_loop_stops_on_request(tmp_path):
 
 
 def test_unit_without_processinfo_is_stopped_by_sigint(tmp_path, ltunit):
-    """Item 7: a unit without processinfo has no request to answer: stop goes straight to SIGINT."""
+    """A unit without processinfo has no request to answer: stop goes straight to SIGINT."""
     res = lt_bash(
         "$LT -n l7 --no-procinfo fpsinit .hold=30 >/dev/null\n"
         '$LT -n l7 runstart >/dev/null; echo "start=$?"\n'
@@ -320,7 +343,7 @@ def _bash_in(
 
 
 def test_unit_outlives_its_starter_and_leaves_no_zombie(tmp_path):
-    """Item 11: the worker survives its starter's whole session; 20 start/stop cycles from this
+    """The worker survives its starter's whole session; 20 start/stop cycles from this
     process leave it no child."""
     env, shm_dir = _isolated_shm_env()
     try:
@@ -355,7 +378,7 @@ def test_unit_outlives_its_starter_and_leaves_no_zombie(tmp_path):
 
 
 def test_concurrent_starts_make_one_worker(tmp_path):
-    """Item 12: three processes, and two threads of one process, start one unit: one worker."""
+    """Three processes, and two threads of one process, start one unit: one worker."""
     lib = _install_dir() / "lib" / "libmilkcomputeunit.so"
     threads = (
         "import ctypes, sys, threading\n"
@@ -386,7 +409,7 @@ def test_concurrent_starts_make_one_worker(tmp_path):
 
 
 def test_environment_snapshot_reaches_the_worker(tmp_path):
-    """Item 13: a variable set when fpsinit ran reaches the worker though its starter lacks it, and
+    """A variable set when fpsinit ran reaches the worker though its starter lacks it, and
     .procinfo.NBthread sets the OpenMP team the worker actually runs."""
     res = lt_bash(
         "export LTVAR=captured; calc_unit l13 o13; unset LTVAR\n"
@@ -405,7 +428,7 @@ def test_environment_snapshot_reaches_the_worker(tmp_path):
 
 
 def test_output_files_rotate_survive_a_crash_and_go_with_the_fps(tmp_path, ltunit):
-    """Item 14: output past MILK_UNIT_OUT_MAX rotates; the last lines before a crash are kept;
+    """Output past MILK_UNIT_OUT_MAX rotates; the last lines before a crash are kept;
     the next start rotates; milk-fps-rm removes the unit directory and the processinfo files.
     """
     res = lt_bash(
@@ -438,7 +461,7 @@ def test_output_files_rotate_survive_a_crash_and_go_with_the_fps(tmp_path, ltuni
 
 
 def test_worker_inherits_no_descriptor(tmp_path):
-    """Item 15: the worker holds none of its starter's descriptors and no ready pipe once ready."""
+    """The worker holds none of its starter's descriptors and no ready pipe once ready."""
     res = lt_bash(
         "calc_unit l15 o15\n"
         'exec 7>"$PWD/held.txt"\n'
@@ -460,7 +483,7 @@ def test_worker_inherits_no_descriptor(tmp_path):
 
 
 def test_foreground_modes_and_no_tmux(tmp_path):
-    """Item 16: run, --fg and MILK_UNIT_FG=1 stay in the foreground; a worker runs with --fg and
+    """run, --fg and MILK_UNIT_FG=1 stay in the foreground; a worker runs with --fg and
     starts no other; -tmux fails with a hint."""
     res = lt_bash(
         "calc_unit l16 o16\n"
@@ -488,7 +511,7 @@ def test_foreground_modes_and_no_tmux(tmp_path):
 
 
 def test_killed_worker_is_failed_and_its_bits_cleared(tmp_path):
-    """Item 17: after kill -9 the state is failed with no exit record, and the stale run bits are
+    """After kill -9 the state is failed with no exit record, and the stale run bits are
     cleared."""
     res = lt_bash(
         "calc_unit l17 o17\n"
@@ -509,7 +532,7 @@ def test_killed_worker_is_failed_and_its_bits_cleared(tmp_path):
 
 
 def test_crash_leftover_processinfo_is_moved(tmp_path):
-    """Item 27: after a crash, the next start moves the dead worker's processinfo file to
+    """After a crash, the next start moves the dead worker's processinfo file to
     run.procinfo.1; the proc directory keeps none of it."""
     res = lt_bash(
         "calc_unit l27 o27\n"
@@ -530,7 +553,7 @@ def test_crash_leftover_processinfo_is_moved(tmp_path):
 
 
 def test_stopper_with_another_proc_dir(tmp_path):
-    """Item 28: a stopper whose MILK_PROC_DIR differs from the worker's still stops it through
+    """A stopper whose MILK_PROC_DIR differs from the worker's still stops it through
     CTRLval (procdir from run.info)."""
     res = lt_bash(
         'mkdir -p "$U/pa" "$U/pb"; calc_unit l28 o28\n'
@@ -546,7 +569,7 @@ def test_stopper_with_another_proc_dir(tmp_path):
 
 
 def test_fpsinit_adds_processinfo_by_default(tmp_path, ltunit):
-    """Item 29: fpsinit adds the processinfo entries; --no-procinfo makes a one-shot unit."""
+    """fpsinit adds the processinfo entries; --no-procinfo makes a one-shot unit."""
     res = lt_bash(
         "$LT -n l29 fpsinit >/dev/null\n"
         'echo "pinfo=$(@get f.l29.procinfo.loopcntMax)"\n'
@@ -566,7 +589,7 @@ def test_fpsinit_adds_processinfo_by_default(tmp_path, ltunit):
 
 
 def test_unit_dir_off_tmpfs_warns(tmp_path):
-    """Item 31: a unit whose directory is not on tmpfs starts, with a warning in run.out."""
+    """A unit whose directory is not on tmpfs starts, with a warning in run.out."""
     base = Path(tempfile.mkdtemp(prefix="milk-ul-", dir="/var/tmp"))
     try:
         if (
@@ -592,7 +615,7 @@ def test_unit_dir_off_tmpfs_warns(tmp_path):
 
 
 def test_group_writable_fps_is_refused(tmp_path):
-    """Item 33: an FPS file that group or others can write is refused."""
+    """An FPS file that group or others can write is refused."""
     res = lt_bash(
         'calc_unit l33 o33; chmod g+w "$U/l33.fps.shm"\n'
         'milk-fps-runstart l33 >start.log 2>&1; echo "start=$?"',
@@ -604,7 +627,7 @@ def test_group_writable_fps_is_refused(tmp_path):
     assert "writable by group or others" in (tmp_path / "start.log").read_text(), out
 
 
-# ---- Phase 2: the shell front-end (U10, U11) ----
+# ---- The shell side (docs/arch/unit_lifecycle.md, U10, U11) ----
 
 
 def test_set_run_and_conf_report_unit_states(tmp_path):
@@ -648,7 +671,7 @@ def test_set_run_and_conf_report_unit_states(tmp_path):
 
 
 def test_set_failures_run_once_with_a_hint(tmp_path, ltunit):
-    """A failed @set f.X.run=start runs once, never again through the server (D29); :tmux and bad
+    """A failed @set f.X.run=start runs once, never again through the server; :tmux and bad
     values fail with a hint; a start timeout exported in the shell reaches the tool."""
     res = lt_bash(
         "$LT -n s2 fpsinit .in=nosuch >/dev/null\n"
@@ -717,6 +740,9 @@ def test_run_out_property(tmp_path):
     out = out_of(res, tmp_path)
     assert value(res.stdout, "never") == "[]", out
     assert value(res.stdout, "last") == "1" and value(res.stdout, "first") == "1", out
+
+
+# ---- Units at run time: RT priority, trigger stream, flag defaults, CPU mask ----
 
 
 def test_unit_start_requests_no_rt_priority(tmp_path):

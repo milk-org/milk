@@ -4,13 +4,28 @@
 
 /**
  * @file milk_sessions.c
- * @brief Sessions: the `@session` keyword (status, ls, new, use, leave, who, end, prune, log).
+ * @brief Sessions: the `@session` keyword (status, ls, new, use, leave, who, end, prune, save,
+ *        log).
  *
- * A session is a milk-cli server: a shell's own (named after the shell's PID, started on its first
- * command), milk-cli's or milk-script's (in its process), or a named one (`@session new NAME`), detached and shared by
- * the shells that use it. A shell records the session it uses in an override file
- * (milk_ipc_set_var()); units record the session that started them in their run.info. Servers start
- * and stop through milk_ipc_common.h and milk_detach.h.
+ * Purpose:     a shell sees and manages sessions without asking them: what it needs is in their
+ *              log files, the shells' override files and the units' run records. A session is a
+ *              milk-cli server: a shell's own (named after the shell's PID, started on its first
+ *              command), milk-cli's or milk-script's (in its process), or a named one
+ *              (`@session new NAME`), detached and shared by the shells that use it.
+ * Does:        lists sessions from their log headers, and the shells that use one from their
+ *              override files (milk_ipc_set_var()); starts a named session; moves the shell to
+ *              another; ends one (its shutdown command, then signals to the identity it recorded)
+ *              and the units it started (their run.info or conf.info names it); removes what
+ *              ended sessions and exited shells left; sends `save` to the session.
+ * Used by:     milk_client_session() (milk_client_stream.c), for `@session` in a shell; the
+ *              server's milk_server_dispatch.c; CLIcore.c (`milk-cli --session`);
+ *              milk_server.c (--idle: the shells that use it) and milk_server_admin.c (the units
+ *              `@session save` lists). Declared in milk_srvlog.h.
+ * Uses:        milk_srvlog.h (the log layout, the files of a session), milk_ipc_common.h (ping,
+ *              shutdown, starting a server), milk_detach.h (process identities and signals),
+ *              fps_unit_startstop.h and fps_unit_state.h (the units of a session).
+ * See also:    milk_srvlog.c (@log); docs/guide/sessions.md, "Managing Sessions (`@session`)".
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef _GNU_SOURCE
@@ -480,7 +495,8 @@ static int session_listens(const char *sockpath)
 }
 
 /**
- * @brief Stop a single server by socket path: its shutdown command, then signals if it stays (U18).
+ * @brief Stop a single server by socket path: its shutdown command, then signals if it stays
+ * (docs/arch/unit_lifecycle.md, U18).
  * Return: 0 once it is gone, 1 if it is a busy milk-cli (it ends at its prompt), 2 if it still runs
  */
 static int stop_one_server(const char *sockpath)
@@ -1247,7 +1263,7 @@ static void print_session_help(void)
 }
 
 /**
- * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, log).
+ * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, save, log).
  */
 int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *hooks)
 {

@@ -4,12 +4,26 @@
 
 /**
  * @file mc_linalg.h
- * @brief Internal interface for linear algebra, FFT, and stacking in `libmilkcalc`.
+ * @brief Internal interface for linear algebra, FFT, stacking and C extension steps in
+ *        `libmilkcalc`.
  *
- * Declares shape/type resolution (`mc_resolve_linalg_call`) and runtime execution entry
- * points (`mc_exec_blas_call`, `mc_exec_lapack_call`, `mc_exec_fft_or_stack`,
- * `mc_exec_ext_ctor`, `mc_exec_multi_linalg_or_ext`) for
- * non-elementwise constructor steps.
+ * Purpose:     the calls a fused per-pixel pass cannot compute (matrix products, solvers,
+ *              decompositions, transforms, concatenation, C extension calls) run as constructor
+ *              steps (MC_STEP_CTOR) that write a whole output image; this header connects them
+ *              to the resolver, the planner and the executor.
+ * Does:        type checks at resolve time (mc_resolve_linalg_call(), mc_ext_resolve_call(),
+ *              mc_multi_lhs_is_image()); the planner's test for an assignment that lowers to one
+ *              in-place BLAS call (mc_is_blas_or_linalg_ctor()); execution, where
+ *              mc_exec_linalg_or_ext() routes a step to mc_exec_blas_call(),
+ *              mc_exec_lapack_call(), mc_exec_fft_or_stack(), mc_exec_ext_ctor() or
+ *              mc_exec_multi_linalg_or_ext(); and the executor's helpers these steps share
+ *              (mc_resolve_or_eval_im(), mc_select_ctor_out_dt(), mc_write_im_pix()).
+ * Used by:     front/mc_resolve.c, plan/mc_plan.c, run/mc_exec.c, run/mc_prestage.c,
+ *              ext/mc_ext_exec.c, and the linalg/ files.
+ * Uses:        plan/mc_plan.h (programs, slots, constructor steps), ImageStreamIO.
+ * See also:    linalg/mc_linalg_blas.c, linalg/mc_linalg_lapack.c, linalg/mc_fft_stack.c,
+ *              ext/mc_ext_exec.c (extension steps), run/mc_exec.c (the shared helpers);
+ *              docs/guide/calculator.md, "Functions".
  */
 
 #ifndef MILK_MC_LINALG_H

@@ -4,8 +4,23 @@
 
 /**
  * @file test_termview_unit.c
- * @brief Core unit tests for termview helpers. Built with the viewer's flags (Release: -Ofast), so
- *        a pass also proves the NaN/Inf guards survived the optimiser.
+ * @brief Unit tests of the termview helpers: NaN/Inf guards, LUT, name tables, range smoothing
+ *        and stream lifecycle.
+ *
+ * Purpose:     the helpers the viewer relies on, checked as users build them: the tests get the
+ *              viewer's flags (Release, the default: -Ofast), so a pass also proves the NaN/Inf
+ *              guards survived the optimiser.
+ * Does:        checks tv_finite(), tv_lut_idx(), tv_parse_double(), tv_view_sanitize() and
+ *              tv_fmt_len(); the name tables (non-empty, unique, exact or unique-prefix lookup);
+ *              the LUT (monotonic scalings, the NaN colour for every colormap and scaling); the
+ *              range smoothing; a stream removed, created again with another size and type,
+ *              then truncated in place.
+ * Used by:     ctest, as test termview_unit (label termview), when BUILD_TESTING is on.
+ * Uses:        termview_internal.h and the termview_core code under test (tv_cmap.c,
+ *              tv_image.c, tv_stream.c); ImageStreamIO, to create the test streams.
+ * See also:    docs/guide/termview.md, "Display range" and "Streams that change".
+ * Constraints: creates its streams in a new directory under /tmp, set as MILK_SHM_DIR for the
+ *              test and restored after.
  */
 
 #include <math.h>
@@ -324,7 +339,7 @@ static int mkstream(IMAGE *w, const char *name, uint32_t xs, uint32_t ys, uint8_
     return ImageStreamIO_createIm(w, name, 2, size, dt, 1, 0, 0) == IMAGESTREAMIO_SUCCESS ? 0 : -1;
 }
 
-/** Stream lifecycle: removed, created again with another geometry, truncated, replaced by junk. */
+/** Stream lifecycle: removed, created again with another geometry, truncated. */
 static void test_stream_lifecycle(void)
 {
     char dir[] = "/tmp/tvunit-XXXXXX";

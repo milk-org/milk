@@ -4,16 +4,25 @@
 
 /**
  * @file cli_treesitter_lexical.c
- * @brief Lexical analyzers for completion context, delimiter/keyword matching, and block counting.
+ * @brief Lexical scanners of the milk-cli prompt: completion context, matching delimiters and
+ *        block keywords, keyword and brace counts.
  *
- * Role & Goal:
- *   Provides fast, allocation-light lexical scanners used both as primary
- *   pre-checks and as fallbacks when Tree-sitter is unavailable or encountering
- *   in-progress edits:
- *   - Token prefix & statement boundary classification (`cli_ts_check_prefix_or_boundary_mode()`)
- *   - Lexical command/argument completion context (`cli_determine_mode_lexical()`)
- *   - Quote/comment-masked delimiter & keyword pair matching (`find_match_pair_lexical()`)
- *   - Quote, shell keyword, and block brace counters for diagnostics and auto-indent.
+ * Purpose:     completion, pair matching and block counts from the text alone, for a line that
+ *              does not parse yet (it is still being typed) and for a milk-cli built without
+ *              tree-sitter.
+ * Does:        cli_ts_shell_ctx() gives the shell context of each byte (code, quoted, comment,
+ *              here-document), the one quoting rule of these scanners;
+ *              cli_ts_check_prefix_or_boundary_mode() and cli_determine_mode_lexical() find the
+ *              completion context of a word; find_match_pair_lexical() finds the partner of the
+ *              delimiter or block keyword at the cursor; cli_ts_count_shell_keyword(),
+ *              cli_ts_count_block_braces() and the closer and transition line tests count the
+ *              blocks still open.
+ * Used by:     cli_treesitter_diag.c (diagnostics, completion context), cli_treesitter_format.c
+ *              (indentation), cli_treesitter.c (pair matching, the normalized parse).
+ * Uses:        bash/milk_shell_lex.h (msl_scan()), milk_entity_ns.h (entity paths), CLIcore.h
+ *              (the CLICOMPLETIONMODE_* contexts).
+ * See also:    cli_treesitter_internal.h (the declarations);
+ *              docs/guide/CLIcore.md, "Tab Completion".
  */
 
 #include <ctype.h>

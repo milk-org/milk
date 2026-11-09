@@ -1,4 +1,15 @@
-"""Dataset catalog (§6.2) for calculator expression testing."""
+"""Named datasets for generated calculator statements: image shapes, types and names.
+
+Purpose:     generated statements need inputs; a fixed catalog of shapes and value kinds (offset
+             frames, NaN and inf, integer limits, complex, masks, cubes, broadcast shapes, sizes
+             around block boundaries) makes the cases reproducible.
+Does:        DATASETS maps an ID to a DatasetSpec (description, shape, the names of its images
+             by kind and of its scalars); it describes the data, the caller creates it.
+             all_dataset_ids() lists the IDs (without the 1024^2 and 2048^2 sets by default),
+             offset_dataset_ids() the four offset frames used for reduction accuracy.
+Used by:     gen_expr.py; fused_views_test.py.
+See also:    extract_corpus.py.
+"""
 
 from __future__ import annotations
 

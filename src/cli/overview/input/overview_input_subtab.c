@@ -4,10 +4,26 @@
 
 /**
  * @file overview_input_subtab.c
- * @brief Clicks and keys of the sub-tab panel (DASH bottom-right, F6) and of F7's loop list
+ * @brief Clicks and keys of the sub-tab panel (DASH bottom-right, F6), and clicks in F7's loop
+ *        list.
  *
- * Sub-tab keys run before the generic toggles, so ENTER edits a DETAILS parameter instead of toggling
- * the sub-tab, and selects the CONNECTIONS row's stream.
+ * Purpose:     each sub-tab takes clicks and keys its own way: CONNECTIONS rows lead to their
+ *              stream or reader, DETAILS edits FPS parameters, the loop list selects a loop.
+ * Does:        ov_input__subtab_click(): a label on the panel's top border switches sub-tab; a
+ *              body click goes to the shown sub-tab's handler: CONNECTIONS moves its cursor (a
+ *              double click selects the row's stream in DASH, or its reader right of the name),
+ *              LOOPS selects a loop (a double click opens F7), DETAILS selects a parameter (a
+ *              stream parameter selects that stream). ov_input__handle_subtab_keys(): ENTER
+ *              selects the CONNECTIONS row's stream; in DETAILS the arrows move the parameter
+ *              cursor and ENTER edits (CONTROL mode). These keys run before the generic toggles,
+ *              where ENTER would toggle DETAILS.
+ * Used by:     input/overview_input_mouse_panels.c (clicks) and input/overview_input.c (keys, a
+ *              key group). Declared in input/overview_input_internal.h.
+ * Uses:        ov_graph_rows() (render/overview_render_graph.c), ov_sel_model()
+ *              (render/overview_render_select.c), ov_detail_target(), ov_fps_get_params(),
+ *              ov_fps_inline_edit() (input/overview_fps_edit.c), ov_subtab_hit().
+ * See also:    render/overview_render_subtabs.c (draws the sub-tabs);
+ *              docs/guide/milk-CTRL.md, "Sub-tabs".
  */
 
 #include "overview_input_internal.h"

@@ -6,26 +6,32 @@
  * @file mc_ext_exec.c
  * @brief Resolution, parameter packing, and runtime execution of `milk_calc_ext` kernels/operators.
  *
- * Bridges user-defined and built-in C extensions (`milk_calc_ext.h`) into the `libmilkcalc`
- * resolver (`mc_resolve.c`) and constructor executor (`mc_exec.c`):
- *   - **Call-site validation (`mc_ext_resolve_call`)**: Validates positional and keyword arguments
- *     against the extension's `milk_calc_param_set_t` and `milk_calc_op_ports_t` tables, enforces
- *     port arity and multi-LHS unpacking counts, and infers output `res_kind`, `res_dt`, and
- *     dimensions when static.
- *   - **Parameter struct packing (`pack_ext_params`)**: Assembles the 256-byte binary parameter
- *     buffer `pbuf` (`MILK_CALC_PARAM_BYTES`) for each invocation by binding keyword arguments,
- *     trailing positional scalar arguments, or live `<label>.<param>` FPS/calculator variables
- *     (falling back to `<ext_name>.<param>` or creating `<label>.<param>` with the default value).
- *   - **Tier 1 execution (`mc_exec_ext_ctor`)**:
- *       - `MILK_EXT_IMG`: Whole-image callback `img_fn(out, in, pbuf)`.
- *       - `MILK_EXT_STENCIL`: Parallel 2D row-strip execution via `arith_team_run()`, clamping
- *         `2*R + 1` input rows with horizontal border replication into a per-thread pad buffer.
- *       - `MILK_EXT_BLK1` / `MILK_EXT_BLK2`: Parallel 1D SIMD block execution over flat float32
- *         arrays across `arith_team_run()`.
- *   - **Tier 2 stateful operator execution (`exec_ext_op`, `mc_exec_multi_linalg_or_ext`)**:
- *     Caches operator state (`op_cache_state_t`) on `cs->ext_state`, re-running `op_init()` only
- *     when input dimensions or non-`FPFLAG_WRITERUN` parameters change, and binds multi-output
- *     image and scalar ports.
+ * Purpose:     connect the registered C extensions to calculator programs: check each call when a
+ *              program is resolved, and run it as a step, with its parameters taken from the
+ *              call's arguments or from live variables that a unit exposes in its FPS.
+ * Does:        mc_ext_resolve_call() binds the arguments of a call (mc_ext_bind_args()), checks
+ *              its inputs and number of targets against the parameters and ports of the
+ *              extension, and sets the result kind, type and size when they are known. Each run
+ *              packs the parameters into a MILK_CALC_PARAM_BYTES struct: the bound argument, else
+ *              the variable `<label>.<param>` (`ext:label(...)`; then `<ext>.<param>`), created
+ *              with its default if absent. mc_exec_ext_ctor() runs a Tier 1 kernel on float32 data
+ *              (an input of another type is converted; the built-in rotate2d keeps a double
+ *              image): MILK_EXT_IMG on the whole image, MILK_EXT_STENCIL in row strips with
+ *              clamped rows and replicated borders, MILK_EXT_BLK1/BLK2 in blocks, the last two
+ *              across arith_team_run(). A Tier 2 operator (MILK_EXT_OP) keeps its state on the
+ *              step (cs->ext_state) and calls op_init() again only when an input shape or a
+ *              parameter without FPFLAG_WRITERUN changes; its image and scalar output ports go to
+ *              the targets of the statement. mc_exec_multi_linalg_or_ext() sends a multi-target
+ *              statement to an operator, or to `svd`/`eigh` (linalg/mc_linalg_lapack.c).
+ * Used by:     front/mc_resolve.c (mc_ext_resolve_call()); linalg/mc_fft_stack.c, whose
+ *              mc_exec_linalg_or_ext() run/mc_exec.c calls for library and extension steps.
+ *              Declared in linalg/mc_linalg.h.
+ * Uses:        ext/mc_ext_registry.c (milk_calc_ext_get()), ext/mc_ext_loader.c
+ *              (mc_ext_bind_args()), run/mc_out.c, run/mc_reduce.c (mc_eval_scalar_d()),
+ *              run/mc_exec.c (mc_resolve_or_eval_im()), COREMOD_arith (arith_team.h),
+ *              COREMOD_memory (variables), libfps (FPFLAG_WRITERUN).
+ * See also:    milk_calc_ext.h; docs/guide/calc_c_extensions.md, "FPS Parameter Binding Rules"
+ *              and "Tier 2: Stateful Multi-Port Operators (`MILK_CALC_OP_DECLARE`)".
  */
 
 #include <math.h>

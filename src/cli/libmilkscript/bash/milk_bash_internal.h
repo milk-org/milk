@@ -4,12 +4,20 @@
 
 /**
  * @file milk_bash_internal.h
- * @brief Internal declarations shared across `bash/` translator and co-process files.
+ * @brief Internal declarations shared by the translator and the co-process files.
  *
- * Role & Goal:
- *   Shares dynamic string-buffer helpers (`sbuf_t`) and co-process execution
- *   helpers between `milk_bash_translate.c`, `milk_bash_coproc.c`, and
- *   `milk_bash_exec.c`.
+ * Purpose:     what the translator and co-process files share, kept out of the
+ *              public milk_bash.h.
+ * Does:        sbuf_t, a growing string buffer (inline helpers; after a failed
+ *              allocation its data is NULL and appends do nothing);
+ *              milk_bash_funsub_disabled() (bash 5.3 `${| ...; }`); the co-process
+ *              calls of milk_bash_exec.c (milk_bash_coproc_ensure(),
+ *              milk_bash_coproc_run(), milk_bash_set_label()); milk_bash_exec_raw(),
+ *              which the co-process start also uses.
+ * Used by:     milk_bash_translate.c, milk_bash_coproc.c, milk_bash_exec.c;
+ *              milk_unit_script.c, for the translator.
+ * Uses:        milk_bash.h, milk_shell_lex.h.
+ * See also:    milk_bash.h.
  */
 
 #ifndef MILK_BASH_INTERNAL_H

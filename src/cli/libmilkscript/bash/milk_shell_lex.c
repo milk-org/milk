@@ -8,7 +8,10 @@
  *
  * One forward pass with an explicit frame stack: code (top level, $(...), `...`, ${| ...; },
  * <(...)), quotes, $'...', ${...}, arithmetic. Here-documents and compound keywords inside
- * code frames are handled by `milk_shell_lex_code.c`.
+ * code frames are handled by `milk_shell_lex_code.c`. At the end, a frame still open makes the
+ * text unterminated (the innermost one is reported); that, an open subshell, compound command
+ * or `@{`, a here-document body still to come, or a trailing `\`, `|`, `&&` or `||` makes it
+ * incomplete.
  */
 
 #include <stdlib.h>

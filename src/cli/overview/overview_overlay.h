@@ -4,7 +4,18 @@
 
 /**
  * @file overview_overlay.h
- * @brief State of the overlays and prompts drawn over the panels (help, theme popup, loop rename)
+ * @brief State of the overlays and prompts drawn over the panels (help, theme popup, loop rename).
+ *
+ * Purpose:     keeps the state types of what is drawn over the panels out of overview_layout.h.
+ * Does:        OV_HELP_STATE (help overlay: mode, cursor, expanded rows, search), OV_THEME_POPUP
+ *              (theme selector: selection, time of the last key, rectangle), OV_RENAME_STATE (loop
+ *              rename prompt), and the opaque OV_INPUT_HISTORY (F5 parameter-tree positions,
+ *              defined in input/overview_input_history.c).
+ * Used by:     overview_layout.h, which includes it after OV_RECT and embeds the states in
+ *              OV_LAYOUT; the help (render/overview_render_help*.c, input/overview_input_help.c),
+ *              the theme popup (render/overview_render_popup.c, input/overview_input.c) and the
+ *              rename prompt (render/overview_render_loops_panel.c, input/overview_input_modal.c).
+ * See also:    overview_panel.h; overview_target.h (the y/N confirmation state).
  */
 
 #ifndef OVERVIEW_OVERLAY_H

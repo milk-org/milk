@@ -4,12 +4,14 @@
 
 /**
  * @file milk_bash_hooks.c
- * @brief Host GNU Bash symbol resolution, client callbacks, and pure-shell loadable builtins.
+ * @brief The client hooks into the bash that loaded libmilkbash, and the builtins that need no
+ *        session: milkcloexec, milktranslate, milkdefer, milkargs (see milk_bash_defer.h).
  *
- * Resolves host Bash C functions (`bind_variable`, `get_string_value`, `parse_and_execute`)
- * via `dlsym(RTLD_DEFAULT, ...)`, provides `milk_client_hooks_t` callbacks for in-process
- * variable binding and command definition, and implements the pure-shell builtins
- * (`milkcloexec`, `milktranslate`, `milkdefer`, `milkargs`).
+ * Bash's own functions (bind_variable, get_string_value, parse_and_execute) are found with
+ * dlsym(RTLD_DEFAULT, ...) in the bash that loaded the library, so no bash header or version is
+ * built in; without them, variables are read and set with getenv() and setenv(). A result is
+ * bound in the calling shell with bind_variable(), without a subshell, and code that must run in
+ * the caller's frame (array bindings, `local`, `return`) goes through parse_and_execute().
  */
 
 #ifndef _GNU_SOURCE

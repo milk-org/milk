@@ -4,15 +4,27 @@
 
 /**
  * @file milk_client_conn.c
- * @brief Client connection management, lazy daemon auto-start, and response loop.
+ * @brief The client's connection to its session: kept connections, starting the shell's own
+ *        session, and the reply loop.
  *
- * Role & Goal:
- *   Manages UNIX domain socket connections from bash builtins (`libmilkbash.so`)
- *   and `milk-call` to `milk-cli --server`, kept between requests (one per process
- *   and session, while the server's replies say so). Handles lazy on-demand spawning of
- *   the per-shell server daemon with lifetime pipe binding, packs the shell variables
- *   a calc expression names, and runs the response frame loop with `SIGINT`
- *   and `SIGWINCH` forwarding.
+ * Purpose:     a milk command costs one request on a connection the process already holds, and
+ *              a shell's own session starts by itself on the shell's first command.
+ * Does:        keeps a process's connections (to the shell's session and to its front end's)
+ *              open between requests while the replies say MILK_FLAG_KEEP; starts the shell's
+ *              own session (`milk-cli -q --server`) when none answers, tied to the shell by an
+ *              owner pipe, or by its pid from a subshell or milk-call; never starts a named
+ *              session; packs the shell variables a calculator expression names, and
+ *              MILK_DPDIGITS; reads the replies until DONE, forwarding Ctrl-C (CANCEL) and
+ *              window size changes (WINCH); defines the functions of new module commands when
+ *              the session's registry generation changes.
+ * Used by:     milk_client_ops.c and milk_client_stream.c (every request); milk_bash_hooks.c.
+ *              Declared in milk_client_internal.h.
+ * Uses:        milk_proto.h, milk_ipc_common.h (the socket of the shell's session, connecting,
+ *              starting a server), milk_srvlog.h (session names).
+ * See also:    milk_server.c (the session's side); docs/guide/sessions.md, "Using milk from Plain
+ *              Bash" and "Concurrent Commands Across Shells".
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads. A forked
+ *              subshell opens connections of its own: two processes must not share one.
  */
 
 #ifndef _GNU_SOURCE
@@ -504,7 +516,7 @@ int milk_client_await_response(int                        fd,
 
     int32_t final_rc = MILK_CLIENT_RC_TRANSPORT; // until DONE arrives, the transport failed
     int     resync   = 0;
-    int     queued   = 0; // the request waits for another shell's command (D38)
+    int     queued   = 0; // the request waits for another shell's command
 
     for (;;)
     {

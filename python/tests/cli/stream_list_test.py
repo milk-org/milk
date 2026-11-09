@@ -1,4 +1,15 @@
-"""readshmimall and shmimpurge list the streams of the shm directory (libmilkdata milk_stream_list)."""
+"""mem.readshmimall loads the streams of the shm directory whose names match its filter.
+
+Purpose:     readshmimall and shmimpurge take the streams of the shm directory from
+             milk_stream_list() (libmilkdata); this checks that the list reaches the command in
+             milk-cli.
+Does:        creates three streams, runs `mem.readshmimall rsa_` and checks that `mem.listim`
+             shows the two whose names match, and not the third.
+Covers:      src/coremods/COREMOD_memory/read_shmimall.c, milk_stream_list()
+             (src/engine/libmilkdata/milkdata_streamlist.c).
+Uses:        conftest.py: _isolated_shm_env; milk.cliwrap: MILK_CLI_EXEC; milk-stream-create.
+See also:    src/engine/libmilkdata/tests/test_milkdata_streamlist.c.
+"""
 
 from __future__ import annotations
 

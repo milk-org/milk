@@ -6,26 +6,30 @@
  * @file mc_scalar_eval.c
  * @brief AST evaluator for scalar expressions, reductions, and control flow in libmilkcalc.
  *
- * When `mc_resolve.c` determines that an expression or statement produces a
- * scalar or string value without the per-pixel SIMD image path
- * (`needs_image == 0`), execution dispatches directly to this tree-walking
- * evaluator (`mc_scalar_eval_expr`, `mc_scalar_exec_stmt`,
- * `mc_scalar_exec_prog`).
- *
- * Key responsibilities:
- * - Evaluating scalar literals, variables in `milk_data.variable[]`, host/bash
- *   string variables, numeric environment variables, and shared-memory entity
- *   properties (`s.<stream>.<prop>`, `f.<fps>.<prop>`, `p.<proc>.<prop>`).
- * - Direct single-pixel image reads (`im[x, y]`) and writes (`im[x, y] = v`,
- *   `im[x, y] += v`) across all ImageStreamIO datatypes, posting output stream
- *   semaphores when modifying shared-memory streams.
- * - Scalar function calls (`MC_FN_SCALAR`, `MC_FN_WHERE`, `MC_FN_PRNG`,
- *   `MC_FN_STR`, `MC_FN_CPLX`, `MC_FN_LUT`), stateful scalar `ema(x, alpha)`
- *   and `post(stream)` directives, and scalar-returning image reductions
- *   (`itot`, `imean`, `istats`, `icentroid`, `dot`, etc. via `mc_reduce.c`).
- * - Executing statement-level control flow (`if`/`elif`/`else`, `for` loops
- *   with `MC_FOR_MAX_ITER` guard, `skip` tick termination, and multi-target
- *   tuple assignments).
+ * Purpose:     run, by walking the resolved AST, everything that needs no per-pixel pass: scalar
+ *              and string statements, single pixels, entity properties, reductions to numbers,
+ *              and the `if`/`for` statements that steer a program.
+ * Does:        mc_scalar_eval_expr() evaluates literals, calculator variables
+ *              (milk_data.variable[]), string variables (mc_host_str_get()), numeric environment
+ *              variables, `s.`/`f.`/`p.` properties (milk_shm_prop.h), single pixels `im[x, y]`
+ *              of any datatype, function calls (math, `where`, random numbers, strings, complex
+ *              parts, `lut`, a scalar `ema` kept on its call node, `post(name)`) and reductions
+ *              (run/mc_reduce.c). An assignment writes a variable, a property
+ *              (`f.loop.gain = ...`) or a single pixel, and posts a shared stream it changes.
+ *              mc_scalar_exec_stmt() runs a statement: `if`/`elif`/`else`, `for` (at most
+ *              MC_FOR_MAX_ITER iterations), `skip`, multi-target assignments; the body of a branch
+ *              or loop runs as a cached sub-program (mc_exec_sub_prog()). mc_store_scalar_var()
+ *              keeps a number in milk_data.variable[] and a string in the host's table; a variable
+ *              bound to a unit parameter keeps its place.
+ * Used by:     mc_eval.c (scalar `@calc` statements), run/mc_prog.c and run/mc_exec.c (scalar
+ *              steps), run/mc_reduce.c, plan/mc_views.c (slice bounds), ext/mc_ext_exec.c,
+ *              linalg/. Declared in front/mc_ast.h and plan/mc_plan.h.
+ * Uses:        run/mc_scalar_ops.c (operators, `pow`, string functions), run/mc_reduce.c,
+ *              run/mc_prog.c (sub-programs, `skip`), run/mc_out.c (mc_out_post_now()),
+ *              milk_shm_prop.h (milkprop), mcalc_host.h, COREMOD_memory (variables, images).
+ * See also:    run/mc_scalar_ops.c (the fast path in the shell); docs/guide/calculator.md,
+ *              "Calculator (`@calc`, `@test`, `@pipe`)", "Operators" and
+ *              "Compute Units Without C".
  */
 
 #include <ctype.h>

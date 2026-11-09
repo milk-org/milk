@@ -4,14 +4,23 @@
 
 /**
  * @file milk_server.h
- * @brief Milk UNIX domain socket command server public API.
+ * @brief Milk UNIX domain socket command server public API: the process of a session.
  *
- * Role & Goal:
- *   Declares the entry points for starting and driving the persistent
- *   milk-cli command server over a UNIX domain socket (`MILKCLI_SOCK`).
- *   The server hosts all loaded milk modules, shared-memory streams, FPS
- *   connections, and local variables/images in memory, servicing client
- *   requests from interactive bash sessions, `.milk` scripts, and `milk-call`.
+ * Purpose:     the state that outlives a command (loaded modules, local images, calculator
+ *              variables, settings) lives in one process, the session's server, which the
+ *              shells that use the session send their commands to (socket $MILKCLI_SOCK).
+ * Does:        declares the server's entry points: listen and run the loop until the shutdown
+ *              command, SIGTERM, the end of the owner or --idle (`milk-cli --server`); or serve
+ *              requests from another loop (milk_server_ready_fd(),
+ *              milk_server_accept_and_handle()), as milk-cli and milk-script do for their own
+ *              session; run the lines of milk-cli's calc mode in its process; the session's
+ *              log flags and name; milk_complete(), the one completer.
+ * Used by:     CLIcore.c (`milk-cli --server`); milk_bash_coproc.c (the session of milk-cli and
+ *              milk-script, served while their bash runs); milk_bash_exec.c (calc mode);
+ *              CLIcore_UI_completion_tab.c (milk_complete()); CLIcore_UI_history.c,
+ *              CLIcore_UI_history_display.c.
+ * See also:    milk_server.c, milk_server_internal.h (the request handlers);
+ *              docs/guide/sessions.md, "Concurrent Commands Across Shells".
  */
 
 #ifndef MILK_SERVER_H

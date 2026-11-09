@@ -2,10 +2,28 @@
 # SPDX-FileCopyrightText: 2026 Olivier Guyon et al
 # SPDX-License-Identifier: LGPL-3.0-or-later
 #
-# milk.bash: First-class GNU Bash integration for milk
+# milk.bash: milk in a GNU Bash shell or script
 #
 # Usage (source into any bash shell or script):
 #   source milk.bash [--session NAME]
+#
+# Purpose:     milk's module commands and @ keywords in any bash shell or script, which keeps its
+#              own shell state and sends milk commands to a session (a milk-cli --server).
+# Does:        sets MILK_INSTALLDIR, PATH and LD_LIBRARY_PATH; chooses the session (MILKCLI_SOCK,
+#              --session NAME); loads the libmilkbash.so builtins, or nothing at all; defines
+#              the keywords done in bash (_milk_<name>_impl: @on, @source, @config, @session,
+#              @unload, ...), @restore --undo and the @defer traps; a function per keyword that
+#              is not a builtin and per catalogued module command; the user commands of
+#              commands.d; completion; the prompt.
+# Used by:     users and scripts; the bash co-process of milk-cli and milk-script
+#              (milk_bash_coproc.c); the bash of the milk.script unit (milk_unit_script.c).
+# Uses:        libmilkbash.so (the milk* builtins; `milkls --keywords --define` and
+#              `milkls --namespaces --define` define the keyword functions and the entity
+#              namespaces from the C tables); share/milk/catalog.bash, written at install
+#              (milk-cli --catalog).
+# See also:    src/cli/libmilkscript/bash/ (the builtins); docs/guide/sessions.md, "Using milk
+#              from Plain Bash"; docs/guide/scripting.md, "Keywords".
+# Constraints: sourced, never run; loads nothing when libmilkbash.so cannot load.
 #
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

@@ -4,13 +4,16 @@
 
 /**
  * @file milk_shm_prop_stream.c
- * @brief Stream and in-memory image handler (`@s.` / `@stream.`) for entity ops.
+ * @brief The `s.` and `l.` namespaces: stream and local-image properties, pixel statistics and
+ *        FITS keywords (see milk_shm_prop_internal.h).
  *
- * Role & Goal:
- *   Implements the properties listed in milk_stream_props.h (metadata, pixel
- *   statistics), FITS keyword reads/writes (`kw.<KEY>` and `kw.*`), and existence checks
- *   for both local CLI images (`dcimg[]`) and `/dev/shm/*.im.shm`
- *   ImageStreamIO shared-memory streams.
+ * A name is looked up among the local images of the process first, then as a stream in the
+ * cache (milk_shm_cache.h); `l.` takes only images that are not shared. The properties are those
+ * of milk_stream_props.h. The pixel statistics are those of the calculator (imin ... icount),
+ * computed with COREMOD_arith's header-only block kernels and read under the torn-frame rule of
+ * milkdata_torn_frame.h; a clean read is cached per (inode, cnt0, 16-pixel sample), so several
+ * statistics of one frame scan it once. A keyword write takes the type of its value: integer,
+ * else float, else string.
  */
 
 #include <math.h>

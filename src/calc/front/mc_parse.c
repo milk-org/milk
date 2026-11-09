@@ -6,25 +6,24 @@
  * @file mc_parse.c
  * @brief Pratt expression parser and recursive-descent statement parser for libmilkcalc.
  *
- * This module implements the second stage of the calculator front-end pipeline:
- * consuming a flat `mc_tok_list_t` from `mc_lex()` and building an unresolved
- * Abstract Syntax Tree (`mc_stmt_t` / `mc_expr_t`) for subsequent type and
- * symbol resolution in `mc_resolve.c`.
- *
- * Key responsibilities:
- * - Precedence-climbing (Pratt) expression parsing (`parse_expr`,
- *   `parse_primary`) with support for unary operators, ternary `c ? a : b`,
- *   chained relational comparisons (`a <= x <= b`), postfix `.T` (desugared to
- *   `transpose(x)`), and infix `@` (desugared to `matmul(a, b)`).
- * - Bracket syntax disambiguation between N-D image slices (`im[0:10:2b, *]`),
- *   1-D vector literals (`[1, 2, 3]`), and array comprehensions
- *   (`[expr for x = a:b[:s], ...]`).
- * - Function call parsing with optional keyword arguments (`k=v`) for user C
- *   extensions.
- * - Statement and control-flow parsing for single-line (`if cond: stmt`) and
- *   braced (`if cond { ... } elif ... else ...`, `for var = a:b[:s] { ... }`)
- *   blocks, `local` declarations, multi-target tuple assignments
- *   (`a, b = ...`), `def`, and `skip`.
+ * Purpose:     build the unresolved AST (mc_stmt_t, mc_expr_t) of one statement or a whole
+ *              program from the tokens of mc_lex(), and report the first syntax error with its
+ *              line and column.
+ * Does:        parses expressions by precedence climbing on mc_op_prec(): unary `-` `~` `!`,
+ *              `c ? a : b`, chained comparisons (`a <= x <= b` is one MC_EXPR_CHAIN node), `@`
+ *              and `.T` as calls to matmul() and transpose(), calls with `k=v` arguments (for
+ *              C extensions). A name directly followed by `(` is a call, by `[` a slice
+ *              (`im[0:10:2b, *]`, `im[mask]`, with `end` inside); another `[...]` is a vector
+ *              literal or a comprehension (`[expr for x = a:b[:s]]`). Statements:
+ *              `if c: stmt`, braced `if`/`elif`/`else`, `for v = a:b[:s] { ... }`, `local`,
+ *              `a, b = ...`, `def`, `skip`, and the `@calc` directives `loadlib` and
+ *              `__list_catalog` (top level only). mc_stmt_text() returns the text of a
+ *              statement.
+ * Used by:     mc_eval.c (`@calc`), run/mc_prog.c (programs and units), plan/mc_history.c (the
+ *              ring slices it writes as text). Declared in front/mc_ast.h.
+ * Uses:        front/mc_lex.c (the tokens, mc_op_prec()), mc_func.h (mc_func_find()).
+ * See also:    front/mc_resolve.c (the next stage); docs/guide/calculator.md, "Operators" and
+ *              "Compute Units Without C".
  */
 
 #include <ctype.h>

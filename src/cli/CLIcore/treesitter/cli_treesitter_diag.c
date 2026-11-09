@@ -4,13 +4,25 @@
 
 /**
  * @file cli_treesitter_diag.c
- * @brief Real-time syntax diagnostics, incomplete statement checks, and AST completion context.
+ * @brief Syntax diagnostics of the line being typed at the milk-cli prompt, and the completion
+ *        context of the word at the cursor.
  *
- * Role & Goal:
- *   Provides AST + lexical syntax error and incomplete-construct diagnostics
- *   (`cli_ts_get_diagnostic()`, `cli_ts_collect_error_spans()`), multi-line
- *   continuation detection (`cli_ts_is_incomplete()`), and AST-assisted
- *   tab-completion mode determination (`cli_ts_determine_completion_mode()`).
+ * Purpose:     tell the user, while typing, that a line is not finished (open quote, block or
+ *              `@{`, trailing `|`) or is wrong (unexpected token), and tell the completer what
+ *              kind of word it completes.
+ * Does:        cli_ts_get_diagnostic() reports the first issue it finds: an unfinished
+ *              construct as an INFO hint, a syntax error as an ERROR;
+ *              cli_ts_collect_error_spans() gives the ERROR nodes of the syntax tree, which
+ *              highlighting underlines. Neither treats a block left open (by the count of its
+ *              keywords) as an error, since a multi-line block is typed one line at a time.
+ *              cli_ts_determine_completion_mode() tells a command name, an argument of a
+ *              command (and its index), an entity path, a `$` variable or a file name.
+ * Used by:     CLIcore_UI_hintarea.c (the diagnostic and argument hints),
+ *              CLIcore_UI_completion_tab.c (TAB completion), cli_treesitter.c (highlighting).
+ * Uses:        cli_treesitter_internal.h (the normalized parse, the lexical scanners),
+ *              bash/milk_shell_lex.h (open quotes), milk_entity_ns.h, tree-sitter.
+ * See also:    cli_treesitter.h (the declarations); docs/guide/CLIcore.md, "Syntax Highlighting"
+ *              and "Tab Completion".
  */
 
 #include <ctype.h>
@@ -450,7 +462,7 @@ static bool find_first_error(TSNode node, const char *source, CLI_SYNTAX_DIAG *d
 #endif /* USE_TREESITTER */
 
 /**
- * @brief Check if @buffer ends with a line-continuation operator (`\`, `|`, `&&`, `||`).
+ * @brief Check if @line ends with a line-continuation operator (`\`, `|`, `&&`, `||`).
  */
 static int has_trailing_continuation_op(const char *line, CLI_SYNTAX_DIAG *diag)
 {

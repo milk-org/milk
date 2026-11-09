@@ -4,9 +4,19 @@
 
 /**
  * @file overview_view.h
- * @brief View descriptors (tab label, F-key, CLI name, panels shown) and sub-tab tab-bar helpers
+ * @brief View descriptors (tab label, F-key, CLI name, panels shown) and sub-tab tab-bar helpers.
  *
- * Included by overview_layout.h after ov_view_t and ov_focus_t.
+ * Purpose:     a view is one row of ov_views[]: its tab, F-key, --view name, panels, initial
+ *              focus and -h line all come from it.
+ * Does:        declares OV_VIEW_DESC and ov_views[], the view lookups (ov_view_cycle,
+ *              ov_view_by_fkey, ov_view_by_name, ov_view_label), and the hit tests of the tab bar
+ *              (ov_tabbar_hit, ov_tabbar_level: render/overview_render_tabs.c) and of the sub-tab
+ *              labels (ov_subtab_hit: render/overview_render_subtabs.c).
+ * Used by:     overview_layout.h includes it after ov_view_t and ov_focus_t, hence render/ and
+ *              input/; tools/milkCTRL.c, tools/milkCTRL_opts.c (-h) and
+ *              tools/milkCTRL_opts_parse.c (--view).
+ * See also:    overview_view.c; render/overview_render.c (view_render[]: what each view draws);
+ *              src/cli/overview/README.md, "Extending milk-CTRL"; docs/guide/milk-CTRL.md, "Views".
  */
 
 #ifndef OVERVIEW_VIEW_H

@@ -6,6 +6,19 @@
  * @file milk_builtin_module.h
  * @brief The built-in module `milk`, the root commands and the default module set:
  *        the same in milk-cli, milk-script and a milk-cli server.
+ *
+ * Purpose:     every front end starts with the same commands and modules, so start-up is
+ *              written once rather than in each program's main().
+ * Does:        registers the commands of module `milk` (milk.ci, milk.fpsdump) and the root
+ *              command `help`; lets other files register more milk.<name> commands between
+ *              milk_module_begin() and milk_module_end(); loads the core modules, then the
+ *              modules named in $MILKCLI_ADD_LIBS, or a default list.
+ * Used by:     milkscript_init() (milkscript_api.c), which milk-cli, milk-script and a
+ *              milk-cli server call at start-up; CLIcore_cmd_registry.c, which adds milk-cli's
+ *              own milk.<name> commands.
+ * Uses:        milk_runnable.h (command definitions), CLIcore_modules.h (module loading),
+ *              milk_cmd_index.h (the reserved short name `milk`).
+ * See also:    milk_builtin_module.c; docs/guide/CLIcore.md, "Module Loading".
  */
 
 #ifndef MILK_BUILTIN_MODULE_H

@@ -6,30 +6,30 @@
  * @file mc_emit.c
  * @brief C kernel source code generator for elementwise passes in libmilkcalc.
  *
- * Translates a planned elementwise pass (`mc_pass_t`) and its expression ASTs
- * into a self-contained C11 source string (`pass->c_src`) exporting the kernel
- * entry point:
- *
- *     void mc_k(mc_operand_t * restrict ops, uint64_t y0, uint64_t y1)
- *
- * Key code generation strategies:
- * 1. **Selective Prelude Inclusion**: Prepends only the required portions of
- *    `mc_prelude.h` (`MC_PRELUDE_CORE_SRC`, plus optional complex math,
- *    coordinate/shift helpers, and datatype-specialized `MC_DEF_SPATIAL`
- *    instantiations) to keep GCC parse times minimal.
- * 2. **1D Contiguous Fast Path**: When `pass->is_1d_contig` is true, emits a
- *    flat `#pragma omp simd` loop over `[y0, y1)`. Multi-output passes from a
- *    single statement are L1-strip-mined in blocks of 1024 elements so each
- *    output loop vectorizes cleanly without register pressure spills.
- * 3. **2D/3D Strided & Broadcast Loop**: When slices, broadcasts, coordinates,
- *    or stencils are active, emits an outer loop over flattened `(y, z)` rows
- *    in `[y0, y1)` and splits the inner `x` loop into two scalar boundary
- *    segments `[0, _x0)` and `[_x1, _nx)` plus a `#pragma omp simd` interior
- *    loop `[_x0, _x1)` with hoisted row offsets `_ro` and shift row bases `_sh`.
- * 4. **Algebraic Peepholes**: Specializes `pow(x, c)` for `c` in `{0, 1, 2, 3,
- *    -1, 0.5, -0.5}`, folds `real`/`imag`/`conj` on real inputs, and splits
- *    multi-output passes into a read/compute phase followed by a write phase
- *    to prevent read-after-write aliasing across fused outputs.
+ * Purpose:     run a fused statement, or several fused statements, as one compiled loop over
+ *              the pixels that the C compiler vectorizes, with no temporary image.
+ * Does:        mc_emit_pass() writes
+ *              `void mc_k(mc_operand_t * restrict ops, uint64_t y0, uint64_t y1)` into
+ *              pass->c_src, after only the prelude sections the kernel uses (less for the
+ *              compiler to parse). Scalars, slice bounds and shift offsets come from ops[] at
+ *              run time, so new values reuse the compiled kernel. A contiguous pass is one
+ *              `#pragma omp simd` loop over [y0, y1) (several outputs of one statement are
+ *              strip-mined by 1024, one vectorized loop per output); a sliced, broadcast or
+ *              stencil pass loops over (y, z) rows, with scalar edge segments around a SIMD
+ *              interior and hoisted row offsets. pow(x, c) for c in
+ *              `{0, 1, 2, 3, -1, 0.5, -0.5}` becomes a product, root or reciprocal; real,
+ *              imag and conj of a real input fold; with several `=` outputs, all values are
+ *              computed before any is stored, so no output overwrites a pixel another one
+ *              still reads.
+ * Used by:     plan/mc_plan.c (mc_plan_build(), once per pass). Declared in plan/mc_plan.h.
+ * Uses:        jit/mc_prelude.h (the prelude sections), plan/mc_views.c (slot and operand
+ *              lookup).
+ * See also:    jit/mc_cc.c (compiles the source); docs/guide/calculator.md,
+ *              "Fusion & Cost Model".
+ * Constraints: jit/mc_cc.c reads this text: it finds the entry point by `void mc_k(` (renamed
+ *              per kernel in a batch file), hashes the core prelude once when the source
+ *              starts with it, and finds the typed helpers a batch needs by the
+ *              `MC_DEF_SPATIAL(sfx, type)` lines.
  */
 
 #include <math.h>

@@ -5,6 +5,22 @@
 /**
  * @file tv_term.c
  * @brief Terminal lifecycle: raw mode, alternate screen, signals, restore on every exit path.
+ *
+ * Purpose:     the terminal is given back as it was, whatever ends the viewer: q, a signal, a
+ *              crash, Ctrl-Z or a lost terminal.
+ * Does:        checks that stdin and stdout are terminals and saves the terminal modes; enters and
+ *              leaves raw mode, the alternate screen and SGR mouse tracking; installs the signal
+ *              handlers (quit, resize, stop, continue, and the fatal signals, which restore the
+ *              terminal on an alternate stack before re-raising); sends stderr to /dev/null
+ *              while it shares the screen; writes whole buffers, giving up when a signal comes;
+ *              reads the terminal size; guesses the colour depth from COLORTERM and TERM.
+ * Used by:     termview.c. Declared in termview_internal.h.
+ * Uses:        termios, sigaction, sigaltstack, ioctl(TIOCGWINSZ).
+ * See also:    docs/guide/termview.md, "Keys and mouse" (Ctrl-Z) and "Options" (colour depth).
+ * Constraints: tv_term_restore() is idempotent and async-signal-safe: atexit(), the fatal
+ *              signal handlers and termview.c all call it. Handlers are installed without
+ *              SA_RESTART, so poll() and write() return EINTR. Sanitizer builds
+ *              (TV_KEEP_STDERR) keep stderr.
  */
 
 #include <errno.h>

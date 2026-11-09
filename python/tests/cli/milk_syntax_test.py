@@ -1,5 +1,29 @@
-"""
-Consolidated regression tests for the milk syntax redesign and Phase C enhancements.
+"""The milk script language: keywords, module commands and their arguments, @{...}, bindings, @calc.
+
+Purpose:     a script relies on these rules wherever it runs (milk-cli, milk-script, or bash after
+             `source milk.bash`): the keyword set, how module commands take their arguments, how
+             values are bound to shell variables, and what the calculator computes.
+Does:        keywords and namespaces (`milkls`), `@unload`, `@module load --as`, qualified command
+             names only; command arguments (`-h` and `@help`, `.name=value`, `--save`, `--load`,
+             `--default`, `--no-run`, number forms read alike everywhere, a too-long argument
+             refused); modules loaded on first use, and a libmilkbash.so that links neither
+             cfitsio nor OpenMP; @{...}; the bindings of `@get` and `@calc` (-v, -a, -A);
+             `@defer`, `@set --restore`, `@restore --undo`, `@sleep`, `@waitfor` on an expression,
+             `@args` (also in a sourced file); calculator reductions, math, complex, BLAS, LAPACK
+             and random functions, also against the module commands that compute the same
+             images; the property, modifier and keyword lists against docs/guide/scripting.md;
+             a failed `@set` prints its error once.
+Covers:      the bash builtins and hooks of libmilkbash.so (libmilkscript/bash/:
+             milk_bash_builtins.c, milk_bash_hooks.c, milk_bash_defer.c, milk_bash_translate.c),
+             the client (libmilkscript/client/milk_client_ops.c, milk_client_stream.c), the
+             keyword table (core/milk_keywords.c), argument rules (core/milk_cmd_args.c,
+             core/CLIcore_checkargs.c, src/engine/libfps/params/fps_args.c), module loading
+             (core/milk_builtin_module.c, milk_catalog_autoload() in core/milk_catalog_build.c,
+             server/milk_server_admin.c), the calculator (src/calc), scripts/milk.bash.
+Uses:        conftest.py: milk_bash, milk_cli_script, milk_cli_env, translate, events, value,
+             _run_bash, _env, _install_dir, CAM, UNIT_HELPERS.
+See also:    docs/guide/scripting.md, "Keywords", "Module Commands", "Arguments", "Entities";
+             docs/guide/calculator.md, "Functions".
 """
 
 from __future__ import annotations

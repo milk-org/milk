@@ -5,6 +5,19 @@
 /**
  * @file tv_stream.c
  * @brief Read-only stream access: validate the header before mapping, never write to the stream.
+ *
+ * Purpose:     a viewer left running next to a real-time loop must not disturb the stream, and
+ *              must survive the stream being removed, recreated or truncated under it.
+ * Does:        resolves a name, name.im.shm or path; reads the metadata header and checks it
+ *              (version, shared, in CPU memory, 1 to 3 axes, sizes without overflow, a real
+ *              datatype) before mapping the file read-only; tells whether the path still names
+ *              the mapped file; drops the mapping once the file has shrunk below it, so that a
+ *              read cannot fault; reopens the stream now at the same path once it is valid.
+ * Used by:     termview.c (open, a check before each read and once a second, reopen);
+ *              tests/test_termview_unit.c (stream lifecycle). Declared in termview_internal.h.
+ * Uses:        ImageStreamIO (file name, type size, ImageStreamIO_image_sizing() for the data
+ *              pointers), libmilkcommon/pixel_dispatch.h (the real datatypes).
+ * See also:    docs/guide/termview.md, "Streams that change".
  */
 
 #include <errno.h>

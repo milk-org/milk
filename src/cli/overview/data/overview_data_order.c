@@ -6,16 +6,27 @@
  * @file    overview_data_order.c
  * @brief   Display order of the list panels, as model index arrays; the model is never permuted.
  *
- * A sort request computes the order and snapshots each entry's rank by identity (name; processes
- * also PID). Later models are shown in that snapshot order, in O(n), until the next sort request;
- * entries the snapshot does not know go last, by name. Before the first sort, order = scan order.
+ * Purpose:     a sort is a one-shot request: the rows keep that order across new models until the
+ *              user sorts again, so they do not move at every scan.
+ * Does:        ov_order_sort() sorts a panel (ov_sort_streams/procs/fps, overview_data_sort*.c)
+ *              and snapshots each entry's rank by identity (name; processes also PID).
+ *              ov_order_get() shows later models in that snapshot order (a rank lookup per entry,
+ *              then a sort by rank); entries the snapshot does not know go last, by name. Before
+ *              the first sort, order = scan order.
+ *              ov_order_gen() changes whenever a panel's order array is rebuilt.
+ * Used by:     render/overview_render_sync.c (ov_order_sort, on a sort request) and
+ *              render/overview_render_view.c (ov_order_get, ov_order_gen: the drawn rows).
+ *              Declared in overview_data.h.
+ * Uses:        overview_data_sort*.c.
+ * See also:    docs/guide/milk-CTRL.md, "Lists".
+ * Constraints: UI thread only (static state).
  */
 
 #include "overview_data_internal.h"
 #include <stdint.h>
 #include <string.h>
 
-#define OV_RANK_SLOTS 4096 /* power of two, > 2 * OV_MAX_STREAMS: short probes */
+#define OV_RANK_SLOTS 4096 /* power of two; < OV_MAX_STREAMS: 4096+ entries hang the probe loops */
 #define OV_RANK_NONE INT32_MAX
 
 typedef struct

@@ -4,14 +4,14 @@
 
 /**
  * @file milk_ipc_common.c
- * @brief Shared socket, environment, binary lookup, and daemon-spawning helpers.
+ * @brief Shared socket, environment, binary lookup, and daemon-spawning helpers (see
+ *        milk_ipc_common.h).
  *
- * Role & Goal:
- *   Implements the common IPC utilities declared in `milk_ipc_common.h` so
- *   that `milk_client_conn.c`, `milk_client_ops.c`, `milk_srvlog.c`, and
- *   `milk_sessions.c` share a single implementation of socket addressing,
- *   shell variable propagation, server ping/shutdown, and double-fork daemon
- *   launching.
+ * The override file is named after the shell's pid and start time, so a later shell with the same
+ * pid does not inherit it, and is read only when this user owns it and nobody else can write it;
+ * setting MILKCLI_SOCK writes or removes it. A server is started by the absolute path of milk-cli,
+ * without a service manager's variables (NOTIFY_SOCKET, WATCHDOG_*), its output in the file next
+ * to its log; when it does not start, the end of that file is printed.
  */
 
 #ifndef _GNU_SOURCE
@@ -60,18 +60,6 @@ const char *milk_ipc_get_var(const milk_client_hooks_t *hooks, const char *name)
     return getenv(name);
 }
 
-/**
- * get_shell_override_file - Compute the per-shell active socket override file path
- * @hooks: Optional shell callback hooks for reading `_MILK_LOCAL_SOCK`
- * @out:   Output buffer receiving the file path
- * @outsz: Size of @out in bytes
- *
- * Determines the owning shell PID from `_MILK_LOCAL_SOCK` (or `getpid()`/`getppid()`) and its start
- * time, and formats a path in `$TMPDIR` used to persist `@session use` socket switches across
- * subshells and standalone `milk-call` invocations.
- *
- * Return: void
- */
 pid_t milk_ipc_shell_pid(const milk_client_hooks_t *hooks)
 {
     const char *local_sock = milk_ipc_get_var(hooks, "_MILK_LOCAL_SOCK");
@@ -86,6 +74,18 @@ pid_t milk_ipc_shell_pid(const milk_client_hooks_t *hooks)
     return (hooks != NULL && hooks->get_var != NULL) ? getpid() : getppid();
 }
 
+/**
+ * get_shell_override_file - Compute the per-shell active socket override file path
+ * @hooks: Optional shell callback hooks for reading `_MILK_LOCAL_SOCK`
+ * @out:   Output buffer receiving the file path
+ * @outsz: Size of @out in bytes
+ *
+ * Determines the owning shell PID from `_MILK_LOCAL_SOCK` (or `getpid()`/`getppid()`) and its start
+ * time, and formats a path in `$TMPDIR` used to persist `@session use` socket switches across
+ * subshells and standalone `milk-call` invocations.
+ *
+ * Return: void
+ */
 static void get_shell_override_file(const milk_client_hooks_t *hooks, char *out, size_t outsz)
 {
     static pid_t start_pid = 0; // the shell's start, read once per process: with its pid it names
@@ -656,7 +656,7 @@ static int spawn_exe_path(const char *bin, char *out, size_t size)
 }
 
 /* The server's environment: ours (entries, not copies) without a service manager's variables (only
- * a server it starts itself answers it), and MILK_SRV_NAMED=1 for a named server. free() it */
+ * a server it starts itself answers it), and MILK_SRV_NAMED=1 for a named session. free() it */
 static char **spawn_env(int is_named)
 {
     size_t n = 0;

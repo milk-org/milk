@@ -6,12 +6,17 @@
  * @file milk_server_internal.h
  * @brief Internal declarations shared across milk_server sub-modules.
  *
- * Role & Goal:
- *   Connects the server listener/connection loop (`milk_server.c`),
- *   command & expression dispatcher (`milk_server_dispatch.c`),
- *   variable synchronization & entity expansion (`milk_server_vars.c`),
- *   blocking stream wait/grab/I/O operations (`milk_server_stream.c`),
- *   and command listing/tab-completion (`milk_server_complete.c`).
+ * Purpose:     the server's files share one request path (the command lock, kept connections,
+ *              replies, the guarded run of a request body) and call each other's handlers.
+ * Does:        declares, file by file, the handlers of milk_server_vars.c (shell variables in
+ *              and out), milk_server_stream.c (@waitfor, @grab, @replay, streamcat, streamwrite),
+ *              milk_server_complete.c (COMPLETE), milk_server_dispatch.c (CALL and SET, the
+ *              requests that wait for a CALL), milk_server_admin.c (@module, @config, @history,
+ *              @session save), milk_server_eval.c (CALC and TEST, @assert, @pipe) and
+ *              milk_server.c (connections, replies, the command lock, the session's log).
+ * Used by:     the milk_server*.c files; milk_bash_coproc.c.
+ * Uses:        milk_server.h, milk_srvlog.h (g_srvlog_shm, the session's log).
+ * See also:    milk_server.h.
  */
 
 #ifndef MILK_SERVER_INTERNAL_H
@@ -85,6 +90,8 @@ int milk_server_set_argv(int argc, char **argv);
 
 int milk_server_dispatch_argv(int argc, char **argv);
 
+/* --- milk_server_admin.c --- */
+
 /** milk_server_module() - `@module`; milk_server_config() - `@config` (its server settings). */
 int milk_server_module(int argc, char **argv);
 int milk_server_config(int argc, char **argv);
@@ -94,6 +101,8 @@ int milk_server_history(int argc, char **argv, int *handled);
 
 /** milk_server_session_save() - `@session save PATH`: this session as a milk script, images in PATH.d/. */
 int milk_server_session_save(const char *path);
+
+/* --- milk_server_dispatch.c --- */
 
 /** milk_server_serve_waiting() - serve, in order, the requests that waited for the CALL that just ran. */
 void milk_server_serve_waiting(int listen_fd, int *shutdown_flag);
@@ -165,7 +174,8 @@ void milk_server_conn_done(int fd, int outcome);
  * new server) and close the kept connections (their shells see it). */
 void milk_server_stop_listening(int listen_fd);
 
-/** Set by a crash in a request body (not Ctrl-C): its connection is closed after the reply. */
+/** Set by a crash in a request body (not Ctrl-C): its connection is closed after the reply
+ * (milk_server_dispatch.c). */
 extern volatile sig_atomic_t g_milk_server_crashed;
 
 /** Serializes everything that touches milk state (data.*, calc, stdio/cwd swaps); recursive. */
@@ -178,7 +188,7 @@ int milk_server_spawn_stream_worker(int client_fd);
 /** Set when SHUTDOWN arrives outside the main loop (e.g. during a CALL); the main loop stops on it. */
 extern volatile sig_atomic_t g_milk_server_stop;
 
-/** Reset the CALL watcher in a forked child (its thread is not copied). */
+/** Reset the CALL watcher in a forked child (its thread is not copied; milk_server_dispatch.c). */
 void milk_server_watcher_atfork_child(void);
 
 /** Set after forking a worker; the server then reaps exited children. */

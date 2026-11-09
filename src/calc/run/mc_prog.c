@@ -6,26 +6,29 @@
  * @file mc_prog.c
  * @brief Multi-statement program compilation, variable binding, and execution for `libmilkcalc`.
  *
- * Implements the `mcalc_prog` lifecycle (`mcalc_prog_new`, `mcalc_prog_run`, `mcalc_prog_free`,
- * `mcalc_prog_exec_once`) used by the `milk.calc` FPS compute unit and by multi-statement or
- * image-producing expressions in `@calc` / `milk-script`.
- *
- * Key responsibilities:
- *   - **FPS parameter binding (`bind_prog_vars`, `mc_prog_load_vars`, `mc_prog_store_vars`)**:
- *     Maps `mcalc_binding` descriptors (from `milk.calc` unit parameters and loop variables like
- *     `_n`, `_t`, `_dt`, `_cnt0`) into `milk_data.variable[]` before each frame and copies modified
- *     values back to their FPS pointers after execution.
- *   - **Read-only variable protection (`is_readonly_unit_var`, `scan_assigned_stmts`)**: Statically
- *     scans the AST at compile time to reject assignments to unit telemetry variables (`_n`, `_t`,
- *     `_dt`, `_cnt0`, `_ts`, `_missed`, `_torn`) and records which bound variables are written.
- *   - **History ring expansion**: Invokes `mc_rewrite_history()` before lexing so `hist()` and
- *     `prev()` calls are desugared into `<stream>_hist` ring buffer slices.
- *   - **Adaptive re-planning (`mc_prog_slots_valid`, `replan_prog_in_place`)**: Validates before
- *     each `mcalc_prog_run()` that every referenced image slot still has the shape and datatype
- *     assumed by the compiled plan; if an upstream stream was recreated or resized, the program
- *     transparently re-resolves and rebuilds its execution plan in place.
- *   - **Deferred stream posting (`mc_post_defer`, `mc_post_flush`)**: Batches output semaphore
- *     posts across all steps of a program so downstream consumers see a coherent frame update.
+ * Purpose:     compile a calculator text once and run it many times (each frame of a milk.calc
+ *              unit, each cached `@calc` statement), following the streams that are recreated or
+ *              resized between runs.
+ * Does:        mcalc_prog_new() binds the given variables (a unit's parameters and its read-only
+ *              `_n`, `_t`, `_dt`, `_cnt0`, `_ts`, `_missed`, `_torn`) to calculator variables,
+ *              lexes and parses the text, turns `hist()`/`prev()` into ring slices
+ *              (mc_hist_rewrite()), refuses `loadlib`, more than 128 statements and assignments
+ *              to a read-only variable, registers the `def`s, then resolves and plans the program.
+ *              mcalc_prog_run() loads the bound values, plans again in place when an image no
+ *              longer has the shape or type the plan assumed (mc_prog_slots_valid()), runs the
+ *              scalar, constructor and pass steps (after `skip`, only the ring updates), posts
+ *              each shared output once at the end (mc_post_defer(), mc_post_flush()), and writes
+ *              the assigned values back to the bound pointers. mc_exec_sub_prog() compiles,
+ *              caches and runs the body of an `if` branch or a `for` loop.
+ * Used by:     units/milk_unit_calc.c (the milk.calc unit), mc_eval.c (`@calc` statements that
+ *              make or read images), plan/mc_explain.c (`--explain`), run/mc_scalar_eval.c
+ *              (`if`/`for` bodies), run/mc_reduce.c (sub-programs); mc_var_bound() also by the
+ *              server's milk_server_vars.c. Declared in mcalc.h, plan/mc_plan.h and
+ *              front/mc_ast.h.
+ * Uses:        front/ (mc_lex(), mc_parse_prog(), mc_resolve_prog_ex()), plan/mc_plan.c
+ *              (mc_plan_build()), plan/mc_history.c (mc_hist_rewrite()), run/mc_exec.c,
+ *              run/mc_scalar_eval.c, run/mc_out.c, COREMOD_memory (variables, read_shmim.h).
+ * See also:    docs/guide/calculator.md, "Compute Units Without C".
  */
 
 #include <ctype.h>
@@ -43,7 +46,7 @@
 #include "COREMOD_memory/variable_ID.h"
 #include "plan/mc_plan.h"
 
-/* Thread-local skip flag (`skip()` builtin) and nesting depth inside a `milk.calc` unit. */
+/* Thread-local skip flag (the `skip` statement) and nesting depth inside a `milk.calc` unit. */
 static _Thread_local int g_prog_skip       = 0;
 static _Thread_local int g_prog_unit_depth = 0;
 
@@ -52,11 +55,11 @@ static _Thread_local int g_prog_unit_depth = 0;
 /* ============================================================================================== */
 
 /**
- * mc_prog_set_skip - Set or clear the current frame's `skip()` flag
+ * mc_prog_set_skip - Set or clear the current frame's `skip` flag
  * @on: 1 to skip remaining non-history steps in the current program run, 0 to clear
  *
- * Triggered by the `skip()` builtin inside an `if` branch or conditional expression to abort
- * output updates for the current frame while still updating `hist()` ring buffers.
+ * Set by the `skip` statement (`if <cond>: skip`) to end the tick: the remaining statements do
+ * not run, but the `hist()` rings are still updated.
  *
  * Return: void
  */
@@ -66,7 +69,7 @@ void mc_prog_set_skip(int on)
 }
 
 /**
- * mc_prog_skip_active - Query whether `skip()` has been triggered in the current frame
+ * mc_prog_skip_active - Query whether `skip` has run in the current frame
  *
  * Return: 1 if skipping is active, 0 otherwise
  */
@@ -471,9 +474,9 @@ static int bind_prog_vars(mcalc_prog_t        *p,
  *
  * Compilation pipeline:
  *   1. Binds @vars into `milk_data.variable[]`.
- *   2. Expands `hist()` and `prev()` calls via `mc_rewrite_history()`.
- *   3. Lexes (`mc_lex`) and parses (`mc_parse_prog`) into an AST statement list (up to 128 user
- *      statements plus synthesized history update statements).
+ *   2. Lexes (`mc_lex`) and parses (`mc_parse_prog`) into an AST statement list.
+ *   3. Turns `hist()` and `prev()` calls into ring slices and appends the ring updates
+ *      (`mc_hist_rewrite`); at most 128 user statements, the ring updates not counted.
  *   4. Registers any inline `def` statements and checks for illegal assignments to read-only unit
  *      variables (`scan_assigned_stmts`).
  *   5. Resolves types, shapes, and stream IDs (`mc_resolve_prog_ex`).
@@ -836,7 +839,7 @@ void mcalc_prog_set_processinfo(mcalc_prog *p, void *processinfo)
  * @err:     Error message buffer
  * @errsz:   Capacity of @err in bytes
  *
- * Respects `g_prog_skip`: once `skip()` is called, subsequent steps are skipped unless marked
+ * Respects `g_prog_skip`: once `skip` runs, subsequent steps are skipped unless marked
  * `st->is_hist_step` (so `hist()` ring buffers remain synchronized with `_n`).
  *
  * Return: 0 on success, non-zero on runtime evaluation error

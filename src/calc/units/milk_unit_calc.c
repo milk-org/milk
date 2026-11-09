@@ -4,18 +4,37 @@
 
 /**
  * @file milk_unit_calc.c
- * @brief milk-fpsexec-milk-calc (milk.calc): a compute unit that runs calculator statements on each frame.
+ * @brief milk-fpsexec-milk-calc (milk.calc): a compute unit that runs calculator statements on
+ *        each frame.
  *
- * .unit.expr (or the file .unit.file names) is compiled once and run on each frame of
- * .unit.trigger, else on each tick of the delay loop; a new .unit.expr or .unit.file is compiled
- * at the next frame, and if it does not compile the previous statements keep running (stderr and
- * the process message say why). .unit.params declares parameters, "name:type[=default][:help] ...", as
- * calculator variables that @set changes live; a statement that assigns one writes it back to the
- * FPS. Names in the statements are shared streams, and a new image target becomes one. An error
- * stops the loop and is kept in .unit.error.
- *
- * On the command line the program is given with unit options (-e -t -p -f -i -I), and the values
- * after the command word set the declared parameters, in declaration order, as for any fpsexec.
+ * Purpose:     a compute unit without C code: calculator statements, compiled once, run on each
+ *              frame of a stream, with their parameters in the unit's FPS.
+ * Does:        .unit.expr (or the file .unit.file names) is compiled once and run on each frame
+ *              of .unit.trigger, else on each tick of the delay loop; a new .unit.expr or
+ *              .unit.file, or a changed stream parameter, is compiled at the next frame, and if
+ *              it does not compile the previous statements keep running (stderr and the process
+ *              message say why). .unit.init (or .unit.initfile) runs once before frame 0, and
+ *              again, with the frame counters reset, when set; .unit.libs loads C extensions.
+ *              .unit.params declares parameters, "name:type[=default][:help] ...", as calculator
+ *              variables that @set changes live; a statement that assigns one writes it back to
+ *              the FPS, unless another process set it meanwhile. The extension parameters that
+ *              no call argument binds, and the scalar outputs of extension calls, become FPS
+ *              entries too. Seven read-only variables describe the frame (_n, _t, _dt, _cnt0,
+ *              _ts, _missed, _torn). Names in the statements are shared streams, and a new image
+ *              target becomes one. An error stops the loop and is kept in .unit.error. On the
+ *              command line the program is given with unit options (-e -t -p -f -i -I -l), and
+ *              the values after the command word set the declared parameters, in declaration
+ *              order, as for any fpsexec; --list prints the calculator's catalog.
+ * Used by:     users and scripts, started as any fpsexec (fpsinit, runstart, ...), e.g.
+ *              scripts/milk-demopipeline.
+ * Uses:        libmilkcalc (mcalc.h: mcalc_prog_*, mcalc_ext_*); milk_runnable.h (the
+ *              processinfo loop); fps_unit_options.h (unit options, parameter declarations);
+ *              fps_modulevars_resync.h (writing assigned parameters back).
+ * See also:    run/mc_prog.c (programs); milk_unit_script.c (milk.script, the bash-snippet unit);
+ *              docs/guide/calculator.md, "Compute Units Without C".
+ * Constraints: built with MILK_NO_CLI and without libmilkscript (src/calc/CMakeLists.txt): it
+ *              runs without a session. At most 64 parameters, extension ones included; a
+ *              statement file must be under 64 KiB.
  */
 
 #include <stdio.h>

@@ -4,7 +4,20 @@
 
 /**
  * @file overview_panel.h
- * @brief State of one list panel (streams, processes or FPS) and of each sub-tab; OV_LAYOUT holds them
+ * @brief State of one list panel (streams, processes or FPS) and of each sub-tab; OV_LAYOUT holds
+ *        them.
+ *
+ * Purpose:     the three list panels share one state struct, indexed by ov_focus_t, so the same
+ *              code serves each of them.
+ * Does:        OV_PANEL_STATE (cursor and frozen-entry identities and the rows derived from them,
+ *              scroll, horizontal scroll, sort key and direction, column cursor, collapsed
+ *              columns, hovered entry, regex filter); ov_subtab_t (CONNECTIONS, LOOPS, DETAILS,
+ *              RESOURCES, OUTPUT) with the list cursor of each sub-tab (OV_SUBTAB_STATE); and the
+ *              pages of the F3 inspector, ov_insp_tab_t (INFO, SEMS, TRACE, KEYS, HOLDERS).
+ * Used by:     overview_layout.h (OV_LAYOUT.panel[], OV_LAYOUT.sub[]), hence render/, input/ and
+ *              tools/milkCTRL.c; tools/milkCTRL_opts_parse.c (the length of PATTERN).
+ * Uses:        overview_target.h (OV_TARGET).
+ * See also:    overview_layout.h; docs/guide/milk-CTRL.md, "Sub-tabs".
  */
 
 #ifndef OVERVIEW_PANEL_H

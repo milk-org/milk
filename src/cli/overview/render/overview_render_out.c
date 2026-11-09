@@ -5,6 +5,18 @@
 /**
  * @file    overview_render_out.c
  * @brief   OUTPUT sub-tab: the run state of the DETAILS FPS and the end of its unit's run.out.
+ *
+ * Purpose:     see what the run process of an FPS printed, and how it ended, without leaving
+ *              milk-CTRL (milk-fps-log NAME shows more).
+ * Does:        ov_render_out_panel() shows the unit state of the DETAILS FPS (with how its last
+ *              run ended), then the last lines of its run output that fit: read on each frame, at
+ *              most 64 KiB, cleaned of terminal sequences and control characters.
+ * Used by:     render/overview_render_subtabs.c (the OUTPUT sub-tab). Declared in
+ *              render/overview_render_internal.h.
+ * Uses:        libfps fps_unit_state.h (fps_unit_out_tail, fps_unit_state_name),
+ *              ov_detail_target() (render/overview_render_detail.c).
+ * See also:    src/tui/fpsCTRL/fpsCTRL_units.c (fpsCTRL's output mode reads the same tail);
+ *              docs/guide/milk-CTRL.md, "Sub-tabs".
  */
 
 #include "overview_render_internal.h"

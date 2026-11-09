@@ -6,6 +6,22 @@
  * @file tv_image.c
  * @brief Image pipeline: layout, view transform, sampling tables, typed samplers, display range
  *        and the cached image layer. Pure: memory in, memory out.
+ *
+ * Purpose:     turn a stream frame into coloured cells at a cost set by the terminal size, not
+ *              by the image size.
+ * Does:        lays out the screen (menubar, image, colorbar, status bar); turns the view (zoom,
+ *              centre, flips) into tables of source column and row per display sample, rebuilt
+ *              only when the layout or the view changes; samples the nearest pixel, two samples
+ *              per cell (half blocks), with one sampler per datatype; finds percentiles by an
+ *              exact radix select; smooths the display range; colours the samples through the
+ *              LUT, holding small changes in low-bandwidth mode. Wide types (32/64-bit
+ *              integers, double) are sampled relative to the median of a 3x3 grid of in-view
+ *              pixels, so that float keeps their precision.
+ * Used by:     termview.c (layout, view and each frame); tests/test_termview_unit.c (range
+ *              smoothing). Declared in termview_internal.h.
+ * Uses:        libmilkcommon/pixel_dispatch.h (FOREACH_REAL_DATATYPE),
+ *              libmilkcommon/milk_compiler.h, the LUT built by tv_cmap.c.
+ * See also:    docs/guide/termview.md, "Display range" and "Slow terminals and ssh".
  */
 
 #include <float.h>

@@ -1,10 +1,26 @@
-"""
-The unit program language (plan 'the-new-milk-cli-calc' step 4): `if <scalar>: <statement>`, `skip`,
-`post(name)`, the trigger frame's `_cnt0` `_ts` `_missed`, `hist(s, N)` / `prev(s[, k])` ring buffers,
-and `zeros()`.
+"""The milk.calc unit program language: guards, skip, post, frame variables, history rings, ema.
 
-A unit started with `run` on a stream whose semaphore was posted before it started processes that
-frame first (tick 0), so the frames posted by the test start at tick 1.
+Purpose:     a unit runs its statements on every frame of its trigger stream; these constructs
+             decide what runs, what is posted and what state carries from one frame to the next,
+             and a unit must keep running through a bad edit or a racing writer.
+Does:        zeros() shapes; one program with `if <scalar>: <statement>`, `skip`, `post(name)`,
+             the trigger frame's `_cnt0` `_ts` `_missed`, and `hist(s, N)` / `prev(s[, k])`
+             rings; errors for `if` without ':' and for a prev() deeper than its ring; a guarded
+             statement keeps a self-triggered unit above 100 kHz, and a false guard writes
+             nothing; ema() and accumulators that start at zero on frame 0; an edit that does not
+             compile leaves the unit running; an output written twice is posted once per tick; a
+             parameter set during a slow tick keeps its value; torn reads under a fast producer
+             are run again and counted (`_torn`). A unit started with `run` on a stream whose
+             semaphore was posted before it started processes that frame first (tick 0), so the
+             frames posted by the test start at tick 1.
+Covers:      milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c), the program runner
+             (src/calc/run/mc_prog.c), the rings (plan/mc_history.c), the parser and resolver
+             (front/mc_parse.c, front/mc_resolve.c), ema (run/mc_prestage.c), torn-read retries
+             (run/mc_exec.c).
+Uses:        conftest.py: milk_bash, value, CAM, UNIT_HELPERS; the HELPERS and STOP shell
+             functions.
+See also:    docs/guide/calculator.md, "Compute Units Without C"; units_sessions_test.py
+             (milk.calc options and parameters).
 """
 
 from __future__ import annotations

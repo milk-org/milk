@@ -4,12 +4,20 @@
 
 /**
  * @file milk_call_main.c
- * @brief Standalone client executable (`milk-call`) for milk-cli --server
+ * @brief `milk-call`: the client as a program, for tools that run milk commands outside bash.
  *
- * Used both as a fallback when `enable -f libmilkbash.so` is unavailable
- * and as the target of the `$MILK_INSTALLDIR/libexec/milk/bin/<module.cmd>` and `@<keyword>` links
- * (`milk-cli --catalog`) so external tools (`xargs`, `find -exec`, `timeout`, `parallel`) can
- * run milk commands directly.
+ * Purpose:     external tools (`xargs`, `find -exec`, `timeout`, `parallel`) run module commands
+ *              and keywords without a shell that loaded libmilkbash.so.
+ * Does:        runs a subcommand (call, complete, translate, shutdown) or a callable keyword
+ *              named without its `@` (get, set, calc, waitfor, ...) through its milk_client_*
+ *              call; run through a link, takes the command or keyword from the link's name;
+ *              any other word is a module command, sent to the session.
+ * Used by:     the links in libexec/milk/bin (`<module.cmd>`, `@<keyword>`) that
+ *              `milk-cli --catalog` writes (milk_catalog_build.c); python/tests/cli/conftest.py
+ *              (`milk-call translate`).
+ * Uses:        milk_client.h (the client calls), milk_keywords.h (the keyword list of its
+ *              usage), milk_bash.h (milk_translate_shorthand_to_bash()); links libmilkscript.
+ * See also:    docs/guide/scripting.md, "Module Commands".
  */
 
 #ifndef _GNU_SOURCE
@@ -295,7 +303,7 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
  *
  * Inspects `basename(argv[0])` to support busybox-style symlink invocation for
  * `@<keyword>` and `<module.cmd>` links in the bin farm, or dispatches the first
- * argument as a subcommand or milk server command.
+ * argument as a subcommand or a module command.
  *
  * Return: Process exit status from the dispatched subcommand or remote command
  */

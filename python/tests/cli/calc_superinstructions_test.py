@@ -1,12 +1,16 @@
-"""
-Tests for the superinstructions of fused passes (P2 of the 2026-10-27 engine review).
+"""Short arithmetic statements compile to one fused pass and match the per-operator values.
 
-The compiler's peephole folds an image load with the operator that follows it: `img op c` and
-`c op img` (FI_IMGC), `img op img` (FI_IMGIMG), and `top op img * c` (FI_VIMGC), so `a*2.5 + b*0.5`
-is two passes over the block instead of five, and the one-argument libm functions are dispatched on
-a kind resolved at compile time. Values must equal the per-operator fallback, for float and
-integer inputs, through views, and across a cross-statement merge that reads the previous
-destination (which unfuses the read into its register slot).
+Purpose:     the fused C pass makes per-frame arithmetic fast; a common statement must stay one
+             pass, and compute what evaluating each operator on its own computes.
+Does:        checks with --explain that seven statements each compile to one fused pass reading
+             two images; compares 13 expressions (float and u16 inputs, slices, a broadcast row)
+             with the same forced through the per-operator path by binned slices; runs a unit
+             whose local, read by the next two statements, is merged into their pass.
+Covers:      the planner and the JIT (src/calc/plan/mc_plan.c, mc_views.c: fusion and local
+             elision; src/calc/jit/mc_emit.c, mc_cc.c); src/calc/plan/mc_explain.c;
+             milk-fpsexec-milk-calc.
+Uses:        conftest.py: milk_bash, value.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; calc_int_float_path_test.py.
 """
 
 from __future__ import annotations
@@ -67,7 +71,7 @@ def test_peephole_shortens_the_tape(tmp_path):
 
 
 def test_superinstructions_match_fallback(tmp_path):
-    """Float and u16 inputs, views and NaNs: fused values equal the slice-forced fallback."""
+    """Float and u16 inputs and views: fused values equal the slice-forced fallback."""
     # (fused expression, the same forced through the per-operator path with binned slices)
     exprs = [
         ("a*2.5 + b*0.5", "a[::1b]*2.5 + b[::1b]*0.5"),

@@ -4,15 +4,15 @@
 
 /**
  * @file milk_srvlog.c
- * @brief Shared-memory server ring-buffer log (`milk-srv.<uid>.<name>.log.shm`) and `@log` CLI.
+ * @brief Shared-memory server ring-buffer log (`milk-srv.<uid>.<name>.log.shm`) and `@log` CLI
+ *        (see milk_srvlog.h).
  *
- * Role & Goal:
- *   Implements the lock-free `/dev/shm` circular log (`milk_srvlog_shm_t`,
- *   1024 entries) recording nanosecond timestamps, execution durations, exit
- *   codes, input commands, and captured stdout/stderr snippets for each
- *   `milk-cli` server. Also implements the `@log` / `@session log` search,
- *   regex filter, `--slow`, `--since`, `--errors`, `--json`, and `-f` live-tail
- *   commands.
+ * The log is a file in MILK_SHM_DIR (else the shm directory, /dev/shm or $TMPDIR) that the server
+ * and its readers map. Writers take no lock: each claims a slot by an atomic increment of
+ * write_seq, zeroes the slot's seq while it writes, then stores the sequence number; a reader keeps
+ * an entry only when its seq is the one it expects. A server that starts on the socket of one that
+ * closed its log keeps the entries. `@log` copies the matching entries, prints the last ones, and
+ * with -f polls write_seq every 15 ms.
  */
 
 #ifndef _GNU_SOURCE
@@ -110,7 +110,7 @@ void milk_srvlog_get_dir(char *out, size_t outsz)
 }
 
 /**
- * @brief Parse a `MILKCLI_SOCK` string into its numeric UID and logical server name.
+ * @brief Parse a `MILKCLI_SOCK` string into its numeric UID and session name.
  */
 void milk_srvlog_parse_sock(const char   *sockpath,
                             unsigned int *out_uid,
@@ -165,7 +165,7 @@ void milk_srvlog_parse_sock(const char   *sockpath,
 }
 
 /**
- * @brief Build a canonical `MILKCLI_SOCK` string from a logical server name or socket.
+ * @brief Build a canonical `MILKCLI_SOCK` string from a session name or socket.
  */
 void milk_srvlog_make_sock(const char *name_or_sock, char *out_sock, size_t socksz)
 {
@@ -409,7 +409,8 @@ void milk_srvlog_record(milk_srvlog_shm_t     *shm,
 }
 
 /**
- * @brief Append a client-side fast-path operation (`@get`/`@set`) to the session's SHM log.
+ * @brief Append a client-side fast-path operation (a `@set` done in the shell) to the session's
+ * SHM log.
  */
 void milk_srvlog_client_record(const char            *sockpath,
                                const struct timespec *ts_start,

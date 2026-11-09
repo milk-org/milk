@@ -4,20 +4,28 @@
 
 /**
  * @file milk_client_ops.c
- * @brief Core client RPC, entity read/write (`@get`/`@set`), undo journal, and calculator (`@calc`/`@test`).
+ * @brief The client calls that run module commands and read or write values: `@get`, `@set`
+ *        (and its undo journal), `@calc`, `@test`, `@exists`, `@running`.
  *
- * Role & Goal:
- *   Implements the primary data-path client entry points declared in `milk_client.h`:
- *   - `milk_client_call()`     : Dispatch CLI commands with `SCM_RIGHTS` fds
- *   - `milk_client_get*()`     : Fast `/dev/shm` read with server fallback and `-v`/`-a`/`-A` bindings
- *   - `milk_client_set*()`     : Fast `/dev/shm` write with `--restore` and `--undo` journaling
- *   - `milk_client_calc*()`    : Local scalar fast path + server math/array evaluation
- *   - `milk_client_test()`     : Boolean condition evaluation
- *   - `milk_client_exists()`   : Entity existence / running checks
- *
- *   Synchronization, capture, completion, and discovery operations (`@waitfor`,
- *   `@waitany`, `@sleep`, `@grab`, `@complete`, `@shutdown`, `@session`, `@log`,
- *   `@ls`) live in `milk_client_stream.c`.
+ * Purpose:     the frequent calls need no request: the shell reads and writes shared memory and
+ *              evaluates scalar statements in its own process; the session does the rest.
+ * Does:        sends a module command (CALL) with the caller's stdin, stdout, stderr and working
+ *              directory (SCM_RIGHTS), a piped stdin read into a memory file first; reads
+ *              (@get: -v, -a, -A, --watch) and writes (@set: --restore, --tui) entities in shared
+ *              memory, and asks the session for the rest (local images); records the values
+ *              each @set changed in the shell's __MILK_UNDO, for `@restore --undo`;
+ *              evaluates @calc and @test in the shell when every statement is scalar
+ *              (mcalc_local()), else in the session; tells whether an entity exists or runs.
+ * Used by:     the bash builtins (milk_bash_builtins.c), milk-call (milk_call_main.c);
+ *              milk_client_stream.c and milk_sessions.c (milk_client_call()). Declared in
+ *              milk_client.h and milk_client_internal.h.
+ * Uses:        milk_shm_prop.h (libmilkprop: entities in shared memory), mcalc.h (the in-shell
+ *              scalar evaluator), milk_client_internal.h (the connection), milk_ipc_common.h
+ *              (the caller's variables), milk_srvlog.h (a @set done in the shell goes to the
+ *              session's log).
+ * See also:    milk_client_stream.c (the other keywords); docs/guide/scripting.md, "Entities"
+ *              and "Cost Model".
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef _GNU_SOURCE
@@ -685,7 +693,7 @@ static void watch_sigint(int signo)
 }
 
 /*
- * @get --watch [T] <spec>...: the values every @period s until Ctrl-C (D41), redrawn in place at a
+ * @get --watch [T] <spec>...: the values every @period s until Ctrl-C, redrawn in place at a
  * terminal, else one tab-separated line per refresh. Return: 0 once Ctrl-C ends it, 1 if a spec
  * fails at the first refresh
  */

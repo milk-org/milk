@@ -6,24 +6,27 @@
  * @file mc_prestage.c
  * @brief Non-elementwise pre-stage and axis-reduction constructors for `libmilkcalc`.
  *
- * Implements the `MC_STEP_CTOR` operations dispatched via `mc_exec_prestage()` when an expression
- * either stands alone as a constructor statement or is hoisted into a temporary slot (`_tmpcalcN`)
- * ahead of an elementwise pass:
- *   - **Temporal exponential moving average (`ema(im, alpha)`)**: Maintains a per-step double
- *     accumulator buffer in `cs->scratch_buf` across frames (`milk.calc` unit iterations).
- *   - **Prefix sum (`cumsum(im[, axis])`)**: Copies and promotes the input image to float/double
- *     and computes an in-place prefix sum along the requested axis.
- *   - **Spatial filters (`gauss`, `boxmean`, `conv2`, `medfilt3/5/7`, `imin3`, `imax3`)**: Run
- *     the COREMOD_arith kernels (`arith_image_*_im`) with persistent scratch storage in
- *     `cs->scratch_buf`.
- *   - **Radial profile (`rprof(im[, cx, cy])`) and bin-map average (`pixunmap(im, map[, n])`)**:
- *     Uses a cached Compressed Sparse Row (CSR) gather schedule (`arith_csr_cache_t` in `cs->csr`)
- *     when the input and map are materialized 2D images, or falls back to a multi-threaded L1
- *     tile-streamed scatter-accumulate over `mc_red_src_t`.
- *   - **Per-axis reductions (`itot`, `imean`, `imin`, `imax`, `istd`, `irms`, `ivar`, `norm`,
- *     `asum`, `icount` with an `axis` argument)**: Collapses one dimension (or keeps a
- *     size-1 broadcast axis when hoisted inside an elementwise expression, `cs->is_anon == 2`)
- *     using SIMD horizontal lane vectorization for `axis > 0`.
+ * Purpose:     run the image operations that a fused pass cannot do pixel by pixel, as a step of
+ *              their own before the pass that reads them, with their state and scratch memory kept
+ *              on the step from frame to frame.
+ * Does:        mc_exec_prestage() runs one such constructor step: `ema(im, alpha)` keeps a double
+ *              accumulator per call site (cs->scratch_buf), seeded with its input on frame 0;
+ *              `cumsum(im[, axis])` copies the input to a float or double image and sums along
+ *              the axis in place; `gauss`, `boxmean`, `conv2`, `medfilt3/5/7`, `imin3` and `imax3`
+ *              run the COREMOD_arith kernels; `rprof` and `pixunmap` use a gather schedule cached
+ *              on the step (CSR, cs->csr) when the image and the map are named 2-D images, else a
+ *              tiled scatter on the thread team; the axis forms of `itot`, `imean`, `imin`,
+ *              `imax`, `istd`, `irms`, `ivar`, `norm`, `asum` and `icount` reduce one axis on the
+ *              thread team, keeping it at extent 1 when the result is an operand of a larger pass
+ *              (cs->is_anon == 2). mc_ctor_step_free() releases the CSR cache, extension state
+ *              and scratch buffer of a step.
+ * Used by:     run/mc_exec.c (mc_exec_ctor()); mc_ctor_step_free() by run/mc_prog.c. Declared in
+ *              plan/mc_plan.h.
+ * Uses:        COREMOD_arith (image_spatial.h, imfunctions.h, image_stats.h, arith_team.h),
+ *              run/mc_reduce.c (tiled reduction sources), run/mc_out.c, run/mc_exec.c,
+ *              milk_omp_team.h.
+ * See also:    run/mc_reduce.c (whole-image reductions); docs/guide/calculator.md, "Functions"
+ *              and "Fusion & Cost Model".
  */
 
 #include <math.h>

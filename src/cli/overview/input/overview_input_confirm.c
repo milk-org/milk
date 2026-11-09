@@ -5,6 +5,22 @@
 /**
  * @file overview_input_confirm.c
  * @brief y/N confirmation for destructive and batch verbs; the target is re-resolved before acting.
+ *
+ * Purpose:     SIGKILL, erase, cleanup and FPS batch actions run only after the user answers y,
+ *              and only on the entity that was on screen when the question was asked.
+ * Does:        ov_confirm_open() records the verb and the identity of its target (OV_CONFIRM).
+ *              While it is open, ov_input__handle_confirm() makes y act and any other key or
+ *              click cancel; pointer motion and the wheel are ignored. Acting finds the target
+ *              again by identity and does nothing if it is gone. A batch verb acts on each marked
+ *              FPS that is present and not already in the requested state, logs the counts and
+ *              clears the marks; ov_confirm_batch_arg() chooses start or stop for a batch toggle.
+ * Used by:     input/overview_input_actions.c and overview_input_mouse.c (open it);
+ *              input/overview_input.c (its keys, before the other key handlers). Declared in
+ *              input/overview_input_internal.h. render/overview_render_popup.c draws the box.
+ * Uses:        the ov_ctrl_* actions (input/overview_ctrl.c, overview_ctrl_proc.c), which check
+ *              the identity again; ov_tgt_set() and ov_tgt_find()
+ *              (render/overview_render_select.c).
+ * See also:    overview_target.h (ov_act_t, OV_CONFIRM); docs/guide/milk-CTRL.md, "CONTROL mode".
  */
 
 #include "overview_input_internal.h"
@@ -91,7 +107,10 @@ static void ov_confirm_batch(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_msel_clear(lay);
 }
 
-/** ov_confirm_exec - act on the confirmed verb if its target still exists (C2 identity checks apply). */
+/**
+ * ov_confirm_exec - act on the confirmed verb if its target still exists; the ov_ctrl_* actions
+ * check its identity again.
+ */
 static void ov_confirm_exec(OV_LAYOUT *lay, const OV_MODEL *m)
 {
     const OV_CONFIRM *c   = &lay->confirm;

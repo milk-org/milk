@@ -4,26 +4,33 @@
 
 /**
  * @file mc_lex.c
- * @brief Lexical analyzer and AST node deallocator for libmilkcalc.
+ * @brief Lexical analyzer, and the AST free, copy and walk functions, for libmilkcalc.
  *
- * This module implements the first stage of the calculator front-end pipeline:
- * converting raw expression or program text into a flat token stream
- * (`mc_tok_list_t`) consumed by the recursive-descent parser in `mc_parse.c`.
- *
- * Key responsibilities:
- * - Operator precedence table (`mc_op_prec`) shared by the full AST parser
- *   and the lightweight `mcalc_local()` evaluator.
- * - Numeric literal scanning (`mc_scan_number`) supporting decimal integers,
- *   floating-point numbers with scientific notation, and `0x`/`0o`/`0b` radix
- *   prefixes.
- * - Context-sensitive disambiguation of `@` (stream/local/FPS prefixes `@S:`,
- *   `@L:`, `@F:` vs. infix matrix multiplication `@`) and `.T` (postfix matrix
- *   transpose vs. dotted entity property names).
- * - Tracking `no_space_after` on tokens so the parser can distinguish function
- *   calls `f(x)` and slices `im[0]` from parenthesized expressions or vector
- *   literals separated by whitespace.
- * - Recursive teardown of expression (`mc_expr_free`) and statement
- *   (`mc_stmt_free`) AST trees.
+ * Purpose:     turn calculator text, one expression or a whole program, into tokens that keep
+ *              their line, column and byte span, so errors point into the text and a statement
+ *              can be printed back.
+ * Does:        mc_lex() fills a growable token list (the token texts in one buffer, reused at
+ *              the next call): `#` comments are dropped, newlines kept as statement
+ *              separators, `S:name` and `L:name` written `@S:name` and `@L:name`. `@` is a
+ *              stream prefix (`@S:` `@L:` `@F:`) or, after an operand, the matrix product;
+ *              `.T` after a name, `)` or `]` is the transpose, but `s.T` is the stream T;
+ *              no_space_after tells `f(x)` and `im[0]` from `f (x)` and `[...]`.
+ *              mc_scan_number() reads 0x/0o/0b, decimal and floating literals (an integer
+ *              beyond 64 bits is a double), mc_scan_ident() reads names and entity paths (a
+ *              stream name in `s.my-cam.cnt0` may hold `-`), mc_op_prec() gives the operator
+ *              precedence. mc_expr_free(), mc_stmt_free(), mc_expr_clone() and
+ *              mc_expr_child_slots() free, copy and walk AST nodes.
+ * Used by:     front/mc_parse.c (the tokens); front/mc_resolve.c and plan/mc_history.c (copy,
+ *              free, walk); mc_eval.c and run/mc_prog.c (lex, then parse); ext/mc_ext_loader.c
+ *              (mcalc_ext_scan_source()); in every shell, mcalc_local() (run/mc_scalar_ops.c)
+ *              and `@waitfor` (milk_client_stream.c); the server's milk_server_vars.c (calc
+ *              mode). Declared in front/mc_ast.h.
+ * Uses:        milk_entity_ns.h (entity path prefixes), ImageStreamIO/ImageStruct.h
+ *              (STRINGMAXLEN_IMAGE_NAME), mcalc_sub_prog_free() (run/mc_prog.c).
+ * See also:    front/mc_parse.c (the next stage); docs/guide/calculator.md, "Operators".
+ * Constraints: also compiled into libmilkbash.so (the thin client every shell loads), which
+ *              uses only mc_lex(), the scanners and mc_op_prec(): the AST functions call
+ *              mcalc_sub_prog_free(), which is not built there.
  */
 
 #include <ctype.h>

@@ -5,6 +5,18 @@
 /**
  * @file    overview_data_adj.c
  * @brief   Adjacency lists of the link graph: each node's out-edges and in-edges, in edge order.
+ *
+ * Purpose:     graph walks visit the edges of one node without scanning every edge of the model.
+ * Does:        ov_model_adjacency() fills OV_MODEL.adj_out and adj_in and their offset arrays by
+ *              a counting sort (compressed sparse rows). Each node keeps its edges in edge order,
+ *              so a walk visits them in the order they were found.
+ * Used by:     ov_build_graph() (overview_data_graph.c), as its last step; declared in
+ *              overview_data.h. The walks read the lists through OV_ADJ_B/OV_ADJ_E:
+ *              stream_graph*.c, overview_data_loops*.c, and the lineage, loop and health code of
+ *              render/ and input/. milk-fps-info also compiles this file.
+ * Uses:        overview_data_internal.h (OV_MODEL).
+ * See also:    overview_data_graph.c (the edges); overview_data.h (the adjacency fields).
+ * Constraints: not reentrant: one static work array.
  */
 
 #include "overview_data_internal.h"

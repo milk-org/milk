@@ -4,7 +4,18 @@
 
 /**
  * @file    overview_render_bar.c
- * @brief   Priority layout of one-line bars (header, status line): what fits when the terminal is narrow.
+ * @brief   Priority layout of one-line bars (header, status line): what fits when the terminal is
+ *          narrow.
+ *
+ * Purpose:     on a narrow terminal the header and the status line drop their least important
+ *              items first, or shorten them, instead of being cut at the right edge.
+ * Does:        ov_bar_layout() takes the items of a bar (OV_BAR_ITEM: full and short widths,
+ *              priority) and, by ascending priority (screen order within one priority), shows
+ *              each in its full form, else its short form, else hides it.
+ * Used by:     render/overview_render_header.c and overview_render_status.c. Declared in
+ *              render/overview_render_internal.h.
+ * See also:    render/overview_render_tabs.c (the tab bar's own fitting, ov_tabbar_level);
+ *              docs/guide/milk-CTRL.md, "Screen".
  */
 
 #include "overview_render_internal.h"

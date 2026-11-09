@@ -5,6 +5,20 @@
 /**
  * @file milk_bash_defer.h
  * @brief Internal ABI types, hook helpers, and `@defer` support for `libmilkbash`.
+ *
+ * Purpose:     libmilkbash is built without bash's headers: the few bash types
+ *              its builtins need are copied here, with what its files share.
+ * Does:        declares WORD_LIST and struct builtin; make_bash_hooks(), the
+ *              client hooks that read and set the shell's variables and run
+ *              code in its frame; wordlist_to_argv(); the builtins milkcloexec,
+ *              milktranslate, milkdefer and milkargs; milk_bash_defer_argv(),
+ *              the `@defer` scope stack.
+ * Used by:     milk_bash_builtins.c, milk_bash_hooks.c, milk_bash_defer.c.
+ * Uses:        milk_client.h (milk_client_hooks_t).
+ * See also:    milk_bash_hooks.c, milk_bash_defer.c; docs/guide/scripting.md,
+ *              "Waiting, Events and Cleanup" (@defer).
+ * Constraints: compiled into libmilkbash.so only. WORD_LIST and struct builtin
+ *              must keep the layout of bash's own (command.h, builtins.h).
  */
 
 #ifndef MILK_BASH_DEFER_H

@@ -25,12 +25,12 @@ The property names of each namespace are listed for users in
 | :--- | :--- |
 | `milk_shm_prop.h` | Public API: get/set/exists of entity properties, `@snapshot`/`@diff`/`@restore`, stream lookup |
 | `milk_stream_props.h` | The single table of stream property names (listings, completion, `@help streams`) |
-| `milk_shm_prop_internal.h` | Internal per-namespace handler declarations (`stream`, `fps`, `proc`) |
+| `milk_shm_prop_internal.h` | Internal per-namespace handler declarations (`stream`, `fps`, `proc`) and the helpers they share |
 | `milk_entity_ns.h` | Canonical table of entity namespaces (`s`, `l`, `f`, `p`, and long aliases) |
-| `milk_shm_cache.h` / `milk_shm_cache.c` | Inode-validated process-local cache of mapped SHM streams and FPS instances |
-| `milk_shm_prop.c` | Top-level `type.name.prop` dispatcher, `/dev/shm` glob discovery, `--json` formatting, `@snapshot`/`@diff`/`@restore` |
+| `milk_shm_cache.h` / `milk_shm_cache.c` | Inode-validated process-local cache of mapped SHM streams and FPS instances, and the reader semaphore slots of a stream |
+| `milk_shm_prop.c` | Top-level `type.name.prop` dispatcher, glob discovery in the shared-memory directory, `--json` formatting, `@snapshot`/`@diff`/`@restore` |
 | `milk_shm_prop_stream.c` | Stream/image metadata queries, statistical reductions, FITS keywords, and JSON output |
-| `milk_shm_prop_fps.c` | FPS parameter reads/writes, unit state inspection, and JSON serialization |
+| `milk_shm_prop_fps.c` | FPS parameter reads/writes, unit state inspection and actions, and JSON serialization |
 | `milk_shm_prop_proc.c` | `PROCESSINFO` telemetry queries, control actions, and JSON serialization |
 
 ---

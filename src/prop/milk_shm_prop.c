@@ -4,13 +4,19 @@
 
 /**
  * @file milk_shm_prop.c
- * @brief Top-level dispatcher for milk shared-memory entity operations.
+ * @brief Entity paths to their namespace handler; globs, JSON, `@snapshot`, `@diff` and
+ *        `@restore` (see milk_shm_prop.h).
  *
- * Role & Goal:
- *   Parses entity path strings (`[@]<namespace>.<name>.<prop>` or legacy
- *   `[@]<name>.<prop>`) and routes read (`milk_shm_prop_get`), write
- *   (`milk_shm_prop_set`), and existence (`milk_shm_prop_exists`) queries to the
- *   appropriate namespace handler (`stream`, `fps` or `proc`).
+ * A path is normalized (milk_normalize_entity_spec()) and split at its first two dots into
+ * namespace, name and property; the namespace picks the handler (milk_shm_prop_internal.h). A
+ * glob in the name lists the matching entities (local images, files of the stream directory,
+ * the processinfo list) and applies the request to each. JSON is built from the handlers' `kv`
+ * output (`key<TAB>value` lines). A path with no known namespace, `<name>.<prop>`, reads an FPS
+ * or else a process, and writes an FPS. milk_shm_prop_get_num() reads stream sizes and counters,
+ * numeric keywords and numeric FPS parameters straight from the mapping, and parses the text of
+ * anything else. A snapshot is one flat JSON object of `f.<fps>.<param>` and
+ * `s.<stream>.kw.<KEY>` values; `@diff` and `@restore` read it back with a small scanner, and
+ * `@diff` compares numbers with a relative tolerance of 1e-9.
  */
 
 #include <ctype.h>

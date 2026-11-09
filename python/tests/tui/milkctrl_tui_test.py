@@ -1,4 +1,16 @@
-"""Consolidated tests for milk-CTRL TUI (views, keys, colours, read-only safety, FPS edits, and loops)."""
+"""milk-CTRL: views, keys, colours, read-only viewing, FPS edits and feedback loops.
+
+Purpose:     milk-CTRL stays open on a running system: viewing must never write to shared
+             memory, and its control actions must do what they say.
+Does:        no emoji in the dashboard sources; keys and the status bar (an unmapped key, a key
+             that needs CONTROL mode); the night theme uses none of the fixed colours; viewing
+             leaves the processinfo registry unchanged, and C cleans up a dead entry after a y/N
+             confirm; a parameter edit writes the FPS, a value that is not a number is refused;
+             F7 lists a loop of two FPS as IDLE and renames it.
+Covers:      milk-CTRL (src/cli/overview: input/, render/, data/, tools/milkCTRL.c).
+Uses:        conftest.py: milkctrl, entities, tui_env; pyMilk's FPS, to read a parameter back.
+See also:    docs/guide/milk-CTRL.md, "CONTROL mode" and "Feedback loops (F7, or LOOPS sub-tab)".
+"""
 
 from __future__ import annotations
 

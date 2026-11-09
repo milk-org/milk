@@ -5,6 +5,18 @@
 /**
  * @file tv_cmap.c
  * @brief Colormaps, intensity scalings, LUT construction and the option name tables.
+ *
+ * Purpose:     each pixel takes its colour from one table lookup, whatever the colormap and
+ *              scaling; the options, the menus and -h use the same setting names.
+ * Does:        tv_cmap_color() gives a colormap's colour at a value in [0, 1];
+ *              tv_lut_build() bakes a colormap and a scaling curve into TV_LUT_N colours, plus
+ *              magenta for NaN and Inf pixels; tv_lookup_name() matches a name exactly or by a
+ *              unique prefix, in any case. The name tables of the colormaps, scalings and
+ *              range modes are checked against their enums at compile time.
+ * Used by:     termview.c (the LUT), tv_ui.c (menus, colormap previews), milk-termview.c
+ *              (options, -h) and tests/test_termview_unit.c. Declared in termview_internal.h.
+ * Uses:        termview.h (the colormap, scale and range enums).
+ * See also:    docs/guide/termview.md, "Menus" and "Options".
  */
 
 #include <math.h>

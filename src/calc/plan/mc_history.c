@@ -6,17 +6,24 @@
  * @file mc_history.c
  * @brief Self-referential stream bootstrap and the `hist()`/`prev()` ring rewriter.
  *
- * Implements two compilation-support facilities for `libmilkcalc` programs:
- *   1. **Self-referential recurrence bootstrap (`mc_expr_mentions_self`, `mc_self_init_create`)**:
- *      Detects recurrence assignments where an uncreated target appears on its own RHS (e.g.
- *      `avg = 0.9 * avg + 0.1 * im` or `n = n + 1`) and pre-creates the target image or scalar
- *      variable zero-initialized using the shape/datatype of the non-self operand.
- *   2. **History ring rewriter (`mc_rewrite_history`)**: Scans program source text before lexing
- *      for `hist(stream, N)` declarations and `prev(stream[, k])` references. Allocates or
- *      verifies the backing `(naxis + 1)`-D shared-memory ring buffer `<stream>_hist` of depth `N`
- *      (default `2` when `prev(stream)` is used without an explicit `hist()`), rewrites every
- *      `prev(stream, k)` call into `<stream>_hist[..., (_n + N - k) % N]`, and appends
- *      `<stream>_hist[..., _n % N] = <stream>` update statements at the end of the program.
+ * Purpose:     let a unit read its own output (`acc = 0.9 * acc + 0.1 * cam`) and the past frames
+ *              of a stream (`cam - prev(cam)`), with no init statement or bookkeeping of its own.
+ * Does:        mc_expr_mentions_self() tells whether an expression reads a given name, and finds
+ *              another image to take the shape from (not inside a reduction); mc_self_init_create()
+ *              creates the name, zero, as an image of the right-hand side's shape and type, or as a
+ *              scalar variable. mc_hist_rewrite() rewrites a parsed program: each `hist(s, N)`
+ *              statement declares a ring of N frames and becomes empty; each `prev(s[, k])` becomes
+ *              the slice of the ring `<s>_hist` that holds frame n-k (depth 2 when s has no
+ *              hist()); the rings are created as shared streams with one more axis, or checked; one
+ *              update statement per ring is appended, flagged is_hist_stmt. Rings work only in a
+ *              unit, on 1-D and 2-D streams, at most MC_HIST_MAX per program.
+ * Used by:     front/mc_resolve.c (self-init targets, in a unit), plan/mc_views.c (whether an
+ *              expression reads a slot, for fusion and elision), run/mc_prog.c (mc_hist_rewrite(),
+ *              after parsing). Declared in front/mc_ast.h.
+ * Uses:        COREMOD_memory (create_image.h, create_variable.h, image_ID.h), ImageStreamIO;
+ *              front/mc_lex.c and front/mc_parse.c (the ring slices are written as text, then
+ *              parsed).
+ * See also:    docs/guide/calculator.md, "Compute Units Without C".
  */
 
 #include <ctype.h>

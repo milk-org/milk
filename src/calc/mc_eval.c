@@ -6,22 +6,34 @@
  * @file mc_eval.c
  * @brief Top-level statement evaluator, LRU program cache, and `def` table for `libmilkcalc`.
  *
- * Provides the interactive and scripting entry points (`mcalc_eval_bash`, `mcalc_eval_str`,
- * `mcalc_eval_math_to_val`) used by `milk.bash` (`@calc`), `libmilkscript`, `CLIcore`, and the
- * `milk-calc` REPL.
- *
- * Key responsibilities:
- *   - **Host string variable bridge (`mc_host_str_*`)**: Forwards string variable reads and writes
- *     to the registered host environment (`bash` shell variables or `milk-script` table) or falls
- *     back to an internal 128-entry table (`g_fb_vars`) in standalone processes.
- *   - **User-defined inline functions (`mcalc_udef_*`)**: Parses and stores `def f(x, ...) = expr`
- *     definitions so subsequent statements inline the AST body at call sites.
- *   - **64-entry LRU statement cache (`g_stmt_cache`)**: Caches compiled `mcalc_prog_t` objects
- *     keyed by FNV-1a hash of the input string. Repeated executions of image expressions in shell
- *     loops skip lexing, parsing, resolution, planning, and C kernel compilation whenever the
- *     shared-memory table generation (`milk_table_generation()`) and slot shapes remain valid.
- *   - **Output formatting (`emit_scalar_result`, `emit_image_result`)**: Formats scalar values or
- *     image summaries according to `mcalc_out_mode` (`VALUES`, `REPL`, `PIXELS`, `BIND`, `NONE`).
+ * Purpose:     turn the calculator text of a request (@calc, @test) into results: check it, run
+ *              its statements on the session's images and variables, print what they give in
+ *              the form asked, and set the exit status.
+ * Does:        mcalc_eval_bash() parses the whole text first (a syntax error runs nothing), then
+ *              runs its statements in turn until one fails, tests false or meets Ctrl-C. Each is
+ *              a directive (loadlib, __list_catalog, def, an if or for block), a scalar
+ *              statement evaluated directly, or a statement that reads or makes images,
+ *              compiled into a program (run/mc_prog.c) and kept in a 64-entry LRU cache keyed
+ *              by its text (FNV-1a): repeated in a shell loop, it skips lexing, parsing,
+ *              resolution, planning and C compilation until a change of the image and variable
+ *              tables (milk_table_generation()) affects its names or slot shapes. Output
+ *              follows mcalc_out_mode (VALUES, BIND, PIXELS, REPL), or goes to a buffer
+ *              (mcalc_eval_str()); errors go to stderr and mcalc_lasterr. Also keeps the def
+ *              table (mcalc_udef_*: each call inlines the body), forwards string variables to
+ *              the host (mcalc_host.h) or, with none registered, to a 128-entry table of its
+ *              own, and evaluates a numeric expression silently (mcalc_eval_math_to_val()).
+ * Used by:     the session (milk_server_eval.c: @calc, @test, @assert, @pipe and calc mode;
+ *              milk_server_stream.c: @waitfor conditions); milk_cmd_args.c (an expression as an
+ *              argument value); the calculator's resolver, scalar evaluator, programs and
+ *              --explain (def table, string variables). Declared in mcalc.h, mcalc_host.h and
+ *              front/mc_ast.h.
+ * Uses:        front/mc_ast.h (lexer, parser, resolver, scalar evaluator), plan/mc_plan.h
+ *              (programs), libmilkdata (image table, table generation), COREMOD_memory.
+ * See also:    run/mc_prog.c (programs);
+ *              docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)";
+ *              docs/guide/scripting.md, "Errors and Exit Status".
+ * Constraints: not thread-safe: the cache, the def table, the output mode and the output
+ *              buffer are process globals; the session runs one command at a time.
  */
 
 #include <ctype.h>
@@ -869,7 +881,7 @@ static void store_stmt_cache(const char   *input,
  * eval_bash_inner - Core implementation of single-statement and directive evaluation
  * @input:   Input expression or statement string
  * @is_test: 1 when evaluating a boolean condition (`@test`), 0 for normal evaluation
- * @out_rc:  Output pointer receiving shell-style exit status (`0` true/ok, `1` false, `2` error)
+ * @out_rc:  Exit status: `0` ok or true, `1` false or a failed `@calc` run, `2` any other error
  *
  * Execution pipeline:
  *   1. Auto-loads any extension libraries listed in `MILK_CALC_LIBS`.
@@ -1139,7 +1151,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
  * eval_bash_text - Parse @input whole, then evaluate its statements one at a time
  * @input:   Statements separated by `;` or newlines (blocks, comments and directives included)
  * @is_test: 1 for `@test`, 0 for `@calc`
- * @out_rc:  Optional pointer receiving exit status (`0` success/true, `1` false, `2` error)
+ * @out_rc:  Optional exit status (`0` ok or true, `1` false or a failed `@calc` run, `2` error)
  *
  * A syntax error anywhere runs nothing. Each statement is then checked and run by
  * eval_bash_inner(), against the session as the earlier ones left it; the first that fails, tests
@@ -1212,7 +1224,7 @@ static int eval_bash_text(const char *input, int is_test, int *out_rc)
  * mcalc_eval_bash - Evaluate calculator statements for `@calc` and `@test` (eval_bash_text())
  * @input:   Statements to evaluate
  * @is_test: 1 for boolean condition testing (`@test`), 0 for normal evaluation
- * @out_rc:  Optional pointer receiving exit status (`0` success/true, `1` false, `2` error)
+ * @out_rc:  Optional exit status (`0` ok or true, `1` false or a failed `@calc` run, `2` error)
  *
  * Return: 1 on success, 0 on syntax or evaluation error
  */

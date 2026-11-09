@@ -4,12 +4,27 @@
 
 /**
  * @file milk_server_eval.c
- * @brief Calculator (`@calc`/`@test`), assertion (`@assert`), and batch pipeline (`@pipe`) evaluation.
+ * @brief Calculator (`@calc`/`@test`), assertion (`@assert`), and batch pipeline (`@pipe`)
+ *        evaluation.
  *
- * Role & Goal:
- *   Evaluates `@calc` / `@test` expressions (`milk_server_exec_calc_or_test`),
- *   diagnostic entity/boolean assertions (`milk_server_assert`), and multi-step
- *   `@pipe` chains with `_` output-image forwarding (`milk_server_batch_or_pipe`).
+ * Purpose:     calculator text that the shell cannot evaluate itself (images, calculator
+ *              variables) runs in the session, where its images and variables are.
+ * Does:        runs a CALC or TEST request: takes in the shell variables it names, then runs the
+ *              statements (mcalc_eval_bash()) under milk_server_run_guarded(), printing values,
+ *              lines to bind (-v, -a) or what --explain shows; @assert checks an entity (--exists,
+ *              --running, --dim, --cnt-min, --fps-min, --max-age) or a condition, and prints
+ *              both sides of a failed comparison; @pipe runs commands and statements in one
+ *              request, `_` naming the image the previous stage made; runs a line of milk-cli's
+ *              calc mode in its process; splits a command line into words.
+ * Used by:     milk_server.c (CALC and TEST requests), milk_server_dispatch.c (@assert, @pipe),
+ *              milk_bash_exec.c (calc mode), CLIcore_UI_history_display.c
+ *              (milk_server_split_words()). Declared in milk_server_internal.h and
+ *              milk_server.h.
+ * Uses:        mcalc.h (the calculator), milk_shell_lex.h (quoting, for the splitters),
+ *              milk_shm_prop.h (entities), milk_server_vars.c (shell variables),
+ *              milk_server_dispatch.c (commands in @pipe).
+ * See also:    docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)";
+ *              docs/guide/sessions.md, "Snapshots, Undo, Assertions, and Logs".
  */
 
 #ifndef _GNU_SOURCE
@@ -885,7 +900,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
 }
 
 /**
- * batch_step_cb - `split_top_level()` callback that runs one `@pipe` step
+ * batch_step_cb - `split_pipe_stages()` callback that runs one `@pipe` step
  * @seg: Pipeline segment string
  * @ctx: Pointer to the 256-byte `last_img` buffer
  *
@@ -1055,9 +1070,8 @@ static int calc_body(void *arg)
  * @log_cmd:    Output buffer receiving the human-readable command for the server log
  * @log_cmd_sz: Capacity of @log_cmd in bytes
  *
- * Synchronizes referenced bash scalars into `dcvar[]`, splits the
- * expression on top-level semicolons/newlines, and evaluates each statement under
- * milk_server_run_guarded().
+ * Synchronizes referenced bash scalars into `dcvar[]`, and evaluates the statements
+ * (mcalc_eval_bash()) under milk_server_run_guarded().
  *
  * Return: 0 on success (or true `@test`), 1 on false `@test` or runtime error, 2 on syntax error,
  * 130 if interrupted.

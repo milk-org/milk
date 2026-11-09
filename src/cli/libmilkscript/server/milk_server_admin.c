@@ -6,6 +6,24 @@
  * @file milk_server_admin.c
  * @brief The session keywords the server runs: @module, @config, @history's subcommands, and
  *        @session save.
+ *
+ * Purpose:     the keywords that act on the session itself run in its process, where its
+ *              modules, settings, variables and images are.
+ * Does:        @module lists the modules (--all: the catalog's too) or loads one, under an
+ *              optional short name; @config shows or sets the session's settings (digits,
+ *              precision, procinfo, calc) and passes the REPL settings to milk-cli's commands;
+ *              @history shows the lines typed at milk-cli prompts, in this session or in all
+ *              (read from ~/.milk_history_log where milk-cli's history commands are missing, as
+ *              in milk-script); @session save writes a milk script that rebuilds the session's
+ *              settings, calculator variables, command defaults and local images.
+ * Used by:     milk_server_dispatch.c (milk_server_dispatch_argv()), which also receives the
+ *              `@session save` that milk_sessions.c forwards. Declared in
+ *              milk_server_internal.h.
+ * Uses:        CLIcore_modules.h and milk_catalog.h (modules), milk_cmd_args.h (command
+ *              defaults), milk_cmd_index.h, mcalc.h (calculator variables), COREMOD_iofits (the
+ *              images' FITS files), milk_srvlog.h (the units the session started).
+ * See also:    docs/guide/sessions.md, "Managing Sessions (`@session`)"; docs/guide/scripting.md,
+ *              "Module Commands"; docs/guide/CLIcore.md, "History".
  */
 
 #ifndef _GNU_SOURCE
@@ -331,7 +349,7 @@ static int history_from_log(int global, long n)
  * @handled: Output flag, set to 1
  *
  * `@history [N]` (or `--local`) shows the last N lines typed in this session, `--global` in all of
- * them, in every front-end (D39). The others are the milk-cli prompt's: its readline history.
+ * them, in every front-end. The others are the milk-cli prompt's: its readline history.
  *
  * Return: Exit status of the history command, 2 for a usage error
  */

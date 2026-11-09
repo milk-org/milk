@@ -4,8 +4,23 @@
 
 /**
  * @file    overview_render_graph_health.c
- * @brief   Health of each CONNECTIONS row (stream rate, reader state, missed triggers, FPS, compute time)
- *          and where a pipeline stalls.
+ * @brief   Health of each CONNECTIONS row (stream rate, reader state, missed triggers, FPS,
+ *          compute time) and where a pipeline stalls.
+ *
+ * Purpose:     the CONNECTIONS tree shows, right of each row, whether data flows through it, and
+ *              marks the first node upstream that stopped advancing.
+ * Does:        ov_graph_row_health() fills OV_ROW_HEALTH for a tree row: the stream's rate
+ *              (flagged when its reader runs slower), the reader process's state (OFF for an FPS
+ *              whose run process is down), its compute time on this input (from hop 0 of the
+ *              trace of a stream it writes), its missed-trigger share, and the FPS running it.
+ *              ov_graph_stalls() marks where a pipeline stops (a stalled reader with no stalled
+ *              row above it on its path) and the rows below that stop.
+ * Used by:     render/overview_render_graph.c (the CONNECTIONS tree). Declared in
+ *              render/overview_render_internal.h.
+ * Uses:        the model's adjacency lists (OV_ADJ_B, OV_ADJ_E), ov_trace_hop()
+ *              (data/overview_data_trace.c), ov_fmt_si() and ov_fmt_dt_ns()
+ *              (overview_render_numfmt.c).
+ * See also:    docs/guide/milk-CTRL.md, "Sub-tabs".
  */
 
 #include "overview_render_internal.h"

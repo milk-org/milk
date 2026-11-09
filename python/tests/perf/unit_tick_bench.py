@@ -4,14 +4,21 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """Per-tick cost of milk.calc compute units, by statement kind.
 
-Not a pytest test (no test_ prefix): a benchmark to run before and after a change.
-
-    MILK_INSTALLDIR=/path/to/install python3 unit_tick_bench.py [--seconds S]
-
-Each unit is triggered by the stream it writes ("self-triggered"), so it runs back to back with
-no sleep and no producer: the rate of its output's cnt0 is the tick rate, and 1/rate the cost of
-one tick (trigger wait, FPS sync, the statements, one output post). The first row, an 8x8
-statement, is the loop's own floor. Statements run with OMP_NUM_THREADS=1 unless noted.
+Purpose:     a benchmark to run before and after a change: what one tick of a unit costs, from
+             the loop's own floor to large kept statements.
+Does:        each unit is triggered by the stream it writes ("self-triggered"), so it runs back
+             to back with no sleep and no producer: the rate of its output's cnt0 is the tick
+             rate, and 1/rate the cost of one tick (trigger wait, FPS sync, the statements, one
+             output post). The first row, an 8x8 statement, is the loop's own floor. Statements
+             run with OMP_NUM_THREADS=1 unless noted.
+Covers:      milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c) and the calculator's
+             kept statements.
+Uses:        the install that MILK_INSTALLDIR names; milk-script, to make the streams and read
+             cnt0.
+See also:    python/tests/cli/perf_ceilings_test.py (test_unit_tick_ceilings);
+             docs/guide/calculator.md, "Compute Units Without C".
+Constraints: not a pytest test (no test_ prefix); run it by hand:
+             MILK_INSTALLDIR=/path/to/install python3 unit_tick_bench.py [--seconds S]
 """
 
 import argparse

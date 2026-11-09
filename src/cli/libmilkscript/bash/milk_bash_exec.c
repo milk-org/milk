@@ -4,13 +4,18 @@
 
 /**
  * @file milk_bash_exec.c
- * @brief High-level command/file execution and `@calc` REPL mode dispatch for the bash co-process.
+ * @brief Running a command line or a file in the bash co-process, and calc mode (see
+ *        milk_bash.h).
  *
- * Role & Goal:
- *   Provides `milk_bash_exec()` and `milk_bash_exec_file()`, handling
- *   re-entrancy guards, bare `@calc` REPL mode toggles, in-process calculator
- *   fast-paths, and multi-line bash block accumulation before delegating raw
- *   shell execution to `milk_bash_exec_raw()`.
+ * Text with no bare `@calc` line, outside calc mode, goes to bash in one piece. Otherwise it is
+ * taken line by line: a bare `@calc` switches calc mode, lines outside it go to bash together,
+ * and in calc mode a line is a calculator statement (a line that starts with `@` runs as a
+ * keyword; `exit` or `quit` leaves the mode). A statement is evaluated in this process when it
+ * needs nothing from bash (milk_server_can_exec_calc_inproc()), bash uses this process's session
+ * and -e is off; else it runs in bash as `@calc --repl "<line>"`. milk_bash_exec_raw() refuses an
+ * unterminated quote, translates `@{...}` and adds `set -e` under -e (exit on error); around a
+ * command that may change shell variables, it bumps the server's bash epoch, so calc mode reads
+ * them again. A shell command started from inside a milk command is refused.
  */
 
 #ifndef _GNU_SOURCE

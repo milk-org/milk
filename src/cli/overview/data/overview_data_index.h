@@ -4,10 +4,25 @@
 
 /**
  * @file overview_data_index.h
- * @brief Open-addressing hash index: 64-bit key hash -> array position, for O(1) lookups by name, inode, PID
+ * @brief Open-addressing hash index: 64-bit key hash -> array position, for O(1) lookups by name,
+ *        inode or PID.
  *
- * Linear probing over a power-of-two table; the value -1 marks an empty slot. Hashes may collide: lookups
- * confirm each candidate with a match function. Keep tables at most half full.
+ * Purpose:     the scan looks entries up (streams by name or inode, processes by PID, edges by
+ *              their ends) for every entry it reads; each lookup must stay O(1) with thousands of
+ *              streams.
+ * Does:        OV_INDEX_DEF(cap) declares an index of cap slots (a power of two): parallel key
+ *              and value arrays. ov_ix_put() adds a value under a hash (duplicates allowed);
+ *              ov_ix_find() and ov_ix_slot() return the first value, or its slot, under a hash
+ *              that a match function accepts; ov_ix_clear() empties the index. Linear probing;
+ *              the value -1 marks an empty slot. Hashes may collide: the match function confirms
+ *              each candidate. ov_hash_str() (FNV-1a) and ov_hash_u64() make the hashes.
+ * Used by:     overview_data.h (the model's stream-name, inode and PID indexes, built in
+ *              overview_data_graph.c, which also indexes edges to drop duplicates),
+ *              overview_data_cache.c (the stream, FPS and process caches), overview_data_pid.c
+ *              (the PID table of a scan and the dead PIDs).
+ * Uses:        libc only.
+ * See also:    overview_data_index.c.
+ * Constraints: keep a table at most half full; ov_ix_put() returns -1 on a full table.
  */
 
 #ifndef OVERVIEW_DATA_INDEX_H

@@ -1,14 +1,24 @@
-"""
-Regression tests for user-defined C extensions in milk.calc / @calc (`milk_calc_ext.h`)
-and standalone compilation via `milk-cc`:
-  - Tier 1a: 1D SIMD block kernels (`MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2`)
-  - Tier 1b: 2D neighborhood stencils (`MILK_CALC_REG_STENCIL`)
-  - Tier 1c: Single-function whole-image kernels (`MILK_CALC_REG_IMG`)
-  - Tier 2:  Multi-input / multi-output stateful operators (`MILK_CALC_OP_DECLARE`, `MILK_CALC_REG_OP`)
-  - Tier 3:  Single-command `MILK_RUNNABLE` compilation (`milk-cc <unit.c>`)
-  - FPS parameter exposure rules: unbound params exposed under `.<func>.<param>` or `.<label>.<param>`,
-    call-site bound params (`th = 3 * rms`) hidden from FPS, and scalar output ports exposed as
-    `FPFLAG_DEFAULT_OUTPUT`.
+"""C extensions of the calculator (milk_calc_ext.h, -l) and compute units built with milk-cc.
+
+Purpose:     users add compiled kernels and operators without editing CMake; each tier must
+             build, run in @calc and in units, and put exactly the right parameters in the unit's
+             FPS: unbound ones as `.<func>.<param>` (or `.<label>.<param>`), bound ones nowhere,
+             scalar output ports as outputs.
+Does:        builds and runs Tier 1a block kernels (MILK_CALC_REG_BLK, MILK_CALC_REG_BLK2), a
+             Tier 1b stencil (MILK_CALC_REG_STENCIL), a Tier 1c whole-image kernel
+             (MILK_CALC_REG_IMG), a Tier 2 stateful operator with a scalar output port
+             (MILK_CALC_OP_DECLARE, MILK_CALC_REG_OP) and a Tier 3 MILK_RUNNABLE built by
+             milk-cc; checks the FPS parameter rules (a parameter bound by name, by position or
+             in a nested call), --list with an extension, the kernels that modules export, how
+             -l compiles, caches and reports errors, argument binding, and the parameter tables
+             the packer refuses.
+Covers:      src/calc/milk_calc_ext.h; src/calc/ext/ (mc_ext_loader.c, mc_ext_registry.c,
+             mc_ext_exec.c, mc_ext_builtin.c), behind @calc -l; scripts/milk-cc; --list
+             (src/calc/mc_func.c); milk-fpsexec-milk-calc; imgbasic.imexpand and
+             imgbasic.resizeim (plugins/milk-extra-src/image_basic).
+Uses:        conftest.py: milk_bash, value.
+See also:    docs/guide/calc_c_extensions.md;
+             docs/guide/calculator.md, "Auto-Compilation and Caching (`-l` / `--lib`)".
 """
 
 from __future__ import annotations
@@ -405,7 +415,7 @@ echo "sx2=$(@get s.wfs_sx.mean) flux2=$(@get f.u_sh.total_flux)"
 
 def test_tier3_milk_cc_standalone_runnable(tmp_path):
     """Tier 3 (`milk-cc <unit.c>`):
-    Compiles a single-file `MILK_RUNNABLE` `.c` source into `./milk-fpsexec-milk-custom-scale`
+    Compiles a single-file `MILK_RUNNABLE` `.c` source into `./milk-fpsexec-custom-scale`
     with zero CMake setup and runs it.
     """
     c_file = tmp_path / "custom_scale.c"

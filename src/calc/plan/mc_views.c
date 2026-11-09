@@ -6,26 +6,28 @@
  * @file mc_views.c
  * @brief Slice view resolution, broadcast geometry, and pass fusion analysis for libmilkcalc.
  *
- * Provides two groups of routines used during planning (`mc_plan.c`), C code
- * emission (`mc_emit.c`), and pass execution (`mc_exec.c`):
- *
- * 1. **Runtime View & Broadcast Resolution**:
- *    - `mc_view_resolve()` evaluates dynamic slice bounds (`start:stop:step` or
- *      `::Nb` binned slices, supporting negative indices and the `end` keyword)
- *      against a live `IMAGE` and computes the resulting 3D view extents
- *      `(vnx, vny, vnz)`, base element offset (`offset_elem`), and signed
- *      per-axis element strides (`st[3]`). Binned RHS slices (`::Nb`) are
- *      materialized into temporary images via `imgid_slice_materialize()`.
- *    - `mc_view_merge_shape()` and `mc_view_apply_broadcast()` implement
- *      NumPy-style singleton-axis broadcasting, zeroing `st[a]` on axes where
- *      `vnx/vny/vnz == 1` and `pass_size[a] > 1`.
- * 2. **Pass Operand Lookup & Fusion/Elision Legality**:
- *    - `mc_find_slot_by_bare()`, `mc_find_im_op()`, and `mc_find_scalar_op()`
- *      locate planned slots and operands during C code generation.
- *    - `mc_can_merge_passes()`, `mc_has_bcast_stencil()`, and
- *      `mc_elide_unused_locals()` analyze data dependencies across statements
- *      to determine when consecutive elementwise passes can be fused and when
- *      `local` intermediate images can be kept purely in CPU registers.
+ * Purpose:     let one compiled kernel read and write slices and broadcast operands in place,
+ *              with bounds that may change at each run, and tell which statements can share a
+ *              pass.
+ * Does:        at run time, mc_view_resolve() evaluates the slice bounds of an operand
+ *              (negative indices, `end`, steps) on the live image, into a base offset, signed
+ *              strides and extents; a binned slice (`::Nb`) read on the right-hand side is
+ *              first computed into a temporary image (imgid_slice_materialize()).
+ *              mc_view_merge_shape() and mc_view_apply_broadcast() broadcast extent-1 axes
+ *              (stride 0). At planning, mc_find_slot_by_bare(), mc_find_im_op() and
+ *              mc_find_scalar_op() find slots and operands; mc_can_merge_passes() and
+ *              mc_has_bcast_stencil() decide whether two passes can be fused (same shape, no
+ *              slice or mask target, no hazard between what one writes and the other reads);
+ *              mc_elide_unused_locals() keeps a `local` output that no other step reads in a
+ *              register.
+ * Used by:     run/mc_exec.c (views, each time a pass runs), plan/mc_plan.c (fusion, elision),
+ *              jit/mc_emit.c (slot and operand lookup). Declared in plan/mc_plan.h.
+ * Uses:        libfps imgid_slice.h (IMGID_SLICE, imgid_slice_output_size()),
+ *              COREMOD_memory/stream_slice.h (imgid_slice_materialize()), run/mc_scalar_eval.c
+ *              (bound expressions), run/mc_out.c (mc_tmp_image()), plan/mc_history.c
+ *              (mc_expr_mentions_self()).
+ * See also:    docs/guide/slicing.md, "Syntax"; docs/guide/calculator.md,
+ *              "Fusion & Cost Model".
  */
 
 #include <math.h>

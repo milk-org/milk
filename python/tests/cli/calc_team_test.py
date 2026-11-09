@@ -1,12 +1,22 @@
-"""
-Tests for the calculator's persistent worker team (P3 of the 2026-10-27 engine review).
+"""The calculator's persistent worker team: same results at any size, hot workers in fast units.
 
-Every block loop of the fused passes (statements, reductions, axis and segmented reductions, the
-Gaussian) used to open an OpenMP parallel region of its own, so a multi-region tick paid several
-fork/joins, and a unit ticking slower than libgomp's spin window paid a ~100 µs wake-up per region.
-The team is created once, dispatched per block loop with the caller as thread 0, and its workers
-spin for `MILK_CALC_SPIN_US` (default 2000) after a job before sleeping. Results must not depend on
-the team size, and a unit at a 1 ms period must run its statements with hot workers.
+Purpose:     passes, reductions and pre-stages run their block loops on a team of threads that
+             stays alive between calls, with the caller as thread 0 (no OpenMP fork/join per
+             loop), and the workers spin for MILK_CALC_SPIN_US (default 2000 µs) after a job
+             before sleeping, so a unit that ticks every millisecond does not pay a wake-up per
+             loop; results must not depend on the team size.
+Does:        compares reductions, a centroid, an axis reduction, a Gaussian and a fill between 1
+             and 4 threads on a 1024^2 image; runs a -loopd 0.001 unit with spinning workers
+             (MILK_CALC_SPIN_US=-1) and with sleeping ones (0), and compares their worst and
+             median execution times (p.<unit>.exec_max, exectime).
+Covers:      the team (src/coremods/COREMOD_arith/arith_team.c) and its calculator callers
+             (src/calc/run/mc_exec.c, mc_reduce.c, mc_prestage.c); milk_omp_team_size()
+             (src/engine/libmilkcommon/milk_omp_team.c); MILK_CALC_THREADS.
+Uses:        conftest.py: milk_bash, value, _install_dir, _isolated_shm_env, _run; milk-script
+             and milk-fpsexec-milk-calc.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; calc_prestage_threads_test.py.
+Constraints: MILK_PERF_TESTS=0 skips the timing test, which needs 4 CPUs and skips itself on a
+             slow host.
 """
 
 from __future__ import annotations

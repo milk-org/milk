@@ -314,7 +314,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 - **2026-10-23** — Calculator, linear algebra, and `COREMOD_arith` kernel consolidation:
   - **Shared arithmetic & reduction kernels (`COREMOD_arith`):** unified complex arithmetic
-    (`im_complex.c`), coordinate and counter-based hash PRNG generators (`image_coord.{c,h}`),
+    (`im_complex.c`), coordinate and counter-based hash PRNG generators (`image_generate.{c,h}`),
     general-datatype/masked/axis reductions (`image_stats.{c,h}`), and matrix/BLAS kernels
     (`image_linalg.{c,h}`) across the calculator, `image_gen`, `image_basic`, and `linalgebra`,
     retiring ~4,900 lines of duplicate legacy loops. `mkrandomim` now uses the parallel counter

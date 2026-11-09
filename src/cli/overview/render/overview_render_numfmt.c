@@ -5,6 +5,17 @@
 /**
  * @file    overview_render_numfmt.c
  * @brief   Number formatting with units, so values keep a bounded width.
+ *
+ * Purpose:     list columns have fixed widths: rates, counters and times must fit them at any
+ *              magnitude.
+ * Does:        ov_fmt_si(): a value with an SI suffix in at most 6 columns ("999.9", "12.3k",
+ *              "1.20M"); ov_fmt_dt_ns(): a duration in ns, us, ms or s ("850ns", "12.3us",
+ *              "1.25ms", "2.40s"). Both print "-" for a negative (unknown) value.
+ * Used by:     the processes and streams columns (render/overview_columns_procs.c,
+ *              overview_columns_streams.c), CONNECTIONS health, stream DETAILS and the F3
+ *              inspector. Declared in render/overview_render_internal.h.
+ * See also:    format_mem_kb() and format_uptime() (render/overview_render_internal.h);
+ *              docs/guide/milk-CTRL.md, "Lists".
  */
 
 #include "overview_render_internal.h"

@@ -4,7 +4,18 @@
 
 /**
  * @file milk_bash_coproc.c
- * @brief Supervised bash co-process and in-process socket server lifecycle for milk-cli.
+ * @brief The bash co-process of milk-cli and milk-script: start, run a command while serving its
+ *        requests, abort, shut down (see milk_bash.h).
+ *
+ * milk_bash_init() opens the front end's own session socket (@milk-cli-<uid>-<pid>, served in
+ * this process) and forks `/bin/bash --norc --noprofile` in its own process group, running
+ * BASH_COPROC_LOOP_SCRIPT: it sources milk.bash, then reads commands on fd 198 and answers on
+ * fd 199. A command is a translated text in a command file, which bash sources; bash answers
+ * `<status>\t<exit request>\t<socket>\t<cwd>\0`, and the front end takes on bash's working
+ * directory and the session it uses. While bash runs, the front end serves the requests of bash's
+ * builtins, gives bash the terminal and passes Ctrl-C on to its process group. After an abort,
+ * bash has about 2 s to come back to its loop before it is killed; a bash that died is reported,
+ * and the next command starts a new one.
  */
 
 #ifndef _GNU_SOURCE
@@ -41,7 +52,7 @@ static int            g_cmd_pipe_w     = -1;
 static int            g_status_pipe_r  = -1;
 static pid_t          g_bash_pid       = -1;
 static char           g_sockpath[128]  = { '\0' };
-static char           g_bash_sock[256] = { '\0' }; /* the session bash uses ("": milk-cli's own) */
+static char           g_bash_sock[256] = { '\0' }; /* the session bash uses ("": this process's) */
 static char           g_cmdfile[300]   = { '\0' }; /* translated command file sourced by bash */
 static char           g_cmdfile_sent[300] = { '\0' }; /* path last sent to current bash */
 static char           g_label[64]         = "milk";   /* command-file name shown in bash errors */
@@ -406,7 +417,7 @@ static int write_and_send_cmdfile(char *translated)
 
 /**
  * await_coproc_status - Service IPC requests while waiting for bash's NUL-terminated status
- * @sbuf:         Output buffer receiving `<rc>\t<exit_req>\t<pwd>`
+ * @sbuf:         Output buffer receiving `<rc>\t<exit_req>\t<sock>\t<pwd>`
  * @sbufsz:       Capacity of @sbuf in bytes
  * @out_exit_req: Optional output flag set if bash died in non-interactive mode
  * @out_lost_rc:  Output receiving the exit code when bash died unexpectedly

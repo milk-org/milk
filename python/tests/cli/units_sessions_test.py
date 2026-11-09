@@ -1,32 +1,36 @@
-"""
-Tests for Phase D (plan §9): compute units from the terminal and sessions, one section per work package.
+"""Units without C code and sessions, from the terminal; unit properties as the shell reads them.
 
-E8a: the units without C code, milk-fpsexec-milk-calc (milk.calc) and milk-fpsexec-milk-script (milk.script),
-on today's fpsexec API. Their loops run as background processes here, stopped with SIGINT, not in tmux.
-
-E2: sessions (D33-D35, revised in §9.4): the @session keyword, names, verbs, and the hints that
-replace @server. Session names are global (abstract sockets): each test uses names of its own.
-
-E3: owners and lifetimes (D37): the owner and orphaned sessions, the idle timeout, @on watchers that
-end with their shell, and override files named after the shell's start.
-
-E5: milk-cli --session NAME (D36 revised: milk-cli keeps its own session, its bash joins NAME), and
-@session save/restore.
-
-E4: shared sessions run one command at a time (D38), and history is per session (D39).
-
-E6: @get --watch (D41) and the parameter sweep as a loop (D42); D40, a multi-stream @grab, was
-dropped (user decision 2026-10-26).
-
-D32: milk-demopipeline is a milk script that starts each unit once the one before it has written a
-frame (@waitfor), with no fixed sleep.
-
-E1: what D30 left after the unit-lifecycle work: the parameter check as f.<unit>.ok/errors/msg,
-trigger modes by name, p.<unit>.dt/dtmax, the same loop rates in @get, --json and @ls, and
-@waitfor p.<unit> seeing a clean exit.
-
-Docs audit (2026-10-26): @session save keeps the calculator's string variables, and @session new of
-a session that runs from another MILK_SHM_DIR names that directory.
+Purpose:     milk.calc and milk.script units are made and run from a terminal, and sessions hold
+             the state that shells share; these tests hold the behaviour that
+             docs/guide/calculator.md and docs/guide/sessions.md describe.
+Does:        milk.calc and milk.script units on the fpsexec API (their loops run in the
+             background, stopped with SIGINT): declared parameters and the values that set them,
+             live .unit.* changes, errors, init statements, frame variables, stream parameters,
+             casts and reductions; fpsexec value rules. Sessions: @session new, use, leave, end,
+             who, ls, prune, valid names, the hints that replace @server, an ended session not
+             restarted, units listed with their session; owners, orphaned and idle sessions, @on
+             watchers that end with their shell, the files that record a shell's session;
+             milk-cli --session (its bash joins the session, milk-cli keeps its own); save and
+             restore; one command at a time in a shared session; history per session;
+             `@get --watch` and a parameter sweep as a loop; milk-demopipeline, which starts each
+             unit once the one before it has written a frame. Unit properties: the parameter
+             check as f.X.ok/errors/msg, trigger modes by name, the same loop rates in @get,
+             --json and @ls, @waitfor p.X on a clean exit, processinfo read from MILK_PROC_DIR.
+Covers:      milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c), milk-fpsexec-milk-script
+             (libmilkscript/units/milk_unit_script.c), fpsexec values
+             (src/engine/libfps/params/fps_args.c); @session (libmilkscript/client/milk_sessions.c,
+             milk_client_conn.c, server/milk_server.c, server/milk_server_dispatch.c,
+             scripts/milk.bash), milk-cli --session (src/cli/CLIcore/CLIcore.c), @history
+             (server/milk_server_admin.c); @get --watch (client/milk_client_ops.c); the unit
+             properties (src/prop/milk_shm_prop_fps.c, milk_shm_prop_proc.c);
+             scripts/milk-demopipeline.
+Uses:        conftest.py: milk_bash, milk_proc, value, UNIT_HELPERS, _run, _run_bash,
+             _isolated_shm_env, _install_dir, _kill_session, MILK_CLI_EXEC; the HELPERS and
+             SESSION_FUNCS shell functions; the sessions fixture: session names are global
+             (abstract sockets), so each test gets names of its own, ended after it.
+See also:    docs/guide/calculator.md, "Compute Units Without C"; docs/guide/sessions.md;
+             docs/guide/scripting.md, "Writing and Actions"; unit_language_test.py,
+             unit_lifecycle_test.py.
 """
 
 from __future__ import annotations
@@ -75,7 +79,7 @@ mem.mk2Dim "@S:cam" 4 4 >/dev/null; @calc "cam = 2"
 """
 
 
-# ------------------------------------------------------------- E8a: milk.calc
+# ------------------------------------------------------------- milk.calc units
 
 
 def test_E8_calc_once_makes_a_stream_and_declared_parameters(tmp_path):
@@ -321,7 +325,7 @@ def test_fpsexec_values_by_name_negative_and_errors(tmp_path):
     assert value(res.stdout, "loopd") == "0 123", res.stdout + res.stderr
 
 
-# ------------------------------------------------------------- E8a: milk.script
+# ------------------------------------------------------------- milk.script units
 
 
 def test_E8_script_runs_per_frame_follows_cmd_and_stops_on_failure(tmp_path):
@@ -476,7 +480,7 @@ def test_E8_script_params_file_and_args_types(tmp_path):
     assert n1 > n0 >= 0, ticks
 
 
-# ------------------------------------------------------------- E2: sessions
+# ------------------------------------------------------------- sessions
 
 # other CMD: run CMD in another shell, on its own session; sstate [NAME]: the State word of
 # @session status; srvpid [NAME]: its server's PID
@@ -504,9 +508,10 @@ def sessions():
 
 
 def test_E2_new_use_leave_and_what_a_session_keeps(tmp_path, sessions):
-    """D35: new fails if the session runs, use if it does not, leave returns to the shell's own session.
-    D34: a name is [A-Za-z0-9_-] and not a number (a shell's own session). The images and calculator
-    variables are the server's: another shell that uses the session sees them."""
+    """@session new fails if the session runs, use if it does not, leave returns to the shell's
+    own session. A name is [A-Za-z0-9_-] and not a number (a shell's own session). The images and
+    calculator variables are the server's: another shell that uses the session sees them.
+    """
     n = sessions()
     res = milk_bash(
         SESSION_FUNCS + f"""
@@ -543,8 +548,8 @@ echo "other=$(other '@session use {n} >/dev/null; echo $(@calc v),$(@calc "imean
 
 
 def test_E2_an_ended_session_is_not_restarted(tmp_path, sessions):
-    """D34 (user decision 2026-10-26): only @session new starts a named session. A shell whose session
-    another shell ended gets a hint, and nothing restarts it; leave gets the shell going again.
+    """Only @session new starts a named session. A shell whose session another shell ended gets a
+    hint, and nothing restarts it; leave gets the shell going again.
     """
     n = sessions()
     res = milk_bash(
@@ -569,8 +574,8 @@ echo "state=$(sstate {n})"
 
 
 def test_E2_who_and_ls(tmp_path, sessions):
-    """D35: who lists the shells that use a session; ls shows each session with its state and clients,
-    the current one marked, and --json the same fields."""
+    """@session who lists the shells that use a session; ls shows each session with its state and
+    clients, the current one marked, and --json the same fields."""
     n = sessions()
     res = milk_bash(
         SESSION_FUNCS + f"""
@@ -612,8 +617,8 @@ kill $child
 def test_E2_units_are_listed_with_their_session_and_end_units_stops_them(
     tmp_path, sessions
 ):
-    """D35 and D37 (§9.4): a unit records the session of the shell that started it; status and ls count
-    it; end leaves it running, end --units stops it, also once the session has ended."""
+    """A unit records the session of the shell that started it; status and ls count it; end leaves
+    it running, end --units stops it, also once the session has ended."""
     n = sessions()
     res = milk_bash(
         SESSION_FUNCS + f"""
@@ -657,8 +662,8 @@ milk-fps-runstop su1 >/dev/null 2>&1
 
 
 def test_E2_prune(tmp_path):
-    """D35: prune removes what ended sessions and exited shells left: the logs of dead servers, the
-    servers of shells that are gone, and the records of exited shells."""
+    """@session prune removes what ended sessions and exited shells left: the logs of dead servers,
+    the servers of shells that are gone, and the records of exited shells."""
     n = f"e2{uuid.uuid4().hex[:8]}"
     res = milk_bash(
         SESSION_FUNCS + f"""
@@ -678,7 +683,7 @@ echo "files=$(ls "$MILK_SHM_DIR" | grep -c '^milk-srv\\.')"
         extra_env={"TMPDIR": str(tmp_path)},
     )
     out = res.stdout + res.stderr
-    assert value(res.stdout, "before") == "ORPHANED", out  # its shell has gone (E3)
+    assert value(res.stdout, "before") == "ORPHANED", out  # its shell has gone
     assert value(res.stdout, "pruned") == (
         "Pruned ended-session logs: 1, orphaned servers: 1, exited-shell records: 1."
     ), out
@@ -688,7 +693,7 @@ echo "files=$(ls "$MILK_SHM_DIR" | grep -c '^milk-srv\\.')"
 
 
 def test_E2_milk_bash_session_option(tmp_path, sessions):
-    """D34: `source milk.bash --session NAME` uses session NAME, started if it does not run; another
+    """`source milk.bash --session NAME` uses session NAME, started if it does not run; another
     shell resumes it. -s is not milk's any more: a script's own -s is left alone."""
     n = sessions()
     (tmp_path / "join.sh").write_text(
@@ -712,8 +717,8 @@ echo "short=[$(join -s {n})]"
 
 
 def test_E2_old_spellings_give_hints(tmp_path):
-    """D33 (user decision 2026-10-26): @server, its verbs, @log --server, milk.bash --server and
-    milk-call server fail with the @session form; there is no --modernize rewrite."""
+    """@server, its verbs, @log --server, milk.bash --server and milk-call server fail with the
+    @session form; there is no --modernize rewrite."""
     res = milk_bash(
         """
 @server ls 2>s.log; echo "server=$?"
@@ -781,7 +786,7 @@ def _read_until(stream, text: str, timeout: float) -> str:
 
 
 def test_E2_end_ends_a_milk_cli_session(tmp_path):
-    """D35: @session end works on a milk-cli session, whose shutdown command milk-cli used to ignore:
+    """@session end works on a milk-cli session, whose shutdown command milk-cli used to ignore:
     milk-cli exits. Inside milk-cli, its own session ends with milk-cli (exit)."""
     env, shm_dir = _isolated_shm_env()
     try:
@@ -841,11 +846,11 @@ def test_E2_end_lets_a_busy_milk_cli_finish_its_command(tmp_path):
     assert "after=1" not in out, out
 
 
-# ------------------------------------------------------------- E3: owners and lifetimes
+# ------------------------------------------------------------- owners and lifetimes
 
 
 def test_E3_owner_and_orphaned_sessions(tmp_path, sessions):
-    """D37: the shell that runs `@session new` owns the session without being tied to it: once that
+    """The shell that runs `@session new` owns the session without being tied to it: once that
     shell has exited, ls and status list the session as orphaned."""
     a, b = sessions(), sessions()
     res = milk_bash(
@@ -870,9 +875,8 @@ echo "ls=$(@session ls --json)"
 
 
 def test_E3_idle_sessions_end_once_unused(tmp_path, sessions):
-    """D37 (user decision 2026-10-26): `--idle T` ends a session once it has had no command for T and
-    no shell uses it; a shell that uses it holds it, also while it waits on its own; bad durations
-    are refused."""
+    """`--idle T` ends a session once it has had no command for T and no shell uses it; a shell that
+    uses it holds it, also while it waits on its own; bad durations are refused."""
     a, b = sessions(), sessions()
     res = milk_bash(
         SESSION_FUNCS + f"""
@@ -902,8 +906,8 @@ echo "left=$(sstate {b})"
 
 
 def test_E3_watchers_end_with_their_shell(tmp_path):
-    """D37 (user decision 2026-10-26): @on watchers end with the shell that started them, also when it
-    is killed, and no longer keep its own session alive."""
+    """@on watchers end with the shell that started them, also when it is killed, and no longer
+    keep its own session alive."""
     (tmp_path / "w.sh").write_text(
         'source "$MILK_INSTALLDIR/bin/milk.bash"\n'
         'mem.mk2Dim "@S:wcam" 2 2 >/dev/null\n'
@@ -936,7 +940,7 @@ done < ids.txt
 
 
 def test_E3_override_files_are_named_after_the_shell_start(tmp_path):
-    """D37: a shell records the session it uses in a file named after its PID and start time; a file
+    """A shell records the session it uses in a file named after its PID and start time; a file
     that an earlier process with the same PID left is not read, and prune removes it."""
     n = f"e3{uuid.uuid4().hex[:8]}"
     res = milk_bash(
@@ -965,13 +969,13 @@ echo "pruned=$(@session prune)"
     assert value(res.stdout, "stale") == "0", out
 
 
-# ------------------------------------------------------------- E5: milk-cli --session, save/restore
+# ------------------------------------------------------------- milk-cli --session, save/restore
 
 
 def test_E5_milk_cli_session_runs_its_commands_in_the_session(tmp_path, sessions):
-    """D36 revised (user decision 2026-10-26): `milk-cli --session NAME` starts NAME if it does not
-    run and its bash joins it; calc mode evaluates there; @history and the REPL settings of @config
-    stay milk-cli's; @session leave returns to milk-cli's own session. NAME outlives milk-cli.
+    """`milk-cli --session NAME` starts NAME if it does not run and its bash joins it; calc mode
+    evaluates there; @history and the REPL settings of @config stay milk-cli's; @session leave
+    returns to milk-cli's own session. NAME outlives milk-cli.
     """
     n = sessions()
     env, shm_dir = _isolated_shm_env()
@@ -1030,8 +1034,8 @@ def test_E5_milk_cli_session_runs_its_commands_in_the_session(tmp_path, sessions
 
 
 def test_E5_save_and_restore(tmp_path, sessions):
-    """D36 revised (user decisions 2026-10-26): @session save writes a milk script and FITS files;
-    @session restore runs it in the shell's session, and lists the units without starting them.
+    """@session save writes a milk script and FITS files; @session restore runs it in the shell's
+    session, and lists the units without starting them.
     """
     a, b = sessions(), sessions()
     res = milk_bash(
@@ -1093,14 +1097,14 @@ milk-fps-runstop e5u >/dev/null 2>&1
     ), out
 
 
-# ------------------------------------------------------------- E4: shared sessions, history
+# ------------------------------------------------------------- shared sessions, history
 
 
 def test_E4_another_shells_command_waits_for_a_long_one(tmp_path, sessions):
-    """D38 (user decision 2026-10-26): what another process group sends during a long command waits
-    for it, then runs on the state it left, instead of in a fork whose changes are lost; --nowait
-    fails at once with "busy"; Ctrl-C gives up a waiting command without running it, and the
-    shell's next command runs (on a new connection)."""
+    """What another process group sends during a long command waits for it, then runs on the state
+    it left, instead of in a fork whose changes are lost; --nowait fails at once with "busy";
+    Ctrl-C gives up a waiting command without running it, and the shell's next command runs (on a
+    new connection)."""
     n = sessions()
     res = milk_bash(
         rf"""
@@ -1157,7 +1161,7 @@ def _pty_drain(fd: int, seconds: float) -> None:
 
 
 def test_E4_history_lines_are_appended_not_rewritten(tmp_path):
-    """D39: two milk-cli prompts that run at the same time both keep their lines in ~/.milk_history:
+    """Two milk-cli prompts that run at the same time both keep their lines in ~/.milk_history:
     each line is appended as it runs, and exit no longer rewrites the file from one prompt's list.
     """
     env, shm_dir = _isolated_shm_env()
@@ -1185,9 +1189,9 @@ def test_E4_history_lines_are_appended_not_rewritten(tmp_path):
 
 
 def test_E4_history_is_per_session_from_any_front_end(tmp_path, sessions):
-    """D39 (user decision 2026-10-26): the history log records the session each line ran in; @history
-    shows the current session's lines from bash and milk-script too (--global: all), search stays the
-    milk-cli prompt's; milk-script's own session is labelled as milk-script's."""
+    """The history log records the session each line ran in; @history shows the current session's
+    lines from bash and milk-script too (--global: all), search stays the milk-cli prompt's;
+    milk-script's own session is labelled as milk-script's."""
     n = sessions()
     env, shm_dir = _isolated_shm_env()
     try:
@@ -1232,11 +1236,11 @@ echo "global=$(@history --global | grep -c 'echo in-session\\|echo outside')"
     assert value(scr.stdout, "g") == "1", out
 
 
-# ------------------------------------------------------------- E6: @get --watch, a sweep
+# ------------------------------------------------------------- @get --watch, a sweep
 
 
 def test_E6_get_watch(tmp_path):
-    """D41: @get --watch [T] <spec>... prints the values every T s until Ctrl-C ends it (status 0):
+    """@get --watch [T] <spec>... prints the values every T s until Ctrl-C ends it (status 0):
     one tab-separated line per refresh off a terminal. A bad period or a binding is a usage error.
     """
     res = milk_bash(
@@ -1260,8 +1264,8 @@ def test_E6_get_watch(tmp_path):
 
 
 def test_E6_parameter_sweep_loop(tmp_path):
-    """D42: a sweep is a loop, as in scripting.md: @set --restore puts the parameter back when the
-    function returns, and @calc -v binds what each step measures (on a milk.calc unit).
+    """A sweep is a loop, as in docs/guide/scripting.md: @set --restore puts the parameter back
+    when the function returns, and @calc -v binds what each step measures (on a milk.calc unit).
     """
     res = milk_bash(
         HELPERS
@@ -1288,7 +1292,7 @@ def test_E6_parameter_sweep_loop(tmp_path):
     assert value(res.stdout, "after") == "1", out
 
 
-# ------------------------------------------------------------- D32: units brought up by a milk script
+# ------------------------------------------------------------- units brought up by a milk script
 
 DEMO_UNITS = (
     "mkrnd gaussfilt imtrunc gaussfilt2 resizeim rotateim cropim streamave streammon"
@@ -1346,7 +1350,7 @@ def test_D32_demopipeline_starts_each_unit_on_a_frame(tmp_path):
     assert left == [], left
 
 
-# ------------------------------------------------------------- E1: unit properties (D30)
+# ------------------------------------------------------------- unit properties
 
 
 def test_E1_loop_rates_agree_everywhere(tmp_path):
@@ -1457,7 +1461,7 @@ def test_E1_waitfor_process_sees_a_clean_exit(tmp_path):
     assert value(res.stdout, "running") == "124", out
 
 
-# ------------------------------------------------------------- docs audit (2026-10-26)
+# ------------------------------------------------------------- sessions and processinfo: more cases
 
 
 def test_save_keeps_string_variables(tmp_path, sessions):

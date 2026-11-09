@@ -4,13 +4,20 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 """Per-line and per-statement cost of milk-cli / milk-script in bash and calc mode.
 
-Not a pytest test (no test_ prefix): a benchmark to run before and after a change.
-
-    MILK_INSTALLDIR=/path/to/install python3 calc_bash_bench.py [--quick] [--cpu N]
-
-Columns are microseconds per line (or per statement); lower is better. Each value is the best
-of several runs. Per-statement costs subtract a 1-statement run from an N-statement run, so
-process startup cancels out.
+Purpose:     a benchmark to run before and after a change: what it costs per line of input
+             and per calculator statement.
+Does:        pipes lines to milk-cli -q and milk-script -q (`:`, bash arithmetic, @calc -v,
+             calc mode), and runs calculator statements on 8^2 to 512^2 images in
+             milk-script (`@calc --repl`), with one thread, pinned to one CPU (--cpu).
+             Columns are microseconds per line (or per statement), the best of several
+             runs; lower is better. Per-line costs subtract an empty run, per-statement
+             costs a 1-statement run from an N-statement run, so process startup cancels out.
+Covers:      milk-cli, milk-script and the calculator (@calc).
+Uses:        the install that MILK_INSTALLDIR names; taskset when installed.
+See also:    docs/guide/scripting.md, "Cost Model"; python/tests/cli/perf_ceilings_test.py
+             (ceilings on the same costs).
+Constraints: not a pytest test (no test_ prefix); run it by hand:
+             MILK_INSTALLDIR=/path/to/install python3 calc_bash_bench.py [--quick] [--cpu N]
 """
 
 import argparse

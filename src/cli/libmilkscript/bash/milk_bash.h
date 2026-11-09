@@ -4,15 +4,32 @@
 
 /**
  * @file milk_bash.h
- * @brief Supervised bash co-process and `@{...}` inline translator.
+ * @brief The bash co-process of milk-cli and milk-script, and the `@{...}` translator.
  *
- * Role & Goal:
- *   Provides the public interface of milk-cli's bash co-process:
- *   1. `milk_translate_shorthand_to_bash()`: Translates inline `@{...}` entity/calculator
- *      expansions and `\@` escapes into `milk.bash` syntax while preserving 1:1 line numbers.
- *   2. `milk_bash_*()`: Manages the persistent supervised bash co-process
- *      and in-process UNIX domain socket server used by interactive `milk-cli`
- *      and `milk-cli <script.milk>`.
+ * Purpose:     milk-cli and milk-script run every command line in one persistent bash, so shell
+ *              state (variables, functions, cwd, traps) lasts from one line to the next; the
+ *              front end answers that bash's milk requests itself, as its own session.
+ * Does:        milk_translate_shorthand_to_bash() rewrites `@{...}` into milkget and milkcalc
+ *              calls, keeping line numbers; milk_bash_exec() and milk_bash_exec_file() run
+ *              text or a file in bash, started on first use, and handle calc mode; the text is
+ *              sourced from a file in a private directory (milk_bash_cmdfile_*());
+ *              milk_bash_serve() answers requests while the prompt is idle; milk_bash_abort()
+ *              ends a command after Ctrl-C or a fault, and milk_bash_shutdown() ends bash, which
+ *              runs its EXIT trap; milk_shell_incomplete() tells whether a text needs more lines.
+ * Used by:     milk-cli (CLIcore.c: the REPL, -c, -s, piped and FIFO input;
+ *              CLIcore_UI_completion.c, CLIcore_UI_builtins.c, CLIcore_UI_history.c);
+ *              milk-script and the embedding API (milkscript_main.c, milkscript_api.c);
+ *              `milk-call translate` (milk_call_main.c); the milk.script unit
+ *              (milk_unit_script.c); the milktranslate builtin (milk_bash_hooks.c).
+ * Uses:        milk_server.h (the in-process server), milk_shell_lex.h (the shell scanner),
+ *              CLIcore_script.h (calc mode, the variables exported to bash), /bin/bash and
+ *              scripts/milk.bash.
+ * See also:    milk_bash_translate.c, milk_bash_coproc.c, milk_bash_exec.c, milk_bash_cmdfile.c,
+ *              milk_bash_internal.h; docs/guide/scripting.md, "The Language at a Glance" and
+ *              "Errors and Exit Status".
+ * Constraints: the translator, the command files and milk_shell_incomplete() are also compiled
+ *              into libmilkbash.so; the co-process is in libmilkscript only. The translator keeps
+ *              its scan in static storage: one call at a time.
  */
 
 #ifndef MILK_BASH_H
@@ -27,7 +44,7 @@
  * matches the source file line numbers.
  *
  * @param src          Input script or command line
- * @param allow_legacy Non-zero to also translate un-sigiled `module.command` names
+ * @param allow_legacy Unused (callers still pass it)
  * @return Newly heap-allocated translated string (caller must `free()`), or NULL
  */
 char *milk_translate_shorthand_to_bash(const char *src, int allow_legacy);
@@ -42,8 +59,8 @@ int milk_bash_init(void);
 /**
  * @brief Translate and execute a command or multi-line block in the bash co-process.
  *
- * While bash executes the command, the parent milk-cli process services all
- * incoming socket requests (`milkcall`, `milkcalc`, `milkget`, `milkset`, etc.)
+ * While bash executes the command, the front end (milk-cli or milk-script) services
+ * all incoming socket requests (`milkcall`, `milkcalc`, `milkget`, `milkset`, etc.)
  * in-process.
  *
  * @param cmdline      Command line or multi-line script text

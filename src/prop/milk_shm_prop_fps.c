@@ -4,13 +4,17 @@
 
 /**
  * @file milk_shm_prop_fps.c
- * @brief Function Parameter Structure (`@f.` / `@fps.`) handler for entity ops.
+ * @brief The `f.` namespace: FPS parameters, the state and output of the unit, and unit actions
+ *        (see milk_shm_prop_internal.h).
  *
- * Role & Goal:
- *   Implements shared-memory parameter reading, wildcard (`*`) parameter
- *   enumeration, typed parameter writing (`cli_fps_set_param` /
- *   `milk_shm_prop_set_fps`), and existence / running-state checks for FPS
- *   structures in `/dev/shm`.
+ * The FPS comes from the cache (milk_shm_cache.h). A property is an exact parameter name first,
+ * then a property of the unit itself (status, conf, run.out, ok, msg, ...), then any parameter
+ * that functionparameter_GetParamIndex() matches: it also matches substrings, and `conf` must
+ * not find `conf.timestring`. The state of the unit is fps_unit_status_fps()
+ * (docs/arch/unit_lifecycle.md, U10). A float reads as the shortest text that converts back to
+ * the same value; a trigger mode reads and writes by name. Setting `conf` or `run` to start or
+ * stop, or an action property, runs the milk-fps-<op> tool and waits for it
+ * (docs/arch/unit_lifecycle.md, U11); in bash, the tool gets the variables the shell exports.
  */
 
 #ifndef _GNU_SOURCE
@@ -334,7 +338,8 @@ int milk_shm_prop_get_fps(const char *name, const char *prop, char *out, size_t 
     }
     else if (fps.md != NULL)
     {
-        // the unit's state (U10), "run.out"/"conf.out" its output; the conf role for conf*
+        // the unit's state (docs/arch/unit_lifecycle.md, U10), "run.out"/"conf.out" its output;
+        // the conf role for conf*
         FPS_UNIT_ROLE   role = (strncmp(prop, "conf", 4) == 0) ? FPS_UNIT_CONF : FPS_UNIT_RUN;
         FPS_UNIT_STATUS st;
         if (strcmp(prop, "status") == 0 || strcmp(prop, "state") == 0 || strcmp(prop, "run") == 0 ||
@@ -445,9 +450,10 @@ static char **child_environ(void)
 }
 
 /**
- * try_fps_lifecycle_action() - `@set f.<name>.conf|run=<value>` and the action properties (confstart,
- * confstop, confstep, runstart, runstop, reset): the milk-fps-<op> tool, waited for, its messages to the
- * caller (U11). The state names that `@get` returns are values too, so `@set --restore` puts a unit back.
+ * try_fps_lifecycle_action() - `@set f.<name>.conf|run=<value>` and the action properties
+ * (confstart, confstop, confstep, runstart, runstop, reset): the milk-fps-<op> tool, waited for,
+ * its messages to the caller (docs/arch/unit_lifecycle.md, U11). The state names that `@get`
+ * returns are values too, so `@set --restore` puts a unit back.
  * Return: 1 if @pname is one of them, *@out_rc 0 or MILK_SHM_PROP_ACTION_FAILED; 0 otherwise.
  */
 static int try_fps_lifecycle_action(FPS        *fps,
@@ -482,7 +488,7 @@ static int try_fps_lifecycle_action(FPS        *fps,
     {
         return 0;
     }
-    *out_rc = MILK_SHM_PROP_ACTION_FAILED; // done here, never sent again to a server (D29)
+    *out_rc = MILK_SHM_PROP_ACTION_FAILED; // done here, never sent again to a server
     if (conf || strcmp(pname, "run") == 0)
     {
         if (strcasestr(valstr, "tmux") != NULL)
@@ -660,7 +666,8 @@ int milk_shm_prop_set_fps(const char *name, const char *prop, const char *val)
  * @brief Check whether a named FPS exists (and optionally is running).
  *
  * @param name          FPS shared-memory name
- * @param check_running If non-zero, require the run process of the unit to be alive (U10)
+ * @param check_running If non-zero, require the run process of the unit to be alive
+ *                      (docs/arch/unit_lifecycle.md, U10)
  * @return 1 if exists/running, 0 otherwise
  */
 int milk_shm_prop_exists_fps(const char *name, int check_running)

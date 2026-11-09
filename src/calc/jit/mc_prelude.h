@@ -4,20 +4,29 @@
 
 /**
  * @file mc_prelude.h
- * @brief Embedded C99 prelude strings prepended to generated calculator `.so` kernels.
+ * @brief Embedded C prelude strings prepended to generated calculator `.so` kernels.
  *
- * Provides self-contained `static inline` C helpers for generated elementwise kernels so
- * that compiled `.so` files do not need external header paths at runtime:
- *   - `MC_PRELUDE_CORE_SRC`: `libmvec` SIMD math declarations, `mc_operand_t` ABI struct,
- *     fast scalar/SIMD math helpers (`mc_sqf`, `mc_clampf`, `mc_wrap_pif`, `mc_sincf`,
- *     bit-level `mc_isnanf`/`mc_isfinitef`), integer casts, and counter-based PRNG
- *     (`mc_urandf`, `mc_grandf`).
- *   - `MC_PRELUDE_COMPLEX_SRC`: C99 `_Complex` arithmetic and phase helpers.
- *   - `MC_PRELUDE_COORD_SHIFT_SRC`: 2-D coordinate generators (`ix`, `iy`, `ir`, `itheta`)
- *     and clamped/wrapped index helpers for `shift` and `roll`.
- *   - `MC_PRELUDE_SPATIAL_MACRO_SRC` / `MC_PRELUDE_SPATIAL_ALL_SRC`: Typed inline helpers
- *     for 1-D linear LUT (`mc_lut_*`), index gather (`mc_gather_*`), 2-D bilinear
- *     interpolation (`mc_interp2_*`).
+ * Purpose:     make each generated kernel one self-contained C file: it compiles without
+ *              milk's headers or include paths, and its cache key covers all the code it
+ *              compiles.
+ * Does:        MC_PRELUDE_CORE_SRC, at the top of every kernel: libmvec SIMD declarations
+ *              of the math functions (glibc on x86-64), the mc_operand_t struct,
+ *              scalar/SIMD math helpers (mc_sqf, mc_clampf, mc_wrap_pif, mc_sincf,
+ *              bit-level mc_isnanf/mc_isfinitef), bitwise helpers, integer store casts that
+ *              wrap, and counter-based random numbers (mc_urandf, mc_grandf). Added only
+ *              when used: MC_PRELUDE_COMPLEX_SRC (_Complex multiply, divide, abs, arg,
+ *              cplx, expi), MC_PRELUDE_COORD_SHIFT_SRC (ix, iy, ir, itheta, and the clamped
+ *              or wrapped indices of shift and roll) and MC_PRELUDE_SPATIAL_MACRO_SRC
+ *              (MC_DEF_SPATIAL(sfx, type): lut, pixremap and interp2 for one pixel type;
+ *              MC_PRELUDE_SPATIAL_ALL_SRC lists it for all ten types).
+ * Used by:     jit/mc_emit.c (the source of a kernel), jit/mc_cc.c (batch files, cache
+ *              key).
+ * See also:    plan/mc_plan.h (mc_operand_t); docs/guide/calculator.md,
+ *              "Fusion & Cost Model".
+ * Constraints: mc_operand_t must stay identical to its copy in plan/mc_plan.h.
+ *              MC_PRELUDE_VERSION seeds every cache key (jit/mc_cc.c): raising it makes
+ *              every cached kernel compile again. jit/mc_cc.c finds the optional sections
+ *              in a kernel's source by `#include <complex.h>` and `mc_cl(`.
  */
 
 #ifndef MILK_CALC_MC_PRELUDE_H

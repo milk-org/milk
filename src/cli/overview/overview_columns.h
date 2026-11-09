@@ -4,9 +4,29 @@
 
 /**
  * @file overview_columns.h
- * @brief Column tables of the list panels: one entry per column drives header, rows, hit-testing and sort
+ * @brief Column tables of the list panels: one entry per column drives header, rows, hit-testing
+ *        and sort.
  *
- * Included by render/overview_render_internal.h, after the model, layout, theme and OV_RELATED types.
+ * Purpose:     a list column is one table entry; its header, cells, width, drop order, compact
+ *              hiding, sort key and click target follow from it.
+ * Does:        declares OV_COLUMN (id, label, width, drop priority, OV_COLF_* flags, sort key,
+ *              cell function), OV_TABLE, the cell a column function fills (OV_COLCELL: text with
+ *              \x01..\x02 highlight markup, or styled runs), what it sees of its row
+ *              (OV_ROW_CTX), and the layout of a table in a panel (OV_TABLE_LAYOUT): the pinned
+ *              columns, the scrollable ones from the horizontal scroll on, the highest priority
+ *              dropped first until the rest fit, then the spare room to the elastic and fill
+ *              columns.
+ * Used by:     render/overview_render_internal.h includes it, after the model, layout, theme and
+ *              OV_RELATED types: the list renderers (render/overview_render_streams*.c,
+ *              overview_render_procs*.c, overview_render_fps.c), the column keys and header clicks
+ *              (input/overview_input_sort_keys.c, overview_input_hittest_cols.c) and the [sort:]
+ *              tag (render/overview_render_status.c).
+ * See also:    render/overview_columns.c (layout, lookups); render/overview_render_columns.c
+ *              (drawing); render/overview_columns_streams.c, _procs.c, _fps.c (the tables);
+ *              src/cli/overview/README.md, "Extending milk-CTRL";
+ *              docs/guide/milk-CTRL.md, "Lists".
+ * Constraints: at most OV_TABLE_MAX_COLS (32) columns per table: the collapsed mask has one bit
+ *              per column.
  */
 
 #ifndef OVERVIEW_COLUMNS_H
@@ -69,7 +89,7 @@ typedef struct
 
 typedef struct
 {
-    const char *id;       /* stable name: docs, future --sort */
+    const char *id;       /* stable name, for ov_table_find_id() */
     const char *label;    /* header text */
     const char *status;   /* [sort:...] text; NULL = label */
     int         width;    /* content columns, separator excluded */

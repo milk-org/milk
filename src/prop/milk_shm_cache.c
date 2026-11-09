@@ -4,29 +4,17 @@
 
 /**
  * @file milk_shm_cache.c
- * @brief Process-wide LRU cache of mapped ImageStreamIO streams and FPS shared-memory segments
- *        for `libmilkprop`.
+ * @brief The cache of mapped streams and FPSs, and semaphore slot ownership (see
+ *        milk_shm_cache.h).
  *
- * This module maintains a thread-safe, process-wide cache of open ImageStreamIO streams
- * (`SHM_CACHE_NSTREAM = 64` slots) and Function Parameter Structure (FPS) segments
- * (`SHM_CACHE_NFPS = 16` slots) used by `libmilkprop` property queries, `@waitfor` blocking
- * waits, and `milk-script` / `milk.calc` runtime lookups:
- *
- * - **Inode-validated caching**: Every lookup `stat()`s the backing `/dev/shm/<name>.im.shm` or
- *   `<name>.fps.shm` file and compares `st_ino` against the cached inode (`ent_hdr_t.ino`). If a
- *   stream or FPS was recreated or deleted by an external process, the stale mapping is
- *   transparently closed (or detached until unpinned) and remapped.
- * - **Pinning and LRU eviction**: Long-lived operations (such as `@waitfor` semaphore waits) pin
- *   stream entries via `milk_shm_cache_pin_stream()` so that concurrent cache lookups never
- *   evict an actively awaited `IMAGE` struct. Unpinned slots are evicted in least-recently-used
- *   (LRU) order tracked by a monotonic `g_tick` counter.
- * - **Lock-free semaphore slot ownership**: `milk_shm_sem_claim()` and `milk_shm_sem_release()`
- *   claim and release reader slots in `im->semReadPID[]` using atomic compare-and-exchange
- *   operations, reclaiming slots left behind by dead processes (`getpgid(cur) < 0`) while
- *   ensuring two concurrent waiters in the same process never share a semaphore slot.
- * - **Fork and exit hygiene**: Registers `pthread_atfork()` handlers so child processes spawned
- *   by `--async` or `@replay` reinitialize `g_cache_lock` cleanly, and an `atexit()` handler
- *   (`shm_cache_atexit()`) to release any owned reader semaphore slots on process termination.
+ * Two fixed tables of slots (64 streams, 16 FPSs) share one mutex. A slot keeps the path and
+ * inode of its file: a lookup stat()s the file, reuses the slot when the inode matches, and else
+ * unmaps it (a pinned slot is detached, and unmapped at its last unpin) and maps the file again
+ * into a free or least-recently-used unpinned slot. A semaphore slot belongs to the PID written
+ * in semReadPID[]: it is claimed with a compare-and-exchange, taken over from a dead process,
+ * and never one this process already holds. A stream's first waiter keeps its slot in the cache
+ * entry until the last unpin; an atexit() handler gives back the slots the cache still holds,
+ * and pthread_atfork() handlers keep the mutex usable in a forked child.
  */
 
 #include <pthread.h>

@@ -4,16 +4,18 @@
 
 /**
  * @file milk_bash_translate.c
- * @brief Line-preserving translator for `@{...}` inline milk.bash expansions.
+ * @brief Line-preserving translation of `@{...}` into milkget and milkcalc calls (see
+ *        milk_bash.h).
  *
- * Role & Goal:
- *   Translates `.milk` scripts and interactive bash lines into executable
- *   `milk.bash` code while preserving 1:1 line numbering (`$LINENO`):
- *   - Standalone `NAME=@{<expr>}` / `NAME="@{<expr>}"` -> `{ milkcalc -v NAME "<expr>" ...; }`
- *   - Standalone `NAME=@{<entity>}` -> `{ milkget -v NAME <entity> ...; }`
- *   - Inline `@{<expr>}` -> `${| milkcalc -v REPLY "<expr>" ...; }` (or `$(milkcalc ...)` < 5.3)
- *   - Inline `@{<entity>}` -> `${| milkget -v REPLY <entity> ...; }` (or `$(milkget ...)` < 5.3)
- *   - Escaped `\@{...}` inside double quotes -> literal `@{...}`
+ * msl_scan() gives the context of every byte; the text is cut into statements, and the code in
+ * each command substitution is translated the same way, one level down. An entity path goes to
+ * milkget, anything else to milkcalc. A statement that is only `NAME=@{<expr>}` or
+ * `NAME="@{<expr>}"` becomes `{ milkcalc -v NAME "<expr>" ...; }`, bound without a substitution;
+ * any other `@{<expr>}` becomes `${| milkcalc -v REPLY "<expr>" ...; }`, or `$(milkcalc ...)`,
+ * which forks, when bash is older than 5.3 ($MILK_BASH_NO_FUNSUB). Each call ends with
+ * `|| __milk_inline_err` (milk.bash), which reports a failure. `@{` right after a letter, digit
+ * or `_`, git's `@{1}` and `@{-1}`, and `\@{` stay as written (in double quotes, `\@{` becomes
+ * `@{`). No line is added or removed, so $LINENO matches the source.
  */
 
 #ifndef _GNU_SOURCE
@@ -34,7 +36,7 @@ static msl_map_t   g_mbt_map;
 
 static void mbt_translate_code(const char *p, size_t n, int d, sbuf_t *out);
 
-/** Return the `msl_ctx_t` lexical context of byte @p within `g_mbt_src`. */
+/** Return the `enum msl_ctx` lexical context of byte @p within `g_mbt_src`. */
 static inline int mbt_cx(const char *p)
 {
     return g_mbt_map.ctx[p - g_mbt_src];

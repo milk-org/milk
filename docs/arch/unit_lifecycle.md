@@ -72,8 +72,8 @@ directory. No daemon is involved.
 
 | Part | Files |
 | --- | --- |
-| Detached processes, ready pipe, identity, rotation | `src/engine/libmilkcommon/milk_detach.{c,h}`, `milk_spawn.{c,h}`, `milk_syscalls.h`, `milk_syscalls_linux.c` |
-| Service manager messages | `src/engine/libmilkcommon/milk_notify.{c,h}` |
+| Detached processes, ready pipe, identity, rotation | `src/engine/libmilkcommon/milk_detach.h`, `milk_spawn.h`, `milk_syscalls.h`; `process/milk_detach.c`, `milk_spawn.c`, `milk_syscalls_linux.c` |
+| Service manager messages | `src/engine/libmilkcommon/milk_sdnotify.h`, `process/milk_sdnotify.c` |
 | Unit directory and state | `src/engine/libfps/core/fps_unit_state.c`, `fps_unit_state.h` |
 | Start, stop, spawn, env snapshot, lock | `src/engine/libcomputeunit/core/fps_unit_startstop.c`, `fps_unit_startstop.h` |
 | Verbs | `src/engine/libcomputeunit/core/fps_standalone_main.c` |

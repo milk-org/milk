@@ -5,6 +5,17 @@
 /**
  * @file overview_input_nav_insp.c
  * @brief Keys of the F3 stream inspector: enter and leave it, scroll its page, change page.
+ *
+ * Purpose:     in F3 the navigation keys move either the stream list or the inspector beside it;
+ *              this decides which, and handles the inspector's own keys.
+ * Does:        ov_input_nav_insp(): Right or ENTER on the list enter the inspector; there Up/Down,
+ *              PgUp/PgDn and Home/End scroll the page, Right shows the next page, Left or ESC go
+ *              back to the list. ov_insp_tab_step() changes page and starts it from its top.
+ * Used by:     input/overview_input_nav.c (the first row of its bindings, in F3) and
+ *              input/overview_input_toggles.c (Shift+TAB: next page). Declared in
+ *              render/overview_render_internal.h.
+ * See also:    render/overview_render_insp.c (draws the inspector and clamps the scroll);
+ *              docs/guide/milk-CTRL.md, "Streams view (F3)".
  */
 
 #include "overview_input_internal.h"

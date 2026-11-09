@@ -4,11 +4,20 @@
 
 /**
  * @file milk_client_internal.h
- * @brief Internal declarations shared across `milk_client_conn.c`, `milk_client_ops.c`, and `milk_client_stream.c`.
+ * @brief What the client's files share: the connection, the packed shell variables, the reply
+ *        loop.
  *
- * Role & Goal:
- *   Exposes the connection, lazy auto-start, variable-packing, response-loop,
- *   and array-capture helpers shared across the `ipc/` client implementation files.
+ * Purpose:     every client call reaches the session the same way: a kept connection, the shell
+ *              variables a calculator expression names, one reply loop.
+ * Does:        declares the connection calls of milk_client_conn.c (connect, or start the
+ *              shell's own session; end a request; read the replies; pack shell variables into
+ *              milk_packed_vars_t) and the helpers of milk_client_ops.c that send a keyword as
+ *              another command (milk_client_call_as()) or bind a call's output to a shell array
+ *              (milk_client_capture_array()).
+ * Used by:     milk_client_ops.c, milk_client_stream.c; milk_bash_hooks.c (an @on watcher drops
+ *              the shell's owner pipe and kept connections).
+ * Uses:        milk_client.h (the hooks).
+ * See also:    milk_client_conn.c, milk_client_ops.c.
  */
 
 #ifndef MILK_CLIENT_INTERNAL_H

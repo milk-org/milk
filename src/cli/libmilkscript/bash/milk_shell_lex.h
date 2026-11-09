@@ -7,8 +7,21 @@
  * @brief Bash-aware context scanner: tells, for every byte of a script, which syntactic
  *        context it is in, and whether the text is an incomplete construct.
  *
- * Single source of truth for quoting/nesting used by the `@` translator, the REPL
- * continuation prompt and FIFO line buffering.
+ * Purpose:     milk reads bash text without running bash (to rewrite `@{...}`, to see where a
+ *              command ends, to split `@pipe` stages, to highlight); one scanner decides where
+ *              quotes, substitutions, comments and here-documents start and end, so they agree.
+ * Does:        msl_scan() gives each byte its context (enum msl_ctx) and its
+ *              command-substitution depth, and tells whether the text needs more input
+ *              (incomplete) or leaves a quote or substitution open (unterminated, and where);
+ *              milk_shell_incomplete() is its yes-or-no form.
+ * Used by:     the translator (milk_bash_translate.c) and milk_bash_exec.c; milk-cli's
+ *              continuation lines (CLIcore_UI_completion.c), piped and FIFO input (CLIcore.c),
+ *              highlighting and diagnostics (CLIcore/treesitter: cli_treesitter_lexical.c,
+ *              cli_treesitter_diag.c); the server's `@pipe` and `@assert` parsing
+ *              (milk_server_eval.c); the milktranslate builtin (milk_bash_hooks.c).
+ * Uses:        libc only.
+ * See also:    milk_shell_lex.c, milk_shell_lex_code.c, milk_shell_lex_internal.h.
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef MILK_SHELL_LEX_H

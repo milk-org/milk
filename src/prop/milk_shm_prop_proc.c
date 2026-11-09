@@ -4,11 +4,14 @@
 
 /**
  * @file milk_shm_prop_proc.c
- * @brief Processinfo (`@p.`) entity handlers.
+ * @brief The `p.` namespace: processinfo telemetry, loop control, and the trigger mode names
+ *        (see milk_shm_prop_internal.h).
  *
- * Role & Goal:
- *   Implements shared-memory telemetry reading, control-value (`ctrlval`)
- *   writing, and liveness/running checks for `PROCESSINFO` (`proc.*.shm`) structures.
+ * A name is looked up in the processinfo list (processinfo.list.shm, mapped once per
+ * directory), else among the proc.<name>.<pid>.shm files; a live PID wins over a dead one. Each
+ * request maps the PROCESSINFO of that process and unmaps it. The timing properties (hz, dt,
+ * jitter, ...) come from the timing ring of the loop, through processinfo_timing_stats(). A
+ * write sets CTRLval; `run`, `pause`, `step` and `stop` are also actions that take a boolean.
  */
 
 #include <dirent.h>

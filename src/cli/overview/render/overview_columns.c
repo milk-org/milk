@@ -4,7 +4,15 @@
 
 /**
  * @file    overview_columns.c
- * @brief   Column table lookups: visible columns, sort keys, labels (no drawing).
+ * @brief   Column table layout and lookups: visible columns, sort keys, labels; no drawing (see
+ *          overview_columns.h).
+ *
+ * ov_table_layout() measures the kept columns (a collapsed column takes one column and no
+ * separator), drops the one with the highest priority until the rest fit (never a pinned column,
+ * nor the first scrollable one), then gives the spare room to the elastic columns, up to
+ * OV_COL_ELASTIC_MAX, and the rest to the fill columns. Input works on the table as last drawn:
+ * the header records its width here (ov_table_set_width), and ov_table_visible() and the column
+ * cursor lay the table out again at that width.
  */
 
 #include "overview_render_internal.h"

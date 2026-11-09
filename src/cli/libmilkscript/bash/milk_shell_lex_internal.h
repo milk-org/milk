@@ -6,6 +6,19 @@
  * @file milk_shell_lex_internal.h
  * @brief Internal frame stack and scanner state shared between `milk_shell_lex.c` and
  *        `milk_shell_lex_code.c`.
+ *
+ * Purpose:     the scanner is split in two files, quotes and expansions on one side,
+ *              shell code on the other, and both work on one state.
+ * Does:        defines the frame types and their closers, frame_t, the scanner state
+ *              lex_t, and msl_mark(), msl_push() and msl_pop(); declares
+ *              msl_open_expansion() (milk_shell_lex.c) and msl_scan_frame_code()
+ *              (milk_shell_lex_code.c), which each file calls in the other.
+ * Used by:     milk_shell_lex.c, milk_shell_lex_code.c.
+ * Uses:        milk_shell_lex.h.
+ * See also:    milk_shell_lex.h.
+ * Constraints: fixed sizes: 64 nested frames (deeper ones share one), 64 open compound
+ *              commands per frame, 16 pending here-documents with delimiters of up to 127
+ *              bytes, depths up to 255. Past them the scan goes on, less exactly.
  */
 
 #ifndef MILK_SHELL_LEX_INTERNAL_H

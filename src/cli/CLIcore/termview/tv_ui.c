@@ -6,6 +6,20 @@
  * @file tv_ui.c
  * @brief The interface around the image: menubar and its dropdown menus, colorbar, status bar,
  *        range minibuffer and the key help box. Draws into the screen grid, registers hit rects.
+ *
+ * Purpose:     every setting can be seen and changed with the keyboard or the mouse, without
+ *              leaving the image.
+ * Does:        draws the interface over the composed image as interface cells, which the
+ *              renderer sends first, and registers a hit rect for each clickable area; builds
+ *              each menu from the current state, previews a choice while it is highlighted and
+ *              undoes it on Esc; handles the menu keys and the keys of an open menu, the help
+ *              box or the range minibuffer, and passes the others back; fits the colorbar labels
+ *              to their width without cutting them; drops status bar segments from the end when
+ *              the row is too short. Changes go through tv_do() and tv_set_range() (termview.c).
+ * Used by:     termview.c (drawing, keys, mouse); milk-termview.c (tv_help_keys, for -h).
+ *              Declared in termview_internal.h.
+ * Uses:        the cell helpers of termview_internal.h; tv_cmap.c (colormap previews, names).
+ * See also:    docs/guide/termview.md, "Screen", "Menus" and "Keys and mouse".
  */
 
 #include <math.h>

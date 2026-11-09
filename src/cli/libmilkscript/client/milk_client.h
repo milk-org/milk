@@ -4,10 +4,23 @@
 
 /**
  * @file milk_client.h
- * @brief Client routines for communicating with milk-cli --server
+ * @brief The client: one call per keyword or request that a shell sends to its session
+ *        (milk-cli --server).
  *
- * Shared by both the loadable bash builtin module (`libmilkbash.so`)
- * and the standalone helper executable (`milk-call`).
+ * Purpose:     the bash builtins and milk-call run module commands and keywords through one API,
+ *              whether the work is done in the calling process or by the session.
+ * Does:        declares milk_client_call() for module commands, one call per keyword (@get,
+ *              @set, @calc, @test, @exists, @waitfor, @waitany, @sleep, @args, @grab, @session,
+ *              @log, @ls), completion and shutdown; the hooks (milk_client_hooks_t) through
+ *              which a call reads and sets the caller's variables, defines command functions
+ *              and runs shell code; MILK_CLIENT_RC_TRANSPORT, the status (255) when the session
+ *              cannot be reached.
+ * Used by:     the builtins of libmilkbash.so (milk_bash_builtins.c, milk_bash_hooks.c), milk-call
+ *              (milk_call_main.c); milk_ipc_common.h, milk_srvlog.h and milk_bash_defer.h (the
+ *              hooks).
+ * See also:    milk_client_ops.c, milk_client_stream.c, milk_client_args.c (the calls),
+ *              milk_client_internal.h and milk_client_conn.c (the connection);
+ *              docs/guide/sessions.md, "Using milk from Plain Bash".
  */
 
 #ifndef MILK_CLIENT_H
@@ -141,7 +154,7 @@ int milk_client_shutdown(const milk_client_hooks_t *hooks);
 int milk_client_session(int argc, char **argv, const milk_client_hooks_t *hooks);
 
 /**
-     * @brief Inspect or search the server SHM command & output log (`@log`).
+     * @brief Inspect or search the session's SHM command & output log (`@log`).
      */
 int milk_client_log(int argc, char **argv, const milk_client_hooks_t *hooks);
 

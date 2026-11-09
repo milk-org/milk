@@ -6,29 +6,28 @@
  * @file mc_out.c
  * @brief Temporary image pool, output image preparation, semaphore batching, and formatting.
  *
- * Manages image allocation, reuse, publication, and CLI result formatting for
- * `libmilkcalc` program execution:
- *
- * 1. **Temporary Image Pool (`_tmpcalcpool0..3`)**: Maintains a 4-slot, 256 MiB
- *    pool of local `IMAGE` buffers (`mc_tmp_image`, `mc_tmp_release`) so
- *    per-frame evaluations that need scratch images (aliased in-place clones,
- *    binned slices, compound reduction inputs) avoid repeated `malloc`/`free`
- *    and table scans. Sub-program slots (`_tmpcalcsub*`) stay pinned across
- *    evaluations until `mc_tmp_release_force()` or `mcalc_tmp_cleanup()`.
- * 2. **Output Preparation (`mc_out_prepare`)**: Resolves or creates the target
- *    `IMAGE` for a planned slot, enforcing `@S:` (shared) vs `@L:`/`local`
- *    storage rules, rejecting name collisions with scalar calculator/shell
- *    variables, validating shared stream dimensions, and setting `md[0].write = 1`
- *    prior to pixel writes. Uses `milk_table_generation()` (`checked_gen`) to
- *    bypass hash lookups on repeated loop iterations.
- * 3. **Deferred Stream Posting (`mc_out_post`, `mc_post_defer`, `mc_post_flush`)**:
- *    Allows multi-step programs (or `for` loops) to batch shared-memory stream
- *    updates (`processinfo_update_output_stream`) so downstream consumers are
- *    woken once at the end of a transaction rather than on every intermediate
- *    write.
- * 4. **CLI Output Formatting (`mc_format_image_summary`, `mc_format_pixel_line`)**:
- *    Formats human-readable image summaries (`name [dims] type`) and `-a`
- *    space-separated pixel dumps.
+ * Purpose:     one place where every step gets its target image and publishes it, so storage
+ *              rules, memory reuse from frame to frame and semaphore posts are the same for all.
+ * Does:        mc_out_prepare() finds or creates the image of a slot (shared for `S:` and by
+ *              default in a unit, else local; `L:`, `local` and `_tmpcalc*` are always local),
+ *              refuses a name that a variable holds and a shared stream with another element
+ *              count, reuses a local image of the same shape and type and recreates it otherwise,
+ *              and skips the lookup while milk_table_generation() is unchanged. mc_tmp_image() and
+ *              mc_tmp_release() keep up to 4 released scratch images (`_tmpcalcpool0..3`,
+ *              256 MiB in all), so per-frame clones, binned slices and reduction inputs are not
+ *              allocated each time; the `_tmpcalcsub*` images of cached sub-programs stay until
+ *              mc_tmp_release_force() or mcalc_tmp_cleanup(). mc_out_post() posts a target;
+ *              between mc_post_defer() and mc_post_flush() it queues shared streams, so a run
+ *              wakes each reader once. mc_format_image_summary() and mc_format_pixel_line() print
+ *              `name [dims] type` and the pixels of `@calc -a`.
+ * Used by:     the steps in run/, ext/mc_ext_exec.c and linalg/; plan/mc_views.c (binned views);
+ *              mc_eval.c (result text); mcalc_tmp_cleanup() by the server's
+ *              milk_server_dispatch.c. Declared in plan/mc_plan.h and mcalc.h.
+ * Uses:        COREMOD_memory (create_image.h, delete_image.h, image_ID.h, variable_ID.h),
+ *              processinfo_update_output_stream() (libprocessinfo), milkdata.h,
+ *              mc_resolve_or_autoconnect_image() (ext/mc_ext_builtin.c).
+ * See also:    run/mc_prog.c (defers the posts of a run); docs/guide/calculator.md,
+ *              "Calculator (`@calc`, `@test`, `@pipe`)" and "Fusion & Cost Model".
  */
 
 #include <stdint.h>
@@ -303,8 +302,8 @@ void mc_ensure_pool_warm(uint8_t naxis, const uint32_t size[3], uint8_t dt)
 /**
  * mcalc_tmp_cleanup - Recycle or delete all non-pooled `_tmpcalc*` images in `milk_data`
  *
- * Sweeps `milk_data.image[]` after a top-level `mcalc_eval()` call to reclaim
- * any unreferenced `_tmpcalc*` buffers while preserving `_tmpcalcpool*` slots.
+ * Called by the server before and after each module command (milk_server_dispatch.c): every
+ * `_tmpcalc*` image except the `_tmpcalcpool*` slots goes back to the pool or is deleted.
  *
  * Return: void
  */
@@ -725,7 +724,7 @@ void mc_format_image_summary(imageID id, const char *assign_name, char *buf, siz
  * mc_format_pixel_line - Format all pixels of a real image as a space-separated string
  * @id: `imageID` of the real image to format (up to `MC_MAX_PIXELS` elements)
  *
- * Used by `milk-calc -a` to print 1D/2D array elements on a single line.
+ * Used by `@calc -a` to print 1D/2D array elements on a single line.
  * Rejects complex or half-precision images and images exceeding 1,048,576 pixels.
  *
  * Return: Newly heap-allocated NUL-terminated string (caller must `free()`), or NULL

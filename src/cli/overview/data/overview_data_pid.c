@@ -6,12 +6,27 @@
  * @file    overview_data_pid.c
  * @brief   Process liveness and /proc/<pid>/stat values, read once per PID per scan.
  *
- * One read of /proc/<pid>/stat gives state, CPU ticks, start time and RSS. The table is reset at the
- * start of each scan (pid_cache_reset). A PID found dead is not probed again until the kernel may have
- * reused it, i.e. its PID counter (ns_last_pid) wrapped, or for OV_PID_DEAD_RECHECK_S seconds when that
- * counter cannot be read: dead stream owners and stale registry entries would otherwise cost a syscall each,
- * every scan. Dead PIDs not looked up for OV_PID_DEAD_FORGET_S seconds are dropped.
- * pid_same_process() and pid_check_zombie() always read afresh: they guard actions.
+ * Purpose:     a scan asks about the same PIDs many times (stream owners, semaphore users,
+ *              processes, FPS processes); one /proc read per PID per scan keeps that cheap, and
+ *              dead stream owners and stale registry entries do not cost a syscall each, every
+ *              scan.
+ * Does:        one read of /proc/<pid>/stat gives state, CPU ticks, start time and RSS
+ *              (pid_get_status, pid_is_alive, pid_get_rss_kb, pid_get_cpu_ticks,
+ *              pid_get_start_ticks). pid_cache_reset() starts a scan and empties the table. A PID
+ *              found dead is not probed again until the kernel may have reused it, i.e. its PID
+ *              counter (ns_last_pid) wrapped, or for OV_PID_DEAD_RECHECK_S seconds when that
+ *              counter cannot be read; dead PIDs not looked up for OV_PID_DEAD_FORGET_S seconds
+ *              are dropped. When /proc hides other users' processes (hidepid), kill(pid, 0)
+ *              decides. pid_same_process() always reads afresh: it guards actions.
+ * Used by:     the scan (overview_data.c, overview_data_scan*.c, overview_data_inspect.c); the
+ *              CONTROL actions (input/overview_ctrl.c, overview_ctrl_proc.c: pid_same_process);
+ *              the PID colours of the renderers (render/overview_theme_draw.h) and the tools
+ *              milk-stream-info and milk-procinfo-info (pid_get_status). Declared in
+ *              overview_data_internal.h, pid_get_status in overview_data_types.h. milk-fps-info
+ *              also compiles this file.
+ * Uses:        overview_data_index.h (the PID and dead-PID indexes).
+ * See also:    overview_data_sys_proc.c (CPU cores and scheduling, read from /proc for RESOURCES).
+ * Constraints: called from the scan thread and the UI thread: a mutex guards the tables.
  */
 
 #include <errno.h>

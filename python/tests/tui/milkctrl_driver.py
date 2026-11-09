@@ -1,4 +1,16 @@
-"""tmux-pane driver for milk-CTRL and the legacy TUIs (milk-streamCTRL, milk-fpsCTRL, milk-procCTRL)."""
+"""tmux-pane driver for milk-CTRL (also as milk-streamCTRL) and the legacy TUIs.
+
+Purpose:     a TUI test drives the real program as a user does (keys, text, mouse, paste) and
+             reads what it draws.
+Does:        TuiPane runs a command in its own tmux session and prints its exit code as __rc=N
+             when it ends; it sends tmux key names, literal text, raw bytes, SGR mouse clicks and
+             bracketed pastes, reads the screen with or without its colours, and waits for a
+             regex on it. MilkCtrl adds quit(), header() and status(). PtyRun runs a TUI on a pty
+             it owns, so termios and O_NONBLOCK can be checked after the TUI exits.
+Used by:     conftest.py (the milkctrl, legacy_pane and milkctrl_pty fixtures).
+Uses:        libtmux; pty and termios.
+See also:    entities.py; docs/guide/milk-CTRL.md, "Keys"; docs/guide/fpsCTRL_reference.md.
+"""
 
 from __future__ import annotations
 

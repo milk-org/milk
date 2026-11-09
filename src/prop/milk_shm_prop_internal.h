@@ -4,13 +4,17 @@
 
 /**
  * @file milk_shm_prop_internal.h
- * @brief Internal namespace handlers for live milk shared-memory entities.
+ * @brief The namespace handlers of libmilkprop, and the helpers they share.
  *
- * Role & Goal:
- *   Declares the per-namespace (`stream`, `fps`, `proc`) backend
- *   functions called by the top-level dispatcher in `milk_shm_prop.c`.
- *   Keeping each namespace in its own translation unit keeps file and
- *   function lengths small and easy to audit.
+ * Purpose:     milk_shm_prop.c parses an entity path and hands the name and property to the
+ *              handler of its namespace; each namespace has a file of its own.
+ * Does:        declares get, set and exists of each namespace: milk_shm_prop_stream.c (`s.` and
+ *              `l.`), milk_shm_prop_fps.c (`f.`), milk_shm_prop_proc.c (`p.`); the stream
+ *              directory and the exact number format of milk_shm_prop.c; the trigger mode names
+ *              of milk_shm_prop_proc.c.
+ * Used by:     the files of libmilkprop; milk_waitfor.c (`@waitfor`: the stream directory, the
+ *              trigger mode names).
+ * See also:    milk_shm_prop.h (the API).
  */
 
 #ifndef MILK_SHM_PROP_INTERNAL_H
@@ -18,11 +22,12 @@
 
 #include <stddef.h>
 
-/* Stream / local image namespace (@s., @stream., @l., @local.) */
+/* Helpers of all the namespaces (milk_shm_prop.c) */
 const char *milk_shm_prop_shmdir(void);
 
 void milk_shm_prop_fmt_double(char *out, size_t outsz, double v);
 
+/* Stream / local image namespace (@s., @stream., @l., @local.) */
 int milk_shm_prop_get_stream(const char *name, const char *prop, char *out, size_t outsz);
 
 int milk_shm_prop_set_stream(const char *name,
@@ -48,7 +53,7 @@ int milk_shm_prop_set_fps(const char *name, const char *prop, const char *val);
 
 int milk_shm_prop_exists_fps(const char *name, int check_running);
 
-/* Processinfo telemetry namespace (@p., @proc., @procinfo.) */
+/* Processinfo telemetry namespace (@p., @proc.) */
 int milk_shm_prop_get_proc(const char *name, const char *prop, char *out, size_t outsz);
 
 int milk_shm_prop_set_proc(const char *name, const char *prop, const char *val);

@@ -6,9 +6,29 @@
  * @file mc_func.h
  * @brief Built-in calculator function catalog and scalar math helper declarations.
  *
- * Classifies every built-in calculator function into a semantic category (`mc_fn_kind_t`)
- * with its argument/LHS arity bounds, scalar C function pointers (`fn1`/`fn2`/`fn3`),
- * and C-codegen prelude symbol names (`c_f32`/`c_f64`) used by the planner and emitter.
+ * Purpose:     each built-in function is defined once, so the parser, the resolver, the planner,
+ *              the C code generator, both scalar evaluators (session and shell) and completion
+ *              agree on what a name means; a removed name fails with its replacement.
+ * Does:        mc_fn_kind_t classifies the functions by how they run (per pixel, reduction,
+ *              library pre-stage, BLAS/LAPACK/FFT, string, program directive). An mc_func_t
+ *              entry holds the argument and LHS-target counts, the cast type, whether the
+ *              shell's evaluator (mcalc_local()) has it, the scalar C callbacks (fn1/fn2/fn3)
+ *              and the names the float32 and float64 kernels call (c_f32/c_f64). Lookups by
+ *              name or name slice; the replacements of removed aliases (ln, fabs, ...) and of
+ *              the `_PI`-style constants; the reserved constants pi, nan and inf; the scalar
+ *              helpers, with the kernels' formulas. mc_func.c also implements mc_truth()
+ *              (front/mc_ast.h) and mcalc_print_catalog() (mcalc.h, `--list`).
+ * Used by:     the calculator's front end, planner, JIT and scalar evaluators (through
+ *              front/mc_ast.h); ext/mc_ext_registry.c and mc_eval.c (an extension or a def may
+ *              not take a built-in name); the session: milk_server_complete.c (completion of
+ *              function names), milk_server_vars.c (reserved constants).
+ * Uses:        libc and libm; mc_func.c also ImageStreamIO/ImageStruct.h (the cast types) and
+ *              the extension registry (milk_calc_ext.h).
+ * See also:    mc_func.c; jit/mc_prelude.h (the kernels' helpers); docs/guide/calculator.md,
+ *              "Functions"; docs/guide/scripting.md, "Migrating Old Scripts" (removed names).
+ * Constraints: mc_func.c is also compiled into libmilkbash.so, the thin client every shell
+ *              loads, which does not link libmilkcalc: it may call only the calculator files
+ *              that target also compiles (ext/mc_ext_registry.c, run/mc_scalar_ops.c, ...).
  */
 
 #ifndef MILK_MC_FUNC_H
@@ -22,13 +42,13 @@ typedef enum
     MC_FN_SCALAR = 0, /* elementwise scalar/image math & casts (sin, pow, clamp, f32...) */
     MC_FN_WHERE,      /* where(cond, t, f) */
     MC_FN_COORD,      /* ix, iy, ir, itheta */
-    MC_FN_PRNG,       /* rand, randn, urand, grand */
+    MC_FN_PRNG,       /* rand, randn */
     MC_FN_CPLX,       /* real, imag, arg, conj, cplx, expi */
     MC_FN_SHIFT,      /* shift, roll */
     MC_FN_LUT,        /* lut(x, tbl[, x0, dx]) */
     MC_FN_GATHER,     /* pixremap, interp2 */
     MC_FN_LINSPACE,   /* linspace(a, b, n) */
-    MC_FN_REDUCE_D,   /* itot, imean, istd, irms, ivar, imin, imax, norm, nrm2, asum */
+    MC_FN_REDUCE_D,   /* itot, imean, istd, irms, ivar, imin, imax, norm, asum */
     MC_FN_REDUCE_L,   /* icount, iargmax, iargmin, iamax */
     MC_FN_DOT,        /* dot(a, b) */
     MC_FN_ISTATS,     /* istats(im) */
@@ -50,14 +70,14 @@ typedef struct
     mc_fn_kind_t kind;             /* semantic category */
     uint8_t      cast_dt;          /* _DATATYPE_* for explicit cast functions, else 0 */
     uint8_t      in_local;         /* 1 if supported by mcalc_local() fast path */
-    uint8_t      in_old;           /* 1 if the old calculator supported it (diff generator) */
+    uint8_t      in_old;           /* 1 if the old calculator supported it (not read) */
     double (*fn1)(double);         /* unary scalar C implementation, if any */
     double (*fn2)(double, double); /* binary scalar C implementation, if any */
     double (*fn3)(double, double, double); /* ternary scalar C implementation, if any */
     const char *c_f32;                     /* C prelude / expression name in float32 pass */
     const char *c_f64;                     /* C prelude / expression name in float64 pass */
-    const char *signature;                 /* human-readable signature for --list / help */
-    const char *help;                      /* one-line description */
+    const char *signature;                 /* human-readable signature (not read) */
+    const char *help;                      /* one-line description (not read) */
 } mc_func_t;
 
 /** mc_func_find() - look up a built-in function by exact name (without '('). */

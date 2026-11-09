@@ -4,13 +4,23 @@
 
 /**
  * @file cli_treesitter_internal.h
- * @brief Internal types and cross-file prototypes for the `treesitter/` subsystem.
+ * @brief Types and functions shared by the files of treesitter/, outside the cli_treesitter.h API.
  *
- * Role & Goal:
- *   Shares highlight span structures, parser state accessors, normalized AST
- *   parsing (`cli_ts_parse_normalized_tree()`), and lexical fallback analyzers
- *   across `cli_treesitter.c`, `cli_treesitter_lexical.c`,
- *   `cli_treesitter_diag.c`, and `cli_treesitter_format.c`.
+ * Purpose:     milk-cli's tree-sitter support is split into four files that share a parser, a
+ *              highlight span type and the lexical scanners; this header keeps them out of
+ *              cli_treesitter.h, which the rest of milk-cli includes.
+ * Does:        declares HighlightSpan and the lexical scanners of cli_treesitter_lexical.c;
+ *              with USE_TREESITTER, the parser and the normalized parse of cli_treesitter.c
+ *              (milk's own forms, such as `@{...}`, rewritten as shell text of the same length,
+ *              so byte offsets still match the line) and the error spans of
+ *              cli_treesitter_diag.c.
+ * Used by:     cli_treesitter.c, cli_treesitter_lexical.c, cli_treesitter_diag.c,
+ *              cli_treesitter_format.c.
+ * Uses:        cli_treesitter.h (CLI_MATCH_PAIR), bash/milk_shell_lex.h (the shell context of
+ *              each byte), tree_sitter/api.h.
+ * See also:    docs/guide/CLIcore.md, "Syntax Highlighting".
+ * Constraints: the tree-sitter declarations exist only when milk-cli is built with tree-sitter
+ *              (USE_TREESITTER: the CMake option, and the library found).
  */
 
 #ifndef CLI_TREESITTER_INTERNAL_H

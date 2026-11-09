@@ -6,8 +6,23 @@
  * @file    overview_render_select.c
  * @brief   One resolver for drawn rows, cursor and action targets in the list panels.
  *
- * The cursor of each list panel is an identity (OV_TARGET). Rows are derived per frame from the
- * rows actually drawn, so render, hover, navigation and actions always agree on the entity.
+ * Purpose:     render, hover, navigation and actions agree on the entity under the cursor while
+ *              rows move between scans, sorts and filter changes.
+ * Does:        the cursor of each list panel is an identity (OV_TARGET); its row is derived per
+ *              frame from the rows actually drawn (ov_view_rows). ov_tgt_set() and ov_tgt_find()
+ *              capture and resolve identities, with a name index built once per published model;
+ *              ov_sel_row(), ov_sel_model() and ov_sel_idx() move and read the cursor;
+ *              ov_get_selected_*_idx() give the selection (the frozen entry when frozen).
+ *              ov_sel_sync() re-derives the rows: a cursor whose entity is gone moves to the
+ *              neighbouring row, a freeze whose subject is gone is released, and the command log
+ *              says so. The FPS batch marks (ov_msel_*) are identities too.
+ * Used by:     the list panels, DETAILS, CONNECTIONS, previews and help of render/, the mouse,
+ *              navigation, actions and y/N confirmation of input/, and tools/milkCTRL.c.
+ *              Declared in render/overview_render_internal.h.
+ * Uses:        overview_target.h (OV_TARGET), ov_view_rows() and ov_view_row_of()
+ *              (overview_render_view.c).
+ * See also:    render/overview_render_sync.c (calls ov_sel_sync() at the start of each frame).
+ * Constraints: UI thread only (static name index, one per panel).
  */
 
 #include "overview_render_internal.h"

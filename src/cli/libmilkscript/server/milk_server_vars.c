@@ -4,15 +4,24 @@
 
 /**
  * @file milk_server_vars.c
- * @brief Lossless bash <-> dcvar variable synchronization and inline entity expansion.
+ * @brief Lossless bash <-> dcvar variable synchronization.
  *
- * Role & Goal:
- *   1. Moves scalar variables between the calling bash environment and milk's variables (a number
- *      in `dcvar[]`, text in `cli_vars[]`): the bash variables a calc expression names
- *      come in with the request; a command's declared outputs (CLICMDDATA.outvars) that it changed
- *      go back.
- *   2. Expands the entity references (`s.<stream>.<prop>`, `f.<fps>.<param>`, `p.<proc>.<field>`)
- *      inside calc and test expressions before `mcalc_eval_bash()` runs them.
+ * Purpose:     calculator text run by the session sees the shell variables it names, and the
+ *              outputs a command declares reach the shell, without losing digits on the way.
+ * Does:        stores the shell variables a request carries (a number in `dcvar[]`, text in
+ *              `cli_vars[]`; never over an image of that name), keeping a variable's exact value
+ *              when the text is what milk printed for it; takes the shell's MILK_DPDIGITS for the
+ *              request; fingerprints a command's declared outputs (CLICMDDATA.outvars) before it
+ *              runs, and sends those it changed back as SETVAR; tells whether a line of milk-cli's
+ *              calc mode can run in milk-cli's process, its names known and synced since the
+ *              last bash command.
+ * Used by:     milk_server_eval.c (CALC and TEST), milk_server_dispatch.c (CALL);
+ *              milk_bash_coproc.c and milk_bash_exec.c (calc mode). Declared in
+ *              milk_server_internal.h and milk_server.h.
+ * Uses:        CLIcore.h and CLIcore_script.h (dcvar[], cli_var_set()), COREMOD_memory,
+ *              front/mc_ast.h and mc_func.h (the calculator's tokens and names), milk_proto.h.
+ * See also:    milk_client_conn.c (the shell variables a request carries);
+ *              docs/guide/calculator.md, "Calculator (`@calc`, `@test`, `@pipe`)".
  */
 
 #ifndef _GNU_SOURCE

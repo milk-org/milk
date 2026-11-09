@@ -4,8 +4,14 @@
 
 /**
  * @file milk_bash_cmdfile.c
- * @brief Private directory of translated command files, shared by the milk-cli bash co-process
- *        and the `milktranslate` builtin (part of the thin bash client).
+ * @brief Private directory of translated command files, shared by the bash co-process and the
+ *        `milktranslate` builtin (see milk_bash.h).
+ *
+ * Bash sources a translated text from a file named after its script, so that bash's error
+ * messages name the script. The file is in a directory private to the process,
+ * milk-cmdfiles-<pid>-XXXXXX (mkdtemp) in $XDG_RUNTIME_DIR, else /dev/shm, $TMPDIR or /tmp,
+ * made on first use after removing the directories of processes that are gone. A forked child
+ * makes its own; only the process that made a directory removes it, at exit or at shutdown.
  */
 
 #ifndef _GNU_SOURCE

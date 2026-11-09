@@ -4,7 +4,12 @@
 
 /**
  * @file    overview_data_index.c
- * @brief   Open-addressing hash index (see overview_data_index.h) and the hashes it is keyed with.
+ * @brief   Open-addressing hash index and the hashes it is keyed with (see overview_data_index.h).
+ *
+ * The functions take the key array, the value array and the capacity that the header's macros
+ * pass, so one implementation serves indexes of every size. A probe starts at the hash masked to
+ * the table size and stops at the first empty slot, or after one full turn. Nothing is removed
+ * from an index: its owner clears and refills it.
  */
 
 #include <string.h>

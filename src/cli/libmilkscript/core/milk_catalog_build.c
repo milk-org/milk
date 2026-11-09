@@ -4,8 +4,14 @@
 
 /**
  * @file milk_catalog_build.c
- * @brief Writing the install-time catalog (`milk-cli --catalog`), and loading the module of a catalogued
- * command (see milk_catalog.h).
+ * @brief Writing the install-time catalog (`milk-cli --catalog`), and loading the module of a
+ *        catalogued command (see milk_catalog.h).
+ *
+ * The build finds the milk modules among the libraries in <prefix>/lib by their
+ * `__milk_module_info` symbol, checks in a child process that each one loads and registers
+ * cleanly, loads them, then writes the catalog from the command registry. catalog.bash is
+ * replaced atomically (a temporary file, then rename()). milk_catalog_autoload() quietly loads
+ * the module of a catalogued command the first time the command is called.
  */
 
 #include <dirent.h>

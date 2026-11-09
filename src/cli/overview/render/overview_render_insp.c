@@ -4,8 +4,26 @@
 
 /**
  * @file    overview_render_insp.c
- * @brief   F3 stream inspector: a panel beside (or under) the stream list with one page per tab. Pages write
- *          lines into a buffer (ov_insp_line, ov_insp_kv); the frame draws the part that fits, scrolled.
+ * @brief   F3 stream inspector: a panel beside (or under) the stream list with one page per tab.
+ *          Pages write lines into a buffer (ov_insp_line, ov_insp_kv); the frame draws the part
+ *          that fits, scrolled.
+ *
+ * Purpose:     F3 shows everything about the stream under the cursor beside the list.
+ * Does:        ov_render_stream_inspector() draws the panel: the page labels (their positions are
+ *              kept for clicks, ov_insp_tab_at), then the current page from OV_MODEL.insp. INFO
+ *              (metadata, times and ages, creator and owner, counters, rates) and SEMS (values,
+ *              last reader and writer, † for a process that is gone) are written here; TRACE,
+ *              KEYS and HOLDERS in overview_render_insp_pages.c. Until a scan has filled
+ *              OV_MODEL.insp for that stream, the page says so. The scroll is clamped here.
+ * Used by:     render/overview_render.c (the F3 view), render/overview_render_status.c
+ *              (ov_insp_tab_name), input/overview_input_mouse_panels.c (ov_insp_tab_at),
+ *              overview_render_insp_pages.c (ov_insp_line, ov_insp_kv). Declared in
+ *              render/overview_render_internal.h.
+ * Uses:        OV_MODEL.insp (data/overview_data_inspect.c),
+ *              ov_fmt_si() (overview_render_numfmt.c).
+ * See also:    input/overview_input_nav_insp.c (its keys);
+ *              docs/guide/milk-CTRL.md, "Streams view (F3)".
+ * Constraints: UI thread only (static line buffer and label positions).
  */
 
 #include "overview_render_internal.h"

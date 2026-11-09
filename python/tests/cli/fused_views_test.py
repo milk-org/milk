@@ -1,10 +1,25 @@
-"""
-Fused views and axis reductions (plan 'the-new-milk-cli-calc' step 3): slices, strided and reversed
-slices, broadcasting and axis reductions run in one fused pass, as operands and as sliced
-destinations, in one-shot statements and in kept unit programs.
+"""Fused views and axis reductions give the per-operator results; the newer calculator syntax works.
 
-The per-operator path is forced with a bin-1 slice (`im[::1b]`): an exact copy that a fused pass does
-not read as a view. Coordinate images are centred on n/2, so expected pixel values account for that.
+Purpose:     slices (strided, reversed), broadcasts and axis reductions run in one fused pass, as
+             operands and as sliced destinations, in one-shot statements and in kept unit
+             programs; that pass must compute what the per-operator path computes.
+Does:        compares fused statements with the per-operator path, forced by a bin-1 slice
+             (`im[::1b]`: an exact copy that a fused pass does not read as a view): slice operands,
+             broadcasts, sliced destinations (one post per statement), bounds with variables, axis
+             reductions, and a milk.calc unit with a sliced destination, a ring buffer and an axis
+             reduction. Then: masked assignments, `end` in bounds, comprehensions, vector
+             literals, linspace, roll, chained comparisons, pi/nan/inf, wrap_pi, sinc,
+             iargmax/iargmin unpacking, the library functions (matmul, einsum, svd, eigh, fft,
+             stacking, conv2, ...), reductions at large offsets against a double reference, and
+             statements from the calcdiff expression generator. Coordinate images are centred on
+             n/2: the expected pixel values account for that.
+Covers:      the calculator (src/calc: plan/mc_views.c, plan/mc_plan.c, jit/mc_emit.c,
+             run/mc_reduce.c, run/mc_prestage.c, linalg/), through @calc and
+             milk-fpsexec-milk-calc (units/milk_unit_calc.c).
+Uses:        conftest.py: milk_bash, value; calcdiff/datasets.py and calcdiff/gen_expr.py.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; docs/guide/slicing.md,
+             "Output (LHS) Slicing and Masked Assignment"; perf_ceilings_test.py (fused against
+             per-operator results on random expressions).
 """
 
 from __future__ import annotations
@@ -164,7 +179,7 @@ def test_unit_keeps_sliced_destination_ring_buffer_and_axis_reduction(tmp_path):
 
 
 def test_phase5_masked_lhs_and_end_slices(tmp_path):
-    """Masked LHS assignments (=, +=, -=, *=, /=) and `end` in slice bounds (§3.2 rules 1, 7)."""
+    """Masked LHS assignments (=, +=, -=, *=, /=) and `end` in slice bounds."""
     res = milk_bash(
         SETUP + '@calc "m = a; m[a > 0] = -1; ref = where(a > 0, -1, a)"\n'
         '@calc -v em1 "imax(abs(m - ref))"; echo "em1=$em1"\n'
@@ -185,7 +200,7 @@ def test_phase5_masked_lhs_and_end_slices(tmp_path):
 
 
 def test_phase5_comprehensions_literals_and_linspace(tmp_path):
-    """Array comprehensions, vector literals, and linspace (§3.2 rules 4, 5)."""
+    """Array comprehensions, vector literals, and linspace."""
     res = milk_bash(
         '@calc "c1 = [k * k for k = 0:4]; c1rev = [k for k = 6:0:-2]"\n'
         '@calc "c2 = [x + 10 * y for x = 0:3, y = 0:2]"\n'
@@ -203,7 +218,7 @@ def test_phase5_comprehensions_literals_and_linspace(tmp_path):
 
 
 def test_phase5_roll_chained_cmp_constants_and_math(tmp_path):
-    """roll, chained comparisons, pi/nan/inf, wrap_pi, and sinc (§3.2 rules 6, 8, 12, 13, 14)."""
+    """roll, chained comparisons, pi/nan/inf, wrap_pi, and sinc."""
     res = milk_bash(
         SETUP + '@calc "r1 = roll(a, 2, -1)"\n'
         '@calc -v rp0,ra0,rp1,ra1 "r1[0,0]; a[6,1]; r1[3,5]; a[1,0]"\n'
@@ -263,7 +278,7 @@ def test_offset_datasets_reduction_accuracy(tmp_path):
 
 
 def test_iargmax_iargmin_coord_unpack(tmp_path):
-    """Verify 2-D and 3-D coordinate unpacking on `iargmax` and `iargmin` (§3.2 rule 11)."""
+    """Verify 2-D and 3-D coordinate unpacking on `iargmax` and `iargmin`."""
     script = (
         "mem.mk2Dim im2 16 12 >/dev/null\n"
         "mem.mk3Dim im3 8 6 4 >/dev/null\n"
@@ -291,7 +306,7 @@ def test_iargmax_iargmin_coord_unpack(tmp_path):
 
 
 def test_phase7_library_and_spatial_ops(tmp_path):
-    """Verify Phase 7 library calls, spatial ops, and new §3.2 features (§5 Phase 7)."""
+    """Verify `@`, `.T`, einsum, svd, eigh, fft, stacking, rot90, conv2, boxmean, imin3, imax3."""
     script = (
         "mem.mk2Dim A 8 8 >/dev/null\n"
         "mem.mk2Dim B 8 8 >/dev/null\n"
@@ -330,7 +345,7 @@ def test_phase7_library_and_spatial_ops(tmp_path):
 
 
 def test_datasets_and_generated_expressions(tmp_path):
-    """Verify §6.2 datasets and §6.3 expression generator on the calculator."""
+    """Verify the calcdiff datasets and expression generator, and run generated statements."""
     ids = all_dataset_ids(include_large=True)
     for expected in ("default", "random", "offset_0", "offset_3e4", "cubes"):
         assert expected in DATASETS and expected in ids

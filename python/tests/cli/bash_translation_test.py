@@ -1,7 +1,21 @@
-"""
-How milk lines become bash, through the `@` translator and the bash co-process: heredocs
-and `<<`, quoting, `$'...'`, `${#...}`, globbing, line numbers, `@source`d files and
-git's `@{-1}`.
+"""How milk lines become bash: the @{...} translator and the bash co-process that runs them.
+
+Purpose:     the translator rewrites only @{...} and its escaped form; heredocs, quotes,
+             arithmetic, globbing and line numbers must reach bash as written, or scripts break
+             in ways that are hard to trace.
+Does:        checks that `<<` in arithmetic or in @{...} is not a heredoc; that strings,
+             continuation lines and a second heredoc body stay as written; that `$'...'`,
+             `${#...}`, a quoted @calc text and a `case` pattern that is a bash keyword are read
+             as bash reads them; that an @{...} result is neither globbed nor split; that $LINENO
+             matches the source, also with -e; that top-level and @source'd lines agree; the bash
+             each @{...} form becomes; that git's `@{-1}` and an `@{` right after a letter are
+             left alone.
+Covers:      milk_translate_shorthand_to_bash() and the bash scanner it uses
+             (src/cli/libmilkscript/bash/milk_bash_translate.c, milk_shell_lex.c), through
+             `milk-call translate`; milk-cli -s and -e, which run the translated lines in their
+             bash co-process.
+Uses:        conftest.py: translate, milk_cli_script, _run_bash, _env, _run, value.
+See also:    docs/guide/scripting.md, "The Language at a Glance"; bash_integration_test.py.
 """
 
 from __future__ import annotations

@@ -1,4 +1,18 @@
-"""Synthetic milk entities for TUI tests: streams, FPS, processinfo loops and tmux sessions."""
+"""Synthetic milk entities for TUI tests: streams, FPS, processinfo loops and tmux sessions.
+
+Purpose:     the TUIs need something to show and act on, made in the test's own MILK_SHM_DIR and
+             removed after it.
+Does:        Entities makes streams (milk-stream-create), FPS with typed parameters (pyMilk), and
+             fake processinfo loops at about 20 Hz that honour CTRLval and stall on SIGUSR1; also a
+             stream file renamed to a name the CLI tools refuse, stream keywords (milk-cli
+             imkwadd), a stream that milk-shmimpoke posts and milk-shmimcopy-semtrig copies, and a
+             tmux session shaped like an FPS one; cleanup() kills the processes it started.
+Used by:     conftest.py (the entities fixture), for legacy_tui_test.py, milkctrl_tui_test.py and
+             unit_tui_test.py.
+Uses:        pyMilk: FPS, ProcessInfo; milk-stream-create, milk-cli, milk-shmimpoke and
+             milk-shmimcopy-semtrig from the install.
+See also:    milkctrl_driver.py.
+"""
 
 from __future__ import annotations
 

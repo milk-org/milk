@@ -4,11 +4,22 @@
 
 /**
  * @file    overview_render_view.c
- * @brief   Per-panel view cache: the rows a list panel draws, rebuilt only when their inputs change.
+ * @brief   Per-panel view cache: the rows a list panel draws, rebuilt only when their inputs
+ *          change.
  *
- * The rows depend on the model, its display order, the panel's applied filter, loop isolation and
- * the frozen subject of another panel. Those inputs form a memcmp-able key; any change rebuilds the
- * panel's rows and their inverse (model index -> row). An identity index makes ov_tgt_find O(1).
+ * Purpose:     the drawn rows of a panel are asked for many times per frame (drawing, hover,
+ *              cursor, actions); they are computed once per change of their inputs.
+ * Does:        ov_view_rows() gives a panel's drawn rows: its display order (ov_order_get) less
+ *              the entries that the panel's applied filter, the loop isolation or the frozen
+ *              subject of another panel leave out. Those inputs form a memcmp-able key; any
+ *              change rebuilds the rows and their inverse (model index -> row), which
+ *              ov_view_row_of() reads in O(1).
+ * Used by:     render/overview_render_select.c (ov_rows, ov_row_to_idx, ov_sel_*, ov_sel_sync).
+ *              Declared in render/overview_render_internal.h.
+ * Uses:        data/overview_data_order.c (the display order), ov_filter_streams/procs/fps()
+ *              (render/overview_render_relate.c).
+ * See also:    render/overview_render_select.c (its name index makes ov_tgt_find() O(1)).
+ * Constraints: UI thread only (static per-panel caches).
  */
 
 #include "overview_render_internal.h"

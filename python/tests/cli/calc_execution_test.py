@@ -1,7 +1,23 @@
-"""
-How calculator programs run: fusion and kept locals, axis reductions, selects, stencils
-on views, replanning when inputs change, exact `%` and `wrap_pi`, casts and broadcasts,
-NaN in `imin`, `imax`, `lut` and `interp2`, and torn-frame counters.
+"""How calculator statements run: fusion, locals, axis reductions, selects, casts and NaN.
+
+Purpose:     a statement must give the same values however it runs (one fused pass, merged
+             with the next statement, per operator, kept in a unit), and keep running when an
+             input changes shape or type.
+Does:        checks reductions that read a value written earlier in the block; locals elided
+             or kept in a unit; axis reductions on non-square images and cubes; a zero divisor
+             in an untaken branch (no error) and outside a select (an error); stencils on
+             broadcast or sliced operands; re-planning after an input is re-created; the JIT's
+             math and its `/=` rollback; exact `%`, `fmod` and `wrap_pi`; casts, masks and
+             broadcasts; argmax and argmin in float and double; NaN in imin, imax, lut and
+             interp2; hypot overflow; the `torn` field of `s.<name>.stats`; kept scalar
+             statements.
+Covers:      the calculator: src/calc/plan/ (mc_plan.c, mc_views.c), src/calc/jit/ (mc_emit.c,
+             mc_cc.c), src/calc/run/ (mc_exec.c, mc_prestage.c, mc_reduce.c), src/calc/mc_eval.c;
+             milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c); the stats property
+             (src/prop/milk_shm_prop_stream.c).
+Uses:        conftest.py: milk_bash, _run_bash, value, CAM, UNIT_HELPERS.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model" and "Compute Units Without C";
+             fused_views_test.py.
 """
 
 from __future__ import annotations
@@ -165,7 +181,7 @@ def test_local_read_through_def_is_written(tmp_path):
 
 
 def test_local_read_by_merged_statement_is_written(tmp_path):
-    """A reader folded into an earlier pass (STMT_NOP) still counts: b2 sees the previous frame's tmp2."""
+    """A reader folded into an earlier pass still counts: b2 sees the previous frame's tmp2."""
     res, out = _unit(
         tmp_path,
         "c2b",

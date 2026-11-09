@@ -4,8 +4,10 @@
 
 /**
  * @file milk_catalog.c
- * @brief Reading the install-time catalog of module commands (see milk_catalog.h); libc only,
- *        as it is part of the thin bash client.
+ * @brief Reading the install-time catalog of module commands (see milk_catalog.h).
+ *
+ * On first use, reads every .tsv file in $MILK_INSTALLDIR/share/milk/catalog.d, sorts the
+ * entries by command key and answers each lookup by binary search.
  */
 
 #include <dirent.h>

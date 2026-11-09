@@ -4,11 +4,22 @@
 
 /**
  * @file overview_input_keys.h
- * @brief Key bindings: rows {keys, context needed, context forbidden, handler}, first match wins
+ * @brief Key bindings: rows {keys, context needed, context forbidden, handler}, first match wins.
  *
- * Each key group keeps its table next to its (static) handlers; the groups run in the order of
- * ov_handle_key(). A handler returning 0 lets the next matching row, then the next group, try.
- * Documentation of the keys: overview_keymap.h.
+ * Purpose:     each key group says, in a table next to its (static) handlers, which keys it takes
+ *              in which state; the documentation of the keys stays in overview_keymap.h.
+ * Does:        OV_KEYBIND is one row: a 0-terminated list of key codes (OV_KEY_ANY: every key),
+ *              the OV_CTX_* bits it needs and those it forbids, and its handler. ov_key_ctx()
+ *              computes the OV_CTX_* bits of the current state; ov_key_dispatch() runs the first
+ *              row that matches. A handler returning 0 lets the next matching row, then the next
+ *              group, try; a global key returns OV_KEY_QUIT to quit milk-CTRL. The groups run in
+ *              the order of ov_handle_key_internal() (input/overview_input.c).
+ * Used by:     the key groups of input/ (overview_input_actions.c, overview_input_modal.c,
+ *              overview_input_nav.c, overview_input_sort_keys.c, overview_input_toggles.c),
+ *              through input/overview_input_internal.h; render/overview_render_status.c
+ *              (ov_key_ctx, for the status-line hints).
+ * Uses:        overview_keymap.h (the OV_CTX_* bits).
+ * See also:    overview_input_keys.c; src/cli/overview/README.md, "Extending milk-CTRL".
  */
 
 #ifndef OVERVIEW_INPUT_KEYS_H

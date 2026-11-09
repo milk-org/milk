@@ -5,6 +5,12 @@
 /**
  * @file milk_cmd_args.c
  * @brief Per-call command arguments (see milk_cmd_args.h).
+ *
+ * milk_args_begin() opens the call's frame: it strips the meta-options from argv and resets the
+ * values; milk_args_end() closes it and restores the defaults. A session default is kept as the
+ * string the user gave, checked when it is set and parsed again at each reset. A preset is one
+ * file per name in the command's preset directory, written to a temporary file and renamed into
+ * place.
  */
 
 #include <ctype.h>

@@ -1,4 +1,24 @@
-"""Shared test helpers and fixtures for milk CLI, milk-script, and milk.bash tests."""
+"""Helpers for the milk-cli, milk-script and milk.bash tests: isolated runs, ptys, output parsing.
+
+Purpose:     each test runs the installed programs in its own MILK_SHM_DIR, MILK_PROC_DIR and
+             HOME, and kills the processes it started, so tests neither see nor leave each
+             other's streams, sessions or processes.
+Does:        _isolated_shm_env() builds that environment; _run() runs a program in a new
+             session and kills the session when it returns or times out; milk_bash() runs a
+             script after `source milk.bash`; milk_cli_script(), milk_cli_stdin(),
+             _run_milk_cli() and milk_script() run milk-cli -s, -c or piped input, and
+             milk-script; translate() runs `milk-call translate --legacy`; pty_session()
+             drives an interactive milk-cli on a pty; milk_proc() runs milk-cli in its own
+             session and reaps it, run_milk() to the end, failing on a crash or a hang; value()
+             and events() read the output; CAM and UNIT_HELPERS are shell snippets several test
+             files share.
+Used by:     the test files of python/tests/cli; python/tests/tui/conftest.py and
+             tui/unit_tui_test.py import _install_dir, _isolated_shm_env and _run.
+Uses:        the install in $MILK_INSTALLDIR (bin/milk-cli, milk.bash, milk-call,
+             milk-script), or milk-cli from PATH (milk.cliwrap) when it has none; the
+             MILK_SHM_DIR that python/tests/conftestaux/milk.py sets for the run.
+See also:    docs/developer/tooling.md, "4.2 pytest".
+"""
 
 from __future__ import annotations
 
@@ -25,7 +45,7 @@ _ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 
 
 def bug(finding: str, reason: str = "", strict: bool = True):
-    """Xfail marker tagged with a review finding ID (strict unless the repro is timing-dependent)."""
+    """Xfail marker for known bug @finding (strict unless the repro is timing-dependent)."""
     return pytest.mark.xfail(strict=strict, reason=f"[{finding}] {reason}")
 
 

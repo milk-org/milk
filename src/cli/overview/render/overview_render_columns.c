@@ -4,11 +4,16 @@
 
 /**
  * @file    overview_render_columns.c
- * @brief   Draw list-panel headers and rows from their column tables; record header hit rectangles.
+ * @brief   Draw list-panel headers and rows from their column tables; record header hit rectangles
+ *          (see overview_columns.h).
  *
- * Column c of a table is collapsed when bit c of the panel's collapsed mask is set ('t'), and the
- * column cursor (Shift+Left/Right) is a table index. Header and rows share one ov_table_layout() of the
- * panel width; one space separates a column from the next unless it is collapsed.
+ * Header and rows share one ov_table_layout() of the panel width; one space separates a column
+ * from the next unless it is collapsed. Column c of a table is collapsed when bit c of the panel's
+ * collapsed mask is set ('t'), and the column cursor (Shift+Left/Right) is a table index. A cell
+ * is fitted to its width: padded on the side opposite to its alignment, or cut with "…"; a cell
+ * made of styled runs is drawn run by run. The header marks the sort column, shows ‹ and › where
+ * columns are scrolled off or dropped, and records each column's screen position for
+ * ov_table_col_at().
  */
 
 #include "overview_render_internal.h"

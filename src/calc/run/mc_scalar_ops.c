@@ -6,23 +6,28 @@
  * @file mc_scalar_ops.c
  * @brief Scalar arithmetic/string kernels and zero-heap `mcalc_local()` fast path.
  *
- * This module serves two closely related roles in `libmilkcalc`:
- *
- * 1. **Shared Scalar Arithmetic & String Operations**:
- *    Provides overflow-checked 64-bit integer exponentiation (`mc_scalar_pow`),
- *    hybrid integer/double binary operator evaluation with automatic float64
- *    promotion on signed overflow (`mc_scalar_binop`), value-to-string
- *    formatting (`mc_val_to_str`), and scalar string functions (`mc_scalar_str_fn`:
- *    `strlen`, `toupper`, `tolower`, `substr`, `replace`, `hex`, `oct`, `bin`).
- *
- * 2. **Zero-Allocation `mcalc_local()` Fast Path**:
- *    Evaluates pure scalar arithmetic expressions (including constants `pi`,
- *    `nan`, `inf`, `in_local` math functions, and shared-memory entity
- *    properties `s.<stream>.<prop>`, `f.<fps>.<prop>`, `p.<proc>.<prop>`)
- *    entirely on the stack (`mc_lexp_t`) without allocating an AST or touching
- *    `milk_data`. When an expression references calculator variables, images,
- *    or assignments, `lex_local()` returns -1 so the caller seamlessly falls
- *    back to the full AST pipeline.
+ * Purpose:     one implementation of the scalar operators, so that a number comes out the same in
+ *              the session and in a shell, and a fast path that lets a shell evaluate a numeric
+ *              expression itself, without a request to the session.
+ * Does:        mc_scalar_binop() applies a binary operator: exact 64-bit arithmetic on two
+ *              integers (a double on overflow; `/` always gives a double), double arithmetic
+ *              otherwise; mc_scalar_pow() keeps an integer power exact when it fits;
+ *              mc_val_to_str() formats a value; mc_scalar_str_fn() runs `strlen`, `toupper`,
+ *              `tolower`, `substr`, `replace`, `hex`, `oct` and `bin`. mcalc_local() evaluates an
+ *              expression of numbers, operators, `pi`, `nan`, `inf`, in_local math functions and
+ *              numeric `s.`/`f.`/`p.` properties on the stack, with no AST and no heap, through
+ *              the same operator code; for anything else (variables, images, strings,
+ *              assignments) it returns 0 and the caller sends the text to the session.
+ * Used by:     run/mc_scalar_eval.c (operators, `pow`, string functions); mcalc_local() by
+ *              `@calc`, `@test` and `@{...}` in every shell (milk_client_ops.c). Declared in
+ *              front/mc_ast.h and mcalc.h.
+ * Uses:        front/mc_lex.c (number and name scanners, operator precedence), mc_func.c
+ *              (function table, mc_truth()), milk_shm_prop.h and milk_entity_ns.h (milkprop).
+ * See also:    run/mc_scalar_eval.c (the full scalar evaluator); docs/guide/calculator.md,
+ *              "Calculator (`@calc`, `@test`, `@pipe`)" and "Operators".
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads, for
+ *              mcalc_local(); both libraries build it with -fno-finite-math-only, so NaN tests
+ *              keep IEEE semantics (src/calc/CMakeLists.txt).
  */
 
 #include <ctype.h>
@@ -133,8 +138,8 @@ void mc_scalar_pow(const mc_val_t *a, const mc_val_t *b, mc_val_t *out)
  * @out: Output scalar value (`MC_VAL_LONG` or promoted `MC_VAL_DOUBLE` on overflow)
  * @err: Output static error message string (set on modulo by zero, else NULL)
  *
- * Arithmetic (`+`, `-`, `*`) uses compiler overflow builtins and transparently
- * promotes to `MC_VAL_DOUBLE` on 64-bit signed overflow. Shift counts outside
+ * Arithmetic (`+`, `-`, `*`) uses compiler overflow builtins and promotes to
+ * `MC_VAL_DOUBLE` on 64-bit signed overflow. Shift counts outside
  * `[0, 63]` and `LONG_MIN % -1` are guarded against undefined behavior.
  *
  * Return: 1 if @op was handled as an integer operation, 0 if caller should use float64

@@ -4,7 +4,11 @@
 
 /**
  * @file    overview_columns_procs.c
- * @brief   Column table of the processes panel.
+ * @brief   Column table of the processes panel (see overview_columns.h).
+ *
+ * One cell function per column, then the table: A, NAME, PID, PRIO, STAT, Hz, UPTIME, TRG,
+ * trig-strm, EXEC, DUTY, CPU%, LOOPCNT, MEM, MISSED, and MSG, which takes the room left. Rates
+ * and counters go through ov_fmt_si() and EXEC through ov_fmt_dt_ns(), so they keep their width.
  */
 
 #include "overview_render_internal.h"

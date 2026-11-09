@@ -4,20 +4,28 @@
 
 /**
  * @file milk_client_stream.c
- * @brief Client synchronization (`@waitfor`/`@waitany`/`@sleep`), capture (`@grab`), completion, and discovery (`@ls`).
+ * @brief The client calls that wait, capture and list: `@waitfor`, `@waitany`, `@sleep`, `@grab`,
+ *        completion, shutdown, `@session`, `@log` and `@ls`.
  *
- * Role & Goal:
- *   Implements the stream synchronization, timing, frame capture, tab completion,
- *   server lifecycle, and entity/keyword discovery operations declared in `milk_client.h`:
- *   - `milk_client_waitfor()`  : Semaphore/property/predicate wait (`@waitfor`)
- *   - `milk_client_waitany()`  : Multi-stream eventfd + semaphore wait (`@waitany`)
- *   - `milk_client_sleep_argv()`: Monotonic sleep and periodic rate-limiter (`@sleep`)
- *   - `milk_client_grab()`     : N-frame stream capture to 3D cube or FITS (`@grab`)
- *   - `milk_client_complete()` : Interactive tab completion query (`@complete`)
- *   - `milk_client_shutdown()` : Clean server shutdown (`@shutdown`)
- *   - `milk_client_session()`  : Sessions (`@session`)
- *   - `milk_client_log()`      : Command/output ring-buffer log (`@log`)
- *   - `milk_client_ls()`       : Entity, keyword, and namespace introspection (`@ls`)
+ * Purpose:     a shell waits for streams and shared-memory values in its own process, asleep on
+ *              stream semaphores: a wait costs no request and no CPU.
+ * Does:        @waitfor waits in the shell for frames and entity values (milk_waitfor.h), and for
+ *              an expression by testing it on each new frame of the streams it names; it asks
+ *              the session only for local images and variables. @waitany runs one semaphore
+ *              thread per stream, all waking one eventfd. @sleep sleeps to a CLOCK_MONOTONIC
+ *              deadline, without drift with --every or --hz. @grab sends GRAB, or runs streamcat
+ *              for --stdout. Completion asks the session and lists file names in the shell's
+ *              directory. @session and @log run in the shell. @ls lists shared memory and asks
+ *              the session for local images; it also gives milk.bash its keyword functions.
+ * Used by:     the bash builtins (milk_bash_builtins.c), milk-call (milk_call_main.c). Declared in
+ *              milk_client.h.
+ * Uses:        milk_waitfor.h; milk_shm_cache.h and milk_shm_prop.h (libmilkprop); ImageStreamIO;
+ *              front/mc_ast.h (the calculator's tokens: the streams an expression names);
+ *              milk_sessions.c and milk_srvlog.h (@session, @log); milk_ls_exec()
+ *              (CLIcore_inspect.c); milk_keywords.h, milk_renames.h.
+ * See also:    milk_client_ops.c (the other keywords), milk_server_stream.c (the session's side);
+ *              docs/guide/scripting.md, "Waiting, Events and Cleanup".
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef _GNU_SOURCE
@@ -224,7 +232,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         return client_wait_expr(target, next, strtod(timeout, NULL), hooks);
     }
 
-    /* No RPC for shm entities and existing streams; local images, variables and expressions need the server */
+    /* No RPC for shm entities and existing streams; local images and variables need the server */
     int here = (wt.kind == MILK_WAIT_STREAM && !wt.local);
     if (wt.kind == MILK_WAIT_EQ)
     {
@@ -1229,7 +1237,7 @@ static void complete_local_files(const char *prefix, int fits_only)
 }
 
 /**
- * milk_client_complete - Query tab-completion candidates from the server (`@complete`)
+ * milk_client_complete - Query tab-completion candidates from the server (`milkcomplete`)
  * @prefix:    Token prefix being completed
  * @comp_type: Completion context (`"cmd"`, `"arg"`, `"arg:<cmd>:<idx>"`)
  * @hooks:     Optional shell variable hooks
@@ -1306,7 +1314,7 @@ int milk_client_complete(const char                *prefix,
 }
 
 /**
- * milk_client_shutdown - Shut down the current shell's background server (`@shutdown`)
+ * milk_client_shutdown - Shut down the session in use (`milkshutdown`, which `@unload` runs)
  * @hooks: Optional shell variable hooks
  *
  * Return: 0 on clean shutdown (or if no server was running), non-zero on error.
@@ -1346,7 +1354,7 @@ int milk_client_session(int argc, char **argv, const milk_client_hooks_t *hooks)
 extern int milk_ls_exec(int argc, char **argv);
 
 /**
- * milk_client_log - Inspect or clear the server's shared-memory command/output ring log (`@log`)
+ * milk_client_log - Inspect or clear the session's shared-memory command/output ring log (`@log`)
  * @argc:  Argument count
  * @argv:  Argument vector
  * @hooks: Optional shell variable hooks

@@ -1,14 +1,21 @@
-"""
-Regression tests for spatial, remapping, and domain kernels of milk.calc / @calc:
-- medfilt3(im), medfilt5(im), medfilt7(im): exact 2D SIMD median filters (3x3, 5x5, 7x7)
-- pixremap(im, map[, fill]): fused indexed gather
-- pixunmap(im, map[, n]): fused segmented-mean reduction with CSR gather cache
-- rprof(im[, cx, cy]): azimuthal radial profile reduction and lut(ir(im), rprof(im)) composition
-- gauss(im, sigma[, sigmay]): separable 2-pass 2D Gaussian blur
-- boxmean(im, r), conv2(im, K), imin3(im), imax3(im): COREMOD_arith kernels with clamped edges
-- fft(im), ifft(im): FFTW transforms (real-to-complex for real input) against numpy
-- interp2(im, xmap, ymap): 2D sub-pixel bilinear interpolation gather
-- cx, cy[, flux] = icentroid(im[, th]): single-pass thresholded flux-weighted centroid reduction
+"""Spatial, remapping and Fourier functions of the calculator, against numpy references.
+
+Purpose:     units run these functions on every frame, so their values, edges and NaN handling
+             must match a reference exactly.
+Does:        compares medfilt3/5/7, gauss, boxmean, conv2, imin3 and imax3 (NaN, cube planes, an
+             integer output) and fft and ifft (real and complex input, 1-D to 3-D, also planned
+             with FFTW_MEASURE in a unit) with numpy; checks pixremap and pixunmap (fill, round
+             trip, the CSR cache of a unit when the map changes), rprof and radial subtraction,
+             interp2 (clamping, aliasing) and icentroid (threshold, also in a unit).
+Covers:      the COREMOD_arith kernels (src/coremods/COREMOD_arith/image_spatial.c, and
+             imfunctions.c for medfilt) that the pre-stages (src/calc/run/mc_prestage.c: filters,
+             pixunmap, rprof) and the JIT's passes (src/calc/jit/mc_emit.c: pixremap, interp2)
+             call; fft and ifft (src/calc/linalg/mc_fft_stack.c); icentroid
+             (src/calc/run/mc_reduce.c); milk-fpsexec-milk-calc.
+Uses:        conftest.py: milk_bash, value; numpy; astropy.io.fits, with iofits.loadfits and
+             iofits.saveFITS.
+See also:    docs/guide/calculator.md, "Functions" and "Fusion & Cost Model";
+             calc_prestage_threads_test.py.
 """
 
 from __future__ import annotations

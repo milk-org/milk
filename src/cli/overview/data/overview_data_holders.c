@@ -4,8 +4,22 @@
 
 /**
  * @file    overview_data_holders.c
- * @brief   Which processes map which stream: one pass over /proc/<pid>/maps for all streams, only while the
- *          HOLDERS page is on screen and at most every 2 s. No fuser, no shell.
+ * @brief   Which processes map which stream: one pass over /proc/<pid>/maps for all streams, only
+ *          while the HOLDERS page is on screen and at most every 2 s. No fuser, no shell.
+ *
+ * Purpose:     the F3 inspector's HOLDERS page and the HOLD column show which processes map a
+ *              stream file, without running fuser for each stream.
+ * Does:        ov_scan_holders() reads every readable /proc/<pid>/maps but its own process's and
+ *              records, in the stream cache, how many processes map each <name>.im.shm of the
+ *              stream directory and their PIDs (up to OV_MAX_HOLDERS). The model gets the age
+ *              and cost of the last pass and how many processes could not be read.
+ * Used by:     ov_model_full_scan() (overview_data.c), before the streams, whose rows copy the
+ *              counts; declared in overview_data_internal.h. The UI asks for it with
+ *              OV_HINT_HOLDERS (tools/milkCTRL.c). milk-fps-info also compiles this file.
+ * Uses:        the stream cache of overview_data_cache.c (scache_find, s_scache_mutex).
+ * See also:    overview_data_inspect.c (copies the holders of the inspected stream);
+ *              render/overview_render_insp_pages.c (HOLDERS page);
+ *              docs/guide/milk-CTRL.md, "Streams view (F3)".
  */
 
 #include "overview_data_internal.h"

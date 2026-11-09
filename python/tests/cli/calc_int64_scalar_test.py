@@ -1,13 +1,18 @@
-"""
-Tests for the exact 64-bit scalar lane, the fused index reductions and `cumsum` (closing round of the
-2026-10-27 engine review).
+"""Exact 64-bit integers in kept scalar statements, fused index reductions, and cumsum.
 
-A kept scalar statement used to compute in double, so `k * 3 % 1000` with `k = 2^53 + 1` gave 976 in a
-unit and 979 on the text path. The scalar tape now carries an `int64_t` lane next to the double one
-and evaluates integer operands with the old text calculator's `cli_calc_long_binop`, including its overflow
-fallback to double and its shift semantics. `iargmax`, `iargmin` and `iamax` are fused reductions
-(the guide said so; they fell back to text), and `cumsum(expr[, axis])` is a pre-stage that the guide
-listed but the calculator did not have.
+Purpose:     a unit's kept scalar statement must compute integers as a one-shot @calc does (exact
+             in 64 bits, a double on overflow, 0 for a shift by 64 or more), so a program gives
+             the same numbers in a unit and in a shell.
+Does:        runs `k * 3 % 1000` with k = 2^53 + 1 in a unit and in @calc (979; a double gives
+             976), and shifts and an overflowing product in the unit; checks that iargmax,
+             iargmin and iamax skip NaN, take the first of equal values and give -1 when every
+             pixel is NaN, fused and per operator, on 1 and 4 threads; checks cumsum along each
+             axis against prefix totals, and that a bad axis is an error.
+Covers:      the scalar evaluator (src/calc/run/mc_scalar_eval.c, and mc_scalar_binop() in
+             src/calc/run/mc_scalar_ops.c); the index reductions (src/calc/run/mc_reduce.c);
+             cumsum (src/calc/run/mc_prestage.c); milk-fpsexec-milk-calc; @calc --explain.
+Uses:        conftest.py: milk_bash, value.
+See also:    docs/guide/calculator.md, "Operators" and "Functions"; calc_execution_test.py.
 """
 
 from __future__ import annotations

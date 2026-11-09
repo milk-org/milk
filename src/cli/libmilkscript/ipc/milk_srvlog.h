@@ -4,8 +4,28 @@
 
 /**
  * @file milk_srvlog.h
- * @brief Shared-memory server telemetry, sessions (@session),
- *        and high-performance searchable command/output ring-buffer log (@log).
+ * @brief A session's shared-memory log (`milk-srv.<uid>.<name>.log.shm`) and `@log`; the
+ *        `@session` entry points.
+ *
+ * Purpose:     any shell can tell what a session is and what it ran, without asking it: the
+ *              session may be busy, or gone.
+ * Does:        lays out the log file: a header that describes the session (server pid, owner
+ *              and their identities, flags, name, socket, working directory, idle limit,
+ *              counts) and a ring of its last 1024 commands (start, duration, status, the
+ *              start of their output); names a session's files from its socket; creates the log
+ *              in a server, records a command, also a `@set` that a shell did itself; runs
+ *              `@log`. Also declares the `@session` functions of milk_sessions.c.
+ * Used by:     the server (milk_server.c, milk_server_dispatch.c, milk_server_eval.c,
+ *              milk_server_admin.c); the client (milk_client_conn.c, milk_client_ops.c,
+ *              milk_client_stream.c), milk_sessions.c, milk_ipc_common.c; milk_bash_coproc.c;
+ *              CLIcore.c (`milk-cli --session`).
+ * Uses:        milk_client.h (the hooks), milk_ipc_common.h, milk_detach.h (process identities),
+ *              milk_keywords.h (the help of @log).
+ * See also:    milk_srvlog.c, milk_sessions.c; docs/guide/sessions.md, "Snapshots, Undo,
+ *              Assertions, and Logs".
+ * Constraints: every process that maps the file reads this layout: change it only with a new
+ *              MILK_SRVLOG_VERSION. Compiled into libmilkbash.so, the thin client every shell
+ *              loads.
  */
 
 #ifndef MILK_SRVLOG_H
@@ -30,9 +50,9 @@ extern "C"
 #define MILK_SRVLOG_CMD_MAX 256
 #define MILK_SRVLOG_OUT_MAX 512
 
-#define MILK_SRVFLAG_NAMED 0x01U  /* Persistent named server (survives shell exit) */
-#define MILK_SRVFLAG_INPROC 0x04U /* In-process server inside interactive milk-cli */
-#define MILK_SRVFLAG_SCRIPT 0x08U /* ... inside milk-script */
+#define MILK_SRVFLAG_NAMED 0x01U  /* A named session (outlives the shell that started it) */
+#define MILK_SRVFLAG_INPROC 0x04U /* The session of milk-cli, served in its own process */
+#define MILK_SRVFLAG_SCRIPT 0x08U /* ... of milk-script */
 /* 0x02 marked a server hosted in tmux (`@server start --tmux`, removed) */
 
 /**
@@ -77,7 +97,7 @@ typedef struct
 } milk_srvlog_shm_t;
 
 /**
- * @brief Parse a MILKCLI_SOCK string into its numeric UID and logical server name.
+ * @brief Parse a MILKCLI_SOCK string into its numeric UID and session name.
  */
 void milk_srvlog_parse_sock(const char   *sockpath,
                             unsigned int *out_uid,
@@ -85,7 +105,7 @@ void milk_srvlog_parse_sock(const char   *sockpath,
                             size_t        namesz);
 
 /**
- * @brief Build a canonical MILKCLI_SOCK string from a logical server name or socket.
+ * @brief Build a canonical MILKCLI_SOCK string from a session name or socket.
  */
 void milk_srvlog_make_sock(const char *name_or_sock, char *out_sock, size_t socksz);
 
@@ -131,7 +151,8 @@ void milk_srvlog_record(milk_srvlog_shm_t     *shm,
                         const char            *output);
 
 /**
- * @brief Append a client-side fast-path operation (@get/@set) to the session's SHM log.
+ * @brief Append a client-side fast-path operation (a @set done in the shell) to the session's SHM
+ * log.
  */
 void milk_srvlog_client_record(const char            *sockpath,
                                const struct timespec *ts_start,

@@ -4,7 +4,12 @@
 
 /**
  * @file    overview_columns_streams.c
- * @brief   Column table of the streams panel.
+ * @brief   Column table of the streams panel (see overview_columns.h).
+ *
+ * One cell function per column, then the table: A, NAME, TYP, SIZE, Hz, B/s, INODE, OWNER, CPID,
+ * COUNT, SEMS, WPID, RPID and HOLD. NAME also marks the files that are not usable streams (with
+ * the reason), the streams not mapped yet and the symbolic links. RPID lists the read PIDs as
+ * styled runs (ov_cell_span) in RPID_W columns, then +N for the rest.
  */
 
 #include "overview_render_internal.h"

@@ -5,6 +5,10 @@
 /**
  * @file milk_cmd_index.c
  * @brief Name rules, hash index of data.cmd[] and registry generation (see milk_cmd_index.h).
+ *
+ * The index is an open-addressing table with linear probing, keyed by the FNV-1a hash of the
+ * command key; a lookup first indexes the data.cmd[] entries added since the last one. The
+ * generation rises only when a command registers that the install catalog does not list.
  */
 
 #include <ctype.h>

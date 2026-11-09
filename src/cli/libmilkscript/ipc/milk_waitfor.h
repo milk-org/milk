@@ -4,10 +4,24 @@
 
 /**
  * @file milk_waitfor.h
- * @brief `@waitfor` target parsing, state aliasing and wait loops shared by the client and the server.
+ * @brief `@waitfor` target parsing, state aliasing and wait loops shared by the client and the
+ *        server.
  *
- * The client runs these in-process for streams and shm entities (no RPC); the server runs them for
- * targets only it can read (local images, variables) and for calc expressions.
+ * Purpose:     `@waitfor` reads a target and waits for it the same way in a shell and in a
+ *              session.
+ * Does:        classifies a target: frames of a stream, an entity value (`f.loop.gain=0.5`; a
+ *              unit state for `f.<name> [state]`, a process state for `p.<name> [state]`, with
+ *              their aliases: RUN or 1 is ACTIVE) or a calculator expression; matches a value
+ *              (numbers by value); waits for frames on a stream semaphore, first for the stream
+ *              to be created if need be; polls an entity value until it matches. A wait ends
+ *              after its timeout (124) or when its caller cancels it (130).
+ * Used by:     the client (milk_client_stream.c), which waits in the shell for streams and
+ *              shared-memory entities, with no request; the server (milk_server_stream.c), for
+ *              what only it can read (local images, variables).
+ * Uses:        ImageStreamIO, libmilkprop (milk_shm_cache.h: pinned streams, milk_shm_prop.h:
+ *              entity values, milk_entity_ns.h).
+ * See also:    milk_waitfor.c; docs/guide/scripting.md, "Waiting, Events and Cleanup".
+ * Constraints: compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef MILK_WAITFOR_H

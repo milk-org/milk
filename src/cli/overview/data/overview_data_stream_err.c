@@ -4,7 +4,24 @@
 
 /**
  * @file    overview_data_stream_err.c
- * @brief   Directory entries of the stream scan: symbolic links resolved (libmilkdata), failures explained.
+ * @brief   Directory entries of the stream scan: symbolic links resolved (libmilkdata), failures
+ *          explained.
+ *
+ * Purpose:     every *.im.shm file of the stream directory is listed: one that cannot be used
+ *              shows the reason, and a symbolic link is followed to its stream.
+ * Does:        ov_stream_dirent() gives the inode and link target of a directory entry (a regular
+ *              file costs no syscall; other entries go through milk_stream_classify()) and reports
+ *              a dangling link; the target's inode keys the cache, so a recreated target is
+ *              noticed. ov_stream_map_err() turns a failed mapping into an ov_stream_err_t;
+ *              ov_stream_err_label() names it in a few words ("cannot open", "not a stream
+ *              file", "ImageStreamIO version", "damaged or truncated", "dangling link").
+ * Used by:     overview_data_scan_streams.c (ov_stream_dirent, ov_stream_map_err; declared in
+ *              overview_data_internal.h); the stream list, stream DETAILS and the F3 inspector
+ *              (ov_stream_err_label: render/overview_columns_streams.c,
+ *              overview_render_detail_stream.c, overview_render_insp.c; declared in
+ *              overview_data.h). milk-fps-info also compiles this file.
+ * Uses:        libmilkdata (milkdata_streamlist.h: milk_stream_classify).
+ * See also:    docs/guide/milk-CTRL.md, "Streams view (F3)".
  */
 
 #include "overview_data_internal.h"

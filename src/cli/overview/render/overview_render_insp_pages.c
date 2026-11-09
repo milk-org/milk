@@ -4,8 +4,23 @@
 
 /**
  * @file    overview_render_insp_pages.c
- * @brief   F3 stream inspector pages TRACE (the process chain that wrote the stream, with timing), KEYS (the
- *          stream's keywords) and HOLDERS (the processes that map it).
+ * @brief   F3 stream inspector pages TRACE (the process chain that wrote the stream, with timing),
+ *          KEYS (the stream's keywords) and HOLDERS (the processes that map it).
+ *
+ * Purpose:     show how a stream was produced, what it carries and who maps it.
+ * Does:        ov_insp_page_trace(): per hop of the process trace, the writer, its trigger stream
+ *              (or inode), mode and status, how long ago it started, its compute time, the
+ *              hand-off from the previous hop and the lag in frames, under the end-to-end time.
+ *              ov_insp_page_keys(): name, type, value and comment of each keyword set (up to
+ *              OV_INSP_MAX_KW). ov_insp_page_holders(): the processes that mapped the stream at
+ *              the last /proc maps pass, with the pass's age and cost.
+ * Used by:     ov_render_stream_inspector() (overview_render_insp.c). Declared in
+ *              render/overview_render_internal.h.
+ * Uses:        ov_insp_line() and ov_insp_kv() (overview_render_insp.c), ov_trace_hop() and
+ *              ov_trace_end_to_end_ns() (data/overview_data_trace.c), OV_MODEL.insp
+ *              (data/overview_data_inspect.c, data/overview_data_holders.c).
+ * See also:    docs/guide/milk-CTRL.md, "Streams view (F3)";
+ *              docs/guide/streams.md, "Stream Process Trace (Ancestry)".
  */
 
 #include "overview_render_internal.h"

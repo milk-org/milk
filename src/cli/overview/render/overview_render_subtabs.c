@@ -4,7 +4,22 @@
 
 /**
  * @file    overview_render_subtabs.c
- * @brief   Sub-tabs of the bottom-right panel (DASH) and of F6: tab bar, hit rectangles, body dispatch.
+ * @brief   Sub-tabs of the bottom-right panel (DASH) and of F6: tab bar, hit rectangles, body
+ *          dispatch.
+ *
+ * Purpose:     a sub-tab is one table entry: its label, status-line tag and renderer.
+ * Does:        ov_subtab_bar() frames the panel with the sub-tab labels and records where each
+ *              label is, for ov_subtab_hit(); ov_render_subtab() draws the current sub-tab
+ *              (CONNECTIONS when it has nothing to show); ov_subtab_status() gives its status-line
+ *              tag. The sub-tabs: CONNECTIONS, LOOPS, DETAILS, RESOURCES, OUTPUT.
+ * Used by:     render/overview_render.c (ov_render_subtab); each sub-tab's renderer frames its
+ *              panel with ov_subtab_bar() (render/overview_render_graph.c, _loops_panel.c,
+ *              _detail_*.c, _resources.c, _out.c); render/overview_render_status.c
+ *              (ov_subtab_status); input/overview_input_subtab.c (ov_subtab_hit). Declared in
+ *              render/overview_render_internal.h, ov_subtab_hit in overview_view.h.
+ * See also:    input/overview_input_subtab.c (clicks and keys);
+ *              src/cli/overview/README.md, "Extending milk-CTRL";
+ *              docs/guide/milk-CTRL.md, "Sub-tabs".
  */
 
 #include "overview_render_internal.h"

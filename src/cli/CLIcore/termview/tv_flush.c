@@ -6,6 +6,19 @@
  * @file tv_flush.c
  * @brief Diff renderer: emits only cells whose visible appearance changed, with the fewest bytes,
  *        inside one synchronized update. Truecolor, xterm-256 or 16-colour output.
+ *
+ * Purpose:     a frame costs bytes in proportion to what changed on screen, so that the viewer
+ *              stays usable on a slow terminal or over ssh, and the interface is never held
+ *              back behind image bytes.
+ * Does:        compares the new screen grid with the one the terminal shows, as 64-bit words;
+ *              skips a changed cell that looks the same at the colour depth in use; reaches each
+ *              cell by the cheapest cursor move (re-sending up to two cells rather than an
+ *              escape) and sets only the colours that change; maps 24-bit colours to the 256 or
+ *              16 colour palette through a small cache; sends interface cells first, then image
+ *              cells within a byte budget, rows rotating so that none starves.
+ * Used by:     termview.c, for each flush. Declared in termview_internal.h.
+ * Uses:        the cell format of termview_internal.h; no I/O (termview.c writes the buffer).
+ * See also:    docs/guide/termview.md, "Slow terminals and ssh".
  */
 
 #include "termview_internal.h"

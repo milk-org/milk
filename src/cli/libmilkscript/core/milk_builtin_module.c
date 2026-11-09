@@ -5,6 +5,12 @@
 /**
  * @file milk_builtin_module.c
  * @brief Built-in module `milk`, root commands and default modules (see milk_builtin_module.h).
+ *
+ * The commands are MILK_RUNNABLE definitions, registered with milk_register_runnable().
+ * milk_module_begin() registers module `milk` once, under its reserved short name, and makes it
+ * the module of the commands registered until milk_module_end(). The core modules load in a fixed
+ * order: memory, iofits (when built with cfitsio), arith, tools. $MILKCLI_ADD_LIBS replaces the
+ * default list of extra modules; "none" or an empty value loads none.
  */
 
 #include <stdio.h>

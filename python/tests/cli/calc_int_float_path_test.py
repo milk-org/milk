@@ -1,11 +1,17 @@
-"""
-Tests for the float32 fused path on 8- and 16-bit integer images (P1 of the 2026-10-27 engine review).
+"""8- and 16-bit integer images run the float32 fused pass, with exact values.
 
-`u8 i8 u16 i16` operands and destinations are exact in float32, so a statement over them runs the
-float32 block kernels (twice the SIMD width of the double path a camera frame used to take). The
-values must match the per-operator fallback exactly, integer destinations and slices included, a
-stencil on an integer image keeps its pass in double, and a u16 statement must cost about what the
-same statement on float images costs.
+Purpose:     u8, i8, u16 and i16 values are exact in float32, so statements on camera frames of
+             those types run the float32 pass (twice the SIMD width of the double one) without
+             changing any result.
+Does:        checks that statements on such operands and destinations, whole or sliced, equal
+             the per-operator path; that --explain reports float32 for them, and double for a
+             pass merged with a stencil on an integer image; that a u16 statement at 2048^2 on
+             one thread costs at most 1.3x the same statement on float images.
+Covers:      the choice of a pass's precision (src/calc/plan/mc_plan.c) and the kernels emitted
+             for it (src/calc/jit/mc_emit.c); @calc --explain.
+Uses:        conftest.py: milk_bash, value, _install_dir, _isolated_shm_env, _run; milk-script.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; calc_superinstructions_test.py.
+Constraints: MILK_PERF_TESTS=0 skips the timing test, which also skips itself on a slow host.
 """
 
 from __future__ import annotations

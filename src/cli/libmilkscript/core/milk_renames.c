@@ -5,6 +5,9 @@
 /**
  * @file milk_renames.c
  * @brief Removed spellings and their replacements (see milk_renames.h).
+ *
+ * One static table of {old, new, how} entries, grouped by what replaced them: module `milk`, the
+ * keywords, plain bash, milk scripts, unit fpsexecs and sessions. A lookup scans it.
  */
 
 #include <string.h>
@@ -132,13 +135,14 @@ static const rename_t cmd_renames[] = {
     { "seq.submit", SEQ_GONE, H },
     { "seq.tasks", SEQ_GONE, H },
     { "seq.log", SEQ_GONE, H },
-    /* the fpslist.txt deployment and the tmux unit hosts were removed (unit lifecycle, U2) */
+    /* the fpslist.txt deployment and the tmux unit hosts were removed
+     * (docs/arch/unit_lifecycle.md, "Removed, with a hint") */
     { "milk-fpsinit", UNIT_GONE, H },
     { "milk-fpsmkcmd", UNIT_GONE, H },
     { "milk-fpslist-addentry", UNIT_GONE, H },
     { "tmuxsessionname", "$MILK_UNIT_NAME in a unit's process (units have no tmux session)", H },
     { "tmuxkillall", TMUX_GONE, H },
-    /* servers are sessions (D33-D35) */
+    /* servers are sessions */
     { "@server", SERVER_GONE, H },
     { NULL, NULL, W }
 };

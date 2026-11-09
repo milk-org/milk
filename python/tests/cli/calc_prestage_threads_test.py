@@ -1,13 +1,18 @@
-"""
-Tests for the parallel pre-stages of the 2026-10-27 engine review (P4, P5).
+"""Pre-stages on several threads: axis and segmented reductions, rprof and the Gaussian.
 
-Axis reductions give every thread its own outputs (rows for axis 0, row groups across the planes
-for axis 2, planes for axis 1 of a cube; a 2-D axis-1 reduction merges per-thread partials), with
-op-specialized SIMD accumulation and no per-frame allocation, so a cube collapse over z is no longer
-single-threaded. Segmented reductions gather bins in parallel and scatter an expression on per-thread
-partials, `rprof` on an expression reuses a per-pixel bin table, and the Gaussian passes run rows
-across the team. Results must equal the per-operator fallback with 1 thread and with 4. Found on the way: the eager
-`rprof(...)` was dispatched as `pixunmap` (the tokenizer never marked the token).
+Purpose:     pre-stages run on every frame of a unit, so they share the work among threads (a
+             cube collapse over z is not left on one core) and must give the same values with
+             any number of threads.
+Does:        compares every axis reduction along every axis of a cube and of a 2-D image (NaN
+             included), pixunmap and rprof of an image and of an expression, and gauss with the
+             per-operator path, on 1 and on 4 threads; times four of them on 1 and on 4 threads.
+Covers:      src/calc/run/mc_prestage.c (axis reductions, pixunmap, rprof, spatial filters) and
+             the COREMOD_arith code it runs (src/coremods/COREMOD_arith/image_spatial.c,
+             arith_team.c); MILK_CALC_THREADS.
+Uses:        conftest.py: _install_dir, _isolated_shm_env, _run; milk-script.
+See also:    docs/guide/calculator.md, "Fusion & Cost Model"; calc_team_test.py.
+Constraints: MILK_PERF_TESTS=0 skips the timing test, which needs 4 CPUs and skips itself on a
+             slow host.
 """
 
 from __future__ import annotations

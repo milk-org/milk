@@ -5,23 +5,20 @@
 /**
  * @file mc_fft_stack.c
  * @brief FFT, array stacking/concatenation, 90-degree rotation, and top-level constructor
- *        dispatch for `libmilkcalc`.
+ *        dispatch for `libmilkcalc` (see mc_linalg.h).
  *
- * This module implements the Fourier transform, array reshaping/concatenation,
- * and top-level linear-algebra/extension constructor dispatcher for `libmilkcalc`:
- *
- * - **1D/2D/3D Discrete Fourier Transforms (`fft`, `ifft`, `fftshift`)**: executes forward and
- *   normalized (`1/N`) inverse DFTs with a 16-slot cache of FFTW3 plans (`FFTW_MEASURE` in compute
- *   units, `FFTW_ESTIMATE` at the prompt) in single (`fftwf`) or double (`fftw`) precision: real-to-complex for real input (half the work), in
- *   64-byte aligned scratch (SIMD), threaded on the calculator's thread team when the FFTW threads
- *   libraries are present; a separable 1D DFT fallback when compiled without `HAVE_FFTW3`. `fftshift` circularly shifts the zero-frequency component to
- *   the center of the spectrum across all active axes.
- * - **Array stacking, concatenation, and rotation (`hstack`, `vstack`, `dstack`, `cat`, `rot90`)**:
- *   concatenates arbitrary sequences of images along axis 0, 1, or 2 with automatic real/complex
- *   and float32/float64 promotion, and rotates 2D images by `k * 90` degrees.
- * - **Top-level constructor dispatcher (`mc_exec_linalg_or_ext`)**: routes `MC_STEP_CTOR` plan
- *   steps to multi-LHS handlers, C/FPS extension operators, FFT/stack helpers, LAPACK solvers,
- *   or BLAS routines.
+ * fft and ifft (1-D to 3-D; ifft scaled by 1/N) run FFTW3 in single (fftwf) or double (fftw)
+ * precision, in 64-byte aligned scratch kept by the step, so FFTW's SIMD code applies: real input
+ * takes a real-to-complex transform (half the work), mirrored into the other half of the
+ * spectrum; complex input and ifft an in-place complex one. Plans stay in a 16-slot cache: a
+ * compute unit plans each new shape with FFTW_MEASURE (up to seconds, once), the prompt with
+ * FFTW_ESTIMATE. With the FFTW threads libraries, plans run on the calculator's thread team.
+ * FFTW's planner is not thread-safe, so plans are made and run under one lock. Without
+ * HAVE_FFTW3, a separable 1-D DFT on each axis takes over. fftshift moves the zero frequency to
+ * the center on every axis; hstack, vstack, dstack and cat concatenate along axis 0, 1 or 2,
+ * promoting to complex or double as needed; rot90 turns a 2-D image by k * 90 degrees.
+ * mc_exec_linalg_or_ext() sends each constructor step to its handler: multi-LHS statements, C
+ * extension calls, algebraic BLAS, FFT and stacking, LAPACK, then explicit BLAS and einsum.
  */
 
 #include <math.h>

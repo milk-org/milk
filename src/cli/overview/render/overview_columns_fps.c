@@ -4,7 +4,12 @@
 
 /**
  * @file    overview_columns_fps.c
- * @brief   Column table of the FPS panel.
+ * @brief   Column table of the FPS panel (see overview_columns.h).
+ *
+ * One cell function per column, then the table: batch mark, A, NAME, STATE, UP, CPID, RPID, STR,
+ * MEM, LAST, DESCRIPTION and the Hz sparkline. STATE, UP and LAST show the unit state of the run
+ * process (libfps fps_unit_state.h). The file also holds the cell helpers the other tables use:
+ * ov_cell_ancestry(), ov_cell_name() and ov_cell_pid() (declared in overview_render_internal.h).
  */
 
 #include "overview_render_internal.h"
@@ -101,7 +106,10 @@ static void cell_name(OV_COLCELL *c, const OV_ROW_CTX *rc)
     ov_cell_name(c, rc, FPS(rc)->name, OV_FG_FPS);
 }
 
-/** cell_state - state of the run process (U10): running, starting, stopping, failed, exited, stopped. */
+/**
+ * cell_state - state of the run process (docs/arch/unit_lifecycle.md, U10): running, starting,
+ * stopping, failed, exited, stopped.
+ */
 static void cell_state(OV_COLCELL *c, const OV_ROW_CTX *rc)
 {
     FPS_UNIT_STATE s = (FPS_UNIT_STATE) FPS(rc)->run_state;

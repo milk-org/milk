@@ -4,12 +4,23 @@
 
 /**
  * @file milk_client_args.c
- * @brief `@args`: the parameters of a shell function or script, checked like module-command arguments.
+ * @brief `@args`: the parameters of a shell function or script, checked like module-command
+ *        arguments.
  *
- * `@args "name:type[=default][:help]"... -- "$@"`: values in order or as `.name=value`, `.` for the
- * default, `--` before values that start with `.` or `-`; types int uint float bool str (the typed
- * parsing of fps_args.c). The names are bound in the caller: as locals by the builtin, which also
- * ends the function after -h or a usage error.
+ * Purpose:     a shell function or script gets the argument rules, checks and help of a module
+ *              command from one declaration line.
+ * Does:        `@args "name:type[=default][:help]"... -- "$@"`: parses the declarations (types
+ *              int uint float bool str stream fits); binds the values as module commands bind
+ *              theirs (in order or as `.name=value`, `.` for the default, `--` before values
+ *              that start with `.` or `-`); checks each with the typed parsing of fps_args.c;
+ *              prints the help after -h; sets the names in the caller in one assignment.
+ * Used by:     the `@args` builtin (milkargs_builtin(), milk_bash_hooks.c), which binds locals
+ *              and ends the function after -h or a usage error; milk-call's `args` subcommand
+ *              (milk_call_main.c), which sets plain variables. Declared in milk_client.h.
+ * Uses:        fps_args.h (milk_argspec_parse(), milk_args_bind(), milk_argval_parse()),
+ *              milk_ipc_common.h (milk_ipc_eval()), milk_keywords.h (the usage line).
+ * See also:    docs/guide/scripting.md, "Your Own Commands".
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads.
  */
 
 #ifndef _GNU_SOURCE

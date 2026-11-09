@@ -4,15 +4,16 @@
 
 /**
  * @file milk_server.c
- * @brief Milk UNIX domain socket listener, connection handler, and SHM log tee pump.
+ * @brief Milk UNIX domain socket listener, connection handler, and SHM log tee pump (see
+ *        milk_server.h).
  *
- * Role & Goal:
- *   Implements the UNIX domain socket server event loop (`milk_server_run`),
- *   listener socket creation (`milk_server_create_listener`), per-connection
- *   framing and SCM_RIGHTS stdio/cwd redirection (`milk_server_handle_client`),
- *   and the background tee pump thread that forwards command stdout/stderr to
- *   the client while simultaneously capturing a snippet for the `/dev/shm`
- *   server ring-buffer log.
+ * The listening socket and the connections shells keep are in one epoll set. Requests that touch
+ * milk state run one at a time, under a recursive command lock: a command gets the caller's stdin,
+ * stdout, stderr and directory, passed with the request and swapped in process-wide. PING,
+ * SHUTDOWN, COMPLETE, GET and EXISTS are answered at once. WAITFOR and GRAB run in a thread of this
+ * process, so that they see live state; --async calls and @replay run in a forked child, on a copy
+ * of it. When the output of a CALL is not a terminal, one pump thread forwards it and keeps its
+ * start for the session's log.
  */
 
 #ifndef _GNU_SOURCE
@@ -1308,8 +1309,8 @@ static void milk_server_on_term(int signo)
     g_milk_server_stop = 1;
 }
 
-/* Seconds since the session was last used: a request, or an entry of its log (the clients' fast @get
- * and @set write there); 0 while a stream request (@waitfor, @grab) runs */
+/* Seconds since the session was last used: a request, or an entry of its log (a @set that a shell
+ * did itself writes there); 0 while a stream request (@waitfor, @grab) runs */
 static double idle_for(void)
 {
     struct timespec now;

@@ -6,11 +6,24 @@
  * @file CLIcore_UI_completion_menu.c
  * @brief Interactive Zsh-style grid menu for readline tab-completion matches.
  *
- * Role & Goal:
- *   Intercepts the terminal when multiple tab-completion matches are available
- *   (`cli_menu_display_matches()`), rendering a live-highlighted multi-column
- *   grid below the prompt with arrow-key / Tab / Shift-Tab / PageUp / PageDown
- *   navigation, Enter selection, and Escape cancellation.
+ * Purpose:     when TAB finds several matches, the user picks one from a grid under
+ *              the prompt instead of reading readline's plain list and typing more.
+ * Does:        cli_menu_display_matches() drops duplicate matches and inserts a single
+ *              one at once; otherwise it draws a multi-column grid below the prompt (at
+ *              most 6 rows, scrolling) in raw mode, moved through with the arrows, Tab,
+ *              Shift-Tab, PgUp and PgDn. Enter inserts the highlighted match, followed
+ *              by a space unless it ends in '.' or '/'; Esc, Ctrl-C, Ctrl-D and Ctrl-G
+ *              cancel; any other key cancels and is then typed. cli_custom_getc() makes
+ *              the TAB after a menu (or a single-match insert) start a new completion.
+ * Used by:     the milk-cli prompt: CLIcore.c installs both functions as readline
+ *              hooks, and CLI_configure_readline() (CLIcore_UI_hintarea.c) installs
+ *              cli_custom_getc() too. Declared in CLIcore.h.
+ * Uses:        GNU readline, termios; CLIcore_UI_execute.h (cli_comp_start, where the
+ *              word to replace starts; the ghost text and pending suggestion, which the
+ *              menu clears).
+ * See also:    CLIcore_UI_completion_tab.c (finds the matches); docs/guide/CLIcore.md,
+ *              "Tab Completion".
+ * Constraints: without USE_READLINE, both functions are stubs (no menu; fgetc()).
  */
 
 #include <stdio.h>

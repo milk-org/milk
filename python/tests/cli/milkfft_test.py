@@ -1,9 +1,17 @@
-"""
-The milkfft plugin's transforms against numpy:
-- fft.do1Drfft: real -> half-spectrum along x of each row (2D) or along z of each pixel (3D), for
-  float, double and uint16 input, whatever the input's place in the image table
-- fft.dofft: 2D complex FFT, forward (-1) and backward (1, unnormalized)
-- imgfilt.fconv: FFT convolution (2D real transform of image and kernel), centered like fftshift
+"""The milkfft plugin's transforms give numpy's results.
+
+Purpose:     checked against numpy, a wrong axis, scale, input type or image lookup in the FFT
+             module commands shows at once.
+Does:        fft.do1Drfft: real -> half-spectrum along x of each row (2D) or along z of each pixel
+             (3D), for float, double and uint16 input, whatever the input's place in the image
+             table; fft.dofft: 2D complex FFT, forward (-1) and backward (1, unnormalized);
+             imgfilt.fconv: FFT convolution (2D real transform of image and kernel), centered
+             like fftshift.
+Covers:      plugins/milk-extra-src/fft (libmilkfft: dofft.c, dofft_1d.c, dofft_2d.c) and
+             plugins/milk-extra-src/image_filter/fconvolve.c (libmilkimagefilter).
+Uses:        conftest.py: milk_bash, _install_dir; numpy and astropy.io.fits.
+See also:    plugins/milk-extra-src/fft/README.md.
+Constraints: skipped when libmilkfft.so is not installed.
 """
 
 from __future__ import annotations

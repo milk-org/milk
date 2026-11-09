@@ -6,19 +6,30 @@
  * @file mc_ext_builtin.c
  * @brief Built-in `MILK_CALC_REG_IMG` spatial kernels and shared-memory stream resolution helpers.
  *
- * Performs two roles in `libmilkcalc`:
- *   1. **Built-in whole-image spatial extensions (`MILK_CALC_MODULE_EXPORT`)**:
- *      Auto-registers four `MILK_EXT_IMG` kernels at library load time via `__attribute__
- *      ((constructor))` using the public `milk_calc_ext.h` SDK:
- *        - `bblur1pix(im[, amp, niter])`: Iterative 1-pixel 5-point cross box blur.
- *        - `rotate2d(im[, angle])`: Bilinear 2D image rotation around the image center.
- *        - `circsym(im[, cx, cy])`: Azimuthally symmetric component around `(cx, cy)`.
- *        - `circasym(im[, cx, cy])`: Azimuthally asymmetric residual around `(cx, cy)`.
- *   2. **Stream and identifier resolution helpers**:
- *      Provides `mc_resolve_or_autoconnect_image()` (which resolves in-memory images, detects
- *      recreated `/dev/shm/*.im.shm` inodes, and lazily attaches external shared-memory streams),
- *      `mc_parse_ident_streamname()` (which expands `FPTYPE_STREAMNAME` aliases and `@S:`/`@L:`
- *      prefixes), `mc_set_expr_from_im()`, and `mc_is_numeric_env_var()`.
+ * Purpose:     offer four COREMOD_arith spatial kernels as calculator functions through the same
+ *              interface as user extensions (milk_calc_ext.h), and hold the helpers that turn a
+ *              name into an image for the resolver and the run-time steps.
+ * Does:        registers `bblur1pix(im[, amp, niter])` (iterated 5-point cross blur),
+ *              `rotate2d(im[, angle])` (bilinear rotation about the center), and
+ *              `circsym(im[, cx, cy])` and `circasym(im[, cx, cy])` (azimuthally symmetric part
+ *              and its residual) as MILK_EXT_IMG kernels when libmilkcalc loads
+ *              (MILK_CALC_MODULE_EXPORT constructor). mc_resolve_or_autoconnect_image() finds an
+ *              image by name (`@S:`/`@L:` prefix allowed), reattaches a loaded stream whose
+ *              /dev/shm file was recreated (new inode), and attaches a /dev/shm stream not yet
+ *              loaded; mc_parse_ident_streamname() replaces a FPTYPE_STREAMNAME variable by the
+ *              stream it names and strips the prefix; mc_set_expr_from_im() copies the type and
+ *              shape of an image to an AST node; mc_is_numeric_env_var() tells whether an
+ *              environment variable holds a number.
+ * Used by:     the kernels: front/mc_resolve.c (lookup by name), ext/mc_ext_exec.c (run); the
+ *              helpers: front/mc_resolve.c, plan/mc_plan.c, plan/mc_history.c, run/,
+ *              ext/mc_ext_exec.c, linalg/. Declared in front/mc_ast.h.
+ * Uses:        milk_calc_ext.h, COREMOD_arith image_spatial.h, ImageStreamIO,
+ *              fps_streamname_parse.h (libfps), COREMOD_memory (image_ID.h, variable_ID.h),
+ *              milkdata.h (milk_table_bump()).
+ * See also:    ext/mc_ext_registry.c (the table the kernels join); resolve_arg_image() in
+ *              src/cli/libmilkscript/core/milk_cmd_args.c (the same lookup, for module-command
+ *              arguments); docs/guide/calc_c_extensions.md,
+ *              "Tier 1: Custom Pixel, Stencil, and Whole-Image Kernels (`milk_calc_ext.h`)".
  */
 
 #include <stdio.h>

@@ -1,9 +1,26 @@
-"""
-Phase 4 of the unit-lifecycle plan (U17): units as systemd services. Item 21 needs no systemd: a
-foreground run tells $NOTIFY_SOCKET what it tells a milk starter. Items 22-24 run test units in the
-user manager, and are skipped where `systemctl --user` does not answer: each script writes a
-template like share/milk/systemd/milk-unit@.service in $XDG_RUNTIME_DIR/systemd/user, and the
-fixture stops its units and removes it.
+"""Units as systemd services: notify messages, the service template, milk's tools via systemctl.
+
+Purpose:     systemd can supervise a unit without libsystemd (docs/arch/unit_lifecycle.md, U17):
+             the unit tells $NOTIFY_SOCKET its state, and milk's start and stop go through
+             systemctl while systemd runs the unit, so the two never fight over it.
+Does:        a foreground run tells $NOTIFY_SOCKET what it tells a milk starter (STATUS=,
+             READY=1, WATCHDOG=1, STOPPING=1) and records no service without systemd. In the user
+             manager: `systemctl --user start` returns once the loop runs, the status line has the
+             loop rate, the environment file reaches the unit unchanged, the output goes to
+             run.out, .procinfo.cset is skipped, a kill -9 is reported; milk-fps-runstop and
+             milk-fps-runstart go through systemctl until `milk-fps-run --release`; WatchdogSec=
+             restarts a stuck loop, not an idle one.
+Covers:      the notify messages (src/engine/libmilkcommon/process/milk_sdnotify.c), their use
+             and the systemctl path in src/engine/libcomputeunit/core/fps_unit_startstop.c,
+             milk-fps-run (libcomputeunit/tools/milk-fps-cmd.c), milk-fps-info, the template
+             scripts/systemd/milk-unit@.service.in.
+Uses:        conftest.py: milk_bash, value; unit_lifecycle_test.py: FUNCS, ltunit,
+             no_worker_left; the SD_FUNCS shell functions and the unit_prefix fixture: each test
+             writes a template like share/milk/systemd/milk-unit@.service in
+             $XDG_RUNTIME_DIR/systemd/user, and the fixture stops its units and removes it.
+See also:    docs/operations/systemd.md; docs/arch/unit_lifecycle.md, "Decisions".
+Constraints: all tests but the first need a systemd user manager (`systemctl --user`); they are
+             skipped where none answers.
 """
 
 from __future__ import annotations
@@ -100,7 +117,7 @@ def out_of(res: subprocess.CompletedProcess[str], tmp_path: Path) -> str:
 
 
 def test_notify_socket_messages(tmp_path):
-    """Item 21: a foreground run tells $NOTIFY_SOCKET what it tells a starter (STATUS=, READY=1), pings
+    """A foreground run tells $NOTIFY_SOCKET what it tells a starter (STATUS=, READY=1), pings
     the watchdog while its loop idles, and sends STOPPING=1 as it exits; without systemd it records
     no service."""
     sock_path = tmp_path / "notify.sock"
@@ -143,7 +160,7 @@ def test_notify_socket_messages(tmp_path):
 
 @needs_user_manager
 def test_service_starts_reports_and_fails_on_a_signal(tmp_path, unit_prefix):
-    """Item 22: `systemctl --user start` returns once the loop runs; the status line has the loop rate;
+    """`systemctl --user start` returns once the loop runs; the status line has the loop rate;
     the snapshot reaches the unit through EnvironmentFile= unchanged; the output goes to run.out;
     .procinfo.cset is skipped; after kill -9, systemd's result names the signal."""
     res = milk_bash(
@@ -188,7 +205,7 @@ def test_service_starts_reports_and_fails_on_a_signal(tmp_path, unit_prefix):
 
 @needs_user_manager
 def test_milk_tools_go_through_systemctl_until_released(tmp_path, unit_prefix):
-    """Item 23: once systemd ran a unit, milk-fps-runstop and milk-fps-runstart go through systemctl
+    """Once systemd ran a unit, milk-fps-runstop and milk-fps-runstart go through systemctl
     (no restart after the stop); milk-fps-run refuses a unit milk runs; after --release, milk starts
     and stops it itself."""
     res = milk_bash(
@@ -230,7 +247,7 @@ def test_milk_tools_go_through_systemctl_until_released(tmp_path, unit_prefix):
 
 @needs_user_manager
 def test_watchdog_restarts_a_stuck_loop_not_an_idle_one(tmp_path, unit_prefix, ltunit):
-    """Item 24: with WatchdogSec=, an idle loop (its waits time out) keeps running; a loop stuck in its
+    """With WatchdogSec=, an idle loop (its waits time out) keeps running; a loop stuck in its
     computation is killed and restarted."""
     res = milk_bash(
         FUNCS + SD_FUNCS + 'mem.mk2Dim "@S:lt_in" 4 4 >/dev/null\n'

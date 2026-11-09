@@ -6,10 +6,24 @@
  * @file milk_unit_script.c
  * @brief milk-fpsexec-milk-script (milk.script): compute unit running a bash snippet per frame.
  *
- * .unit.cmd runs on each frame of .unit.trigger, else on each tick of the delay loop, in one bash
- * that loaded milk.bash at start: a tick costs what its commands cost (a pipe round trip, ~0.1 ms,
- * on top). A new .unit.cmd applies from the next tick. A tick that fails stops the loop, with its
- * status in .unit.error (`|| :` ignores a failure).
+ * Purpose:     a compute unit without C code: bash commands run on each frame of a stream, with
+ *              the unit's parameters in an FPS, as for any unit.
+ * Does:        .unit.cmd (or the file .unit.file names), its @{...} translated, runs on each
+ *              frame of .unit.trigger, else on each tick of the delay loop, in one bash that
+ *              loaded milk.bash at start: a tick costs what its commands cost (a pipe round trip,
+ *              ~0.1 ms, on top). The parameters that -p declares are shell variables, set again
+ *              when @set changes them; $_n is the tick number. A new .unit.cmd applies from the
+ *              next tick. A tick that fails stops the loop, with its status in .unit.error
+ *              (`|| :` ignores a failure).
+ * Used by:     run like any fpsexec unit (fpsinit, exec, runstart, ...), from a shell or a script.
+ * Uses:        milk_runnable.h and fps_unit_options.h (milk_unit_main(): unit options, -p
+ *              declarations), libfps and processinfo, the translator (milk_bash_translate.c,
+ *              through milk_bash_internal.h).
+ * See also:    src/calc/units/milk_unit_calc.c (milk.calc); docs/guide/calculator.md, "Compute
+ *              Units Without C".
+ * Constraints: .unit.cmd and .unit.file are FPS strings of at most 63 characters (longer
+ *              commands go in a file); at most 32 declared parameters; a command file under
+ *              64 KiB. The bash is killed when the unit dies (PR_SET_PDEATHSIG).
  */
 
 #ifndef _GNU_SOURCE

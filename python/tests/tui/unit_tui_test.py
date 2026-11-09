@@ -1,8 +1,19 @@
-"""Unit starts and stops from milk-CTRL and fpsCTRL (unit-lifecycle Phase 2, §7 items 18 and 30).
+"""Unit starts and stops from milk-CTRL and fpsCTRL.
 
-The TUIs run the milk-fps-* tools in the background, so a unit that takes seconds to start never
-freezes the screen. The unit is `ltunit` (tests/cli/unit_lifecycle_test.py), built here with milk-cc
-and set to sleep 2 s before its loop starts.
+Purpose:     the TUIs run the milk-fps-* tools in the background (docs/arch/unit_lifecycle.md, U3),
+             so a unit that takes seconds to start never freezes the screen.
+Does:        with a unit whose loop starts 2 s after its process: fpsCTRL's R and milk-CTRL's r
+             start it while the screen still answers keys; in fpsCTRL, Ctrl+a follows its output
+             and Ctrl-C there stops it, and E erases it; in milk-CTRL, e on its process entry stops
+             it through the stop request, and Ctrl+e erases it.
+Covers:      src/tui/fpsCTRL/fpsCTRL_units.c, src/cli/overview/input/overview_ctrl.c, and
+             fps_unit_job_start() / fps_unit_job_poll()
+             (src/engine/libcomputeunit/core/fps_unit_startstop.c).
+Uses:        conftest.py: tui_env, entities, legacy_pane, milkctrl; `ltunit` (LTUNIT_C from
+             tests/cli/unit_lifecycle_test.py), built here with milk-cc and set to sleep 2 s
+             before its loop starts; the slow_unit fixture, which kills its workers after the test.
+See also:    docs/guide/fpsCTRL_reference.md, "FPS Control"; docs/guide/milk-CTRL.md,
+             "CONTROL mode"; tests/cli/unit_lifecycle_test.py.
 """
 
 from __future__ import annotations
@@ -71,7 +82,7 @@ def slow_unit(tui_env, entities, ltunit):
 
 
 def test_fpsctrl_unit_keys_never_block(legacy_pane, slow_unit, tui_env):
-    """Item 18: R starts a slow unit in the background: the screen answers a key before the unit is
+    """R starts a slow unit in the background: the screen answers a key before the unit is
     ready. Ctrl+a follows the unit's output, Ctrl-C there stops it, E erases it."""
     _, shm_dir = tui_env
     slow_unit("tu1")
@@ -100,7 +111,7 @@ def test_fpsctrl_unit_keys_never_block(legacy_pane, slow_unit, tui_env):
 
 
 def test_milkctrl_unit_actions_never_block(milkctrl, slow_unit, tui_env):
-    """Items 18 and 30: r starts a slow unit without freezing the screen; e on the unit's process entry
+    """r starts a slow unit without freezing the screen; e on the unit's process entry
     stops the unit through its stop (marker in run.out); erase removes it."""
     _, shm_dir = tui_env
     slow_unit("tu2")

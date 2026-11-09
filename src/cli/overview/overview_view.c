@@ -4,7 +4,11 @@
 
 /**
  * @file    overview_view.c
- * @brief   View descriptor table and view switching.
+ * @brief   View descriptor table and view switching (see overview_view.h).
+ *
+ * ov_views[] is indexed by ov_view_t, so the tab order is the enum order; the lookups scan it.
+ * ov_view_has_panel() and ov_set_view(), declared in overview_layout.h, read it too: switching
+ * view gives the focus to the view's default panel, except in DASH, which keeps the focus.
  */
 
 #include <string.h>

@@ -4,13 +4,24 @@
 
 /**
  * @file cli_treesitter_format.c
- * @brief Auto-indentation depth calculation, AST script formatting, and block fold outlines.
+ * @brief Block structure of milk scripts: indentation at the continuation prompt,
+ *        `milk-cli --format` and `milk-cli --outline`.
  *
- * Role & Goal:
- *   Computes block nesting depth for interactive PS2 continuation prompts
- *   (`cli_ts_compute_indent_depth()`), formats multi-line milk scripts with
- *   AST-scoped indentation (`cli_ts_format_code()`), and prints structural
- *   block outlines (`cli_ts_print_block_folds()`).
+ * Purpose:     lay out a script by its blocks (loops, if, case, functions): indentation while
+ *              it is typed at the prompt, and the reformatting and outline of a script file.
+ * Does:        cli_ts_compute_indent_depth() counts the blocks still open in the lines typed so
+ *              far, which indents the next continuation line; cli_ts_format_code() re-indents a
+ *              script from the blocks of its syntax tree (from keyword counts when there is no
+ *              tree); cli_ts_print_block_folds() lists the multi-line blocks with their line
+ *              ranges.
+ * Used by:     CLIcore_UI_completion.c (the continuation prompt); CLIcore_UI_builtins.c, for
+ *              `milk-cli --format`, `--format-in-place` and `--outline`.
+ * Uses:        cli_treesitter_internal.h (the normalized parse, the keyword counts),
+ *              tree-sitter.
+ * See also:    cli_treesitter.h (the declarations);
+ *              docs/guide/CLIcore.md, "Command-Line Options".
+ * Constraints: built without tree-sitter, cli_ts_format_code() returns the script unchanged and
+ *              cli_ts_print_block_folds() finds no block.
  */
 
 #include <ctype.h>

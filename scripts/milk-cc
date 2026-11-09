@@ -5,6 +5,21 @@
 #
 # milk-cc — Single-command compiler for user C compute units (Tier 3 MILK_RUNNABLE)
 #           and milk.calc extensions (Tier 1/2 milk_calc_ext.h).
+#
+# Purpose:     build a user's compute unit or calculator extension from one .c file, against
+#              an installed milk, without CMake or milk's source tree.
+# Does:        a file with EXPORT_FPSEXEC(prefix, "id", sym) becomes ./<prefix>-fpsexec-<id>,
+#              linked with a generated main() (MILK_FPSEXEC_MAIN) and the installed milk
+#              libraries; any other file, or --shared, becomes ./<stem>.so, which -l loads
+#              in @calc and milk-fpsexec-milk-calc. Both use the calculator's compiler and flags.
+# Used by:     users; the tests that build extensions and units (python/tests:
+#              calc_user_ext_test.py, unit_lifecycle_test.py, unit_tui_test.py).
+# Uses:        MILK_CC_FLAGS and the compiler milk was built with, written in by CMake
+#              (configure_file in CMakeLists.txt), $MILK_CALC_CC replacing the compiler; the
+#              headers and libraries under $MILK_INSTALLDIR; milk_skinny_runnable.h.
+# See also:    docs/guide/calc_c_extensions.md, "Tier 3: Standalone `MILK_RUNNABLE` Units via
+#              `milk-cc`"; docs/guide/calculator.md, "Fusion & Cost Model".
+# Constraints: this file is a template: run the configured copy that milk installs in bin/.
 
 set -euo pipefail
 

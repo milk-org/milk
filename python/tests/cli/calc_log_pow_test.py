@@ -1,9 +1,17 @@
-"""
-Tests for Phase 1 calculator language changes:
-- `log(x)` is the natural logarithm (`ln` was removed: its error names `log`); `log10(x)` is base-10
-  logarithm.
-- `pow(a, b)` replaces the `^` operator, preserving exact `int64` for non-negative integer powers.
-- A lone `^` fails with `'^' is not an operator: write pow(a, b) (^^ is xor)`; `^^` remains XOR.
+"""`log`, `log10` and `pow`, and the errors of the removed `ln` and `^`.
+
+Purpose:     `log` is the natural logarithm and `pow` replaces the `^` operator, keeping
+             non-negative integer powers exact; an old spelling fails with a message that names
+             its replacement.
+Does:        checks `log` and `log10` on numbers and images; the status and message of `ln`;
+             `pow(2, 62) + 1` in the shell and in the session, a negative exponent and `pow` on
+             images; the message of a lone `^`; `^^` as bitwise xor.
+Covers:      src/calc/front/mc_resolve.c (removed names, through mc_func_replacement() in
+             src/calc/mc_func.c), src/calc/front/mc_lex.c (`^`), src/calc/run/mc_scalar_ops.c
+             (mc_scalar_pow()).
+Uses:        conftest.py: milk_bash, value.
+See also:    docs/guide/calculator.md, "Operators" and "Functions"; docs/guide/scripting.md,
+             "Migrating Old Scripts".
 """
 
 from __future__ import annotations

@@ -1,7 +1,18 @@
 """Fixtures for TUI regression tests (milk-CTRL and the legacy TUIs).
 
-Each test gets its own MILK_SHM_DIR (under conftestaux's spoofed dir), HOME, TMPDIR and private tmux
-server, so nothing reaches the user's shm, history files or tmux sessions.
+Purpose:     a TUI test drives the real programs in a terminal without touching the user's shm,
+             history files or tmux sessions, and leaves no pane or process behind.
+Does:        tui_env gives each test its own MILK_SHM_DIR (under the directory that
+             tests/conftestaux/milk.py sets for the session), HOME, TMPDIR and terminal settings,
+             also in os.environ so that the private tmux server inherits them, and skips the test
+             without milk-CTRL or tmux; tmux_server starts that private server; entities makes
+             streams, FPS and processinfo loops; milkctrl and legacy_pane start milk-CTRL or
+             another TUI in a pane; milkctrl_pty runs milk-CTRL on a pty for byte-level and
+             tty-state checks.
+Used by:     legacy_tui_test.py, milkctrl_tui_test.py, unit_tui_test.py.
+Uses:        libtmux (the tests are skipped without it); milkctrl_driver.py: TuiPane, MilkCtrl,
+             PtyRun; entities.py; tests/cli/conftest.py: _install_dir, _isolated_shm_env.
+See also:    docs/guide/milk-CTRL.md; docs/guide/fpsCTRL_reference.md.
 """
 
 from __future__ import annotations
