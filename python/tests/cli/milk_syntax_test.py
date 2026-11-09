@@ -26,6 +26,9 @@ from tests.cli.conftest import (
     milk_script,
     translate,
     value,
+    CAM,
+    UNIT_HELPERS,
+    _run_bash,
 )
 
 pytestmark = [
@@ -362,3 +365,156 @@ def test_calc_and_module_kernel_unification(tmp_path):
     out = res.stdout + res.stderr
     vals = [float(x) for x in value(res.stdout, "unif").split()]
     assert vals == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], out
+
+
+def test_calc_v_quoted_expression(tmp_path):
+    res = milk_cli_script(
+        '@calc -v r "1+2"\necho "r=$r"\n@calc -v s \'2*3\'\necho "s=$s"', tmp_path
+    )
+    assert value(res.stdout, "r") == "3"
+    assert value(res.stdout, "s") == "6"
+
+
+def test_calc_v_error_on_unknown_image(tmp_path):
+    res = milk_cli_script(
+        '@calc -v r "imean(nosuchimage)"\necho "rc=$? r=$r"', tmp_path
+    )
+    assert "r=imean(nosuchimage)" not in res.stdout
+    assert "rc=0" not in res.stdout
+
+
+def test_qualified_names_only(tmp_path):
+    body = 'mem.listvar >/dev/null 2>&1; echo "{0}q=$?"\nlistvar >/dev/null 2>&1; echo "{0}b=$?"\n'
+    (tmp_path / "sub.milk").write_text(body.format("s"))
+    res = milk_cli_script(body.format("t") + "@source sub.milk", tmp_path)
+    for k, v in (("tq", "0"), ("tb", "127"), ("sq", "0"), ("sb", "127")):
+        assert value(res.stdout, k) == v, res.stdout
+
+
+def test_args_in_sourced_file_binds_caller_variable(tmp_path):
+    sub = tmp_path / "sourced_args.milk"
+    sub.write_text('@args "val:int=42:test int" -- "$@"\n')
+    res = _run_bash(f"""
+        @source "{sub}" 99
+        [[ "$val" == "99" ]]
+        echo "ARGS_OK"
+    """)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "ARGS_OK" in res.stdout
+
+
+@pytest.mark.timeout(120)
+def test_long_module_argument_fails_instead_of_being_cut(tmp_path):
+    res = milk_bash(
+        "mem.mk2Dim im 4 4 >/dev/null\n"
+        "P=\"$PWD/$(printf 'd%.0s' {1..220})/out.fits\"\n"
+        'iofits.saveFITS im "$P" --no-run 2>err.txt; echo "rc=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "1", out
+    assert "longer than 199 characters" in (tmp_path / "err.txt").read_text(), out
+
+
+@pytest.mark.timeout(120)
+def test_argument_values_and_words_read_alike(tmp_path):
+    res = milk_bash(
+        CAM
+        + 'mem.mk2Dim "@S:a1" 010 0x8 >/dev/null; echo "m1=$(@get s.a1.xsize),$(@get s.a1.ysize)"\n'
+        'mem.mk2Dim "@S:a2" 1e1 0b11 >/dev/null; echo "m2=$(@get s.a2.xsize),$(@get s.a2.ysize)"\n'
+        'mem.mk2Dim "@S:a3" 1.5 4 2>/dev/null; echo "m3=$?"\n'
+        'C="milk-fpsexec-milk-calc -n av1"\n'
+        '$C -t cam -p "n:int=0 b:bool=off" -e "out_av = cam * 0 + n + b" fpsinit .n=010 .b=true '
+        '>/dev/null; echo "init=$?"\n'
+        "$C run >run.log 2>&1 & pid=$!\n"
+        'sleep 0.6; @calc "cam = 3"; sleep 0.3; @calc -v o "imean(out_av)"; echo "unit=$o"\n'
+        "kill -INT $pid; wait $pid\n"
+        '$C set .n=1 .n=2 >/dev/null 2>e1; echo "twice=$?"\n'
+        '$C set -- -5 >/dev/null; echo "dashes=$?,$(@get f.av1.n)"\n'
+        '@set f.av1.n=0b101; @set f.av1.b=false; echo "set=$(@get f.av1.n),$(@get f.av1.b)"\n'
+        'h() { @args "a:int" "b:int" -- "$@"; echo "h=$a,$b"; }; h 1 .a=2\n'
+        'g() { @args "n:int=5" -- "$@"; echo "g=$n"; }; g .n=.\n'
+        'k() { @args "n:int" -- "$@"; echo "k=$n"; }; k 0o17',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "m1") == "10,8" and value(res.stdout, "m2") == "10,3", out
+    assert value(res.stdout, "m3") == "2", out
+    assert value(res.stdout, "init") == "0", out
+    assert (
+        value(res.stdout, "unit") == "11"
+    ), out  # 010 is 10, and the bool reached the unit
+    assert value(res.stdout, "twice") == "2", out
+    assert "given twice" in (tmp_path / "e1").read_text(), out
+    assert value(res.stdout, "dashes") == "0,-5", out
+    assert value(res.stdout, "set") == "5,OFF", out
+    assert value(res.stdout, "h") == "2,1", out  # tags first, then the positional words
+    assert value(res.stdout, "g") == "5" and value(res.stdout, "k") == "15", out
+
+
+@pytest.mark.timeout(120)
+def test_property_modifier_and_keyword_tables_agree(tmp_path):
+    from pathlib import Path
+
+    res = milk_bash(
+        'mem.mk2Dim "@S:pl" 4 4 >/dev/null; names=$(@get s.pl.list); echo "list=$names"\n'
+        'for p in $names; do @get "s.pl.$p" >/dev/null 2>&1 || echo "unreadable=$p"; done\n'
+        'echo "mods=$(milkcomplete @TC arg:mem.mk2Dim:1 | tr "\\n" " ")"\n'
+        'echo "kw=$(milkls --keywords | cut -d" " -f1 | tr "\\n" " ")"\n'
+        "@help > help.txt; milk-call > usage.txt 2>&1",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    names = value(res.stdout, "list").split()
+    assert names[:5] == ["xsize", "ysize", "zsize", "naxis", "nelement"], out
+    assert "owner_pid" in names and "ownerPID" not in names, out
+    assert "unreadable=" not in res.stdout, out
+    docs = Path(__file__).resolve().parents[3] / "docs" / "guide" / "scripting.md"
+    text = docs.read_text()
+    bullet = text[text.index("- streams (`s.`, `l.`") : text.index("- FPS (`f.`)")]
+    assert [n for n in names if f"`{n}`" not in bullet] == [], bullet
+    assert value(res.stdout, "mods").split() == ["@TC64:", "@TC128:"], out
+    kws = value(res.stdout, "kw").split()
+    assert len(kws) == 28, out
+    section = text[text.index("## Keywords") : text.index("## Module Commands")]
+    table = "".join(ln for ln in section.splitlines(True) if ln.startswith("|"))
+    assert sorted(kws) == sorted(re.findall(r"`@(\w+)`", table)), table
+    helptext = (tmp_path / "help.txt").read_text()
+    assert [k for k in kws if f"@{k}" not in helptext] == [], helptext
+    assert "batch" not in (tmp_path / "usage.txt").read_text(), out
+
+
+@pytest.mark.timeout(120)
+def test_failed_set_prints_its_error_once(tmp_path):
+    """An @set that fails in the shell is not sent again to the server, which printed the same error a
+    second time. An @set on a server-local image still goes to the server, with no error.
+    """
+    specs = [
+        "f.se.procinfo.loopcntMax=abc",
+        "f.se.nosuchparam=1",
+        "f.nosuch.x=1",
+        "f.se.procinfo.triggermode=often",
+        "s.nosuch.kw.A=1",
+        "p.nosuch.ctrl=pause",
+        "s.cam.nosuchprop=1",
+    ]
+    res = milk_bash(
+        UNIT_HELPERS
+        + 'milk-fpsexec-milk-calc -n se -e "o = cam" fpsinit >/dev/null\n'
+        + "".join(
+            f'@set "{s}" >set{i}.log 2>&1; echo "rc{i}=$?"\n'
+            for i, s in enumerate(specs)
+        )
+        + 'mem.mk2Dim "@L:limg" 4 4 >/dev/null; @set s.limg.kw.A=1 >lim.log 2>&1; echo "lrc=$?"\n'
+        'echo "lim=$(@get l.limg.kw.A)"',
+        tmp_path,
+    )
+    for i, spec in enumerate(specs):
+        lines = (tmp_path / f"set{i}.log").read_text().splitlines()
+        assert value(res.stdout, f"rc{i}") not in (None, "0"), (
+            spec + res.stdout + res.stderr
+        )
+        assert len(lines) == 1, f"{spec}: {lines}"
+    assert value(res.stdout, "lrc") == "0", res.stdout + res.stderr
+    assert (tmp_path / "lim.log").read_text() == ""
+    assert value(res.stdout, "lim") == "1", res.stdout + res.stderr

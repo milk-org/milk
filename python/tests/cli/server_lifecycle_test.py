@@ -170,3 +170,97 @@ def test_server_tells_notify_socket(tmp_path, names):
         f"READY=1\nSTATUS=listening on @milk-cli-{os.getuid()}-{name}\n",
         "STOPPING=1\n",
     ], out
+
+
+def test_ctrl_c_stops_a_running_calc_while_the_session_answers(tmp_path):
+    res = milk_bash(
+        'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 3"; t0=$EPOCHREALTIME\n'
+        '( @calc "for i = 1:100000 { for j = 1:100000 { x = i + j } }" 2>loop.err\n'
+        '  echo "loop_rc=$?" ) & pid=$!\n'
+        "sleep 1; t1=$EPOCHREALTIME\n"
+        '@test "imean(im) > 2"; echo "test_rc=$?"\n'
+        'echo "test_ms=$(( (${EPOCHREALTIME/./} - ${t1/./}) / 1000 ))"\n'
+        "kill -INT $pid; wait $pid\n"
+        'echo "loop_ms=$(( (${EPOCHREALTIME/./} - ${t0/./}) / 1000 ))"\n'
+        '@calc -v m "imean(im * 2)"; echo "after=$m"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "test_rc") == "0", out
+    assert int(value(res.stdout, "test_ms")) < 500, out  # served while the loop runs
+    assert value(res.stdout, "loop_rc") == "130", out
+    assert int(value(res.stdout, "loop_ms")) < 5000, out
+    assert "interrupted" in (tmp_path / "loop.err").read_text(), out
+    assert value(res.stdout, "after") == "6", out
+
+
+def test_a_crash_in_calc_keeps_the_session(tmp_path):
+    (tmp_path / "crash.c").write_text(r"""
+#include "milk_calc_ext.h"
+#define CR_PARAMS(X) \
+    X(".k", k, FPTYPE_FLOAT64, 1.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "unused")
+MILK_CALC_PARAMS(crash_now, CR_PARAMS);
+static int crash_img(IMAGE *out, const IMAGE *in, const struct crash_now_par *P)
+{
+    (void) out;
+    (void) in;
+    (void) P;
+    volatile int *p = 0;
+    *p = 1;
+    return 0;
+}
+MILK_CALC_EXT_EXPORT(MILK_CALC_REG_IMG("crash_now", crash_img, crash_now));
+""")
+    res = milk_bash(
+        'mem.mk2Dim "@L:loc" 4 4 >/dev/null; @calc "loc = 5"\n'
+        'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 3"\n'
+        '@calc -l crash.c "o = crash_now(im)" 2>crash.err; echo "crash_rc=$?"\n'
+        '@calc -v m "imean(loc)"; echo "loc=$m"',  # a local image: this session's server lives
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "crash_rc") == "1", out
+    assert "CRASH INTERCEPTED" in (tmp_path / "crash.err").read_text(), out
+    assert value(res.stdout, "loc") == "5", out
+
+
+def test_a_shell_keeps_one_connection_between_requests(tmp_path):
+    """The shell's connection stays the same socket; a subshell has its own; a script's own fds,
+    numbered or `{var}`, work beside it (bash protects a close-on-exec fd from `exec N>`, so the
+    connection sits high); after the server ends, the next request starts it again."""
+    res = milk_bash(
+        'mem.mk2Dim "@S:k6" 4 4 >/dev/null; @calc "k6 = 1"\n'
+        "sock() { for f in /proc/$1/fd/*; do [[ $(readlink $f) == socket:* ]] && ((${f##*/} >= 64)) && echo ${f##*/}:$(readlink $f); done | head -1; }\n"
+        'a=$(sock $$); @calc "k6 = k6 + 1"; mem.listim >/dev/null; @test "imean(k6) > 0"; b=$(sock $$)\n'
+        'echo "same=$([ -n "$a" ] && [ "$a" = "$b" ] && echo 1)"\n'
+        '( @calc "k6 = k6 + 1"; c=$(sock $BASHPID); echo "sub=$([ -n "$c" ] && [ "$c" != "$a" ] && echo 1)" )\n'
+        'exec 3>three.txt; @calc "k6 = k6 + 1"; echo x >&3; exec 3>&-\n'
+        'exec {v}>var.txt; @calc "k6 = k6 + 1"; echo y >&$v; exec {v}>&-\n'
+        "echo \"fds=$(cat three.txt var.txt | tr -d '\\n') val=$(@calc 'imean(k6)')\"\n"
+        "milkshutdown >/dev/null 2>&1\n"
+        '@calc "k6 = k6 + 1"; echo "restart=$(@calc \'imean(k6)\')"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "same") == "1", out
+    assert value(res.stdout, "sub") == "1", out
+    assert value(res.stdout, "fds") == "xy val=5", out
+    assert value(res.stdout, "restart") == "6", out
+
+
+def test_captured_command_output_is_complete(tmp_path):
+    res = milk_bash(
+        'for i in $(seq 1 300); do mem.mk2Dim "cap6_$i" 2 2 >/dev/null; done\n'
+        'echo "pipe=$(mem.listim | grep -c cap6_)"\n'
+        'mem.listim > out.txt; echo "file=$(grep -c cap6_ out.txt)"\n'
+        'echo "err=$(mem.mk2Dim 2>&1 >/dev/null | grep -ci usage)"\n'
+        '@log -n 3 | grep -q cap6_ && echo "logged=1"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, k) for k in ("pipe", "file", "logged")] == [
+        "300",
+        "300",
+        "1",
+    ], out
+    assert value(res.stdout, "err") not in (None, "0"), out

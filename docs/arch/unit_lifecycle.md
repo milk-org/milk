@@ -82,4 +82,4 @@ directory. No daemon is involved.
 | Signals | `src/engine/libprocessinfo/processinfo_signals.c` |
 | Guards | `cmake/milk_layer_guards.cmake` |
 | milk-cli servers | `src/cli/libmilkscript/ipc/milk_ipc_common.c` (start), `client/milk_sessions.c` (stop), `server/milk_server.c` (readiness) |
-| Tests | `python/tests/cli/unit_lifecycle_test.py`, `unit_removal_test.py`, `unit_systemd_test.py`, `server_lifecycle_test.py`, `python/tests/tui/unit_tui_test.py`, `test_milk_detach.c`, `test_milk_sdnotify.c`, `test_processinfo_signals.c` |
+| Tests | `python/tests/cli/unit_lifecycle_test.py`, `removed_forms_test.py`, `unit_systemd_test.py`, `server_lifecycle_test.py`, `python/tests/tui/unit_tui_test.py`, `test_milk_detach.c`, `test_milk_sdnotify.c`, `test_processinfo_signals.c` |

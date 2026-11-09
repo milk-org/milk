@@ -10,19 +10,17 @@ from __future__ import annotations
 import pytest
 
 from milk.cliwrap import HAVE_CLI
-from tests.cli.conftest import milk_bash, value
+from tests.cli.conftest import (
+    milk_bash,
+    value,
+    CAM,
+    UNIT_HELPERS,
+)
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
     pytest.mark.timeout(120),
 ]
-
-HELPERS = r"""
-until_file() { for _ in $(seq 100); do [ -e "$MILK_SHM_DIR/$1.im.shm" ] && return 0; sleep 0.05; done; return 1; }
-stop() { kill -INT "$1" 2>/dev/null; for _ in $(seq 60); do kill -0 "$1" 2>/dev/null || break; sleep 0.05; done
-         kill -0 "$1" 2>/dev/null && echo "still running"; wait "$1" 2>/dev/null; }
-mem.mk2Dim "@S:cam" 8 8 >/dev/null; @calc "cam = 2"
-"""
 
 
 def _line_after(out: str, stmt: str) -> str:
@@ -98,7 +96,7 @@ def test_unit_notes_each_text_statement_once(tmp_path):
         "out = cam * 2\nz = cplx(out, out)\nok = out + 1\n"
     )
     res = milk_bash(
-        HELPERS
+        UNIT_HELPERS
         + "milk-fpsexec-milk-calc -n p7 -t cam -f prog.calc fpsinit >/dev/null\n"
         "milk-fpsexec-milk-calc -n p7 run >run.log 2>&1 & pid=$!\n"
         "sleep 0.6\n"
@@ -111,3 +109,31 @@ def test_unit_notes_each_text_statement_once(tmp_path):
     assert value(res.stdout, "error") == "[]" and value(res.stdout, "ok") == "13", out
     notes = [ln for ln in log.splitlines() if "is not kept" in ln]
     assert len(notes) == 0, out
+
+
+def test_explain_does_not_run(tmp_path):
+    res = milk_bash(
+        CAM + '@calc --explain "cam = cam + 100" >/dev/null; echo "rc=$?"\n'
+        '@calc -v m "imean(cam)"; echo "m=$m"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0", out
+    assert value(res.stdout, "m") == "2", out
+
+
+def test_explain_leaves_defs_and_rings_alone(tmp_path):
+    res = milk_bash(
+        CAM
+        + '@calc --explain "def hid(x) = x * 2; y = hid(cam)" >/dev/null; echo "x1=$?"\n'
+        "@calc 'hid(2)' 2>/dev/null; echo \"hid=$?\"\n"
+        '@calc --explain "hist(cam, 4); y = cam - prev(cam)" 2>&1 |'
+        ' grep -c "only in a milk.calc unit" | sed "s/^/unit=/"\n'
+        '@exists s.cam_hist && echo "ring=yes" || echo "ring=no"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "x1") == "0", out
+    assert value(res.stdout, "hid") == "2", out  # the def stayed out of the session
+    assert value(res.stdout, "unit") == "1", out
+    assert value(res.stdout, "ring") == "no", out

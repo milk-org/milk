@@ -587,3 +587,188 @@ echo "blur_ok=$(@calc 'imax(im_blur) > 0.1 && imax(im_blur) < imax(im_in)')"
     ] == ["0", "0.1", "32x32", "32x32", "1", "1", "1"], (
         res.stdout + res.stderr
     )
+
+
+def _ext_blk(name, params):
+    """Source of a Tier-1 block kernel @name with parameter X-macro lines @params."""
+    return (
+        '#include "milk_calc_ext.h"\n'
+        f"#define {name.upper()}_PARAMS(X) \\\n" + " \\\n".join(params) + "\n"
+        f"MILK_CALC_PARAMS({name}, {name.upper()}_PARAMS);\n"
+        f"static void {name}_f(float *restrict out, const float *restrict in, const struct {name}_par *P, int len)\n"
+        "{ for (int i = 0; i < len; i++) out[i] = in[i] * 2.0f; }\n"
+        f'MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK("{name}", {name}_f, {name}, 4));\n'
+    )
+
+
+EXT_BIND_C = r"""
+#include "milk_calc_ext.h"
+
+#define G2_PARAMS(X) \
+    X(".a", a, FPTYPE_FLOAT64, 1.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Gain") \
+    X(".b", b, FPTYPE_FLOAT64, 0.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Offset")
+MILK_CALC_PARAMS(gain2, G2_PARAMS);
+
+static void gain2_f(float *restrict out, const float *restrict in, const struct gain2_par *P, int len)
+{
+    for (int i = 0; i < len; i++)
+    {
+        out[i] = in[i] * (float) P->a + (float) P->b;
+    }
+}
+
+#define MOP_PARAMS(X) X(".g", g, FPTYPE_FLOAT64, 1.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Gain")
+#define MOP_PORTS(X) X(IN, frame, MILK_PORT_IMAGE, 0, "Input") X(OUT, o, MILK_PORT_IMAGE, 0, "Output")
+MILK_CALC_OP_DECLARE(mop, MOP_PARAMS, MOP_PORTS);
+
+static int mop_init(milk_op_ctx *ctx, const struct mop_par *P, void **state)
+{
+    (void) ctx;
+    (void) P;
+    *state = NULL;
+    return 0;
+}
+
+static int mop_exec(milk_op_ctx *ctx, const struct mop_par *P, void *state)
+{
+    const IMAGE *in = MILK_IN(ctx, mop_frame);
+    IMAGE       *o  = MILK_OUT(ctx, mop_o);
+    (void) state;
+    for (uint64_t i = 0; i < in->md[0].nelement; i++)
+    {
+        o->array.F[i] = in->array.F[i] * (float) P->g;
+    }
+    return 0;
+}
+
+static void mop_free(void *state)
+{
+    (void) state;
+}
+
+MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK("gain2", gain2_f, gain2, 2),
+                     MILK_CALC_REG_OP("mop", mop, mop_init, mop_exec, mop_free));
+"""
+
+
+NANFIX_C = r"""
+#include <math.h>
+#include "milk_calc_ext.h"
+#define NF_PARAMS(X) \
+    X(".v", v, FPTYPE_FLOAT64, 0.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Value for NaN")
+MILK_CALC_PARAMS(nanfix, NF_PARAMS);
+static void nanfix_f(float *restrict out, const float *restrict in, const struct nanfix_par *P,
+                     int len)
+{
+    for (int i = 0; i < len; i++)
+    {
+        out[i] = isnan(in[i]) ? (float) P->v : in[i];
+    }
+}
+MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK("nanfix", nanfix_f, nanfix, 1));
+"""
+
+
+@pytest.mark.timeout(120)
+def test_extensions_compile_like_jit_kernels(tmp_path):
+    (tmp_path / "nanfix.c").write_text(NANFIX_C)
+    (tmp_path / "bad.c").write_text('#include "milk_calc_ext.h"\nflot x;\n')
+    cache = tmp_path / "cache"
+    res = milk_bash(
+        'mem.mk2Dim im 4 4 >/dev/null; @calc "im = 2; im[1, 1] = nan"\n'
+        '@calc -l nanfix.c "o = nanfix(im)"; echo "rc=$?"\n'
+        '@calc -v t "itot(o)"; echo "tot=$t"\n'
+        '@calc -l bad.c "o2 = 1" 2>bad.err; echo "bad_rc=$?"\n'
+        'milk-cc -v --shared nanfix.c -o nf.so >cc.out 2>&1; echo "cc_rc=$?"',
+        tmp_path,
+        extra_env={"MILK_CALC_CACHE": str(cache)},
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0", out
+    assert value(res.stdout, "tot") == "30", out  # isnan() was not folded away
+    assert any(p.name.startswith("ext_") for p in cache.iterdir()), out
+    assert value(res.stdout, "bad_rc") != "0", out
+    assert "unknown type name" in (tmp_path / "bad.err").read_text(), out
+    assert value(res.stdout, "cc_rc") == "0", out
+    assert "-fno-finite-math-only" in (tmp_path / "cc.out").read_text(), out
+
+    (tmp_path / "real").mkdir()
+    (tmp_path / "link").symlink_to(tmp_path / "real")
+    for env, msg in (
+        ({"MILK_CALC_CC": "no-such-cc", "MILK_CALC_CACHE": str(cache)}, "no-such-cc"),
+        ({"MILK_CALC_CACHE": str(tmp_path / "link")}, "unsafe cache directory"),
+    ):
+        res = milk_bash(
+            '@calc -l nanfix.c "1" 2>e.txt; echo "rc=$?"', tmp_path, extra_env=env
+        )
+        assert value(res.stdout, "rc") != "0", res.stdout + res.stderr
+        assert msg in (tmp_path / "e.txt").read_text(), res.stdout + res.stderr
+
+
+@pytest.mark.timeout(120)
+def test_extension_arguments_bind_like_module_commands(tmp_path):
+    (tmp_path / "ext.c").write_text(EXT_BIND_C)
+    res = milk_bash(
+        'mem.mk2Dim "@S:raw" 4 4 >/dev/null; @calc "raw = 10"\n'
+        'milk-fpsexec-milk-calc -n ua -l ext.c -e "o1 = gain2(raw, a = 2, 3); o2 = mop(raw, 4)" exec '
+        '>/dev/null 2>&1; echo "rc=$?"\n'
+        'echo "vals=$(@get s.o1.mean) $(@get s.o2.mean)"\n'
+        'echo "fps=$(for p in gain2.a gain2.b mop.g; do @get f.ua.$p >/dev/null 2>&1 && echo -n 1 || echo -n 0; done)"\n'
+        'milk-fpsexec-milk-calc -n ub -l ext.c -e "o3 = gain2(raw, 1, 2, 3)" exec 2>&1 >/dev/null | '
+        'grep -c "gain2: too many arguments" | sed "s/^/many=/"\n'
+        'milk-fpsexec-milk-calc -n uc -l ext.c fpsinit >/dev/null 2>&1; echo "lib=$(@get f.uc.gain2.b) $(@get f.uc.mop.g)"\n'
+        '@get f.uc.bblur1pix.amp >/dev/null 2>&1 && echo "builtin=1" || echo "builtin=0"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0", out
+    assert value(res.stdout, "vals") == "23 40", out
+    assert value(res.stdout, "fps") == "000", out
+    assert value(res.stdout, "many") == "1", out
+    assert value(res.stdout, "lib") == "0 1", out
+    assert value(res.stdout, "builtin") == "0", out
+
+
+@pytest.mark.timeout(120)
+def test_parameter_tables_the_packer_cannot_hold_are_refused(tmp_path):
+    """17 parameters, or a string field, used to load silently and pack past the 256-byte buffer."""
+    (tmp_path / "big17.c").write_text(
+        _ext_blk(
+            "big",
+            [
+                f'    X(".p{i}", p{i}, FPTYPE_FLOAT64, {i}.0, FPFLAG_DEFAULT_INPUT, "p{i}")'
+                for i in range(17)
+            ],
+        )
+    )
+    (tmp_path / "strp.c").write_text(
+        _ext_blk(
+            "strp",
+            [
+                '    X(".tag", tag, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "tag")',
+                '    X(".g", g, FPTYPE_FLOAT64, 2.0, FPFLAG_DEFAULT_INPUT, "gain")',
+            ],
+        )
+    )
+    (tmp_path / "ok16.c").write_text(
+        _ext_blk(
+            "ok",
+            [
+                f'    X(".q{i}", q{i}, FPTYPE_FLOAT32, {i}.0, FPFLAG_DEFAULT_INPUT, "q{i}")'
+                for i in range(16)
+            ],
+        )
+    )
+    res = milk_bash(
+        'mem.mk2Dim a5 4 4 >/dev/null; @calc "a5 = 3"\n'
+        '@calc -l big17.c "o5 = big(a5)" 2>err17.log; echo "rc17=$?"\n'
+        '@calc -l strp.c "o5s = strp(a5)" 2>errs.log; echo "rcstr=$?"\n'
+        '@calc -l ok16.c "o5k = ok(a5)" 2>errok.log; echo "rcok=$?"\n'
+        '@calc -v m "imean(o5k)"; echo "ok=$m"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc17") != "0" and value(res.stdout, "rcstr") != "0", out
+    assert "at most 16" in (tmp_path / "err17.log").read_text(), out
+    assert "cannot pack" in (tmp_path / "errs.log").read_text(), out
+    assert value(res.stdout, "rcok") == "0" and value(res.stdout, "ok") == "6", out

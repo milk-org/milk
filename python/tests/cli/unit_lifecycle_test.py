@@ -22,9 +22,17 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import time
 
 from milk.cliwrap import HAVE_CLI
-from tests.cli.conftest import _install_dir, _isolated_shm_env, _run, milk_bash, value
+from tests.cli.conftest import (
+    _install_dir,
+    _isolated_shm_env,
+    _run,
+    milk_bash,
+    value,
+    UNIT_HELPERS,
+)
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -709,3 +717,110 @@ def test_run_out_property(tmp_path):
     out = out_of(res, tmp_path)
     assert value(res.stdout, "never") == "[]", out
     assert value(res.stdout, "last") == "1" and value(res.stdout, "first") == "1", out
+
+
+def test_unit_start_requests_no_rt_priority(tmp_path):
+    """A unit whose FPS keeps the default RTprio (-1) neither warns nor writes 'RT prio failed'."""
+    res = milk_bash(
+        UNIT_HELPERS
+        + 'milk-fpsexec-milk-calc -n h3 -t cam -e "out3 = cam * 2" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n h3 run >run.log 2>&1 & pid=$!\n"
+        'until_file out3; sleep 0.3; @calc "cam = 3"; sleep 0.3\n'
+        'echo "msg=$(@get p.h3.msg)"; echo "rtprio=$(@get f.h3.procinfo.RTprio)"; stop $pid',
+        tmp_path,
+    )
+    log = (tmp_path / "run.log").read_text()
+    assert "RT priority" not in log, log
+    assert "RT prio" not in (value(res.stdout, "msg") or ""), res.stdout + res.stderr
+    assert value(res.stdout, "rtprio") == "-1", res.stdout + res.stderr
+
+
+def test_recreated_trigger_stream_is_remapped(tmp_path):
+    """The trigger stream deleted and created again (new inode) is picked up after a timeout, which
+    `p.<unit>.timeouts` counts."""
+    res = milk_bash(
+        UNIT_HELPERS + 'mem.mk2Dim "@S:trg" 4 4 >/dev/null; @calc "trg = 1"\n'
+        'milk-fpsexec-milk-calc -n h5 -t trg -e "out5 = trg * 2" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n h5 run >run.log 2>&1 & pid=$!\n"
+        'until_file out5; sleep 0.3; @calc "trg = 1"; sleep 0.3; c0=$(@get s.out5.cnt0)\n'
+        'mem.rmshmim trg >/dev/null 2>&1; sleep 0.2; mem.mk2Dim "@S:trg" 4 4 >/dev/null\n'
+        "sleep 3.0\n"
+        'for i in 1 2 3; do @calc "trg = 3"; sleep 0.3; done\n'
+        'echo "adv=$(( $(@get s.out5.cnt0) - c0 ))"; echo "to=$(@get p.h5.timeouts)"; echo "val=$(@get s.out5.mean)"\n'
+        "stop $pid",
+        tmp_path,
+    )
+    log = (tmp_path / "run.log").read_text()
+    assert int(value(res.stdout, "adv") or 0) >= 1, res.stdout + res.stderr + log
+    assert int(value(res.stdout, "to") or 0) >= 1, res.stdout + res.stderr + log
+    assert value(res.stdout, "val") == "6", res.stdout + res.stderr + log
+
+
+def test_onoff_default_on_reaches_the_unit(tmp_path):
+    """streamave's .comp.ave defaults to ON, so the unit posts the mean of every 2 frames. The FPS used to
+    start with the flag OFF, which the unit reads, so it never wrote its output."""
+    res = milk_bash(
+        UNIT_HELPERS
+        + "milk-fpsexec-mem-streamave -n sa1 -loops fpsinit cam avg 2 >/dev/null\n"
+        'echo "ave=$(@get f.sa1.comp.ave) rms=$(@get f.sa1.comp.rms)"\n'
+        "milk-fpsexec-mem-streamave -n sa1 -loops run >run.log 2>&1 & pid=$!\n"
+        "until_file avg; sleep 0.3; c0=$(@get s.avg.cnt0)\n"
+        'for _ in 1 2 3 4 5 6; do @calc "cam = 5"; sleep 0.1; done; sleep 0.3\n'
+        'echo "posts=$(( $(@get s.avg.cnt0) - c0 ))"; echo "val=$(@get s.avg.mean)"; stop $pid',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "ave") == "ON rms=OFF", out
+    assert int(value(res.stdout, "posts") or 0) >= 2, out
+    assert value(res.stdout, "val") == "5", out
+
+
+@pytest.mark.skipif(
+    not os.path.exists("/sys/devices/cpu_core/cpus")
+    or len(os.sched_getaffinity(0)) < 24,
+    reason="needs a hybrid P+E CPU with at least 24 CPUs allowed",
+)
+def test_unit_under_taskset_keeps_its_cpu_mask(tmp_path):
+    """A unit started with a P+E mask by taskset is still on that mask after large OpenMP statements."""
+    env, shm_dir = _isolated_shm_env()
+    bindir = _install_dir() / "bin"
+    proc = None
+    try:
+        r = _run(
+            [str(bindir / "milk-script"), "-q", "-"],
+            env,
+            timeout=30,
+            stdin='mem.mk2Dim "@S:aff" 2048 2048\n',
+            cwd=str(tmp_path),
+        )
+        assert r.returncode == 0, r.stderr
+        proc = subprocess.Popen(
+            [
+                "taskset",
+                "-c",
+                "8-23",
+                str(bindir / "milk-fpsexec-milk-calc"),
+                "-n",
+                "aff",
+                "-loopd",
+                "0.001",
+                "-e",
+                "aff = aff * 2 + 1",
+                "exec",
+            ],
+            env=env,
+            cwd=str(tmp_path),
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(2.0)
+        assert proc.poll() is None, "unit exited early"
+        status = Path(f"/proc/{proc.pid}/status").read_text()
+        allowed = re.search(r"^Cpus_allowed_list:\s*(\S+)", status, re.M).group(1)
+        assert allowed == "8-23", allowed
+    finally:
+        if proc is not None:
+            proc.kill()
+            proc.wait()
+        shutil.rmtree(shm_dir, ignore_errors=True)

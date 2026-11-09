@@ -1,33 +1,23 @@
 """
-Regression tests for the 2026-10-27 calculator engine review fixes (C1-C4).
-
-C1: a `local` that no later statement reads is merged into the next statement's pass without leaving
-its value on the vector stack (the next statement's output used to get the dead local). C2: a `local`
-is written to memory when a statement already merged into an earlier pass, or a `def` body, reads it
-(the text scan used to miss both). C3: an axis-0 or middle-axis reduction read as an operand is placed
-on its own axis, so `im - imean(im, 0)` subtracts the row means of a non-square image and is not
-transposed on a square one, while a plain assignment keeps the squeezed shape. C4: a division by zero
-inside the untaken branch of `?:` or `where()` is selected away instead of failing the statement.
+How calculator programs run: fusion and kept locals, axis reductions, selects, stencils
+on views, replanning when inputs change, exact `%` and `wrap_pi`, casts and broadcasts,
+NaN in `imin`, `imax`, `lut` and `interp2`, and torn-frame counters.
 """
 
 from __future__ import annotations
 
 import pytest
+import math
+import re
+import struct
 
 from milk.cliwrap import HAVE_CLI
-from tests.cli.conftest import milk_bash, value
+from tests.cli.conftest import CAM, UNIT_HELPERS, _run_bash, milk_bash, value
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
     pytest.mark.timeout(120),
 ]
-
-HELPERS = r"""
-until_file() { for _ in $(seq 100); do [ -e "$MILK_SHM_DIR/$1.im.shm" ] && return 0; sleep 0.05; done; return 1; }
-stop() { kill -INT "$1" 2>/dev/null; for _ in $(seq 60); do kill -0 "$1" 2>/dev/null || break; sleep 0.05; done
-         kill -0 "$1" 2>/dev/null && echo "still running"; wait "$1" 2>/dev/null; }
-mem.mk2Dim "@S:cam" 8 8 >/dev/null; @calc "cam = 2"
-"""
 
 
 def _unit(tmp_path, name, prog, probes, init=""):
@@ -35,7 +25,7 @@ def _unit(tmp_path, name, prog, probes, init=""):
     (tmp_path / "prog.calc").write_text(prog)
     opt_init = f' -i "{init}"' if init else ""
     res = milk_bash(
-        HELPERS
+        UNIT_HELPERS
         + f"milk-fpsexec-milk-calc -n {name} -t cam -f prog.calc{opt_init} fpsinit >/dev/null\n"
         f"milk-fpsexec-milk-calc -n {name} run >run.log 2>&1 & pid=$!\n"
         "sleep 0.6\n"
@@ -48,7 +38,109 @@ def _unit(tmp_path, name, prog, probes, init=""):
     return res, res.stdout + res.stderr + log
 
 
-def test_C1_elided_unread_local_does_not_replace_next_output(tmp_path):
+def test_nan_in_lut_and_interp2_does_not_crash():
+    res = _run_bash("""
+        mem.mk2Dim "@S:rim" 4 4
+        @calc "rim = -2.0"
+        mem.mk2Dim "@S:tbl" 8 1
+        @calc "tbl = ix(tbl); nanim = rim * sqrt(-1.0); lout = lut(nanim, tbl, 0, 1); iout = interp2(rim, nanim, nanim)"
+        echo "NAN_OK"
+    """)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "NAN_OK" in res.stdout
+
+
+def test_fused_reduction_reads_this_block_value(tmp_path):
+    """In one block, `imean(y)` sees the `y` written by the statement before it, not the old one."""
+    res = milk_bash(
+        CAM + '@calc "y = cam * 0"\n'
+        '@calc "for k = 1:1 { y = cam * 3; z = y - imean(y) }"; echo "rc=$?"\n'
+        '@calc -v zm "imean(z)"; echo "zm=$zm"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0", out
+    assert value(res.stdout, "zm") == "0", out
+
+
+def test_image_hypot_does_not_overflow(tmp_path):
+    res = milk_bash(
+        'mem.mk2Dim a 4 4 >/dev/null; @calc "a = 1e20"; @calc "h = hypot(a, a)"\n'
+        '@calc -v hm "imax(h)"; echo "hm=$hm"',
+        tmp_path,
+    )
+    hm = value(res.stdout, "hm")
+    assert hm is not None, res.stdout + res.stderr
+    assert float(hm) == pytest.approx(math.sqrt(2.0) * 1e20, rel=1e-6)
+
+
+def test_mod_and_wrap_pi_stay_exact(tmp_path):
+    res = milk_bash(
+        "mem.mk2Dim a 16 16 >/dev/null; mem.mk2Dim y 16 16 >/dev/null; @config digits 17 >/dev/null\n"
+        '@calc "a = (rand(a, 1) - 0.5) * 2000; y = (rand(y, 2) + 0.01) * 3"\n'
+        '@calc "m = a % y; f = fmod(a, y); w = wrap_pi(a)"\n'
+        "for k in 0 17 101 202 255; do x=$((k % 16)); j=$((k / 16)); "
+        'echo "px=$(@calc -v r "a[$x,$j]"; echo $r) $(@calc -v r "y[$x,$j]"; echo $r) '
+        '$(@calc -v r "m[$x,$j]"; echo $r) $(@calc -v r "f[$x,$j]"; echo $r) $(@calc -v r "w[$x,$j]"; echo $r)"; done\n'
+        '@calc -v big "1e20 % 3"; echo "big=$big"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    f32 = lambda v: struct.unpack("f", struct.pack("f", v))[0]
+    rows = re.findall(r"^px=(.*)$", res.stdout, re.M)
+    assert len(rows) == 5, out
+    for row in rows:
+        a, y, m, f, w = map(float, row.split())
+        ref = f32(math.fmod(a, y))
+        assert m == ref and f == ref, (row, ref, out)
+        assert w == f32(math.remainder(a, f32(2 * math.pi))), (row, out)
+    assert value(res.stdout, "big") == "nan", out
+
+
+def test_casts_masks_and_broadcasts_keep_values(tmp_path):
+    vals = "300 -2 2.7 -2.7 70000.5 -70000.5 2147483904 nan inf"
+    res = milk_bash(
+        'mem.mk2Dim a 8 8 >/dev/null; mem.mk2Dim "@TF64:d" 8 8 >/dev/null\n'
+        f'for v in {vals}; do @calc "a = $v; d = $v"\n'
+        '  @calc "b = u8(a); c = i16(a); m = a & 0xF0; e = u16(d); g = d & 0xFFF"\n'
+        '  echo "img=$v $(@calc "b[0,0]") $(@calc "c[0,0]") $(@calc "m[0,0]") $(@calc "e[0,0]") $(@calc "g[0,0]")"\n'
+        '  echo "num=$v $(@calc "u8($v)") $(@calc "i16($v)") $(@calc "$v & 0xF0" 2>/dev/null || echo 0) '
+        '$(@calc "u16($v)") $(@calc "$v & 0xFFF" 2>/dev/null || echo 0)"; done\n'
+        "mem.mk2Dim A 64 8 >/dev/null; mem.mk2Dim col 1 8 >/dev/null; mem.mk2Dim U 64 8 >/dev/null; mem.mk2Dim V 64 8 >/dev/null\n"
+        '@calc "A = ix(A, 0, 0); col = iy(col, 0, 0) * 100; C = A + col; U = 1; V = 2"; echo "bc=$(@calc "C[5, 3]")"\n'
+        '@calc "U, V = V, U"; @calc "U = U + A; V = V - A"; echo "uv=$(@calc "U[5, 0]") $(@calc "V[5, 0]")"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    img = {
+        r.split()[0]: r.split()[1:] for r in re.findall(r"^img=(.*)$", res.stdout, re.M)
+    }
+    num = {
+        r.split()[0]: r.split()[1:] for r in re.findall(r"^num=(.*)$", res.stdout, re.M)
+    }
+    assert len(img) == 9 and img == num, out
+    assert value(res.stdout, "bc") == "305", out
+    assert value(res.stdout, "uv") == "7 -4", out
+
+
+def test_float_argext_matches_double(tmp_path):
+    res = milk_bash(
+        'mem.mk2Dim w 100 50 >/dev/null; mem.mk2Dim "@TF64:wd" 100 50 >/dev/null\n'
+        'for s in 1 2 3; do @calc "w = floor(rand(w, $s) * 20) - 10"\n'
+        '  [ $s = 2 ] && @calc "w = -inf; w[1, 0] = nan; w[60, 40] = -3.4028234663852886e38"\n'
+        '  [ $s = 3 ] && @calc "w = nan"\n'
+        '  @calc "wd = f64(w)"; echo "f$s=$(@calc "iargmax(w); iargmin(w); iamax(w)" | tr "\n" " ")"\n'
+        '  echo "d$s=$(@calc "iargmax(wd); iargmin(wd); iamax(wd)" | tr "\n" " ")"; done',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    for s in "123":
+        assert value(res.stdout, f"f{s}") == value(res.stdout, f"d{s}"), out
+    assert value(res.stdout, "f2").split()[0] == "4060", out
+    assert value(res.stdout, "f3").split() == ["-1", "-1", "-1"], out
+
+
+def test_elided_unread_local_does_not_replace_next_output(tmp_path):
     """`local tmp = cam - 1; out = cam * 3` fuse into one pass; out is 3*cam, not tmp."""
     res, out = _unit(
         tmp_path,
@@ -60,7 +152,7 @@ def test_C1_elided_unread_local_does_not_replace_next_output(tmp_path):
     assert value(res.stdout, "o1") == "15", out
 
 
-def test_C2_local_read_through_def_is_written(tmp_path):
+def test_local_read_through_def_is_written(tmp_path):
     """A `def` body reading the local keeps it materialized: out3 sees this frame's tmp3."""
     res, out = _unit(
         tmp_path,
@@ -72,7 +164,7 @@ def test_C2_local_read_through_def_is_written(tmp_path):
     assert value(res.stdout, "o3") == "9,10", out
 
 
-def test_C2_local_read_by_merged_statement_is_written(tmp_path):
+def test_local_read_by_merged_statement_is_written(tmp_path):
     """A reader folded into an earlier pass (STMT_NOP) still counts: b2 sees the previous frame's tmp2."""
     res, out = _unit(
         tmp_path,
@@ -85,7 +177,7 @@ def test_C2_local_read_by_merged_statement_is_written(tmp_path):
     assert value(res.stdout, "b2") == "5,10", out
 
 
-def test_C3_axis0_reduction_is_placed_on_its_axis(tmp_path):
+def test_axis0_reduction_is_placed_on_its_axis(tmp_path):
     """Row means come off every row of a 16x8 image and of an 8x8 one; shapes of plain results stay squeezed."""
     res = milk_bash(
         'mem.mk2Dim im3 16 8 >/dev/null; @calc "im3 = iy(im3)*10 + ix(im3) + rand(im3, 3)"\n'
@@ -120,7 +212,7 @@ def test_C3_axis0_reduction_is_placed_on_its_axis(tmp_path):
     assert float(value(res.stdout, "e1e")) < 1e-6, out
 
 
-def test_C4_zero_divisor_in_untaken_branch_is_selected_away(tmp_path):
+def test_zero_divisor_in_untaken_branch_is_selected_away(tmp_path):
     """Kept scalar and image selects with a zero divisor in the other branch run every tick."""
     res, out = _unit(
         tmp_path,
@@ -137,63 +229,7 @@ def test_C4_zero_divisor_in_untaken_branch_is_selected_away(tmp_path):
     assert int(value(res.stdout, "cnt")) >= 5, out
 
 
-def _ext_blk(name, params):
-    """Source of a Tier-1 block kernel @name with parameter X-macro lines @params."""
-    return (
-        '#include "milk_calc_ext.h"\n'
-        f"#define {name.upper()}_PARAMS(X) \\\n" + " \\\n".join(params) + "\n"
-        f"MILK_CALC_PARAMS({name}, {name.upper()}_PARAMS);\n"
-        f"static void {name}_f(float *restrict out, const float *restrict in, const struct {name}_par *P, int len)\n"
-        "{ for (int i = 0; i < len; i++) out[i] = in[i] * 2.0f; }\n"
-        f'MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK("{name}", {name}_f, {name}, 4));\n'
-    )
-
-
-def test_C5_parameter_tables_the_packer_cannot_hold_are_refused(tmp_path):
-    """17 parameters, or a string field, used to load silently and pack past the 256-byte buffer."""
-    (tmp_path / "big17.c").write_text(
-        _ext_blk(
-            "big",
-            [
-                f'    X(".p{i}", p{i}, FPTYPE_FLOAT64, {i}.0, FPFLAG_DEFAULT_INPUT, "p{i}")'
-                for i in range(17)
-            ],
-        )
-    )
-    (tmp_path / "strp.c").write_text(
-        _ext_blk(
-            "strp",
-            [
-                '    X(".tag", tag, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "tag")',
-                '    X(".g", g, FPTYPE_FLOAT64, 2.0, FPFLAG_DEFAULT_INPUT, "gain")',
-            ],
-        )
-    )
-    (tmp_path / "ok16.c").write_text(
-        _ext_blk(
-            "ok",
-            [
-                f'    X(".q{i}", q{i}, FPTYPE_FLOAT32, {i}.0, FPFLAG_DEFAULT_INPUT, "q{i}")'
-                for i in range(16)
-            ],
-        )
-    )
-    res = milk_bash(
-        'mem.mk2Dim a5 4 4 >/dev/null; @calc "a5 = 3"\n'
-        '@calc -l big17.c "o5 = big(a5)" 2>err17.log; echo "rc17=$?"\n'
-        '@calc -l strp.c "o5s = strp(a5)" 2>errs.log; echo "rcstr=$?"\n'
-        '@calc -l ok16.c "o5k = ok(a5)" 2>errok.log; echo "rcok=$?"\n'
-        '@calc -v m "imean(o5k)"; echo "ok=$m"',
-        tmp_path,
-    )
-    out = res.stdout + res.stderr
-    assert value(res.stdout, "rc17") != "0" and value(res.stdout, "rcstr") != "0", out
-    assert "at most 16" in (tmp_path / "err17.log").read_text(), out
-    assert "cannot pack" in (tmp_path / "errs.log").read_text(), out
-    assert value(res.stdout, "rcok") == "0" and value(res.stdout, "ok") == "6", out
-
-
-def test_C6_stencils_on_broadcast_or_sliced_operands_match_eager(tmp_path):
+def test_stencils_on_broadcast_or_sliced_operands_match_eager(tmp_path):
     """A stencil on a 2-D operand broadcast into a cube, or on a slice, used to index the whole image
     by iteration coordinates (reading past it); such programs now leave the fused path. The eager
     medfilt used a window size the tokenizer never set."""
@@ -218,10 +254,10 @@ def test_C6_stencils_on_broadcast_or_sliced_operands_match_eager(tmp_path):
         assert float(value(res.stdout, k)) < 1e-6, out
 
 
-def test_C4_unguarded_zero_divisor_still_fails(tmp_path):
+def test_unguarded_zero_divisor_still_fails(tmp_path):
     """Outside a select the zero divisor is still an error, in the shell and in a unit."""
     res = milk_bash(
-        HELPERS
+        UNIT_HELPERS
         + '@calc "n0 = 0"; @calc "bad4 = cam / n0" 2>/dev/null; echo "badrc=$?"\n'
         '@calc "ok4 = n0 > 0 ? 1 / n0 : -1"; @calc -v y "ok4"; echo "y=$y"',
         tmp_path,
@@ -296,3 +332,49 @@ def test_jit_differential_math_and_multipass_batch(tmp_path):
     assert value(res.stdout, "zrc") != "0", out
     assert float(value(res.stdout, "erol")) == 0.0, out
     assert float(value(res.stdout, "esl")) < 1e-6, out
+
+
+def test_imin_imax_skip_nan(tmp_path):
+    """A NaN pixel is skipped whatever its position and the image size; all-NaN gives NaN."""
+    res = milk_bash(
+        'mem.mk2Dim "@S:a" 8 8 >/dev/null; @calc "a = ix(a) + 10; a[0,0] = sqrt(-1)"\n'
+        '@calc -v mn,mx "imin(a); imax(a)"; echo "small=$mn,$mx"\n'
+        'mem.mk2Dim "@S:big" 1100 1000 >/dev/null\n'
+        '@calc "big = ix(big) + 5000; big[0,0] = sqrt(-1); big[5,5] = sqrt(-1)"\n'
+        '@calc -v mn,mx "imin(big); imax(big)"; echo "big=$mn,$mx"\n'
+        '@calc "r = imin(a, 1); c = imax(a, 0)"; @calc -v r0,c0 "r[0]; c[0]"; echo "axis=$r0,$c0"\n'
+        'mem.mk2Dim "@S:nn" 4 4 >/dev/null; @calc "nn = sqrt(-1)"\n'
+        '@calc -v mn,mx "imin(nn); imax(nn)"; echo "allnan=$mn,$mx"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "small") == "6,13", out  # ix is centred: -4+10 .. 3+10
+    assert value(res.stdout, "big") == "4450,5549", out  # -550+5000 .. 549+5000
+    assert value(res.stdout, "axis") == "6,13", out  # row 0 and column 0 hold the NaN
+    assert all(
+        v.lstrip("-") == "nan" for v in value(res.stdout, "allnan").split(",")
+    ), out
+
+
+def test_stats_listing_has_torn_flag(tmp_path):
+    res = milk_bash(
+        'mem.mk2Dim "@S:c" 8 8 >/dev/null; @calc "c = 3"\n'
+        '@get -A st s.c.stats; echo "torn=${st[torn]} mean=${st[mean]}"\n'
+        'echo "lines=$(@get s.c.stats | wc -l)"',
+        tmp_path,
+    )
+    assert value(res.stdout, "torn") == "0 mean=3", res.stdout + res.stderr
+    assert value(res.stdout, "lines") == "8", res.stdout + res.stderr
+
+
+def test_kept_scalar_statement_value_is_stable(tmp_path):
+    """The second run of a scalar statement (kept) gives the text path's value, integer or not."""
+    res = milk_bash(
+        'mem.mk2Dim "@S:b" 8 8 >/dev/null; @calc "b = 1; b[0,0] = 0"\n'
+        '@calc "n = icount(b) + 1"; @calc -v v1 "n"; @calc "n = icount(b) + 1"; @calc -v v2 "n"\n'
+        '@calc "d = icount(b) / 2"; @calc "d = icount(b) / 2"; @calc -v v3 "d"\n'
+        '@calc "q = n > 3 && d < 100"; @calc "q = n > 3 && d < 100"; @calc -v v4 "q"\n'
+        'echo "vals=$v1,$v2,$v3,$v4"',
+        tmp_path,
+    )
+    assert value(res.stdout, "vals") == "64,64,31.5,1", res.stdout + res.stderr

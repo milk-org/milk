@@ -56,6 +56,8 @@ from tests.cli.conftest import (
     milk_bash,
     milk_proc,
     value,
+    UNIT_HELPERS,
+    _run_bash,
 )
 
 pytestmark = [
@@ -1516,3 +1518,41 @@ def test_session_names_hold_63_characters_at_most(tmp_path):
     res = milk_bash(f'@session new {"n" * 64} 2>err.txt; echo "rc=$?"', tmp_path)
     assert value(res.stdout, "rc") == "2", res.stdout + res.stderr
     assert "longer than 63 characters" in (tmp_path / "err.txt").read_text()
+
+
+def test_session_status_and_failed_get_status():
+    res = _run_bash("""
+        @session status >/dev/null
+        rc=0
+        @get s.no_such_stream.xsize 2>/dev/null || rc=$?
+        [[ "$rc" -ne 0 ]]
+        echo "STATUS_OK"
+    """)
+    assert res.returncode == 0, res.stderr
+    assert "STATUS_OK" in res.stdout
+
+
+@pytest.mark.timeout(120)
+@pytest.mark.skipif(
+    not os.access("/milk/shm", os.W_OK), reason="needs a writable /milk/shm"
+)
+def test_proc_reads_look_where_units_write(tmp_path):
+    """With MILK_PROC_DIR apart from MILK_SHM_DIR, `@get p.` and `@ls` find the unit's processinfo in
+    MILK_PROC_DIR. They read MILK_SHM_DIR instead when MILK_PROC_DIR was under /milk/shm or /dev/shm.
+    """
+    proc_dir = tempfile.mkdtemp(prefix="milk_proc_", dir="/milk/shm")
+    try:
+        res = milk_bash(
+            UNIT_HELPERS
+            + 'milk-fpsexec-milk-calc -n pd1 -loopd 0.02 -e "outp = cam" fpsinit >/dev/null\n'
+            "milk-fpsexec-milk-calc -n pd1 run >run.log 2>&1 & pid=$!\n"
+            "until_file outp; sleep 0.3\n"
+            'echo "status=$(@get p.pd1.status)"; echo "ls=$(@ls -l p.pd1 | grep -c pd1)"; stop $pid',
+            tmp_path,
+            extra_env={"MILK_PROC_DIR": proc_dir},
+        )
+    finally:
+        shutil.rmtree(proc_dir, ignore_errors=True)
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "status") == "ACTIVE", out
+    assert value(res.stdout, "ls") == "1", out

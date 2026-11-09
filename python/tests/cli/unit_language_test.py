@@ -12,7 +12,12 @@ from __future__ import annotations
 import pytest
 
 from milk.cliwrap import HAVE_CLI
-from tests.cli.conftest import milk_bash, value
+from tests.cli.conftest import (
+    milk_bash,
+    value,
+    CAM,
+    UNIT_HELPERS,
+)
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -152,3 +157,90 @@ def test_ema_and_frame0_auto_zero_accumulators(tmp_path):
     # tick 2 (cam=7): acc=11, k=3, sm=4.5
     # tick 3 (cam=15): acc=26, k=4, sm=9.75
     assert value(res.stdout, "res") == "26,9.75,4,9.75", out
+
+
+STOP = (
+    'stop() { kill -INT "$1" 2>/dev/null; for _ in $(seq 60); do kill -0 "$1" 2>/dev/null || break;'
+    ' sleep 0.05; done; wait "$1" 2>/dev/null; }\n'
+)
+
+
+def test_unit_keeps_running_when_an_edit_does_not_compile(tmp_path):
+    res = milk_bash(
+        CAM
+        + 'milk-fpsexec-milk-calc -n le1 -t cam -e "out_le = cam * 2" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n le1 run >run.log 2>&1 & pid=$!\n"
+        "sleep 0.6\n"
+        '@set f.le1.unit.expr="out_le = cam *"; sleep 0.2\n'
+        '@calc "cam = 4"; sleep 0.3; @calc -v b "imean(out_le)"; echo "bad_edit=$b"\n'
+        'echo "error=[$(@get f.le1.unit.error)]"\n'
+        '@set f.le1.unit.expr="out_le = cam * 3"; sleep 0.2\n'
+        '@calc "cam = 5"; sleep 0.3; @calc -v c "imean(out_le)"; echo "good_edit=$c"\n'
+        "kill -INT $pid; wait $pid",
+        tmp_path,
+    )
+    log = (tmp_path / "run.log").read_text()
+    out = res.stdout + res.stderr + log
+    assert value(res.stdout, "bad_edit") == "8", out
+    assert value(res.stdout, "error") == "[]", out
+    assert value(res.stdout, "good_edit") == "15", out
+    assert "not applied, still running the previous statements" in log, out
+
+
+def test_output_written_twice_is_posted_once_per_tick(tmp_path):
+    """`out = cam*2; out = out + 1` advances out's cnt0 by one per input frame, with the final value."""
+    res = milk_bash(
+        UNIT_HELPERS
+        + 'milk-fpsexec-milk-calc -n m4 -t cam -e "out4 = cam * 2; out4 = out4 + 1" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n m4 run >run.log 2>&1 & pid=$!\n"
+        "until_file out4; sleep 0.3\n"
+        "c0=$(@get s.out4.cnt0)\n"
+        'for i in 1 2 3 4 5; do @calc "cam = $i"; sleep 0.1; done; sleep 0.3\n'
+        'echo "posts=$(( $(@get s.out4.cnt0) - c0 ))"; echo "val=$(@get s.out4.mean)"; stop $pid',
+        tmp_path,
+    )
+    assert value(res.stdout, "posts") == "5", (
+        res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    )
+    assert value(res.stdout, "val") == "11", res.stdout + res.stderr
+
+
+def test_set_during_slow_ticks_is_not_overwritten(tmp_path):
+    """A parameter set from the shell while the unit computes keeps the new value (no write-back race)."""
+    res = milk_bash(
+        UNIT_HELPERS
+        + 'mem.mk2Dim "@S:big" 1024 1024 >/dev/null; mem.mk2Dim "@S:bigo" 1024 1024 >/dev/null\n'
+        '@calc "big = 1"\n'
+        'milk-fpsexec-milk-calc -n h4 -t bigo -p "gain:float=1" -e "bigo = sin(big) + exp(big) * gain" fpsinit >/dev/null\n'
+        "OMP_NUM_THREADS=1 milk-fpsexec-milk-calc -n h4 run >run.log 2>&1 & pid=$!\n"
+        "sleep 0.5; mem.imsetsempost bigo -1 >/dev/null; sleep 0.3\n"
+        "bad=0\n"
+        'for i in $(seq 1 20); do @set f.h4.gain=$i; sleep 0.03; g=$(@get f.h4.gain); [ "$g" = "$i" ] || bad=$((bad+1)); done\n'
+        'echo "bad=$bad"; echo "cnt=$(@get s.bigo.cnt0)"; stop $pid',
+        tmp_path,
+    )
+    log = (tmp_path / "run.log").read_text()
+    assert int(value(res.stdout, "cnt") or 0) > 50, res.stdout + res.stderr + log
+    assert value(res.stdout, "bad") == "0", res.stdout + res.stderr + log
+
+
+def test_torn_counter_with_fast_producer(tmp_path):
+    """A consumer reading a stream another unit rewrites at full speed re-runs torn passes and counts them."""
+    res = milk_bash(
+        STOP
+        + 'mem.mk2Dim "@S:src" 128 128 >/dev/null; mem.mk2Dim "@S:out" 128 128 >/dev/null; @calc "src = 1"\n'
+        'milk-fpsexec-milk-calc -n prod -t src -e "src = src + 1" fpsinit >/dev/null\n'
+        'milk-fpsexec-milk-calc -n cons -t out -p "torn:int=0" -e "out = src * 2 + 1; torn = _torn" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n cons run >cons.log 2>&1 & pc=$!\n"
+        "sleep 0.4; mem.imsetsempost out -1 >/dev/null; sleep 0.4\n"
+        'echo "alone=$(@get f.cons.torn)"\n'
+        "milk-fpsexec-milk-calc -n prod run >prod.log 2>&1 & pp=$!\n"
+        "sleep 0.4; mem.imsetsempost src -1 >/dev/null; sleep 0.8\n"
+        'echo "with=$(@get f.cons.torn)"; echo "error=[$(@get f.cons.unit.error)]"\n'
+        "stop $pp; stop $pc",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "alone") == "0", out
+    assert int(value(res.stdout, "with") or 0) > 0, out
+    assert value(res.stdout, "error") == "[]", out

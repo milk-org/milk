@@ -8,9 +8,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import os
+import re
+import shutil
+import subprocess
 
 from milk.cliwrap import CLICommands, HAVE_CLI
-from tests.cli.conftest import _run_bash, _run_milk_cli
+from tests.cli.conftest import (
+    _run_bash,
+    _run_milk_cli,
+    _install_dir,
+    milk_bash,
+    value,
+)
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -437,3 +447,53 @@ echo "CALC_REPL_OK=@{a}:@{b}:@{c}:@{d}:@{e}:@{f}"
         res = _run_milk_cli(script, tmp_path, mode=mode)
         assert res.returncode == 0, res.stderr
         assert "CALC_REPL_OK=4:12:42:150:45:21" in res.stdout
+
+
+@pytest.mark.timeout(120)
+def test_milk_bash_stops_without_its_builtins(tmp_path):
+    (tmp_path / "bin").mkdir()
+    shutil.copy(_install_dir() / "bin" / "milk.bash", tmp_path / "bin")
+    (tmp_path / "bin" / "milk-cli").write_text("#!/bin/sh\n")
+    (tmp_path / "bin" / "milk-cli").chmod(0o755)
+    res = subprocess.run(
+        [
+            "bash",
+            "-c",
+            f'source "{tmp_path}/bin/milk.bash"; echo "rc=$? kw=$(type -t @get)"',
+        ],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        env={**os.environ, "MILK_INSTALLDIR": str(tmp_path)},
+    )
+    assert value(res.stdout, "rc") == "1 kw=", res.stdout + res.stderr
+    assert (
+        "libmilkbash.so is missing" in res.stderr and "milk is not loaded" in res.stderr
+    ), res.stderr
+
+
+@pytest.mark.timeout(120)
+def test_semaphore_slots_released_after_waits(tmp_path):
+    """Six concurrent `@waitfor` on one stream, then none of the stream's reader slots is still held."""
+    res = milk_bash(
+        'mem.mk2Dim "@S:x" 4 4 >/dev/null\n'
+        'for i in 1 2 3 4 5 6; do ( @waitfor s.x --timeout 0.6 >/dev/null 2>&1; echo "w=$?" ) & done\n'
+        "sleep 0.2; mem.imseminfo x > during.txt 2>&1; wait\n"
+        "mem.imseminfo x > after.txt 2>&1\n"
+        '@waitfor s.x --timeout 0.2 >/dev/null 2>&1; echo "last=$?"\n'
+        "mem.imseminfo x > final.txt 2>&1",
+        tmp_path,
+    )
+    assert res.stdout.count("w=124") == 6, res.stdout + res.stderr
+
+    def held(path: Path) -> list[int]:
+        pids = []
+        for ln in path.read_text().splitlines():
+            m = re.match(r"\s*(\d+)\s+(\d+)\s+(-?\d+)\s+(-?\d+)\s*$", ln)
+            if m and int(m.group(4)) > 0:
+                pids.append(int(m.group(4)))
+        return pids
+
+    assert held(tmp_path / "during.txt"), (tmp_path / "during.txt").read_text()
+    assert held(tmp_path / "after.txt") == [], (tmp_path / "after.txt").read_text()
+    assert held(tmp_path / "final.txt") == [], (tmp_path / "final.txt").read_text()

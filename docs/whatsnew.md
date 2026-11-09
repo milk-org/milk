@@ -310,7 +310,7 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   - **Build and tests:** `-mno-recip` on the whole `COREMOD_arith` and `libmilkscript` targets (the
     shared inline kernels agree between entry paths); `perf_ceilings_test.py` picks an allowed CPU,
     uses a relative float32 parity tolerance, and `MILK_PERF_TESTS=0` skips the timing tests;
-    `engine_fixes_test.py` guards each fix `#cli` `#fps` `#performance`
+    regression tests guard each fix `#cli` `#fps` `#performance`
 
 - **2026-10-23** — Calculator, linear algebra, and `COREMOD_arith` kernel consolidation:
   - **Shared arithmetic & reduction kernels (`COREMOD_arith`):** unified complex arithmetic

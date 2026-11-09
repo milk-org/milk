@@ -429,3 +429,15 @@ def run_milk(
             pytest.fail(f"milk-cli hung: {args!r}")
     assert_no_crash(m.proc.returncode)
     return m.proc.returncode, out
+
+
+# Shell setup shared by several test files: an 8x8 image `cam` = 2 ...
+CAM = 'mem.mk2Dim "@S:cam" 8 8 >/dev/null; @calc "cam = 2"\n'
+
+# ... and, for unit tests, wait for a stream file and stop a unit and reap it.
+UNIT_HELPERS = r"""
+until_file() { for _ in $(seq 100); do [ -e "$MILK_SHM_DIR/$1.im.shm" ] && return 0; sleep 0.05; done; return 1; }
+stop() { kill -INT "$1" 2>/dev/null; for _ in $(seq 60); do kill -0 "$1" 2>/dev/null || break; sleep 0.05; done
+         kill -0 "$1" 2>/dev/null && echo "still running"; wait "$1" 2>/dev/null; }
+mem.mk2Dim "@S:cam" 8 8 >/dev/null; @calc "cam = 2"
+"""

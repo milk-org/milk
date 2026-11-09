@@ -265,7 +265,7 @@ def collect_corpus() -> list[CorpusEntry]:
     tests_dir = REPO_ROOT / "python" / "tests"
     guide_dir = REPO_ROOT / "docs" / "guide"
 
-    skip_files = {"calc_diff_test.py", "calc_engine_bench_test.py"}
+    skip_files = {"calc_diff_test.py", "calc_bench_test.py"}
     for py_file in sorted(tests_dir.rglob("*.py")):
         if "calcdiff" in py_file.parts or py_file.name in skip_files:
             continue
