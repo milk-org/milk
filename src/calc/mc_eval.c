@@ -33,8 +33,8 @@
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
-#include "mc_ast.h"
-#include "mc_plan.h"
+#include "front/mc_ast.h"
+#include "plan/mc_plan.h"
 #include "mcalc.h"
 #include "mcalc_host.h"
 

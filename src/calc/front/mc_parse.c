@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 
 /* ========================================================================= */
 /* Parser State and Token Stream Helpers                                     */

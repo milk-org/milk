@@ -41,8 +41,8 @@
 
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
-#include "mc_plan.h"
-#include "mc_prelude.h"
+#include "plan/mc_plan.h"
+#include "jit/mc_prelude.h"
 
 /* ========================================================================== */
 /* Dynamic String Buffer & Datatype Metadata Table                            */

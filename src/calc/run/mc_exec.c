@@ -52,7 +52,7 @@
 #include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/image_ID.h"
 #include "linalg/mc_linalg.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 
 /* ========================================================================== */
 /* Telemetry, Error Reporting & Pixel Write Helpers                           */

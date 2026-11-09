@@ -45,7 +45,7 @@
 #include "COREMOD_memory/delete_image.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 #include "mcalc.h"
 
 #define MC_POOL_N 4

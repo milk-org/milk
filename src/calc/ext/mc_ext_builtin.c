@@ -34,7 +34,7 @@
 #include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 #include "milk_calc_ext.h"
 
 /* ============================================================================================== */

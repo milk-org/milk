@@ -41,7 +41,7 @@
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
 #include "linalg/mc_linalg.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 
 /* ========================================================================== */
 /* Error Reporting & Datatype Classification Helpers                          */

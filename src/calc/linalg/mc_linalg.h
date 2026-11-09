@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 #include "ImageStreamIO/ImageStruct.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 
 /** mc_write_im_pix() - write scalar value @v to element @idx of @im with datatype @dt. */
 void mc_write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v);

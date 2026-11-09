@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 #include "mcalc.h"
 #include "mcalc_host.h"
 #include "milk_entity_ns.h"

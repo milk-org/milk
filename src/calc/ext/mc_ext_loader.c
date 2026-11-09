@@ -36,8 +36,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "mc_ast.h"
-#include "mc_plan.h"
+#include "front/mc_ast.h"
+#include "plan/mc_plan.h"
 #include "mcalc.h"
 #include "fps_args.h"
 #include "milk_calc_ext.h"
@@ -109,7 +109,13 @@ static void find_milk_include_dirs(char inc_dirs[8][PATH_MAX], int *n_inc)
     }
     char src_file[PATH_MAX];
     snprintf(src_file, sizeof(src_file), "%s", __FILE__);
+    /* this file is <calc>/ext/mc_ext_loader.c: two levels up is <calc>, where milk_calc_ext.h is */
     char *last_sl = strrchr(src_file, '/');
+    if (last_sl != NULL)
+    {
+        *last_sl = '\0';
+        last_sl  = strrchr(src_file, '/');
+    }
     if (last_sl != NULL && *n_inc < 8)
     {
         *last_sl = '\0';

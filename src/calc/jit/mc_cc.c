@@ -53,8 +53,8 @@
 #include <unistd.h>
 
 #include "libmilkcommon/milk_spawn.h"
-#include "mc_plan.h"
-#include "mc_prelude.h"
+#include "plan/mc_plan.h"
+#include "jit/mc_prelude.h"
 
 #ifndef MILK_DEFAULT_CC
 #    define MILK_DEFAULT_CC "gcc"

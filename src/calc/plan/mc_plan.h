@@ -26,7 +26,7 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 #include "mcalc.h"
 
 /* ABI-stable operand descriptor passed to compiled C kernels. */

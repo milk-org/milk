@@ -44,7 +44,7 @@
 #include <unistd.h>
 
 #include "ImageStreamIO/ImageStruct.h"
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 #include "mc_func.h"
 #include "mcalc.h"
 #include "milk_calc_ext.h"

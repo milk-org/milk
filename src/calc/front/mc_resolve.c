@@ -48,7 +48,7 @@
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "linalg/mc_linalg.h"
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 #include "mcalc_host.h"
 #include "milk_calc_ext.h"
 #include "milk_entity_ns.h"

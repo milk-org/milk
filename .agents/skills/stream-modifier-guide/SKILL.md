@@ -23,4 +23,4 @@ slices `im[a:b]`.
   `@TF32:`) or an `s.`/`l.` namespace prefix. Returns the bare name without allocating;
   `fps_streamname_modifier()` lists the modifiers for completion and help.
 - `src/engine/libfps/IMGID.h` — `IMGID`, the image handle (name, template, connection).
-- `src/calc/mc_views.c` — slices in calculator expressions.
+- `src/calc/plan/mc_views.c` — slices in calculator expressions.

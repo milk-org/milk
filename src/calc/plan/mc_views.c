@@ -37,8 +37,8 @@
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_memory/stream_slice.h"
-#include "mc_ast.h"
-#include "mc_plan.h"
+#include "front/mc_ast.h"
+#include "plan/mc_plan.h"
 
 /* ========================================================================== */
 /* Slice Bound Evaluation & View Resolution                                   */

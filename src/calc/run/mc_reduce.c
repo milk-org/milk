@@ -45,7 +45,7 @@
 #include "COREMOD_arith/arith_team.h"
 #include "COREMOD_arith/image_generate.h"
 #include "COREMOD_arith/image_stats.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 
 /* L1 tile size (in elements) used for block-streamed sub-pass evaluation and reduction. */
 #define MC_RED_BLK 1024

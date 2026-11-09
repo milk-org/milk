@@ -30,8 +30,8 @@
 #include "COREMOD_memory/create_variable.h"
 #include "COREMOD_memory/image_ID.h"
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "mc_ast.h"
-#include "mc_plan.h"
+#include "front/mc_ast.h"
+#include "plan/mc_plan.h"
 #include "mcalc.h"
 
 /* Maximum number of distinct streams with a `hist()` / `prev()` ring in a single program. */

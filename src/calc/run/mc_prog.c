@@ -41,7 +41,7 @@
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/read_shmim.h"
 #include "COREMOD_memory/variable_ID.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 
 /* Thread-local skip flag (`skip()` builtin) and nesting depth inside a `milk.calc` unit. */
 static _Thread_local int g_prog_skip       = 0;

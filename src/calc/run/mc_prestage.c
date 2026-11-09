@@ -43,7 +43,7 @@
 #include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "linalg/mc_linalg.h"
-#include "mc_plan.h"
+#include "plan/mc_plan.h"
 
 /* Block size (in elements) for axis reductions and L1-streamed segmented scatter. */
 #define MC_RED_BLK 1024

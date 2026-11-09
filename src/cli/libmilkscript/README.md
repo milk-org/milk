@@ -11,7 +11,7 @@ interactive CLI execution pipeline for the `milk` framework.
    input through preprocessing, expansion, interception, argument checking,
    and command dispatch.
 2. **The `milk-cli` Unix-domain socket daemon server (`server/`) and IPC client
-   (`ipc/`)** — enabling persistent module state, stream pools, and high-speed
+   (`client/`, `ipc/`)** — enabling persistent module state, stream pools, and high-speed
    shared-memory command logging across external processes and bash shells.
 3. **The bash integration (`bash/` and `milkbash`)** — translating
    `@{...}` inline syntax, providing loadable GNU Bash builtins, and
@@ -28,7 +28,8 @@ compute unit live in `src/calc/` (`libmilkcalc`).
 
 ```
 src/cli/libmilkscript/
-├── ipc/             ← Client socket protocol, server discovery, waitfor & SHM ring log
+├── client/          ← Client calls, connection, sessions & the `milk-call` binary
+├── ipc/             ← What client and server share: wire protocol, waitfor & SHM ring log
 ├── server/          ← Persistent Unix-domain socket server & RPC handlers
 ├── bash/            ← Bash coprocess lifecycle, @{...} translator & loadable bash builtins
 ├── core/            ← Core CLI execution pipeline, catalog, module loader & help
@@ -41,13 +42,11 @@ src/cli/libmilkscript/
 └── standalone_dependencies.h ← Declarations shared with the no-CLI build
 ```
 
-### 1. `ipc/` — Client IPC, Server Discovery & Shared-Memory Log
+### 1. `client/` and `ipc/` — Client, Shared Protocol & Shared-Memory Log
+
+`client/`:
 
 - `milk_client.h` — Public client API for `milk-call`, `milkbash`, and `milk-cli`.
-- `milk_srvlog.h` — Shared-memory ring-buffer command/output log layout and API.
-- `milk_ipc_common.h` / `milk_ipc_common.c` — Shared socket path formatting,
-  PID liveness probing, and bounded `read_all` / `write_all` I/O helpers.
-- `milk_proto.h` — Wire format: frame header, message types, `sendmsg`/`recvmsg` with fd passing.
 - `milk_client_internal.h` — Internal declarations shared across client files.
 - `milk_client_conn.c` — Socket connection (one kept per process, reused by its requests),
   `MILK_SERVER` resolution, and auto-daemon spawning.
@@ -57,14 +56,21 @@ src/cli/libmilkscript/
   stream capture (`@grab`), tab completion (`milkcomplete`), sessions (`@session`, `@log`,
   server shutdown), and entity/keyword discovery (`@ls`, `milkls --keywords`).
 - `milk_client_args.c` — Client-side argument validation and help formatting.
-- `milk_waitfor.h` / `milk_waitfor.c` — Shared `@waitfor` target parser, process-state
-  aliasing, and stream/property wait loops used by both client and server.
 - `milk_call_main.c` — Standalone `milk-call` binary entry point (`call`, `complete`,
   `translate`, `shutdown`, and the callable `@` keywords of the lexicon).
-- `milk_srvlog.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
-  high-resolution timestamped entry recording, and log querying (`--log`).
 - `milk_sessions.c` — Server session discovery (`--list`), status dashboard
   (`--status`), and shutdown (`--kill`).
+
+`ipc/`, used by both the client and the server:
+
+- `milk_proto.h` — Wire format: frame header, message types, `sendmsg`/`recvmsg` with fd passing.
+- `milk_ipc_common.h` / `milk_ipc_common.c` — Shared socket path formatting,
+  PID liveness probing, and bounded `read_all` / `write_all` I/O helpers.
+- `milk_waitfor.h` / `milk_waitfor.c` — Shared `@waitfor` target parser, process-state
+  aliasing, and stream/property wait loops used by both client and server.
+- `milk_srvlog.h` — Shared-memory ring-buffer command/output log layout and API.
+- `milk_srvlog.c` — `milk_srvlog.*` POSIX SHM creation, attachment,
+  high-resolution timestamped entry recording, and log querying (`--log`).
 
 ### 2. `server/` — Daemon Server & RPC Dispatch
 

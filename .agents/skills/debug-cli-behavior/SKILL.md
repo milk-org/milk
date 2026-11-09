@@ -228,6 +228,6 @@ Key files for CLI debugging:
 | `libmilkscript/server/milk_server_dispatch.c`        | Command dispatch on the session server      |
 | `libmilkscript/core/CLIcore_checkargs.c`             | Argument binding and validation             |
 | `src/calc/mc_eval.c`                 | Arithmetic expression entry point           |
-| `src/calc/mc_lex.c`                  | Expression tokenizer                        |
-| `src/calc/mc_parse.c`                | Pratt parser                                |
-| `src/calc/mc_scalar_eval.c`               | Built-in scalar math & string functions     |
+| `src/calc/front/mc_lex.c`                  | Expression tokenizer                        |
+| `src/calc/front/mc_parse.c`                | Pratt parser                                |
+| `src/calc/run/mc_scalar_eval.c`               | Built-in scalar math & string functions     |

@@ -33,7 +33,7 @@
 #include <string.h>
 
 #include "ImageStreamIO/ImageStruct.h"
-#include "mc_ast.h"
+#include "front/mc_ast.h"
 #include "milk_entity_ns.h"
 
 /* ========================================================================= */

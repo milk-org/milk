@@ -46,13 +46,13 @@ set(MILKSCRIPT_SOURCES
     core/milk_renames.c
     core/milk_builtin_module.c
     ipc/milk_ipc_common.c
-    ipc/milk_client_conn.c
-    ipc/milk_client_ops.c
-    ipc/milk_client_stream.c
-    ipc/milk_client_args.c
+    client/milk_client_conn.c
+    client/milk_client_ops.c
+    client/milk_client_stream.c
+    client/milk_client_args.c
     ipc/milk_waitfor.c
     ipc/milk_srvlog.c
-    ipc/milk_sessions.c
+    client/milk_sessions.c
     server/milk_server.c
     server/milk_server_vars.c
     server/milk_server_stream.c
@@ -114,6 +114,7 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/calc>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/calc/units>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/ipc>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/client>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/server>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bash>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
@@ -147,7 +148,7 @@ install(
         core/CLIcore_utils.h
         ipc/milk_proto.h
         ipc/milk_srvlog.h
-        ipc/milk_client.h
+        client/milk_client.h
         server/milk_server.h
         bash/milk_bash.h
         standalone_dependencies.h
@@ -175,20 +176,20 @@ add_library(
   bash/milk_shell_lex.c
   bash/milk_shell_lex_code.c
   bash/milk_bash_cmdfile.c
-  ipc/milk_client_conn.c
-  ipc/milk_client_ops.c
-  ipc/milk_client_stream.c
-  ipc/milk_client_args.c
+  client/milk_client_conn.c
+  client/milk_client_ops.c
+  client/milk_client_stream.c
+  client/milk_client_args.c
   ipc/milk_ipc_common.c
   ipc/milk_waitfor.c
   ipc/milk_srvlog.c
-  ipc/milk_sessions.c
+  client/milk_sessions.c
   core/milk_keywords.c
-  ../../calc/mc_ext_registry.c
-  ../../calc/mc_ext_loader.c
+  ../../calc/ext/mc_ext_registry.c
+  ../../calc/ext/mc_ext_loader.c
   ../../calc/mc_func.c
-  ../../calc/mc_lex.c
-  ../../calc/mc_scalar_ops.c
+  ../../calc/front/mc_lex.c
+  ../../calc/run/mc_scalar_ops.c
   core/milk_renames.c
   core/CLIcore_inspect.c)
 target_include_directories(
@@ -214,7 +215,7 @@ foreach(_unit script)
 endforeach()
 
 # Standalone helper executable (milk-call)
-add_executable(milk-call ipc/milk_call_main.c)
+add_executable(milk-call client/milk_call_main.c)
 target_link_libraries(milk-call PRIVATE milkscript milkprocessinfo milkdata)
 target_include_directories(
   milk-call PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

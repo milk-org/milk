@@ -12,8 +12,8 @@
  */
 #include <stdio.h>
 
-#include "mc_ast.h"
-#include "mc_plan.h"
+#include "front/mc_ast.h"
+#include "plan/mc_plan.h"
 #include "mcalc.h"
 
 /**
