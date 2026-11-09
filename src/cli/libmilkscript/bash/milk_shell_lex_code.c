@@ -203,7 +203,8 @@ static size_t code_word(lex_t *L, frame_t *f, size_t i)
     size_t      j = i;
     while (j < L->len && !is_meta(s[j]) && s[j] != '\'' && s[j] != '"' && s[j] != '$' &&
            s[j] != '`' && s[j] != '\\' &&
-           !(s[j] == '@' && j + 1 < L->len && s[j + 1] == '{' && (j == i || s[j - 1] == '=')))
+           !(s[j] == '@' && j + 1 < L->len && s[j + 1] == '{' &&
+             (j == i || !(isalnum((unsigned char) s[j - 1]) || s[j - 1] == '_'))))
     {
         j++;
     }

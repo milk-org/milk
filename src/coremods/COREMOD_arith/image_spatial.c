@@ -114,9 +114,9 @@ int arith_image_map_nbins(const IMAGE *map_im)
         for (uint64_t ii = 0; ii < nel; ii++)                            \
         {                                                                \
             double m = (double) src[ii];                                 \
-            if (m >= 0.0 && m < 16777216.0)                              \
+            if (!arith_isnan_d(m) && m >= -0.5 && m < 16777216.0)        \
             {                                                            \
-                int64_t v = (int64_t) m;                                 \
+                int64_t v = (int64_t) llround(m);                        \
                 if (v > max_i)                                           \
                 {                                                        \
                     max_i = v;                                           \
@@ -176,9 +176,9 @@ int arith_csr_build_map(arith_csr_cache_t *csr, const IMAGE *map_im, int nbins, 
         for (uint64_t ii = 0; ii < nel; ii++)                            \
         {                                                                \
             double m = (double) src[ii];                                 \
-            if (!arith_isnan_d(m) && m >= 0.0 && m < max_n)              \
+            if (!arith_isnan_d(m) && m >= -0.5 && m < max_n)             \
             {                                                            \
-                int b = (int) (int64_t) m;                               \
+                int b = (int) llround(m);                                \
                 if (b >= 0 && b < nbins)                                 \
                 {                                                        \
                     rp[b + 1]++;                                         \
@@ -206,9 +206,9 @@ int arith_csr_build_map(arith_csr_cache_t *csr, const IMAGE *map_im, int nbins, 
         for (uint64_t ii = 0; ii < nel; ii++)                            \
         {                                                                \
             double m = (double) src[ii];                                 \
-            if (!arith_isnan_d(m) && m >= 0.0 && m < max_n)              \
+            if (!arith_isnan_d(m) && m >= -0.5 && m < max_n)             \
             {                                                            \
-                int b = (int) (int64_t) m;                               \
+                int b = (int) llround(m);                                \
                 if (b >= 0 && b < nbins)                                 \
                 {                                                        \
                     pi[cur[b]++] = (int32_t) ii;                         \
@@ -2198,7 +2198,8 @@ int arith_image_circsym_im(const IMAGE *src, IMAGE *dst, double cx, double cy, i
 
     arith_csr_cache_t csr       = { 0 };
     uint32_t          ishape[3] = { nx, ny, 1 };
-    if (arith_csr_build_rprof(&csr, ishape, cx, cy, 1.0) != 0)
+    int               nbins     = arith_image_rprof_nbins(ishape, cx, cy);
+    if (nbins <= 0 || arith_csr_build_rprof(&csr, ishape, cx, cy, nbins) != 0)
     {
         return -1;
     }
@@ -2217,7 +2218,7 @@ int arith_image_circsym_im(const IMAGE *src, IMAGE *dst, double cx, double cy, i
     rmd.datatype       = _DATATYPE_FLOAT;
     rim.md             = &rmd;
     rim.array.F        = mean;
-    arith_csr_gather(src, &csr, ARITH_RED_MEAN, 0, &rim);
+    arith_csr_gather(src, &csr, csr.nbins, (uint64_t) nx * (uint64_t) ny, &rim);
     arith_csr_cache_free(&csr);
 
     float *restrict out_p      = dst->array.F;

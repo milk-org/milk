@@ -262,6 +262,22 @@ static size_t inline_close(const char *p, size_t n, size_t i, int d)
     int depth = 1;
     for (size_t j = i + 1; j < n; j++)
     {
+        if (mbt_dp(p + j) < d)
+        {
+            return 0;
+        }
+        if (c == MSL_DQ && mbt_dp(p + j) == d)
+        {
+            if (mbt_cx(p + j) == MSL_DQ && p[j] == '\\' && j + 1 < n)
+            {
+                j++;
+                continue;
+            }
+            if ((mbt_cx(p + j) == MSL_DQ && p[j] == '"') || mbt_cx(p + j) == MSL_CODE)
+            {
+                return 0;
+            }
+        }
         if (mbt_cx(p + j) == c && mbt_dp(p + j) == d &&
             (depth += (p[j] == '{') - (p[j] == '}')) == 0)
         {

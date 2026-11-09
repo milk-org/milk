@@ -169,7 +169,7 @@ _milk_defer_exit_trap() {
 _milk_defer_init() {
     _MILK_USER_EXIT_TRAP=
     if (( BASHPID != $$ )); then
-        trap - RETURN # until it sets a trap, a subshell's `trap -p` shows its parent's (inactive) traps
+        trap - RETURN EXIT # until it sets a trap, a subshell's `trap -p` shows its parent's (inactive) traps
     fi
     _milk_defer_exit_trap
 }

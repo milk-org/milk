@@ -142,7 +142,7 @@ Functions (the math ones also apply per pixel to an image):
 pixels is the upper of the two middle ones; `istd` is the population standard deviation and `irms`
 the root mean square, $\sqrt{\text{mean}(x^2)}$. `shift(im, dx, dy)` reads `im[x+dx, y+dy]`, the
 nearest edge pixel past the border, while `roll(im, dx, dy)` wraps around periodically
-(`((x+dx) mod nx, (y+dy) mod ny)`). In slice bounds, `end` resolves to `size[axis] - 1`
+(`((x-dx) mod nx, (y-dy) mod ny)`). In slice bounds, `end` resolves to `size[axis] - 1`
 (`im[1:end-1, 0:end]`), whatever variable is named `end`. `icentroid` gives 0-based pixel
 coordinates, and `iargmax`/`iargmin` unpack 2-D (`px, py = iargmax(im)`) or 3-D
 (`px, py, pz = iargmax(cube)`) coordinates directly (`-1` when all pixels are NaN).

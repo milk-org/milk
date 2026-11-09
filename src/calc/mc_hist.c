@@ -233,6 +233,12 @@ static int hist_ring(mc_hist_decl_t *d, char *err, size_t errsz)
             snprintf(err, errsz, "hist: cannot create stream '%s'", ring);
             return -1;
         }
+        int tsz = ImageStreamIO_typesize(im->md[0].datatype);
+        if (tsz > 0 && milk_data.image[rid].array.raw != NULL)
+        {
+            memset(milk_data.image[rid].array.raw, 0,
+                   (size_t) milk_data.image[rid].md[0].nelement * (size_t) tsz);
+        }
         return 0;
     }
     const IMAGE *r = &milk_data.image[rid];
@@ -268,9 +274,11 @@ typedef struct
 /* Index of the ring of stream @name, added with depth @N if new; -1 when there are too many */
 static int hist_ring_of(hist_ctx_t *h, const char *name, int N)
 {
+    const char *bare =
+        (name[0] == '@' && (name[1] == 'S' || name[1] == 'L') && name[2] == ':') ? name + 3 : name;
     for (int k = 0; k < h->nd; k++)
     {
-        if (strcmp(h->decl[k].name, name) == 0)
+        if (strcmp(h->decl[k].name, bare) == 0)
         {
             return k;
         }
@@ -282,7 +290,7 @@ static int hist_ring_of(hist_ctx_t *h, const char *name, int N)
     }
     mc_hist_decl_t *d = &h->decl[h->nd];
     memset(d, 0, sizeof(*d));
-    snprintf(d->name, sizeof(d->name), "%s", name);
+    snprintf(d->name, sizeof(d->name), "%s", bare);
     d->N       = N;
     d->src_off = h->off;
     d->src_end = h->end;
@@ -357,22 +365,26 @@ static int hist_find_decls(hist_ctx_t *h, mc_stmt_t *s)
 static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
 {
     mc_expr_t *e = *pe;
-    if (is_ring_call(e, "prev") && e->u.call.nargs <= 2 &&
-        (e->u.call.nargs == 1 || e->u.call.args[1]->kind == MC_EXPR_LONG))
+    if (is_ring_call(e, "prev") && e->u.call.nargs <= 2)
     {
         if (!h->in_unit)
         {
             snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
             return -1;
         }
-        long lag = (e->u.call.nargs == 2) ? e->u.call.args[1]->u.lval : 1;
+        int is_lit = (e->u.call.nargs == 1 || e->u.call.args[1]->kind == MC_EXPR_LONG);
+        if (!is_lit && hist_expand(h, &e->u.call.args[1]) != 0)
+        {
+            return -1;
+        }
+        long lag = (e->u.call.nargs == 2 && is_lit) ? e->u.call.args[1]->u.lval : 1;
         int  k   = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
         if (k < 0)
         {
             return -1;
         }
         mc_hist_decl_t *d = &h->decl[k];
-        if (lag < 1 || lag >= d->N)
+        if (is_lit && (lag < 1 || lag >= d->N))
         {
             snprintf(h->err, h->errsz, "prev(%s, %ld): the ring holds %d frames", d->name, lag,
                      d->N);
@@ -383,13 +395,28 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
             return -1;
         }
         char text[STRINGMAXLEN_IMAGE_NAME + 64];
-        snprintf(text, sizeof(text), "%s_hist[%s(_n + %d) %% %d]", d->name,
-                 (d->naxis == 2) ? ":,:," : ":,", d->N - (int) lag, d->N);
+        if (is_lit)
+        {
+            snprintf(text, sizeof(text), "%s_hist[%s(_n + %d) %% %d]", d->name,
+                     (d->naxis == 2) ? ":,:," : ":,", d->N - (int) lag, d->N);
+        }
+        else
+        {
+            snprintf(text, sizeof(text), "%s_hist[%s((_n %% %d) + %d - (0)) %% %d]", d->name,
+                     (d->naxis == 2) ? ":,:," : ":,", d->N, d->N, d->N);
+        }
         mc_expr_t *sl = parse_snippet(text);
         if (sl == NULL)
         {
             snprintf(h->err, h->errsz, "prev: '%s' is no stream name", d->name);
             return -1;
+        }
+        if (!is_lit)
+        {
+            mc_expr_t *sub = sl->u.slice.axes[d->naxis].start->u.binary.left;
+            mc_expr_free(sub->u.binary.right);
+            sub->u.binary.right = e->u.call.args[1];
+            e->u.call.args[1]   = NULL;
         }
         sl->line = e->line;
         sl->col  = e->col;

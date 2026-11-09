@@ -23,7 +23,7 @@
 #ifndef MILK_CALC_MC_PRELUDE_H
 #define MILK_CALC_MC_PRELUDE_H
 
-#define MC_PRELUDE_VERSION 19
+#define MC_PRELUDE_VERSION 20
 
 static const char MC_PRELUDE_CORE_SRC[] =
     "#include <math.h>\n"
@@ -184,9 +184,13 @@ static const char MC_PRELUDE_CORE_SRC[] =
     "#define mc_st_i8(x)  ((int8_t)mc_wrap((x), 256.0f, 0x1p-8f))\n"
     "#define mc_st_u16(x) ((uint16_t)mc_wrap((x), 65536.0f, 0x1p-16f))\n"
     "#define mc_st_i16(x) ((int16_t)mc_wrap((x), 65536.0f, 0x1p-16f))\n"
+    "static inline uint64_t mc_u64d(double x) {\n"
+    "    return (x >= 9223372036854775808.0) ? ((uint64_t)(x - 9223372036854775808.0) + "
+    "9223372036854775808ULL) : (uint64_t)(int64_t)x;\n"
+    "}\n"
     "#define mc_st_u32(x) ((uint32_t)(int64_t)(x))\n"
     "#define mc_st_i32(x) ((int32_t)(int64_t)(x))\n"
-    "#define mc_st_u64(x) ((uint64_t)(int64_t)(x))\n"
+    "#define mc_st_u64(x) (mc_u64d((double)(x)))\n"
     "#define mc_st_i64(x) ((int64_t)(x))\n"
     "#define mc_cast_f32(x) ((float)(x))\n"
     "#define mc_cast_f64(x) ((double)(x))\n"
@@ -196,7 +200,7 @@ static const char MC_PRELUDE_CORE_SRC[] =
     "#define mc_cast_i16(x) mc_st_i16(x)\n"
     "#define mc_cast_u32(x) mc_st_u32(x)\n"
     "#define mc_cast_i32(x) mc_st_i32(x)\n"
-    "#define mc_cast_u64(x) ((uint64_t)(int64_t)(x))\n"
+    "#define mc_cast_u64(x) (mc_u64d((double)(x)))\n"
     "#define mc_cast_i64(x) ((int64_t)(x))\n"
     "\n"
     "static inline uint32_t mc_hash32(uint32_t h) {\n"
@@ -334,8 +338,8 @@ static const char MC_PRELUDE_SPATIAL_MACRO_SRC[] =
     "static inline double mc_gather_##SFX(const mc_operand_t *op, double m, double fill) { \\\n"
     "    const T *src = (const T *)op->base; \\\n"
     "    int64_t N = (int64_t)op->vnx * (int64_t)op->vny * (int64_t)op->vnz; \\\n"
-    "    if (!mc_isnand(m) && m >= 0.0 && m < (double)N) { \\\n"
-    "        int64_t idx = (int64_t)m; \\\n"
+    "    if (!mc_isnand(m) && m >= -0.5 && m < (double)N) { \\\n"
+    "        int64_t idx = (int64_t)llround(m); \\\n"
     "        return (idx >= 0 && idx < N) ? (double)src[mc_lin_off_##SFX(op, idx)] : fill; \\\n"
     "    } \\\n"
     "    return fill; \\\n"

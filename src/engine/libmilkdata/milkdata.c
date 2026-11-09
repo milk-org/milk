@@ -39,7 +39,14 @@ uint64_t  milk_table_gen = 1;
  */
 errno_t milk_data_init(void)
 {
+    static int     initialized = 0;
     struct timeval t1;
+
+    if (initialized && milk_data.image != NULL)
+    {
+        return RETURN_SUCCESS;
+    }
+    initialized = 1;
 
     milk_data.NB_MAX_IMAGE    = STATIC_NB_MAX_IMAGE;
     milk_data.NB_MAX_VARIABLE = STATIC_NB_MAX_VARIABLE;

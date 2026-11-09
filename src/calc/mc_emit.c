@@ -1179,7 +1179,8 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
               c.used_spatial ? MC_PRELUDE_SPATIAL_MACRO_SRC : "");
     for (int i = 0, seen = 0; c.used_spatial && i <= pass->nops; i++)
     {
-        uint8_t dt = (i < pass->nops && !pass->ops[i].is_scalar && !is_complex_dt(pass->ops[i].dt))
+        uint8_t dt = (i < pass->nops && !pass->ops[i].is_scalar && pass->ops[i].dt != 0 &&
+                      !is_complex_dt(pass->ops[i].dt))
                          ? pass->ops[i].dt
                          : _DATATYPE_FLOAT;
         if ((seen & (1 << (dt & 31))) == 0)

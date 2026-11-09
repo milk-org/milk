@@ -78,18 +78,6 @@ static void client_sigwinch_handler(int sig)
 }
 
 /**
- * @brief Close the shell-lifetime owner pipe if held by the current process.
- */
-void milk_client_close_owner_pipe(void)
-{
-    if (g_owner_pipe_wfd >= 0)
-    {
-        close(g_owner_pipe_wfd);
-        g_owner_pipe_wfd = -1;
-    }
-}
-
-/**
  * @brief Lazily spawn `milk-cli -q --server` for @sockpath if not yet running.
  *
  * @param hooks    Optional shell callback hooks
@@ -201,6 +189,22 @@ static void conn_forget(client_conn_t *c)
     c->fd = -1;
 }
 
+/**
+ * @brief Close the shell-lifetime owner pipe and any kept sockets in the current process.
+ */
+void milk_client_close_owner_pipe(void)
+{
+    if (g_owner_pipe_wfd >= 0)
+    {
+        close(g_owner_pipe_wfd);
+        g_owner_pipe_wfd = -1;
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        conn_forget(&g_conns[i]);
+    }
+}
+
 /** conn_of() - the kept connection of this process on @fd, or NULL. */
 static client_conn_t *conn_of(int fd)
 {
@@ -238,13 +242,16 @@ int milk_client_connect(const char *sockpath)
     client_conn_t *c = NULL;
     for (int i = 0; i < 2; i++)
     {
+        if (g_conns[i].fd >= 0 && g_conns[i].pid != getpid())
+        {
+            conn_forget(&g_conns[i]);
+        }
         struct pollfd p = { g_conns[i].fd, POLLIN | POLLRDHUP, 0 };
         if (g_conns[i].fd < 0 || strcmp(g_conns[i].path, sockpath) != 0)
         {
             continue;
         }
-        if (g_conns[i].pid == getpid() && g_conns[i].keep && conn_is_ours(&g_conns[i]) &&
-            poll(&p, 1, 0) == 0)
+        if (g_conns[i].keep && conn_is_ours(&g_conns[i]) && poll(&p, 1, 0) == 0)
         {
             g_conns[i].keep = 0; /* until this request's reply says MILK_FLAG_KEEP */
             g_conns[i].used = ++g_conn_clock;

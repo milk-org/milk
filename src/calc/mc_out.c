@@ -204,7 +204,7 @@ imageID mc_tmp_image(uint8_t naxis, const uint32_t size[3], uint8_t dt)
 void mc_tmp_release_force(imageID tid)
 {
     if (milk_data.image == NULL || tid < 0 || tid >= milk_data.NB_MAX_IMAGE ||
-        !milk_data.image[tid].used)
+        !milk_data.image[tid].used || strncmp(milk_data.image[tid].name, "_tmpcalc", 8) != 0)
     {
         return;
     }
@@ -540,6 +540,46 @@ void mc_out_post(imageID id)
     {
         processinfo_update_output_stream(NULL, im, NULL);
     }
+}
+
+/**
+ * mc_out_post_now - Immediately publish an output image, bypassing deferred batching
+ * @id: `imageID` of the image to post immediately
+ *
+ * Used by the explicit `post(stream)` built-in so mid-program or in-loop
+ * semaphore posts wake consumers immediately and remove @id from any pending
+ * deferred post queue.
+ *
+ * Return: void
+ */
+void mc_out_post_now(imageID id)
+{
+    if (milk_data.image == NULL || id < 0 || id >= milk_data.NB_MAX_IMAGE ||
+        !milk_data.image[id].used)
+    {
+        return;
+    }
+    for (int i = 0; i < g_post_n; i++)
+    {
+        if (g_post_ids[i] == id)
+        {
+            memmove(&g_post_ids[i], &g_post_ids[i + 1],
+                    (size_t) (--g_post_n - i) * sizeof(g_post_ids[0]));
+            break;
+        }
+    }
+    IMAGE *im = &milk_data.image[id];
+    if (im->md == NULL)
+    {
+        return;
+    }
+    if (!im->md[0].shared)
+    {
+        im->md[0].write = 0;
+        im->md[0].cnt0++;
+        return;
+    }
+    processinfo_update_output_stream(NULL, im, NULL);
 }
 
 /**

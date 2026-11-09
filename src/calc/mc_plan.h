@@ -268,6 +268,9 @@ imageID mc_tmp_steal_slot(mc_slot_t *slot);
 /* Publish an updated image (`md->write=0`, `cnt0++`, post semaphores if shared). */
 void mc_out_post(imageID id);
 
+/* Immediately publish an image (`post(stream)`), bypassing deferred batching. */
+void mc_out_post_now(imageID id);
+
 /* Enable or disable deferred semaphore/cnt0 posting for shared outputs. */
 void mc_post_defer(int on);
 

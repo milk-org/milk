@@ -329,9 +329,9 @@ static void seg_scatter_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi
         for (int q = 0; q < len; q++)
         {
             double m = b2[q];
-            if (!arith_isnan_d(m) && m >= 0.0 && m < j->max_n)
+            if (!arith_isnan_d(m) && m >= -0.5 && m < j->max_n)
             {
-                int bb = (int) (int64_t) m;
+                int bb = (int) llround(m);
                 if (bb >= 0 && bb < j->nbins)
                 {
                     sum[bb] += b1[q];
@@ -695,7 +695,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
             {
                 double mx = 0.0;
                 mc_run_stat_max(&s2, &mx, err, errsz);
-                nbins = (!arith_isnan_d(mx) && mx >= 0.0) ? ((int) (int64_t) mx + 1) : 0;
+                nbins = (!arith_isnan_d(mx) && mx >= -0.5) ? ((int) llround(mx) + 1) : 0;
             }
         }
 

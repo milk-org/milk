@@ -598,10 +598,11 @@ int mc_can_merge_passes(const mcalc_prog_t *prog, const mc_pass_t *a, const mc_p
     for (int i = 0; i < b->nops; i++)
     {
         bad |= (!b->ops[i].is_out && b->ops[i].is_expr_im);
-        for (int j = 0; b->ops[i].is_scalar && j < a->nouts; j++)
+        for (int j = 0; (b->ops[i].is_scalar || b->ops[i].slice_expr != NULL) && j < a->nouts; j++)
         {
-            bad |= mc_expr_mentions_self(b->ops[i].scalar_expr,
-                                         prog->slots[a->outs[j].slot_idx].bare, NULL);
+            const char *ob = prog->slots[a->outs[j].slot_idx].bare;
+            bad |= mc_expr_mentions_self(b->ops[i].scalar_expr, ob, NULL) ||
+                   mc_expr_mentions_self(b->ops[i].slice_expr, ob, NULL);
         }
         for (int j = 0; !b->ops[i].is_out && j < a->nouts; j++)
         {
@@ -683,7 +684,15 @@ void mc_elide_unused_locals(mcalc_prog_t *prog)
                 {
                     for (int k = 0; !used_later && k < os->pass.nops; k++)
                     {
-                        used_later |= (os->pass.ops[k].slot_idx == sidx);
+                        used_later |=
+                            (os->pass.ops[k].slot_idx == sidx ||
+                             mc_expr_mentions_self(os->pass.ops[k].scalar_expr, slot->bare, NULL) ||
+                             mc_expr_mentions_self(os->pass.ops[k].slice_expr, slot->bare, NULL));
+                    }
+                    for (int k = 0; !used_later && k < os->pass.nouts; k++)
+                    {
+                        used_later |=
+                            mc_expr_mentions_self(os->pass.outs[k].lhs_slice, slot->bare, NULL);
                     }
                 }
                 else if (os->kind == MC_STEP_CTOR)

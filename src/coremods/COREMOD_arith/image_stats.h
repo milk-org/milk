@@ -507,7 +507,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
             uint64_t c = 0;                                                                       \
             _Pragma("omp simd reduction(+:c)") for (int j = 0; j < len; j++)                      \
             {                                                                                     \
-                c += (v[j] != (FT) 0);                                                            \
+                c += (!ISNAN_FN(v[j]) && v[j] != (FT) 0);                                         \
             }                                                                                     \
             acc->n += c;                                                                          \
             break;                                                                                \

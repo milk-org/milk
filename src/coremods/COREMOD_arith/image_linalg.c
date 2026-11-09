@@ -344,7 +344,7 @@ int arith_image_matmul_dims(const IMAGE *im1,
             K  = a1;
             N  = b1;
         }
-        else if (a0 == b0)
+        else if (is_3d_a && a0 == b0)
         {
             tA = 1;
             tB = 0;

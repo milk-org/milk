@@ -33,6 +33,7 @@
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "milk_argval.h"
+#include "milk_bash_engine_internal.h"
 #include "milk_unit.h"
 #include "processinfo_signals.h"
 
@@ -543,9 +544,11 @@ static errno_t compute(const MILK_RUNNABLE *self)
             }
             else
             {
+                char *xl = milk_translate_shorthand_to_bash(text, 0);
                 dprintf(sh_in, "__MILK_UNIT_CMD=");
-                put_quoted(text);
+                put_quoted(xl ? xl : text);
                 dprintf(sh_in, "\n");
+                free(xl);
                 free(text);
             }
         }

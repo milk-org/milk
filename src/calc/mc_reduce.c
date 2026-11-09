@@ -595,7 +595,7 @@ static inline void stat_block_sterbenz_f(arith_reduce_op op,
 #pragma omp simd reduction(+ : bsum, bcnt)
         for (int j = 0; j < len; j++)
         {
-            float mj = (m[j] != 0.0f) ? 1.0f : 0.0f;
+            float mj = (!arith_isnan_f(m[j]) && m[j] != 0.0f) ? 1.0f : 0.0f;
             bsum += v[j] * mj;
             bcnt += mj;
         }

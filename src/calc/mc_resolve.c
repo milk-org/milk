@@ -837,17 +837,12 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     case MC_FN_SCALAR:
     case MC_FN_WHERE:
     case MC_FN_PROG:
-        if ((fn->kind == MC_FN_SCALAR && nargs == 3 &&
-             (e->u.call.args[1]->res_kind == MC_RES_IMAGE ||
-              e->u.call.args[2]->res_kind == MC_RES_IMAGE)) ||
-            (fn->kind == MC_FN_PROG &&
-             (strcmp(fn->name, "ema") != 0 || e->u.call.args[0]->res_kind == MC_RES_STRING ||
-              e->u.call.args[1]->res_kind == MC_RES_IMAGE ||
-              e->u.call.args[1]->res_kind == MC_RES_STRING)))
+        if (fn->kind == MC_FN_PROG &&
+            (strcmp(fn->name, "ema") != 0 || e->u.call.args[0]->res_kind == MC_RES_STRING ||
+             e->u.call.args[1]->res_kind == MC_RES_IMAGE ||
+             e->u.call.args[1]->res_kind == MC_RES_STRING))
         {
-            return res_err(ctx, (fn->kind == MC_FN_SCALAR)
-                                    ? "Only the first argument may be an image"
-                                : (strcmp(fn->name, "ema") == 0)
+            return res_err(ctx, (strcmp(fn->name, "ema") == 0)
                                     ? "ema: expected ema(expr, alpha) with scalar alpha"
                                     : "function requires hist(stream, N) in a unit program");
         }
@@ -1005,12 +1000,11 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
             {
                 return res_err(ctx, "%s: axis out of range", fn->name);
             }
-            e->res_naxis   = (a0->res_naxis == 2 && ax == 1) ? 1 : 2;
+            e->res_naxis   = (a0->res_naxis == 2) ? 1 : 2;
             e->res_size[2] = 1;
-            e->res_size[0] = (a0->res_naxis == 2) ? ((ax == 0) ? 1 : a0->res_size[0])
-                                                  : ((ax == 0) ? a0->res_size[1] : a0->res_size[0]);
-            e->res_size[1] = (a0->res_naxis == 2) ? ((ax == 0) ? a0->res_size[1] : 1)
-                                                  : ((ax == 2) ? a0->res_size[1] : a0->res_size[2]);
+            e->res_size[0] = (ax == 0) ? a0->res_size[1] : a0->res_size[0];
+            e->res_size[1] =
+                (a0->res_naxis == 2) ? 1 : ((ax == 2) ? a0->res_size[1] : a0->res_size[2]);
         }
         e->needs_image = (e->res_kind == MC_RES_IMAGE);
         return 0;

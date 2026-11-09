@@ -561,16 +561,17 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
                      : -1;
             goto done_src;
         }
-        long     k     = llround(kd);
-        long     absk  = (k < 0) ? -k : k;
-        uint8_t  sdt   = src->md[0].datatype;
-        uint8_t  odt   = mc_select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE
-                                                                               : _DATATYPE_FLOAT);
-        uint64_t r0    = (k < 0) ? (uint64_t) absk : 0;
-        uint64_t c0    = (k > 0) ? (uint64_t) absk : 0;
-        int      is_1d = (src->md[0].naxis == 1);
-        uint64_t M     = src->md[0].size[0];
-        uint64_t N     = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
+        long     k    = llround(kd);
+        long     absk = (k < 0) ? -k : k;
+        uint8_t  sdt  = src->md[0].datatype;
+        uint8_t  odt  = mc_select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE
+                                                                              : _DATATYPE_FLOAT);
+        uint64_t r0   = (k < 0) ? (uint64_t) absk : 0;
+        uint64_t c0   = (k > 0) ? (uint64_t) absk : 0;
+        int is_1d  = (src->md[0].naxis == 1 ||
+                      (src->md[0].naxis == 2 && src->md[0].size[1] == 1 && src->md[0].size[0] > 1));
+        uint64_t M = src->md[0].size[0];
+        uint64_t N = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
         if (!is_1d && (r0 >= M || c0 >= N))
         {
             rc = exec_err(err, errsz, "diag: diagonal offset out of range");
@@ -729,21 +730,31 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
 
     if (!ops || !views || pass->nops > 64 || pass->nouts > 32)
     {
-        rc = exec_err(err, errsz, "pass operand limit exceeded");
-        goto cleanup;
+        if (ops != ops_s)
+        {
+            free(ops);
+        }
+        if (views != views_s)
+        {
+            free(views);
+        }
+        return exec_err(err, errsz, "pass operand limit exceeded");
     }
     memset(ops, 0, (size_t) pass->nops * sizeof(*ops));
     memset(views, 0, (size_t) pass->nops * sizeof(*views));
     memset(expr_ims, 0xff, (size_t) pass->nops * sizeof(imageID));
     memset(snap_ims, 0xff, (size_t) pass->nops * sizeof(imageID));
     memset(div_snap, 0xff, (size_t) pass->nouts * sizeof(imageID));
+    for (int i = 0; i < pass->nops; i++)
+    {
+        views[i].im_id        = -1;
+        views[i].owned_tmp_id = -1;
+    }
 
     /* Step 1: Evaluate hoisted scalar operands (with paired reduction fusion) */
     int sc_done[64] = { 0 };
     for (int i = 0; i < pass->nops; i++)
     {
-        views[i].im_id        = -1;
-        views[i].owned_tmp_id = -1;
         const mc_op_desc_t *d = &pass->ops[i];
         if (!d->is_scalar)
         {
@@ -953,6 +964,41 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         }
     }
 
+    /* Clone any RHS input that aliases a plain-assignment output whose shape or type changes */
+    for (int i = 0; vnaxis > 0 && i < pass->nops; i++)
+    {
+        const mc_op_desc_t *d = &pass->ops[i];
+        if (d->is_scalar || d->is_out || d->is_expr_im || snap_ims[i] >= 0 || views[i].im_id < 0)
+        {
+            continue;
+        }
+        for (int j = 0; j < pass->nouts; j++)
+        {
+            const mc_pass_out_t *out = &pass->outs[j];
+            if (out->is_elided || out->lhs_slice != NULL || out->assign_op != MC_TOK_ASSIGN ||
+                (out->slot_idx != d->slot_idx &&
+                 prog->slots[out->slot_idx].im_id != views[i].im_id))
+            {
+                continue;
+            }
+            const IMAGE *oim = &milk_data.image[views[i].im_id];
+            if (!oim->md[0].shared &&
+                (oim->md[0].datatype != out->out_dt || oim->md[0].naxis != vnaxis ||
+                 oim->md[0].size[0] != vsz[0] || (vnaxis > 1 && oim->md[0].size[1] != vsz[1]) ||
+                 (vnaxis > 2 && oim->md[0].size[2] != vsz[2])))
+            {
+                snap_ims[i] = clone_to_tmp(views[i].im_id);
+                if (snap_ims[i] < 0 || mc_view_resolve(d->has_slice ? d->slice_expr : NULL,
+                                                       snap_ims[i], 0, &views[i], err, errsz) != 0)
+                {
+                    rc = -1;
+                    goto cleanup;
+                }
+                break;
+            }
+        }
+    }
+
     /* Step 6: Prepare output images and validate mask geometry */
     for (int j = 0; j < pass->nouts; j++)
     {
@@ -1002,6 +1048,12 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         {
             is_elided_out |= (pass->outs[j].op_idx == i && pass->outs[j].is_elided);
         }
+        if (is_elided_out)
+        {
+            ops[i].vnx = (vnaxis > 0) ? vsz[0] : 1;
+            ops[i].vny = (vnaxis > 1) ? vsz[1] : 1;
+            ops[i].vnz = (vnaxis > 2) ? vsz[2] : 1;
+        }
         if (pass->ops[i].is_scalar || is_elided_out || views[i].dt == 0)
         {
             continue;
@@ -1049,7 +1101,8 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     int rerun_ok = 1;
     for (int j = 0; j < pass->nouts; j++)
     {
-        rerun_ok &= (pass->outs[j].is_elided || pass->outs[j].assign_op == MC_TOK_ASSIGN);
+        rerun_ok &= (pass->outs[j].is_elided ||
+                     (pass->outs[j].assign_op == MC_TOK_ASSIGN && pass->outs[j].lhs_slice == NULL));
     }
     for (int i = 0; i < pass->nops; i++)
     {

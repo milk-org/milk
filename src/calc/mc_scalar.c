@@ -465,7 +465,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
         {
             return sc_err(err, errsz, "post: unknown image '%s'", e->u.call.args[0]->u.ident.name);
         }
-        mc_out_post(id);
+        mc_out_post_now(id);
         *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = 0 };
         return 0;
     }
