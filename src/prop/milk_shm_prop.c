@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -937,18 +938,52 @@ int milk_shm_prop_get_num(const char *spec, double *out_d, long *out_l, int *is_
                 else if (strcmp(nsp, "f") == 0)
                 {
                     FPS *cfps = milk_shm_cache_fps(name);
-                    if (cfps != NULL)
+                    if (cfps != NULL && cfps->md != NULL)
                     {
-                        int pi = functionparameter_GetParamIndex(cfps, prop);
-                        if (pi < 0)
+                        const char *fname = cfps->md->name;
+                        size_t      flen  = strlen(fname);
+                        const char *rel   = prop + (prop[0] == '.');
+                        int         pi    = -1;
+                        for (int k = 0; k < cfps->md->NBparamMAX; k++)
                         {
-                            char dname[256];
-                            snprintf(dname, sizeof(dname), ".%s", prop);
-                            pi = functionparameter_GetParamIndex(cfps, dname);
+                            const char *kw = cfps->parray[k].keywordfull;
+                            if ((cfps->parray[k].fpflag & FPFLAG_ACTIVE) &&
+                                (strcmp(kw, prop) == 0 ||
+                                 (kw[0] == '.' && strcmp(kw + 1, rel) == 0) ||
+                                 (strncmp(kw, fname, flen) == 0 && kw[flen] == '.' &&
+                                  strcmp(kw + flen + 1, rel) == 0)))
+                            {
+                                pi = k;
+                                break;
+                            }
+                        }
+                        if (pi < 0 && strcmp(prop, "status") != 0 && strcmp(prop, "state") != 0 &&
+                            strcmp(prop, "run") != 0 && strcmp(prop, "conf") != 0 &&
+                            strcmp(prop, "session") != 0 && strcmp(prop, "run.out") != 0 &&
+                            strcmp(prop, "conf.out") != 0 && strcmp(prop, "confrunning") != 0 &&
+                            strcmp(prop, "runrunning") != 0 && strcmp(prop, "pid") != 0 &&
+                            strcmp(prop, "confpid") != 0 && strcmp(prop, "runpid") != 0 &&
+                            strcmp(prop, "nbparam") != 0 && strcmp(prop, "description") != 0 &&
+                            strcmp(prop, "ok") != 0 && strcmp(prop, "errors") != 0 &&
+                            strcmp(prop, "msg") != 0)
+                        {
+                            pi = functionparameter_GetParamIndex(cfps, prop);
+                            if (pi < 0)
+                            {
+                                char dname[256];
+                                snprintf(dname, sizeof(dname), ".%s", prop);
+                                pi = functionparameter_GetParamIndex(cfps, dname);
+                            }
                         }
                         if (pi >= 0)
                         {
-                            const FPS_PARAM *p = &cfps->parray[pi];
+                            const FPS_PARAM  *p       = &cfps->parray[pi];
+                            static const char tmsuf[] = "procinfo.triggermode";
+                            size_t            kl      = strlen(p->keywordfull);
+                            size_t            sl      = sizeof(tmsuf) - 1;
+                            int is_tm = (p->type & FPTYPE_INT64) && kl >= sl &&
+                                        strcmp(p->keywordfull + kl - sl, tmsuf) == 0 &&
+                                        (kl == sl || p->keywordfull[kl - sl - 1] == '.');
                             switch (p->type)
                             {
                             case FPTYPE_FLOAT64:
@@ -962,14 +997,18 @@ int milk_shm_prop_get_num(const char *spec, double *out_d, long *out_l, int *is_
                                 *is_long = 0;
                                 return 0;
                             case FPTYPE_INT64:
+                                if (is_tm)
+                                {
+                                    break;
+                                }
                                 *out_l   = (long) p->val.i64[0];
                                 *out_d   = (double) *out_l;
                                 *is_long = 1;
                                 return 0;
                             case FPTYPE_UINT64:
+                                *out_d   = (double) p->val.ui64[0];
                                 *out_l   = (long) p->val.ui64[0];
-                                *out_d   = (double) *out_l;
-                                *is_long = 1;
+                                *is_long = (p->val.ui64[0] <= (uint64_t) LONG_MAX);
                                 return 0;
                             case FPTYPE_INT32:
                                 *out_l   = (long) p->val.i32[0];

@@ -329,6 +329,58 @@ static int cli_auto_indent_startup_hook(void)
 }
 
 /**
+ * cli_calc_incomplete - Check if a `@calc` mode buffer has unclosed `{`, `(`, `[` or string
+ * @s: Input buffer
+ *
+ * Return: 1 if @s needs more continuation lines, 0 otherwise
+ */
+static int cli_calc_incomplete(const char *s)
+{
+    int depth = 0;
+    int in_q  = 0;
+    for (const char *p = s; p != NULL && *p != '\0'; p++)
+    {
+        if (in_q)
+        {
+            if (*p == '\\' && p[1] != '\0')
+            {
+                p++;
+            }
+            else if (*p == '"')
+            {
+                in_q = 0;
+            }
+            continue;
+        }
+        if (*p == '#')
+        {
+            while (*p != '\0' && *p != '\n')
+            {
+                p++;
+            }
+            if (*p == '\0')
+            {
+                break;
+            }
+            continue;
+        }
+        if (*p == '"')
+        {
+            in_q = 1;
+        }
+        else if (*p == '{' || *p == '(' || *p == '[')
+        {
+            depth++;
+        }
+        else if ((*p == '}' || *p == ')' || *p == ']') && depth > 0)
+        {
+            depth--;
+        }
+    }
+    return in_q || depth > 0;
+}
+
+/**
  * rl_cb_linehandler - Readline callback invoked when a complete input line is entered
  * @linein:Newly allocated line string from readline (freed before returning), or NULL on EOF
  *
@@ -358,7 +410,7 @@ void rl_cb_linehandler(char *linein)
 
     /* Handle multi-line continuation (quotes, here-documents, compound commands, trailing
      * operators and backslashes): milk_shell_incomplete() is the bash-aware check */
-    if (!cli_calc_mode && milk_shell_incomplete(multiline_buf))
+    if (cli_calc_mode ? cli_calc_incomplete(multiline_buf) : milk_shell_incomplete(multiline_buf))
     {
         had_continuation = 1;
         rl_callback_handler_remove();
@@ -376,7 +428,8 @@ void rl_cb_linehandler(char *linein)
         }
         else
         {
-            while (milk_shell_incomplete(multiline_buf))
+            while (cli_calc_mode ? cli_calc_incomplete(multiline_buf)
+                                 : milk_shell_incomplete(multiline_buf))
             {
                 size_t len       = strlen(multiline_buf);
                 int    is_bslash = (len > 0 && multiline_buf[len - 1] == '\\');

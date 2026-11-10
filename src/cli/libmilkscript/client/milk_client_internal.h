@@ -33,7 +33,7 @@
 typedef struct
 {
     char names[256][64];
-    char vals[256][128];
+    char vals[256][256];
     int  count;
 } milk_packed_vars_t;
 

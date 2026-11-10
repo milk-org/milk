@@ -29,6 +29,8 @@
 #endif
 
 #include <ctype.h>
+#include <errno.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -167,15 +169,31 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
         }
 
         /* One store per name: a number in dcvar, text in the string table */
-        char  *endl = NULL;
-        char  *endd = NULL;
-        long   lval = strtol(vval, &endl, 10);
-        double dval = strtod(vval, &endd);
-        if (vval[0] != '\0' && (*endl == '\0' || *endd == '\0'))
+        const char *vp = vval;
+        while (*vp == ' ' || *vp == '\t')
+        {
+            vp++;
+        }
+        if (*vp == '+' || *vp == '-')
+        {
+            vp++;
+        }
+        int is_num_start =
+            isdigit((unsigned char) *vp) || (*vp == '.' && isdigit((unsigned char) vp[1]));
+        int   is_hex_num = (vp[0] == '0' && (vp[1] == 'x' || vp[1] == 'X'));
+        char *endl       = NULL;
+        char *endd       = NULL;
+        errno            = 0;
+        long lval        = strtol(vval, &endl, 10);
+        int  lok         = (vval[0] != '\0' && *endl == '\0' && errno == 0);
+        errno            = 0;
+        double dval      = strtod(vval, &endd);
+        int dok = (vval[0] != '\0' && is_num_start && !is_hex_num && *endd == '\0' && errno == 0 &&
+                   !isnan(dval) && !isinf(dval));
+        if (lok || dok)
         {
             cli_var_set(vname, NULL);
-            vid = (*endl == '\0') ? create_variable_long_ID(vname, lval)
-                                  : create_variable_ID(vname, dval);
+            vid = lok ? create_variable_long_ID(vname, lval) : create_variable_ID(vname, dval);
             if (vid >= 0 && vid < DCVAR_CACHE_MAX)
             {
                 g_var_sync_epoch[vid] = g_bash_epoch;

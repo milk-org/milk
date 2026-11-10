@@ -142,10 +142,62 @@ static char *trim_calc_line(char *s)
 }
 
 /**
+ * calc_block_incomplete - Check if a calculator block has unclosed `{`, `(`, `[` or string
+ * @s: Calculator text buffer
+ *
+ * Return: 1 if @s has an unclosed quote or positive bracket/paren/brace nesting depth, 0 otherwise
+ */
+static int calc_block_incomplete(const char *s)
+{
+    int depth = 0;
+    int in_q  = 0;
+    for (const char *p = s; p != NULL && *p != '\0'; p++)
+    {
+        if (in_q)
+        {
+            if (*p == '\\' && p[1] != '\0')
+            {
+                p++;
+            }
+            else if (*p == '"')
+            {
+                in_q = 0;
+            }
+            continue;
+        }
+        if (*p == '#')
+        {
+            while (*p != '\0' && *p != '\n')
+            {
+                p++;
+            }
+            if (*p == '\0')
+            {
+                break;
+            }
+            continue;
+        }
+        if (*p == '"')
+        {
+            in_q = 1;
+        }
+        else if (*p == '{' || *p == '(' || *p == '[')
+        {
+            depth++;
+        }
+        else if ((*p == '}' || *p == ')' || *p == ']') && depth > 0)
+        {
+            depth--;
+        }
+    }
+    return in_q || depth > 0;
+}
+
+/**
  * cmdline_has_bare_calc - Check whether any line in @cmdline is a bare `@calc` mode toggle
  * @cmdline: Command line or multi-line script string
  *
- * Return: 1 if @cmdline contains a bare `@calc` line, 0 otherwise
+ * Return: 1 if @cmdline contains a bare `@calc` line outside quotes/heredocs, 0 otherwise
  */
 static int cmdline_has_bare_calc(const char *cmdline)
 {
@@ -153,7 +205,10 @@ static int cmdline_has_bare_calc(const char *cmdline)
     {
         return 0;
     }
-    const char *p = cmdline;
+    msl_map_t   m   = { 0 };
+    int         has = (msl_scan(cmdline, strlen(cmdline), &m) == 0);
+    int         ret = 0;
+    const char *p   = cmdline;
     while (*p != '\0')
     {
         const char *nl   = strchr(p, '\n');
@@ -164,7 +219,8 @@ static int cmdline_has_bare_calc(const char *cmdline)
         {
             s++;
         }
-        if ((size_t) (end - s) >= 5 && strncmp(s, "@calc", 5) == 0)
+        if ((size_t) (end - s) >= 5 && strncmp(s, "@calc", 5) == 0 &&
+            (!has || (m.ctx[s - cmdline] == MSL_CODE && m.depth[s - cmdline] == 0)))
         {
             const char *q = s + 5;
             while (q < end && (*q == ' ' || *q == '\t' || *q == '\r'))
@@ -173,7 +229,8 @@ static int cmdline_has_bare_calc(const char *cmdline)
             }
             if (q == end || *q == '#')
             {
-                return 1;
+                ret = 1;
+                break;
             }
         }
         if (nl == NULL)
@@ -182,7 +239,11 @@ static int cmdline_has_bare_calc(const char *cmdline)
         }
         p = nl + 1;
     }
-    return 0;
+    if (has)
+    {
+        msl_free(&m);
+    }
+    return ret;
 }
 
 /**
@@ -363,7 +424,9 @@ int milk_bash_exec(const char *cmdline, int *out_exit_req)
     }
 
     sbuf_t bash_buf;
+    sbuf_t calc_buf;
     sbuf_init(&bash_buf);
+    sbuf_init(&calc_buf);
     for (const char *p = cmdline; *p != '\0';)
     {
         const char *nl   = strchr(p, '\n');
@@ -376,11 +439,37 @@ int milk_bash_exec(const char *cmdline, int *out_exit_req)
         }
         char *trimmed   = trim_calc_line(raw);
         int   is_toggle = (strcmp(trimmed, "@calc") == 0);
-        int   exreq     = 0;
+        if (is_toggle && !cli_calc_mode && bash_buf.len > 0)
+        {
+            msl_map_t m;
+            if (msl_scan(bash_buf.data, bash_buf.len, &m) == 0)
+            {
+                if (m.unterminated || m.ctx[bash_buf.len] != MSL_CODE)
+                {
+                    is_toggle = 0;
+                }
+                msl_free(&m);
+            }
+        }
+        int exreq = 0;
 
         if (is_toggle)
         {
             free(raw);
+            if (cli_calc_mode && calc_buf.len > 0)
+            {
+                rc               = exec_calc_mode_line(calc_buf.data, &exreq);
+                calc_buf.len     = 0;
+                calc_buf.data[0] = '\0';
+                if (exreq)
+                {
+                    if (out_exit_req != NULL)
+                    {
+                        *out_exit_req = 1;
+                    }
+                    break;
+                }
+            }
             if (!cli_calc_mode && flush_bash_buf(&bash_buf, &rc, out_exit_req))
             {
                 break;
@@ -399,7 +488,17 @@ int milk_bash_exec(const char *cmdline, int *out_exit_req)
         {
             if (trimmed[0] != '\0')
             {
-                rc = exec_calc_mode_line(trimmed, &exreq);
+                if (calc_buf.len > 0)
+                {
+                    sbuf_append_ch(&calc_buf, '\n');
+                }
+                sbuf_append_str(&calc_buf, trimmed);
+                if (!calc_block_incomplete(calc_buf.data))
+                {
+                    rc               = exec_calc_mode_line(calc_buf.data, &exreq);
+                    calc_buf.len     = 0;
+                    calc_buf.data[0] = '\0';
+                }
             }
             free(raw);
             if (exreq)
@@ -417,7 +516,17 @@ int milk_bash_exec(const char *cmdline, int *out_exit_req)
         }
         p = nl + 1;
     }
+    if (calc_buf.len > 0)
+    {
+        int exreq = 0;
+        rc        = exec_calc_mode_line(calc_buf.data, &exreq);
+        if (exreq && out_exit_req != NULL)
+        {
+            *out_exit_req = 1;
+        }
+    }
     flush_bash_buf(&bash_buf, &rc, out_exit_req);
+    free(calc_buf.data);
     free(bash_buf.data);
     g_milk_bash_exec_depth--;
     dcexitcode = rc;

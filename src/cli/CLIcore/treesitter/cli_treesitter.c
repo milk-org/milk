@@ -664,13 +664,17 @@ static void collect_at_token_spans(const char    *line,
                 }
                 k++;
             }
-            if (k < len && depth == 0 && *num_spans < max_spans)
+            if (k < len && depth == 0)
             {
-                spans[*num_spans].start_byte = (uint32_t) k;
-                spans[*num_spans].end_byte   = (uint32_t) (k + 1);
-                spans[*num_spans].color      = cmd_color;
-                spans[*num_spans].priority   = 1;
-                (*num_spans)++;
+                if (*num_spans < max_spans)
+                {
+                    spans[*num_spans].start_byte = (uint32_t) k;
+                    spans[*num_spans].end_byte   = (uint32_t) (k + 1);
+                    spans[*num_spans].color      = cmd_color;
+                    spans[*num_spans].priority   = 1;
+                    (*num_spans)++;
+                }
+                i = k;
             }
             continue;
         }

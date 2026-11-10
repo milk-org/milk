@@ -799,30 +799,30 @@ int milk_shm_prop_set_stream(const char *name,
     }
 
     snprintf(im->kw[slot].name, KEYWORD_MAX_STRING, "%s", kname);
+    if (comment != NULL && comment[0] != '\0')
+    {
+        snprintf(im->kw[slot].comment, KEYWORD_MAX_COMMENT, "%s", comment);
+    }
     char     *endp = NULL;
     long long lval = strtoll(val, &endp, 10);
     if (val[0] != '\0' && endp != val && *endp == '\0')
     {
-        im->kw[slot].type       = 'L';
         im->kw[slot].value.numl = (int64_t) lval;
+        im->kw[slot].type       = 'L';
     }
     else
     {
         double dval = strtod(val, &endp);
         if (val[0] != '\0' && endp != val && *endp == '\0')
         {
-            im->kw[slot].type       = 'D';
             im->kw[slot].value.numf = dval;
+            im->kw[slot].type       = 'D';
         }
         else
         {
-            im->kw[slot].type = 'S';
             snprintf(im->kw[slot].value.valstr, KEYWORD_MAX_STRING, "%s", val);
+            im->kw[slot].type = 'S';
         }
-    }
-    if (comment != NULL && comment[0] != '\0')
-    {
-        snprintf(im->kw[slot].comment, KEYWORD_MAX_COMMENT, "%s", comment);
     }
     im->kw[slot].cnt++;
 

@@ -130,7 +130,8 @@ static int   sh_st  = -1; /* a status line per tick, from SCRIPT_STATUS_FD */
  */
 static int is_fixed(const char *name)
 {
-    return strcmp(name, "_n") == 0 || strcmp(name, "unit") == 0;
+    return strcmp(name, "_n") == 0 || strcmp(name, "unit") == 0 || strcmp(name, "conf") == 0 ||
+           strcmp(name, "procinfo") == 0;
 }
 
 /**
@@ -253,19 +254,24 @@ static char *source_text(const char *inline_str, const char *fpath, char *err, s
 /** put_quoted() - write @s to the shell as a single-quoted word. */
 static int put_quoted(const char *s)
 {
-    FILE *fp = fdopen(dup(sh_in), "w");
-
-    if (fp == NULL)
-    {
-        return -1;
-    }
-    fputc('\'', fp);
+    sbuf_t b;
+    sbuf_init(&b);
+    sbuf_append_ch(&b, '\'');
     for (; *s != '\0'; s++)
     {
-        (*s == '\'') ? fputs("'\\''", fp) : fputc(*s, fp);
+        if (*s == '\'')
+        {
+            sbuf_append_str(&b, "'\\''");
+        }
+        else
+        {
+            sbuf_append_ch(&b, *s);
+        }
     }
-    fputc('\'', fp);
-    return fclose(fp);
+    sbuf_append_ch(&b, '\'');
+    int rc = (b.data != NULL && write(sh_in, b.data, b.len) == (ssize_t) b.len) ? 0 : -1;
+    free(b.data);
+    return rc;
 }
 
 /**
@@ -477,6 +483,7 @@ static int shell_start(char *err, size_t errsz)
             SCRIPT_STATUS_FD, SCRIPT_STATUS_FD, SCRIPT_STATUS_FD);
     if (read_line(line, sizeof(line), 60.0, NULL) != 0)
     {
+        shell_stop();
         snprintf(err, errsz, "bash could not load %s/milk.bash", dir);
         return -1;
     }

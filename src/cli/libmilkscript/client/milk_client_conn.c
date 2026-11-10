@@ -377,10 +377,10 @@ static void try_add_packed_var(milk_packed_vars_t        *pv,
         }
     }
     const char *val = milk_ipc_get_var(hooks, ident);
-    if (val != NULL && strlen(val) < 128)
+    if (val != NULL && strlen(val) < sizeof(pv->vals[0]))
     {
-        snprintf(pv->names[pv->count], 64, "%s", ident);
-        snprintf(pv->vals[pv->count], 128, "%s", val);
+        snprintf(pv->names[pv->count], sizeof(pv->names[0]), "%s", ident);
+        snprintf(pv->vals[pv->count], sizeof(pv->vals[0]), "%s", val);
         pv->count++;
     }
 }
@@ -412,9 +412,38 @@ void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
     {
         return;
     }
-    const char *p = s;
+    const char *p    = s;
+    int         in_q = 0;
     while (*p != '\0')
     {
+        if (in_q)
+        {
+            if (*p == '\\' && p[1] != '\0')
+            {
+                p += 2;
+                continue;
+            }
+            if (*p == '"')
+            {
+                in_q = 0;
+            }
+            p++;
+            continue;
+        }
+        if (*p == '"')
+        {
+            in_q = 1;
+            p++;
+            continue;
+        }
+        if (*p == '#')
+        {
+            while (*p != '\0' && *p != '\n')
+            {
+                p++;
+            }
+            continue;
+        }
         if (isalpha((unsigned char) *p) || *p == '_')
         {
             const char *start = p++;

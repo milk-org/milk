@@ -140,14 +140,22 @@ static inline void sbuf_append_ch(sbuf_t *b, char c)
 
 /**
  * sbuf_append_dq_escaped - Append @s[0..@n) escaped for inclusion inside double quotes
- * @b: Target string buffer
- * @s: Source byte slice
- * @n: Number of bytes in @s
+ * @b:     Target string buffer
+ * @s:     Source byte slice
+ * @n:     Number of bytes in @s
+ * @in_dq: Non-zero if @s was already inside double quotes (`\"` already escaped)
  */
-static inline void sbuf_append_dq_escaped(sbuf_t *b, const char *s, size_t n)
+static inline void sbuf_append_dq_escaped(sbuf_t *b, const char *s, size_t n, int in_dq)
 {
     for (size_t i = 0; i < n; i++)
     {
+        if (in_dq && s[i] == '\\' && i + 1 < n &&
+            (s[i + 1] == '"' || s[i + 1] == '\\' || s[i + 1] == '`' || s[i + 1] == '$'))
+        {
+            sbuf_append_ch(b, s[i]);
+            sbuf_append_ch(b, s[++i]);
+            continue;
+        }
         if (s[i] == '"' || s[i] == '\\' || s[i] == '`')
         {
             sbuf_append_ch(b, '\\');

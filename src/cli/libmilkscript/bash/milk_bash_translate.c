@@ -202,7 +202,7 @@ static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, in
     if (is_calc)
     {
         sbuf_append_str(out, funsub ? "milkcalc -v REPLY \"" : "milkcalc \"");
-        sbuf_append_dq_escaped(out, body, n);
+        sbuf_append_dq_escaped(out, body, n, !dq);
         sbuf_append_ch(out, '"');
     }
     else
@@ -260,8 +260,9 @@ static int git_brace(const char *b, size_t bn)
 /** Find the matching `}` for the `{` at `@p[@i]` at lexical depth @d, or 0 if unclosed. */
 static size_t inline_close(const char *p, size_t n, size_t i, int d)
 {
-    int c     = mbt_cx(p + i);
-    int depth = 1;
+    int c           = mbt_cx(p + i);
+    int depth       = 1;
+    int in_inner_dq = 0;
     for (size_t j = i + 1; j < n; j++)
     {
         if (mbt_dp(p + j) < d)
@@ -272,12 +273,26 @@ static size_t inline_close(const char *p, size_t n, size_t i, int d)
         {
             if (mbt_cx(p + j) == MSL_DQ && p[j] == '\\' && j + 1 < n)
             {
+                if (p[j + 1] == '"')
+                {
+                    in_inner_dq = !in_inner_dq;
+                }
+                else if (in_inner_dq && p[j + 1] == '\\' && j + 2 < n && p[j + 2] == '\\' &&
+                         j + 3 < n && p[j + 3] == '"')
+                {
+                    j += 3;
+                    continue;
+                }
                 j++;
                 continue;
             }
             if ((mbt_cx(p + j) == MSL_DQ && p[j] == '"') || mbt_cx(p + j) == MSL_CODE)
             {
                 return 0;
+            }
+            if (in_inner_dq)
+            {
+                continue;
             }
         }
         if (mbt_cx(p + j) == c && mbt_dp(p + j) == d &&
@@ -481,7 +496,7 @@ static int emit_assign_inline(const char *s, size_t n, int d, sbuf_t *out)
     if (is_calc)
     {
         sbuf_append_str(out, " \"");
-        sbuf_append_dq_escaped(out, b, bn);
+        sbuf_append_dq_escaped(out, b, bn, dq);
         sbuf_append_str(out, "\" || __milk_inline_err $? ''");
     }
     else
