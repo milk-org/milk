@@ -1,0 +1,3 @@
+# WFS acquisition (trigger wfsim): dark and reference subtraction. cacao's acquWFS also divides by
+# the total flux; a phase image has no flux, so this one does not.
+wfss = wfsim - wfsdark - wfsref

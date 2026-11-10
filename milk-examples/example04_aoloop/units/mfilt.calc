@@ -1,0 +1,7 @@
+# Modal filter (trigger mval): leaky integrator with per-mode gains, clipped; loopON=0 holds the
+# command and posts it, so the chain after it runs on every frame either way.
+if loopON {
+    mint = clamp(mult * mint - gain * mgain * mval, -limit, limit)
+} else {
+    post(mint)
+}

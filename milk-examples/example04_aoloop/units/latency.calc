@@ -1,0 +1,3 @@
+# Latency probe, part 2 (trigger dm, measurement only): time from that camera frame to the DM write.
+# A stream's age (s.wfsim.age) has a 1 ms resolution, so each probe takes its trigger's write time.
+latency = _ts - tcam
