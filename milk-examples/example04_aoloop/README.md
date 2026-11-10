@@ -28,6 +28,15 @@ dmch0..3 -> dmtrig -> dmcomb -> dm -> (read by wfssim at its next frame)
 A unit has a single trigger stream, so the DM combiner needs `trigmerge` to wake on any of its four
 channels ([Merging triggers](../../docs/guide/procinfo.md#merging-triggers)).
 
+`mfilt` has anti-windup: each frame starts from the modes the DM applied,
+`M2A.T @ (dm - dmch0 - dmch2 - dmch3)`, not from its own last output. When `dmcomb` clips
+actuators at `maxstroke`, the integrator then stops growing an error the DM cannot correct, and
+does not overshoot when the turbulence changes. With four times the default turbulence
+(`f.wfssim.tgain=4`, `f.mfilt.gain=0.1`), it cut the saturated actuators from about 24 to 14 per
+frame, and the 99th percentile of the residual at the pupil edge from 1.5–2.3 to 1.4–1.6. Errors
+remain where the DM lacks the stroke: raise `f.dmcomb.maxstroke` and `f.mfilt.limit`, or lower
+the turbulence.
+
 Sizes are set at the top of [`aoloop.sh`](aoloop.sh): a 12x12 DM, a 24x24 WFS (2 pixels per
 actuator, circular pupil), 100 controlled modes, 2 kHz camera.
 
@@ -145,37 +154,37 @@ options combine, e.g. `./aoloop.sh --fused --psf --threads 1 start`.
 
 ## Performance
 
-`./aoloop.sh measure` on an i9-12950HX laptop (powersave governor, no real-time priority), one unit
-per step:
+`./aoloop.sh measure` on an i9-12950HX laptop (powersave governor, no real-time priority, another
+copy of the loop running), one unit per step:
 
 ```text
-residual RMS over 4000 frames (phase units): loop open 0.276998200984146, closed 0.0403539750812254
-camera frame to DM write: median 64 us, 90% below 97 us
+residual RMS over 4000 frames (phase units): loop open 0.304087870746984, closed 0.0431277827185886
+camera frame to DM write: median 91 us, 90% below 182 us
 unit       rate (Hz)  busy (us)   max (us)  missed
-wfssim          2000       23.3       46.8       0
-dmtrig          2007      496.6      649.1       0
-dmcomb          2008        4.2        9.5       5
-acquwfs         2000        2.7        4.4      49
-wfs2modes       2002        9.9       38.0      67
-mfilt           1999        4.3       10.4      91
-modes2dm        2001        5.1        8.5     108
+wfssim          2001       28.4       72.2       0
+dmtrig          1984      501.6      594.9       0
+dmcomb          1985        4.1       14.7       9
+acquwfs         1997        3.7       12.9      64
+wfs2modes       1999       16.6       35.7      91
+mfilt           1996       13.9       47.1      91
+modes2dm        1988        7.8       32.4      95
 ```
 
 and with `--fused`, right after:
 
 ```text
-residual RMS over 4000 frames (phase units): loop open 0.381367219587668, closed 0.0397597041560361
-camera frame to DM write: median 30 us, 90% below 51 us
+residual RMS over 4000 frames (phase units): loop open 0.305630153731271, closed 0.0393917688316313
+camera frame to DM write: median 38 us, 90% below 97 us
 unit       rate (Hz)  busy (us)   max (us)  missed
-wfssim          2000       21.9       59.5       0
-aoloop          1999       25.5       53.1      80
+wfssim          2001       33.8       72.0       0
+aoloop          2001       21.4       95.2     129
 ```
 
-Over three alternating runs of each, the median camera-to-DM latency was 64 to 91 µs with one unit
-per step, and 30 to 34 µs fused (90% below 97 to 131 µs, and 51 to 56 µs). Most of the difference
+Over three alternating runs of each, the median camera-to-DM latency was 71 to 91 µs with one unit
+per step, and 21 to 38 µs fused (90% below 173 to 182 µs, and 71 to 97 µs). Most of the difference
 is hand-offs: the split loop wakes six more processes or threads per frame (four units,
-`trigmerge`'s input thread and loop, `dmcomb`), about 9 µs each. Fusing also saves the per-frame
-overhead of four units: the fused unit was busy 18 to 28 µs per frame, the five steps 26 to 52 µs
+`trigmerge`'s input thread and loop, `dmcomb`), about 8 µs each. Fusing also saves the per-frame
+overhead of four units: the fused unit was busy 19 to 33 µs per frame, the five steps 32 to 46 µs
 together.
 
 - **busy** is the median time per frame from the unit's timing ring (`p.<unit>.exectime`). It is

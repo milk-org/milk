@@ -1,7 +1,10 @@
 # Modal filter (trigger mval): leaky integrator with per-mode gains, clipped; loopON=0 holds the
-# command and posts it, so the chain after it runs on every frame either way.
+# command and posts it, so the chain after it runs on every frame either way. Anti-windup: the
+# integrator starts from the modes the DM applied, after dmcomb's clipping (M2A has orthonormal
+# columns), not from its own last output, so it does not wind up while actuators saturate.
 if loopON {
-    mint = clamp(mult * mint - gain * mgain * mval, -limit, limit)
+    local applied = M2A.T @ (dm - dmch0 - dmch2 - dmch3)
+    mint = clamp(mult * applied - gain * mgain * mval, -limit, limit)
 } else {
     post(mint)
 }
