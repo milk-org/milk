@@ -105,6 +105,44 @@ work as before. The `mfilt` and `dmcomb` parameters become `f.aoloop.gain`, `.mu
 `.loopON` and `.maxstroke`. There is no `dmtrig`: a write to `dmch0`, `dmch2` or `dmch3` reaches
 `dm` at the next camera frame, not at once.
 
+## Focal-plane PSF
+
+```bash
+./aoloop.sh --psf start
+```
+
+With `--psf`, a unit `psf` ([`psf.calc`](units/psf.calc)) computes the focal-plane image of the
+corrected wavefront at every frame. Its trigger is `wfphase`, which `wfssim` writes along with
+`wfsim`: the phase after the DM, without the WFS read noise. The unit zero-pads the pupil field
+`wfspup * expi(rad * wfphase)` into the 72x72 complex stream `psfE`, and writes `|fft|²`, centred,
+to the stream `psf`. The pupil is 24 pixels across, so the PSF has 3 pixels per λ/D, 1.5 times
+Nyquist (`PSFSAMP` in `aoloop.sh`). A flat wavefront gives the Airy pattern with a peak of 1, so
+the peak is the Strehl ratio:
+
+```bash
+source milk.bash; @calc "imax(psf)"
+```
+
+`f.psf.rad` sets the radians per phase unit (default 1). At 1, the Strehl ratio is about 0.95 with
+the loop open and 0.998 closed. `@set f.psf.rad=10` shows a speckled PSF: a peak of 0.07 open and
+0.87 closed, averaged over 400 frames.
+
+The unit is busy about 70 µs per frame, mostly in the calculator's `fft` and `fftshift` steps.
+FFTW alone does this 72x72 transform in 11 µs. At 2 kHz it keeps up on a core of its own, but it
+competes with the loop units for the CPU.
+
+## Threads
+
+```bash
+./aoloop.sh --threads 1 start
+```
+
+`--threads N` sets `.procinfo.NBthread` to N on every unit, which caps its OpenMP and OpenBLAS
+threads ([Compute units without C](../../docs/guide/calculator.md#compute-units-without-c)). At the
+example's sizes, the calculator runs each step on one thread anyway: the cap mostly shrinks each
+unit's idle OpenBLAS pool, from one thread per CPU to N. `dmtrig` keeps one thread per input. The
+options combine, e.g. `./aoloop.sh --fused --psf --threads 1 start`.
+
 ## Performance
 
 `./aoloop.sh measure` on an i9-12950HX laptop (powersave governor, no real-time priority), one unit
