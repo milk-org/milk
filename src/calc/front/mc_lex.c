@@ -152,6 +152,10 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
             *out_type = MC_TOK_LONG;
             *out_l    = strtol((base == 16) ? p : p + 2, &end, base);
             *out_d    = 0.0;
+            if (end <= p + 2)
+            {
+                return 0;
+            }
             if (errno == ERANGE)
             {
                 *out_type = MC_TOK_DOUBLE;
@@ -173,8 +177,9 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
         p++;
     }
 
-    /* Optional fractional part */
-    if (*p == '.')
+    /* Optional fractional part (do not consume '.T' transpose suffix) */
+    if (*p == '.' && !(p[1] == 'T' && !isalnum((unsigned char) p[2]) && p[2] != '_' &&
+                       p[2] != '.' && p[2] != '$'))
     {
         is_float = 1;
         p++;
@@ -187,15 +192,15 @@ size_t mc_scan_number(const char *p, mc_tok_type_t *out_type, long *out_l, doubl
     /* Optional scientific notation exponent */
     if (*p == 'e' || *p == 'E')
     {
-        is_float = 1;
-        p++;
-        if (*p == '+' || *p == '-')
+        const char *ep = p + 1 + (p[1] == '+' || p[1] == '-');
+        if (isdigit((unsigned char) *ep))
         {
-            p++;
-        }
-        while (isdigit((unsigned char) *p))
-        {
-            p++;
+            is_float = 1;
+            p        = ep;
+            while (isdigit((unsigned char) *p))
+            {
+                p++;
+            }
         }
     }
 
@@ -249,7 +254,7 @@ static inline int is_ident_char(int c)
  */
 static int is_ns_prefix_only(const char *start, size_t len)
 {
-    if (len == 1 && (start[0] == 's' || start[0] == 'l' || start[0] == 'f' || start[0] == 'p'))
+    if (milk_is_entity_ns_prefix(start, len) || memchr(start, '.', len) != NULL)
     {
         return 1;
     }
@@ -561,13 +566,16 @@ int mc_lex(const char *src, mc_tok_list_t *out)
         /* Disambiguate @S:, @L:, @F: prefix vs @ matrix multiply operator */
         if (*p == '@')
         {
-            int is_pfx = ((p[1] == 'S' || p[1] == 'L' || p[1] == 'F') && p[2] == ':');
-            /* A@B without space, after an operand, is the operator too */
-            if (!is_pfx && (!is_ident_start((unsigned char) p[1]) ||
-                            (nt > 0 && (out->toks[nt - 1].type == MC_TOK_IDENT ||
-                                        out->toks[nt - 1].type == MC_TOK_RPAREN ||
-                                        out->toks[nt - 1].type == MC_TOK_RBRACK ||
-                                        out->toks[nt - 1].type == MC_TOK_DOT_T))))
+            int is_pfx     = ((p[1] == 'S' || p[1] == 'L' || p[1] == 'F') && p[2] == ':');
+            int after_opnd = (nt > 0 && (out->toks[nt - 1].type == MC_TOK_LONG ||
+                                         out->toks[nt - 1].type == MC_TOK_DOUBLE ||
+                                         (out->toks[nt - 1].type == MC_TOK_IDENT &&
+                                          strcmp(out->toks[nt - 1].sval, "local") != 0) ||
+                                         out->toks[nt - 1].type == MC_TOK_RPAREN ||
+                                         out->toks[nt - 1].type == MC_TOK_RBRACK ||
+                                         out->toks[nt - 1].type == MC_TOK_DOT_T));
+            /* A@B or A@S:B without space, after an operand, is the operator too */
+            if (after_opnd || (!is_pfx && !is_ident_start((unsigned char) p[1])))
             {
                 mc_tok_t *t = tok_new(out, nt++, MC_TOK_MATMUL, base, ts, line, col);
                 tok_text(out, &used, t, NULL, "@", 1);
@@ -612,8 +620,20 @@ int mc_lex(const char *src, mc_tok_list_t *out)
         long          lval  = 0;
         double        dval  = 0.0;
         size_t        nlen  = mc_scan_number(p, &ntype, &lval, &dval);
-        if (nlen > 0)
+        int is_rad = (*p == '0' && (p[1] == 'x' || p[1] == 'X' || p[1] == 'o' || p[1] == 'O' ||
+                                    p[1] == 'b' || p[1] == 'B'));
+        if (nlen > 0 || is_rad)
         {
+            int dot_t = (nlen > 0 && p[nlen] == '.' && p[nlen + 1] == 'T' &&
+                         !is_ident_char((unsigned char) p[nlen + 2]));
+            if (nlen == 0 || (is_rad && (isalnum((unsigned char) p[nlen]) || p[nlen] == '_')) ||
+                (ntype == MC_TOK_DOUBLE && !dot_t && p[nlen] == '.'))
+            {
+                out->err_line = line;
+                out->err_col  = col;
+                snprintf(out->errmsg, sizeof(out->errmsg), "invalid numeric literal");
+                return -1;
+            }
             mc_tok_t *t = tok_new(out, nt++, ntype, base, ts, line, col);
             t->lval     = lval;
             t->dval     = dval;
@@ -637,14 +657,18 @@ int mc_lex(const char *src, mc_tok_list_t *out)
                 p++;
                 col++;
             }
+            if (*p != '"')
+            {
+                out->err_line = t->line;
+                out->err_col  = t->col;
+                snprintf(out->errmsg, sizeof(out->errmsg), "unterminated string literal");
+                return -1;
+            }
             size_t slen = (size_t) (p - start);
             tok_text(out, &used, t, NULL, start,
                      (slen < MC_TOK_STR_MAX) ? slen : (MC_TOK_STR_MAX - 1));
-            if (*p == '"')
-            {
-                p++;
-                col++;
-            }
+            p++;
+            col++;
             t->len = (int) (p - ts);
             continue;
         }

@@ -49,7 +49,7 @@
 #include "milk_entity_ns.h"
 #include "milk_shm_prop.h"
 
-#define MC_MAX_CREATED_VARS 64
+#define MC_MAX_CREATED_VARS 256
 #define MC_UDEF_MAX_DEPTH 4
 
 /* ========================================================================= */
@@ -73,6 +73,8 @@
  * @comp_vars:      Names of active array comprehension generator variables
  * @created_dt:     Datatype tag for each entry in @created_vars (255 = scalar
  *                  variable, >0 = ImageStreamIO `_DATATYPE_*` code)
+ * @created_naxis:  Recorded rank (1..3) for created images, or 0 if unknown
+ * @created_size:   Recorded axis dimensions for created images
  */
 typedef struct
 {
@@ -89,6 +91,8 @@ typedef struct
     char         created_vars[MC_MAX_CREATED_VARS][256];
     char         comp_vars[3][64];
     uint8_t      created_dt[MC_MAX_CREATED_VARS]; /* 255 = scalar var, >0 = image dt */
+    uint8_t      created_naxis[MC_MAX_CREATED_VARS];
+    uint32_t     created_size[MC_MAX_CREATED_VARS][3];
 } mc_resolve_ctx_t;
 
 /**
@@ -187,9 +191,47 @@ static int created_var_op(mc_resolve_ctx_t *ctx, const char *bare, int add_dt)
     }
     if (add_dt > 0 && bare != NULL && bare[0] != '\0' && ctx->ncreated < MC_MAX_CREATED_VARS)
     {
-        ctx->created_dt[ctx->ncreated] = (uint8_t) add_dt;
+        ctx->created_dt[ctx->ncreated]    = (uint8_t) add_dt;
+        ctx->created_naxis[ctx->ncreated] = 0;
         snprintf(ctx->created_vars[ctx->ncreated++], sizeof(ctx->created_vars[0]), "%s", bare);
     }
+    return 0;
+}
+
+static void record_created_im_shape(mc_resolve_ctx_t *ctx,
+                                    const char       *bare,
+                                    uint8_t           naxis,
+                                    const uint32_t    size[3])
+{
+    for (int i = 0; i < ctx->ncreated; i++)
+    {
+        if (strcmp(ctx->created_vars[i], bare) == 0)
+        {
+            ctx->created_naxis[i] = naxis;
+            if (naxis > 0)
+            {
+                memcpy(ctx->created_size[i], size, sizeof(ctx->created_size[0]));
+            }
+            return;
+        }
+    }
+}
+
+static int get_created_im_shape(const mc_resolve_ctx_t *ctx,
+                                const char             *bare,
+                                int                    *out_naxis,
+                                uint32_t                out_size[3])
+{
+    for (int i = 0; i < ctx->ncreated; i++)
+    {
+        if (strcmp(ctx->created_vars[i], bare) == 0 && ctx->created_naxis[i] > 0)
+        {
+            *out_naxis = (int) ctx->created_naxis[i];
+            memcpy(out_size, ctx->created_size[i], sizeof(uint32_t) * 3);
+            return 1;
+        }
+    }
+    *out_naxis = 0;
     return 0;
 }
 
@@ -278,6 +320,10 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
         e->u.ident.id_kind = MC_ID_IMAGE;
         e->u.ident.im_id   = imid;
         set_expr_im(e, (imid != -1) ? &milk_data.image[imid] : NULL, (uint8_t) cdt);
+        if (imid == -1)
+        {
+            (void) get_created_im_shape(ctx, bare, &e->res_naxis, e->res_size);
+        }
         return 0;
     }
 
@@ -382,23 +428,33 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
     }
 
     const IMAGE *im = (imid != -1) ? &milk_data.image[imid] : NULL;
-    uint8_t dt = (im != NULL) ? im->md[0].datatype : (cdt > 0) ? (uint8_t) cdt : _DATATYPE_FLOAT;
-    int     im_naxis = (im != NULL) ? (int) im->md[0].naxis : 3;
+    uint8_t  dt   = (im != NULL) ? im->md[0].datatype : (cdt > 0) ? (uint8_t) cdt : _DATATYPE_FLOAT;
+    int      cnax = 0;
+    uint32_t csz[3]   = { 1, 1, 1 };
+    int      has_csz  = (im == NULL) && get_created_im_shape(ctx, e->u.slice.bare, &cnax, csz);
+    int      has_sh   = (im != NULL || has_csz);
+    int      im_naxis = (im != NULL) ? (int) im->md[0].naxis : has_csz ? cnax : 3;
+    uint32_t im_sz[3] = {
+        (im != NULL) ? im->md[0].size[0] : csz[0],
+        (im != NULL) ? ((im_naxis > 1) ? im->md[0].size[1] : 1) : csz[1],
+        (im != NULL) ? ((im_naxis > 2) ? im->md[0].size[2] : 1) : csz[2],
+    };
     e->u.slice.im_id = imid;
     set_expr_im(e, im, dt);
 
     int saved_slice_ax_sz = ctx->slice_ax_size;
-    int single            = (im != NULL) && (e->u.slice.naxis == im_naxis) && !is_complex_dt(dt);
+    int single            = has_sh && (e->u.slice.naxis == im_naxis) && !is_complex_dt(dt);
     int bad_bnd           = 0;
-    int nrange = (im != NULL && im_naxis > e->u.slice.naxis) ? (im_naxis - e->u.slice.naxis) : 0;
+    int nrange = (has_sh && im_naxis > e->u.slice.naxis) ? (im_naxis - e->u.slice.naxis) : 0;
 
     for (int ax = 0; ax < e->u.slice.naxis; ax++)
     {
-        ctx->slice_ax_size       = (im != NULL && ax < im_naxis) ? (int) im->md[0].size[ax] : 1;
+        int              ax_sz   = (has_sh && ax < im_naxis) ? (int) im_sz[ax] : 1;
         mc_slice_axis_t *sa      = &e->u.slice.axes[ax];
         mc_expr_t       *bnds[3] = { sa->start, sa->stop, sa->step };
         for (int b = 0; b < 3; b++)
         {
+            ctx->slice_ax_size = ax_sz;
             if (bnds[b] != NULL && resolve_expr(ctx, bnds[b], 1) != 0)
             {
                 ctx->slice_ax_size = saved_slice_ax_sz;
@@ -437,6 +493,59 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
     else if (!e->u.slice.is_mask_index && nrange > 0)
     {
         e->res_naxis = (uint8_t) nrange;
+        if (has_sh)
+        {
+            int out_ax     = 0;
+            int all_known  = 1;
+            e->res_size[0] = 1;
+            e->res_size[1] = 1;
+            e->res_size[2] = 1;
+            for (int ax = 0; ax < im_naxis && out_ax < 3; ax++)
+            {
+                if (ax >= e->u.slice.naxis)
+                {
+                    e->res_size[out_ax++] = im_sz[ax];
+                    continue;
+                }
+                const mc_slice_axis_t *sa = &e->u.slice.axes[ax];
+                if (!sa->has_colon && !sa->is_full && !sa->is_rev_full)
+                {
+                    continue;
+                }
+                if (sa->is_full || sa->is_rev_full)
+                {
+                    e->res_size[out_ax++] = im_sz[ax];
+                }
+                else if (sa->start != NULL && sa->start->kind == MC_EXPR_LONG && sa->stop != NULL &&
+                         sa->stop->kind == MC_EXPR_LONG &&
+                         (sa->step == NULL ||
+                          (sa->step->kind == MC_EXPR_LONG && sa->step->u.lval != 0)))
+                {
+                    long stp = (sa->step != NULL) ? sa->step->u.lval : 1;
+                    long s0  = (sa->start->u.lval < 0) ? ((long) im_sz[ax] + sa->start->u.lval)
+                                                       : sa->start->u.lval;
+                    long s1  = (sa->stop->u.lval < 0) ? ((long) im_sz[ax] + sa->stop->u.lval)
+                                                      : sa->stop->u.lval;
+                    long cnt = ((s1 - s0) * stp >= 0) ? (((s1 - s0) / stp) + 1) : 0;
+                    if (cnt > 0)
+                    {
+                        e->res_size[out_ax++] = (uint32_t) cnt;
+                    }
+                    else
+                    {
+                        all_known = 0;
+                    }
+                }
+                else
+                {
+                    all_known = 0;
+                }
+            }
+            if (!all_known)
+            {
+                e->res_naxis = 0;
+            }
+        }
     }
     return 0;
 }
@@ -652,6 +761,7 @@ static int subst_params(mc_resolve_ctx_t   *ctx,
             }
             snprintf(e->u.slice.name, sizeof(e->u.slice.name), "%s", args[k]->u.ident.name);
             uses[k]++;
+            break;
         }
     }
     mc_expr_t **slots[MC_MAX_ARGS];
@@ -688,16 +798,48 @@ static int inline_udef_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, const mcalc_ude
     {
         return res_err(ctx, "def '%s': calls nested more than %d deep", u->name, MC_UDEF_MAX_DEPTH);
     }
+    mc_expr_t *bound_args[MCALC_UDEF_MAXARGS] = { 0 };
+    int        seen_kw                        = 0;
+    for (int i = 0; i < e->u.call.nargs; i++)
+    {
+        const char *kw = e->u.call.kw_names[i];
+        if (kw[0] == '\0')
+        {
+            if (seen_kw)
+            {
+                return res_err(ctx, "positional argument after keyword argument in '%s'", u->name);
+            }
+            bound_args[i] = e->u.call.args[i];
+            continue;
+        }
+        seen_kw     = 1;
+        int matched = -1;
+        for (int k = 0; k < u->nargs; k++)
+        {
+            if (strcmp(u->arg_names[k], kw) == 0)
+            {
+                matched = k;
+                break;
+            }
+        }
+        if (matched < 0 || bound_args[matched] != NULL)
+        {
+            return (matched < 0)
+                       ? res_err(ctx, "unknown keyword argument '%s' for '%s'", kw, u->name)
+                       : res_err(ctx, "duplicate argument '%s' in call to '%s'", kw, u->name);
+        }
+        bound_args[matched] = e->u.call.args[i];
+    }
     int        uses[MCALC_UDEF_MAXARGS] = { 0 };
     mc_expr_t *body                     = mc_expr_clone(u->body);
-    if (body == NULL || subst_params(ctx, &body, u, e->u.call.args, uses) != 0)
+    if (body == NULL || subst_params(ctx, &body, u, bound_args, uses) != 0)
     {
         mc_expr_free(body);
         return (body == NULL) ? res_err(ctx, "out of memory") : -1;
     }
     for (int k = 0; k < u->nargs; k++)
     {
-        if (uses[k] > 1 && expr_is_impure(e->u.call.args[k], 0))
+        if (uses[k] > 1 && expr_is_impure(bound_args[k], 0))
         {
             mc_expr_free(body);
             return res_err(ctx,
@@ -871,6 +1013,14 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         }
         e->needs_image =
             (strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0) ? 1 : any_im;
+        for (int i = 0; e->needs_image && i < nargs && e->res_naxis == 0; i++)
+        {
+            if (e->u.call.args[i]->res_naxis > 0)
+            {
+                e->res_naxis = e->u.call.args[i]->res_naxis;
+                memcpy(e->res_size, e->u.call.args[i]->res_size, sizeof(e->res_size));
+            }
+        }
         e->res_dt   = (strcmp(fn->name, "cplx") == 0 || strcmp(fn->name, "expi") == 0)
                           ? (any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT)
                       : (strcmp(fn->name, "conj") == 0)
@@ -903,8 +1053,13 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                              ? (nargs > 0 && e->u.call.args[0]->res_kind == MC_RES_IMAGE)
                          : (fn->kind == MC_FN_LUT) ? e->u.call.args[0]->needs_image
                                                    : 1;
-        e->res_kind    = e->needs_image ? MC_RES_IMAGE : MC_RES_SCALAR_D;
-        e->res_dt      = any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+        if (e->needs_image && nargs > 0 && e->u.call.args[0]->res_naxis > 0)
+        {
+            e->res_naxis = e->u.call.args[0]->res_naxis;
+            memcpy(e->res_size, e->u.call.args[0]->res_size, sizeof(e->res_size));
+        }
+        e->res_kind = e->needs_image ? MC_RES_IMAGE : MC_RES_SCALAR_D;
+        e->res_dt   = any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
         return 0;
 
     case MC_FN_STR:
@@ -1105,6 +1260,10 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
 
     if (imid != -1 || (cdt > 0 && cdt != 255))
     {
+        if (rhs->res_kind == MC_RES_STRING)
+        {
+            return res_err(ctx, "cannot assign string to image '%s'", bare);
+        }
         uint8_t tdt = (imid != -1) ? milk_data.image[imid].md[0].datatype : (uint8_t) cdt;
         target->u.ident.id_kind = MC_ID_IMAGE;
         target->u.ident.im_id   = imid;
@@ -1114,6 +1273,15 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
                      (imid == -1 || !milk_data.image[imid].md[0].shared))
                         ? (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT)
                         : tdt);
+        if (rhs->res_naxis > 0)
+        {
+            e->res_naxis = rhs->res_naxis;
+            memcpy(e->res_size, rhs->res_size, sizeof(e->res_size));
+        }
+        if (imid == -1 && op == MC_TOK_ASSIGN && rhs->res_kind == MC_RES_IMAGE)
+        {
+            record_created_im_shape(ctx, bare, rhs->res_naxis, rhs->res_size);
+        }
         return 0;
     }
 
@@ -1134,10 +1302,19 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
         int new_dt =
             (rhs->res_kind == MC_RES_IMAGE) ? (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT) : 255;
         created_var_op(ctx, bare, new_dt);
+        if (rhs->res_kind == MC_RES_IMAGE)
+        {
+            record_created_im_shape(ctx, bare, rhs->res_naxis, rhs->res_size);
+        }
     }
     e->needs_image = (rhs->res_kind == MC_RES_IMAGE) ? 1 : rhs->needs_image;
     e->res_kind    = (op != MC_TOK_ASSIGN) ? MC_RES_SCALAR_D : rhs->res_kind;
     e->res_dt      = rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT;
+    if (rhs->res_naxis > 0)
+    {
+        e->res_naxis = rhs->res_naxis;
+        memcpy(e->res_size, rhs->res_size, sizeof(e->res_size));
+    }
     return 0;
 }
 
@@ -1279,7 +1456,16 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
             {
                 return -1;
             }
+            if (e->u.chain.operands[i]->res_kind == MC_RES_STRING)
+            {
+                return res_err(ctx, "chained comparison does not support strings");
+            }
             e->needs_image |= e->u.chain.operands[i]->needs_image;
+            if (e->res_naxis == 0 && e->u.chain.operands[i]->res_naxis > 0)
+            {
+                e->res_naxis = e->u.chain.operands[i]->res_naxis;
+                memcpy(e->res_size, e->u.chain.operands[i]->res_size, sizeof(e->res_size));
+            }
         }
         e->res_kind = e->needs_image ? MC_RES_IMAGE : MC_RES_SCALAR_L;
         e->res_dt   = _DATATYPE_FLOAT;
@@ -1299,6 +1485,18 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                           e->u.ternary.f_expr->res_dt == _DATATYPE_DOUBLE)
                              ? _DATATYPE_DOUBLE
                              : _DATATYPE_FLOAT;
+        if (e->needs_image)
+        {
+            const mc_expr_t *s_im = (e->u.ternary.t_expr->res_naxis > 0)   ? e->u.ternary.t_expr
+                                    : (e->u.ternary.f_expr->res_naxis > 0) ? e->u.ternary.f_expr
+                                    : (e->u.ternary.cond->res_naxis > 0)   ? e->u.ternary.cond
+                                                                           : NULL;
+            if (s_im != NULL)
+            {
+                e->res_naxis = s_im->res_naxis;
+                memcpy(e->res_size, s_im->res_size, sizeof(e->res_size));
+            }
+        }
         return 0;
 
     case MC_EXPR_VEC_LIT:
@@ -1321,25 +1519,79 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         return 0;
 
     case MC_EXPR_COMP:
+    {
+        char saved_vars[3][64];
+        int  saved_n = ctx->ncomp_vars;
+        memcpy(saved_vars, ctx->comp_vars, sizeof(saved_vars));
         for (int g = 0; g < e->u.comp.ngens; g++)
         {
-            if ((e->u.comp.gens[g].start && resolve_expr(ctx, e->u.comp.gens[g].start, 1) != 0) ||
-                (e->u.comp.gens[g].stop && resolve_expr(ctx, e->u.comp.gens[g].stop, 1) != 0) ||
-                (e->u.comp.gens[g].step && resolve_expr(ctx, e->u.comp.gens[g].step, 1) != 0))
+            mc_expr_t *bnds[3] = {
+                e->u.comp.gens[g].start,
+                e->u.comp.gens[g].stop,
+                e->u.comp.gens[g].step,
+            };
+            for (int b = 0; b < 3; b++)
             {
-                return -1;
+                if (bnds[b] != NULL &&
+                    (resolve_expr(ctx, bnds[b], 1) != 0 || bnds[b]->needs_image ||
+                     bnds[b]->res_kind == MC_RES_IMAGE || bnds[b]->res_kind == MC_RES_STRING))
+                {
+                    memcpy(ctx->comp_vars, saved_vars, sizeof(saved_vars));
+                    ctx->ncomp_vars = saved_n;
+                    return (bnds[b]->needs_image || bnds[b]->res_kind == MC_RES_IMAGE ||
+                            bnds[b]->res_kind == MC_RES_STRING)
+                               ? res_err(ctx, "comprehension range bounds must be scalar numbers")
+                               : -1;
+                }
             }
             snprintf(ctx->comp_vars[g], sizeof(ctx->comp_vars[g]), "%s", e->u.comp.gens[g].var);
+            ctx->ncomp_vars = g + 1;
         }
-        ctx->ncomp_vars = e->u.comp.ngens;
-        if (resolve_expr(ctx, e->u.comp.body, 1) != 0)
+        int brc = resolve_expr(ctx, e->u.comp.body, 1);
+        memcpy(ctx->comp_vars, saved_vars, sizeof(saved_vars));
+        ctx->ncomp_vars = saved_n;
+        if (brc != 0 || e->u.comp.body->res_kind == MC_RES_STRING)
         {
-            ctx->ncomp_vars = 0;
-            return -1;
+            return (brc != 0) ? -1 : res_err(ctx, "comprehension body must be numeric");
         }
-        ctx->ncomp_vars = 0;
-        set_expr_im(e, NULL, _DATATYPE_FLOAT);
+        uint8_t cdt = (e->u.comp.body->res_dt == _DATATYPE_DOUBLE ||
+                       e->u.comp.body->res_dt == _DATATYPE_COMPLEX_DOUBLE ||
+                       e->u.comp.body->res_dt == _DATATYPE_COMPLEX_FLOAT)
+                          ? e->u.comp.body->res_dt
+                          : _DATATYPE_FLOAT;
+        set_expr_im(e, NULL, cdt);
+        e->res_naxis   = (uint8_t) e->u.comp.ngens;
+        e->res_size[0] = 1;
+        e->res_size[1] = 1;
+        e->res_size[2] = 1;
+        for (int g = 0; g < e->u.comp.ngens; g++)
+        {
+            const mc_comp_gen_t *gn = &e->u.comp.gens[g];
+            if (gn->start != NULL && gn->start->kind == MC_EXPR_LONG && gn->stop != NULL &&
+                gn->stop->kind == MC_EXPR_LONG &&
+                (gn->step == NULL || (gn->step->kind == MC_EXPR_LONG && gn->step->u.lval != 0)))
+            {
+                long stp = (gn->step != NULL) ? gn->step->u.lval : 1;
+                long d   = gn->stop->u.lval - gn->start->u.lval;
+                long cnt = (d * stp >= 0) ? ((d / stp) + 1) : 0;
+                if (cnt > 0)
+                {
+                    e->res_size[g] = (uint32_t) cnt;
+                }
+                else
+                {
+                    e->res_naxis = 0;
+                    break;
+                }
+            }
+            else
+            {
+                e->res_naxis = 0;
+                break;
+            }
+        }
         return 0;
+    }
     }
     return -1;
 }
@@ -1404,18 +1656,48 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
                     return res_err(ctx, "'%s' is a constant: it cannot be assigned",
                                    lhs->u.ident.bare);
                 }
-                imageID imid   = mc_resolve_or_autoconnect_image(lhs->u.ident.name);
-                int     rhs_im = (nrhs == nlhs) ? (s->u.multi.rhs[j]->res_kind == MC_RES_IMAGE)
-                                                : mc_multi_lhs_is_image(s->u.multi.rhs[0], j);
-                lhs->u.ident.id_kind = (imid != -1) ? MC_ID_IMAGE : rhs_im ? MC_ID_NEW : MC_ID_VAR;
+                const char *dot1 = strchr(lhs->u.ident.name, '.');
+                int     is_prop  = (dot1 != NULL && strchr(dot1 + 1, '.') != NULL &&
+                                    milk_entity_ns_kind(lhs->u.ident.name, NULL) != MILK_NS_NONE);
+                imageID imid = is_prop ? -1 : mc_resolve_or_autoconnect_image(lhs->u.ident.name);
+                int  cdt = (imid == -1 && !is_prop) ? created_var_op(ctx, lhs->u.ident.bare, 0) : 0;
+                long vid = (is_prop || imid != -1 || (cdt > 0 && cdt != 255))
+                               ? -1
+                               : variable_ID(lhs->u.ident.bare);
+                int  rhs_im = (nrhs == nlhs) ? (s->u.multi.rhs[j]->res_kind == MC_RES_IMAGE)
+                                             : mc_multi_lhs_is_image(s->u.multi.rhs[0], j);
+                if (rhs_im && (is_prop || (vid != -1 && milk_data.variable[vid].type != 3)))
+                {
+                    return res_err(ctx,
+                                   is_prop
+                                       ? "cannot assign image to property"
+                                       : "'%s' is a variable (calculator or bash), not an image",
+                                   lhs->u.ident.bare);
+                }
+                if (nrhs != nlhs && !rhs_im && (imid != -1 || (cdt > 0 && cdt != 255)))
+                {
+                    return res_err(ctx, "'%s' is an image, not a scalar variable",
+                                   lhs->u.ident.bare);
+                }
+                lhs->u.ident.id_kind = is_prop                                   ? MC_ID_PROP
+                                       : (imid != -1 || (cdt > 0 && cdt != 255)) ? MC_ID_IMAGE
+                                       : rhs_im                                  ? MC_ID_NEW
+                                                                                 : MC_ID_VAR;
                 lhs->u.ident.im_id   = imid;
-                lhs->u.ident.var_id  = (imid != -1 || rhs_im) ? -1 : variable_ID(lhs->u.ident.bare);
-                s->needs_image |= (imid != -1 || rhs_im);
+                lhs->u.ident.var_id  = (is_prop || imid != -1 || rhs_im) ? -1 : vid;
+                s->needs_image |= (imid != -1 || (cdt > 0 && cdt != 255) || rhs_im);
                 const mc_expr_t *re  = s->u.multi.rhs[(nrhs == nlhs) ? j : 0];
-                uint8_t          rdt = rhs_im ? (re->res_dt ? re->res_dt : _DATATYPE_FLOAT) : 255;
-                if (imid == -1)
+                uint8_t          rdt = rhs_im ? (re->res_dt ? re->res_dt : _DATATYPE_FLOAT)
+                                       : (cdt > 0 && cdt != 255) ? (uint8_t) cdt
+                                                                 : 255;
+                if (imid == -1 && !is_prop)
                 {
                     created_var_op(ctx, lhs->u.ident.bare, rdt);
+                    if (rhs_im && nrhs == nlhs)
+                    {
+                        record_created_im_shape(ctx, lhs->u.ident.bare, re->res_naxis,
+                                                re->res_size);
+                    }
                 }
             }
             continue;

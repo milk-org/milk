@@ -558,18 +558,6 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
         node = make_call(advance_tok(ctx), "transpose", node, NULL);
     }
 
-    /* Assignment expression when primary is an identifier or slice */
-    if (!ctx->err_flag && (node->kind == MC_EXPR_IDENT || node->kind == MC_EXPR_SLICE) &&
-        mc_is_assign_tok(cur_tok(ctx)->type))
-    {
-        const mc_tok_t *op_tok = advance_tok(ctx);
-        mc_expr_t      *asgn   = alloc_expr(MC_EXPR_ASSIGN, op_tok);
-        asgn->u.assign.op      = op_tok->type;
-        asgn->u.assign.target  = node;
-        asgn->u.assign.rhs     = parse_expr(ctx, 0);
-        return asgn;
-    }
-
     return node;
 }
 
@@ -580,9 +568,9 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
  *
  * Parses a left-hand primary via `parse_primary()`, then consumes infix
  * operators with precedence `>= @min_prec`. Handles right-associative ternary
- * `? :`, desugars `@` into `matmul(left, right)`, and collapses adjacent
- * relational operators (`<`, `<=`, `>`, `>=`) into a single `MC_EXPR_CHAIN`
- * node (`a <= x <= b`).
+ * `? :` and assignments (`=`, `+=`, ...), desugars `@` into `matmul(left, right)`,
+ * and collapses adjacent relational operators (`<`, `<=`, `>`, `>=`) into a
+ * single `MC_EXPR_CHAIN` node (`a <= x <= b`).
  *
  * Return: Root `mc_expr_t` node of the parsed sub-expression
  */
@@ -594,11 +582,26 @@ static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
         const mc_tok_t *op_tok = cur_tok(ctx);
         mc_tok_type_t   op     = op_tok->type;
         int             prec   = mc_op_prec(op);
-        if (prec < min_prec || mc_is_assign_tok(op))
+        if (prec < min_prec)
         {
             break;
         }
         advance_tok(ctx);
+
+        if (mc_is_assign_tok(op))
+        {
+            if (left->kind != MC_EXPR_IDENT && left->kind != MC_EXPR_SLICE)
+            {
+                parse_err(ctx, op_tok, "invalid assignment target");
+                return left;
+            }
+            mc_expr_t *asgn       = alloc_expr(MC_EXPR_ASSIGN, op_tok);
+            asgn->u.assign.op     = op;
+            asgn->u.assign.target = left;
+            asgn->u.assign.rhs    = parse_expr(ctx, 0);
+            left                  = asgn;
+            continue;
+        }
 
         if (op == MC_TOK_QUEST)
         {

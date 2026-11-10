@@ -263,6 +263,11 @@ static int          g_nudefs_saved = -1;
  */
 void mc_udef_save(void)
 {
+    for (int i = 0; i < g_nudefs_saved; i++)
+    {
+        mc_expr_free(g_udefs_saved[i].body);
+        g_udefs_saved[i].body = NULL;
+    }
     for (int i = 0; i < g_nudefs; i++)
     {
         g_udefs_saved[i]      = g_udefs[i];
@@ -715,21 +720,83 @@ static int emit_image_result(imageID im_id, int is_assign, int is_multi, const c
  */
 static int expr_has_shadowed_var(const mc_expr_t *e)
 {
-    int r = (e != NULL) &&
-            ((e->kind == MC_EXPR_IDENT && e->u.ident.id_kind == MC_ID_VAR &&
-              image_ID(e->u.ident.bare, milk_data.image, milk_data.NB_MAX_IMAGE) >= 0) ||
-             (e->kind == MC_EXPR_UNARY && expr_has_shadowed_var(e->u.unary.operand)) ||
-             (e->kind == MC_EXPR_BINARY && (expr_has_shadowed_var(e->u.binary.left) ||
-                                            expr_has_shadowed_var(e->u.binary.right))) ||
-             (e->kind == MC_EXPR_TERNARY && (expr_has_shadowed_var(e->u.ternary.cond) ||
-                                             expr_has_shadowed_var(e->u.ternary.t_expr) ||
-                                             expr_has_shadowed_var(e->u.ternary.f_expr))) ||
-             (e->kind == MC_EXPR_ASSIGN && expr_has_shadowed_var(e->u.assign.rhs)));
-    for (int i = 0; e && e->kind == MC_EXPR_CALL && i < e->u.call.nargs && !r; i++)
+    if (e == NULL)
     {
-        r = expr_has_shadowed_var(e->u.call.args[i]);
+        return 0;
     }
-    return r;
+    if (e->kind == MC_EXPR_IDENT && e->u.ident.id_kind == MC_ID_VAR &&
+        image_ID(e->u.ident.bare, milk_data.image, milk_data.NB_MAX_IMAGE) >= 0)
+    {
+        return 1;
+    }
+    if (e->kind == MC_EXPR_SLICE && e->u.slice.im_id < 0 &&
+        image_ID(e->u.slice.bare, milk_data.image, milk_data.NB_MAX_IMAGE) >= 0)
+    {
+        return 1;
+    }
+    mc_expr_t **ch[MC_MAX_ARGS];
+    int         n = mc_expr_child_slots((mc_expr_t *) e, ch);
+    for (int i = 0; i < n; i++)
+    {
+        if (expr_has_shadowed_var(*ch[i]))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * stmt_has_shadowed_var - Check if any scalar variable in statement list @head is shadowed
+ * @head: Statement list to inspect recursively
+ *
+ * Return: 1 if any `MC_ID_VAR` in @head is now shadowed by a live image, 0 otherwise
+ */
+static int stmt_has_shadowed_var(const mc_stmt_t *head)
+{
+    for (const mc_stmt_t *st = head; st != NULL; st = st->next)
+    {
+        if (st->kind == MC_STMT_EXPR && expr_has_shadowed_var(st->u.expr))
+        {
+            return 1;
+        }
+        if (st->kind == MC_STMT_MULTI_ASSIGN)
+        {
+            for (int j = 0; j < st->u.multi.nlhs; j++)
+            {
+                if (expr_has_shadowed_var(st->u.multi.lhs[j]))
+                {
+                    return 1;
+                }
+            }
+            for (int j = 0; j < st->u.multi.nrhs; j++)
+            {
+                if (expr_has_shadowed_var(st->u.multi.rhs[j]))
+                {
+                    return 1;
+                }
+            }
+        }
+        if (st->kind == MC_STMT_IF)
+        {
+            for (int b = 0; b < st->u.if_stmt.nbranches; b++)
+            {
+                if (expr_has_shadowed_var(st->u.if_stmt.branches[b].cond) ||
+                    stmt_has_shadowed_var(st->u.if_stmt.branches[b].body))
+                {
+                    return 1;
+                }
+            }
+        }
+        if (st->kind == MC_STMT_FOR && (expr_has_shadowed_var(st->u.for_stmt.start) ||
+                                        expr_has_shadowed_var(st->u.for_stmt.stop) ||
+                                        expr_has_shadowed_var(st->u.for_stmt.step) ||
+                                        stmt_has_shadowed_var(st->u.for_stmt.body)))
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**
@@ -741,12 +808,9 @@ static int expr_has_shadowed_var(const mc_expr_t *e)
  */
 static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
 {
-    for (const mc_stmt_t *st = same_gen ? NULL : p->ast_head; st != NULL; st = st->next)
+    if (!same_gen && stmt_has_shadowed_var(p->ast_head))
     {
-        if (st->kind == MC_STMT_EXPR && expr_has_shadowed_var(st->u.expr))
-        {
-            return 0;
-        }
+        return 0;
     }
     return mc_prog_slots_valid(p, same_gen);
 }
