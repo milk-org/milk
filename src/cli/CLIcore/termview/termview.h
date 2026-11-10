@@ -110,4 +110,11 @@ void termview_options_init(termview_options_t *opt);
  */
 int termview_run(const char *name, const termview_options_t *opt);
 
+/**
+ * termview_run_multi() - View @nstreams streams (@names) until the user quits.
+ * When @nstreams > 1, all streams must be 2D with identical dimensions and share
+ * the same display range, scaling, and colorbar.
+ */
+int termview_run_multi(const char *const *names, int nstreams, const termview_options_t *opt);
+
 #endif /* _TERMVIEW_H */

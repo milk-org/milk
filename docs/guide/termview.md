@@ -14,6 +14,7 @@ cheap enough to leave running next to a real-time loop, locally or over ssh.
 ```bash
 milk-termview wfsim
 milk-termview -c inferno -s log -r 1 dmdisp
+milk-termview dm01disp00 dm01disp01 dm01disp02 dm01disp03
 milk-termview /milk/shm/aol0_wfsim.im.shm
 ```
 
@@ -60,7 +61,7 @@ highlighted choice at once. Enter or a click keeps it; Esc or a click outside th
 what was there before. Space applies an item and leaves the menu open. Left/Right move to the
 neighbouring menu.
 
-## 3D streams
+## 3D streams and multiple 2D streams
 
 When opened on a 3D stream (`X x Y x Z`), `milk-termview` offers five viewing modes in the **View**
 menu (or cycled with `d` / `D` and selected at startup with `-3, --3d MODE`):
@@ -77,6 +78,13 @@ In **Slice** mode, the slider bar displays the active slice index (`Slice z/zmax
 buttons (`◀` / `▶`), and a proportional slider track. You can click or drag the slider track, click
 the step buttons, scroll the mouse wheel on the slider row, or use `[` / `]`, `PgDn` / `PgUp`, and
 `Home` / `End` to step through slices.
+
+You can also pass **multiple 2D streams** of identical size (for example, DM channels
+`milk-termview dm01disp00 dm01disp01 ...`). All given streams must be 2D with the same `X x Y`
+dimensions; they are displayed side-by-side in **Gallery** mode by default and share the same
+intensity scale, range, and colorbar. You can also switch between Gallery, single-channel Slice
+(showing each channel's stream name on the slider), and 2D remap modes via the **View** menu or
+`d` / `D`.
 
 ## Keys and mouse
 

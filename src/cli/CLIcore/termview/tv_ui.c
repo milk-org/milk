@@ -1627,8 +1627,15 @@ static void tv_render_slider(tv_state_t *s)
     uint32_t zmax  = zsize - 1;
     int      sl = (s->opt.slice < 0) ? 0 : (s->opt.slice > (int) zmax) ? (int) zmax : s->opt.slice;
 
-    char pre[48];
-    snprintf(pre, sizeof(pre), " Slice %d/%u ", sl, zmax);
+    char pre[64];
+    if (s->nstreams > 1 && sl >= 0 && sl < s->nstreams)
+    {
+        snprintf(pre, sizeof(pre), " Slice %d/%u [%s] ", sl, zmax, s->streams[sl].name);
+    }
+    else
+    {
+        snprintf(pre, sizeof(pre), " Slice %d/%u ", sl, zmax);
+    }
     int x = tv_text(s, r, 0, s->cols, pre, TV_C_BRIGHT, TV_C_BAR);
     if (x + 3 <= s->cols)
     {
@@ -1721,14 +1728,32 @@ static void tv_render_status(tv_state_t *s, int64_t now_us)
                                 : "h");
         fg[0] = TV_C_WARN;
     }
-    snprintf(seg[1], sizeof(seg[1]), "%s", st->name);
+    if (s->nstreams > 1 && s->opt.mode3d == TV_3D_SLICE && s->opt.slice >= 0 &&
+        s->opt.slice < s->nstreams)
+    {
+        snprintf(seg[1], sizeof(seg[1]), "%s (%d/%d)", s->streams[s->opt.slice].name,
+                 s->opt.slice + 1, s->nstreams);
+    }
+    else
+    {
+        snprintf(seg[1], sizeof(seg[1]), "%s", st->name);
+    }
     fg[1] = TV_C_STREAM;
     snprintf(seg[2], sizeof(seg[2]), "%7.1f Hz", s->current_stream_fps);
     fg[2] = TV_C_TEXT;
     snprintf(seg[3], sizeof(seg[3]), "[%.4g : %.4g] %s", s->cur_min, s->cur_max,
              s->opt.range_locked ? "LOCK" : tv_range_names[s->opt.range]);
     fg[3] = s->opt.range_locked ? TV_C_WARN : TV_C_TEXT;
-    if (st->naxis == 3)
+    if (s->nstreams > 1)
+    {
+        uint8_t dt =
+            (s->opt.mode3d == TV_3D_SLICE && s->opt.slice >= 0 && s->opt.slice < s->nstreams)
+                ? s->streams[s->opt.slice].datatype
+                : st->datatype;
+        snprintf(seg[4], sizeof(seg[4]), "%dx %ux%u (%s) %s", s->nstreams, st->xsize, st->ysize,
+                 tv_3d_labels[s->opt.mode3d], tv_dtype_name(dt));
+    }
+    else if (st->naxis == 3)
     {
         if (s->opt.mode3d == TV_3D_SLICE)
         {

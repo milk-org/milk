@@ -67,7 +67,7 @@ static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, TV_DESCRIPTION, mh_color);
     milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [options] %s<stream>%s\n\n", mh_color ? MH_CMD : "", progname,
+    printf("  %s%s%s [options] %s<stream> [<stream> ...]%s\n\n", mh_color ? MH_CMD : "", progname,
            mh_color ? MH_RST : "", mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 
     milk_help_section("Description", mh_color);
@@ -75,11 +75,13 @@ static void print_help(const char *progname, int mh_color)
            "  the stream read-only and redraws only the cells that changed, in 24-bit, 256\n"
            "  or 16 colours. The menubar (click, or F2-F6) sets the colormap, scaling, range\n"
            "  and view; the status bar shows the stream state (LIVE, STALE, PAUSED, GONE),\n"
-           "  rate and range. A stream that is removed or recreated is followed.\n\n");
+           "  rate and range. A stream that is removed or recreated is followed. Multiple\n"
+           "  equal-sized 2D streams (e.g. DM channels) are shown side-by-side sharing the\n"
+           "  same scale and colorbar.\n\n");
 
     milk_help_section("Arguments", mh_color);
-    printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_ARG, "<stream>", 22),
-           "Stream name, name.im.shm, or path to the .im.shm file");
+    printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_ARG, "<stream> ...", 22),
+           "One stream, or multiple equal-sized 2D streams");
 
     milk_help_section("Options", mh_color);
     printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-c, --cmap NAME", 22), "Initial colormap");
@@ -224,7 +226,7 @@ int main(int argc, char **argv)
         { NULL, 0, NULL, 0 },
     };
 
-    int have_min = 0, have_max = 0;
+    int have_min = 0, have_max = 0, have_3d = 0, have_slice = 0;
     int c;
     opterr = 0;
     while ((c = getopt_long(argc, argv, ":c:s:r:f:3:", longopts, NULL)) != -1)
@@ -271,13 +273,15 @@ int main(int argc, char **argv)
                 return 1;
             }
             opt.mode3d = (termview_3d_mode_t) idx;
+            have_3d    = 1;
             break;
         case OPT_SLICE:
             if (tv_parse_double(optarg, &v) != 0 || v < 0 || v > INT32_MAX || v != (double) (int) v)
             {
                 return arg_error(progname, "--slice expects a non-negative integer, got", optarg);
             }
-            opt.slice = (int) v;
+            opt.slice  = (int) v;
+            have_slice = 1;
             break;
         case OPT_MIN:
         case OPT_MAX:
@@ -327,11 +331,16 @@ int main(int argc, char **argv)
         }
         opt.range_locked = true;
     }
-    if (optind != argc - 1)
+    if (optind >= argc)
     {
-        return arg_error(
-            progname, (optind >= argc) ? "missing stream name" : "expected one stream name", NULL);
+        return arg_error(progname, "missing stream name", NULL);
     }
 
-    return termview_run(argv[optind], &opt);
+    int nstreams = argc - optind;
+    if (nstreams > 1 && !have_3d && !have_slice)
+    {
+        opt.mode3d = TV_3D_GALLERY;
+    }
+
+    return termview_run_multi((const char *const *) &argv[optind], nstreams, &opt);
 }

@@ -39,12 +39,39 @@
 /** tv_cnt0() - The stream's frame counter; the last value seen once the mapping is gone. */
 static inline uint64_t tv_cnt0(const tv_state_t *ctx)
 {
+    if (ctx->nstreams > 1)
+    {
+        uint64_t sum = 0;
+        for (int k = 0; k < ctx->nstreams; k++)
+        {
+            sum += (ctx->streams[k].img.md != NULL) ? ctx->streams[k].img.md->cnt0
+                                                    : ctx->last_cnt0_multi[k];
+        }
+        return sum;
+    }
     return (ctx->st->img.md != NULL) ? ctx->st->img.md->cnt0 : ctx->last_cnt0;
 }
 
 /** tv_mapped() - The mapping can be read now; one just dropped is looked into at once. */
 static int tv_mapped(tv_state_t *ctx)
 {
+    if (ctx->nstreams > 1)
+    {
+        int any = 0;
+        for (int k = 0; k < ctx->nstreams; k++)
+        {
+            int had = (ctx->streams[k].map != NULL);
+            if (tv_stream_safe(&ctx->streams[k]))
+            {
+                any = 1;
+            }
+            else
+            {
+                ctx->recheck |= had;
+            }
+        }
+        return any;
+    }
     int had = (ctx->st->map != NULL);
     if (tv_stream_safe(ctx->st))
     {
@@ -68,20 +95,36 @@ static void tv_update_stats(tv_state_t *ctx, int64_t now_us)
         (now_cpu.tv_sec - ctx->stats_cpu.tv_sec) + (now_cpu.tv_nsec - ctx->stats_cpu.tv_nsec) / 1e9;
     ctx->current_cpu_usage = cpu_diff / real_diff * 100.0;
 
-    uint64_t cnt0 = tv_cnt0(ctx);
-    /* a counter that went backwards means the stream was reset: re-baseline */
-    ctx->current_stream_fps = (cnt0 >= ctx->last_cnt0_for_fps)
-                                  ? (double) (cnt0 - ctx->last_cnt0_for_fps) / real_diff
-                                  : 0.0;
+    if (ctx->nstreams > 1)
+    {
+        uint64_t max_delta = 0;
+        for (int k = 0; k < ctx->nstreams; k++)
+        {
+            uint64_t c = (ctx->streams[k].img.md != NULL) ? ctx->streams[k].img.md->cnt0
+                                                          : ctx->last_cnt0_fps_arr[k];
+            uint64_t d = (c >= ctx->last_cnt0_fps_arr[k]) ? (c - ctx->last_cnt0_fps_arr[k]) : 0;
+            max_delta  = (d > max_delta) ? d : max_delta;
+            ctx->last_cnt0_fps_arr[k] = c;
+        }
+        ctx->current_stream_fps = (double) max_delta / real_diff;
+    }
+    else
+    {
+        uint64_t cnt0 = tv_cnt0(ctx);
+        /* a counter that went backwards means the stream was reset: re-baseline */
+        ctx->current_stream_fps = (cnt0 >= ctx->last_cnt0_for_fps)
+                                      ? (double) (cnt0 - ctx->last_cnt0_for_fps) / real_diff
+                                      : 0.0;
+        ctx->last_cnt0_for_fps  = cnt0;
+    }
     if (ctx->current_stream_fps > 0.0)
     {
         ctx->rate_hz = ctx->current_stream_fps;
     }
-    ctx->last_cnt0_for_fps = cnt0;
-    ctx->ui_fps            = ctx->flushes / real_diff;
-    ctx->flushes           = 0;
-    ctx->stats_time_us     = now_us;
-    ctx->stats_cpu         = now_cpu;
+    ctx->ui_fps        = ctx->flushes / real_diff;
+    ctx->flushes       = 0;
+    ctx->stats_time_us = now_us;
+    ctx->stats_cpu     = now_cpu;
 }
 
 /**
@@ -108,6 +151,10 @@ int64_t tv_stale_age_us(const tv_state_t *ctx, int64_t now_us)
 /** tv_seen_at() - When the stream was last written (tv_now_us() time), from its write time. */
 static int64_t tv_seen_at(const IMAGE_METADATA *md, int64_t now_us)
 {
+    if (md == NULL)
+    {
+        return now_us;
+    }
     struct timespec wall;
     clock_gettime(CLOCK_ISIO, &wall);
     double age = (double) (wall.tv_sec - md->writetime.tv_sec) +
@@ -117,6 +164,30 @@ static int64_t tv_seen_at(const IMAGE_METADATA *md, int64_t now_us)
         return now_us - (int64_t) (age * 1e6);
     }
     return now_us; /* not set, or from another clock */
+}
+
+/** tv_newest_seen_at() - Most recent write timestamp across all streams in @ctx. */
+static int64_t tv_newest_seen_at(const tv_state_t *ctx, int64_t now_us)
+{
+    if (ctx->nstreams <= 1)
+    {
+        return tv_seen_at(ctx->st->img.md, now_us);
+    }
+    int64_t best = 0;
+    int     have = 0;
+    for (int k = 0; k < ctx->nstreams; k++)
+    {
+        if (ctx->streams[k].img.md != NULL)
+        {
+            int64_t t = tv_seen_at(ctx->streams[k].img.md, now_us);
+            if (!have || t > best)
+            {
+                best = t;
+                have = 1;
+            }
+        }
+    }
+    return have ? best : now_us;
 }
 
 /** tv_note_cnt0() - Record a cnt0 value seen at @now_us; true if it is a new frame. */
@@ -137,7 +208,17 @@ static int tv_note_cnt0(tv_state_t *ctx, uint64_t cnt0, int64_t now_us)
     {
         /* first change seen (or after a pause): not ours to time, but the frame says its age */
         ctx->period_us = 0.0;
-        seen           = tv_seen_at(ctx->st->img.md, now_us);
+        seen           = tv_newest_seen_at(ctx, now_us);
+    }
+    if (ctx->nstreams > 1)
+    {
+        for (int k = 0; k < ctx->nstreams; k++)
+        {
+            if (ctx->streams[k].img.md != NULL)
+            {
+                ctx->last_cnt0_multi[k] = ctx->streams[k].img.md->cnt0;
+            }
+        }
     }
     ctx->last_cnt0      = cnt0;
     ctx->last_change_us = seen;
@@ -204,19 +285,56 @@ static void tv_pause(tv_state_t *ctx, int on)
     tv_stream_t *st = ctx->st;
     free(ctx->frozen);
     ctx->frozen = NULL;
+    if (ctx->frozen_multi != NULL)
+    {
+        for (int k = 0; k < ctx->nstreams; k++)
+        {
+            free(ctx->frozen_multi[k]);
+            ctx->frozen_multi[k] = NULL;
+        }
+    }
     ctx->paused = on;
     if (on && tv_mapped(ctx))
     {
-        size_t n    = (size_t) st->xsize * st->ysize * st->zsize *
-                      (size_t) ImageStreamIO_typesize(st->datatype);
-        ctx->frozen = malloc(n);
-        if (ctx->frozen == NULL)
+        if (ctx->nstreams > 1)
         {
-            ctx->paused = 0; /* no memory for the copy: a pause would show live data; refuse */
-            tv_write_all("\a", 1);
-            return;
+            for (int k = 0; k < ctx->nstreams; k++)
+            {
+                tv_stream_t *sk = &ctx->streams[k];
+                if (!tv_stream_safe(sk))
+                {
+                    continue;
+                }
+                size_t n =
+                    (size_t) sk->xsize * sk->ysize * (size_t) ImageStreamIO_typesize(sk->datatype);
+                ctx->frozen_multi[k] = malloc(n);
+                if (ctx->frozen_multi[k] == NULL)
+                {
+                    for (int j = 0; j < k; j++)
+                    {
+                        free(ctx->frozen_multi[j]);
+                        ctx->frozen_multi[j] = NULL;
+                    }
+                    ctx->paused = 0;
+                    tv_write_all("\a", 1);
+                    return;
+                }
+                memcpy(ctx->frozen_multi[k], sk->img.array.raw, n);
+            }
         }
-        memcpy(ctx->frozen, st->img.array.raw, n);
+        else
+        {
+            size_t n    = (size_t) st->xsize * st->ysize * st->zsize *
+                          (size_t) ImageStreamIO_typesize(st->datatype);
+            ctx->frozen = malloc(n);
+            if (ctx->frozen == NULL)
+            {
+                ctx->paused = 0; /* no memory for the copy: a pause would show live data; refuse */
+                tv_write_all("\a", 1);
+                return;
+            }
+            memcpy(ctx->frozen, st->img.array.raw, n);
+        }
     }
     if (!on)
     {
@@ -1857,31 +1975,65 @@ static void tv_stream_monitor(tv_state_t *ctx, int64_t now_us)
 {
     tv_stream_t *st       = ctx->st;
     int          was_gone = ctx->gone;
-    ctx->gone             = (tv_stream_check(st) != TV_STREAM_OK);
-    if (ctx->gone && !ctx->paused)
+    if (ctx->nstreams > 1)
     {
-        uint32_t xsize = st->xsize, ysize = st->ysize, zsize = st->zsize;
-        uint8_t  naxis = st->naxis;
-        if (tv_stream_reopen(st) == 0)
+        int any_ok = 0;
+        for (int k = 0; k < ctx->nstreams; k++)
         {
-            ctx->gone = 0;
-            if (st->xsize != xsize || st->ysize != ysize || st->zsize != zsize ||
-                st->naxis != naxis)
+            tv_stream_t *sk = &ctx->streams[k];
+            if (tv_stream_check(sk) == TV_STREAM_OK)
             {
-                ctx->view.zoom = 1.0;
-                ctx->view.cx   = 0.5;
-                ctx->view.cy   = 0.5;
+                any_ok = 1;
+                continue;
             }
-            if (ctx->opt.slice >= (int) st->zsize)
+            if (!ctx->paused && tv_stream_reopen(sk) == 0)
             {
-                ctx->opt.slice = (st->zsize > 0) ? (int) st->zsize - 1 : 0;
+                if (sk->naxis != 2 || sk->xsize != ctx->vstream.xsize ||
+                    sk->ysize != ctx->vstream.ysize)
+                {
+                    tv_stream_close(sk);
+                    continue;
+                }
+                any_ok                    = 1;
+                ctx->last_cnt0_multi[k]   = sk->img.md->cnt0;
+                ctx->last_cnt0_fps_arr[k] = sk->img.md->cnt0;
+                ctx->period_us            = -1.0;
+                ctx->last_change_us       = tv_seen_at(sk->img.md, now_us);
+                ctx->im.have_range        = 0;
+                ctx->dirty |= TV_D_GEOM | TV_D_DATA | TV_D_CHROME;
             }
-            ctx->last_cnt0         = st->img.md->cnt0;
-            ctx->last_cnt0_for_fps = st->img.md->cnt0;
-            ctx->period_us         = -1.0;
-            ctx->last_change_us    = tv_seen_at(st->img.md, now_us);
-            ctx->im.have_range     = 0; /* other values: no smoothing from the old ones */
-            ctx->dirty |= TV_D_GEOM | TV_D_DATA | TV_D_CHROME;
+        }
+        ctx->last_cnt0 = tv_cnt0(ctx);
+        ctx->gone      = !any_ok;
+    }
+    else
+    {
+        ctx->gone = (tv_stream_check(st) != TV_STREAM_OK);
+        if (ctx->gone && !ctx->paused)
+        {
+            uint32_t xsize = st->xsize, ysize = st->ysize, zsize = st->zsize;
+            uint8_t  naxis = st->naxis;
+            if (tv_stream_reopen(st) == 0)
+            {
+                ctx->gone = 0;
+                if (st->xsize != xsize || st->ysize != ysize || st->zsize != zsize ||
+                    st->naxis != naxis)
+                {
+                    ctx->view.zoom = 1.0;
+                    ctx->view.cx   = 0.5;
+                    ctx->view.cy   = 0.5;
+                }
+                if (ctx->opt.slice >= (int) st->zsize)
+                {
+                    ctx->opt.slice = (st->zsize > 0) ? (int) st->zsize - 1 : 0;
+                }
+                ctx->last_cnt0         = st->img.md->cnt0;
+                ctx->last_cnt0_for_fps = st->img.md->cnt0;
+                ctx->period_us         = -1.0;
+                ctx->last_change_us    = tv_seen_at(st->img.md, now_us);
+                ctx->im.have_range     = 0; /* other values: no smoothing from the old ones */
+                ctx->dirty |= TV_D_GEOM | TV_D_DATA | TV_D_CHROME;
+            }
         }
     }
     if (ctx->gone != was_gone)
@@ -1966,30 +2118,117 @@ int64_t tv_wake_at(const tv_state_t *ctx, const tv_timers_t *tm, int64_t now_us,
 }
 
 /**
- * termview_run - Open an ImageStreamIO stream and run the interactive terminal viewer.
- * @name: Stream name or path (including optional slice suffix).
- * @opt:  Initial viewer options.
+ * tv_close_streams - Close and free an array of @nstreams opened streams.
+ * @streams:  Array of stream handles.
+ * @nstreams: Number of opened entries in @streams.
  *
- * Opens the target stream, initializes the raw terminal and signal handlers,
- * runs the poll-driven rendering and flow-control loop until quit or hangup,
- * drains any in-flight CPR replies, and restores terminal state.
+ * Return: void.
+ */
+static void tv_close_streams(tv_stream_t *streams, int nstreams)
+{
+    if (streams == NULL)
+    {
+        return;
+    }
+    for (int k = 0; k < nstreams; k++)
+    {
+        tv_stream_close(&streams[k]);
+    }
+    free(streams);
+}
+
+/**
+ * tv_free_state - Release all dynamically allocated buffers inside @ctx and @ctx itself.
+ * @ctx: Termview state structure to free.
+ *
+ * Return: void.
+ */
+static void tv_free_state(tv_state_t *ctx)
+{
+    if (ctx == NULL)
+    {
+        return;
+    }
+    tv_image_free(&ctx->im);
+    free(ctx->frozen);
+    if (ctx->frozen_multi != NULL)
+    {
+        for (int k = 0; k < ctx->nstreams; k++)
+        {
+            free(ctx->frozen_multi[k]);
+        }
+        free(ctx->frozen_multi);
+    }
+    free(ctx->src_ptrs);
+    free(ctx->src_dtypes);
+    free(ctx->last_cnt0_multi);
+    free(ctx->last_cnt0_fps_arr);
+    free(ctx->screen);
+    free(ctx->prev_screen);
+    free(ctx->frame_buffer);
+    free(ctx);
+}
+
+/**
+ * termview_run_multi - Open one or more ImageStreamIO streams and run the terminal viewer.
+ * @names:    Array of @nstreams stream names or paths.
+ * @nstreams: Number of streams to view (>= 1).
+ * @opt:      Initial viewer options.
+ *
+ * When `@nstreams > 1`, validates that all streams are 2D with identical
+ * `xsize x ysize` dimensions and binds them as slices of a synthetic 3D
+ * descriptor so they can be viewed side-by-side in gallery mode (or scrubbed
+ * in slice/remap modes) with a shared intensity range and colorbar.
  *
  * Return: 0 on normal exit, 1 on error or hangup.
  */
-int termview_run(const char *name, const termview_options_t *opt)
+int termview_run_multi(const char *const *names, int nstreams, const termview_options_t *opt)
 {
-    char        err[512];
-    tv_stream_t st;
+    char err[512];
 
-    if (tv_stream_open(&st, name, err, sizeof(err)) != 0)
+    if (names == NULL || nstreams < 1)
     {
-        fprintf(stderr, "Error: %s\n", err);
+        fprintf(stderr, "Error: missing stream name\n");
         return 1;
     }
+
+    tv_stream_t *streams = (tv_stream_t *) calloc((size_t) nstreams, sizeof(tv_stream_t));
+    if (streams == NULL)
+    {
+        fprintf(stderr, "Error: out of memory\n");
+        return 1;
+    }
+
+    for (int k = 0; k < nstreams; k++)
+    {
+        if (tv_stream_open(&streams[k], names[k], err, sizeof(err)) != 0)
+        {
+            fprintf(stderr, "Error: %s\n", err);
+            tv_close_streams(streams, k);
+            return 1;
+        }
+        if (nstreams > 1 && streams[k].naxis != 2)
+        {
+            fprintf(stderr, "Error: stream '%s' is %uD; multi-stream mode requires 2D streams\n",
+                    streams[k].name, (unsigned) streams[k].naxis);
+            tv_close_streams(streams, k + 1);
+            return 1;
+        }
+        if (nstreams > 1 &&
+            (streams[k].xsize != streams[0].xsize || streams[k].ysize != streams[0].ysize))
+        {
+            fprintf(stderr, "Error: stream '%s' is %ux%u, expected %ux%u to match '%s'\n",
+                    streams[k].name, streams[k].xsize, streams[k].ysize, streams[0].xsize,
+                    streams[0].ysize, streams[0].name);
+            tv_close_streams(streams, k + 1);
+            return 1;
+        }
+    }
+
     if (tv_term_init(err, sizeof(err)) != 0)
     {
         fprintf(stderr, "Error: %s\n", err);
-        tv_stream_close(&st);
+        tv_close_streams(streams, nstreams);
         return 1;
     }
 
@@ -1997,18 +2236,55 @@ int termview_run(const char *name, const termview_options_t *opt)
     if (ctx == NULL)
     {
         fprintf(stderr, "Error: out of memory\n");
-        tv_stream_close(&st);
+        tv_close_streams(streams, nstreams);
         return 1;
     }
-    ctx->st  = &st;
+    ctx->streams  = streams;
+    ctx->nstreams = nstreams;
+    if (nstreams > 1)
+    {
+        ctx->frozen_multi      = (void **) calloc((size_t) nstreams, sizeof(void *));
+        ctx->src_ptrs          = (const void **) calloc((size_t) nstreams, sizeof(const void *));
+        ctx->src_dtypes        = (uint8_t *) calloc((size_t) nstreams, sizeof(uint8_t));
+        ctx->last_cnt0_multi   = (uint64_t *) calloc((size_t) nstreams, sizeof(uint64_t));
+        ctx->last_cnt0_fps_arr = (uint64_t *) calloc((size_t) nstreams, sizeof(uint64_t));
+        if (!ctx->frozen_multi || !ctx->src_ptrs || !ctx->src_dtypes || !ctx->last_cnt0_multi ||
+            !ctx->last_cnt0_fps_arr)
+        {
+            fprintf(stderr, "Error: out of memory\n");
+            tv_free_state(ctx);
+            tv_close_streams(streams, nstreams);
+            return 1;
+        }
+        for (int k = 0; k < nstreams; k++)
+        {
+            ctx->last_cnt0_multi[k]   = streams[k].img.md->cnt0;
+            ctx->last_cnt0_fps_arr[k] = streams[k].img.md->cnt0;
+        }
+        ctx->vstream          = streams[0];
+        ctx->vstream.fd       = -1;
+        ctx->vstream.map      = NULL;
+        ctx->vstream.mapsize  = 0;
+        ctx->vstream.zsize    = (uint32_t) nstreams;
+        ctx->vstream.naxis    = 3;
+        ctx->vstream.datatype = streams[0].datatype;
+        snprintf(ctx->vstream.name, sizeof(ctx->vstream.name), "%s (+%d)", streams[0].name,
+                 nstreams - 1);
+        ctx->st = &ctx->vstream;
+    }
+    else
+    {
+        ctx->st = &streams[0];
+    }
+
     ctx->opt = *opt;
     if (ctx->opt.slice < 0)
     {
         ctx->opt.slice = 0;
     }
-    else if (st.zsize > 0 && ctx->opt.slice >= (int) st.zsize)
+    else if (ctx->st->zsize > 0 && ctx->opt.slice >= (int) ctx->st->zsize)
     {
-        ctx->opt.slice = (int) st.zsize - 1;
+        ctx->opt.slice = (int) ctx->st->zsize - 1;
     }
     ctx->view.zoom         = 1.0;
     ctx->view.cx           = 0.5;
@@ -2019,9 +2295,9 @@ int termview_run(const char *name, const termview_options_t *opt)
     ctx->lut_scale         = -1;
     ctx->cur_max           = 1.0;
     ctx->target_fps        = (opt->fps >= 1 && opt->fps <= 120) ? opt->fps : 20;
-    ctx->last_cnt0         = st.img.md->cnt0; /* the first frame is drawn by the TV_D_FULL above */
-    ctx->period_us         = -1.0;            /* no frame interval observed yet */
-    ctx->last_cnt0_for_fps = st.img.md->cnt0;
+    ctx->last_cnt0         = tv_cnt0(ctx); /* the first frame is drawn by the TV_D_FULL above */
+    ctx->period_us         = -1.0;         /* no frame interval observed yet */
+    ctx->last_cnt0_for_fps = ctx->last_cnt0;
     int alloc_failed       = 0;
 
     ctx->stats_time_us = tv_now_us();
@@ -2029,13 +2305,13 @@ int termview_run(const char *name, const termview_options_t *opt)
     tv_emit_init(&ctx->emit,
                  (opt->colors >= 1 && opt->colors <= 3) ? opt->colors : tv_term_color_level());
 
-    ctx->last_change_us = tv_seen_at(st.img.md, ctx->stats_time_us); /* the newest frame's age */
+    ctx->last_change_us = tv_newest_seen_at(ctx, ctx->stats_time_us); /* the newest frame's age */
 
     if (tv_term_enter() != 0)
     {
         tv_term_restore();
-        tv_stream_close(&st);
-        free(ctx);
+        tv_free_state(ctx);
+        tv_close_streams(streams, nstreams);
         fprintf(stderr, "Error: cannot configure the terminal\n");
         return 1;
     }
@@ -2248,7 +2524,8 @@ int termview_run(const char *name, const termview_options_t *opt)
         {
             tv_view_sanitize(&ctx->view.zoom, &ctx->view.cx, &ctx->view.cy, tv_zmax(ctx));
             tv_vgeom_t vg;
-            tv_vgeom_compute(&vg, &lay, st.xsize, st.ysize, st.zsize, st.naxis, &ctx->opt);
+            tv_vgeom_compute(&vg, &lay, ctx->st->xsize, ctx->st->ysize, ctx->st->zsize,
+                             ctx->st->naxis, &ctx->opt);
             ctx->opt.slice = vg.slice;
             tv_xform_t xf;
             tv_xform_compute_3d(&xf, &lay, &ctx->view, &vg, ctx->opt.flip_h, ctx->opt.flip_v);
@@ -2259,10 +2536,31 @@ int termview_run(const char *name, const termview_options_t *opt)
             }
         }
         /* the frozen copy while paused, else the mapping; nothing once the mapping is gone */
-        const void *src = (ctx->paused && ctx->frozen) ? ctx->frozen
-                          : tv_mapped(ctx)             ? st.img.array.raw
-                                                       : NULL;
-        if (src == NULL)
+        int         any_src = 0;
+        const void *src     = NULL;
+        if (ctx->nstreams > 1)
+        {
+            for (int k = 0; k < ctx->nstreams; k++)
+            {
+                const void *p = ctx->paused                        ? ctx->frozen_multi[k]
+                                : tv_stream_safe(&ctx->streams[k]) ? ctx->streams[k].img.array.raw
+                                                                   : NULL;
+                ctx->src_ptrs[k]   = p;
+                ctx->src_dtypes[k] = ctx->streams[k].datatype;
+                if (p != NULL)
+                {
+                    any_src = 1;
+                }
+            }
+        }
+        else
+        {
+            src     = (ctx->paused && ctx->frozen) ? ctx->frozen
+                      : tv_mapped(ctx)             ? ctx->st->img.array.raw
+                                                   : NULL;
+            any_src = (src != NULL);
+        }
+        if (!any_src)
         {
             ctx->im.held = 0; /* no samples: no held rows to refresh */
             if (dirty & (TV_D_GEOM | TV_D_FULL))
@@ -2275,7 +2573,16 @@ int termview_run(const char *name, const termview_options_t *opt)
         }
         if (dirty & (TV_D_GEOM | TV_D_FULL | TV_D_DATA))
         {
-            sampled      = tv_image_sample(&ctx->im, src, st.datatype);
+            if (ctx->nstreams > 1)
+            {
+                uint64_t slice_elems = (uint64_t) ctx->st->xsize * (uint64_t) ctx->st->ysize;
+                sampled = tv_image_sample_multi(&ctx->im, ctx->src_ptrs, ctx->src_dtypes,
+                                                ctx->nstreams, slice_elems);
+            }
+            else
+            {
+                sampled = tv_image_sample(&ctx->im, src, ctx->st->datatype);
+            }
             ctx->resting = !sampled && (dirty & TV_D_DATA);
             if (!sampled && ctx->im.held)
             {
@@ -2320,14 +2627,9 @@ int termview_run(const char *name, const termview_options_t *opt)
     tv_note_dropped(dropped);
     ImageStreamIO_set_default_printError();
 
-    tv_image_free(&ctx->im);
-    free(ctx->frozen);
-    free(ctx->screen);
-    free(ctx->prev_screen);
-    free(ctx->frame_buffer);
     int status = ctx->exit_status;
-    free(ctx);
-    tv_stream_close(&st);
+    tv_free_state(ctx);
+    tv_close_streams(streams, nstreams);
 
     if (tv_sig_quit)
     {
@@ -2348,4 +2650,20 @@ int termview_run(const char *name, const termview_options_t *opt)
         return 1;
     }
     return status;
+}
+
+/**
+ * termview_run - Open an ImageStreamIO stream and run the interactive terminal viewer.
+ * @name: Stream name or path (including optional slice suffix).
+ * @opt:  Initial viewer options.
+ *
+ * Opens the target stream, initializes the raw terminal and signal handlers,
+ * runs the poll-driven rendering and flow-control loop until quit or hangup,
+ * drains any in-flight CPR replies, and restores terminal state.
+ *
+ * Return: 0 on normal exit, 1 on error or hangup.
+ */
+int termview_run(const char *name, const termview_options_t *opt)
+{
+    return termview_run_multi(&name, 1, opt);
 }

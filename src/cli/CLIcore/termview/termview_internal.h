@@ -608,6 +608,16 @@ int tv_image_geom_3d(tv_image_t        *im,
 /** tv_image_sample() - Sample @data through the tables; returns 0 if identical to last frame. */
 int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype);
 
+/**
+ * tv_image_sample_multi() - Sample @nstreams 2D streams of @slice_elems pixels each
+ * through the 3D virtual geometry tables; returns 0 if identical to last frame.
+ */
+int tv_image_sample_multi(tv_image_t        *im,
+                          const void *const *srcs,
+                          const uint8_t     *dtypes,
+                          int                nstreams,
+                          uint64_t           slice_elems);
+
 /** tv_image_range() - Display range for @opt from the samples; @snap skips the smoothing. */
 void tv_image_range(tv_image_t *im, const termview_options_t *opt, int snap);
 
@@ -841,6 +851,14 @@ typedef struct
 typedef struct
 {
     tv_stream_t       *st;
+    tv_stream_t       *streams;           /**< array of nstreams stream handles */
+    int                nstreams;          /**< number of streams (>= 1) */
+    tv_stream_t        vstream;           /**< synthetic 3D descriptor when nstreams > 1 */
+    void             **frozen_multi;      /**< per-stream frozen copies at pause */
+    const void       **src_ptrs;          /**< per-stream active source pointers */
+    uint8_t           *src_dtypes;        /**< per-stream active datatype codes */
+    uint64_t          *last_cnt0_multi;   /**< per-stream last cnt0 seen */
+    uint64_t          *last_cnt0_fps_arr; /**< per-stream cnt0 at last stats tick */
     termview_options_t opt;
     tv_view_t          view;
     tv_layout_t        lay; /**< layout of the last frame */

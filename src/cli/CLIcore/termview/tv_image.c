@@ -549,7 +549,7 @@ FOREACH_REAL_DATATYPE(TV_SAMPLER)
 #undef TV_SAMPLER
 
 /** tv_pixel() - Element @idx of @data as double. */
-static double tv_pixel(const void *data, uint8_t datatype, size_t idx)
+static inline double tv_pixel(const void *data, uint8_t datatype, size_t idx)
 {
     switch (datatype)
     {
@@ -635,6 +635,53 @@ static double tv_offset(const tv_image_t *im, const void *data, uint8_t datatype
 }
 
 /**
+ * tv_offset_multi() - Reference value for wide types across @nstreams 2D streams.
+ */
+static double tv_offset_multi(const tv_image_t  *im,
+                              const void *const *srcs,
+                              const uint8_t     *dtypes,
+                              int                nstreams,
+                              int64_t            s_elems)
+{
+    double v[9];
+    int    n = 0;
+    for (int gi = 0; gi < 3; gi++)
+    {
+        int i = tv_nearest_in(im->row_in, im->nrows, (im->nrows * (2 * gi + 1)) / 6);
+        for (int gj = 0; gj < 3 && i >= 0; gj++)
+        {
+            int j = tv_nearest_in(im->col_in, im->ncols, (im->ncols * (2 * gj + 1)) / 6);
+            if (j < 0)
+            {
+                break;
+            }
+            int64_t idx = im->row_off[i] + im->col_src[j];
+            if (idx < 0 || idx >= im->nelem || s_elems <= 0)
+            {
+                continue;
+            }
+            int    z   = (int) (idx / s_elems);
+            size_t rem = (size_t) (idx % s_elems);
+            if (z < 0 || z >= nstreams || srcs[z] == NULL)
+            {
+                continue;
+            }
+            double p = tv_pixel(srcs[z], dtypes[z], rem);
+            if (tv_finite(p))
+            {
+                v[n++] = p;
+            }
+        }
+    }
+    if (n == 0)
+    {
+        return 0.0;
+    }
+    qsort(v, (size_t) n, sizeof(v[0]), cmp_double);
+    return v[n / 2];
+}
+
+/**
  * tv_image_sample - Sample the source image through the viewport lookup tables
  * @im:       Image pipeline state
  * @data:     Pointer to raw source pixel buffer
@@ -673,6 +720,106 @@ int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype)
     default:
         return 1;
     }
+
+    im->blank    = 0;
+    size_t bytes = (size_t) im->ncols * im->nrows * sizeof(float);
+    int    changed =
+        !(im->have_prev && im->offset == im->prev_offset && memcmp(im->samp, im->prev, bytes) == 0);
+    im->have_prev   = 1;
+    im->prev_offset = im->offset;
+    return changed;
+}
+
+/**
+ * tv_image_sample_multi - Sample @nstreams 2D streams through the 3D viewport lookup tables
+ * @im:          Image pipeline state
+ * @srcs:        Array of @nstreams raw source pixel pointers (entries may be NULL if unmapped)
+ * @dtypes:      Array of @nstreams ImageStreamIO datatype codes
+ * @nstreams:    Number of streams (slices along the virtual Z axis)
+ * @slice_elems: Number of pixels per 2D stream (`xsize * ysize`)
+ *
+ * Samples each display position `(i, j)` by decomposing its virtual 3D linear
+ * offset `ro + cs[j]` into stream index `z = idx / slice_elems` and 2D pixel
+ * offset `rem = idx % slice_elems`, computing a unified `vmin`, `vmax`, and
+ * `nvalid` across all visible streams.
+ *
+ * Return: Non-zero if the sampled grid differs from the previous sample, 0 if unchanged
+ */
+int tv_image_sample_multi(tv_image_t        *im,
+                          const void *const *srcs,
+                          const uint8_t     *dtypes,
+                          int                nstreams,
+                          uint64_t           slice_elems)
+{
+    int64_t s_elems = (slice_elems > 0) ? (int64_t) slice_elems : 1;
+    int     wide    = 0;
+    for (int k = 0; k < nstreams; k++)
+    {
+        uint8_t dt = dtypes[k];
+        if (dt == _DATATYPE_INT32 || dt == _DATATYPE_UINT32 || dt == _DATATYPE_INT64 ||
+            dt == _DATATYPE_UINT64 || dt == _DATATYPE_DOUBLE)
+        {
+            wide = 1;
+            break;
+        }
+    }
+    im->offset = wide ? tv_offset_multi(im, srcs, dtypes, nstreams, s_elems) : 0.0;
+
+    float *keep  = im->prev;
+    im->prev     = im->samp;
+    im->samp     = keep;
+    size_t cap   = im->prev_cap;
+    im->prev_cap = im->samp_cap;
+    im->samp_cap = cap;
+
+    const int64_t *MILK_RESTRICT cs     = im->col_src;
+    int64_t                      nelem  = im->nelem;
+    double                       offset = im->offset;
+    float                        vmin = FLT_MAX, vmax = -FLT_MAX;
+    long                         nvalid = 0;
+
+    for (int i = 0; i < im->nrows; i++)
+    {
+        float *MILK_RESTRICT row = im->samp + (size_t) i * im->ncols;
+        int64_t              ro  = im->row_off[i];
+        if (ro < 0 || ro >= nelem)
+        {
+            for (int j = 0; j < im->ncols; j++)
+            {
+                row[j] = NAN;
+            }
+            continue;
+        }
+        int64_t lim = nelem - ro;
+        for (int j = 0; j < im->ncols; j++)
+        {
+            int64_t c = cs[j];
+            if (UNLIKELY(c < 0 || c >= lim))
+            {
+                row[j] = NAN;
+                continue;
+            }
+            int64_t idx = ro + c;
+            int     z   = (int) (idx / s_elems);
+            size_t  rem = (size_t) (idx % s_elems);
+            if (UNLIKELY(z < 0 || z >= nstreams || srcs[z] == NULL))
+            {
+                row[j] = NAN;
+                continue;
+            }
+            float v = (float) (tv_pixel(srcs[z], dtypes[z], rem) - offset);
+            row[j]  = v;
+            if (LIKELY(tv_finitef(v)))
+            {
+                vmin = (v < vmin) ? v : vmin;
+                vmax = (v > vmax) ? v : vmax;
+                nvalid++;
+            }
+        }
+    }
+    im->vmin   = vmin;
+    im->vmax   = vmax;
+    im->nvalid = nvalid;
 
     im->blank    = 0;
     size_t bytes = (size_t) im->ncols * im->nrows * sizeof(float);

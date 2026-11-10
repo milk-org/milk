@@ -489,6 +489,22 @@ static void test_3d_modes(const char *shmdir)
     TV_CHECK(tv_image_sample(&im, cube, _DATATYPE_FLOAT) == 1);
     TV_CHECK(im.nvalid > 0 && im.vmin == 0.0f && im.vmax == 423.0f);
 
+    /* 5b. Multi-stream 2D sampling (ZS separate 2D buffers sharing gallery & range) */
+    const void *srcs[ZS];
+    uint8_t     dtypes[ZS];
+    for (uint32_t z = 0; z < ZS; z++)
+    {
+        srcs[z]   = &cube[z * XS * YS];
+        dtypes[z] = _DATATYPE_FLOAT;
+    }
+    opt.mode3d = TV_3D_GALLERY;
+    tv_vgeom_compute(&vg, &l_no, XS, YS, ZS, 3, &opt);
+    tv_xform_compute_3d(&xf, &l_no, &view, &vg, false, false);
+    TV_CHECK(tv_image_geom_3d(&im, &l_no, &xf, &vg) == 0);
+    TV_CHECK(tv_image_sample_multi(&im, srcs, dtypes, ZS, (uint64_t) XS * YS) == 1);
+    TV_CHECK(im.nvalid > 0 && im.vmin == 0.0f && im.vmax == 423.0f);
+    TV_CHECK(tv_image_sample_multi(&im, srcs, dtypes, ZS, (uint64_t) XS * YS) == 0);
+
     tv_image_free(&im);
 
     /* 6. 3D stream opening, keyboard/menu actions, and interactive slider mouse controls */
