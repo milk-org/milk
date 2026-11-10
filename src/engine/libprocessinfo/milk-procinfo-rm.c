@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
             int   pid_alive = 0;
 
             int          fd    = -1;
-            PROCESSINFO *pinfo = processinfo_shm_link(fullpath, &fd);
+            PROCESSINFO *pinfo = processinfo_shm_link_ro(fullpath, &fd);
             if (pinfo != MAP_FAILED)
             {
                 pid      = pinfo->PID;

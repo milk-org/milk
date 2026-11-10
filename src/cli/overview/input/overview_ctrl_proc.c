@@ -106,16 +106,6 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
     char fname[1024];
     snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
-    struct stat st;
-    if (stat(fname, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
-    {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
-        }
-        return;
-    }
-
     int          fd    = -1;
     PROCESSINFO *pinfo = processinfo_shm_link(fname, &fd);
     if (pinfo == MAP_FAILED)

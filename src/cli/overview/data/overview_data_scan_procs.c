@@ -95,7 +95,7 @@ void ov_scan_procs(OV_MODEL *model)
             else
             {
                 int          pfd = -1;
-                PROCESSINFO *pm  = processinfo_shm_link(fpath, &pfd);
+                PROCESSINFO *pm  = processinfo_shm_link_ro(fpath, &pfd);
                 if (pm != MAP_FAILED)
                 {
                     if (s_pcache_nb >= OV_MAX_PROCS)
