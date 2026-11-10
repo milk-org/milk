@@ -366,11 +366,34 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
                     (int) K, B_d, (int) M);
     }
 #else
-    for (uint64_t j = 0; j < N && rc == 0; j++)
+    if (!is_sm || side == 'L')
     {
-        rc = solve_tri_col_d(K, A_d, transA, uplo, diag, &B_d[j * M]);
+        for (uint64_t j = 0; j < N && rc == 0; j++)
+        {
+            rc = solve_tri_col_d(K, A_d, transA, uplo, diag, &B_d[j * M]);
+        }
     }
-    (void) side;
+    else
+    {
+        double *row = (double *) malloc(sizeof(double) * N);
+        if (row == NULL)
+        {
+            rc = lap_err(err, errsz, "%s: out of memory", fn);
+        }
+        for (uint64_t i = 0; i < M && rc == 0; i++)
+        {
+            for (uint64_t j = 0; j < N; j++)
+            {
+                row[j] = B_d[i + j * M];
+            }
+            rc = solve_tri_col_d(K, A_d, !transA, uplo, diag, row);
+            for (uint64_t j = 0; j < N && rc == 0; j++)
+            {
+                B_d[i + j * M] = row[j];
+            }
+        }
+        free(row);
+    }
 #endif
 
     uint8_t pref_dt =

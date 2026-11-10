@@ -796,6 +796,32 @@ static int exec_ext_op(mcalc_prog_t                *prog,
                     sl             = &tmp_slot;
                 }
             }
+            imageID sid = (sl != NULL && sl->im_id >= 0 && milk_data.image[sl->im_id].used &&
+                           strcmp(milk_data.image[sl->im_id].name, sl->bare) == 0)
+                              ? sl->im_id
+                              : (sl != NULL ? mc_resolve_or_autoconnect_image(sl->name) : -1);
+            for (int q = 0; sid >= 0 && q < pts->nin; q++)
+            {
+                if (pts->in_ports[q].kind == MILK_PORT_IMAGE && f32_ids[q] == sid && !f32_tmp[q])
+                {
+                    const IMAGE *sim   = &milk_data.image[sid];
+                    uint32_t     csz[] = {
+                        sim->md[0].size[0],
+                        (sim->md[0].naxis > 1) ? sim->md[0].size[1] : 1,
+                        (sim->md[0].naxis > 2) ? sim->md[0].size[2] : 1,
+                    };
+                    imageID cid = mc_tmp_image(sim->md[0].naxis, csz, sim->md[0].datatype);
+                    if (cid >= 0)
+                    {
+                        memcpy(milk_data.image[cid].array.raw, sim->array.raw,
+                               (size_t) sim->md[0].nelement *
+                                   (size_t) ImageStreamIO_typesize(sim->md[0].datatype));
+                        f32_ids[q]    = cid;
+                        f32_tmp[q]    = 1;
+                        ctx.in_img[q] = &milk_data.image[cid];
+                    }
+                }
+            }
             out_ids[p] =
                 mc_out_prepare(sl, ctx.out_naxis[p], ctx.out_size[p], dt, in_unit, err, errsz);
         }
@@ -834,6 +860,25 @@ static int exec_ext_op(mcalc_prog_t                *prog,
             mc_store_scalar_var(lhs->u.ident.bare[0] != '\0' ? lhs->u.ident.bare
                                                              : lhs->u.ident.name,
                                 &lhs->u.ident.var_id, &sv);
+            if (out_val != NULL)
+            {
+                *out_val = sv;
+            }
+        }
+        else if (multi_s == NULL && p == 0)
+        {
+            mc_val_t sv = { .type = MC_VAL_DOUBLE, .dval = ctx.out_scalar[0] };
+            if (cs != NULL && cs->target_expr != NULL && cs->target_expr->kind == MC_EXPR_IDENT)
+            {
+                mc_expr_t *lhs = (mc_expr_t *) cs->target_expr;
+                mc_store_scalar_var(lhs->u.ident.bare[0] != '\0' ? lhs->u.ident.bare
+                                                                 : lhs->u.ident.name,
+                                    &lhs->u.ident.var_id, &sv);
+            }
+            if (prog != NULL)
+            {
+                prog->last_scalar = sv;
+            }
             if (out_val != NULL)
             {
                 *out_val = sv;
@@ -968,19 +1013,30 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
         (im0->md[0].naxis > 1) ? im0->md[0].size[1] : 1,
         (im0->md[0].naxis > 2) ? im0->md[0].size[2] : 1,
     };
-    uint8_t out_dt = keep_f64 ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    imageID oid    = mc_out_prepare(slot, im0->md[0].naxis, sz, out_dt, in_unit, err, errsz);
+    uint8_t work_dt = keep_f64 ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+    uint8_t out_dt  = mc_select_ctor_out_dt(slot, work_dt);
+    imageID oid     = mc_out_prepare(slot, im0->md[0].naxis, sz, out_dt, in_unit, err, errsz);
     if (oid < 0)
     {
         rc = -1;
         goto done;
     }
-    IMAGE *out = &milk_data.image[oid];
+    imageID wid = (out_dt == work_dt) ? oid : mc_tmp_image(im0->md[0].naxis, sz, work_dt);
+    if (wid < 0)
+    {
+        rc = ext_err(err, errsz, "%s: failed to allocate work buffer", ext->name);
+        goto done;
+    }
+    IMAGE *out = &milk_data.image[wid];
 
     if (ext->kind == MILK_EXT_IMG)
     {
         if (ext->img_fn(out, &milk_data.image[f0], pbuf) != 0)
         {
+            if (wid != oid)
+            {
+                mc_tmp_release(wid);
+            }
             rc = ext_err(err, errsz, "user image kernel '%s' failed", ext->name);
             goto done;
         }
@@ -1025,6 +1081,16 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
         {
             arith_team_run(nth, nel, blk_team_cb, &job);
         }
+    }
+    if (wid != oid)
+    {
+        IMAGE   *dst = &milk_data.image[oid];
+        uint64_t nel = dst->md[0].nelement;
+        for (uint64_t i = 0; i < nel; i++)
+        {
+            mc_write_im_pix(dst, out_dt, i, arith_read_im_pix(out, work_dt, i));
+        }
+        mc_tmp_release(wid);
     }
     mc_out_post(oid);
 

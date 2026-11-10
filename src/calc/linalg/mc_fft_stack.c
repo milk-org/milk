@@ -810,7 +810,9 @@ static int exec_fftshift(mc_slot_t       *slot,
                 }
                 else
                 {
-                    mc_write_im_pix(out, out_dt, didx, arith_read_im_pix(src, sdt, sidx));
+                    double re = 0.0, im_p = 0.0;
+                    read_pix_any(src, sdt, sidx, &re, &im_p);
+                    write_pix_any(out, out_dt, didx, re, im_p);
                 }
             }
         }
@@ -1017,13 +1019,12 @@ static int exec_rot90(mc_slot_t       *slot,
         }
         return fs_err(err, errsz, "rot90: expected 2D image");
     }
-    uint32_t nx    = src->md[0].size[0];
-    uint32_t ny    = src->md[0].size[1];
-    uint32_t sz[3] = { (k % 2 == 1) ? ny : nx, (k % 2 == 1) ? nx : ny, 1 };
-    uint8_t  sdt   = src->md[0].datatype;
-    uint8_t  out_dt =
-        mc_select_ctor_out_dt(slot, (sdt == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
-    imageID oid = mc_out_prepare(slot, 2, sz, out_dt, in_unit, err, errsz);
+    uint32_t nx     = src->md[0].size[0];
+    uint32_t ny     = src->md[0].size[1];
+    uint32_t sz[3]  = { (k % 2 == 1) ? ny : nx, (k % 2 == 1) ? nx : ny, 1 };
+    uint8_t  sdt    = src->md[0].datatype;
+    uint8_t  out_dt = mc_select_ctor_out_dt(slot, sdt);
+    imageID  oid    = mc_out_prepare(slot, 2, sz, out_dt, in_unit, err, errsz);
     if (oid < 0)
     {
         if (src_tmp)
@@ -1033,14 +1034,26 @@ static int exec_rot90(mc_slot_t       *slot,
         return -1;
     }
     IMAGE *out = &milk_data.image[oid];
+    size_t esz = (size_t) ImageStreamIO_typesize(sdt);
     for (uint32_t dy = 0; dy < sz[1]; dy++)
     {
         for (uint32_t dx = 0; dx < sz[0]; dx++)
         {
             uint32_t sx = (k == 0) ? dx : (k == 1) ? (nx - 1 - dy) : (k == 2) ? (nx - 1 - dx) : dy;
             uint32_t sy = (k == 0) ? dy : (k == 1) ? dx : (k == 2) ? (ny - 1 - dy) : (ny - 1 - dx);
-            mc_write_im_pix(out, out_dt, (uint64_t) dy * sz[0] + dx,
-                            arith_read_im_pix(src, sdt, (uint64_t) sy * nx + sx));
+            uint64_t sidx = (uint64_t) sy * nx + sx;
+            uint64_t didx = (uint64_t) dy * sz[0] + dx;
+            if (out_dt == sdt)
+            {
+                memcpy((uint8_t *) out->array.raw + didx * esz,
+                       (const uint8_t *) src->array.raw + sidx * esz, esz);
+            }
+            else
+            {
+                double re = 0.0, im_p = 0.0;
+                read_pix_any(src, sdt, sidx, &re, &im_p);
+                write_pix_any(out, out_dt, didx, re, im_p);
+            }
         }
     }
     mc_out_post(oid);

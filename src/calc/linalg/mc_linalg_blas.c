@@ -178,9 +178,69 @@ int mc_resolve_linalg_call(mc_expr_t *e,
         return blas_err(err, errsz, "%s: expected image argument", fn);
     }
 
-    /* Mark result as an image and infer output element datatype */
+    /* Mark result as an image and infer output element datatype and static shape */
     e->needs_image = 1;
     e->res_kind    = MC_RES_IMAGE;
+    if (strcmp(fn, "zeros") == 0 || strcmp(fn, "ones") == 0 || strcmp(fn, "iota") == 0)
+    {
+        int all_long = 1;
+        for (int i = 0; i < nargs; i++)
+        {
+            all_long &= (e->u.call.args[i]->kind == MC_EXPR_LONG && e->u.call.args[i]->u.lval > 0);
+        }
+        if (all_long && nargs >= 1 && nargs <= 3)
+        {
+            e->res_naxis   = (uint8_t) nargs;
+            e->res_size[0] = (uint32_t) e->u.call.args[0]->u.lval;
+            e->res_size[1] = (nargs >= 2) ? (uint32_t) e->u.call.args[1]->u.lval : 1;
+            e->res_size[2] = (nargs >= 3) ? (uint32_t) e->u.call.args[2]->u.lval : 1;
+        }
+    }
+    else if (strcmp(fn, "eye") == 0 && e->u.call.args[0]->kind == MC_EXPR_LONG &&
+             e->u.call.args[0]->u.lval > 0 &&
+             (nargs == 1 ||
+              (e->u.call.args[1]->kind == MC_EXPR_LONG && e->u.call.args[1]->u.lval > 0)))
+    {
+        e->res_naxis   = 2;
+        e->res_size[0] = (uint32_t) e->u.call.args[0]->u.lval;
+        e->res_size[1] = (nargs == 2) ? (uint32_t) e->u.call.args[1]->u.lval : e->res_size[0];
+        e->res_size[2] = 1;
+    }
+    else if (strcmp(fn, "vec") == 0)
+    {
+        e->res_naxis   = 1;
+        e->res_size[0] = (uint32_t) nargs;
+        e->res_size[1] = 1;
+        e->res_size[2] = 1;
+    }
+    else if (strcmp(fn, "reshape") == 0 && nargs >= 2 && nargs <= 4)
+    {
+        int all_long = 1;
+        for (int i = 1; i < nargs; i++)
+        {
+            all_long &= (e->u.call.args[i]->kind == MC_EXPR_LONG && e->u.call.args[i]->u.lval > 0);
+        }
+        if (all_long)
+        {
+            e->res_naxis   = (uint8_t) (nargs - 1);
+            e->res_size[0] = (uint32_t) e->u.call.args[1]->u.lval;
+            e->res_size[1] = (nargs >= 3) ? (uint32_t) e->u.call.args[2]->u.lval : 1;
+            e->res_size[2] = (nargs >= 4) ? (uint32_t) e->u.call.args[3]->u.lval : 1;
+        }
+    }
+    else if (strcmp(fn, "transpose") == 0 && e->u.call.args[0]->res_naxis >= 1)
+    {
+        e->res_naxis   = 2;
+        e->res_size[0] = (e->u.call.args[0]->res_naxis >= 2) ? e->u.call.args[0]->res_size[1] : 1;
+        e->res_size[1] = e->u.call.args[0]->res_size[0];
+        e->res_size[2] = 1;
+    }
+    else if ((strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0 || strcmp(fn, "fftshift") == 0) &&
+             e->u.call.args[0]->res_naxis > 0)
+    {
+        e->res_naxis = e->u.call.args[0]->res_naxis;
+        memcpy(e->res_size, e->u.call.args[0]->res_size, sizeof(e->res_size));
+    }
     if (strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0)
     {
         e->res_dt = any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT;
@@ -608,12 +668,18 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     }
     const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
     uint8_t      dtA = imA->md[0].datatype, dtB = imB->md[0].datatype;
-    if ((dtA != _DATATYPE_FLOAT && dtA != _DATATYPE_DOUBLE) || dtA != dtB)
+    if (dtA == _DATATYPE_COMPLEX_FLOAT || dtA == _DATATYPE_COMPLEX_DOUBLE ||
+        dtB == _DATATYPE_COMPLEX_FLOAT || dtB == _DATATYPE_COMPLEX_DOUBLE)
     {
-        rc = blas_err(err, errsz, "%s: expected matching float32 or float64 images",
+        rc = blas_err(err, errsz, "%s: complex images are not supported",
                       m->is_outer ? "outer" : "matmul");
         goto done;
     }
+    uint8_t pref_dt =
+        (dtA == _DATATYPE_DOUBLE || dtB == _DATATYPE_DOUBLE || dtA == _DATATYPE_INT64 ||
+         dtA == _DATATYPE_UINT64 || dtB == _DATATYPE_INT64 || dtB == _DATATYPE_UINT64)
+            ? _DATATYPE_DOUBLE
+            : _DATATYPE_FLOAT;
 
     /* Compute output shape and validate inner contraction dimensions */
     uint64_t M = 0, N = 0, K = 0;
@@ -644,7 +710,9 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
                strcmp(milk_data.image[slot->im_id].name, slot->bare) == 0)
                   ? slot->im_id
                   : mc_resolve_or_autoconnect_image(slot->name);
-        if (oid < 0 || milk_data.image[oid].md[0].datatype != dtA ||
+        if (oid < 0 ||
+            (milk_data.image[oid].md[0].datatype != _DATATYPE_FLOAT &&
+             milk_data.image[oid].md[0].datatype != _DATATYPE_DOUBLE) ||
             milk_data.image[oid].md[0].naxis != (uint8_t) out_naxis ||
             milk_data.image[oid].md[0].size[0] != out_sz[0] ||
             (out_naxis == 2 && milk_data.image[oid].md[0].size[1] != out_sz[1]))
@@ -657,13 +725,15 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     }
     else
     {
-        uint8_t out_dt = mc_select_ctor_out_dt(slot, dtA);
-        if (out_dt != dtA || (oid = mc_out_prepare(slot, (uint8_t) out_naxis, out_sz, out_dt,
-                                                   in_unit, err, errsz)) < 0)
+        uint8_t out_dt = mc_select_ctor_out_dt(slot, pref_dt);
+        if ((out_dt != _DATATYPE_FLOAT && out_dt != _DATATYPE_DOUBLE) ||
+            (oid = mc_out_prepare(slot, (uint8_t) out_naxis, out_sz, out_dt, in_unit, err, errsz)) <
+                0)
         {
-            rc = (out_dt != dtA) ? blas_err(err, errsz, "%s: destination stream datatype mismatch",
-                                            m->is_outer ? "outer" : "matmul")
-                                 : -1;
+            rc = (out_dt != _DATATYPE_FLOAT && out_dt != _DATATYPE_DOUBLE)
+                     ? blas_err(err, errsz, "%s: destination stream datatype mismatch",
+                                m->is_outer ? "outer" : "matmul")
+                     : -1;
             goto done;
         }
     }
@@ -917,8 +987,9 @@ static int exec_einsum(mc_slot_t       *slot,
     }
 
     /* Fast path 2: 3D cube contractions over flattened spatial planes (nx * ny) via GEMM */
-    if (nin == 2 && strlen(in_sub[0]) == 3 && (dtA == _DATATYPE_FLOAT || dtA == _DATATYPE_DOUBLE) &&
-        dtA == dtB && out_dt == dtA)
+    if (nin == 2 && strlen(in_sub[0]) == 3 && in_sub[0][0] != in_sub[0][1] &&
+        in_sub[0][0] != in_sub[0][2] && in_sub[0][1] != in_sub[0][2] &&
+        (dtA == _DATATYPE_FLOAT || dtA == _DATATYPE_DOUBLE) && dtA == dtB && out_dt == dtA)
     {
         IMAGE          vA = *imA, vB = *imB, vO = *out;
         IMAGE_METADATA mdA = imA->md[0], mdB = imB->md[0], mdO = out->md[0];
@@ -1128,22 +1199,31 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         {
             return -1;
         }
-        return (arith_image_scal_im(alpha, &milk_data.image[idC]) == 0)
-                   ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                   : blas_err(err, errsz, "scal: expected float or double image");
+        milk_data.image[idC].md[0].write = 1;
+        if (arith_image_scal_im(alpha, &milk_data.image[idC]) == 0)
+        {
+            return finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz);
+        }
+        milk_data.image[idC].md[0].write = 0;
+        return blas_err(err, errsz, "scal: expected float or double image");
     }
 
     if (strcmp(fn, "axpy") == 0)
     {
         if (resolve_inplace_target(rhs->u.call.args[2], fn, &idC, err, errsz) != 0 ||
-            mc_resolve_or_eval_im(rhs->u.call.args[1], -1, in_unit, &idA, &tmpA, err, errsz) != 0)
+            mc_resolve_or_eval_im(rhs->u.call.args[1], idC, in_unit, &idA, &tmpA, err, errsz) != 0)
         {
             return -1;
         }
+        milk_data.image[idC].md[0].write = 1;
         rc = arith_image_axpy_im(alpha, &milk_data.image[idA], &milk_data.image[idC]);
         if (tmpA)
         {
             mc_tmp_release(idA);
+        }
+        if (rc != 0)
+        {
+            milk_data.image[idC].md[0].write = 0;
         }
         return (rc == 0) ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
                          : blas_err(err, errsz,
@@ -1164,12 +1244,17 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             }
             return -1;
         }
-        rc = (arith_image_ger_check(&milk_data.image[idA], &milk_data.image[idB],
-                                    &milk_data.image[idC]) == 0 &&
-              arith_image_ger_im(&milk_data.image[idA], &milk_data.image[idB], alpha, 1.0,
-                                 &milk_data.image[idC]) == 0)
-                 ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                 : blas_err(err, errsz, "ger: dimension or datatype mismatch");
+        milk_data.image[idC].md[0].write = 1;
+        int ok = (arith_image_ger_check(&milk_data.image[idA], &milk_data.image[idB],
+                                        &milk_data.image[idC]) == 0 &&
+                  arith_image_ger_im(&milk_data.image[idA], &milk_data.image[idB], alpha, 1.0,
+                                     &milk_data.image[idC]) == 0);
+        if (!ok)
+        {
+            milk_data.image[idC].md[0].write = 0;
+        }
+        rc = ok ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
+                : blas_err(err, errsz, "ger: dimension or datatype mismatch");
         if (tmpA)
         {
             mc_tmp_release(idA);
@@ -1191,11 +1276,17 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         {
             return -1;
         }
-        rc = (arith_image_syrk_check(&milk_data.image[idA], transA, &milk_data.image[idC]) == 0 &&
-              arith_image_syrk_im(&milk_data.image[idA], transA, alpha, beta,
-                                  &milk_data.image[idC]) == 0)
-                 ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                 : blas_err(err, errsz, "syrk: dimension or datatype mismatch");
+        milk_data.image[idC].md[0].write = 1;
+        int ok =
+            (arith_image_syrk_check(&milk_data.image[idA], transA, &milk_data.image[idC]) == 0 &&
+             arith_image_syrk_im(&milk_data.image[idA], transA, alpha, beta,
+                                 &milk_data.image[idC]) == 0);
+        if (!ok)
+        {
+            milk_data.image[idC].md[0].write = 0;
+        }
+        rc = ok ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
+                : blas_err(err, errsz, "syrk: dimension or datatype mismatch");
         if (tmpA)
         {
             mc_tmp_release(idA);
@@ -1225,13 +1316,16 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         }
         const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
         IMAGE       *imC = &milk_data.image[idC];
-        rc = is_symv ? ((arith_image_symv_im(imA, imB, alpha, beta, imC) == 0)
-                            ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                            : blas_err(err, errsz, "symv: dimension or datatype mismatch"))
-                     : ((arith_image_matmul_check(imA, transA, imB, transB, imC, 0) == 0 &&
-                         arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, imC) == 0)
-                            ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                            : blas_err(err, errsz, "%s: dimension or datatype mismatch", fn));
+        imC->md[0].write = 1;
+        int ok = is_symv ? (arith_image_symv_im(imA, imB, alpha, beta, imC) == 0)
+                         : (arith_image_matmul_check(imA, transA, imB, transB, imC, 0) == 0 &&
+                            arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, imC) == 0);
+        if (!ok)
+        {
+            imC->md[0].write = 0;
+        }
+        rc = ok ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
+                : blas_err(err, errsz, "%s: dimension or datatype mismatch", fn);
         if (tmpA)
         {
             mc_tmp_release(idA);

@@ -1150,6 +1150,17 @@ int arith_image_syrk_im(const IMAGE *imA, int transA, double alpha, double beta,
  */
 int arith_image_symv_im(const IMAGE *imA, const IMAGE *imX, double alpha, double beta, IMAGE *imY)
 {
+    uint64_t nx = 0;
+    uint64_t ny = 0;
+    if (imA == NULL || imX == NULL || imY == NULL || !imA->used || !imX->used || !imY->used ||
+        imY == imA || imY == imX || imA->md[0].naxis != 2 ||
+        imA->md[0].size[0] != imA->md[0].size[1] || !arith_image_is_1d_vec(imX, &nx) ||
+        !arith_image_is_1d_vec(imY, &ny) || nx != imA->md[0].size[0] || ny != nx ||
+        is_complex_dt(imA->md[0].datatype) || is_complex_dt(imX->md[0].datatype) ||
+        (imY->md[0].datatype != _DATATYPE_FLOAT && imY->md[0].datatype != _DATATYPE_DOUBLE))
+    {
+        return -1;
+    }
     uint64_t N   = imA->md[0].size[0];
     uint8_t  dta = imA->md[0].datatype;
     uint8_t  dtx = imX->md[0].datatype;
@@ -1205,9 +1216,21 @@ int arith_image_symv_im(const IMAGE *imA, const IMAGE *imX, double alpha, double
  */
 int arith_image_axpy_im(double alpha, const IMAGE *imX, IMAGE *imY)
 {
+    if (imX == NULL || imY == NULL || !imX->used || !imY->used)
+    {
+        return -1;
+    }
+    uint8_t dtx = imX->md[0].datatype;
+    uint8_t dty = imY->md[0].datatype;
+    if (is_complex_dt(dtx) || (dty != _DATATYPE_FLOAT && dty != _DATATYPE_DOUBLE))
+    {
+        return -1;
+    }
+    if (imX->md[0].nelement != imY->md[0].nelement)
+    {
+        return -2;
+    }
     uint64_t nel = imY->md[0].nelement;
-    uint8_t  dtx = imX->md[0].datatype;
-    uint8_t  dty = imY->md[0].datatype;
 
     if (dtx == _DATATYPE_FLOAT && dty == _DATATYPE_FLOAT)
     {
