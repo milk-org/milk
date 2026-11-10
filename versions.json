@@ -1,5 +1,10 @@
 [
   {
+    "version": "vd-fdev-pipelines",
+    "title": "vd/fdev/pipelines",
+    "aliases": []
+  },
+  {
     "version": "framework-dev",
     "title": "framework-dev",
     "aliases": []
