@@ -577,10 +577,10 @@ int mc_find_scalar_op(const mc_pass_t *pass, const mc_expr_t *se, const mc_expr_
  */
 int mc_can_merge_passes(const mcalc_prog_t *prog, const mc_pass_t *a, const mc_pass_t *b)
 {
-    int bad =
-        (a->is_comp || b->is_comp || a->no_dst_bcast || b->no_dst_bcast ||
-         a->is_complex != b->is_complex || a->nouts + b->nouts > 8 || a->vnx == 0 || b->vnx == 0 ||
-         a->naxis != b->naxis || a->vnx != b->vnx || a->vny != b->vny || a->vnz != b->vnz);
+    int bad = (a->is_comp || b->is_comp || a->no_dst_bcast || b->no_dst_bcast ||
+               a->is_complex != b->is_complex || a->nouts + b->nouts > 8 ||
+               a->nops + b->nops > 64 || a->vnx == 0 || b->vnx == 0 || a->naxis != b->naxis ||
+               a->vnx != b->vnx || a->vny != b->vny || a->vnz != b->vnz);
     for (int i = 0; i < a->nouts; i++)
     {
         bad |= (a->outs[i].lhs_slice != NULL);
@@ -642,6 +642,10 @@ int mc_has_bcast_stencil(const mc_expr_t *e, const uint32_t dsz[3])
     for (int i = 0; !r && e != NULL && e->kind == MC_EXPR_CALL && i < e->u.call.nargs; i++)
     {
         r |= mc_has_bcast_stencil(e->u.call.args[i], dsz);
+    }
+    for (int i = 0; !r && e != NULL && e->kind == MC_EXPR_CHAIN && i <= e->u.chain.nops; i++)
+    {
+        r |= mc_has_bcast_stencil(e->u.chain.operands[i], dsz);
     }
     return r;
 }

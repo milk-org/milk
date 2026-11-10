@@ -735,8 +735,8 @@ int mc_prog_slots_valid(mcalc_prog_t *p, int same_gen)
             uint32_t sz[3] = { md ? md->size[0] : 0, (md && md->naxis >= 2) ? md->size[1] : 1,
                                (md && md->naxis >= 3) ? md->size[2] : 1 };
             if (!md || md->datatype != s->orig_dt ||
-                (s->plan_naxis > 0 &&
-                 (md->naxis != s->plan_naxis || memcmp(sz, s->plan_size, sizeof(sz)) != 0)))
+                (s->orig_naxis > 0 &&
+                 (md->naxis != s->orig_naxis || memcmp(sz, s->orig_size, sizeof(sz)) != 0)))
             {
                 return 0;
             }

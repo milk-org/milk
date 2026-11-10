@@ -259,7 +259,7 @@ static void emit_scalar_arg(emit_ctx_t *c, const mc_expr_t *e, int is_int)
     }
     if (is_int)
     {
-        eb_printf(c->eb, "llround((double)(");
+        eb_printf(c->eb, "mc_ish((double)(");
     }
     emit_expr(c, e);
     if (is_int)
@@ -468,8 +468,9 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
 
     case MC_FN_SHIFT:
     {
-        c->used_coord_shift  = 1;
-        int         op_idx   = resolve_im_arg_op(c, e->u.call.args[0], 0);
+        c->used_coord_shift = 1;
+        int         op_idx  = resolve_im_arg_op(c, e->u.call.args[0], 0);
+        const char *scast = (op_idx >= 0 && is_complex_dt(c->pass->ops[op_idx].dt)) ? c->ct : c->wt;
         int         is_roll  = (strcmp(fn->name, "roll") == 0);
         int         sh_id    = ++c->chain_seq;
         emit_buf_t *saved_eb = c->eb;
@@ -481,7 +482,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         }
         else
         {
-            eb_printf(c->eb, "((%s)_p%d[mc_shift_idx(&ops[%d], x, y, z", c->wt, op_idx, op_idx);
+            eb_printf(c->eb, "((%s)_p%d[mc_shift_idx(&ops[%d], x, y, z", scast, op_idx, op_idx);
         }
         for (int a = 1; a <= 3; a++)
         {
@@ -499,7 +500,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         if (c->eb == c->pre_eb)
         {
             c->eb = saved_eb;
-            eb_printf(c->eb, "((%s)_p%d[_sh%d + (int64_t)x])", c->wt, op_idx, sh_id);
+            eb_printf(c->eb, "((%s)_p%d[_sh%d + (int64_t)x])", scast, op_idx, sh_id);
         }
         return;
     }
@@ -783,7 +784,7 @@ static void emit_expr(emit_ctx_t *c, const mc_expr_t *e)
         {
             if (i > 0)
             {
-                eb_printf(c->eb, " && ");
+                eb_printf(c->eb, " & ");
             }
             eb_printf(c->eb, "(_ch%d_%d %s _ch%d_%d)", id, i, rel_op_str(e->u.chain.ops[i]), id,
                       i + 1);
@@ -1001,7 +1002,7 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
         {
             eb_printf(&k_eb,
                       "    const %s _sc%d = (%s)ops[%d].scalar; "
-                      "const int64_t _ish%d = (int64_t)llround(ops[%d].scalar); "
+                      "const int64_t _ish%d = mc_ish(ops[%d].scalar); "
                       "(void)_sc%d; (void)_ish%d;\n",
                       c.wt, i, c.wt, i, i, i, i, i);
         }

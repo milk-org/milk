@@ -157,7 +157,7 @@ static int is_ctor_call(const mc_expr_t *e)
            is_prestage_stencil_fn(fn) ||
            (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
            (fn != NULL && e->res_kind == MC_RES_IMAGE &&
-            (fn->kind == MC_FN_REDUCE_D ||
+            (fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L ||
              (fn->kind == MC_FN_PROG && strcmp(fn->name, "ema") == 0)));
 }
 
@@ -294,10 +294,12 @@ static int find_or_add_slot(mcalc_prog_t  *prog,
     const IMAGE *im    = (im_id >= 0) ? &milk_data.image[im_id] : NULL;
     s->orig_dt         = im ? im->md[0].datatype : (dt ? dt : _DATATYPE_FLOAT);
     s->plan_dt         = s->orig_dt;
-    s->plan_naxis      = im ? im->md[0].naxis : naxis;
-    s->plan_size[0]    = im ? im->md[0].size[0] : (sz ? sz[0] : 0);
-    s->plan_size[1]    = im ? ((s->plan_naxis > 1) ? im->md[0].size[1] : 1) : (sz ? sz[1] : 0);
-    s->plan_size[2]    = im ? ((s->plan_naxis > 2) ? im->md[0].size[2] : 1) : (sz ? sz[2] : 0);
+    s->orig_naxis      = im ? im->md[0].naxis : naxis;
+    s->orig_size[0]    = im ? im->md[0].size[0] : (sz ? sz[0] : 0);
+    s->orig_size[1]    = im ? ((s->orig_naxis > 1) ? im->md[0].size[1] : 1) : (sz ? sz[1] : 0);
+    s->orig_size[2]    = im ? ((s->orig_naxis > 2) ? im->md[0].size[2] : 1) : (sz ? sz[2] : 0);
+    s->plan_naxis      = s->orig_naxis;
+    memcpy(s->plan_size, s->orig_size, sizeof(s->plan_size));
     return prog->nslots++;
 }
 
@@ -463,6 +465,10 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         w->pass->prestage_cnt++;
         mc_op_desc_t d = { .slot_idx         = ps_sidx,
                            .dt               = p->slots[ps_sidx].plan_dt,
+                           .op_naxis         = p->slots[ps_sidx].plan_naxis,
+                           .op_size          = { p->slots[ps_sidx].plan_size[0],
+                                                 p->slots[ps_sidx].plan_size[1],
+                                                 p->slots[ps_sidx].plan_size[2] },
                            .is_non_pointwise = non_pt,
                            .is_table_arg     = tbl,
                            .slice_expr       = e,
@@ -496,13 +502,18 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
                                      e->u.slice.im_id, e->res_dt, 0, NULL)
                   : find_or_add_slot(w->prog, e->u.ident.name, e->u.ident.bare, e->u.ident.loc, 0,
                                      e->u.ident.im_id, e->res_dt, e->res_naxis, e->res_size);
-        mc_op_desc_t d = { .slot_idx         = sidx,
-                           .dt               = (sidx >= 0) ? w->prog->slots[sidx].plan_dt : 0,
-                           .is_non_pointwise = non_pt,
-                           .is_table_arg     = tbl,
-                           .has_slice        = is_sl,
-                           .slice_expr       = is_sl ? e : NULL,
-                           .comp_gen_idx     = -1 };
+        const mc_slot_t *sl_p = (sidx >= 0) ? &w->prog->slots[sidx] : NULL;
+        mc_op_desc_t     d    = { .slot_idx         = sidx,
+                                  .dt               = sl_p ? sl_p->plan_dt : 0,
+                                  .op_naxis         = sl_p ? sl_p->plan_naxis : 0,
+                                  .op_size          = { sl_p ? sl_p->plan_size[0] : 0,
+                                                        sl_p ? sl_p->plan_size[1] : 0,
+                                                        sl_p ? sl_p->plan_size[2] : 0 },
+                                  .is_non_pointwise = non_pt,
+                                  .is_table_arg     = tbl,
+                                  .has_slice        = is_sl,
+                                  .slice_expr       = is_sl ? e : NULL,
+                                  .comp_gen_idx     = -1 };
         return (sidx < 0 || add_pass_op(w->pass, &d) < 0) ? -1 : 0;
     }
     case MC_EXPR_UNARY:
@@ -691,7 +702,11 @@ static int add_pass_out(mcalc_prog_t    *prog,
                                      "imag() or abs() first");
     }
     uint8_t         out_dt = keep_t ? slot->orig_dt : (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT);
-    plan_walk_ctx_t w      = { .prog = prog, .pass = pass, .err = err, .errsz = errsz };
+    plan_walk_ctx_t w      = { .prog       = prog,
+                               .pass       = pass,
+                               .err        = err,
+                               .errsz      = errsz,
+                               .in_guarded = (lhs_sl != NULL && lhs_sl->u.slice.is_mask_index) };
     if (walk_pass_expr(&w, rhs, (assign_op == MC_TOK_DIV_ASSIGN && rhs->res_kind != MC_RES_IMAGE),
                        0, 0) != 0 ||
         (lhs_sl != NULL && lhs_sl->u.slice.is_mask_index &&
@@ -713,9 +728,11 @@ static int add_pass_out(mcalc_prog_t    *prog,
     }
     prog->slots[sidx].plan_dt = out_dt;
 
-    mc_op_desc_t od  = { 0 };
-    od.slot_idx      = sidx;
-    od.dt            = out_dt;
+    mc_op_desc_t od = { 0 };
+    od.slot_idx     = sidx;
+    od.dt           = out_dt;
+    od.op_naxis     = prog->slots[sidx].plan_naxis;
+    memcpy(od.op_size, prog->slots[sidx].plan_size, sizeof(od.op_size));
     od.is_out        = 1;
     od.comp_gen_idx  = -1;
     od.is_inplace_rw = (assign_op != MC_TOK_ASSIGN || lhs_sl != NULL);
@@ -756,7 +773,8 @@ static const mc_expr_t *unwrap_ax_red(const mc_op_desc_t *o)
     const mc_expr_t *se =
         (!o->is_scalar && !o->is_out && !o->has_slice && !o->is_expr_im) ? o->slice_expr : NULL;
     return (se && se->kind == MC_EXPR_CALL && se->u.call.fn &&
-            se->u.call.fn->kind == MC_FN_REDUCE_D && se->u.call.nargs == 2)
+            (se->u.call.fn->kind == MC_FN_REDUCE_D || se->u.call.fn->kind == MC_FN_REDUCE_L) &&
+            se->u.call.nargs == 2)
                ? se
                : NULL;
 }
@@ -804,10 +822,8 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
              ((o->scalar_expr->kind == MC_EXPR_LONG && labs(o->scalar_expr->u.lval) > 16777216L) ||
               (o->scalar_expr->kind == MC_EXPR_DOUBLE &&
                fabs(o->scalar_expr->u.dval) > 16777216.0)));
-        const mc_slot_t *os = (o->slot_idx >= 0) ? &prog->slots[o->slot_idx] : NULL;
-        has_non_red_im |=
-            (!o->is_scalar && !o->is_out && !o->is_table_arg && !unwrap_ax_red(o) &&
-             (!os || os->plan_size[0] != 1 || os->plan_size[1] != 1 || os->plan_size[2] != 1));
+        has_non_red_im |= (!o->is_scalar && !o->is_out && !o->is_table_arg && !unwrap_ax_red(o) &&
+                           (o->op_size[0] != 1 || o->op_size[1] != 1 || o->op_size[2] != 1));
     }
 
     /* When an axis reduction is combined with a full image, keep reduced axis as size 1 */
@@ -836,6 +852,15 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
             sl->plan_size[0] = (ax == 0) ? 1 : a0->res_size[0];
             sl->plan_size[1] = (ax == 1) ? 1 : ((a0->res_naxis > 1) ? a0->res_size[1] : 1);
             sl->plan_size[2] = (ax == 2) ? 1 : ((a0->res_naxis > 2) ? a0->res_size[2] : 1);
+            o->op_naxis      = sl->plan_naxis;
+            memcpy(o->op_size, sl->plan_size, sizeof(o->op_size));
+        }
+        else if (ub != NULL && ax < 0)
+        {
+            sl->plan_naxis = 0;
+            memset(sl->plan_size, 0, sizeof(sl->plan_size));
+            o->op_naxis = 0;
+            memset(o->op_size, 0, sizeof(o->op_size));
         }
     }
     pass->is_complex  = is_cplx;
@@ -868,48 +893,48 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
         {
             continue;
         }
-        const mc_slot_t *s = &prog->slots[o->slot_idx];
-        if (s->plan_naxis > 0 && s->plan_size[0] > 0 && sz[0] == 0)
+        if (o->op_naxis > 0 && o->op_size[0] > 0 && sz[0] == 0)
         {
-            nax = s->plan_naxis;
-            memcpy(sz, s->plan_size, sizeof(sz));
+            nax = o->op_naxis;
+            memcpy(sz, o->op_size, sizeof(sz));
         }
-        else if (s->plan_naxis == 0 || s->plan_size[0] == 0 || s->plan_naxis != nax ||
-                 (s->plan_size[0] != sz[0] && s->plan_size[0] != 1 && sz[0] != 1) ||
-                 (s->plan_size[1] != sz[1] && s->plan_size[1] != 1 && sz[1] != 1) ||
-                 (s->plan_size[2] != sz[2] && s->plan_size[2] != 1 && sz[2] != 1))
+        else if (o->op_naxis == 0 || o->op_size[0] == 0 || o->op_naxis != nax ||
+                 (o->op_size[0] != sz[0] && o->op_size[0] != 1 && sz[0] != 1) ||
+                 (o->op_size[1] != sz[1] && o->op_size[1] != 1 && sz[1] != 1) ||
+                 (o->op_size[2] != sz[2] && o->op_size[2] != 1 && sz[2] != 1))
         {
             contig = 0;
             dyn_sz = 1;
         }
-        else if (memcmp(sz, s->plan_size, sizeof(sz)) != 0)
+        else if (memcmp(sz, o->op_size, sizeof(sz)) != 0)
         {
             contig = 0;
             for (int a = 0; a < 3; a++)
             {
-                sz[a] = (sz[a] > s->plan_size[a]) ? sz[a] : s->plan_size[a];
+                sz[a] = (sz[a] > o->op_size[a]) ? sz[a] : o->op_size[a];
             }
         }
     }
     const mc_slot_t *s0 =
         (!dyn_sz && pass->nouts > 0) ? &prog->slots[pass->outs[0].slot_idx] : NULL;
-    if (s0 && sz[0] == 0 && s0->plan_naxis > 0 && s0->plan_size[0] > 0)
+    const mc_op_desc_t *od0 =
+        (!dyn_sz && pass->nouts > 0) ? &pass->ops[pass->outs[0].op_idx] : NULL;
+    if (s0 && od0 && sz[0] == 0 && od0->op_naxis > 0 && od0->op_size[0] > 0)
     {
-        nax = s0->plan_naxis;
-        memcpy(sz, s0->plan_size, sizeof(sz));
+        nax = od0->op_naxis;
+        memcpy(sz, od0->op_size, sizeof(sz));
     }
-    else if (s0 && sz[0] > 0 && pass->outs[0].lhs_slice == NULL && s0->existed_at_plan &&
-             s0->plan_naxis > 0 && s0->plan_size[0] > 0 && !pass->is_complex &&
-             !pass->no_dst_bcast &&
+    else if (s0 && od0 && sz[0] > 0 && pass->outs[0].lhs_slice == NULL && s0->existed_at_plan &&
+             od0->op_naxis > 0 && od0->op_size[0] > 0 && !pass->is_complex && !pass->no_dst_bcast &&
              (milk_data.image[s0->im_id].md[0].shared == 1 ||
               s0->orig_dt == pass->outs[0].out_dt) &&
-             (s0->plan_naxis != nax || memcmp(sz, s0->plan_size, sizeof(sz)) != 0) &&
-             (sz[0] == 1 || sz[0] == s0->plan_size[0]) &&
-             (sz[1] == 1 || sz[1] == s0->plan_size[1]) && (sz[2] == 1 || sz[2] == s0->plan_size[2]))
+             (od0->op_naxis != nax || memcmp(sz, od0->op_size, sizeof(sz)) != 0) &&
+             (sz[0] == 1 || sz[0] == od0->op_size[0]) && (sz[1] == 1 || sz[1] == od0->op_size[1]) &&
+             (sz[2] == 1 || sz[2] == od0->op_size[2]))
     {
         contig = 0;
-        nax    = s0->plan_naxis;
-        memcpy(sz, s0->plan_size, sizeof(sz));
+        nax    = od0->op_naxis;
+        memcpy(sz, od0->op_size, sizeof(sz));
     }
     if (dyn_sz)
     {
@@ -938,7 +963,7 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
     {
         mc_op_desc_t *o = &pass->ops[i];
         if (!o->is_scalar && !o->is_out && !o->is_table_arg && !o->has_slice && !o->is_expr_im &&
-            !o->is_non_pointwise && o->slot_idx >= 0 && prog->slots[o->slot_idx].plan_size[0] == 1)
+            !o->is_non_pointwise && o->slot_idx >= 0 && o->op_size[0] == 1)
         {
             o->is_x_bcast = 1;
         }
@@ -1071,7 +1096,10 @@ static mc_step_t *alloc_step(mcalc_prog_t *p, mc_step_kind_t kind, int stmt_idx)
 int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
 {
     (void) has_vars;
-    int idx = 0;
+    mc_expr_t *tmp_nodes[128] = { 0 };
+    int        ntmp_nodes     = 0;
+    int        rc             = -1;
+    int        idx            = 0;
     for (mc_stmt_t *s = p->ast_head; s != NULL; s = s->next, idx++)
     {
         if (s->kind == MC_STMT_EMPTY || s->kind == MC_STMT_DEF)
@@ -1082,13 +1110,17 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
                      !(s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2));
         if (bad_s || (s->kind == MC_STMT_EXPR && check_expr_supported(s->u.expr, err, errsz) != 0))
         {
-            return bad_s ? plan_err(err, errsz, "give as many values as names (a, b = x, y)") : -1;
+            if (bad_s)
+            {
+                (void) plan_err(err, errsz, "give as many values as names (a, b = x, y)");
+            }
+            goto done;
         }
         for (int j = 0; s->kind == MC_STMT_MULTI_ASSIGN && j < s->u.multi.nrhs; j++)
         {
             if (check_expr_supported(s->u.multi.rhs[j], err, errsz) != 0)
             {
-                return -1;
+                goto done;
             }
         }
 
@@ -1160,7 +1192,7 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
             if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, loc_fl, 0, aop, target, rhs,
                              err, errsz) != 0)
             {
-                return -1;
+                goto done;
             }
             finalize_pass_meta(p, &p->steps[p->nsteps - 1].pass);
             continue;
@@ -1215,6 +1247,19 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         {
             (void) alloc_step(p, MC_STEP_PASS, idx);
         }
+        int        need_multi_tmp         = 0;
+        mc_expr_t *multi_tmps[MC_MAX_LHS] = { 0 };
+        for (int j = 0; !multi_fused && any_im && j < s->u.multi.nlhs; j++)
+        {
+            const mc_expr_t *lhs = s->u.multi.lhs[j];
+            for (int k = 0; k < s->u.multi.nrhs; k++)
+            {
+                if (k != j && mc_expr_mentions_self(s->u.multi.rhs[k], lhs->u.ident.bare, NULL))
+                {
+                    need_multi_tmp = 1;
+                }
+            }
+        }
         for (int j = 0; any_im && j < s->u.multi.nlhs; j++)
         {
             const mc_expr_t *lhs = s->u.multi.lhs[j];
@@ -1224,18 +1269,55 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
             {
                 continue;
             }
+            const mc_expr_t *dst_lhs = lhs;
+            int              dst_loc = s->is_local;
+            if (!multi_fused && need_multi_tmp && ntmp_nodes < 128)
+            {
+                mc_expr_t *tmp = calloc(1, sizeof(mc_expr_t));
+                if (tmp == NULL)
+                {
+                    goto done;
+                }
+                tmp_nodes[ntmp_nodes++] = tmp;
+                tmp->kind               = MC_EXPR_IDENT;
+                tmp->res_kind           = MC_RES_IMAGE;
+                tmp->res_dt             = (lhs->u.ident.im_id >= 0 &&
+                                           (milk_data.image[lhs->u.ident.im_id].md[0].shared == 1 ||
+                                            rhs->res_kind != MC_RES_IMAGE))
+                                              ? milk_data.image[lhs->u.ident.im_id].md[0].datatype
+                                              : (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT);
+                tmp->res_naxis          = rhs->res_naxis;
+                memcpy(tmp->res_size, rhs->res_size, sizeof(tmp->res_size));
+                snprintf(tmp->u.ident.name, sizeof(tmp->u.ident.name), "_tmpcalcm_%d_%d", idx, j);
+                snprintf(tmp->u.ident.bare, sizeof(tmp->u.ident.bare), "_tmpcalcm_%d_%d", idx, j);
+                tmp->u.ident.loc     = 'L';
+                tmp->u.ident.id_kind = MC_ID_NEW;
+                tmp->u.ident.im_id   = -1;
+                tmp->u.ident.var_id  = -1;
+                multi_tmps[j]        = tmp;
+                dst_lhs              = tmp;
+                dst_loc              = 1;
+            }
             if (!multi_fused)
             {
                 alloc_step(p, MC_STEP_PASS, idx)->pass.no_dst_bcast = 1;
             }
-            if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, s->is_local, multi_fused,
-                             MC_TOK_ASSIGN, lhs, rhs, err, errsz) != 0)
+            if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, dst_loc, multi_fused,
+                             MC_TOK_ASSIGN, dst_lhs, rhs, err, errsz) != 0)
             {
-                return -1;
+                goto done;
             }
             if (!multi_fused)
             {
                 finalize_pass_meta(p, &p->steps[p->nsteps - 1].pass);
+                if (multi_tmps[j] != NULL)
+                {
+                    int tsidx                = p->steps[p->nsteps - 1].pass.outs[0].slot_idx;
+                    multi_tmps[j]->res_dt    = p->slots[tsidx].plan_dt;
+                    multi_tmps[j]->res_naxis = p->slots[tsidx].plan_naxis;
+                    memcpy(multi_tmps[j]->res_size, p->slots[tsidx].plan_size,
+                           sizeof(multi_tmps[j]->res_size));
+                }
             }
         }
         if (multi_fused)
@@ -1246,6 +1328,20 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         {
             alloc_step(p, MC_STEP_SCALAR, idx)->scalar_stmt = s;
         }
+        for (int j = 0; !multi_fused && need_multi_tmp && j < s->u.multi.nlhs; j++)
+        {
+            if (multi_tmps[j] == NULL)
+            {
+                continue;
+            }
+            alloc_step(p, MC_STEP_PASS, idx)->pass.no_dst_bcast = 1;
+            if (add_pass_out(p, &p->steps[p->nsteps - 1].pass, idx, s->is_local, 1, MC_TOK_ASSIGN,
+                             s->u.multi.lhs[j], multi_tmps[j], err, errsz) != 0)
+            {
+                goto done;
+            }
+            finalize_pass_meta(p, &p->steps[p->nsteps - 1].pass);
+        }
     }
 
     merge_passes_and_elide_locals(p);
@@ -1255,13 +1351,20 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         if (p->steps[st].kind == MC_STEP_PASS &&
             mc_emit_pass(p, &p->steps[st].pass, err, errsz) != 0)
         {
-            return -1;
+            goto done;
         }
     }
     if (mc_cc_compile_prog(p, err, errsz) != 0)
     {
-        return -1;
+        goto done;
     }
     p->plan_gen = milk_table_generation();
-    return 0;
+    rc          = 0;
+
+done:
+    for (int i = 0; i < ntmp_nodes; i++)
+    {
+        free(tmp_nodes[i]);
+    }
+    return rc;
 }

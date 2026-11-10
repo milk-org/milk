@@ -157,7 +157,7 @@ static void ax_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
     (void) nth;
     const ax_team_job_t *j     = (const ax_team_job_t *) ctx;
     uint8_t              dt    = j->im->md[0].datatype;
-    int                  out_d = (j->oim->md[0].datatype == _DATATYPE_DOUBLE);
+    uint8_t              odt   = j->oim->md[0].datatype;
     uint64_t             inner = j->inner;
     uint64_t             n     = j->n;
 
@@ -192,13 +192,17 @@ static void ax_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
             {
                 r = arith_image_reduce_lane(j->im, dt, base, n, inner, j->op);
             }
-            if (out_d)
+            if (odt == _DATATYPE_DOUBLE)
             {
                 j->oim->array.D[idx] = r;
             }
-            else
+            else if (odt == _DATATYPE_FLOAT)
             {
                 j->oim->array.F[idx] = (float) r;
+            }
+            else
+            {
+                mc_write_im_pix(j->oim, odt, idx, r);
             }
         }
         return;
@@ -243,17 +247,22 @@ static void ax_team_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
         double inv_n = 1.0 / (double) n;
         for (int q = 0; q < len; q++)
         {
-            double r = (j->op == ARITH_RED_MEAN)   ? (s[q] * inv_n)
-                       : (j->op == ARITH_RED_NORM) ? sqrt(s[q])
-                       : (j->op == ARITH_RED_RMS)  ? sqrt(s[q] * inv_n)
-                                                   : s[q];
-            if (out_d)
+            uint64_t oidx = o * inner + idx0 + (uint64_t) q;
+            double   r    = (j->op == ARITH_RED_MEAN)   ? (s[q] * inv_n)
+                            : (j->op == ARITH_RED_NORM) ? sqrt(s[q])
+                            : (j->op == ARITH_RED_RMS)  ? sqrt(s[q] * inv_n)
+                                                        : s[q];
+            if (odt == _DATATYPE_DOUBLE)
             {
-                j->oim->array.D[o * inner + idx0 + (uint64_t) q] = r;
+                j->oim->array.D[oidx] = r;
+            }
+            else if (odt == _DATATYPE_FLOAT)
+            {
+                j->oim->array.F[oidx] = (float) r;
             }
             else
             {
-                j->oim->array.F[o * inner + idx0 + (uint64_t) q] = (float) r;
+                mc_write_im_pix(j->oim, odt, oidx, r);
             }
         }
     }
@@ -362,7 +371,7 @@ static void seg_scatter_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi
  */
 static uint8_t select_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 {
-    return (slot->existed_at_plan && slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
+    return (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
             milk_data.image[slot->im_id].md[0].shared == 1)
                ? milk_data.image[slot->im_id].md[0].datatype
                : (pref_dt ? pref_dt : _DATATYPE_FLOAT);
@@ -621,17 +630,22 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
             mc_release_red_src(&s1);
             return (err[0] == '\0') ? pre_err(err, errsz, "cumsum: axis out of range") : -1;
         }
-        imageID oid = mc_out_prepare(slot, s1.naxis, s1.ishape, out_dt, in_unit, err, errsz);
-        if (oid < 0)
+        uint8_t work_dt = (out_dt == _DATATYPE_DOUBLE || pref_dt == _DATATYPE_DOUBLE)
+                              ? _DATATYPE_DOUBLE
+                              : _DATATYPE_FLOAT;
+        imageID oid     = mc_out_prepare(slot, s1.naxis, s1.ishape, out_dt, in_unit, err, errsz);
+        imageID w_id =
+            (oid >= 0 && out_dt != work_dt) ? mc_tmp_image(s1.naxis, s1.ishape, work_dt) : oid;
+        if (oid < 0 || w_id < 0)
         {
             mc_release_red_src(&s1);
             return -1;
         }
-        IMAGE *dst = &milk_data.image[oid];
+        IMAGE *dst = &milk_data.image[w_id];
         for (uint64_t i = 0; i < s1.nel; i++)
         {
             double v = arith_read_im_pix(s1.im, s1.dt, i);
-            if (out_dt == _DATATYPE_DOUBLE)
+            if (work_dt == _DATATYPE_DOUBLE)
             {
                 dst->array.D[i] = v;
             }
@@ -641,6 +655,18 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
             }
         }
         rc = arith_image_cumsum_inplace_im(dst, (int) llround(axd));
+        if (w_id != oid)
+        {
+            if (rc == 0)
+            {
+                IMAGE *fim = &milk_data.image[oid];
+                for (uint64_t i = 0; i < s1.nel; i++)
+                {
+                    mc_write_im_pix(fim, out_dt, i, arith_read_im_pix(dst, work_dt, i));
+                }
+            }
+            mc_tmp_release(w_id);
+        }
         mc_release_red_src(&s1);
         if (rc == 0)
         {
@@ -726,7 +752,8 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
         arith_csr_cache_t *csr = (arith_csr_cache_t *) cs->csr;
 
         /* Fast CSR gather path when input (and map) are materialized 2D images. */
-        if (s1.im != NULL && s1.tmp_id < 0 && s1.ishape[2] == 1 && s1.nel < (uint64_t) INT32_MAX &&
+        if ((out_dt == _DATATYPE_FLOAT || out_dt == _DATATYPE_DOUBLE) && s1.im != NULL &&
+            s1.tmp_id < 0 && s1.ishape[2] == 1 && s1.nel < (uint64_t) INT32_MAX &&
             (is_rp || (s2.im != NULL && s2.tmp_id < 0)))
         {
             int ok = is_rp ? ((csr->valid && csr->nbins == nbins && csr->cx == cx &&
@@ -797,9 +824,13 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
             {
                 res->array.D[b] = r;
             }
-            else
+            else if (out_dt == _DATATYPE_FLOAT)
             {
                 res->array.F[b] = (float) r;
+            }
+            else
+            {
+                mc_write_im_pix(res, out_dt, (uint64_t) b, r);
             }
         }
         mc_release_red_src(&s1);

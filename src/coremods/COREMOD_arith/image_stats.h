@@ -257,7 +257,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
             {                                                                                     \
                 _Pragma("omp simd reduction(+:sb,nb)") for (int j = 0; j < len; j++)              \
                 {                                                                                 \
-                    int on = (m[j] != (FT) 0);                                                    \
+                    int on = (!ISNAN_FN(m[j]) && m[j] != (FT) 0);                                 \
                     sb += on ? (double) v[j] : 0.0;                                               \
                     nb += (uint64_t) on;                                                          \
                 }                                                                                 \
@@ -271,7 +271,8 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
                 {                                                                                 \
                     _Pragma("omp simd reduction(+:m2)") for (int j = 0; j < len; j++)             \
                     {                                                                             \
-                        double d = (m[j] != (FT) 0) ? ((double) v[j] - bm) : 0.0;                 \
+                        double d =                                                                \
+                            (!ISNAN_FN(m[j]) && m[j] != (FT) 0) ? ((double) v[j] - bm) : 0.0;     \
                         m2 += d * d;                                                              \
                     }                                                                             \
                 }                                                                                 \
@@ -283,7 +284,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
             {                                                                                     \
                 _Pragma("omp simd reduction(+:sb,nb)") for (int j = 0; j < len; j++)              \
                 {                                                                                 \
-                    int    on = (m[j] != (FT) 0);                                                 \
+                    int    on = (!ISNAN_FN(m[j]) && m[j] != (FT) 0);                              \
                     double x  = on ? (double) v[j] : 0.0;                                         \
                     sb += (op == ARITH_RED_ASUM) ? fabs(x) : (x * x);                             \
                     nb += (uint64_t) on;                                                          \
@@ -294,7 +295,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
             }                                                                                     \
             for (int j = 0; j < len; j++)                                                         \
             {                                                                                     \
-                if (m[j] != (FT) 0)                                                               \
+                if (!ISNAN_FN(m[j]) && m[j] != (FT) 0)                                            \
                 {                                                                                 \
                     double x = (double) v[j];                                                     \
                     sb += x;                                                                      \
@@ -313,7 +314,7 @@ static inline double arith_stat_finish_inline(const arith_stat_acc_t *acc,
             {                                                                                     \
                 _Pragma("omp simd reduction(+:m2)") for (int j = 0; j < len; j++)                 \
                 {                                                                                 \
-                    double d = (m[j] != (FT) 0) ? ((double) v[j] - bm) : 0.0;                     \
+                    double d = (!ISNAN_FN(m[j]) && m[j] != (FT) 0) ? ((double) v[j] - bm) : 0.0;  \
                     m2 += d * d;                                                                  \
                 }                                                                                 \
             }                                                                                     \

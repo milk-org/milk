@@ -299,7 +299,7 @@ int mc_resolve_or_eval_im(const mc_expr_t *e,
  */
 uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 {
-    return (slot->existed_at_plan && slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
+    return (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
             milk_data.image[slot->im_id].md[0].shared == 1)
                ? milk_data.image[slot->im_id].md[0].datatype
                : (pref_dt ? pref_dt : _DATATYPE_FLOAT);
@@ -334,10 +334,15 @@ int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err,
     imageID          avoid_id = (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
                                  strcmp(milk_data.image[slot->im_id].name, slot->bare) == 0)
                                     ? slot->im_id
-                                    : image_ID(slot->bare, milk_data.image, milk_data.NB_MAX_IMAGE);
+                                    : mc_resolve_or_autoconnect_image(slot->name);
+    if (avoid_id >= 0)
+    {
+        slot->im_id = avoid_id;
+    }
 
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
-        (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_STENCIL_LIB ||
+        (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_REDUCE_L ||
+         rhs->u.call.fn->kind == MC_FN_STENCIL_LIB ||
          (rhs->u.call.fn->kind == MC_FN_PROG && strcmp(rhs->u.call.fn->name, "ema") == 0)))
     {
         return mc_exec_prestage(prog, cs, avoid_id, in_unit, err, errsz);
@@ -819,17 +824,24 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                 bnd[gi] = ops[i].scalar;
             }
         }
-        long la  = llround(bnd[0]);
-        long lb  = llround(bnd[1]);
-        long lst = llround(bnd[2]);
-        if (lst == 0 || (lst > 0 && lb < la) || (lst < 0 && lb > la))
+        double da  = bnd[0];
+        double db  = bnd[1];
+        double dst = (pass->comp_expr->u.comp.gens[g].step != NULL) ? bnd[2] : 1.0;
+        if (!arith_isfinite_d(da) || !arith_isfinite_d(db) || !arith_isfinite_d(dst) ||
+            dst == 0.0 || (dst > 0.0 && db < da) || (dst < 0.0 && db > da))
         {
             rc = exec_err(err, errsz,
-                          (lst == 0) ? "comprehension step cannot be zero"
-                                     : "comprehension range is empty");
+                          (dst == 0.0) ? "comprehension step cannot be zero"
+                                       : "comprehension range is empty");
             goto cleanup;
         }
-        vsz[g] = (uint32_t) ((lst > 0) ? ((lb - la) / lst + 1) : ((la - lb) / (-lst) + 1));
+        double span = (db - da) / dst;
+        if (span < 0.0 || span > 16777215.0)
+        {
+            rc = exec_err(err, errsz, "comprehension range is empty");
+            goto cleanup;
+        }
+        vsz[g] = (uint32_t) (floor(span + 1e-9) + 1.0);
     }
 
     /* Step 3: Resolve LHS slice or compound-assignment anchor views */

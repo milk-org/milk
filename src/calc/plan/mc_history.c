@@ -148,7 +148,24 @@ int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out
         return hit;
     }
     case MC_EXPR_ASSIGN:
-        return mc_expr_mentions_self(e->u.assign.rhs, bare, out_im);
+        hit |= mc_expr_mentions_self(e->u.assign.target, bare, NULL);
+        hit |= mc_expr_mentions_self(e->u.assign.rhs, bare, out_im);
+        return hit;
+    case MC_EXPR_VEC_LIT:
+        for (int i = 0; i < e->u.vec_lit.nelem; i++)
+        {
+            hit |= mc_expr_mentions_self(e->u.vec_lit.elems[i], bare, NULL);
+        }
+        return hit;
+    case MC_EXPR_COMP:
+        hit |= mc_expr_mentions_self(e->u.comp.body, bare, NULL);
+        for (int i = 0; i < e->u.comp.ngens; i++)
+        {
+            hit |= mc_expr_mentions_self(e->u.comp.gens[i].start, bare, NULL);
+            hit |= mc_expr_mentions_self(e->u.comp.gens[i].stop, bare, NULL);
+            hit |= mc_expr_mentions_self(e->u.comp.gens[i].step, bare, NULL);
+        }
+        return hit;
     default:
         return 0;
     }
@@ -245,7 +262,8 @@ static int hist_ring(mc_hist_decl_t *d, char *err, size_t errsz)
         return 0;
     }
     const IMAGE *r = &milk_data.image[rid];
-    if (r->md[0].naxis != d->naxis + 1 || r->md[0].size[0] != sz[0] || r->md[0].size[1] != sz[1] ||
+    if (r->md[0].naxis != d->naxis + 1 || r->md[0].datatype != im->md[0].datatype ||
+        r->md[0].size[0] != sz[0] || r->md[0].size[1] != sz[1] ||
         (d->naxis == 2 && r->md[0].size[2] != sz[2]))
     {
         snprintf(err, errsz, "hist: stream '%s' exists with another shape", ring);
@@ -327,12 +345,18 @@ static int hist_find_decls(hist_ctx_t *h, mc_stmt_t *s)
     for (; s != NULL; s = s->next)
     {
         mc_expr_t *e = (s->kind == MC_STMT_EXPR) ? s->u.expr : NULL;
-        if (is_ring_call(e, "hist") && e->u.call.nargs == 2 &&
-            e->u.call.args[1]->kind == MC_EXPR_LONG)
+        if (e != NULL && e->kind == MC_EXPR_CALL && strcmp(e->u.call.name, "hist") == 0)
         {
             if (!h->in_unit)
             {
                 snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
+                return -1;
+            }
+            if (!is_ring_call(e, "hist") || e->u.call.nargs != 2 ||
+                e->u.call.args[1]->kind != MC_EXPR_LONG || e->u.call.args[1]->u.lval < 2)
+            {
+                snprintf(h->err, h->errsz,
+                         "hist: expected hist(stream, N) with integer depth N >= 2");
                 return -1;
             }
             h->off = s->src_off;
@@ -405,7 +429,7 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
         }
         else
         {
-            snprintf(text, sizeof(text), "%s_hist[%s((_n %% %d) + %d - (0)) %% %d]", d->name,
+            snprintf(text, sizeof(text), "%s_hist[%s(((_n - (0)) %% %d) + %d) %% %d]", d->name,
                      (d->naxis == 2) ? ":,:," : ":,", d->N, d->N, d->N);
         }
         mc_expr_t *sl = parse_snippet(text);
@@ -416,7 +440,8 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
         }
         if (!is_lit)
         {
-            mc_expr_t *sub = sl->u.slice.axes[d->naxis].start->u.binary.left;
+            mc_expr_t *sub =
+                sl->u.slice.axes[d->naxis].start->u.binary.left->u.binary.left->u.binary.left;
             mc_expr_free(sub->u.binary.right);
             sub->u.binary.right = e->u.call.args[1];
             e->u.call.args[1]   = NULL;

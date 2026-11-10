@@ -86,6 +86,8 @@ typedef struct
     int              check_div_kind;   /* 1 = check != 0 (/ or /=), 2 = check != 0 (%) */
     int              comp_gen_idx;     /* >= 0 if comprehension generator variable */
     int              is_x_bcast;       /* 1 if axis-0 broadcast (st[0] == 0) */
+    uint8_t          op_naxis;         /* planned naxis when operand was added */
+    uint32_t         op_size[3];       /* planned size[3] when operand was added */
 } mc_op_desc_t;
 
 /* Planned output write inside an elementwise pass. */
@@ -139,6 +141,8 @@ typedef struct
     imageID  im_id;
     uint64_t checked_gen;
     uint8_t  orig_dt;
+    uint8_t  orig_naxis;
+    uint32_t orig_size[3];
     uint8_t  plan_dt;
     uint8_t  plan_naxis;
     uint32_t plan_size[3];

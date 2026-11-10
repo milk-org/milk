@@ -510,7 +510,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
         {
             return sc_err(err, errsz, "String cannot be converted to number");
         }
-        *out = (to_double(&args[0]) != 0.0) ? args[1] : args[2];
+        *out = (mc_truth(&args[0]) > 0) ? args[1] : args[2];
         return 0;
 
     case MC_FN_PRNG:
@@ -544,18 +544,18 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
     case MC_FN_PROG:
     {
         /* Stateful scalar exponential moving average: ema(x, alpha) */
-        double     x    = to_double(&args[0]);
-        double     a    = to_double(&args[1]);
-        long       nvid = variable_ID("_n");
-        long       nval = (nvid >= 0 && milk_data.variable[nvid].type == 1)
-                              ? milk_data.variable[nvid].value.l
-                              : (nvid >= 0 ? (long) milk_data.variable[nvid].value.f : 0);
-        mc_expr_t *me   = (mc_expr_t *) e;
-        me->u.call.ema_val =
-            (!mc_prog_in_unit() || !me->u.call.ema_init || (nvid >= 0 && nval == 0))
-                ? x
-                : ((1.0 - a) * me->u.call.ema_val + a * x);
-        me->u.call.ema_init = 1;
+        double     x        = to_double(&args[0]);
+        double     a        = to_double(&args[1]);
+        long       nvid     = variable_ID("_n");
+        long       nval     = (nvid >= 0 && milk_data.variable[nvid].type == 1)
+                                  ? milk_data.variable[nvid].value.l
+                                  : (nvid >= 0 ? (long) milk_data.variable[nvid].value.f : 0);
+        int        at_n0    = (mc_prog_in_unit() && nvid >= 0 && nval == 0);
+        mc_expr_t *me       = (mc_expr_t *) e;
+        me->u.call.ema_val  = (!me->u.call.ema_init || (at_n0 && me->u.call.ema_init != 2))
+                                  ? x
+                                  : ((1.0 - a) * me->u.call.ema_val + a * x);
+        me->u.call.ema_init = at_n0 ? 2 : 1;
         *out                = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = me->u.call.ema_val };
         return 0;
     }
@@ -791,7 +791,7 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         out->lval = (e->u.unary.op == MC_TOK_MINUS) ? (long) (-(uint64_t) v.lval)
                     : (e->u.unary.op == MC_TOK_BNOT)
                         ? ~((v.type == MC_VAL_LONG) ? v.lval : (long) v.dval)
-                        : (to_double(&v) == 0.0);
+                        : !mc_truth(&v);
         out->dval = -v.dval;
         return 0;
     }
@@ -809,7 +809,7 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         /* Short-circuit logical && and || */
         if (op == MC_TOK_AND || op == MC_TOK_OR)
         {
-            int lt = (l.type != MC_VAL_STRING && to_double(&l) != 0.0);
+            int lt = (mc_truth(&l) > 0);
             if (l.type != MC_VAL_STRING && ((op == MC_TOK_AND && !lt) || (op == MC_TOK_OR && lt)))
             {
                 *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = (op == MC_TOK_OR) };
@@ -823,7 +823,7 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
                            ? sc_err(err, errsz, "Logical op on string")
                            : -1;
             }
-            *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = (to_double(&r) != 0.0) };
+            *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = (mc_truth(&r) > 0) };
             return 0;
         }
 
@@ -905,8 +905,8 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         {
             return sc_err(err, errsz, "Condition cannot be string");
         }
-        return mc_scalar_eval_expr(
-            (to_double(&cv) != 0.0) ? e->u.ternary.t_expr : e->u.ternary.f_expr, out, err, errsz);
+        return mc_scalar_eval_expr((mc_truth(&cv) > 0) ? e->u.ternary.t_expr : e->u.ternary.f_expr,
+                                   out, err, errsz);
     }
 
     case MC_EXPR_CALL:
@@ -989,8 +989,17 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         {
             mc_expr_t       *lhs = s->u.multi.lhs[j];
             const mc_expr_t *rhs = s->u.multi.rhs[j];
-            if (lhs->u.ident.id_kind != MC_ID_IMAGE && lhs->u.ident.id_kind != MC_ID_NEW &&
-                rhs->res_kind != MC_RES_IMAGE)
+            if (lhs->u.ident.id_kind == MC_ID_PROP && rhs->res_kind != MC_RES_IMAGE)
+            {
+                char sbuf[MC_TOK_STR_MAX];
+                mc_val_to_str(&vals[j], sbuf, sizeof(sbuf), 1);
+                if (milk_shm_prop_set(lhs->u.ident.name, sbuf, NULL) != 0)
+                {
+                    return sc_err(err, errsz, "property write failed");
+                }
+            }
+            else if (lhs->u.ident.id_kind != MC_ID_IMAGE && lhs->u.ident.id_kind != MC_ID_NEW &&
+                     rhs->res_kind != MC_RES_IMAGE)
             {
                 mc_store_scalar_var(lhs->u.ident.bare[0] != '\0' ? lhs->u.ident.bare
                                                                  : lhs->u.ident.name,
@@ -1032,6 +1041,10 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         {
             return -1;
         }
+        if (vstart.type == MC_VAL_STRING)
+        {
+            return sc_err(err, errsz, "for loop bounds must be numbers");
+        }
         long vid = -1;
         mc_store_scalar_var(s->u.for_stmt.var, &vid, &vstart);
         for (int iters = 0; !mc_prog_skip_active(); iters++)
@@ -1048,8 +1061,12 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
             {
                 return -1;
             }
+            if (vstop.type == MC_VAL_STRING || vstep.type == MC_VAL_STRING)
+            {
+                return sc_err(err, errsz, "for loop bounds must be numbers");
+            }
             double stpv = to_double(&vstep);
-            if (stpv == 0.0)
+            if (stpv == 0.0 || isnan(stpv))
             {
                 return sc_err(err, errsz, "for loop step cannot be 0");
             }
@@ -1060,7 +1077,8 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
             const VARIABLE *vv   = &milk_data.variable[vid];
             double          cur  = (vv->type == 1) ? (double) vv->value.l : vv->value.f;
             double          endv = to_double(&vstop);
-            if (!((stpv > 0.0) ? (cur <= endv + 1e-12) : (cur >= endv - 1e-12)))
+            double          tol  = 1e-12 * fabs(stpv);
+            if (!((stpv > 0.0) ? (cur <= endv + tol) : (cur >= endv - tol)))
             {
                 break;
             }
@@ -1079,12 +1097,14 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
             VARIABLE *vmut = &milk_data.variable[vid];
             int       use_l =
                 (vmut->type == 1 && (vstep.type == MC_VAL_LONG || stpv == (double) (long) stpv));
-            mc_val_t nextv =
-                use_l ? (mc_val_t) { .type = MC_VAL_LONG,
-                                     .lval =
-                                         vmut->value.l +
-                                         ((vstep.type == MC_VAL_LONG) ? vstep.lval : (long) stpv) }
-                      : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = cur + stpv };
+            long step_l = use_l ? ((vstep.type == MC_VAL_LONG) ? vstep.lval : (long) stpv) : 0;
+            long next_l = 0;
+            if (use_l && __builtin_add_overflow(vmut->value.l, step_l, &next_l))
+            {
+                use_l = 0;
+            }
+            mc_val_t nextv = use_l ? (mc_val_t) { .type = MC_VAL_LONG, .lval = next_l }
+                                   : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = cur + stpv };
             mc_store_scalar_var(s->u.for_stmt.var, &vid, &nextv);
         }
         return 0;

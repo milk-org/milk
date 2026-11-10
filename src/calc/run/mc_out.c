@@ -419,11 +419,14 @@ imageID mc_out_prepare(mc_slot_t     *slot,
 
         if (!slot->is_local && im->md[0].shared == 1)
         {
-            if (im->md[0].nelement != new_nel)
+            if (im->md[0].nelement != new_nel || im->md[0].datatype != dt)
             {
                 if (err != NULL && errsz > 0)
                 {
-                    snprintf(err, errsz, "Dimension mismatch in image assignment");
+                    snprintf(err, errsz,
+                             (im->md[0].nelement != new_nel)
+                                 ? "Dimension mismatch in image assignment"
+                                 : "Datatype mismatch in shared stream assignment");
                 }
                 return -1;
             }

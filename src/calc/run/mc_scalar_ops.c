@@ -272,10 +272,10 @@ const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t 
         res = mk_l(lv != rv);
         break;
     case MC_TOK_AND:
-        res = mk_l(lv != 0.0 && rv != 0.0);
+        res = mk_l(!isnan(lv) && lv != 0.0 && !isnan(rv) && rv != 0.0);
         break;
     case MC_TOK_OR:
-        res = mk_l(lv != 0.0 || rv != 0.0);
+        res = mk_l((!isnan(lv) && lv != 0.0) || (!isnan(rv) && rv != 0.0));
         break;
     case MC_TOK_BAND:
         res = mk_l((long) lv & (long) rv);
@@ -374,11 +374,13 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
         }
         char sv[MC_TOK_STR_MAX];
         mc_val_to_str(&args[0], sv, sizeof(sv), 0);
-        int slen = (int) strlen(sv);
-        int off  = (int) val_num(&args[1]);
-        int len  = (int) val_num(&args[2]);
-        off      = (off < 0) ? 0 : (off > slen) ? slen : off;
-        len      = (len < 0) ? 0 : (off + len > slen) ? (slen - off) : len;
+        int    slen = (int) strlen(sv);
+        double doff = val_num(&args[1]);
+        double dlen = val_num(&args[2]);
+        int    off = (isnan(doff) || doff <= 0.0) ? 0 : (doff >= (double) slen) ? slen : (int) doff;
+        int    len = (isnan(dlen) || dlen <= 0.0)      ? 0
+                     : (dlen >= (double) (slen - off)) ? (slen - off)
+                                                       : (int) dlen;
         memcpy(out->sval, sv + off, (size_t) len);
         out->sval[len] = '\0';
         out->type      = MC_VAL_STRING;
@@ -773,7 +775,7 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
         return mk_l(!live ? 0 : ~((v.type == MC_VAL_LONG) ? v.lval : (long) v.dval));
     case MC_TOK_NOT:
         v = eval_local_primary(x, live);
-        return mk_l(val_num(&v) == 0.0);
+        return mk_l(isnan(val_num(&v)) || val_num(&v) == 0.0);
     case MC_TOK_LPAREN:
         v = eval_local_expr(x, 0, live);
         lexpect(x, MC_TOK_RPAREN);
@@ -851,7 +853,7 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
         x->pos++;
         if (op == MC_TOK_QUEST)
         {
-            int      c  = live && val_num(&left) != 0.0;
+            int      c  = live && !isnan(val_num(&left)) && val_num(&left) != 0.0;
             mc_val_t tv = eval_local_expr(x, 0, c);
             lexpect(x, MC_TOK_COLON);
             mc_val_t fv = eval_local_expr(x, 0, live && !c);
@@ -860,7 +862,7 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
         }
         int next = (op == MC_TOK_QUEST || mc_is_assign_tok(op)) ? prec : prec + 1;
         if (live && (op == MC_TOK_AND || op == MC_TOK_OR) &&
-            (val_num(&left) != 0.0) == (op == MC_TOK_OR))
+            (!isnan(val_num(&left)) && val_num(&left) != 0.0) == (op == MC_TOK_OR))
         {
             eval_local_expr(x, next, 0);
             left = mk_l(op == MC_TOK_OR);
