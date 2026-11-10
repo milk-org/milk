@@ -30,6 +30,7 @@ After changing key rows, regenerate the docs tables: `milk-CTRL --keys-markdown`
 
 `milk-CTRL` is a standalone executable with zero dependency on `ncurses` or `CLIcore`. It uses
 a custom double-buffered ANSI/VT100 shadow grid engine supporting:
+
 - Differential rendering (`ov_buf_flush_delta`) that emits only modified screen cells.
 - 24-bit colour, downgraded at flush time to 256/16 colours (`COLORTERM`/`TERM`) or monochrome
   (`NO_COLOR`, `TERM=dumb`; the selection then shows in reverse video).
@@ -62,6 +63,7 @@ it is still the entity on screen (inode, FPS keyword, process start time).
 
 Press `c` to toggle Control Mode ON/OFF. Destructive and batch actions ask `y/N` first (the
 target is checked again when you answer); a single SIGTERM and run/conf toggles act at once.
+
 - **Streams**: delete the stream file (`DEL` / `^e`, y/N).
 - **Processes**: `k` SIGTERM, `K` SIGKILL (y/N), `p` pause toggle (CTRLval 1/0), `^s` step,
   `e` exit, `z` reset loop counter, `C` remove all STOPPED/CRASHED entries (y/N), `^e` remove a
@@ -77,6 +79,7 @@ target is checked again when you answer); a single SIGTERM and run/conf toggles 
 ## Themes & Customization
 
 `milk-CTRL` includes 10 built-in color themes with 24-bit TrueColor palettes:
+
 - `dark` (Default Dark): Slate dark palette
 - `night` (Observatory Red): Dark-adapted monochrome red palette
 - `accessible` (High-Contrast CVD): Colorblind-friendly palette (Okabe-Ito)
@@ -102,6 +105,39 @@ Themes can also be selected at launch using `-T <name>` (e.g. `milk-CTRL -T drac
 | `MILK_CTRL_THEME` | Initial theme (`-T` wins) |
 | `COLORTERM`, `TERM` | `truecolor`/`24bit`: 24-bit; `*256color`: 256 colours; otherwise 16 |
 | `NO_COLOR`, `TERM=dumb` | Monochrome |
+
+## Directory & Source Organization
+
+```text
+src/cli/overview/
+├── ansi/                    ← Double-buffered ANSI/VT100 shadow grid, delta flush, UTF-8 & key decoder
+├── data/                    ← Shared-memory scan (`milkctrl_model`), graph lineage, loop detection & sorting
+├── input/                   ← Keyboard/mouse handlers, hit-testing, control actions, modals & FPS editor
+├── render/                  ← Panel, table column, graph, loop, help, inspector & theme rendering
+├── tools/                   ← `milk-CTRL`, `milk-stream-info`, `milk-procinfo-info` & `milk-stream-graph`
+├── tests/                   ← Keymap documentation check (`check_keys_doc.sh`) and CTest definitions
+├── overview_cmdlog.c        ← Ring buffer for in-TUI command and status messages
+├── overview_keymap.c        ← Keybinding catalog (`overview_keymap_*.inc`) and `--keys-markdown` export
+├── overview_layout.c        ← Split-panel geometry, resizing, and responsive layout calculation
+└── overview_view.c          ← Top-level view (`DASH`, `STRM`, `PROC`, `FPS`, `CONN`, `LOOPS`) descriptors
+```
+
+| Subdirectory | Role & Key Files |
+| :--- | :--- |
+| `ansi/` | Terminal raw mode (`overview_ansi_term.c`), cell shadow buffer (`overview_ansi_buf.c`), differential flush (`overview_ansi_delta.c`), UTF-8 width (`overview_ansi_utf8.c`), and SGR mouse / key parsing (`overview_ansi_key.c`) |
+| `data/` | Static library `milkctrl_model` (`milkctrl_model.cmake`): background scan thread (`overview_scan.c`), SHM entity scanners (`overview_data_scan_*.c`), producer/consumer adjacency & lineage (`overview_data_adj.c`, `stream_graph*.c`), closed-loop detection (`overview_data_loops*.c`), `/proc` & `perf_event` sampling (`overview_data_sys*.c`), filtering (`overview_data_filter.c`), and sorting (`overview_data_sort*.c`) |
+| `input/` | Key dispatch (`overview_input_keys.c`), mouse click/drag/resize (`overview_input_mouse*.c`), column hit-testing (`overview_input_hittest*.c`), navigation (`overview_input_nav*.c`), control-mode actions & confirmations (`overview_ctrl*.c`, `overview_input_confirm.c`), and inline FPS parameter editing (`overview_fps_edit.c`) |
+| `render/` | Frame compositor (`overview_render.c`), column definitions (`overview_columns_*.c`), view renderers (`overview_render_{streams,procs,fps,graph,loops,insp,help}*.c`), detail sub-tabs (`overview_render_detail*.c`), and 10 truecolor themes (`overview_theme*.c`) |
+| `tools/` | Entry points and CLI option parsers for `milk-CTRL` (`milkCTRL.c`, `milkCTRL_opts*.c`), `milk-stream-info` (`milk-stream-info*.c`), `milk-procinfo-info` (`milk-procinfo-info.c`), and `milk-stream-graph` (`milk-stream-graph*.c`) |
+
+## Standalone Executables
+
+| Executable | Source | Description |
+| :--- | :--- | :--- |
+| `milk-CTRL` | `tools/milkCTRL.c` | Unified multi-panel TUI dashboard (`milk-streamCTRL` symlink opens F3) |
+| `milk-stream-info` | `tools/milk-stream-info.c` | Inspect stream metadata, holders, and producer/consumer links |
+| `milk-procinfo-info` | `tools/milk-procinfo-info.c` | Inspect `processinfo` timing, CPU, and stream links |
+| `milk-stream-graph` | `tools/milk-stream-graph.c` | Terminal and DOT/JSON dataflow graph exporter |
 
 ## Build Requirements
 
