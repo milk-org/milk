@@ -89,22 +89,52 @@ Live parameters: `f.mfilt.gain`, `.mult`, `.limit` and `.loopON`; `f.wfssim.ar` 
 correlation per frame, 1 freezes it), `.tgain` and `.noise`; `f.dmcomb.maxstroke`. Modal gains are
 the stream `mgain`.
 
+## One unit for the whole iteration
+
+```bash
+./aoloop.sh --fused start
+```
+
+With `--fused`, a single unit `aoloop`, triggered by `wfsim`, runs the programs of `acquwfs`,
+`wfs2modes`, `mfilt`, `modes2dm` and `dmcomb` one after the other: `aoloop.sh` concatenates them
+into `units/aoloop.calc` in the work directory. It writes the same streams, so the other commands
+work as before. The `mfilt` and `dmcomb` parameters become `f.aoloop.gain`, `.mult`, `.limit`,
+`.loopON` and `.maxstroke`. There is no `dmtrig`: a write to `dmch0`, `dmch2` or `dmch3` reaches
+`dm` at the next camera frame, not at once.
+
 ## Performance
 
-`./aoloop.sh measure` on an i9-12950HX laptop (powersave governor, no real-time priority):
+`./aoloop.sh measure` on an i9-12950HX laptop (powersave governor, no real-time priority), one unit
+per step:
 
 ```text
-residual RMS over 4000 frames (phase units): loop open 0.297716652210843, closed 0.0404447476357945
-camera frame to DM write: median 91 us, 90% below 200 us
+residual RMS over 4000 frames (phase units): loop open 0.291094822970909, closed 0.0409870936380916
+camera frame to DM write: median 74 us, 90% below 153 us
 unit       rate (Hz)  busy (us)   max (us)  missed
-wfssim          2000       38.7       93.3       0
-dmtrig          1983      502.6      641.7       0
-dmcomb          1983        4.1       16.7      15
-acquwfs         2007        6.2       36.6      63
-wfs2modes       2010       14.6       45.7     211
-mfilt           2002        5.4       24.2     183
-modes2dm        1988        4.6       18.3     172
+wfssim          2000       16.9       64.1       0
+dmtrig          1998      499.0      670.2       0
+dmcomb          1998        3.1       12.7      20
+acquwfs         2000        3.6       21.1      87
+wfs2modes       2000        8.8       35.7     123
+mfilt           2000        4.8       19.7     118
+modes2dm        1998        3.9       18.7     131
 ```
+
+and with `--fused`, right after:
+
+```text
+residual RMS over 4000 frames (phase units): loop open 0.273583985405153, closed 0.0412681103061038
+camera frame to DM write: median 19 us, 90% below 51 us
+unit       rate (Hz)  busy (us)   max (us)  missed
+wfssim          2000       33.7       63.2       0
+aoloop          2000       26.0       62.3      57
+```
+
+Over three alternating runs of each, the median camera-to-DM latency was 74 to 84 µs with one unit
+per step, and 19 to 28 µs fused (90% below 146 to 185 µs, and 51 to 129 µs). The fused unit is busy
+26 µs per frame, about the sum of the five steps (17 to 43 µs over the same runs), so fusing saves
+no computation. It saves hand-offs: the split loop wakes six more processes or threads per frame
+(four units, `trigmerge`'s input thread and loop, `dmcomb`), about 9 µs each.
 
 - **busy** is the median time per frame from the unit's timing ring (`p.<unit>.exectime`). It is
   about 4 µs for a unit with almost nothing to compute, the per-frame floor of a calc unit.
