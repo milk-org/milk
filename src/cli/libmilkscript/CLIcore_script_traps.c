@@ -30,8 +30,7 @@
 #include "CLIcore_script.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
-/* processinfo functions — linked via milkprocessinfo */
-extern errno_t processinfo_procdirname(char *procdname);
+#include "processinfo_procdirname.h"
 
 
 /* ============================================================

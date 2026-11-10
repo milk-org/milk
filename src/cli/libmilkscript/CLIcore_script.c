@@ -35,8 +35,7 @@
 
 #include <sys/mman.h>
 
-/* processinfo functions — linked via milkprocessinfo */
-extern errno_t processinfo_procdirname(char *procdname);
+#include "processinfo_procdirname.h"
 
 /* ============================================================
  *  CLI Variable Storage
