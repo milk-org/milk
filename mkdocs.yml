@@ -166,6 +166,8 @@ markdown_extensions:
       toc_depth: 3
 
 extra:
+  version:
+    provider: mike
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/milk-org/milk

@@ -31,7 +31,8 @@ The milk v2 documentation is build from markdown files using [mkdocs](https://ww
     However, some plugins & customizations are non-standard and will not render. For this to work, you'll need to look at the actual documentation website.
 
 ??? info "Deployment of the documentation"
-    A Github action generates the website into the `gh-pages` branch upon pushes to the `framework-dev` branch.
+    A Github action generates the website into the `gh-pages` branch upon pushes to the branches listed in `.github/workflows/docs.yml`
+    (one version per branch, selectable from the version dropdown; see [PM operations](../maintenance/pm_operations.md#documentation-branch)).
 
     A Github deployment deploys it to https://milk-org.github.io/milk/ automatically.
 
