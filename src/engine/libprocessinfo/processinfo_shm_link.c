@@ -10,14 +10,17 @@
 #include <sys/mman.h> // mmap()
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 
-#include "processinfo.h"
+#include "milk_config.h"
 
 /**
  * @brief Open and map a processinfo shared memory file.
  *
- * Returns a pointer to the mapped PROCESSINFO struct
- * and the file descriptor.
+ * Works for both per-process PROCESSINFO files and the PROCESSINFOLIST
+ * file. Returns a pointer to the mapped struct and the file descriptor.
+ * Returns MAP_FAILED if the file cannot be opened or its structure
+ * version does not match MILK_PROCESSINFO_VERSION.
  */
 PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
 {
@@ -43,6 +46,13 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
 
     if (pinfo == MAP_FAILED)
     {
+        close(SM_fd);
+        return (PROCESSINFO *) MAP_FAILED;
+    }
+
+    if (strncmp(pinfo->version, MILK_PROCESSINFO_VERSION, sizeof(pinfo->version)) != 0)
+    {
+        munmap(pinfo, sharedsize);
         close(SM_fd);
         return (PROCESSINFO *) MAP_FAILED;
     }

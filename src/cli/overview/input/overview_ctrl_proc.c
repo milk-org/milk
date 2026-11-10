@@ -8,6 +8,7 @@
  */
 
 #include "overview_input_internal.h"
+#include "processinfo_shm_link.h"
 #include "processinfo_shm_list_create.h"
 #include <errno.h>
 #include <fcntl.h>
@@ -105,20 +106,9 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
     char fname[1024];
     snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
-    int fd = open(fname, O_RDWR);
-    if (fd < 0)
-    {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (open)", p->name);
-        }
-        return;
-    }
-
     struct stat st;
-    if (fstat(fd, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
+    if (stat(fname, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
     {
-        close(fd);
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (stat)", p->name);
@@ -126,14 +116,13 @@ void ov_ctrl_proc_set_ctrlval(const OV_PROC *p, int val, OV_CMDLOG *log)
         return;
     }
 
-    PROCESSINFO *pinfo =
-        (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    int          fd    = -1;
+    PROCESSINFO *pinfo = processinfo_shm_link(fname, &fd);
     if (pinfo == MAP_FAILED)
     {
-        close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — ctrl failed (link)", p->name);
         }
         return;
     }
@@ -193,20 +182,9 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
     char fname[1024];
     snprintf(fname, sizeof(fname), "%s/proc.%s.%06d.shm", ov_get_shmdir(), p->name, (int) p->PID);
 
-    int fd = open(fname, O_RDWR);
-    if (fd < 0)
-    {
-        if (log != NULL)
-        {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (open)", p->name);
-        }
-        return;
-    }
-
     struct stat st;
-    if (fstat(fd, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
+    if (stat(fname, &st) < 0 || st.st_size < (off_t) sizeof(PROCESSINFO))
     {
-        close(fd);
         if (log != NULL)
         {
             ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (stat)", p->name);
@@ -214,14 +192,14 @@ void ov_ctrl_proc_zero_counters(const OV_PROC *p, OV_CMDLOG *log)
         return;
     }
 
-    PROCESSINFO *pinfo =
-        (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    int          fd    = -1;
+    PROCESSINFO *pinfo = processinfo_shm_link(fname, &fd);
     if (pinfo == MAP_FAILED)
     {
-        close(fd);
         if (log != NULL)
         {
-            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (mmap)", p->name);
+            ov_cmdlog_push(log, OV_CMDLOG_FAIL, "🚫 Process \"%s\" — zero failed (stat|link)",
+                           p->name);
         }
         return;
     }

@@ -14,6 +14,7 @@
 #include "processinfo_internal.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_link.h"
+#include "milk_config.h"
 
 #define FILEMODE 0666
 
@@ -84,6 +85,9 @@ errno_t processinfo_shm_list_create(long *pindex_out)
             pinfolist = NULL;
             goto fail;
         }
+
+        strncpy(pinfolist->version, MILK_PROCESSINFO_VERSION, sizeof(pinfolist->version) - 1);
+        pinfolist->version[sizeof(pinfolist->version) - 1] = '\0';
 
         for (pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
         {
