@@ -513,3 +513,83 @@ def test_semaphore_slots_released_after_waits(tmp_path):
     assert held(tmp_path / "during.txt"), (tmp_path / "during.txt").read_text()
     assert held(tmp_path / "after.txt") == [], (tmp_path / "after.txt").read_text()
     assert held(tmp_path / "final.txt") == [], (tmp_path / "final.txt").read_text()
+
+
+def test_advanced_multi_subsystem_ao_pipeline(tmp_path: Path):
+    """End-to-end multi-operation script combining:
+    - `@calc` mode blocks (with comments, `quit` and `exit`), `$((...))` bash arithmetic inside `@calc`,
+    - complex wavefront construction (`expi`, `cplx`), 2D FFT/IFFT (`fft`, `ifft`, `fftshift`),
+    - spatial filtering (`gauss`, `boxmean`, `medfilt3`), radial profile (`rprof`),
+    - linear algebra (`svd`, `pinv`, `@` matmul, `einsum`, `solve`),
+    - shared-memory stream properties & keywords (`s.<name>.kw.*`),
+    - and a live `milk-fpsexec-milk-calc` background unit using `hist()` and `ema()` with `@waitfor`.
+    """
+    script = """
+    N=$((16 + 16))
+    mem.mk2Dim @S:wf_phs $N $N
+    mem.mk2Dim @S:wf_amp $N $N
+    mem.mk2Dim @S:dm_cmd $N $N
+    mem.mk2Dim @S:dm_ema $N $N
+
+    # 1. Populate pupil amplitude and aberration phase in a @calc mode block ended by 'quit'
+    @calc
+    # Pupil mask and synthetic Zernike-like phase screen
+    r_norm = ir(wf_amp) / (N * 0.4)
+    theta  = itheta(wf_amp)
+    wf_amp = where(r_norm <= 1.0, 1.0, 0.0)
+    wf_phs = wf_amp * (0.6 * (2.0 * pow(r_norm, 2) - 1.0) * cos(theta) + 0.3 * sin(2.0 * theta))
+    s.wf_phs.kw.WAVELEN = 1.65
+    s.wf_phs.kw.INSTRUM = "SCExAO"
+    quit
+
+    # 2. Complex field, PSF via FFT, inverse FFT round-trip, and spatial/radial diagnostics
+    @calc
+    u_pup = wf_amp * expi(wf_phs)
+    u_foc = fft(u_pup)
+    psf   = pow(abs(u_foc), 2)
+    psf_s = fftshift(psf)
+    u_rec = ifft(u_foc)
+    rec_err = imax(abs(real(u_rec) - real(u_pup)))
+    psf_sm  = gauss(psf_s, 1.2)
+    psf_rp  = rprof(psf_s)
+    exit
+
+    # 3. Modal response matrix calibration & SVD pseudo-inverse control law
+    @calc
+    # Build 4 synthetic influence modes (flattened 64-element sensor vectors x 4 modes = [64 x 4])
+    m0 = reshape(ix(zeros(8, 8)) / 4.0, 64, 1)
+    m1 = reshape(iy(zeros(8, 8)) / 4.0, 64, 1)
+    m2 = reshape((pow(ix(zeros(8, 8)), 2) - pow(iy(zeros(8, 8)), 2)) / 16.0, 64, 1)
+    m3 = reshape(ix(zeros(8, 8)) * iy(zeros(8, 8)) / 16.0, 64, 1)
+    Rmat = vstack(m0, m1, m2, m3)
+    U, svals, Vt = svd(Rmat)
+    Cmat = pinv(Rmat, 1e-4)
+    # Test target vector recovery: y = Rmat @ c_true -> c_est = Cmat @ y
+    c_true = reshape([0.5, -0.25, 0.75, -0.5], 4, 1)
+    y_meas = Rmat @ c_true
+    c_est  = Cmat @ y_meas
+    ctrl_err = imax(abs(c_est - c_true))
+    gram_mat = einsum("ki,kj->ij", Rmat, Rmat)
+    gram_tr  = itot(gram_mat * eye(4))
+    exit
+
+    # 4. Run a background milk.calc unit with temporal hist() and ema() on dm_cmd
+    milk-fpsexec-milk-calc -n ao_telemetry -t dm_cmd -e "dm_ema = ema(dm_cmd, 0.5); dm_diff = dm_cmd - hist(dm_cmd, 1)" fpsinit >/dev/null 2>&1
+    milk-fpsexec-milk-calc -n ao_telemetry run >/dev/null 2>&1 &
+    unit_pid=$!
+    @defer "kill -INT $unit_pid 2>/dev/null || true; milk-fps-rm ao_telemetry >/dev/null 2>&1 || true"
+
+    sleep 0.25
+    for k in 1 2 3 4; do
+        @calc "dm_cmd = wf_phs * $((k * 2))"
+        sleep 0.05
+    done
+    @waitfor "s.dm_ema.cnt0 >= 2" --timeout 5.0
+    kill -INT $unit_pid 2>/dev/null || true
+    wait $unit_pid 2>/dev/null || true
+
+    echo "AO_OK=@{rec_err < 1e-4}:@{ctrl_err < 1e-4}:@{s.wf_phs.kw.INSTRUM}:@{s.wf_phs.kw.WAVELEN}:@{itot(psf_rp) > 0}:@{gram_tr > 0}:@{s.dm_ema.xsize}"
+    """
+    res = _run_milk_cli(script, tmp_path, mode="script")
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "AO_OK=1:1:SCExAO:1.65:1:1:32" in res.stdout

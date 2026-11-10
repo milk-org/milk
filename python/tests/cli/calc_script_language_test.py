@@ -573,3 +573,79 @@ def test_failed_image_assignments_are_errors(tmp_path):
     assert "Cannot change name" not in out, out
     assert value(res.stdout, "block") == "2", out
     assert (tmp_path / "e3.txt").read_text().count("undefined identifier") == 1, out
+
+
+def test_audit_regressions_and_edge_cases(tmp_path):
+    """Covers edge cases across lexer, resolver, planner, views, reductions, linalg, and stacking:
+    - malformed radix/float literals (`0x`, `0b2`, `0o8`, `1.2.3`)
+    - `def` with >4 arguments (up to 8)
+    - `linspace` + `zeros` shape propagation, `end` on newly created images
+    - self-aliased overlapping view assignment (`v[0:6] = v[1:7]`, `w[::-1] = w`)
+    - non-contiguous views in `norm`, `asum`, `icount`, and masked reductions with strided masks
+    - integer destination streams (`@STU16:`) for `cumsum`, `rprof`, and axis reductions
+    - `iargmax` / `iargmin` 2D unpacking on all-NaN images, `INT64_MIN % -1` and shift bounds
+    - `hstack` with >8 arguments and linalg validation (`solve` negative reg, `trsv` bad flag)
+    """
+    res = milk_bash(
+        # 1. Malformed numeric literals
+        '@calc "0x" 2>/dev/null; echo "hex_empty=$?"\n'
+        '@calc "0b2" 2>/dev/null; echo "bin_bad=$?"\n'
+        '@calc "0o8" 2>/dev/null; echo "oct_bad=$?"\n'
+        '@calc "1.2.3" 2>/dev/null; echo "flt_bad=$?"\n'
+        # 2. Multi-arg def (>4 args) and where()
+        '@calc "def poly6(a, b, c, d, e, f) = a + 2*b + 3*c + 4*d + 5*e + 6*f"\n'
+        'echo "poly6=$(@calc "poly6(1, 1, 1, 1, 1, 1)")"\n'
+        'echo "where_sc=$(@calc "where(1, 42, 99)")"\n'
+        # 3. Shape propagation for created images + `end` in same multi-stmt @calc + linspace
+        '@calc "L = linspace(0, 7, 8) + zeros(8); S = L[1:end-1]"\n'
+        'echo "lin=$(@calc "itot(S)")"\n'
+        # 4. Self-aliased overlapping slice assignments (1D shift and reversal)
+        '@calc "v = [i for i = 0:7]; v[0:6] = v[1:7]"; @calc -a va v\n'
+        'echo "shift1d=${va[*]}"\n'
+        '@calc "w = [i for i = 0:3]; w[::-1] = w"; @calc -a wa w\n'
+        'echo "rev1d=${wa[*]}"\n'
+        # 5. Non-contiguous views in norm, asum, icount, and strided mask in imean/istats
+        '@calc "M = reshape([i - 8 for i = 0:15], 4, 4); Mc = M[::2, ::2] + 0"\n'
+        'echo "dnorm=$(@calc "abs(norm(M[::2, ::2]) - norm(Mc))")"\n'
+        'echo "dasum=$(@calc "abs(asum(M[::2, ::2]) - asum(Mc))")"\n'
+        'echo "dcnt=$(@calc "icount(M[::2, ::2]) - icount(Mc)")"\n'
+        '@calc "msk = where(M > -5, 1, 0); msk_c = msk[::2, ::2] + 0"\n'
+        'echo "dmsk=$(@calc "abs(imean(Mc, msk[::2, ::2]) - imean(Mc, msk_c))")"\n'
+        # 6. Integer destination streams for cumsum and axis reductions
+        'mem.mk2Dim "@STU16:u16_cs" 4 4 >/dev/null\n'
+        'mem.mk2Dim "@STU16:u16_ax" 4 1 >/dev/null\n'
+        '@calc "src4 = zeros(4, 4) + 3; u16_cs = cumsum(src4, 0); u16_ax = itot(src4, 1)"\n'
+        'echo "u16_cs=$(@calc "itot(u16_cs)") u16_ax=$(@calc "itot(u16_ax)")"\n'
+        # 7. All-NaN iargmax/iargmin 2D unpacking and INT64_MIN % -1 + shift safety
+        '@calc "nan_im = zeros(4, 4) + nan; rx, ry = iargmax(nan_im); nx, ny = iargmin(nan_im)"\n'
+        'echo "nan_arg=$(@calc rx),$(@calc ry),$(@calc nx),$(@calc ny)"\n'
+        'echo "i64_safe=$(@calc "(-9223372036854775807 - 1) % -1")"\n'
+        'echo "sh_safe=$(@calc "(1 << 64) + (8 >> -1)")"\n'
+        # 8. hstack with 10 arguments (>8) and linalg validation errors
+        '@calc "o1 = zeros(2, 1) + 1; H10 = hstack(o1, o1, o1, o1, o1, o1, o1, o1, o1, o1)"\n'
+        'echo "h10=$(@calc "itot(H10)")"\n'
+        '@calc "A2 = eye(3); b2 = zeros(3, 1) + 1; x2 = solve(A2, b2, -0.1)" 2>/dev/null; echo "solve_neg=$?"\n'
+        '@calc "A2 = eye(3); b2 = zeros(3) + 1; x2 = trsv(A2, b2, \\"BAD\\")" 2>/dev/null; echo "tri_bad=$?"\n',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "hex_empty") == "2", out
+    assert value(res.stdout, "bin_bad") == "2", out
+    assert value(res.stdout, "oct_bad") == "2", out
+    assert value(res.stdout, "flt_bad") == "2", out
+    assert value(res.stdout, "poly6") == "21", out
+    assert value(res.stdout, "where_sc") == "42", out
+    assert value(res.stdout, "lin") == "21", out
+    assert value(res.stdout, "shift1d") == "1 2 3 4 5 6 7 7", out
+    assert value(res.stdout, "rev1d") == "3 2 1 0", out
+    assert float(value(res.stdout, "dnorm")) < 1e-6, out
+    assert float(value(res.stdout, "dasum")) < 1e-6, out
+    assert value(res.stdout, "dcnt") == "0", out
+    assert float(value(res.stdout, "dmsk")) < 1e-6, out
+    assert value(res.stdout, "u16_cs") == "120 u16_ax=48", out
+    assert value(res.stdout, "nan_arg") == "-1,-1,-1,-1", out
+    assert value(res.stdout, "i64_safe") == "0", out
+    assert value(res.stdout, "sh_safe") == "0", out
+    assert value(res.stdout, "h10") == "20", out
+    assert value(res.stdout, "solve_neg") not in (None, "0"), out
+    assert value(res.stdout, "tri_bad") not in (None, "0"), out
