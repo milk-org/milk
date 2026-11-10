@@ -39,6 +39,32 @@ static const double tv_range_lo[RANGE_NB] = { 0.0, 0.001, 0.005, 0.01, 0.05, 0.1
 static const double tv_range_hi[RANGE_NB] = { 1.0, 0.999, 0.995, 0.99, 0.95, 0.90, 0.85, 0.80 };
 
 /**
+ * tv_layout_compute_3d - Compute screen region geometry with an optional 3D slice slider row
+ * @l:          Output layout structure to populate
+ * @rows:       Terminal height in character rows
+ * @cols:       Terminal width in character columns
+ * @has_slider: Non-zero to reserve a row above the status bar for the slice slider
+ *
+ * Partitions the terminal into the top menubar row, central image viewport,
+ * right-hand colorbar column, optional slice slider row, and bottom status row.
+ *
+ * Return: void
+ */
+void tv_layout_compute_3d(tv_layout_t *l, int rows, int cols, int has_slider)
+{
+    int slider    = (has_slider && rows >= 5) ? 1 : 0;
+    l->rows       = rows;
+    l->cols       = cols;
+    l->img_top    = 1;
+    l->img_rows   = rows - TV_CHROME_ROWS - slider;
+    l->img_cols   = cols - TV_BAR_WIDTH;
+    l->bar_col    = cols - TV_BAR_WIDTH;
+    l->slider_row = slider ? (rows - 2) : -1;
+    l->status_row = rows - 1;
+    l->valid      = (l->img_rows >= 2 && l->img_cols >= 4);
+}
+
+/**
  * tv_layout_compute - Compute screen region geometry from terminal dimensions
  * @l:    Output layout structure to populate
  * @rows: Terminal height in character rows
@@ -52,34 +78,212 @@ static const double tv_range_hi[RANGE_NB] = { 1.0, 0.999, 0.995, 0.99, 0.95, 0.9
  */
 void tv_layout_compute(tv_layout_t *l, int rows, int cols)
 {
-    l->rows       = rows;
-    l->cols       = cols;
-    l->img_top    = 1;
-    l->img_rows   = rows - TV_CHROME_ROWS;
-    l->img_cols   = cols - TV_BAR_WIDTH;
-    l->bar_col    = cols - TV_BAR_WIDTH;
-    l->status_row = rows - 1;
-    l->valid      = (l->img_rows >= 2 && l->img_cols >= 4);
+    tv_layout_compute_3d(l, rows, cols, 0);
+}
+
+/**
+ * tv_gallery_grid - Choose gallery tile grid dimensions to best fit the viewport
+ * @l:         Current screen layout (may be NULL or invalid)
+ * @xsize:     Slice width in pixels
+ * @ysize:     Slice height in pixels
+ * @zsize:     Number of slices
+ * @gcols_out: Output number of tile columns
+ * @grows_out: Output number of tile rows
+ *
+ * Picks `(gcols, grows)` with `gcols * grows >= zsize` that minimizes the
+ * unzoomed pixel-per-sample step (maximizing rendered slice size), breaking
+ * ties by fewer empty tile slots.
+ *
+ * Return: void
+ */
+static void tv_gallery_grid(const tv_layout_t *l,
+                            uint32_t           xsize,
+                            uint32_t           ysize,
+                            uint32_t           zsize,
+                            uint32_t          *gcols_out,
+                            uint32_t          *grows_out)
+{
+    if (zsize <= 1)
+    {
+        *gcols_out = 1;
+        *grows_out = 1;
+        return;
+    }
+    double   ws        = (l != NULL && l->valid) ? (double) l->img_cols : 80.0;
+    double   hs        = (l != NULL && l->valid) ? 2.0 * (double) l->img_rows : 48.0;
+    uint32_t best_cols = 1;
+    uint32_t best_rows = zsize;
+    double   best_step = DBL_MAX;
+    uint64_t best_pad  = UINT64_MAX;
+
+    /* Search up to 4096 columns or zsize; above that sqrt scaling is sufficient */
+    uint32_t limit = (zsize < 4096) ? zsize : 4096;
+    for (uint32_t gc = 1; gc <= limit; gc++)
+    {
+        uint32_t gr = (zsize + gc - 1) / gc;
+        if (gc > 1 && (uint64_t) (gc - 1) * gr >= zsize)
+        {
+            continue;
+        }
+        double   sx   = (double) gc * (double) xsize / ws;
+        double   sy   = (double) gr * (double) ysize / hs;
+        double   step = (sx > sy) ? sx : sy;
+        uint64_t pad  = (uint64_t) gc * gr - zsize;
+        if (step < best_step - 1e-12 * best_step ||
+            (fabs(step - best_step) <= 1e-12 * best_step && pad < best_pad))
+        {
+            best_step = step;
+            best_pad  = pad;
+            best_cols = gc;
+            best_rows = gr;
+        }
+    }
+    *gcols_out = best_cols;
+    *grows_out = best_rows;
+}
+
+/**
+ * tv_vgeom_compute - Compute virtual 2D canvas geometry for a stream and 3D viewing mode
+ * @g:     Output virtual geometry structure
+ * @l:     Current screen layout (used to size the gallery grid)
+ * @xsize: Stream axis 0 size
+ * @ysize: Stream axis 1 size
+ * @zsize: Stream axis 2 size (1 for 1D/2D streams)
+ * @naxis: Number of stream axes (1..3)
+ * @opt:   Viewer options containing `mode3d` and `slice`
+ *
+ * Maps the stream dimensions and active 3D mode (single slice, gallery, or
+ * 2D axis merge) to a virtual 2D width, height, clamped slice index, and
+ * gallery tile counts.
+ *
+ * Return: void
+ */
+void tv_vgeom_compute(tv_vgeom_t               *g,
+                      const tv_layout_t        *l,
+                      uint32_t                  xsize,
+                      uint32_t                  ysize,
+                      uint32_t                  zsize,
+                      uint8_t                   naxis,
+                      const termview_options_t *opt)
+{
+    g->xsize = (xsize >= 1) ? xsize : 1;
+    g->ysize = (ysize >= 1) ? ysize : 1;
+    g->zsize = (naxis == 3 && zsize >= 1) ? zsize : 1;
+    g->mode  = (naxis == 3 && opt != NULL && opt->mode3d >= TV_3D_SLICE && opt->mode3d < TV_3D_NB)
+                   ? opt->mode3d
+                   : TV_3D_SLICE;
+    int s    = (opt != NULL) ? opt->slice : 0;
+    g->slice = (s < 0) ? 0 : ((uint32_t) s >= g->zsize) ? g->zsize - 1 : (uint32_t) s;
+    g->gcols = 1;
+    g->grows = 1;
+
+    switch (g->mode)
+    {
+    case TV_3D_GALLERY:
+        tv_gallery_grid(l, g->xsize, g->ysize, g->zsize, &g->gcols, &g->grows);
+        g->width  = (uint64_t) g->gcols * g->xsize;
+        g->height = (uint64_t) g->grows * g->ysize;
+        break;
+    case TV_3D_REMAP_XY:
+        g->width  = (uint64_t) g->xsize * g->ysize;
+        g->height = g->zsize;
+        break;
+    case TV_3D_REMAP_XZ:
+        g->width  = (uint64_t) g->xsize * g->zsize;
+        g->height = g->ysize;
+        break;
+    case TV_3D_REMAP_YZ:
+        g->width  = g->xsize;
+        g->height = (uint64_t) g->ysize * g->zsize;
+        break;
+    case TV_3D_SLICE:
+    default:
+        g->width  = g->xsize;
+        g->height = g->ysize;
+        break;
+    }
 }
 
 /**
  * tv_view_base - Compute the unzoomed image-pixels-per-sample step for a layout
  * @l:     Screen layout with valid `img_cols` and `img_rows`
- * @xsize: Image width in pixels
- * @ysize: Image height in pixels
+ * @xsize: Virtual image width in pixels
+ * @ysize: Virtual image height in pixels
  *
  * Returns the larger of the horizontal and vertical pixel-to-sample ratios so
  * the entire image fits inside the viewport at zoom = 1.0 with square aspect.
  *
  * Return: Base sample step in image pixels
  */
-double tv_view_base(const tv_layout_t *l, uint32_t xsize, uint32_t ysize)
+double tv_view_base(const tv_layout_t *l, uint64_t xsize, uint64_t ysize)
 {
     return fmax((double) xsize / l->img_cols, (double) ysize / (2.0 * l->img_rows));
 }
 
 /**
- * tv_xform_compute - Build the sample-to-image coordinate transform
+ * tv_xform_compute_3d - Build the sample-to-image coordinate transform for virtual geometry @g
+ * @x:      Output transform structure
+ * @l:      Current screen layout
+ * @v:      Viewport center and zoom state
+ * @g:      Virtual 2D geometry of the stream and active 3D mode
+ * @flip_h: True if horizontal mirror is active
+ * @flip_v: True if vertical flip is active
+ *
+ * Computes horizontal and vertical sample steps (preserving square pixels for
+ * 2D, slice, and gallery views while preventing extreme-aspect 2D remaps or 1D
+ * streams from collapsing to sub-sample thickness) and populates @x.
+ *
+ * Return: void
+ */
+void tv_xform_compute_3d(tv_xform_t        *x,
+                         const tv_layout_t *l,
+                         const tv_view_t   *v,
+                         const tv_vgeom_t  *g,
+                         bool               flip_h,
+                         bool               flip_v)
+{
+    double base   = tv_view_base(l, g->width, g->height);
+    double base_x = base;
+    double base_y = base;
+
+    if (g->mode >= TV_3D_REMAP_XY)
+    {
+        double min_w = fmin(2.0 * (double) g->width, 0.5 * (double) l->img_cols);
+        double min_h = fmin(2.0 * (double) g->height, (double) l->img_rows);
+        if (min_w > 0.0 && base_x > (double) g->width / min_w)
+        {
+            base_x = (double) g->width / min_w;
+        }
+        if (min_h > 0.0 && base_y > (double) g->height / min_h)
+        {
+            base_y = (double) g->height / min_h;
+        }
+    }
+    else
+    {
+        if (base_x > 0.5 * (double) g->width)
+        {
+            base_x = 0.5 * (double) g->width;
+        }
+        if (base_y > 0.5 * (double) g->height)
+        {
+            base_y = 0.5 * (double) g->height;
+        }
+    }
+
+    x->step_x = base_x / v->zoom;
+    x->step_y = base_y / v->zoom;
+    x->step   = fmax(x->step_x, x->step_y);
+    x->cx     = v->cx * (double) g->width;
+    x->cy     = v->cy * (double) g->height;
+    x->sx     = flip_h ? -1.0 : 1.0;
+    x->sy     = flip_v ? -1.0 : 1.0;
+    x->cdx    = l->img_cols / 2.0;
+    x->cdy    = l->img_rows; /* half of the 2 * img_rows sample rows */
+}
+
+/**
+ * tv_xform_compute - Build the sample-to-image coordinate transform for a 2D image
  * @x:      Output transform structure
  * @l:      Current screen layout
  * @v:      Viewport center and zoom state
@@ -102,13 +306,9 @@ void tv_xform_compute(tv_xform_t        *x,
                       bool               flip_h,
                       bool               flip_v)
 {
-    x->step = tv_view_base(l, xsize, ysize) / v->zoom;
-    x->cx   = v->cx * xsize;
-    x->cy   = v->cy * ysize;
-    x->sx   = flip_h ? -1.0 : 1.0;
-    x->sy   = flip_v ? -1.0 : 1.0;
-    x->cdx  = l->img_cols / 2.0;
-    x->cdy  = l->img_rows; /* half of the 2 * img_rows sample rows */
+    tv_vgeom_t g;
+    tv_vgeom_compute(&g, l, xsize, ysize, 1, 2, NULL);
+    tv_xform_compute_3d(x, l, v, &g, flip_h, flip_v);
 }
 
 /** tv_grow_buf() - Make *@p hold at least @n elements of @size bytes; -1 on failure. */
@@ -129,7 +329,135 @@ static int tv_grow_buf(void **p, size_t *cap, size_t n, size_t size)
 }
 
 /**
- * tv_image_geom - Precompute column and row sampling lookup tables for the viewport
+ * tv_image_geom_3d - Precompute column and row sampling lookup tables for 2D/3D virtual geometry
+ * @im: Image pipeline state whose buffers and index tables are updated
+ * @l:  Current screen layout
+ * @x:  Current sample-to-image coordinate transform
+ * @g:  Virtual 2D geometry describing the stream dimensions and active 3D mode
+ *
+ * Resizes internal sample/cell buffers if needed and populates `col_src`,
+ * `col_in`, `row_off`, `row_in`, and `nelem` for the `img_cols` by
+ * `2 * img_rows` half-block sample grid across single-slice, gallery, and
+ * 3D-to-2D remapped modes.
+ *
+ * Return: 0 on success, -1 on memory allocation failure
+ */
+int tv_image_geom_3d(tv_image_t *im, const tv_layout_t *l, const tv_xform_t *x, const tv_vgeom_t *g)
+{
+    int    nc = l->img_cols;
+    int    nr = 2 * l->img_rows;
+    size_t ns = (size_t) nc * nr;
+    if (tv_grow_buf((void **) &im->col_src, &im->col_cap, (size_t) nc, sizeof(int64_t)) ||
+        tv_grow_buf((void **) &im->col_in, &im->colin_cap, (size_t) nc, 1) ||
+        tv_grow_buf((void **) &im->row_off, &im->row_cap, (size_t) nr, sizeof(int64_t)) ||
+        tv_grow_buf((void **) &im->row_in, &im->rowin_cap, (size_t) nr, 1) ||
+        tv_grow_buf((void **) &im->samp, &im->samp_cap, ns, sizeof(float)) ||
+        tv_grow_buf((void **) &im->prev, &im->prev_cap, ns, sizeof(float)) ||
+        tv_grow_buf((void **) &im->shown, &im->shown_cap, ns, sizeof(uint16_t)) ||
+        tv_grow_buf((void **) &im->cells, &im->cells_cap, (size_t) nc * l->img_rows,
+                    sizeof(tv_cell_t)))
+    {
+        return -1;
+    }
+
+    int64_t slice_elems = (int64_t) g->xsize * (int64_t) g->ysize;
+    int     gal_sep_x =
+        (g->mode == TV_3D_GALLERY && g->gcols > 1 && (double) g->xsize / x->step_x >= 6.0);
+    int gal_sep_y =
+        (g->mode == TV_3D_GALLERY && g->grows > 1 && (double) g->ysize / x->step_y >= 6.0);
+    uint64_t prev_tx    = 0;
+    int      had_col_in = 0;
+
+    /* sample centres, floor(): columns and rows map symmetrically under flips */
+    for (int j = 0; j < nc; j++)
+    {
+        double vx = floor(tv_xf_img_x(x, j + 0.5) + TV_TIE_EPS);
+        int    in = (vx >= 0.0 && vx < (double) g->width);
+        if (!in)
+        {
+            im->col_src[j] = -1;
+            im->col_in[j]  = 0;
+            had_col_in     = 0;
+            continue;
+        }
+        uint64_t uvx = (uint64_t) vx;
+        uint64_t tx  = uvx / g->xsize;
+        if (gal_sep_x && had_col_in && tx != prev_tx)
+        {
+            im->col_src[j] = -1;
+            im->col_in[j]  = 0;
+            prev_tx        = tx;
+            continue;
+        }
+        prev_tx    = tx;
+        had_col_in = 1;
+        if (g->mode == TV_3D_GALLERY || g->mode == TV_3D_REMAP_XZ)
+        {
+            uint64_t ix    = uvx % g->xsize;
+            im->col_src[j] = (int64_t) ix + (int64_t) tx * slice_elems;
+        }
+        else
+        {
+            im->col_src[j] = (int64_t) uvx;
+        }
+        im->col_in[j] = 1;
+    }
+
+    uint64_t prev_ty    = 0;
+    int      had_row_in = 0;
+    for (int i = 0; i < nr; i++)
+    {
+        double vy = floor(tv_xf_img_y(x, i + 0.5) + TV_TIE_EPS);
+        int    in = (vy >= 0.0 && vy < (double) g->height);
+        if (!in)
+        {
+            im->row_off[i] = -1;
+            im->row_in[i]  = 0;
+            had_row_in     = 0;
+            continue;
+        }
+        uint64_t uvy = (uint64_t) vy;
+        uint64_t ty  = uvy / g->ysize;
+        if (gal_sep_y && had_row_in && ty != prev_ty)
+        {
+            im->row_off[i] = -1;
+            im->row_in[i]  = 0;
+            prev_ty        = ty;
+            continue;
+        }
+        prev_ty    = ty;
+        had_row_in = 1;
+        if (g->mode == TV_3D_SLICE)
+        {
+            im->row_off[i] = (int64_t) g->slice * slice_elems + (int64_t) uvy * (int64_t) g->xsize;
+        }
+        else if (g->mode == TV_3D_GALLERY)
+        {
+            uint64_t iy = uvy % g->ysize;
+            im->row_off[i] =
+                (int64_t) iy * (int64_t) g->xsize + (int64_t) ty * (int64_t) g->gcols * slice_elems;
+        }
+        else if (g->mode == TV_3D_REMAP_XY)
+        {
+            im->row_off[i] = (int64_t) uvy * slice_elems;
+        }
+        else
+        {
+            im->row_off[i] = (int64_t) uvy * (int64_t) g->xsize;
+        }
+        im->row_in[i] = 1;
+    }
+
+    im->nelem      = slice_elems * (int64_t) g->zsize;
+    im->ncols      = nc;
+    im->nrows      = nr;
+    im->have_prev  = 0;
+    im->have_shown = 0;
+    return 0;
+}
+
+/**
+ * tv_image_geom - Precompute column and row sampling lookup tables for a 2D image
  * @im:    Image pipeline state whose buffers and index tables are updated
  * @l:     Current screen layout
  * @x:     Current sample-to-image coordinate transform
@@ -148,41 +476,9 @@ int tv_image_geom(tv_image_t        *im,
                   uint32_t           xsize,
                   uint32_t           ysize)
 {
-    int    nc = l->img_cols;
-    int    nr = 2 * l->img_rows;
-    size_t ns = (size_t) nc * nr;
-    if (tv_grow_buf((void **) &im->col_src, &im->col_cap, (size_t) nc, sizeof(int32_t)) ||
-        tv_grow_buf((void **) &im->col_in, &im->colin_cap, (size_t) nc, 1) ||
-        tv_grow_buf((void **) &im->row_off, &im->row_cap, (size_t) nr, sizeof(int64_t)) ||
-        tv_grow_buf((void **) &im->row_in, &im->rowin_cap, (size_t) nr, 1) ||
-        tv_grow_buf((void **) &im->samp, &im->samp_cap, ns, sizeof(float)) ||
-        tv_grow_buf((void **) &im->prev, &im->prev_cap, ns, sizeof(float)) ||
-        tv_grow_buf((void **) &im->shown, &im->shown_cap, ns, sizeof(uint16_t)) ||
-        tv_grow_buf((void **) &im->cells, &im->cells_cap, (size_t) nc * l->img_rows,
-                    sizeof(tv_cell_t)))
-    {
-        return -1;
-    }
-    /* sample centres, floor(): columns and rows map symmetrically under flips */
-    for (int j = 0; j < nc; j++)
-    {
-        double ix      = floor(tv_xf_img_x(x, j + 0.5) + TV_TIE_EPS);
-        int    in      = (ix >= 0.0 && ix < (double) xsize);
-        im->col_src[j] = in ? (int32_t) ix : -1;
-        im->col_in[j]  = (uint8_t) in;
-    }
-    for (int i = 0; i < nr; i++)
-    {
-        double iy      = floor(tv_xf_img_y(x, i + 0.5) + TV_TIE_EPS);
-        int    in      = (iy >= 0.0 && iy < (double) ysize);
-        im->row_off[i] = in ? (int64_t) iy * xsize : -1;
-        im->row_in[i]  = (uint8_t) in;
-    }
-    im->ncols      = nc;
-    im->nrows      = nr;
-    im->have_prev  = 0;
-    im->have_shown = 0;
-    return 0;
+    tv_vgeom_t g;
+    tv_vgeom_compute(&g, l, xsize, ysize, 1, 2, NULL);
+    return tv_image_geom_3d(im, l, x, &g);
 }
 
 /**
@@ -209,14 +505,15 @@ static inline int tv_finitef(float v)
     static MILK_HOT void tv_sample_##ACC(const CTYPE *MILK_RESTRICT data, tv_image_t *im, \
                                          double offset)                                   \
     {                                                                                     \
-        const int32_t *MILK_RESTRICT cs   = im->col_src;                                  \
+        const int64_t *MILK_RESTRICT cs    = im->col_src;                                 \
+        int64_t                      nelem = im->nelem;                                   \
         float                        vmin = FLT_MAX, vmax = -FLT_MAX;                     \
         long                         nvalid = 0;                                          \
         for (int i = 0; i < im->nrows; i++)                                               \
         {                                                                                 \
             float *MILK_RESTRICT row = im->samp + (size_t) i * im->ncols;                 \
             int64_t              ro  = im->row_off[i];                                    \
-            if (ro < 0)                                                                   \
+            if (ro < 0 || ro >= nelem)                                                    \
             {                                                                             \
                 for (int j = 0; j < im->ncols; j++)                                       \
                 {                                                                         \
@@ -225,10 +522,11 @@ static inline int tv_finitef(float v)
                 continue;                                                                 \
             }                                                                             \
             const CTYPE *MILK_RESTRICT src = data + ro;                                   \
+            int64_t                    lim = nelem - ro;                                  \
             for (int j = 0; j < im->ncols; j++)                                           \
             {                                                                             \
-                int32_t c = cs[j];                                                        \
-                if (UNLIKELY(c < 0))                                                      \
+                int64_t c = cs[j];                                                        \
+                if (UNLIKELY(c < 0 || c >= lim))                                          \
                 {                                                                         \
                     row[j] = NAN;                                                         \
                     continue;                                                             \
@@ -316,7 +614,12 @@ static double tv_offset(const tv_image_t *im, const void *data, uint8_t datatype
             {
                 break;
             }
-            double p = tv_pixel(data, datatype, (size_t) im->row_off[i] + (size_t) im->col_src[j]);
+            int64_t idx = im->row_off[i] + im->col_src[j];
+            if (idx < 0 || idx >= im->nelem)
+            {
+                continue;
+            }
+            double p = tv_pixel(data, datatype, (size_t) idx);
             if (tv_finite(p))
             {
                 v[n++] = p;
@@ -548,7 +851,8 @@ void tv_image_range(tv_image_t *im, const termview_options_t *opt, int snap)
 /** tv_inb() - Sample (@j, @r) lies inside the image. */
 static inline int tv_inb(const tv_image_t *im, int j, int r)
 {
-    return j >= 0 && j < im->ncols && r >= 0 && r < im->nrows && im->col_in[j] && im->row_in[r];
+    return j >= 0 && j < im->ncols && r >= 0 && r < im->nrows && im->col_in[j] && im->row_in[r] &&
+           (im->row_off[r] + im->col_src[j] < im->nelem);
 }
 
 /** tv_near() - An out-of-image sample next to the image: drawn as the frame border. */

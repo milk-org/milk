@@ -44,10 +44,20 @@ const char *const tv_range_keys[RANGE_NB] = {
     "minmax", "0.1", "0.5", "1", "5", "10", "15", "20",
 };
 
+const char *const tv_3d_names[TV_3D_NB] = {
+    "slice", "gallery", "xy", "xz", "yz",
+};
+
+const char *const tv_3d_labels[TV_3D_NB] = {
+    "slice", "gallery", "XYxZ", "XZxY", "XxYZ",
+};
+
 _Static_assert(TV_COUNT(tv_cmap_names) == COLORMAP_NB, "colormap name table out of sync");
 _Static_assert(TV_COUNT(tv_scale_names) == SCALE_NB, "scale name table out of sync");
 _Static_assert(TV_COUNT(tv_range_names) == RANGE_NB, "range name table out of sync");
 _Static_assert(TV_COUNT(tv_range_keys) == RANGE_NB, "range key table out of sync");
+_Static_assert(TV_COUNT(tv_3d_names) == TV_3D_NB, "3D mode name table out of sync");
+_Static_assert(TV_COUNT(tv_3d_labels) == TV_3D_NB, "3D mode label table out of sync");
 
 /**
  * tv_lookup_name - Match an option string against a table of canonical names

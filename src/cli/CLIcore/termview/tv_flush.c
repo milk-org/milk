@@ -30,6 +30,7 @@ static const char *const tv_glyph_utf8[TV_G_COUNT - 0x80] = {
     [TV_G_HLINE - 0x80] = "\xE2\x94\x80",      [TV_G_VLINE - 0x80] = "\xE2\x94\x82",
     [TV_G_TL - 0x80] = "\xE2\x95\xAD",         [TV_G_TR - 0x80] = "\xE2\x95\xAE",
     [TV_G_BL - 0x80] = "\xE2\x95\xB0",         [TV_G_BR - 0x80] = "\xE2\x95\xAF",
+    [TV_G_LEFT - 0x80] = "\xE2\x97\x80",       [TV_G_RIGHT - 0x80] = "\xE2\x96\xB6",
 };
 
 /* xterm's default 16-colour palette */

@@ -71,6 +71,17 @@ typedef enum
     RANGE_NB
 } termview_range_t;
 
+/** @brief 3D stream viewing modes */
+typedef enum
+{
+    TV_3D_SLICE = 0, /**< Single 2D slice (X x Y) along the last dimension */
+    TV_3D_GALLERY,   /**< All slices tiled at once as a 2D gallery         */
+    TV_3D_REMAP_XY,  /**< Remap 3D->2D: merge X and Y axes ((X*Y) x Z)     */
+    TV_3D_REMAP_XZ,  /**< Remap 3D->2D: merge X and Z axes ((X*Z) x Y)     */
+    TV_3D_REMAP_YZ,  /**< Remap 3D->2D: merge Y and Z axes (X x (Y*Z))     */
+    TV_3D_NB
+} termview_3d_mode_t;
+
 /** @brief All runtime options for termview_screen() */
 typedef struct
 {
@@ -86,6 +97,8 @@ typedef struct
     bool                range_smooth; /**< steady auto range (hysteresis) */
     bool                lowbw;        /**< hold sub-threshold changes to cut output */
     int                 colors;       /**< colour depth: 0 auto, 1 = 16, 2 = 256, 3 = 24-bit */
+    termview_3d_mode_t  mode3d;       /**< 3D display mode (slice, gallery, 2D remap) */
+    int                 slice;        /**< active 0-based slice index in TV_3D_SLICE  */
 } termview_options_t;
 
 /** termview_options_init() - Default options: greyscale, linear, min-max, 20 fps, no flips. */

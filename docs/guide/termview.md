@@ -52,13 +52,31 @@ Stream states:
 | Cmap | 17 colormaps, each with a preview strip |
 | Scale | linear, sqrt, log, log_strong, log_extreme, asinh, squared, cubed |
 | Range | min-max or a percentile range (choosing one unlocks the range), Lock range, Set min / max... |
-| View | Fit to window, Zoom in/out, Centre, Flip horizontally/vertically, Colors: auto/24-bit/256/16 |
+| View | Fit to window, Zoom in/out, Centre, Flip horizontally/vertically, 3D modes (when viewing a 3D stream), Colors: auto/24-bit/256/16 |
 | Stream | Pause, UI refresh rate (1-60 fps), Range smoothing, Low-bandwidth, Quit |
 
 Moving through a menu (Up/Down, Home/End, PgUp/PgDn, the wheel, or the pointer) previews the
 highlighted choice at once. Enter or a click keeps it; Esc or a click outside the menu goes back to
 what was there before. Space applies an item and leaves the menu open. Left/Right move to the
 neighbouring menu.
+
+## 3D streams
+
+When opened on a 3D stream (`X x Y x Z`), `milk-termview` offers five viewing modes in the **View**
+menu (or cycled with `d` / `D` and selected at startup with `-3, --3d MODE`):
+
+| Mode | CLI name | Description |
+|------|----------|-------------|
+| **Slice** | `slice` | View one `X x Y` slice at a time (`z` in `0 .. Z - 1`, `--slice N`). Shows an interactive slider bar above the status bar |
+| **Gallery** | `gallery` | View all `Z` slices at once tiled in a 2D grid matched to the viewport aspect ratio |
+| **Merge X,Y** | `xy` (`XYxZ`) | Remap 3D to 2D by merging the `X` and `Y` axes into `(X*Y) x Z` |
+| **Merge X,Z** | `xz` (`XZxY`) | Remap 3D to 2D by merging the `X` and `Z` axes into `(X*Z) x Y` |
+| **Merge Y,Z** | `yz` (`XxYZ`) | Remap 3D to 2D by merging the `Y` and `Z` axes into `X x (Y*Z)` |
+
+In **Slice** mode, the slider bar displays the active slice index (`Slice z/zmax`), clickable step
+buttons (`◀` / `▶`), and a proportional slider track. You can click or drag the slider track, click
+the step buttons, scroll the mouse wheel on the slider row, or use `[` / `]`, `PgDn` / `PgUp`, and
+`Home` / `End` to step through slices.
 
 ## Keys and mouse
 
@@ -71,6 +89,8 @@ neighbouring menu.
 | `+` `=` / `-` `_` | Zoom in / out |
 | `0` | Reset zoom and pan |
 | `c` `C`, `s` `S`, `r` `R` | Next / previous colormap, scaling, range mode |
+| `d` / `D` | Next / previous 3D view mode (slice, gallery, 2D remap) |
+| `[` / `]`, PgDn / PgUp | Previous / next 3D slice (Home / End: first / last) |
 | `l` | Lock or unlock the current range |
 | `m` / `M` | Type the min / max (locks the range) |
 | `h` / `v` | Flip horizontally / vertically |
@@ -80,8 +100,8 @@ neighbouring menu.
 | Ctrl-L | Repaint the screen |
 | Ctrl-Z | Suspend |
 | `q`, Ctrl-C | Quit |
-| Wheel | Zoom at the pointer |
-| Left drag | Pan |
+| Wheel | Zoom at the pointer (or step 3D slice on slider) |
+| Left drag | Pan (or scrub 3D slice on the slider bar) |
 | Right drag | Zoom to the selected box |
 
 ## Display range
@@ -157,6 +177,8 @@ scaling and range settings are kept. A stream truncated in place is dropped befo
 | `-r, --range NAME` | Initial range: minmax, 0.1, 0.5, 1, 5, 10, 15, 20 (lower percentile) |
 | `--min V --max V` | Lock the display range to [min, max] |
 | `-f, --fps N` | UI refresh rate, 1-120 (20) |
+| `-3, --3d MODE` | Initial 3D view mode: `slice`, `gallery`, `xy`, `xz`, `yz` (`slice`) |
+| `--slice N` | Initial 0-based slice index in 3D slice mode (`0`) |
 | `--colors MODE` | auto, truecolor, 256, 16 (auto) |
 
 Colour depth in `auto` mode: `COLORTERM=truecolor` or `24bit` gives 24-bit colour. Otherwise

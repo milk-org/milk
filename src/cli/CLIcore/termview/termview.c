@@ -151,20 +151,33 @@ static double tv_quiet_us(const tv_state_t *ctx)
     return (q < 5e6) ? q : 5e6;
 }
 
+/** tv_has_slider() - True when the 3D slice slider bar row is active. */
+static int tv_has_slider(const tv_state_t *ctx)
+{
+    return ctx->st->naxis == 3 && ctx->opt.mode3d == TV_3D_SLICE;
+}
+
+/** tv_vgeom_now() - Compute the current screen layout and virtual 2D geometry. */
+static void tv_vgeom_now(const tv_state_t *ctx, tv_layout_t *l, tv_vgeom_t *g)
+{
+    tv_layout_compute_3d(l, ctx->rows, ctx->cols, tv_has_slider(ctx));
+    tv_vgeom_compute(g, l, ctx->st->xsize, ctx->st->ysize, ctx->st->zsize, ctx->st->naxis,
+                     &ctx->opt);
+}
+
 /** tv_layout_ok() - True when the image area is drawable; also guards every geometry divisor. */
 static int tv_layout_ok(const tv_state_t *ctx)
 {
     tv_layout_t l;
-    tv_layout_compute(&l, ctx->rows, ctx->cols);
+    tv_layout_compute_3d(&l, ctx->rows, ctx->cols, tv_has_slider(ctx));
     return l.valid;
 }
 
 /** tv_xform_now() - The current view transform, as the renderer uses it. */
-static void tv_xform_now(const tv_state_t *ctx, tv_layout_t *l, tv_xform_t *x)
+static void tv_xform_now(const tv_state_t *ctx, tv_layout_t *l, tv_vgeom_t *g, tv_xform_t *x)
 {
-    tv_layout_compute(l, ctx->rows, ctx->cols);
-    tv_xform_compute(x, l, &ctx->view, ctx->st->xsize, ctx->st->ysize, ctx->opt.flip_h,
-                     ctx->opt.flip_v);
+    tv_vgeom_now(ctx, l, g);
+    tv_xform_compute_3d(x, l, &ctx->view, g, ctx->opt.flip_h, ctx->opt.flip_v);
 }
 
 /** tv_invalidate() - Forget what the terminal shows so the next frame repaints every cell. */
@@ -182,8 +195,9 @@ static void tv_invalidate(tv_state_t *ctx)
 }
 
 /**
- * tv_pause() - Freeze the image on a copy of the displayed slice (so zoom and pan keep working on
- * it), or go back to the live stream. Without memory for the copy, the pause is refused (bell).
+ * tv_pause() - Freeze the image on a copy of the displayed stream (so zoom, pan, and slice
+ * scrubbing keep working on it), or go back to the live stream. Without memory for the copy,
+ * the pause is refused (bell).
  */
 static void tv_pause(tv_state_t *ctx, int on)
 {
@@ -193,7 +207,8 @@ static void tv_pause(tv_state_t *ctx, int on)
     ctx->paused = on;
     if (on && tv_mapped(ctx))
     {
-        size_t n = (size_t) st->xsize * st->ysize * (size_t) ImageStreamIO_typesize(st->datatype);
+        size_t n    = (size_t) st->xsize * st->ysize * st->zsize *
+                      (size_t) ImageStreamIO_typesize(st->datatype);
         ctx->frozen = malloc(n);
         if (ctx->frozen == NULL)
         {
@@ -220,8 +235,9 @@ static double tv_zmax(const tv_state_t *ctx)
         return 1.0;
     }
     tv_layout_t l;
-    tv_layout_compute(&l, ctx->rows, ctx->cols);
-    return fmax(1.0, 64.0 * tv_view_base(&l, ctx->st->xsize, ctx->st->ysize));
+    tv_vgeom_t  g;
+    tv_vgeom_now(ctx, &l, &g);
+    return fmax(1.0, 64.0 * tv_view_base(&l, g.width, g.height));
 }
 
 /**
@@ -405,16 +421,54 @@ void tv_do(tv_state_t *ctx, tv_action_t a, int arg)
         tv_do(ctx, TV_ACT_SET_FPS, ctx->target_fps + arg);
         break;
     case TV_ACT_ESCAPE:
-        if (ctx->mouse_is_dragging || ctx->roi_is_dragging)
+        if (ctx->mouse_is_dragging || ctx->roi_is_dragging || ctx->ui.slider_drag)
         {
             ctx->mouse_is_dragging = 0;
             ctx->roi_is_dragging   = 0;
+            ctx->ui.slider_drag    = 0;
             ctx->dirty |= TV_D_CHROME;
         }
         break;
     case TV_ACT_LOWBW:
         ctx->opt.lowbw = !ctx->opt.lowbw;
         ctx->dirty |= TV_D_MAP | TV_D_CHROME;
+        break;
+    case TV_ACT_3D:
+        if (ctx->st->naxis == 3)
+        {
+            tv_do(ctx, TV_ACT_SET_3D, tv_wrap(ctx->opt.mode3d, arg, TV_3D_NB));
+        }
+        break;
+    case TV_ACT_SET_3D:
+        if (ctx->st->naxis == 3)
+        {
+            termview_3d_mode_t m = (termview_3d_mode_t) tv_wrap(arg, 0, TV_3D_NB);
+            if (m != ctx->opt.mode3d)
+            {
+                ctx->opt.mode3d = m;
+                ctx->view.zoom  = 1.0;
+                ctx->view.cx    = 0.5;
+                ctx->view.cy    = 0.5;
+            }
+            ctx->dirty |= TV_D_GEOM | TV_D_MAP | TV_D_CHROME;
+        }
+        break;
+    case TV_ACT_SLICE:
+        if (ctx->st->naxis == 3 && ctx->st->zsize > 0)
+        {
+            int zmax = (int) ctx->st->zsize - 1;
+            int cur  = (ctx->opt.slice < 0) ? 0 : (ctx->opt.slice > zmax) ? zmax : ctx->opt.slice;
+            tv_do(ctx, TV_ACT_SET_SLICE, cur + arg);
+        }
+        break;
+    case TV_ACT_SET_SLICE:
+        if (ctx->st->naxis == 3 && ctx->st->zsize > 0)
+        {
+            int zmax       = (int) ctx->st->zsize - 1;
+            int sl         = (arg < 0) ? 0 : (arg > zmax) ? zmax : arg;
+            ctx->opt.slice = sl;
+            ctx->dirty |= TV_D_GEOM | TV_D_MAP | TV_D_CHROME;
+        }
         break;
     }
 }
@@ -454,6 +508,24 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
     case 'r':
     case 'R':
         tv_do(ctx, TV_ACT_RANGE, (ev->key == 'r') ? 1 : -1);
+        break;
+    case 'd':
+    case 'D':
+        tv_do(ctx, TV_ACT_3D, (ev->key == 'd') ? 1 : -1);
+        break;
+    case '[':
+    case TV_K_PGDN:
+        tv_do(ctx, TV_ACT_SLICE, -1);
+        break;
+    case ']':
+    case TV_K_PGUP:
+        tv_do(ctx, TV_ACT_SLICE, 1);
+        break;
+    case TV_K_HOME:
+        tv_do(ctx, TV_ACT_SET_SLICE, 0);
+        break;
+    case TV_K_END:
+        tv_do(ctx, TV_ACT_SET_SLICE, INT32_MAX);
         break;
     case 'l':
         tv_do(ctx, TV_ACT_LOCK, -1);
@@ -517,8 +589,9 @@ void tv_handle_key(tv_state_t *ctx, const tv_event_t *ev)
 static void tv_zoom_at(tv_state_t *ctx, int notches, int x, int y)
 {
     tv_layout_t l;
+    tv_vgeom_t  g;
     tv_xform_t  xf;
-    tv_xform_now(ctx, &l, &xf);
+    tv_xform_now(ctx, &l, &g, &xf);
     y -= l.img_top;                /* screen row to image row, both 1-based */
     double dj = x - 0.5;           /* centre of column x (1-based) in samples */
     double di = 2.0 * (y - 1) + 1; /* between the cell's two sample rows */
@@ -527,15 +600,17 @@ static void tv_zoom_at(tv_state_t *ctx, int notches, int x, int y)
         tv_do(ctx, TV_ACT_ZOOM, notches);
         return;
     }
-    double px   = tv_xf_img_x(&xf, dj);
-    double py   = tv_xf_img_y(&xf, di);
-    double zoom = ctx->view.zoom * pow(1.2, notches);
-    double zmax = tv_zmax(ctx);
-    zoom        = (zoom > zmax) ? zmax : (zoom < 0.1) ? 0.1 : zoom;
-    double step = tv_view_base(&l, ctx->st->xsize, ctx->st->ysize) / zoom;
-    double cx   = px - xf.sx * (dj - xf.cdx) * step;
-    double cy   = py - xf.sy * (di - xf.cdy) * step;
-    tv_set_view(ctx, cx / ctx->st->xsize, cy / ctx->st->ysize, zoom);
+    double px     = tv_xf_img_x(&xf, dj);
+    double py     = tv_xf_img_y(&xf, di);
+    double zoom   = ctx->view.zoom * pow(1.2, notches);
+    double zmax   = tv_zmax(ctx);
+    zoom          = (zoom > zmax) ? zmax : (zoom < 0.1) ? 0.1 : zoom;
+    double ratio  = ctx->view.zoom / zoom;
+    double step_x = xf.step_x * ratio;
+    double step_y = xf.step_y * ratio;
+    double cx     = px - xf.sx * (dj - xf.cdx) * step_x;
+    double cy     = py - xf.sy * (di - xf.cdy) * step_y;
+    tv_set_view(ctx, cx / (double) g.width, cy / (double) g.height, zoom);
 }
 
 /** tv_handle_mouse() - Pan (left drag), box zoom (right drag) and wheel zoom at the pointer. */
@@ -554,15 +629,16 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
     }
 
     tv_layout_t l;
+    tv_vgeom_t  g;
     tv_xform_t  xf;
-    tv_xform_now(ctx, &l, &xf);
+    tv_xform_now(ctx, &l, &g, &xf);
     int    mx    = ev->x;
     int    my    = ev->y - l.img_top; /* image rows, 1-based */
-    double xsize = ctx->st->xsize;
+    double xsize = (double) g.width;
     /* a box zoom selection stays inside the image area, so outline and result agree */
     int    bx    = (mx < 1) ? 1 : (mx > l.img_cols) ? l.img_cols : mx;
     int    by    = (my < 1) ? 1 : (my > l.img_rows) ? l.img_rows : my;
-    double ysize = ctx->st->ysize;
+    double ysize = (double) g.height;
 
     if (ev->button == TV_MB_LEFT)
     {
@@ -577,8 +653,8 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
             /* grab: the image point under the pointer follows it, whatever the flips */
             int dx = mx - ctx->last_mouse_x;
             int dy = my - ctx->last_mouse_y;
-            tv_set_view(ctx, (xf.cx - xf.sx * dx * xf.step) / xsize,
-                        (xf.cy - xf.sy * 2.0 * dy * xf.step) / ysize, ctx->view.zoom);
+            tv_set_view(ctx, (xf.cx - xf.sx * dx * xf.step_x) / xsize,
+                        (xf.cy - xf.sy * 2.0 * dy * xf.step_y) / ysize, ctx->view.zoom);
             ctx->last_mouse_x = mx;
             ctx->last_mouse_y = my;
         }
@@ -621,9 +697,11 @@ void tv_handle_mouse(tv_state_t *ctx, const tv_event_t *ev)
                 /* box edges in samples, mapped through the same transform as the image */
                 double x0 = tv_xf_img_x(&xf, min_x - 1.0), x1 = tv_xf_img_x(&xf, max_x);
                 double y0 = tv_xf_img_y(&xf, 2.0 * (min_y - 1)), y1 = tv_xf_img_y(&xf, 2.0 * max_y);
-                double step = fmax(fabs(x1 - x0) / l.img_cols, fabs(y1 - y0) / (2.0 * l.img_rows));
-                double base = tv_view_base(&l, ctx->st->xsize, ctx->st->ysize);
-                tv_set_view(ctx, 0.5 * (x0 + x1) / xsize, 0.5 * (y0 + y1) / ysize, base / step);
+                double zx = (fabs(x1 - x0) > 0.0) ? (xf.step_x * l.img_cols) / fabs(x1 - x0) : 1.0;
+                double zy =
+                    (fabs(y1 - y0) > 0.0) ? (xf.step_y * 2.0 * l.img_rows) / fabs(y1 - y0) : 1.0;
+                double zoom = ctx->view.zoom * fmin(zx, zy);
+                tv_set_view(ctx, 0.5 * (x0 + x1) / xsize, 0.5 * (y0 + y1) / ysize, zoom);
             }
         }
     }
@@ -1782,15 +1860,21 @@ static void tv_stream_monitor(tv_state_t *ctx, int64_t now_us)
     ctx->gone             = (tv_stream_check(st) != TV_STREAM_OK);
     if (ctx->gone && !ctx->paused)
     {
-        uint32_t xsize = st->xsize, ysize = st->ysize;
+        uint32_t xsize = st->xsize, ysize = st->ysize, zsize = st->zsize;
+        uint8_t  naxis = st->naxis;
         if (tv_stream_reopen(st) == 0)
         {
             ctx->gone = 0;
-            if (st->xsize != xsize || st->ysize != ysize)
+            if (st->xsize != xsize || st->ysize != ysize || st->zsize != zsize ||
+                st->naxis != naxis)
             {
                 ctx->view.zoom = 1.0;
                 ctx->view.cx   = 0.5;
                 ctx->view.cy   = 0.5;
+            }
+            if (ctx->opt.slice >= (int) st->zsize)
+            {
+                ctx->opt.slice = (st->zsize > 0) ? (int) st->zsize - 1 : 0;
             }
             ctx->last_cnt0         = st->img.md->cnt0;
             ctx->last_cnt0_for_fps = st->img.md->cnt0;
@@ -1916,8 +2000,16 @@ int termview_run(const char *name, const termview_options_t *opt)
         tv_stream_close(&st);
         return 1;
     }
-    ctx->st                = &st;
-    ctx->opt               = *opt;
+    ctx->st  = &st;
+    ctx->opt = *opt;
+    if (ctx->opt.slice < 0)
+    {
+        ctx->opt.slice = 0;
+    }
+    else if (st.zsize > 0 && ctx->opt.slice >= (int) st.zsize)
+    {
+        ctx->opt.slice = (int) st.zsize - 1;
+    }
     ctx->view.zoom         = 1.0;
     ctx->view.cx           = 0.5;
     ctx->view.cy           = 0.5;
@@ -2107,8 +2199,9 @@ int termview_run(const char *name, const termview_options_t *opt)
         tm.resized_us = 0;
 
         tv_layout_t lay;
-        tv_layout_compute(&lay, ctx->rows, ctx->cols);
-        if (lay.rows != ctx->lay.rows || lay.cols != ctx->lay.cols)
+        tv_layout_compute_3d(&lay, ctx->rows, ctx->cols, tv_has_slider(ctx));
+        if (lay.rows != ctx->lay.rows || lay.cols != ctx->lay.cols ||
+            lay.img_rows != ctx->lay.img_rows || lay.slider_row != ctx->lay.slider_row)
         {
             dirty |= TV_D_GEOM;
         }
@@ -2135,6 +2228,7 @@ int termview_run(const char *name, const termview_options_t *opt)
             }
             ctx->mouse_is_dragging = 0;
             ctx->roi_is_dragging   = 0;
+            ctx->ui.slider_drag    = 0;
             if (ctx->ui.open || ctx->ui.help)
             {
                 tv_ui_open(ctx, -1); /* menus and help do not survive off screen */
@@ -2153,10 +2247,12 @@ int termview_run(const char *name, const termview_options_t *opt)
         if (dirty & (TV_D_GEOM | TV_D_FULL))
         {
             tv_view_sanitize(&ctx->view.zoom, &ctx->view.cx, &ctx->view.cy, tv_zmax(ctx));
+            tv_vgeom_t vg;
+            tv_vgeom_compute(&vg, &lay, st.xsize, st.ysize, st.zsize, st.naxis, &ctx->opt);
+            ctx->opt.slice = vg.slice;
             tv_xform_t xf;
-            tv_xform_compute(&xf, &lay, &ctx->view, st.xsize, st.ysize, ctx->opt.flip_h,
-                             ctx->opt.flip_v);
-            if (tv_image_geom(&ctx->im, &lay, &xf, st.xsize, st.ysize) != 0)
+            tv_xform_compute_3d(&xf, &lay, &ctx->view, &vg, ctx->opt.flip_h, ctx->opt.flip_v);
+            if (tv_image_geom_3d(&ctx->im, &lay, &xf, &vg) != 0)
             {
                 alloc_failed = 1;
                 break;

@@ -58,6 +58,8 @@ const char *const tv_help_keys[][2] = {
     { "+ = / - _", "Zoom in / out" },
     { "0", "Reset zoom and pan" },
     { "c C, s S, r R", "Next / previous colormap, scaling, range mode" },
+    { "d / D", "Next / previous 3D view mode (slice, gallery, 2D remap)" },
+    { "[ / ], PgDn/PgUp", "Previous / next 3D slice (Home / End: first / last)" },
     { "l", "Lock or unlock the current range" },
     { "m / M", "Type the min / max (locks the range)" },
     { "h / v", "Flip horizontally / vertically" },
@@ -67,10 +69,10 @@ const char *const tv_help_keys[][2] = {
     { "Ctrl-L", "Repaint the screen" },
     { "Ctrl-Z", "Suspend" },
     { "q, Ctrl-C", "Quit" },
-    { "Wheel", "Zoom in / out at the pointer" },
-    { "Left drag", "Pan" },
+    { "Wheel", "Zoom in / out at the pointer (or step 3D slice on slider)" },
+    { "Left drag", "Pan (or scrub 3D slice on the slider bar)" },
     { "Right drag", "Zoom to the selected box" },
-    { "Click", "Menus and items; Esc closes a menu, undoing its preview" },
+    { "Click", "Menus, slider and items; Esc closes a menu, undoing its preview" },
 };
 const int tv_help_nkeys = (int) (sizeof(tv_help_keys) / sizeof(tv_help_keys[0]));
 
@@ -303,6 +305,20 @@ static int tv_menu_items(const tv_state_t *s, int m, tv_item_t *it)
         n = tv_add(it, n, TV_I_ACTION, 0, TV_ACT_CENTRE, 0, "Centre");
         n = tv_add(it, n, TV_I_TOGGLE, o->flip_h, TV_ACT_FLIP_H, 0, "Flip horizontally");
         n = tv_add(it, n, TV_I_TOGGLE, o->flip_v, TV_ACT_FLIP_V, 0, "Flip vertically");
+        if (s->st->naxis == 3)
+        {
+            n = tv_add(it, n, TV_I_SEP, 0, 0, 0, "");
+            n = tv_add(it, n, TV_I_CHOICE, o->mode3d == TV_3D_SLICE, TV_ACT_SET_3D, TV_3D_SLICE,
+                       "3D: Slice (one at a time)");
+            n = tv_add(it, n, TV_I_CHOICE, o->mode3d == TV_3D_GALLERY, TV_ACT_SET_3D, TV_3D_GALLERY,
+                       "3D: Gallery (all slices)");
+            n = tv_add(it, n, TV_I_CHOICE, o->mode3d == TV_3D_REMAP_XY, TV_ACT_SET_3D,
+                       TV_3D_REMAP_XY, "3D->2D: Merge X,Y (XYxZ)");
+            n = tv_add(it, n, TV_I_CHOICE, o->mode3d == TV_3D_REMAP_XZ, TV_ACT_SET_3D,
+                       TV_3D_REMAP_XZ, "3D->2D: Merge X,Z (XZxY)");
+            n = tv_add(it, n, TV_I_CHOICE, o->mode3d == TV_3D_REMAP_YZ, TV_ACT_SET_3D,
+                       TV_3D_REMAP_YZ, "3D->2D: Merge Y,Z (XxYZ)");
+        }
         n = tv_add(it, n, TV_I_SEP, 0, 0, 0, "");
         n = tv_add(it, n, TV_I_CHOICE, o->colors == 0, TV_ACT_SET_COLORS, 0, "Colors: auto");
         n = tv_add(it, n, TV_I_CHOICE, o->colors == 3, TV_ACT_SET_COLORS, 3, "Colors: 24-bit");
@@ -352,6 +368,8 @@ static int tv_choice(const tv_state_t *s, int m)
 static void tv_remember(tv_state_t *s)
 {
     s->ui.saved      = tv_choice(s, s->ui.menu);
+    s->ui.saved_3d   = s->opt.mode3d;
+    s->ui.saved_view = s->view;
     s->ui.saved_lock = s->opt.range_locked;
     s->ui.saved_lo   = s->cur_min;
     s->ui.saved_hi   = s->cur_max;
@@ -373,6 +391,11 @@ static void tv_restore(tv_state_t *s)
             s->cur_min          = s->ui.saved_lo;   /* and the range shown comes back with it */
             s->cur_max          = s->ui.saved_hi;
         }
+    }
+    if (m == TV_M_VIEW && (int) s->opt.mode3d != s->ui.saved_3d)
+    {
+        tv_do(s, TV_ACT_SET_3D, s->ui.saved_3d);
+        s->view = s->ui.saved_view;
     }
 }
 
@@ -415,9 +438,10 @@ void tv_ui_open(tv_state_t *s, int m)
     {
         tv_restore(s); /* leaving a menu undoes its preview */
     }
-    s->ui.open  = 0;
-    s->ui.help  = 0;
-    s->ui.hover = 0;
+    s->ui.open        = 0;
+    s->ui.help        = 0;
+    s->ui.hover       = 0;
+    s->ui.slider_drag = 0;
     s->ui.gen++;
     if (m >= 0 && m < TV_M_COUNT)
     {
@@ -442,6 +466,24 @@ static void tv_close(tv_state_t *s)
     s->dirty |= TV_D_CHROME;
 }
 
+/** tv_restore_other_view_group() - Undo preview of the other choice group in the View menu. */
+static void tv_restore_other_view_group(tv_state_t *s, int act)
+{
+    if (s->ui.menu != TV_M_VIEW)
+    {
+        return;
+    }
+    if (act == TV_ACT_SET_3D && s->opt.colors != s->ui.saved)
+    {
+        tv_do(s, TV_ACT_SET_COLORS, s->ui.saved);
+    }
+    else if (act == TV_ACT_SET_COLORS && (int) s->opt.mode3d != s->ui.saved_3d)
+    {
+        tv_do(s, TV_ACT_SET_3D, s->ui.saved_3d);
+        s->view = s->ui.saved_view;
+    }
+}
+
 /** tv_move() - Highlight item @to (separators skipped in the direction of travel), previewing a
  * choice. */
 static void tv_move(tv_state_t *s, const tv_item_t *it, int n, int to)
@@ -459,6 +501,7 @@ static void tv_move(tv_state_t *s, const tv_item_t *it, int n, int to)
     s->ui.sel = to;
     if (it[to].kind == TV_I_CHOICE)
     {
+        tv_restore_other_view_group(s, it[to].act);
         tv_do(s, (tv_action_t) it[to].act, it[to].arg);
     }
     s->dirty |= TV_D_CHROME;
@@ -478,6 +521,10 @@ static void tv_activate(tv_state_t *s, const tv_item_t *it, int k, int stay)
     {
         tv_restore(s); /* a toggle or an action does not keep a choice passed over on the way */
         tv_remember(s);
+    }
+    else
+    {
+        tv_restore_other_view_group(s, i->act);
     }
     if (i->kind == TV_I_ACTION && (!stay || i->act == TV_ACT_PROMPT || i->act == TV_ACT_QUIT))
     {
@@ -820,13 +867,38 @@ static int tv_is_press(const tv_event_t *ev)
 }
 
 /**
+ * tv_slider_set_x - Map a 0-based screen column to a 3D slice index on the slider track.
+ * @s: Termview state structure.
+ * @x: Zero-based screen column index of the mouse pointer.
+ *
+ * Clamps @x to the active slider track `[slider_x0, slider_x1]` and updates the
+ * displayed slice via `TV_ACT_SET_SLICE`.
+ *
+ * Return: Nothing.
+ */
+static void tv_slider_set_x(tv_state_t *s, int x)
+{
+    int span  = s->ui.slider_x1 - s->ui.slider_x0;
+    int zsize = (int) s->st->zsize;
+    if (zsize <= 1 || span <= 0)
+    {
+        tv_do(s, TV_ACT_SET_SLICE, 0);
+        return;
+    }
+    double t = (double) (x - s->ui.slider_x0) / (double) span;
+    t        = (t < 0.0) ? 0.0 : (t > 1.0) ? 1.0 : t;
+    tv_do(s, TV_ACT_SET_SLICE, (int) lround(t * (zsize - 1)));
+}
+
+/**
  * tv_ui_wants_mouse - Check if a mouse event should be handled by the UI chrome rather than the image.
  * @s:  Termview state structure.
  * @ev: Decoded mouse event.
  *
- * Claims all mouse events while a dropdown menu or help box is open, and
- * claims button presses on the menubar row, status row, or any registered hit
- * rectangle when no overlay is open.
+ * Claims all mouse events while a dropdown menu, help box, or slider drag is
+ * active, claims wheel events on the 3D slice slider row, and claims button
+ * presses on the menubar row, slider row, status row, or any registered hit
+ * rectangle when no image drag is in progress.
  *
  * Return: Non-zero if the UI claims @ev, or 0 if it belongs to the image canvas.
  */
@@ -836,13 +908,22 @@ int tv_ui_wants_mouse(const tv_state_t *s, const tv_event_t *ev)
     {
         return 0; /* nothing of the interface is on screen */
     }
-    if (s->ui.open || s->ui.help)
+    if (s->ui.open || s->ui.help || s->ui.slider_drag)
     {
         return 1;
     }
-    int y = ev->y - 1;
-    return tv_is_press(ev) &&
-           (y == 0 || y == s->lay.status_row || tv_hit_at(s, ev->x - 1, y) != NULL);
+    if (s->mouse_is_dragging || s->roi_is_dragging)
+    {
+        return 0;
+    }
+    int y     = ev->y - 1;
+    int wheel = (ev->button == TV_MB_WHEEL_UP || ev->button == TV_MB_WHEEL_DOWN);
+    if (wheel && s->lay.slider_row >= 0 && y == s->lay.slider_row)
+    {
+        return 1;
+    }
+    return tv_is_press(ev) && (y == 0 || y == s->lay.slider_row || y == s->lay.status_row ||
+                               tv_hit_at(s, ev->x - 1, y) != NULL);
 }
 
 /** tv_button() - A click on menubar button @b. */
@@ -873,8 +954,8 @@ static void tv_button(tv_state_t *s, int b)
  * @ev: Decoded mouse event.
  *
  * Updates button hover state, scrolls or closes the help overlay, tracks hover
- * and clicks across open dropdown menus and menubar buttons, or switches focus
- * between range minibuffer fields.
+ * and clicks across open dropdown menus and menubar buttons, scrubs or steps
+ * the 3D slice slider, or switches focus between range minibuffer fields.
  *
  * Return: Nothing.
  */
@@ -890,6 +971,19 @@ void tv_ui_mouse(tv_state_t *s, const tv_event_t *ev)
     {
         s->ui.hover = hover;
         s->dirty |= TV_D_CHROME;
+    }
+    if (s->ui.slider_drag)
+    {
+        if (ev->action == TV_MA_DRAG || ev->action == TV_MA_MOVE)
+        {
+            tv_slider_set_x(s, ev->x - 1);
+        }
+        else if (ev->action == TV_MA_RELEASE)
+        {
+            s->ui.slider_drag = 0;
+            s->dirty |= TV_D_CHROME;
+        }
+        return;
     }
     if (s->ui.help)
     {
@@ -944,6 +1038,11 @@ void tv_ui_mouse(tv_state_t *s, const tv_event_t *ev)
         }
         return;
     }
+    if (wheel && s->lay.slider_row >= 0 && ev->y - 1 == s->lay.slider_row)
+    {
+        tv_do(s, TV_ACT_SLICE, (ev->button == TV_MB_WHEEL_UP) ? 1 : -1);
+        return;
+    }
     if (press && h)
     {
         if (h->kind == TV_HIT_BUTTON)
@@ -954,6 +1053,15 @@ void tv_ui_mouse(tv_state_t *s, const tv_event_t *ev)
         {
             s->mini.field = h->id;
             s->dirty |= TV_D_CHROME;
+        }
+        else if (h->kind == TV_HIT_SLIDER)
+        {
+            s->ui.slider_drag = (ev->button == TV_MB_LEFT);
+            tv_slider_set_x(s, ev->x - 1);
+        }
+        else if (h->kind == TV_HIT_SLIDER_STEP)
+        {
+            tv_do(s, TV_ACT_SLICE, h->id);
         }
     }
 }
@@ -979,7 +1087,14 @@ static void tv_button_label(const tv_state_t *s, int b, int lng, char *out, size
                  o->range_locked ? "locked" : tv_range_names[o->range]);
         break;
     case TV_M_VIEW:
-        snprintf(out, n, " View");
+        if (s->st->naxis == 3)
+        {
+            snprintf(out, n, lng ? " View %s" : " %s", tv_3d_labels[o->mode3d]);
+        }
+        else
+        {
+            snprintf(out, n, " View");
+        }
         break;
     case TV_M_STREAM:
         snprintf(out, n, " Stream");
@@ -1487,6 +1602,82 @@ static void tv_render_mini(tv_state_t *s, int r)
     }
 }
 
+/**
+ * tv_render_slider - Render the interactive 3D slice slider bar on `s->lay.slider_row`.
+ * @s: Termview viewer state.
+ *
+ * Draws the current slice label (`Slice z/zmax`), step-left (`TV_G_LEFT`) and
+ * step-right (`TV_G_RIGHT`) buttons, the proportional slider track with knob,
+ * and keyboard hints, registering hit rectangles for mouse click/drag/step.
+ *
+ * Return: void.
+ */
+static void tv_render_slider(tv_state_t *s)
+{
+    static const char hint[] = " [/] PgDn/Up ";
+    int               r      = s->lay.slider_row;
+    if (r < 0 || r >= s->rows)
+    {
+        return;
+    }
+    tv_fill(s, r, 0, s->cols, TV_C_BAR);
+    tv_hit(s, 0, r, s->cols - 1, r, TV_HIT_CHROME, 0);
+
+    uint32_t zsize = (s->st->zsize > 0) ? s->st->zsize : 1;
+    uint32_t zmax  = zsize - 1;
+    int      sl = (s->opt.slice < 0) ? 0 : (s->opt.slice > (int) zmax) ? (int) zmax : s->opt.slice;
+
+    char pre[48];
+    snprintf(pre, sizeof(pre), " Slice %d/%u ", sl, zmax);
+    int x = tv_text(s, r, 0, s->cols, pre, TV_C_BRIGHT, TV_C_BAR);
+    if (x + 3 <= s->cols)
+    {
+        int b0 = x;
+        tv_put(s, r, x++, ' ', TV_C_ACCENT, TV_C_FIELD);
+        tv_put(s, r, x++, TV_G_LEFT, (sl > 0) ? TV_C_ACCENT : TV_C_DIM, TV_C_FIELD);
+        tv_put(s, r, x++, ' ', TV_C_ACCENT, TV_C_FIELD);
+        tv_hit(s, b0, r, x - 1, r, TV_HIT_SLIDER_STEP, -1);
+    }
+    x++;
+
+    int hlen     = (int) sizeof(hint) - 1;
+    int rreserve = (s->cols - x >= 16 + hlen) ? hlen : 0;
+    int btn_r    = s->cols - rreserve - 3;
+    int tx0      = x;
+    int tx1      = btn_r - 2;
+    if (tx1 >= tx0)
+    {
+        int span = tx1 - tx0;
+        int kx =
+            (zmax > 0 && span > 0) ? tx0 + (int) lround((double) sl * span / (double) zmax) : tx0;
+        s->ui.slider_x0 = (int16_t) tx0;
+        s->ui.slider_x1 = (int16_t) tx1;
+        for (int c = tx0; c <= tx1; c++)
+        {
+            if (c == kx)
+            {
+                tv_put(s, r, c, TV_G_DOT, s->ui.slider_drag ? TV_C_BRIGHT : TV_C_ACCENT, TV_C_BAR);
+            }
+            else
+            {
+                tv_put(s, r, c, TV_G_HLINE, (c < kx) ? TV_C_ACCENT : TV_C_MUTED, TV_C_BAR);
+            }
+        }
+        tv_hit(s, tx0, r, tx1, r, TV_HIT_SLIDER, 0);
+    }
+    if (btn_r >= x && btn_r + 3 <= s->cols)
+    {
+        tv_put(s, r, btn_r, ' ', TV_C_ACCENT, TV_C_FIELD);
+        tv_put(s, r, btn_r + 1, TV_G_RIGHT, (sl < (int) zmax) ? TV_C_ACCENT : TV_C_DIM, TV_C_FIELD);
+        tv_put(s, r, btn_r + 2, ' ', TV_C_ACCENT, TV_C_FIELD);
+        tv_hit(s, btn_r, r, btn_r + 2, r, TV_HIT_SLIDER_STEP, 1);
+    }
+    if (rreserve > 0)
+    {
+        tv_text(s, r, btn_r + 3, s->cols, hint, TV_C_DIM, TV_C_BAR);
+    }
+}
+
 /** tv_render_status() - Segments by priority, dropped from the end when the row is too short. */
 static void tv_render_status(tv_state_t *s, int64_t now_us)
 {
@@ -1537,7 +1728,24 @@ static void tv_render_status(tv_state_t *s, int64_t now_us)
     snprintf(seg[3], sizeof(seg[3]), "[%.4g : %.4g] %s", s->cur_min, s->cur_max,
              s->opt.range_locked ? "LOCK" : tv_range_names[s->opt.range]);
     fg[3] = s->opt.range_locked ? TV_C_WARN : TV_C_TEXT;
-    snprintf(seg[4], sizeof(seg[4]), "%ux%u %s", st->xsize, st->ysize, tv_dtype_name(st->datatype));
+    if (st->naxis == 3)
+    {
+        if (s->opt.mode3d == TV_3D_SLICE)
+        {
+            snprintf(seg[4], sizeof(seg[4]), "%ux%ux%u [z=%d] %s", st->xsize, st->ysize, st->zsize,
+                     s->opt.slice, tv_dtype_name(st->datatype));
+        }
+        else
+        {
+            snprintf(seg[4], sizeof(seg[4]), "%ux%ux%u (%s) %s", st->xsize, st->ysize, st->zsize,
+                     tv_3d_labels[s->opt.mode3d], tv_dtype_name(st->datatype));
+        }
+    }
+    else
+    {
+        snprintf(seg[4], sizeof(seg[4]), "%ux%u %s", st->xsize, st->ysize,
+                 tv_dtype_name(st->datatype));
+    }
     fg[4] = TV_C_DIM;
     snprintf(seg[5], sizeof(seg[5]), "CPU %.1f%%", s->current_cpu_usage);
     fg[5] = TV_C_DIM;
@@ -1579,8 +1787,8 @@ static void tv_render_status(tv_state_t *s, int64_t now_us)
  * @now_us: Current monotonic timestamp in microseconds.
  *
  * Resets the mouse hit-region table for the current UI generation, renders the
- * colorbar, menu bar, and status bar (or mini-buffer), and paints any open
- * drop-down menu or help overlay on top.
+ * colorbar, menu bar, optional 3D slice slider bar, and status bar (or
+ * mini-buffer), and paints any open drop-down menu or help overlay on top.
  *
  * Return: void.
  */
@@ -1590,6 +1798,10 @@ void tv_ui_render(tv_state_t *s, int64_t now_us)
     s->ui.hits_gen = s->ui.gen;
     tv_render_colorbar(s);
     tv_render_menubar(s);
+    if (s->lay.slider_row >= 0)
+    {
+        tv_render_slider(s);
+    }
     tv_render_status(s, now_us);
     if (s->ui.open)
     {

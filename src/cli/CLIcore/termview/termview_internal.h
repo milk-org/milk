@@ -167,6 +167,8 @@ enum
     TV_G_TR,                /**< U+256E */
     TV_G_BL,                /**< U+2570 */
     TV_G_BR,                /**< U+256F */
+    TV_G_LEFT,              /**< U+25C0, slider step left */
+    TV_G_RIGHT,             /**< U+25B6, slider step right */
     TV_G_COUNT
 };
 
@@ -310,6 +312,8 @@ extern const char *const tv_cmap_names[COLORMAP_NB];
 extern const char *const tv_scale_names[SCALE_NB];
 extern const char *const tv_range_names[RANGE_NB];
 extern const char *const tv_range_keys[RANGE_NB];
+extern const char *const tv_3d_names[TV_3D_NB];
+extern const char *const tv_3d_labels[TV_3D_NB];
 
 /** tv_lookup_name() - Case-insensitive exact or unique-prefix match; index or -1. */
 int tv_lookup_name(const char *const *names, int n, const char *s);
@@ -496,15 +500,32 @@ typedef struct
     int img_rows; /**< character rows of image; each shows 2 sample rows */
     int img_cols;
     int bar_col;    /**< first column right of the image: gutter, then the colorbar */
+    int slider_row; /**< slice slider row when >= 0, else -1 */
     int status_row; /**< status bar (or the range minibuffer) */
     int valid;      /**< large enough to draw the image */
 } tv_layout_t;
 
-/** Display sample <-> image pixel mapping; samples are square, 2 per character row. */
+/** Virtual 2D canvas geometry derived from a (1D/2D/3D) stream and the active 3D mode. */
 typedef struct
 {
-    double step;     /**< image pixels per display sample */
-    double cx, cy;   /**< view centre in image pixels */
+    uint64_t           width;  /**< virtual 2D width in pixels */
+    uint64_t           height; /**< virtual 2D height in pixels */
+    uint32_t           xsize;  /**< stream axis 0 size */
+    uint32_t           ysize;  /**< stream axis 1 size */
+    uint32_t           zsize;  /**< stream axis 2 size (1 for 1D/2D) */
+    uint32_t           gcols;  /**< gallery tile columns (>= 1) */
+    uint32_t           grows;  /**< gallery tile rows (>= 1) */
+    uint32_t           slice;  /**< clamped 0-based slice index */
+    termview_3d_mode_t mode;   /**< effective 3D mode (TV_3D_SLICE for 1D/2D) */
+} tv_vgeom_t;
+
+/** Display sample <-> image pixel mapping; 2 samples per character row. */
+typedef struct
+{
+    double step;     /**< max(step_x, step_y), image pixels per display sample */
+    double step_x;   /**< horizontal image pixels per display sample */
+    double step_y;   /**< vertical image pixels per display sample */
+    double cx, cy;   /**< view centre in virtual image pixels */
     double sx, sy;   /**< +1, or -1 when flipped */
     double cdx, cdy; /**< display centre in samples */
 } tv_xform_t;
@@ -512,23 +533,24 @@ typedef struct
 /** tv_xf_img_x() - Image x at display sample coordinate @dj (columns, 0 = left edge). */
 static inline double tv_xf_img_x(const tv_xform_t *x, double dj)
 {
-    return x->cx + x->sx * (dj - x->cdx) * x->step;
+    return x->cx + x->sx * (dj - x->cdx) * x->step_x;
 }
 
 /** tv_xf_img_y() - Image y at display sample coordinate @di (sample rows, 0 = top edge). */
 static inline double tv_xf_img_y(const tv_xform_t *x, double di)
 {
-    return x->cy + x->sy * (di - x->cdy) * x->step;
+    return x->cy + x->sy * (di - x->cdy) * x->step_y;
 }
 
 /** Sampling tables, samples, display range and the image layer, reused across frames. */
 typedef struct
 {
     int        ncols, nrows; /**< samples: img_cols x (2 * img_rows) */
-    int32_t   *col_src;      /**< image column per display column, -1 outside */
+    int64_t   *col_src;      /**< element offset of the image column per display col, -1 outside */
     uint8_t   *col_in;
     int64_t   *row_off; /**< element offset of the image row per sample row, -1 outside */
     uint8_t   *row_in;
+    int64_t    nelem; /**< total valid elements in the stream */
     float     *samp;  /**< value - offset; NaN outside the image or not finite */
     float     *prev;  /**< previous frame's samples */
     tv_cell_t *cells; /**< img_rows x img_cols */
@@ -549,7 +571,15 @@ typedef struct
 } tv_image_t;
 
 void   tv_layout_compute(tv_layout_t *l, int rows, int cols);
-double tv_view_base(const tv_layout_t *l, uint32_t xsize, uint32_t ysize);
+void   tv_layout_compute_3d(tv_layout_t *l, int rows, int cols, int has_slider);
+void   tv_vgeom_compute(tv_vgeom_t               *g,
+                        const tv_layout_t        *l,
+                        uint32_t                  xsize,
+                        uint32_t                  ysize,
+                        uint32_t                  zsize,
+                        uint8_t                   naxis,
+                        const termview_options_t *opt);
+double tv_view_base(const tv_layout_t *l, uint64_t xsize, uint64_t ysize);
 void   tv_xform_compute(tv_xform_t        *x,
                         const tv_layout_t *l,
                         const tv_view_t   *v,
@@ -557,6 +587,12 @@ void   tv_xform_compute(tv_xform_t        *x,
                         uint32_t           ysize,
                         bool               flip_h,
                         bool               flip_v);
+void   tv_xform_compute_3d(tv_xform_t        *x,
+                           const tv_layout_t *l,
+                           const tv_view_t   *v,
+                           const tv_vgeom_t  *g,
+                           bool               flip_h,
+                           bool               flip_v);
 
 /** tv_image_geom() - Rebuild the sampling tables for a new layout or view; -1 on alloc failure. */
 int tv_image_geom(tv_image_t        *im,
@@ -564,6 +600,10 @@ int tv_image_geom(tv_image_t        *im,
                   const tv_xform_t  *x,
                   uint32_t           xsize,
                   uint32_t           ysize);
+int tv_image_geom_3d(tv_image_t        *im,
+                     const tv_layout_t *l,
+                     const tv_xform_t  *x,
+                     const tv_vgeom_t  *g);
 
 /** tv_image_sample() - Sample @data through the tables; returns 0 if identical to last frame. */
 int tv_image_sample(tv_image_t *im, const void *data, uint8_t datatype);
@@ -634,7 +674,11 @@ typedef enum
     TV_ACT_SET_FPS,    /**< arg: UI refresh rate */
     TV_ACT_SMOOTH,     /**< toggle range smoothing */
     TV_ACT_CENTRE,     /**< centre the view, keep the zoom */
-    TV_ACT_HELP        /**< open or close the key help */
+    TV_ACT_HELP,       /**< open or close the key help */
+    TV_ACT_3D,         /**< arg: step 3D view mode */
+    TV_ACT_SET_3D,     /**< arg: termview_3d_mode_t */
+    TV_ACT_SLICE,      /**< arg: step active 3D slice */
+    TV_ACT_SET_SLICE   /**< arg: 0-based slice index */
 } tv_action_t;
 
 /** Dropdown menus of the menubar, left to right. */
@@ -658,11 +702,13 @@ typedef struct
 
 enum
 {
-    TV_HIT_BUTTON, /**< menubar button: id is the menu, TV_M_COUNT Help, TV_M_COUNT + 1 Quit */
-    TV_HIT_ITEM,   /**< dropdown item: id is its index */
-    TV_HIT_PANEL,  /**< the rest of an open dropdown or of the help box */
-    TV_HIT_FIELD,  /**< minibuffer field: id 0 min, 1 max */
-    TV_HIT_CHROME  /**< menubar or status row elsewhere */
+    TV_HIT_BUTTON,      /**< menubar button: id is the menu, TV_M_COUNT Help, TV_M_COUNT + 1 Quit */
+    TV_HIT_ITEM,        /**< dropdown item: id is its index */
+    TV_HIT_PANEL,       /**< the rest of an open dropdown or of the help box */
+    TV_HIT_FIELD,       /**< minibuffer field: id 0 min, 1 max */
+    TV_HIT_SLIDER,      /**< 3D slice slider track */
+    TV_HIT_SLIDER_STEP, /**< 3D slice step button: id -1 prev, +1 next */
+    TV_HIT_CHROME       /**< menubar, slider or status row elsewhere */
 };
 
 #define TV_HITS 64
@@ -670,23 +716,28 @@ enum
 /** Menus, help box and hover state. */
 typedef struct
 {
-    int      open;       /**< a menu is open: menu */
-    int      menu;       /**< the open (or last opened) menu, TV_M_* */
-    int      sel;        /**< highlighted item */
-    int      top;        /**< first item shown when the menu scrolls */
-    int      saved;      /**< the menu's choice when it opened (restored on Esc) */
-    int      saved_lock; /**< the range lock when the Range menu opened */
-    double   saved_lo;   /**< the range shown when the menu opened */
-    double   saved_hi;
-    unsigned gen;        /**< bumped whenever what is open changes */
-    unsigned hits_gen;   /**< gen of the last draw: older hit rects are not used */
-    int      help;       /**< the help box is open */
-    int      help_top;   /**< first help line shown */
-    int      hover;      /**< menubar button under the pointer + 1, 0 for none */
-    int      hover_sent; /**< pointer motion reports the terminal has: 1, 0, or -1 unknown */
-    int16_t  btn_x[TV_M_COUNT + 2]; /**< left column of each menubar button */
-    tv_hit_t hits[TV_HITS];
-    int      nhits;
+    int       open;       /**< a menu is open: menu */
+    int       menu;       /**< the open (or last opened) menu, TV_M_* */
+    int       sel;        /**< highlighted item */
+    int       top;        /**< first item shown when the menu scrolls */
+    int       saved;      /**< the menu's choice when it opened (restored on Esc) */
+    int       saved_3d;   /**< the 3D mode when the View menu opened */
+    tv_view_t saved_view; /**< zoom/pan when the View menu opened */
+    int       saved_lock; /**< the range lock when the Range menu opened */
+    double    saved_lo;   /**< the range shown when the menu opened */
+    double    saved_hi;
+    unsigned  gen;         /**< bumped whenever what is open changes */
+    unsigned  hits_gen;    /**< gen of the last draw: older hit rects are not used */
+    int       help;        /**< the help box is open */
+    int       help_top;    /**< first help line shown */
+    int       hover;       /**< menubar button under the pointer + 1, 0 for none */
+    int       hover_sent;  /**< pointer motion reports the terminal has: 1, 0, or -1 unknown */
+    int       slider_drag; /**< dragging the 3D slice slider */
+    int16_t   slider_x0;   /**< left column of slider track */
+    int16_t   slider_x1;   /**< right column of slider track */
+    int16_t   btn_x[TV_M_COUNT + 2]; /**< left column of each menubar button */
+    tv_hit_t  hits[TV_HITS];
+    int       nhits;
 } tv_ui_t;
 
 /**

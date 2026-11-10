@@ -187,6 +187,11 @@ static void test_names(void)
         TV_CHECK(tv_lookup_name(tv_range_names, RANGE_NB, tv_range_names[i]) == i);
         TV_CHECK(tv_lookup_name(tv_range_keys, RANGE_NB, tv_range_keys[i]) == i);
     }
+    for (int i = 0; i < TV_3D_NB; i++)
+    {
+        TV_CHECK(tv_lookup_name(tv_3d_names, TV_3D_NB, tv_3d_names[i]) == i);
+        TV_CHECK(tv_lookup_name(tv_3d_labels, TV_3D_NB, tv_3d_labels[i]) == i);
+    }
 }
 
 /**
@@ -208,16 +213,17 @@ static void test_fmt_len(void)
 /**
  * test_names_unique - Verify that all entries in option name tables are non-empty and unique
  *
- * Scans colormap, scale, range name, and range key tables to ensure no NULL,
- * empty, or case-insensitively duplicate strings exist.
+ * Scans colormap, scale, range name, range key, and 3D mode tables to ensure no
+ * NULL, empty, or case-insensitively duplicate strings exist.
  *
  * Return: void
  */
 static void test_names_unique(void)
 {
-    const char *const *tables[] = { tv_cmap_names, tv_scale_names, tv_range_names, tv_range_keys };
-    int                sizes[]  = { COLORMAP_NB, SCALE_NB, RANGE_NB, RANGE_NB };
-    for (int t = 0; t < 4; t++)
+    const char *const *tables[] = { tv_cmap_names, tv_scale_names, tv_range_names,
+                                    tv_range_keys, tv_3d_names,    tv_3d_labels };
+    int                sizes[]  = { COLORMAP_NB, SCALE_NB, RANGE_NB, RANGE_NB, TV_3D_NB, TV_3D_NB };
+    for (int t = 0; t < 6; t++)
     {
         for (int i = 0; i < sizes[t]; i++)
         {
@@ -339,6 +345,8 @@ static int mkstream(IMAGE *w, const char *name, uint32_t xs, uint32_t ys, uint8_
     return ImageStreamIO_createIm(w, name, 2, size, dt, 1, 0, 0) == IMAGESTREAMIO_SUCCESS ? 0 : -1;
 }
 
+static void test_3d_modes(const char *shmdir);
+
 /** Stream lifecycle: removed, created again with another geometry, truncated. */
 static void test_stream_lifecycle(void)
 {
@@ -383,9 +391,177 @@ static void test_stream_lifecycle(void)
     unlink(path);
     ImageStreamIO_destroyIm(&w);
     tv_stream_close(&s);
+
+    test_3d_modes(dir);
+
     rmdir(dir);
     saved ? setenv("MILK_SHM_DIR", saved, 1) : unsetenv("MILK_SHM_DIR");
     free(saved);
+}
+
+/**
+ * test_3d_modes - Verify 3D layout, virtual geometry, coordinate tables, and sampling
+ * @shmdir: Active temporary MILK_SHM_DIR directory.
+ *
+ * Tests 3D stream opening, slider layout reservation, and sampling across all
+ * five 3D viewing modes (slice, gallery, and XY/XZ/YZ 3D->2D remappings).
+ *
+ * Return: void
+ */
+static void test_3d_modes(const char *shmdir)
+{
+    enum
+    {
+        XS = 4,
+        YS = 3,
+        ZS = 5
+    };
+    float cube[XS * YS * ZS];
+    for (int z = 0; z < ZS; z++)
+    {
+        for (int y = 0; y < YS; y++)
+        {
+            for (int x = 0; x < XS; x++)
+            {
+                cube[z * (XS * YS) + y * XS + x] = (float) (100 * z + 10 * y + x);
+            }
+        }
+    }
+
+    tv_layout_t l_no, l_sl;
+    tv_layout_compute_3d(&l_no, 24, 80, 0);
+    tv_layout_compute_3d(&l_sl, 24, 80, 1);
+    TV_CHECK(l_no.valid && l_no.slider_row == -1 && l_no.img_rows == 22);
+    TV_CHECK(l_sl.valid && l_sl.slider_row == 22 && l_sl.img_rows == 21);
+
+    termview_options_t opt;
+    termview_options_init(&opt);
+    tv_view_t  view = { .cx = 0.5, .cy = 0.5, .zoom = 1.0 };
+    tv_vgeom_t vg;
+    tv_xform_t xf;
+    tv_image_t im;
+    memset(&im, 0, sizeof(im));
+
+    /* 1. Slice mode (slice = 2) */
+    opt.mode3d = TV_3D_SLICE;
+    opt.slice  = 2;
+    tv_vgeom_compute(&vg, &l_sl, XS, YS, ZS, 3, &opt);
+    TV_CHECK(vg.width == XS && vg.height == YS && vg.slice == 2);
+    tv_xform_compute_3d(&xf, &l_sl, &view, &vg, false, false);
+    TV_CHECK(tv_image_geom_3d(&im, &l_sl, &xf, &vg) == 0);
+    TV_CHECK(tv_image_sample(&im, cube, _DATATYPE_FLOAT) == 1);
+    TV_CHECK(im.nvalid > 0 && im.vmin == 200.0f && im.vmax == 223.0f);
+
+    /* 2. Gallery mode (all 5 slices tiled, with trailing empty slot(s) marked out-of-bounds) */
+    opt.mode3d = TV_3D_GALLERY;
+    tv_vgeom_compute(&vg, &l_no, XS, YS, ZS, 3, &opt);
+    TV_CHECK(vg.gcols * vg.grows >= ZS);
+    TV_CHECK(vg.width == vg.gcols * XS && vg.height == vg.grows * YS);
+    tv_xform_compute_3d(&xf, &l_no, &view, &vg, false, false);
+    TV_CHECK(tv_image_geom_3d(&im, &l_no, &xf, &vg) == 0);
+    TV_CHECK(tv_image_sample(&im, cube, _DATATYPE_FLOAT) == 1);
+    TV_CHECK(im.nvalid > 0 && im.vmin == 0.0f && im.vmax == 423.0f);
+
+    /* 3. Remap XY -> (X*Y) x Z = 12 x 5 */
+    opt.mode3d = TV_3D_REMAP_XY;
+    tv_vgeom_compute(&vg, &l_no, XS, YS, ZS, 3, &opt);
+    TV_CHECK(vg.width == (uint64_t) XS * YS && vg.height == ZS);
+    tv_xform_compute_3d(&xf, &l_no, &view, &vg, false, false);
+    TV_CHECK(tv_image_geom_3d(&im, &l_no, &xf, &vg) == 0);
+    TV_CHECK(tv_image_sample(&im, cube, _DATATYPE_FLOAT) == 1);
+    TV_CHECK(im.nvalid > 0 && im.vmin == 0.0f && im.vmax == 423.0f);
+
+    /* 4. Remap XZ -> (X*Z) x Y = 20 x 3 */
+    opt.mode3d = TV_3D_REMAP_XZ;
+    tv_vgeom_compute(&vg, &l_no, XS, YS, ZS, 3, &opt);
+    TV_CHECK(vg.width == (uint64_t) XS * ZS && vg.height == YS);
+    tv_xform_compute_3d(&xf, &l_no, &view, &vg, false, false);
+    TV_CHECK(tv_image_geom_3d(&im, &l_no, &xf, &vg) == 0);
+    TV_CHECK(tv_image_sample(&im, cube, _DATATYPE_FLOAT) == 1);
+    TV_CHECK(im.nvalid > 0 && im.vmin == 0.0f && im.vmax == 423.0f);
+
+    /* 5. Remap YZ -> X x (Y*Z) = 4 x 15 */
+    opt.mode3d = TV_3D_REMAP_YZ;
+    tv_vgeom_compute(&vg, &l_no, XS, YS, ZS, 3, &opt);
+    TV_CHECK(vg.width == XS && vg.height == (uint64_t) YS * ZS);
+    tv_xform_compute_3d(&xf, &l_no, &view, &vg, false, false);
+    TV_CHECK(tv_image_geom_3d(&im, &l_no, &xf, &vg) == 0);
+    TV_CHECK(tv_image_sample(&im, cube, _DATATYPE_FLOAT) == 1);
+    TV_CHECK(im.nvalid > 0 && im.vmin == 0.0f && im.vmax == 423.0f);
+
+    tv_image_free(&im);
+
+    /* 6. 3D stream opening, keyboard/menu actions, and interactive slider mouse controls */
+    IMAGE    w3d;
+    uint32_t sz3[3] = { XS, YS, ZS };
+    memset(&w3d, 0, sizeof(w3d));
+    TV_CHECK(ImageStreamIO_createIm(&w3d, "tvunit_cube", 3, sz3, _DATATYPE_FLOAT, 1, 0, 0) ==
+             IMAGESTREAMIO_SUCCESS);
+    memcpy(w3d.array.F, cube, sizeof(cube));
+
+    tv_stream_t st;
+    char        err[256];
+    TV_CHECK(tv_stream_open(&st, "tvunit_cube", err, sizeof(err)) == 0);
+    TV_CHECK(st.naxis == 3 && st.xsize == XS && st.ysize == YS && st.zsize == ZS);
+
+    tv_state_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.st   = &st;
+    ctx.rows = 24;
+    ctx.cols = 80;
+    ctx.lay  = l_sl;
+    termview_options_init(&ctx.opt);
+    ctx.screen = calloc((size_t) ctx.rows * ctx.cols, sizeof(tv_cell_t));
+    TV_CHECK(ctx.screen != NULL);
+
+    /* Step and clamp slice via tv_do */
+    tv_do(&ctx, TV_ACT_SLICE, 1);
+    TV_CHECK(ctx.opt.slice == 1);
+    tv_do(&ctx, TV_ACT_SET_SLICE, 999);
+    TV_CHECK(ctx.opt.slice == ZS - 1);
+    tv_do(&ctx, TV_ACT_SET_SLICE, -5);
+    TV_CHECK(ctx.opt.slice == 0);
+
+    /* Render slider and test mouse click/drag/wheel on slider row */
+    tv_ui_render(&ctx, 0);
+    TV_CHECK(ctx.ui.slider_x1 > ctx.ui.slider_x0);
+
+    tv_event_t ev = { .type   = TV_EV_MOUSE,
+                      .button = TV_MB_LEFT,
+                      .action = TV_MA_PRESS,
+                      .x      = ctx.ui.slider_x1 + 1,
+                      .y      = ctx.lay.slider_row + 1 };
+    TV_CHECK(tv_ui_wants_mouse(&ctx, &ev));
+    tv_ui_mouse(&ctx, &ev);
+    TV_CHECK(ctx.ui.slider_drag == 1 && ctx.opt.slice == ZS - 1);
+
+    ev.action = TV_MA_DRAG;
+    ev.x      = ctx.ui.slider_x0 + 1;
+    TV_CHECK(tv_ui_wants_mouse(&ctx, &ev));
+    tv_ui_mouse(&ctx, &ev);
+    TV_CHECK(ctx.opt.slice == 0);
+
+    ev.action = TV_MA_RELEASE;
+    tv_ui_mouse(&ctx, &ev);
+    TV_CHECK(ctx.ui.slider_drag == 0);
+
+    /* Wheel up on slider row steps slice forward */
+    ev.button = TV_MB_WHEEL_UP;
+    ev.action = TV_MA_PRESS;
+    TV_CHECK(tv_ui_wants_mouse(&ctx, &ev));
+    tv_ui_mouse(&ctx, &ev);
+    TV_CHECK(ctx.opt.slice == 1);
+
+    /* Cycle 3D modes via TV_ACT_3D */
+    tv_do(&ctx, TV_ACT_3D, 1);
+    TV_CHECK(ctx.opt.mode3d == TV_3D_GALLERY);
+
+    free(ctx.screen);
+    char path[600];
+    snprintf(path, sizeof(path), "%s/tvunit_cube.im.shm", shmdir);
+    unlink(path);
+    ImageStreamIO_destroyIm(&w3d);
+    tv_stream_close(&st);
 }
 
 /**
@@ -393,7 +569,8 @@ static void test_stream_lifecycle(void)
  *
  * Executes unit tests for floating-point classification, LUT indexing, number
  * parsing, view sanitization, option name lookup, string length clamping, LUT
- * construction, range smoothing, and shared-memory stream lifecycle handling.
+ * construction, range smoothing, shared-memory stream lifecycle handling, and
+ * 3D viewing modes.
  *
  * Return: 0 if all checks pass, 1 if any check failed
  */

@@ -127,12 +127,13 @@ static int tv_stream_check_md(const IMAGE_METADATA *md, char *err, size_t errsz)
             return -1;
         }
     }
-    if (md->size[0] > INT32_MAX || (md->naxis >= 2 && md->size[1] > INT32_MAX))
+    if (md->size[0] > INT32_MAX || (md->naxis >= 2 && md->size[1] > INT32_MAX) ||
+        (md->naxis == 3 && md->size[2] > INT32_MAX))
     {
         snprintf(err, errsz, "image axes longer than 2^31 pixels are not supported");
         return -1;
     }
-    if (nelem != md->nelement)
+    if (nelem != md->nelement || nelem > (1ULL << 52))
     {
         snprintf(err, errsz, "inconsistent element count");
         return -1;

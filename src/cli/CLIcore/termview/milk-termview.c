@@ -90,6 +90,12 @@ static void print_help(const char *progname, int mh_color)
            "Lock the display range to [min, max]");
     printf("  " MH_PAD_FMT " %s %s(20)%s\n", MH_PAD(MH_OPT, "-f, --fps N", 22),
            "UI refresh rate, 1-120", mh_color ? MH_DFLT : "", mh_color ? MH_RST : "");
+    printf("  " MH_PAD_FMT " %s %s(slice)%s\n", MH_PAD(MH_OPT, "-3, --3d MODE", 22),
+           "3D view mode: slice, gallery, xy, xz, yz", mh_color ? MH_DFLT : "",
+           mh_color ? MH_RST : "");
+    printf("  " MH_PAD_FMT " %s %s(0)%s\n", MH_PAD(MH_OPT, "--slice N", 22),
+           "Initial 0-based slice index for 3D slice mode", mh_color ? MH_DFLT : "",
+           mh_color ? MH_RST : "");
     printf("  " MH_PAD_FMT " %s %s(auto)%s\n", MH_PAD(MH_OPT, "--colors MODE", 22),
            "Colour depth: auto, truecolor, 256, 16", mh_color ? MH_DFLT : "",
            mh_color ? MH_RST : "");
@@ -104,12 +110,14 @@ static void print_help(const char *progname, int mh_color)
     print_names(stdout, tv_cmap_names, COLORMAP_NB, 13, 13);
     printf("\n  Scales:    ");
     print_names(stdout, tv_scale_names, SCALE_NB, 13, 13);
+    printf("\n  3D modes:  ");
+    print_names(stdout, tv_3d_names, TV_3D_NB, 13, 13);
     printf("\n\n");
 
     milk_help_section("Keys", mh_color);
     for (int i = 0; i < tv_help_nkeys; i++)
     {
-        printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_CMD, tv_help_keys[i][0], 14), tv_help_keys[i][1]);
+        printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_CMD, tv_help_keys[i][0], 17), tv_help_keys[i][1]);
     }
     printf("\n");
 
@@ -200,13 +208,16 @@ int main(int argc, char **argv)
     {
         OPT_MIN = 0x100,
         OPT_MAX,
-        OPT_COLORS
+        OPT_COLORS,
+        OPT_SLICE
     };
     static const struct option longopts[] = {
         { "cmap", required_argument, NULL, 'c' },
         { "scale", required_argument, NULL, 's' },
         { "range", required_argument, NULL, 'r' },
         { "fps", required_argument, NULL, 'f' },
+        { "3d", required_argument, NULL, '3' },
+        { "slice", required_argument, NULL, OPT_SLICE },
         { "min", required_argument, NULL, OPT_MIN },
         { "max", required_argument, NULL, OPT_MAX },
         { "colors", required_argument, NULL, OPT_COLORS },
@@ -216,7 +227,7 @@ int main(int argc, char **argv)
     int have_min = 0, have_max = 0;
     int c;
     opterr = 0;
-    while ((c = getopt_long(argc, argv, ":c:s:r:f:", longopts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, ":c:s:r:f:3:", longopts, NULL)) != -1)
     {
         int    idx;
         double v;
@@ -251,6 +262,22 @@ int main(int argc, char **argv)
                 return arg_error(progname, "--fps expects an integer 1-120, got", optarg);
             }
             opt.fps = (int) v;
+            break;
+        case '3':
+            idx = tv_lookup_name(tv_3d_labels, TV_3D_NB, optarg);
+            if (idx < 0 &&
+                parse_name(progname, "3D mode", tv_3d_names, TV_3D_NB, optarg, &idx) != 0)
+            {
+                return 1;
+            }
+            opt.mode3d = (termview_3d_mode_t) idx;
+            break;
+        case OPT_SLICE:
+            if (tv_parse_double(optarg, &v) != 0 || v < 0 || v > INT32_MAX || v != (double) (int) v)
+            {
+                return arg_error(progname, "--slice expects a non-negative integer, got", optarg);
+            }
+            opt.slice = (int) v;
             break;
         case OPT_MIN:
         case OPT_MAX:
