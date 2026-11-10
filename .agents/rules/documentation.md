@@ -6,8 +6,8 @@ description: Documentation site structure and markdown standards for docs/ and R
 
 Conventions and tooling: [`docs/developer/DocumentingCode.md`](../../docs/developer/DocumentingCode.md)
 and [`docs/developer/tooling.md`](../../docs/developer/tooling.md). Site: MkDocs Material from `docs/`
-(`mkdocs.yml`), Doxygen from the headers; both deployed by `.github/workflows/docs.yml` from
-`framework-dev`.
+(`mkdocs.yml`), Doxygen from the headers; both deployed by `.github/workflows/docs.yml`
+(versioned per branch, see [`docs/maintenance/pm_operations.md`](../../docs/maintenance/pm_operations.md)).
 
 ## Adding a page
 

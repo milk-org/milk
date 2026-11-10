@@ -7,6 +7,7 @@ on:
       - master
       - dev
       - framework-dev
+      - vd/fdev/pipelines
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
@@ -21,6 +22,10 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
+
+env:
+  DOCS_DEPLOY_BRANCHES: '["framework-dev", "vd/fdev/pipelines"]'
+  DOCS_DEFAULT_VERSION: framework-dev
 
 jobs:
   build-and-deploy:
@@ -45,7 +50,8 @@ jobs:
             mkdocs-glightbox \
             mkdocs-git-revision-date-localized-plugin \
             mkdocs-macros-plugin \
-            mkdocs-minify-plugin
+            mkdocs-minify-plugin \
+            mike
 
       - name: Build MkDocs site
         id: build_strict
@@ -56,13 +62,16 @@ jobs:
         if: steps.build_strict.outcome == 'failure'
         run: mkdocs build -d _site
 
-      - name: Deploy to GitHub Pages
+      # Versioned deploy with mike: each branch in DOCS_DEPLOY_BRANCHES gets its own
+      # subfolder of gh-pages and an entry in the site's version dropdown.
+      - name: Deploy version to GitHub Pages
         if: >-
           github.event_name == 'push' &&
-          github.ref == 'refs/heads/framework-dev'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
-          publish_branch: gh-pages
-          commit_message: "docs: update documentation site"
+          contains(fromJSON(env.DOCS_DEPLOY_BRANCHES), github.ref_name)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages:gh-pages || true
+          VERSION="${GITHUB_REF_NAME//\//-}"
+          mike deploy --push --title "${GITHUB_REF_NAME}" "${VERSION}"
+          mike set-default --push "${DOCS_DEFAULT_VERSION}"
