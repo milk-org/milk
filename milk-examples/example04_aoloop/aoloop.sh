@@ -53,6 +53,8 @@ elif [[ -f $work/shmdir ]]; then
 fi
 if ((fused)); then LOOP=$FUSED FILT=$FUSED; else LOOP=$SPLIT FILT=mfilt; fi
 export MILK_SHM_DIR=$shm MILK_QUIET=1
+# a private run keeps its units' status files (p.<unit>) there too: units are found by name
+[[ $shm == "$work/shm" ]] && export MILK_PROC_DIR=$shm
 mkdir -p "$MILK_SHM_DIR" "$work" && cd "$work" || exit 1
 source milk.bash || exit 1
 
@@ -75,6 +77,7 @@ start() {
     echo "$MILK_SHM_DIR" >shmdir
     ((fused)) && touch fused
     echo "MILK_SHM_DIR=$MILK_SHM_DIR"
+    [[ -n ${MILK_PROC_DIR:-} ]] && echo "MILK_PROC_DIR=$MILK_PROC_DIR"
     local c=$(((WFSNX - 1) / 2)).5 r=$((WFSNX / 2)) p=$((WFSNX / DMNX)) m=$((NM - 1))
     local xy="x = 0:$((WFSNX - 1)), y = 0:$((WFSNX - 1))"
     local inpup="sq(x - $c) + sq(y - $c) < $r * $r"

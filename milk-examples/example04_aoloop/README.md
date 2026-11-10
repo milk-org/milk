@@ -59,11 +59,13 @@ Needs a milk install on `PATH` with the calculator (`milk-fpsexec-milk-calc`, `m
 ```
 
 `start` prints the `MILK_SHM_DIR` that holds the streams, and the other commands use the same one.
-By default it is a directory of the example's own, `${TMPDIR:-/tmp}/milk-aoloop-<uid>/shm`, so
-nothing goes to `/milk/shm`. To watch the loop from another shell, export the printed value there:
+By default it is a directory of the example's own, `${TMPDIR:-/tmp}/milk-aoloop-<uid>/shm`, which
+also holds the units' status files (`MILK_PROC_DIR`), so nothing goes to `/milk/shm` and `measure`
+cannot read another process of the same name. To watch the loop from another shell, export the
+printed values there:
 
 ```bash
-export MILK_SHM_DIR=${TMPDIR:-/tmp}/milk-aoloop-$(id -u)/shm
+export MILK_SHM_DIR=${TMPDIR:-/tmp}/milk-aoloop-$(id -u)/shm; export MILK_PROC_DIR=$MILK_SHM_DIR
 ```
 
 ```bash
@@ -78,8 +80,9 @@ With `--default-shm`, `start` uses the usual directory instead (`$MILK_SHM_DIR`,
 ```
 
 The example's stream names (`dm`, `CM`, `IF`, ...) then replace any stream of the same name in that
-directory. `stop` removes them by name, and runs `@session prune` there for the session files that
-the script's shells left.
+directory, and its units (`wfssim`, `dmcomb`, ...) share their names with any other unit run with
+the same `MILK_PROC_DIR`: `measure` reads the first one running. `stop` removes them by name, and
+runs `@session prune` there for the session files that the script's shells left.
 
 ```bash
 source milk.bash; @set f.mfilt.gain=0.3 f.wfssim.noise=0.05
@@ -108,37 +111,40 @@ work as before. The `mfilt` and `dmcomb` parameters become `f.aoloop.gain`, `.mu
 per step:
 
 ```text
-residual RMS over 4000 frames (phase units): loop open 0.291094822970909, closed 0.0409870936380916
-camera frame to DM write: median 74 us, 90% below 153 us
+residual RMS over 4000 frames (phase units): loop open 0.276998200984146, closed 0.0403539750812254
+camera frame to DM write: median 64 us, 90% below 97 us
 unit       rate (Hz)  busy (us)   max (us)  missed
-wfssim          2000       16.9       64.1       0
-dmtrig          1998      499.0      670.2       0
-dmcomb          1998        3.1       12.7      20
-acquwfs         2000        3.6       21.1      87
-wfs2modes       2000        8.8       35.7     123
-mfilt           2000        4.8       19.7     118
-modes2dm        1998        3.9       18.7     131
+wfssim          2000       23.3       46.8       0
+dmtrig          2007      496.6      649.1       0
+dmcomb          2008        4.2        9.5       5
+acquwfs         2000        2.7        4.4      49
+wfs2modes       2002        9.9       38.0      67
+mfilt           1999        4.3       10.4      91
+modes2dm        2001        5.1        8.5     108
 ```
 
 and with `--fused`, right after:
 
 ```text
-residual RMS over 4000 frames (phase units): loop open 0.273583985405153, closed 0.0412681103061038
-camera frame to DM write: median 19 us, 90% below 51 us
+residual RMS over 4000 frames (phase units): loop open 0.381367219587668, closed 0.0397597041560361
+camera frame to DM write: median 30 us, 90% below 51 us
 unit       rate (Hz)  busy (us)   max (us)  missed
-wfssim          2000       33.7       63.2       0
-aoloop          2000       26.0       62.3      57
+wfssim          2000       21.9       59.5       0
+aoloop          1999       25.5       53.1      80
 ```
 
-Over three alternating runs of each, the median camera-to-DM latency was 74 to 84 µs with one unit
-per step, and 19 to 28 µs fused (90% below 146 to 185 µs, and 51 to 129 µs). The fused unit is busy
-26 µs per frame, about the sum of the five steps (17 to 43 µs over the same runs), so fusing saves
-no computation. It saves hand-offs: the split loop wakes six more processes or threads per frame
-(four units, `trigmerge`'s input thread and loop, `dmcomb`), about 9 µs each.
+Over three alternating runs of each, the median camera-to-DM latency was 64 to 91 µs with one unit
+per step, and 30 to 34 µs fused (90% below 97 to 131 µs, and 51 to 56 µs). Most of the difference
+is hand-offs: the split loop wakes six more processes or threads per frame (four units,
+`trigmerge`'s input thread and loop, `dmcomb`), about 9 µs each. Fusing also saves the per-frame
+overhead of four units: the fused unit was busy 18 to 28 µs per frame, the five steps 26 to 52 µs
+together.
 
 - **busy** is the median time per frame from the unit's timing ring (`p.<unit>.exectime`). It is
   about 4 µs for a unit with almost nothing to compute, the per-frame floor of a calc unit.
-  `dmtrig` waits for its inputs inside its loop, so its busy time is that wait.
+  `dmtrig` waits for its inputs inside its loop, so its busy time is that wait. Busy times vary by
+  up to a factor of two between runs: under the powersave governor, a core slows down between
+  frames.
 - **latency** runs from the camera frame's write time to the `dm` write it caused. Two probe units
   take each write time from `_ts`, the write time of their trigger frame.
 - **missed** counts frames posted before the unit was back to waiting during the measurement. The
