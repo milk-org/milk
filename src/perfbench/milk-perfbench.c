@@ -45,6 +45,8 @@
 
 #include "libmilkcommon/milkDebugTools.h"
 #include "processinfo.h"
+#include "processinfo_shm_close.h"
+#include "processinfo_shm_link.h"
 #include "ImageStreamIO/ImageStruct.h"
 
 /**
@@ -987,23 +989,10 @@ static void read_procinfo_stats(const char *shm_path,
 {
     out->valid = 0;
 
-    int fd = open(shm_path, O_RDONLY);
-    if (fd < 0)
-    {
-        return;
-    }
-
-    struct stat st;
-    if (fstat(fd, &st) < 0)
-    {
-        close(fd);
-        return;
-    }
-
-    PROCESSINFO *pi = (PROCESSINFO *) mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    int          fd = -1;
+    PROCESSINFO *pi = processinfo_shm_link_ro(shm_path, &fd);
     if (pi == MAP_FAILED)
     {
-        close(fd);
         return;
     }
 
@@ -1077,8 +1066,7 @@ static void read_procinfo_stats(const char *shm_path,
         }
     }
 
-    munmap(pi, (size_t) st.st_size);
-    close(fd);
+    processinfo_shm_close(pi, fd);
 
     if (nv == 0)
     {
