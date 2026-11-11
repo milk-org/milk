@@ -16,6 +16,13 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-10** — `mem.streamdelay` (`milk-fpsexec-mem-streamdelay`) and the calculator's new
+  built-in `streamdelay(im[, weights], delay=..., unit=...)` operator share a reusable ring-buffer
+  engine (`milk_stream_delay_*` in `COREMOD_memory`) supporting 1-D/2-D/3-D streams, time (`unit=0`,
+  seconds via `CLOCK_ISIO` `writetime`) and frame (`unit=1`) units, discrete zero-copy `memcpy` or
+  fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
+  `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
+  [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
 - **2026-11-10** — Two session fixes. The bash prompt shows a watched value (`@config prompt
   watch`) and the session name as text: a `$(...)` in a stream keyword, an FPS value or the shell's
   session record ran as a command at the next prompt. The record is read only if it is a regular

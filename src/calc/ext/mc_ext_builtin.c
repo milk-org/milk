@@ -4,16 +4,18 @@
 
 /**
  * @file mc_ext_builtin.c
- * @brief Built-in `MILK_CALC_REG_IMG` spatial kernels and shared-memory stream resolution helpers.
+ * @brief Built-in `milk_calc_ext` spatial kernels, temporal `streamdelay` operator, and stream helpers.
  *
- * Purpose:     offer four COREMOD_arith spatial kernels as calculator functions through the same
- *              interface as user extensions (milk_calc_ext.h), and hold the helpers that turn a
- *              name into an image for the resolver and the run-time steps.
+ * Purpose:     offer four COREMOD_arith spatial kernels and the COREMOD_memory temporal delay /
+ *              filtering engine as calculator functions through the same interface as user
+ *              extensions (milk_calc_ext.h), and hold the helpers that turn a name into an image
+ *              for the resolver and the run-time steps.
  * Does:        registers `bblur1pix(im[, amp, niter])` (iterated 5-point cross blur),
- *              `rotate2d(im[, angle])` (bilinear rotation about the center), and
- *              `circsym(im[, cx, cy])` and `circasym(im[, cx, cy])` (azimuthally symmetric part
- *              and its residual) as MILK_EXT_IMG kernels when libmilkcalc loads
- *              (MILK_CALC_MODULE_EXPORT constructor). mc_resolve_or_autoconnect_image() finds an
+ *              `rotate2d(im[, angle])` (bilinear rotation about the center), `circsym(im[, cx, cy])`
+ *              and `circasym(im[, cx, cy])` (azimuthally symmetric part and its residual) as
+ *              MILK_EXT_IMG kernels, and `streamdelay(im[, weights], delay=..., unit=...)` as a
+ *              stateful MILK_EXT_OP operator when libmilkcalc loads (MILK_CALC_MODULE_EXPORT
+ *              constructor). mc_resolve_or_autoconnect_image() finds an
  *              image by name (`@S:`/`@L:` prefix allowed), reattaches a loaded stream whose
  *              /dev/shm file was recreated (new inode), and attaches a /dev/shm stream not yet
  *              loaded; mc_parse_ident_streamname() replaces a FPTYPE_STREAMNAME variable by the
@@ -44,6 +46,7 @@
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/image_ID.h"
+#include "COREMOD_memory/stream_delay.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "front/mc_ast.h"
 #include "milk_calc_ext.h"
@@ -128,11 +131,116 @@ static int circasym_ext_img(IMAGE *out, const IMAGE *in, const struct circsym_pa
     return arith_image_circsym_im(in, out, cx, cy, 1);
 }
 
-MILK_CALC_MODULE_EXPORT(milkcalc_builtin,
-                        MILK_CALC_REG_IMG(bblur1pix, bblur1pix_ext_img, bblur1pix),
-                        MILK_CALC_REG_IMG(rotate2d, rotate2d_ext_img, rotate2d),
-                        MILK_CALC_REG_IMG(circsym, circsym_ext_img, circsym),
-                        MILK_CALC_REG_IMG(circasym, circasym_ext_img, circsym));
+/* ============================================================================================== */
+/* Built-In `MILK_CALC_REG_OP` Temporal Stream Delay / Filter Operator                            */
+/* ============================================================================================== */
+
+#define SDELAY_EXT_PARAMS(X)                                                          \
+    X(".delay", delay, FPTYPE_FLOAT64, 0.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,   \
+      "Delay (seconds if unit=0, frames if unit=1)")                                  \
+    X(".unit", unit, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,         \
+      "Delay/window unit (0=seconds, 1=frames)")                                      \
+    X(".interp", interp, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,     \
+      "Fractional interpolation (0=discrete, 1=linear)")                              \
+    X(".avemode", avemode, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,   \
+      "Window filter (0=off, 1=boxcar, 2=linear, 3=exp, 4=gauss)")                    \
+    X(".window", window, FPTYPE_FLOAT64, 0.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, \
+      "Window width or FIR tap step (0=1 frame)")                                     \
+    X(".buffsize", buffsize, FPTYPE_UINT64, 1000, FPFLAG_DEFAULT_INPUT,               \
+      "Ring buffer depth in frames")
+
+#define SDELAY_EXT_PORTS(X)                                                       \
+    X(IN, frame, MILK_PORT_IMAGE, 0, "Input image/stream")                        \
+    X(IN, weights, MILK_PORT_IMAGE, MILK_PORT_OPT, "Optional 1D FIR tap weights") \
+    X(OUT, out, MILK_PORT_IMAGE, 0, "Delayed/filtered output image")
+
+MILK_CALC_OP_DECLARE(streamdelay, SDELAY_EXT_PARAMS, SDELAY_EXT_PORTS);
+
+/**
+ * sdelay_ext_init - Allocate per-call-site `MILK_STREAM_DELAY_STATE` ring buffer
+ * @ctx:   Operator context holding input `frame` geometry
+ * @P:     Packed parameter struct (`buffsize` ring capacity)
+ * @state: Output opaque state pointer
+ *
+ * Return: 0 on success, -1 on allocation failure
+ */
+static int sdelay_ext_init(milk_op_ctx *ctx, const struct streamdelay_par *P, void **state)
+{
+    const IMAGE *frame = MILK_IN(ctx, frame);
+    if (frame == NULL)
+    {
+        return -1;
+    }
+    MILK_STREAM_DELAY_STATE *st = calloc(1, sizeof(*st));
+    if (st == NULL)
+    {
+        return -1;
+    }
+    uint64_t cap = (P != NULL && P->buffsize > 0ULL) ? P->buffsize : 1000ULL;
+    if (milk_stream_delay_init(st, frame, cap) != RETURN_SUCCESS)
+    {
+        free(st);
+        return -1;
+    }
+    *state = st;
+    return 0;
+}
+
+/**
+ * sdelay_ext_exec - Push current `frame` and evaluate delayed/filtered output `out`
+ * @ctx:   Operator context (`frame`, optional `weights`, destination `out`)
+ * @P:     Packed live parameter struct
+ * @state: Persistent `MILK_STREAM_DELAY_STATE` allocated by `sdelay_ext_init()`
+ *
+ * Return: 0 on success, -1 on execution failure
+ */
+static int sdelay_ext_exec(milk_op_ctx *ctx, const struct streamdelay_par *P, void *state)
+{
+    MILK_STREAM_DELAY_STATE *st      = (MILK_STREAM_DELAY_STATE *) state;
+    const IMAGE             *frame   = MILK_IN(ctx, frame);
+    const IMAGE             *weights = MILK_IN(ctx, weights);
+    IMAGE                   *out     = MILK_OUT(ctx, out);
+    if (st == NULL || frame == NULL || out == NULL)
+    {
+        return -1;
+    }
+
+    MILK_STREAM_DELAY_CFG cfg = {
+        .delay      = (P != NULL) ? P->delay : 0.0,
+        .window     = (P != NULL) ? P->window : 0.0,
+        .unit_mode  = (P != NULL && P->unit != 0) ? MILK_SDELAY_UNIT_FRAME : MILK_SDELAY_UNIT_TIME,
+        .interp     = (P != NULL && P->interp != 0) ? 1 : 0,
+        .ave_mode   = (P != NULL) ? (int) P->avemode : 0,
+        .naive_mode = 0,
+        .force_push = 1,
+        .allow_skip = 0,
+    };
+
+    int updated = 0;
+    return (milk_stream_delay_step(st, frame, weights, &cfg, out, &updated) == RETURN_SUCCESS) ? 0
+                                                                                               : -1;
+}
+
+/**
+ * sdelay_ext_free - Release `MILK_STREAM_DELAY_STATE` ring-buffer memory
+ * @state: Opaque pointer allocated by `sdelay_ext_init()`
+ */
+static void sdelay_ext_free(void *state)
+{
+    if (state != NULL)
+    {
+        milk_stream_delay_free((MILK_STREAM_DELAY_STATE *) state);
+        free(state);
+    }
+}
+
+MILK_CALC_MODULE_EXPORT(
+    milkcalc_builtin,
+    MILK_CALC_REG_IMG(bblur1pix, bblur1pix_ext_img, bblur1pix),
+    MILK_CALC_REG_IMG(rotate2d, rotate2d_ext_img, rotate2d),
+    MILK_CALC_REG_IMG(circsym, circsym_ext_img, circsym),
+    MILK_CALC_REG_IMG(circasym, circasym_ext_img, circsym),
+    MILK_CALC_REG_OP(streamdelay, streamdelay, sdelay_ext_init, sdelay_ext_exec, sdelay_ext_free));
 
 /* ============================================================================================== */
 /* Stream and Identifier Resolution Helpers                                                       */

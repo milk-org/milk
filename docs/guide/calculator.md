@@ -130,6 +130,7 @@ Functions (the math ones also apply per pixel to an image):
 | Along one axis   | `itot imin imax imean istd irms ivar norm asum`, `cumsum(im[,axis])` plus an axis: `imean(cube, 2)` is the mean frame |
 | Stencil / LUT    | `shift(im,dx[,dy])` (edge-clamped 2-D neighbor offset), `roll(im,dx[,dy])` (periodic wrap-around 2-D shift), `lut(x,tbl[,x0,dx])` (1-D linear LUT) |
 | Spatial / Remap  | `medfilt3(im)`, `medfilt5(im)`, `medfilt7(im)` ($3\times3$, $5\times5$, $7\times7$ median), `imin3(im)`, `imax3(im)` ($3\times3$ min/max erosion/dilation), `boxmean(im,r)` (separable $(2r+1)\times(2r+1)$ box mean, $r \in \{1..64\}$), `conv2(im,K)` (2-D convolution with odd kernel `K` up to $31\times31$), `gauss(im,sx[,sy])`, `interp2(im,xmap,ymap)`, `pixremap(im,map[,fill])`, `pixunmap(im,map[,n])`, `rprof(im[,cx,cy])` |
+| Temporal / Delay | `streamdelay(im[,weights], delay=..., unit=..., interp=..., avemode=..., window=..., buffsize=...)`: per-call-site ring-buffer delay, fractional interpolation, causal window average (`avemode` 1..4), or 1-D FIR filter in seconds (`unit=0`) or frames (`unit=1`) |
 | Image to image   | `where(c,a,b)`, `transpose(im)` (or `im.T`), `reshape(im,nx[,ny,nz])`, `rot90(im[,k])`, `hstack(A,B,...)`, `vstack(A,B,...)`, `dstack(A,B,...)`, `cat(axis,A,B,...)`, `vec(x0,...)` (or `[x0, ...]`), `linspace(a,b,n)`, `[expr for x = a:b[:s], ...]`, `zeros(nx[,ny[,nz]])`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)` (or `A @ B`), `outer(x,y)`, `einsum("subscripts",A[,B])` |
 | BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)` |
 | LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B)`, `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])`, `s = svd(A)` / `U, s, Vt = svd(A)` (thin SVD), `w = eigh(C)` / `w, V = eigh(C)` (symmetric eigendecomposition, ascending) |
@@ -322,6 +323,13 @@ parameters under `Parameters`):
   - `ema(expr, alpha)` maintains a per-call-site persistent exponential moving average image or
     scalar, `s = (1 - alpha) * s + alpha * expr`, updated in a step of its own before the
     statement's pass (seeded with `expr` on frame 0 after `init` or recompile).
+  - `streamdelay(im[, weights], delay=..., unit=..., interp=..., avemode=..., window=..., buffsize=...)`
+    maintains a private per-call-site ring buffer (`COREMOD_memory` `milk_stream_delay_*` engine)
+    supporting discrete or linearly interpolated (`interp=1`) delays in seconds (`unit=0`) or
+    frames (`unit=1`), causal temporal window filters (`avemode`: `1` boxcar, `2` linear, `3`
+    exponential, `4` Gaussian over `window`), and arbitrary 1-D FIR linear combinations via an
+    optional `weights` image. Unbound parameters are automatically exposed in the unit's FPS (use
+    `streamdelay:label(...)` for multiple independent instances in one unit).
   - `a, b = expr1, expr2` assigns multiple images (fused into a single pass when compatible) or
     multiple scalars; `m, s[, lo, hi] = istats(im)` unpacks mean, std, min, and max from one
     reduction pass.

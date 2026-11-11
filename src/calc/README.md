@@ -65,7 +65,7 @@ extensions), `linalg/` and `units/`.
 | `ext/mc_ext_registry.c` | Global registry for loaded Tier 1 and Tier 2 calculator C extensions, with ABI and parameter layout checks |
 | `ext/mc_ext_loader.c` | `.c` / `.so` extension loader (compiles through `mc_cc.c`), `dlopen`, the call-argument binder (`mc_ext_bind_args`, shared with `mc_ext_exec.c`) and FPS parameter scanner |
 | `ext/mc_ext_exec.c` | Runtime execution of Tier 1 (block, stencil, whole-image) and Tier 2 (`MILK_EXT_OP`) extensions |
-| `ext/mc_ext_builtin.c` | Built-in image extensions (`bblur1pix`, `rotate2d`, `circsym`, `circasym`, COREMOD_arith kernels) and stream-resolution helpers |
+| `ext/mc_ext_builtin.c` | Built-in extensions (`bblur1pix`, `rotate2d`, `circsym`, `circasym`, `streamdelay`) and stream-resolution helpers |
 | `linalg/mc_linalg.h` | Internal linear algebra, FFT, stacking, and spatial convolution interface |
 | `linalg/mc_linalg_blas.c` | BLAS Level 1-3 (`@`, `matmul`, `gemm`, `gemv`, `syrk`, ...), GEMM/GER lowering of algebraic forms, and `einsum` |
 | `linalg/mc_linalg_lapack.c` | LAPACK linear solvers (`trsv`, `trsm`, `gesv`, `posv`, `gels`, `solve`, `inv`, `pinv`, `svd`, `eigh`) |

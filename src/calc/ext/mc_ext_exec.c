@@ -395,7 +395,10 @@ static imageID ensure_f32_im(imageID src_id, int *out_tmp)
         {
             dst->array.F[i] = (float) arith_read_im_pix(src, sdt, i);
         }
-        *out_tmp = 1;
+        dst->md[0].writetime = src->md[0].writetime;
+        dst->md[0].atime     = src->md[0].atime;
+        dst->md[0].cnt0      = src->md[0].cnt0;
+        *out_tmp             = 1;
     }
     return tid;
 }
@@ -816,9 +819,12 @@ static int exec_ext_op(mcalc_prog_t                *prog,
                         memcpy(milk_data.image[cid].array.raw, sim->array.raw,
                                (size_t) sim->md[0].nelement *
                                    (size_t) ImageStreamIO_typesize(sim->md[0].datatype));
-                        f32_ids[q]    = cid;
-                        f32_tmp[q]    = 1;
-                        ctx.in_img[q] = &milk_data.image[cid];
+                        milk_data.image[cid].md[0].writetime = sim->md[0].writetime;
+                        milk_data.image[cid].md[0].atime     = sim->md[0].atime;
+                        milk_data.image[cid].md[0].cnt0      = sim->md[0].cnt0;
+                        f32_ids[q]                           = cid;
+                        f32_tmp[q]                           = 1;
+                        ctx.in_img[q]                        = &milk_data.image[cid];
                     }
                 }
             }
