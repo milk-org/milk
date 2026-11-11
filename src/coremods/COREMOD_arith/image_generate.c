@@ -31,26 +31,26 @@ _Static_assert(sizeof(IMAGE_METADATA) % 64 == 0,
 #define COORD_OMP_MIN 16384
 
 /**
- * arith_next_rng_seed - Return the next 32-bit seed for unseeded random image generation
+ * arith_next_rng_seed - Return the next seed for unseeded random image generation
  *
- * Mixes the realtime clock and PID on first use and advances a Weyl sequence
- * on each call so consecutive calls produce independent random realizations.
+ * Mixes the realtime clock and PID on first use and advances a 64-bit Weyl sequence on each
+ * call, so consecutive calls give different realizations and none comes back for 2^53 calls.
  *
- * Return: Non-zero 32-bit seed value
+ * Return: Seed value below 2^53, which a double holds exactly
  */
-uint32_t arith_next_rng_seed(void)
+uint64_t arith_next_rng_seed(void)
 {
-    static uint32_t rng_state = 0;
+    static uint64_t rng_state = 0;
     if (rng_state == 0)
     {
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
-        uint32_t s =
-            (uint32_t) ts.tv_nsec ^ (uint32_t) ts.tv_sec ^ ((uint32_t) getpid() * 0x9e3779b9u);
-        rng_state = (s != 0) ? s : 0x6d2b79f5u;
+        rng_state = arith_mix64(((uint64_t) ts.tv_sec << 30) ^ (uint64_t) ts.tv_nsec ^
+                                ((uint64_t) getpid() << 48)) |
+                    1ULL;
     }
-    rng_state += 0x9e3779b9u;
-    return arith_hash32(rng_state);
+    rng_state += 0x9e3779b97f4a7c15ULL;
+    return arith_mix64(rng_state) >> 11;
 }
 
 /**

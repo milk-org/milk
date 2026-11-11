@@ -460,11 +460,15 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     }
 
     case MC_FN_PRNG:
-        eb_printf(c->eb, "%s(_i, (double)_sc%d)",
-                  (strcmp(fn->name, "randn") == 0) ? (wd ? "mc_grandd" : "mc_grandf")
-                                                   : (wd ? "mc_urandd" : "mc_urandf"),
+    {
+        /* the key of its seed is made once per call; the row's start (_rlo, _rhi) lets the loop
+         * work on the low 32 bits of the pixel index only */
+        int is_n = (strcmp(fn->name, "randn") == 0);
+        eb_printf(c->eb, "%s(_i, _rk%d, _rlo, _rhi)",
+                  is_n ? (wd ? "mc_grandd" : "mc_grandf") : (wd ? "mc_urandd" : "mc_urandf"),
                   mc_find_scalar_op(c->pass, NULL, e, -1));
         return;
+    }
 
     case MC_FN_SHIFT:
     {
@@ -1005,6 +1009,15 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
                       "const int64_t _ish%d = mc_ish(ops[%d].scalar); "
                       "(void)_sc%d; (void)_ish%d;\n",
                       c.wt, i, c.wt, i, i, i, i, i);
+            /* a rand or randn seed: its key from the double itself (a float holds 24 bits of
+             * it), outside the pixel loop */
+            const mc_expr_t *pe = pass->ops[i].slice_expr;
+            if (pe != NULL && pe->kind == MC_EXPR_CALL && pe->u.call.fn != NULL &&
+                pe->u.call.fn->kind == MC_FN_PRNG)
+            {
+                eb_printf(&k_eb, "    const uint64_t _rk%d = mc_rng_key(ops[%d].scalar, %d);\n", i,
+                          i, strcmp(pe->u.call.fn->name, "randn") == 0);
+            }
         }
         else
         {
@@ -1129,6 +1142,19 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
                   "    (void)z; (void)y;\n"
                   "    for (uint64_t _yz = y0; _yz < y1; _yz++) {\n"
                   "        const uint64_t _row_base = _yz * _nx;\n");
+        for (int i = 0; i < pass->nops; i++)
+        {
+            const mc_expr_t *pe = pass->ops[i].is_scalar ? pass->ops[i].slice_expr : NULL;
+            if (pe != NULL && pe->kind == MC_EXPR_CALL && pe->u.call.fn != NULL &&
+                pe->u.call.fn->kind == MC_FN_PRNG)
+            {
+                /* the row's first pixel: low word, and high word times a constant */
+                eb_printf(&k_eb, "        const uint32_t _rlo = (uint32_t)_row_base, "
+                                 "_rhi = (uint32_t)(_row_base >> 32) * 0x9e3779b9U; "
+                                 "(void)_rlo; (void)_rhi;\n");
+                break;
+            }
+        }
         for (int i = 0; i < pass->nops; i++)
         {
             if (!pass->ops[i].is_scalar && !pass->ops[i].is_table_arg)

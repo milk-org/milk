@@ -156,6 +156,15 @@ nearest edge pixel past the border, while `roll(im, dx, dy)` wraps around period
 coordinates, and `iargmax`/`iargmin` unpack 2-D (`px, py = iargmax(im)`) or 3-D
 (`px, py, pz = iargmax(cube)`) coordinates directly (`-1` when all pixels are NaN).
 
+`rand` and `randn` give each pixel a value that depends on the seed and on the pixel's index
+only, so an image is the same whatever the thread count, and `rand(seed)` is its pixel 0. Every
+distinct seed, fractional or large, is another image, from a 64-bit key; without a seed each call
+draws a new one, and `rand` and `randn` of the same seed are unrelated. Both hash the pixel
+index with the key, in 32-bit steps that vectorize well. For `rand` a float pixel has 24 random
+bits, a double one 32 and 20 more derived from them. `randn` is a Box-Muller transform of two
+such values: normal out to 6.6 $\sigma$ in a float32 pass and 8.5 $\sigma$ in a double one. On
+one thread `rand` costs about 0.5 ns per pixel (1 ns in double) and `randn` about 2 ns (4.5 ns).
+
 A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd irms ivar imedian
 norm asum`) and `perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel
 gives NaN, or 0 for `itot`/`asum`/`norm`. A number instead is an axis. On the left-hand side of an

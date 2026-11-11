@@ -365,6 +365,47 @@ def test_calc_simd_random_generators(tmp_path):
     assert grep == 0.0 and gdiff > 0.5, out
 
 
+def test_random_generators_seeds_and_normal_tails(tmp_path):
+    """Every distinct seed is another image (beyond 32 bits, fractional, and beyond the 24 bits
+    a float32 pass holds); rand and randn of one seed are unrelated; rand(seed) and randn(seed)
+    are pixel 0 of the double image; randn is normal out to its tails, which a sum of uniforms
+    is not.
+    """
+    res = milk_cli_script(
+        "mem.mk2Dim a 256 256 >/dev/null; mem.mk2Dim b 256 256 >/dev/null\n"
+        "mem.mk2Dim g 2048 2048 >/dev/null\n"
+        'df() { @calc "a = $1; b = $2"; @calc -v r \'imax(abs(a - b))\'; echo "$3=$r"; }\n'
+        "df 'rand(a, 1)' 'rand(b, 4294967297)' big\n"
+        "df 'rand(a, 0.25)' 'rand(b, 0.5)' frac\n"
+        "df 'rand(a, 16777216)' 'rand(b, 16777217)' f24\n"
+        "df 'randn(a, 16777216)' 'randn(b, 16777217)' n24\n"
+        "df 'rand(a, 7)' 'rand(b, 7)' same\n"
+        "@calc 'a = rand(a, 5) - 0.5; b = randn(b, 5)'\n"
+        "@calc -v c 'imean(a * b) / (istd(a) * istd(b))'; echo \"corr=$c\"\n"
+        "@calc 'd = f64(zeros(16, 16)); d = rand(d, 42)'\n"
+        "@calc -v p0,s0 'd[0,0]; rand(42)'; echo \"px=$p0 $s0\"\n"
+        "@calc 'd = randn(d, 42)'\n"
+        "@calc -v p0,s0 'd[0,0]; randn(42)'; echo \"pn=$p0 $s0\"\n"
+        "@calc 'g = randn(g, 3)'\n"
+        "@calc -v m,s,k,t,hi 'imean(g); istd(g); imean(pow(g, 4)) / pow(ivar(g), 2); "
+        "icount(abs(g) > 4.3); imax(abs(g))'\n"
+        'echo "g=$m $s $k $t $hi"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    for k in ("big", "frac", "f24", "n24"):
+        assert float(value(res.stdout, k)) > 0.5, f"{k}: {out}"
+    assert float(value(res.stdout, "same")) == 0.0, out
+    assert abs(float(value(res.stdout, "corr"))) < 0.02, out
+    for k, tol in (("px", 0.0), ("pn", 1e-12)):  # log and cos differ in their last bit
+        p0, s0 = [float(x) for x in value(res.stdout, k).split()]
+        assert abs(p0 - s0) <= tol, f"{k}: {out}"
+    m, s, kurt, tail, hi = [float(x) for x in value(res.stdout, "g").split()]
+    assert abs(m) < 0.003 and abs(s - 1.0) < 0.003, out  # 4.2 million samples
+    assert abs(kurt - 3.0) < 0.02, out  # 2.8 for a sum of six uniforms
+    assert 30 <= tail <= 130 and hi > 4.3, out  # about 72 samples beyond 4.3 sigma
+
+
 def test_calc_and_module_kernel_unification(tmp_path):
     res = milk_cli_script(
         "imgen.mkdist d_mod 16 16 8 8 >/dev/null\n"

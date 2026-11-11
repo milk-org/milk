@@ -23,6 +23,15 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — `rand` and `randn` have new generators: the values for a given seed change.
+  Every distinct seed gives another image, from a 64-bit key: `rand(im, 1)` and
+  `rand(im, 4294967297)` were the same, as were two fractional seeds, and the 32 bits of state
+  made long runs repeat noise patterns. `rand` and `randn` of one seed are no longer correlated.
+  `randn` is a Box-Muller transform, normal out to 6.6 sigma (8.5 in double); it was a sum of
+  six uniforms, bounded at 4.24 sigma. They cost more on one thread: `rand` about 0.5 ns per
+  pixel (it was 0.25), `randn` about 2 ns (it was 0.7). The image-generation module commands
+  use the same code.
+  See [Calculator](guide/calculator.md) `#cli` `#performance`
 - **2026-11-10** — Calculator and command-line fixes.
   - Calculator: a unit maps again, within half a second, an input stream that another process
     deleted and created again (it kept reading the old file). `@S:name` after `if` and `elif` is

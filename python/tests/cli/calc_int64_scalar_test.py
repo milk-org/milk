@@ -84,8 +84,8 @@ def test_index_reductions_match_the_eager_path(tmp_path, nthreads: int):
     fused = value(res.stdout, "fused")
     assert fused == value(res.stdout, "eager"), out
     assert (
-        fused == "2053,1566754,1566754"
-    ), out  # (5,1); (1500,600) is the later tie; |min| > max
+        fused == "2053,1249731,2053"
+    ), out  # (5,1), and (1500,600) is the later tie; the minimum of rand(a, 3); max > |min|
     x, y = value(res.stdout, "expr").split(",")
     assert x == y, out
     assert value(res.stdout, "allnan") == "-1,-1", out

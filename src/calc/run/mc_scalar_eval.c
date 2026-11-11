@@ -506,10 +506,9 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
 
     case MC_FN_PRNG:
     {
-        int      kind = (strcmp(fn->name, "randn") == 0) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
-        uint32_t seed = (nargs == 1) ? (uint32_t) (int64_t) llround(to_double(&args[0]))
-                                     : arith_next_rng_seed();
-        *out          = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = arith_rng_draw(kind, seed) };
+        int    kind = (strcmp(fn->name, "randn") == 0) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
+        double seed = (nargs == 1) ? to_double(&args[0]) : (double) arith_next_rng_seed();
+        *out        = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = arith_rng_draw(kind, seed) };
         return 0;
     }
 
