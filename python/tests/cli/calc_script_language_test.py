@@ -8,7 +8,8 @@ Does:        checks multiple, nested and istats reductions; bitwise operators; b
              real image; strings and NaN comparisons; identifier limits, dashed stream names,
              name lookup and `end`; reserved constants and per-shell digits; that a text is
              checked before it runs; order statistics and argmax; number and image conditions;
-             exit statuses and error positions; zero divisors; failed image assignments.
+             exit statuses and error positions; zero divisors; failed image assignments; that
+             an argument beyond those a function reads is an error.
 Covers:      the calculator (src/calc: front/, run/mc_scalar_eval.c, run/mc_scalar_ops.c,
              mc_eval.c, mc_func.c, and plan/ and jit/ for image statements); @calc, @test,
              @assert and @waitfor (src/cli/libmilkscript: client/, server/milk_server_eval.c);
@@ -363,6 +364,36 @@ def test_reserved_constants_and_per_shell_digits(tmp_path):
     assert value(res.stdout, "image") == "6.28318530717959", out
     assert value(res.stdout, "d6") == "0.666667", out
     assert value(res.stdout, "d15") == "0.666666666666667", out
+
+
+def test_surplus_arguments_are_errors(tmp_path):
+    """A function takes the arguments `@calc --list` shows: the BLAS calls read no transpose or
+    triangle flag (a transposed operand is `A.T`) and `zeros` no type, and ignored them.
+    """
+    res = milk_bash(
+        'mem.mk2Dim A 2 2 >/dev/null; mem.mk2Dim C 2 2 >/dev/null; @calc "A = 2; C = 0"\n'
+        'mem.mk2Dim x 2 1 >/dev/null; mem.mk2Dim y 2 1 >/dev/null; @calc "x = 1; y = 0"\n'
+        '@calc \'gemm(1, A, A, 0, C, "T", "N")\' 2>e1; echo "gemm=$?"\n'
+        '@calc \'gemv(1, A, x, 0, y, "T")\' 2>e2; echo "gemv=$?"\n'
+        '@calc \'syrk(1, A, 0, C, "T")\' 2>e3; echo "syrk=$?"\n'
+        '@calc \'symv(1, A, x, 0, y, "L")\' 2>e4; echo "symv=$?"\n'
+        '@calc "z = zeros(4, 3, 2, 9)" 2>e5; echo "zeros=$?"\n'
+        '@calc -v t "gemm(1, A.T, A, 0, C); itot(C)"; echo "ok=$? $t"\n'
+        '@calc --list gemm | grep -qF "gemm(a, A, B, b, C)" && echo "list=ok"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    for k, f in (
+        ("gemm", "e1"),
+        ("gemv", "e2"),
+        ("syrk", "e3"),
+        ("symv", "e4"),
+        ("zeros", "e5"),
+    ):
+        assert value(res.stdout, k) == "2", out
+        assert "wrong number of arguments" in (tmp_path / f).read_text(), out
+    assert value(res.stdout, "ok") == "0 32", out
+    assert value(res.stdout, "list") == "ok", out
 
 
 def test_stream_prefix_letters_are_not_variable_names(tmp_path):

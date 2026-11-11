@@ -561,19 +561,34 @@ MILK_CALC_EXT_EXPORT(
 
     res = milk_bash(
         f"""
-@calc --list | grep -q "FI_INTERP2" && echo "full=ok"
-@calc --list stencil | grep -q "FI_MEDFILT" && echo "stencil=ok"
-@calc --list reduce | grep -q "FI_RED (STATS)" && echo "reduce=ok"
-@calc --list --json interp2 | grep -q '"opcode": "FI_INTERP2"' && echo "json=ok"
-@calc -l "{c_file}" --list my_gain_op | grep -q "FI_USER_BLK" && echo "ext_bash=ok"
+@calc --list | grep -q "interp2(im, xmap, ymap)" && echo "full=ok"
+@calc --list stencil | grep -q "medfilt3(im)" && echo "stencil=ok"
+@calc --list reductions | grep -qF "istats(im[, mask])" && echo "reduce=ok"
+@calc --list strlen | grep -q "Byte length" && echo "string=ok"
+@calc --list --json interp2 | grep -q '"name": "interp2", "signature": "interp2(im, xmap, ymap)"' && echo "json=ok"
+@calc --list | grep -qE "fprog|TOK_|FKEPT|FI_" || echo "words=ok"
+@calc --list nosuchfunction >/dev/null; echo "none=$?"
+@calc -l "{c_file}" --list my_gain_op | grep -q "Tier 1 block kernel" && echo "ext_bash=ok"
 milk-fpsexec-milk-calc -l "{c_file}" --list my_gain_op | grep -q "my_gain_op(x)" && echo "ext_unit=ok"
 """,
         tmp_path,
     )
+    assert value(res.stdout, "none") == "1", res.stdout + res.stderr
     assert [
         value(res.stdout, k)
-        for k in ("full", "stencil", "reduce", "json", "ext_bash", "ext_unit")
-    ] == ["ok", "ok", "ok", "ok", "ok", "ok"], (res.stdout + res.stderr)
+        for k in (
+            "full",
+            "stencil",
+            "reduce",
+            "string",
+            "json",
+            "words",
+            "ext_bash",
+            "ext_unit",
+        )
+    ] == ["ok"] * 8, (
+        res.stdout + res.stderr
+    )
 
 
 def test_builtin_module_exported_kernels(tmp_path):

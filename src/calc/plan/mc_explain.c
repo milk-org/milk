@@ -11,11 +11,13 @@
  * Does:        compiles the text with mcalc_prog_new() (the defs it registers stay out of the
  *              session), then prints each statement and how it runs: a def inlined where it is
  *              called, a fused pass (shape, or a shape set at run time; float32 or double; 1D or
- *              ND; operands, pre-stages, targets), a statement merged into an earlier pass, a
- *              constructor or library step, or the scalar tape (operations, reductions).
+ *              ND; operands, pre-stages, threads, targets), a statement merged into an earlier
+ *              pass, a constructor or library step, or a scalar statement (operations,
+ *              reductions).
  * Used by:     the server's milk_server_eval.c (`@calc --explain`). Declared in mcalc.h.
  * Uses:        run/mc_prog.c (mcalc_prog_new(), mcalc_prog_free()), mc_eval.c (mc_udef_save(),
- *              mc_udef_restore()), plan/mc_plan.h (steps and passes).
+ *              mc_udef_restore()), plan/mc_plan.h (steps and passes), milk_omp_team.h (the
+ *              thread count a pass of that size gets in this process).
  * See also:    docs/guide/calculator.md, "Fusion & Cost Model".
  */
 #include <stdio.h>
@@ -23,6 +25,7 @@
 #include "front/mc_ast.h"
 #include "plan/mc_plan.h"
 #include "mcalc.h"
+#include "libmilkcommon/milk_omp_team.h"
 
 /**
  * count_scalar_ops_reds - Count scalar operations and image reductions inside expression @e
@@ -99,12 +102,14 @@ static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
  * Prints each user statement (skipping synthesized `hist()` tail statements) followed by how the
  * planner scheduled it:
  *   - `def, inlined where it is called`
- *   - `kept, merged into the fused pass of statement K`
- *   - `kept: fused pass over NxMxK (<dtype>, 1D|ND, P operands[, Q pre-stages]), writes ...`, or
- *     `over a shape set at run time (<dtype>, P operands...)` when planning cannot know it (an
- *     operand is a target the program creates, or the operand shapes do not match)
- *   - `kept: constructor/library step`
- *   - `kept: scalar tape: N ops, M reductions, 0 pre-stages`
+ *   - `merged into the fused pass of statement K`
+ *   - `fused pass over NxMxK (<dtype>, 1D|ND, P operands[, Q pre-stages], T threads), writes ...`,
+ *     or `over a shape set at run time (<dtype>, P operands...)` when planning cannot know it (an
+ *     operand is a target the program creates, or the operand shapes do not match). T is what
+ *     this process gives a pass of that size; a unit's `.procinfo.NBthread` can differ
+ *   - `constructor or library step`
+ *   - `scalar statement: N operations, M reductions`
+ * and a last line with the number of statements and of steps they run in.
  *
  * Return: 0 on success, 1 on compilation error
  */
@@ -122,7 +127,7 @@ int mcalc_prog_explain(const char *text, FILE *out)
         }
         return 1;
     }
-    int              nkept = 0;
+    int              nrun  = 0;
     const mc_stmt_t *cur_s = p->ast_head;
     for (int i = 0; i < p->nstmts; i++, cur_s = cur_s ? cur_s->next : NULL)
     {
@@ -136,12 +141,15 @@ int mcalc_prog_explain(const char *text, FILE *out)
         char how[512];
         if (sidx < 0)
         {
-            snprintf(how, sizeof(how), "def, inlined where it is called");
+            snprintf(how, sizeof(how), "%s",
+                     (cur_s != NULL && cur_s->kind == MC_STMT_DEF)
+                         ? "def, inlined where it is called"
+                         : "nothing to run");
         }
         else
         {
             const mc_step_t *st = &p->steps[sidx];
-            nkept++;
+            nrun++;
             if (st->kind == MC_STEP_PASS)
             {
                 const char *wtype =
@@ -150,7 +158,7 @@ int mcalc_prog_explain(const char *text, FILE *out)
                         : (st->pass.work_double ? "double" : "float32");
                 if (i > st->first_stmt_idx)
                 {
-                    snprintf(how, sizeof(how), "kept, merged into the fused pass of statement %d",
+                    snprintf(how, sizeof(how), "merged into the fused pass of statement %d",
                              st->first_stmt_idx + 1);
                 }
                 else
@@ -178,30 +186,36 @@ int mcalc_prog_explain(const char *text, FILE *out)
                     }
                     const char *lim_note  = (cur_s != NULL && cur_s->kind == MC_STMT_MULTI_ASSIGN &&
                                              cur_s->u.multi.nlhs > 4)
-                                                ? " (more than 4 targets (FUSE_MAXDST))"
+                                                ? " (more than 4 targets: one pass each)"
                                                 : "";
                     char        shape[48] = "a shape set at run time";
+                    char        th_buf[32] = "";
                     if (st->pass.vnx != 0)
                     {
-                        snprintf(shape, sizeof(shape), "%ux%ux%u", st->pass.vnx,
-                                 st->pass.vny ? st->pass.vny : 1, st->pass.vnz ? st->pass.vnz : 1);
+                        uint64_t ny = st->pass.vny ? st->pass.vny : 1;
+                        uint64_t nz = st->pass.vnz ? st->pass.vnz : 1;
+                        int nth     = milk_omp_team_size((uint64_t) st->pass.vnx * ny * nz, 262144);
+                        snprintf(shape, sizeof(shape), "%ux%ux%u", st->pass.vnx, (unsigned) ny,
+                                 (unsigned) nz);
+                        snprintf(th_buf, sizeof(th_buf), ", %d thread%s", nth,
+                                 (nth == 1) ? "" : "s");
                     }
                     snprintf(how, sizeof(how),
-                             "kept: fused pass over %s (%s, %s%d operand%s%s)%s, writes%s", shape,
+                             "fused pass over %s (%s, %s%d operand%s%s%s)%s, writes%s", shape,
                              wtype,
                              (st->pass.vnx == 0)     ? ""
                              : st->pass.is_1d_contig ? "1D, "
                                                      : "ND, ",
-                             nin_ops, (nin_ops == 1) ? "" : "s", ps_buf, lim_note, wr_buf);
+                             nin_ops, (nin_ops == 1) ? "" : "s", ps_buf, th_buf, lim_note, wr_buf);
                 }
             }
             else if (st->kind == MC_STEP_CTOR)
             {
                 const char *lim_note = (cur_s != NULL && cur_s->kind == MC_STMT_MULTI_ASSIGN &&
                                         cur_s->u.multi.nlhs > 4)
-                                           ? " (more than 4 targets (FUSE_MAXDST))"
+                                           ? " (more than 4 targets: one pass each)"
                                            : "";
-                snprintf(how, sizeof(how), "kept: constructor/library step%s", lim_note);
+                snprintf(how, sizeof(how), "constructor or library step%s", lim_note);
             }
             else
             {
@@ -222,8 +236,7 @@ int mcalc_prog_explain(const char *text, FILE *out)
                 {
                     nops = 1;
                 }
-                snprintf(how, sizeof(how),
-                         "kept: scalar tape: %d op%s, %d reduction%s, 0 pre-stages", nops,
+                snprintf(how, sizeof(how), "scalar statement: %d operation%s, %d reduction%s", nops,
                          (nops == 1) ? "" : "s", nreds, (nreds == 1) ? "" : "s");
             }
         }
@@ -234,7 +247,8 @@ int mcalc_prog_explain(const char *text, FILE *out)
     }
     if (out != NULL)
     {
-        fprintf(out, "%d statement%s kept, 0 evaluated as text\n", nkept, (nkept == 1) ? "" : "s");
+        fprintf(out, "%d statement%s in %d step%s\n", nrun, (nrun == 1) ? "" : "s", p->nsteps,
+                (p->nsteps == 1) ? "" : "s");
     }
     mcalc_prog_free(p);
     return 0;

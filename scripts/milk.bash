@@ -286,7 +286,7 @@ _milk_source_impl() {
     fi
     if [[ $# -eq 0 ]]; then
         echo "Usage: @source [--once] <filename> [args...]" >&2
-        return 1
+        return 2
     fi
     if [[ ! -f "$1" ]]; then
         echo "Error: source: file not found: $1" >&2
@@ -358,7 +358,7 @@ _milk_on_manage() {
             local sel="${2:-}" idx pid tgt stopped=0
             if [[ -z "${sel}" ]]; then
                 echo "Usage: @on --stop <id|pid|target>" >&2
-                return 1
+                return 2
             fi
             for idx in "${!_MILK_ON_PIDS[@]}"; do
                 pid="${_MILK_ON_PIDS[$idx]}"
@@ -441,7 +441,7 @@ _milk_on_spawn_streams() {
 _milk_on_impl() {
     if [[ $# -eq 0 ]]; then
         _milk_on_usage
-        return 1
+        return 2
     fi
     case "${1:-}" in
         --list|--clear|--stop|-s)
@@ -500,7 +500,7 @@ _milk_on_impl() {
     fi
     if [[ $# -lt 2 ]]; then
         _milk_on_usage
-        return 1
+        return 2
     fi
     _milk_on_spawn_streams "$@"
 }
@@ -748,7 +748,7 @@ unset -f "${__MILK_KWBUILTINS[@]/#kw/@}" # these keywords are builtins: a functi
 declare -ga __MILK_UNDO=()
 @restore() {
     case ${1-} in
-        --help) milkls --help-keyword restore ;;
+        -h|--help) milkls --help-keyword restore ;;
         --undo) shift; _milk_undo_impl "$@" ;;
         *) milkcall restore "$@" ;;
     esac
@@ -838,7 +838,7 @@ unset -f __milk_usercmds
 # @help knows them too: their description, then their own -h
 if (( ${#__MILK_USERCMD[@]} )); then
     __milk_help_server() { # the generated @help
-        case ${1-} in --help) milkls --help-keyword help; return ;; esac
+        case ${1-} in -h|--help) milkls --help-keyword help; return ;; esac
         milkcall help "$@"
     }
     @help() {
@@ -1069,7 +1069,7 @@ _milk_apply_ps1() {
 _milk_prompt_unwatch() {
     if [[ $# -eq 0 ]]; then
         echo "Usage: @config prompt unwatch <label|entity.attr> [...]" >&2
-        return 1
+        return 2
     fi
     local target existing elbl espec drop
     local -a kept=()
@@ -1124,7 +1124,7 @@ _milk_prompt_impl() {
             shift
             if [[ $# -eq 0 ]]; then
                 echo "Usage: @config prompt watch [label=]<entity.attr> [...]" >&2
-                return 1
+                return 2
             fi
             local item existing found
             for item in "$@"; do
@@ -1151,7 +1151,7 @@ _milk_prompt_impl() {
             local p="${2:-}"
             if [[ "${p}" != "minimal" && "${p}" != "std" && "${p}" != "ao" ]]; then
                 echo "Usage: @config prompt preset <minimal|std|ao>" >&2
-                return 1
+                return 2
             fi
             _MILK_PROMPT_PRESET="${p}"
             _milk_apply_ps1
@@ -1169,7 +1169,7 @@ _milk_prompt_impl() {
             ;;
         *)
             echo "Usage: @config prompt [status | watch [lbl=]<entity.attr>... | unwatch <target>... | clear | preset <minimal|std|ao> | on | off | render]" >&2
-            return 1
+            return 2
             ;;
     esac
 }

@@ -76,8 +76,8 @@ typedef struct
     double (*fn3)(double, double, double); /* ternary scalar C implementation, if any */
     const char *c_f32;                     /* C prelude / expression name in float32 pass */
     const char *c_f64;                     /* C prelude / expression name in float64 pass */
-    const char *signature;                 /* human-readable signature (not read) */
-    const char *help;                      /* one-line description (not read) */
+    const char *signature;                 /* call signature, for --list */
+    const char *help;                      /* one-line description, for --list */
 } mc_func_t;
 
 /** mc_func_find() - look up a built-in function by exact name (without '('). */

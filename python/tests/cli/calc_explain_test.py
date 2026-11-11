@@ -1,9 +1,11 @@
 """`@calc --explain`: how each statement of a program would run, without running it.
 
 Purpose:     to tune a unit, a user must see whether each statement became a fused pass, a pass
-             merged into an earlier one, a scalar tape or a library step, and which limit applies.
-Does:        checks the report line of each kind (fused pass with its shape and precision, merged
-             pass, scalar tape, def), the FUSE_MAXDST note for more than four targets, a compile
+             merged into an earlier one, a scalar statement or a library step, and which limit
+             applies.
+Does:        checks the report line of each kind (fused pass with its shape, precision and thread
+             count, merged pass, scalar statement, def), the last line, that no word of the
+             removed engine is printed, the note for more than four targets, a compile
              error, that --explain changes no image and keeps its defs and history rings out of
              the session, and that a unit whose statements are all kept prints no "is not kept"
              note.
@@ -15,6 +17,8 @@ See also:    docs/guide/calculator.md, "Fusion & Cost Model"; calc_superinstruct
 """
 
 from __future__ import annotations
+
+import re
 
 import pytest
 
@@ -42,7 +46,7 @@ def _line_after(out: str, stmt: str) -> str:
 
 
 def test_explain_reports_how_each_statement_runs(tmp_path):
-    """Fused pass, merged pass, scalar tape and def; `cplx` and a binned slice are fused too."""
+    """Fused pass, merged pass, scalar statement and def; `cplx` and a binned slice are fused too."""
     res = milk_bash(
         'mem.mk2Dim "@S:cam" 64 64 >/dev/null; mem.mk2Dim dark 64 64 >/dev/null; @calc "cam = 3; dark = 1; g = 2.0; n = 0"\n'
         '@calc --explain "out = (cam - dark) * g; local t = out + 1; out2 = t * 2; m = imean(out); '
@@ -52,40 +56,42 @@ def test_explain_reports_how_each_statement_runs(tmp_path):
     out = res.stdout + res.stderr
     assert value(res.stdout, "rc") == "0", out
     first = _line_after(res.stdout, "out = (cam - dark) * g")
-    assert first.startswith("kept: fused pass over 64x64x1") and "float32" in first, out
+    assert first.startswith("fused pass over 64x64x1") and "float32" in first, out
+    assert ", 1 thread)" in first, out  # 4096 pixels: below the size that gets a team
     assert first.endswith("writes out out2"), out
     assert (
         _line_after(res.stdout, "local t = out + 1")
-        == "kept, merged into the fused pass of statement 1"
+        == "merged into the fused pass of statement 1"
     ), out
     assert (
         _line_after(res.stdout, "out2 = t * 2")
-        == "kept, merged into the fused pass of statement 1"
+        == "merged into the fused pass of statement 1"
     ), out
     assert _line_after(res.stdout, "m = imean(out)").startswith(
-        "kept: scalar tape: 1 op, 1 reduction"
+        "scalar statement: 1 operation, 1 reduction"
     ), out
     z = _line_after(res.stdout, "z = cplx(out, out)")
     s = _line_after(res.stdout, "s = out[::2b]")
-    assert z.startswith("kept: fused pass over 64x64x1") and "complex float32" in z, out
+    assert z.startswith("fused pass over 64x64x1") and "complex float32" in z, out
     # out does not exist until statement 1 runs, and --explain runs nothing
     assert (
-        s.startswith("kept: fused pass over a shape set at run time") and "float32" in s
+        s.startswith("fused pass over a shape set at run time") and "float32" in s
     ), out
     assert _line_after(res.stdout, "x = n > 0 ? 1/n : -1").startswith(
-        "kept: scalar tape"
+        "scalar statement"
     ), out
     assert (
         _line_after(res.stdout, "def f(a) = a*2") == "def, inlined where it is called"
     ), out
     assert _line_after(res.stdout, "y = f(out)").startswith(
-        "kept: fused pass over 64x64x1"
+        "fused pass over 64x64x1"
     ), out
-    assert "8 statements kept, 0 evaluated as text" in res.stdout, out
+    assert re.search(r"8 statements in \d+ steps?$", res.stdout, re.M), out
+    assert not re.search(r"kept|tape|as text|FUSE_", res.stdout), out
 
 
 def test_explain_names_limits_and_compile_errors(tmp_path):
-    """More than four targets names FUSE_MAXDST; a program that does not compile is an error."""
+    """More than four targets get one pass each; a program that does not compile is an error."""
     res = milk_bash(
         'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 1"\n'
         '@calc --explain "a1, a2, a3, a4, a5 = im, im, im, im, im"; echo "rc1=$?"\n'
@@ -94,7 +100,7 @@ def test_explain_names_limits_and_compile_errors(tmp_path):
     )
     out = res.stdout + res.stderr
     assert value(res.stdout, "rc1") == "0", out
-    assert "more than 4 targets (FUSE_MAXDST)" in res.stdout, out
+    assert "more than 4 targets: one pass each" in res.stdout, out
     assert value(res.stdout, "rc2") != "0", out
     assert "milk: calc error:" in (tmp_path / "err.log").read_text() + res.stdout, out
 

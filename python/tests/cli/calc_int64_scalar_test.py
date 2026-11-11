@@ -37,7 +37,7 @@ K = 9007199254740993
 
 
 def test_kept_scalar_statements_are_exact_in_a_unit(tmp_path):
-    """`y = k * 3 % 1000` is kept as a scalar tape; it and the stored `z = k * 3` must be exact,
+    """`y = k * 3 % 1000` runs as a scalar statement; it and the stored `z = k * 3` must be exact,
     `>>` by 64 or more is 0 as on the text path, and an overflowing product becomes a double.
     """
     (tmp_path / "prog.calc").write_text(
@@ -61,7 +61,7 @@ def test_kept_scalar_statements_are_exact_in_a_unit(tmp_path):
     assert value(res.stdout, "error") == "[]", out
     assert value(res.stdout, "text") == "979", out
     assert value(res.stdout, "lane") == "979,979,0,0,1", out
-    assert res.stdout.count("kept: scalar tape") == 2, out
+    assert res.stdout.count("scalar statement:") == 2, out
 
 
 @pytest.mark.parametrize("nthreads", [1, 4])
@@ -89,7 +89,7 @@ def test_index_reductions_match_the_eager_path(tmp_path, nthreads: int):
     x, y = value(res.stdout, "expr").split(",")
     assert x == y, out
     assert value(res.stdout, "allnan") == "-1,-1", out
-    assert "kept: scalar tape: 1 op, 1 reduction" in res.stdout, out
+    assert "scalar statement: 1 operation, 1 reduction" in res.stdout, out
 
 
 @pytest.mark.parametrize("nthreads", [1, 4])

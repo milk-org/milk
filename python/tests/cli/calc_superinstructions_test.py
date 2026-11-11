@@ -43,17 +43,41 @@ def _report(out: str, stmt: str) -> str:
 def test_peephole_shortens_the_tape(tmp_path):
     """Each statement on its own compiles to a single fused pass reported by `--explain`."""
     cases = [
-        ("o1 = a*2.5 + b*0.5", "1 operand), writes o1", "2 operands), writes o1"),
-        ("o2 = a + b", "2 operands), writes o2", "2 operands), writes o2"),
-        ("o3 = (a - b) * 2", "2 operands), writes o3", "2 operands), writes o3"),
-        ("o4 = 2 / a - b", "2 operands), writes o4", "2 operands), writes o4"),
+        (
+            "o1 = a*2.5 + b*0.5",
+            "1 operand, 1 thread), writes o1",
+            "2 operands, 1 thread), writes o1",
+        ),
+        (
+            "o2 = a + b",
+            "2 operands, 1 thread), writes o2",
+            "2 operands, 1 thread), writes o2",
+        ),
+        (
+            "o3 = (a - b) * 2",
+            "2 operands, 1 thread), writes o3",
+            "2 operands, 1 thread), writes o3",
+        ),
+        (
+            "o4 = 2 / a - b",
+            "2 operands, 1 thread), writes o4",
+            "2 operands, 1 thread), writes o4",
+        ),
         (
             "o5 = a*2.5 + b*0.5 - a/4 + 1",
-            "2 operands), writes o5",
-            "2 operands), writes o5",
+            "2 operands, 1 thread), writes o5",
+            "2 operands, 1 thread), writes o5",
         ),
-        ("o6 = (a + 1) * (b - 2)", "2 operands), writes o6", "2 operands), writes o6"),
-        ("o7 = a * b + 1", "2 operands), writes o7", "2 operands), writes o7"),
+        (
+            "o6 = (a + 1) * (b - 2)",
+            "2 operands, 1 thread), writes o6",
+            "2 operands, 1 thread), writes o6",
+        ),
+        (
+            "o7 = a * b + 1",
+            "2 operands, 1 thread), writes o7",
+            "2 operands, 1 thread), writes o7",
+        ),
     ]
     script = 'mem.mk2Dim a 64 64 >/dev/null; mem.mk2Dim b 64 64 >/dev/null; @calc "a = 1; b = 2"\n'
     for st, _, _ in cases:
@@ -62,9 +86,9 @@ def test_peephole_shortens_the_tape(tmp_path):
     out = res.stdout + res.stderr
     for st, _, suffix in cases:
         rep = _report(res.stdout, st)
-        assert rep.startswith(
-            "kept: fused pass over 64x64x1 (float32, 1D,"
-        ) and rep.endswith(suffix), (
+        assert rep.startswith("fused pass over 64x64x1 (float32, 1D,") and rep.endswith(
+            suffix
+        ), (
             st,
             out,
         )

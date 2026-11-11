@@ -125,7 +125,7 @@ static int milkget_builtin(WORD_LIST *list)
  * Modifies FPS parameters, stream FITS keywords, or processinfo controls from
  * the shell without spawning an external process.
  *
- * Return: 0 on success, `EXECUTION_FAILURE` or error code on failure
+ * Return: 0 on success, 2 for a usage error, another error code on failure
  */
 static int milkset_builtin(WORD_LIST *list)
 {
@@ -134,8 +134,7 @@ static int milkset_builtin(WORD_LIST *list)
     if (argc < 1 || argv == NULL)
     {
         free(argv);
-        milk_lexicon_usage("set", stderr);
-        return EXECUTION_FAILURE;
+        return milk_lexicon_usage("set", stderr);
     }
 
     milk_client_hooks_t hooks;
@@ -152,7 +151,7 @@ static int milkset_builtin(WORD_LIST *list)
  * Evaluates a mathematical or image arithmetic expression via the milk client
  * and server, binding any resulting variables directly in the host shell.
  *
- * Return: 0 on success, non-zero on evaluation error
+ * Return: 0 on success, 2 with no argument (usage), non-zero on evaluation error
  */
 static int milkcalc_builtin(WORD_LIST *list)
 {
@@ -161,7 +160,7 @@ static int milkcalc_builtin(WORD_LIST *list)
     if (argc == 0 || argv == NULL)
     {
         free(argv);
-        return EXECUTION_SUCCESS;
+        return milk_lexicon_usage("calc", stderr); /* milk-cli takes a bare @calc itself */
     }
     milk_client_hooks_t hooks;
     make_bash_hooks(&hooks);
@@ -186,7 +185,7 @@ static int milktest_builtin(WORD_LIST *list)
     if (argc == 0 || argv == NULL)
     {
         free(argv);
-        return 1;
+        return milk_lexicon_usage("test", stderr);
     }
 
     size_t tot = 1;
@@ -226,21 +225,17 @@ static int milktest_builtin(WORD_LIST *list)
  * Checks whether a milk stream, FPS or processinfo entity exists
  * (or is actively running when `-r` / `--running` is passed).
  *
- * Return: 0 if the entity exists (and is running if `-r`), 1 otherwise
+ * Return: 0 if the entity exists (and is running if `-r`), 1 otherwise, 2 unless one entity is
+ *         named (usage)
  */
 static int milkexists_builtin(WORD_LIST *list)
 {
-    char **argv = NULL;
-    int    argc = wordlist_to_argv(list, &argv);
-    if (argc == 0 || argv == NULL)
-    {
-        free(argv);
-        return 1;
-    }
-
+    char      **argv          = NULL;
+    int         argc          = wordlist_to_argv(list, &argv);
     int         check_running = 0;
+    int         extra         = 0;
     const char *spec          = NULL;
-    for (int i = 0; i < argc; i++)
+    for (int i = 0; i < argc && argv != NULL; i++)
     {
         if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--running") == 0)
         {
@@ -250,6 +245,15 @@ static int milkexists_builtin(WORD_LIST *list)
         {
             spec = argv[i];
         }
+        else
+        {
+            extra = 1;
+        }
+    }
+    if (spec == NULL || extra) /* one entity: a second one was ignored */
+    {
+        free(argv);
+        return milk_lexicon_usage("exists", stderr);
     }
 
     milk_client_hooks_t hooks;

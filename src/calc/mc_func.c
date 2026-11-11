@@ -11,8 +11,8 @@
  * valid under `-ffast-math`; mc_fmodd() and mc_wrap_pi() use the FMA formulas of the kernels, so
  * `%` and wrap_pi agree on numbers and images, with NaN instead of a wrong value once the
  * quotient reaches 2^52. mcalc_print_catalog() (`@calc --list`, `milk-fpsexec-milk-calc --list`)
- * prints a second table, g_mc_catalog, of operators and functions grouped by category, then the
- * loaded C extensions, as text or as JSON (`--json`).
+ * prints the operators, statements and constants (g_mc_syntax), then g_mc_funcs by category with
+ * each function's signature and help, then the C extensions, as text or as JSON (`--json`).
  */
 
 #ifndef _GNU_SOURCE
@@ -411,26 +411,26 @@ static const mc_func_t g_mc_funcs[] = {
     /* 8. BLAS, LAPACK, FFT, tensor construction & concatenation */
     { "matmul", 2, 2, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "matmul(A, B)",
       "Matrix / vector product (or batched 3D)" },
-    { "gemm", 5, 7, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "gemm(a, A, B, b, C[, tA, tB])", "CBLAS GEMM a*op(A)*op(B) + b*C" },
-    { "gemv", 5, 6, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "gemv(a, A, x, b, y[, tA])", "CBLAS GEMV a*op(A)*x + b*y" },
+    { "gemm", 5, 5, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
+      "gemm(a, A, B, b, C)", "CBLAS GEMM a*op(A)*op(B) + b*C" },
+    { "gemv", 5, 5, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
+      "gemv(a, A, x, b, y)", "CBLAS GEMV a*op(A)*x + b*y" },
     { "ger", 4, 4, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "ger(a, x, y, A)",
       "CBLAS rank-1 update A + a*x*y^T" },
     { "outer", 2, 2, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "outer(x, y)",
       "Outer product x * y^T" },
-    { "syrk", 4, 5, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "syrk(a, A, b, C[, tr])", "CBLAS symmetric rank-k update" },
-    { "symv", 5, 6, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "symv(a, A, x, b, y[, uplo])", "CBLAS symmetric matrix-vector multiply" },
+    { "syrk", 4, 4, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "syrk(a, A, b, C)",
+      "CBLAS symmetric rank-k update" },
+    { "symv", 5, 5, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
+      "symv(a, A, x, b, y)", "CBLAS symmetric matrix-vector multiply" },
     { "axpy", 3, 3, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "axpy(a, x, y)",
       "Vector update a*x + y" },
     { "scal", 2, 2, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "scal(a, x)",
       "Scale tensor a*x" },
     { "trsv", 2, 4, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "trsv(A, b[, uplo, tr])", "Triangular vector solve" },
+      "trsv(A, b[, uplo, diag])", "Triangular vector solve" },
     { "trsm", 2, 5, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "trsm(A, B[, uplo, tr, side])", "Triangular matrix solve" },
+      "trsm(A, B[, uplo, diag, a])", "Triangular matrix solve" },
     { "gesv", 2, 2, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "gesv(A, B)",
       "General linear system solver A*X = B" },
     { "posv", 2, 3, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "posv(A, B[, uplo])",
@@ -463,10 +463,10 @@ static const mc_func_t g_mc_funcs[] = {
       "2D matrix transpose (or batched 3D)" },
     { "reshape", 2, 4, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
       "reshape(A, n0[, n1, n2])", "Reshape dimensions preserving element count" },
-    { "vec", 1, -1, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "vec(A)",
+    { "vec", 1, -1, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL, "vec(A | x0, ...)",
       "Flatten image to 1D vector or pack scalars" },
-    { "zeros", 1, 4, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
-      "zeros(n0[, n1, n2, dt])", "Zero-filled tensor" },
+    { "zeros", 1, 3, 1, 1, MC_FN_LINALG, 0, 0, 1, NULL, NULL, NULL, NULL, NULL,
+      "zeros(nx[, ny, nz])", "Zero-filled tensor" },
     { "hstack", 2, -1, 1, 1, MC_FN_LINALG, 0, 0, 0, NULL, NULL, NULL, NULL, NULL,
       "hstack(A, B, ...)", "Concatenate images along axis 0 (x)" },
     { "vstack", 2, -1, 1, 1, MC_FN_LINALG, 0, 0, 0, NULL, NULL, NULL, NULL, NULL,
@@ -637,127 +637,73 @@ const mc_func_t *mc_func_table(int *out_count)
 /* Calculator Catalog Display (--list, --list --json)                        */
 /* ========================================================================= */
 
-/**
- * struct mc_catalog_entry_t - Grouped operator/function summary row for `--list`
- * @category: Section heading grouping related operators/functions
- * @syntax:   Human-readable syntax summary
- * @token:    Legacy/symbolic token classification label
- * @opcode:   Execution opcode (`FI_BIN`, ...)
- * @stage:    Execution pipeline stage (`fprog_simd`, `prestage`, `fused_reduce`, etc.)
- * @descr:    Concise description of behavior
- */
-typedef struct
-{
-    const char *category;
-    const char *syntax;
-    const char *token;
-    const char *opcode;
-    const char *stage;
-    const char *descr;
-} mc_catalog_entry_t;
-
-static const mc_catalog_entry_t g_mc_catalog[] = {
-    { "1. Element-Wise Operators", "+  -  *  /  %  @  .T", "TOK_OP_*", "FI_BIN", "fprog_simd",
-      "Binary arithmetic (+, -, *, /, %), matrix multiply (@), transpose (.T)" },
-    { "1. Element-Wise Operators", "-x", "TOK_OP_MINUS", "FI_NEG", "fprog_simd",
-      "Unary arithmetic negation" },
-    { "1. Element-Wise Operators", "<  <=  >  >=  ==  !=", "TOK_OP_*", "FI_BIN", "fprog_simd",
-      "Relational and chained comparisons (a <= x <= b)" },
-    { "1. Element-Wise Operators", "&&  ||  !x", "TOK_OP_AND/OR", "FI_BIN", "fprog_simd",
-      "Logical AND, OR (short-circuits on scalars), and NOT" },
-    { "1. Element-Wise Operators", "&  |  ^^  <<  >>  ~x", "TOK_OP_B*", "FI_BIN", "fprog_simd",
-      "64-bit integer bitwise AND, OR, XOR (^^), shifts, complement" },
-    { "1. Element-Wise Operators", "c ? a : b, where(c,a,b)", "TOK_FUNC_WHERE", "FI_SEL",
-      "fprog_simd", "Per-pixel conditional select (c != 0 ? a : b)" },
-    { "1. Element-Wise Operators", "=  +=  -=  *=  /=  im[mask]=", "TOK_EQUAL", "FI_STORE_DST",
-      "fprog_simd", "Destination store (full image, N-D slice, masked LHS, or tuple)" },
-    { "2. Scalar & Element-Wise Math", "sin(x)  cos(x)  tan(x)", "TOK_FUNC_D_D", "FI_FN1",
-      "fprog_simd", "Trigonometric functions (vectorized via libmvec)" },
-    { "2. Scalar & Element-Wise Math", "asin(x) acos(x) atan(x)", "TOK_FUNC_D_D", "FI_FN1",
-      "fprog_simd", "Inverse trigonometric functions" },
-    { "2. Scalar & Element-Wise Math", "sinh(x) cosh(x) tanh(x)", "TOK_FUNC_D_D", "FI_FN1",
-      "fprog_simd", "Hyperbolic functions" },
-    { "2. Scalar & Element-Wise Math", "exp(x)  exp2(x)", "TOK_FUNC_D_D", "FI_FN1", "fprog_simd",
-      "Base-e and base-2 exponential functions" },
-    { "2. Scalar & Element-Wise Math", "log(x)  log10(x)  log2(x)", "TOK_FUNC_D_D", "FI_FN1",
-      "fprog_simd", "Natural (log), base-10 (log10), and base-2 (log2) logarithms" },
-    { "2. Scalar & Element-Wise Math", "sqrt(x) cbrt(x)", "TOK_FUNC_D_D", "FI_FN1", "fprog_simd",
-      "Square root and cube root" },
-    { "2. Scalar & Element-Wise Math", "erf(x)  erfc(x)", "TOK_FUNC_D_D", "FI_FN1", "fprog_simd",
-      "Error function and complementary error function" },
-    { "2. Scalar & Element-Wise Math", "abs(x)", "TOK_FUNC_D_D", "FI_FN1 / FI_CPART", "fprog_simd",
-      "Absolute value (or complex magnitude |z|)" },
-    { "2. Scalar & Element-Wise Math", "ceil(x) floor(x) round(x) trunc(x)", "TOK_FUNC_D_D",
-      "FI_FN1", "fprog_simd", "Nearest-integer rounding operations" },
-    { "2. Scalar & Element-Wise Math", "posi(x) sign(x) wrap_pi(x) sinc(x)", "TOK_FUNC_D_D",
-      "FI_FN1", "fprog_simd", "Step, signum, phase wrap to (-pi,pi], and normalized sinc" },
-    { "2. Scalar & Element-Wise Math", "isnan(x) isfinite(x)", "TOK_FUNC_D_D", "FI_FN1",
-      "fprog_simd", "IEEE-754 NaN and finite checks" },
-    { "2. Scalar & Element-Wise Math", "pow(x, y)    atan2(y, x)", "TOK_FUNC_DD_D", "FI_FN2",
-      "fprog_simd", "Power and four-quadrant inverse tangent" },
-    { "2. Scalar & Element-Wise Math", "hypot(x, y)  fmod(x, y)", "TOK_FUNC_DD_D", "FI_FN2",
-      "fprog_simd", "Euclidean norm sqrt(x^2 + y^2) and floating-point modulo" },
-    { "2. Scalar & Element-Wise Math", "min(a, b)    max(a, b)", "TOK_FUNC_DD_D", "FI_FN2",
-      "fprog_simd", "Per-pixel minimum and maximum" },
-    { "2. Scalar & Element-Wise Math", "clamp(x, lo, hi)", "TOK_FUNC_DDD_D", "FI_FN3", "fprog_simd",
-      "Per-pixel branchless clamp to [lo, hi]" },
-    { "2. Scalar & Element-Wise Math", "f32 f64 u8 i8 u16 i16 u32 i32 u64 i64", "TOK_FUNC_D_D",
-      "FI_FN1 (cast)", "fprog_simd", "Explicit scalar and image datatype casts" },
-    { "3. Coordinates, PRNG & Complex", "ix iy ir itheta(im[, cx, cy])", "TOK_FUNC_COORD",
-      "FI_COORD", "fprog_simd", "Per-pixel Cartesian and polar coordinates" },
-    { "3. Coordinates, PRNG & Complex", "rand(im[, s]) randn(im[, s])", "TOK_FUNC_COORD",
-      "FI_COORD", "fprog_simd", "Uniform [0, 1) and standard normal N(0, 1) PRNG" },
-    { "3. Coordinates, PRNG & Complex", "real(z) imag(z) arg(z) conj(z) cplx expi", "TOK_FUNC_CPLX",
-      "FI_CPART", "fprog_simd", "Complex parts, conjugate, pack, and phasor" },
-    { "3. Coordinates, PRNG & Complex", "[expr for x=a:b] linspace(a,b,n)", "COMPREHENSION",
-      "FI_COORD", "fprog_simd", "Array comprehensions, vector literals, and linear grids" },
-    { "4. Stencils, Gather & Interpolation", "shift(im, dx[, dy]) roll(im, dx...)",
-      "TOK_FUNC_SHIFT", "FI_SHIFT", "fprog_simd",
-      "Edge-clamped shift and periodic wrap-around roll" },
-    { "4. Stencils, Gather & Interpolation", "medfilt3/5/7(im) imin3 imax3 boxmean",
-      "TOK_FUNC_MEDFILT", "FI_MEDFILT", "fprog_simd",
-      "2D median, erosion, dilation, and separable boxcar filters" },
-    { "4. Stencils, Gather & Interpolation", "lut(expr, tbl[, x0, dx])", "TOK_FUNC_LUT", "FI_LUT",
-      "fprog_simd", "1D linear-interpolated lookup into table tbl" },
-    { "4. Stencils, Gather & Interpolation", "pixremap(im, map[, fill])", "TOK_FUNC_PIXREMAP",
-      "FI_GATHER", "fprog_simd", "1D index-map gather im[map[i]]" },
-    { "4. Stencils, Gather & Interpolation", "interp2(im, xmap, ymap)", "TOK_FUNC_INTERP2",
-      "FI_INTERP2", "fprog_simd", "2D bilinear sub-pixel gather" },
-    { "5. Spatial & Projection Pre-Stages", "gauss(expr, sx[, sy]) conv2(im, K)", "TOK_FUNC_GAUSS",
-      "AX_KIND_GAUSS", "prestage", "Separable Gaussian blur and small-kernel 2D convolution" },
-    { "5. Spatial & Projection Pre-Stages", "cumsum(expr[, axis])", "TOK_FUNC_CUMSUM",
-      "AX_KIND_CUMSUM", "prestage", "Cumulative sum along an axis" },
-    { "5. Spatial & Projection Pre-Stages", "pixunmap(expr, map[, n]) rprof", "TOK_FUNC_PIXUNMAP",
-      "AX_KIND_SEG", "prestage", "Segment-mean projection and annular radial profile" },
-    { "6. Reductions & Multi-Output Unpacking", "itot imean istd irms ivar imin imax",
-      "TOK_FUNC_IM_D", "FI_RED (SUM)", "fused_reduce", "Fused reductions (optional mask or axis)" },
-    { "6. Reductions & Multi-Output Unpacking", "norm asum icount iargmax iargmin iamax",
-      "TOK_FUNC_IM_L", "FI_RED (ARG*)", "fused_reduce",
-      "Norms, non-zero count, and argmax/argmin (with 2D/3D unpacking)" },
-    { "6. Reductions & Multi-Output Unpacking", "dot(im1, im2)", "TOK_FUNC_IMIM_D", "FI_RED (DOT)",
-      "fused_reduce", "Two-stream inner product" },
-    { "6. Reductions & Multi-Output Unpacking", "istats(expr)", "TOK_FUNC_IM_D", "FI_RED (STATS)",
-      "fused_reduce", "Multi-LHS unpacking: m, s[, min, max] = istats(im)" },
-    { "6. Reductions & Multi-Output Unpacking", "icentroid(expr[, th])", "TOK_FUNC_IM_D", "FI_CENT",
-      "fused_reduce", "Flux-weighted centroid unpacking: cx, cy[, flux]" },
-    { "6. Reductions & Multi-Output Unpacking", "imedian(im) perc(im,q) trace", "TOK_FUNC_IM*_D",
-      "EAGER_RED", "eager_reduce", "Exact median, percentile, and matrix trace" },
-    { "7. BLAS / Matrix, LAPACK & FFT", "matmul gemm gemv outer ger syrk symv axpy scal",
-      "TOK_FUNC_IMIM_IM", "FKEPT_MATMUL", "fkept_blas", "CBLAS matrix and vector operations" },
-    { "7. BLAS / Matrix, LAPACK & FFT", "trsv trsm gesv posv gels solve inv pinv svd eigh",
-      "TOK_FUNC_IMIM_IM", "LAPACK_SOLVE", "eager_lapack",
-      "Linear solvers, inverse, pseudoinverse, SVD, and eigensolver" },
-    { "7. BLAS / Matrix, LAPACK & FFT", "einsum fft ifft fftshift transpose reshape rot90",
-      "TOK_FUNC_IMIM_IM", "FKEPT_TRANSPOSE", "fkept_blas",
-      "Einstein contraction, FFTW transforms, transpose, reshape, rot90" },
-    { "7. BLAS / Matrix, LAPACK & FFT", "eye diag vec zeros hstack vstack dstack cat",
-      "TOK_FUNC_IMIM_IM", "TENSOR_INIT", "eager_init",
-      "Tensor constructors and axis concatenation" },
-    { "8. Inline Functions, Directives & User C Extensions",
-      "def if/elif/else for local skip post hist prev ema", "DIRECTIVE", "PROG_CTRL", "prog_ctrl",
-      "Inline functions, control flow, stream posting, temporal state" },
-    { NULL, NULL, NULL, NULL, NULL, NULL }
+/* What `--list` shows that is not a function of g_mc_funcs: { syntax, description } */
+static const char *const g_mc_syntax[][2] = {
+    { "+  -  *  /  %  @  .T", "Arithmetic, matrix product (@), transpose (.T)" },
+    { "-x", "Negation" },
+    { "<  <=  >  >=  ==  !=", "Comparisons; < <= > >= chain (a <= x <= b)" },
+    { "&&  ||  !x", "Logical AND, OR (short-circuit on scalars), NOT" },
+    { "&  |  ^^  <<  >>  ~x", "64-bit integer AND, OR, XOR (^^), shifts, complement" },
+    { "c ? a : b", "Conditional select, per pixel on images" },
+    { "=  +=  -=  *=  /=",
+      "Assignment to an image, a slice, a mask (im[mask] =) or several names" },
+    { "def  if/elif/else  for", "Inline function, condition, loop" },
+    { "local  skip", "In a unit: an image that is not shared, the end of the tick" },
+    { "pi  nan  inf", "Constants (reserved names)" },
 };
+#define MC_SYNTAX_COUNT ((int) (sizeof(g_mc_syntax) / sizeof(g_mc_syntax[0])))
+
+/* The categories of `--list`, in the order shown: the first holds g_mc_syntax */
+static const char *const g_mc_categories[] = { "Operators, statements and constants",
+                                               "Math",
+                                               "Datatype casts",
+                                               "Coordinates and random numbers",
+                                               "Complex images",
+                                               "Shift, lookup and remap",
+                                               "Reductions",
+                                               "Filters, stencils and projections",
+                                               "Matrix, linear algebra and FFT",
+                                               "Strings",
+                                               "Unit programs" };
+#define MC_CATEGORY_COUNT ((int) (sizeof(g_mc_categories) / sizeof(g_mc_categories[0])))
+
+/** func_category() - the index in g_mc_categories of built-in function @f. */
+static int func_category(const mc_func_t *f)
+{
+    switch (f->kind)
+    {
+    case MC_FN_SCALAR:
+        return (f->cast_dt != 0) ? 2 : 1;
+    case MC_FN_WHERE:
+        return 1;
+    case MC_FN_COORD:
+    case MC_FN_PRNG:
+        return 3;
+    case MC_FN_CPLX:
+        return 4;
+    case MC_FN_SHIFT:
+    case MC_FN_LUT:
+    case MC_FN_GATHER:
+        return 5;
+    case MC_FN_REDUCE_D:
+    case MC_FN_REDUCE_L:
+    case MC_FN_DOT:
+    case MC_FN_ISTATS:
+    case MC_FN_ICENTROID:
+    case MC_FN_EAGER_RED:
+        return 6;
+    case MC_FN_STENCIL_LIB:
+        return 7;
+    case MC_FN_LINSPACE:
+    case MC_FN_LINALG:
+        return 8;
+    case MC_FN_STR:
+        return 9;
+    case MC_FN_PROG:
+        return 10;
+    }
+    return 1;
+}
 
 /**
  * str_contains_ci - Case-insensitive substring search
@@ -799,54 +745,11 @@ static int str_contains_ci(const char *haystack, const char *needle)
 }
 
 /**
- * catalog_entry_matches - Test whether a catalog row matches filter @pat
- * @e:   Catalog row to inspect
- * @pat: Optional case-insensitive filter substring (NULL or `""` matches all)
- *
- * Return: 1 if any column of @e matches @pat, 0 otherwise
- */
-static int catalog_entry_matches(const mc_catalog_entry_t *e, const char *pat)
-{
-    if (pat == NULL || pat[0] == '\0')
-    {
-        return 1;
-    }
-    return str_contains_ci(e->category, pat) || str_contains_ci(e->syntax, pat) ||
-           str_contains_ci(e->token, pat) || str_contains_ci(e->opcode, pat) ||
-           str_contains_ci(e->stage, pat) || str_contains_ci(e->descr, pat);
-}
-
-/**
- * ext_kind_opcode - Map a user C extension tier to its displayed opcode name
- * @kind: Extension kind enum (`MILK_EXT_BLK1` .. `MILK_EXT_OP`)
- *
- * Return: Static opcode label string for catalog display
- */
-static const char *ext_kind_opcode(milk_calc_ext_kind_t kind)
-{
-    switch (kind)
-    {
-    case MILK_EXT_BLK1:
-        return "FI_USER_BLK (1)";
-    case MILK_EXT_BLK2:
-        return "FI_USER_BLK (2)";
-    case MILK_EXT_STENCIL:
-        return "FI_USER_STENCIL";
-    case MILK_EXT_IMG:
-        return "AX_KIND_USER";
-    case MILK_EXT_OP:
-        return "FKEPT_USER_OP";
-    default:
-        return "TOK_FUNC_USER";
-    }
-}
-
-/**
- * format_ext_info - Format signature and description strings for a user C extension
- * @e:       Registered user extension entry
+ * format_ext_info - Format signature and description strings for a C extension
+ * @e:       Registered extension entry
  * @sig:     Output buffer for call signature
  * @sig_sz:  Size of @sig buffer in bytes
- * @desc:    Output buffer for human-readable tier/parameter description
+ * @desc:    Output buffer for the tier (docs/guide/calc_c_extensions.md) and parameter names
  * @desc_sz: Size of @desc buffer in bytes
  */
 static void format_ext_info(const milk_calc_ext_entry_t *e,
@@ -859,20 +762,19 @@ static void format_ext_info(const milk_calc_ext_entry_t *e,
     {
     case MILK_EXT_BLK1:
         snprintf(sig, sig_sz, "%s(x)", e->name);
-        snprintf(desc, desc_sz, "Tier 1 unary SIMD block kernel");
+        snprintf(desc, desc_sz, "Tier 1 block kernel, one input");
         break;
     case MILK_EXT_BLK2:
         snprintf(sig, sig_sz, "%s(a, b)", e->name);
-        snprintf(desc, desc_sz, "Tier 1 binary SIMD block kernel");
+        snprintf(desc, desc_sz, "Tier 1 block kernel, two inputs");
         break;
     case MILK_EXT_STENCIL:
         snprintf(sig, sig_sz, "%s(im)", e->name);
-        snprintf(desc, desc_sz, "Tier 2 2D stencil kernel (halo r=%d, cost=%d)", e->radius,
-                 e->cost);
+        snprintf(desc, desc_sz, "Tier 1 stencil kernel (halo r=%d, cost=%d)", e->radius, e->cost);
         break;
     case MILK_EXT_IMG:
         snprintf(sig, sig_sz, "%s(im)", e->name);
-        snprintf(desc, desc_sz, "Tier 3 whole-image pre-stage kernel (cost=%d)", e->cost);
+        snprintf(desc, desc_sz, "Tier 1 whole-image kernel (cost=%d)", e->cost);
         break;
     case MILK_EXT_OP:
     {
@@ -880,12 +782,12 @@ static void format_ext_info(const milk_calc_ext_entry_t *e,
         int                         nin   = (ports != NULL) ? ports->nin : 0;
         int                         nout  = (ports != NULL) ? ports->nout : 0;
         snprintf(sig, sig_sz, "%s(%d in -> %d out)", e->name, nin, nout);
-        snprintf(desc, desc_sz, "Tier 4 multi-port operator (%d in, %d out)", nin, nout);
+        snprintf(desc, desc_sz, "Tier 2 operator (%d in, %d out)", nin, nout);
         break;
     }
     default:
         snprintf(sig, sig_sz, "%s(...)", e->name);
-        snprintf(desc, desc_sz, "User C extension");
+        snprintf(desc, desc_sz, "C extension");
         break;
     }
 
@@ -909,27 +811,6 @@ static void format_ext_info(const milk_calc_ext_entry_t *e,
             snprintf(desc + cur, desc_sz - cur, "]");
         }
     }
-}
-
-/**
- * ext_matches - Test whether a registered user C extension matches filter @pat
- * @e:   Registered user extension entry
- * @pat: Optional case-insensitive filter substring
- *
- * Return: 1 if @e matches @pat, 0 otherwise
- */
-static int ext_matches(const milk_calc_ext_entry_t *e, const char *pat)
-{
-    if (pat == NULL || pat[0] == '\0')
-    {
-        return 1;
-    }
-    char sig[64];
-    char desc[256];
-    format_ext_info(e, sig, sizeof(sig), desc, sizeof(desc));
-    return str_contains_ci(e->name, pat) || str_contains_ci(sig, pat) ||
-           str_contains_ci(ext_kind_opcode(e->kind), pat) || str_contains_ci(desc, pat) ||
-           str_contains_ci("user", pat) || str_contains_ci("TOK_FUNC_USER", pat);
 }
 
 /**
@@ -958,129 +839,122 @@ static void json_escape(const char *s)
     putchar('"');
 }
 
+#define MC_EXT_CATEGORY "C extensions (built in, -l, loadlib)"
+
+/**
+ * list_row - Print one `--list` row if it matches @pat
+ * @cat:  Category of the row
+ * @name: Function or extension name; NULL for an operator row
+ * @sig:  Syntax or call signature
+ * @desc: Description
+ * @pat:  Case-insensitive filter on @cat, @sig and @desc; NULL or "" matches all
+ * @json: Non-zero for a JSON object, 0 for a text line under the category's heading
+ * @last: Category of the last row printed, updated; NULL before the first row
+ *
+ * Return: 1 if the row was printed, 0 if @pat left it out
+ */
+static int list_row(const char  *cat,
+                    const char  *name,
+                    const char  *sig,
+                    const char  *desc,
+                    const char  *pat,
+                    int          json,
+                    const char **last)
+{
+    if (!str_contains_ci(cat, pat) && !str_contains_ci(sig, pat) && !str_contains_ci(desc, pat))
+    {
+        return 0;
+    }
+    if (json)
+    {
+        printf("%s    {\"category\": ", (*last != NULL) ? ",\n" : "");
+        json_escape(cat);
+        if (name != NULL)
+        {
+            printf(", \"name\": ");
+            json_escape(name);
+        }
+        printf(", \"signature\": ");
+        json_escape(sig);
+        printf(", \"description\": ");
+        json_escape(desc);
+        printf("}");
+    }
+    else
+    {
+        if (*last != cat)
+        {
+            printf("\n%s\n", cat);
+        }
+        printf("  %-30s %s\n", sig, desc);
+    }
+    *last = cat;
+    return 1;
+}
+
 /**
  * mcalc_print_catalog - Print the calculator operator/function catalog to `stdout`
  * @pattern:   Optional case-insensitive substring filter (NULL or `""` for all)
  * @json_mode: Non-zero to emit machine-readable JSON (`--list --json`), 0 for table
  *
- * Lists built-in operators and functions grouped by category along with any
- * dynamically loaded user C extensions (`-l` / `loadlib`).
+ * Lists the operators, statements and constants, the built-in functions of g_mc_funcs by
+ * category, and the C extensions: the built-in ones and those loaded with `-l` / `loadlib`.
  *
  * Return: 0 if at least one entry matched (or @pattern is empty), 1 if no matches
  */
 int mcalc_print_catalog(const char *pattern, int json_mode)
 {
-    int ext_count = milk_calc_ext_count();
+    const char *last    = NULL;
+    int         matched = 0;
+
     if (json_mode)
     {
-        int matched = 0;
         printf("{\n  \"builtins\": [\n");
-        for (int i = 0; g_mc_catalog[i].category != NULL; i++)
-        {
-            const mc_catalog_entry_t *e = &g_mc_catalog[i];
-            if (!catalog_entry_matches(e, pattern))
-            {
-                continue;
-            }
-            if (matched > 0)
-            {
-                printf(",\n");
-            }
-            printf("    {\"category\": ");
-            json_escape(e->category);
-            printf(", \"syntax\": ");
-            json_escape(e->syntax);
-            printf(", \"token\": ");
-            json_escape(e->token);
-            printf(", \"opcode\": ");
-            json_escape(e->opcode);
-            printf(", \"stage\": ");
-            json_escape(e->stage);
-            printf(", \"description\": ");
-            json_escape(e->descr);
-            printf("}");
-            matched++;
-        }
-        printf("\n  ],\n  \"user_extensions\": [\n");
-        int umatched = 0;
-        for (int i = 0; i < ext_count; i++)
-        {
-            const milk_calc_ext_entry_t *e = milk_calc_ext_get(i);
-            if (e == NULL || !ext_matches(e, pattern))
-            {
-                continue;
-            }
-            char sig[64];
-            char desc[256];
-            format_ext_info(e, sig, sizeof(sig), desc, sizeof(desc));
-            if (umatched > 0)
-            {
-                printf(",\n");
-            }
-            printf("    {\"name\": ");
-            json_escape(e->name);
-            printf(", \"signature\": ");
-            json_escape(sig);
-            printf(", \"token\": \"TOK_FUNC_USER\", \"opcode\": ");
-            json_escape(ext_kind_opcode(e->kind));
-            printf(", \"description\": ");
-            json_escape(desc);
-            printf("}");
-            umatched++;
-            matched++;
-        }
-        printf("\n  ]\n}\n");
-        fflush(stdout);
-        return (matched > 0 || pattern == NULL || pattern[0] == '\0') ? 0 : 1;
     }
-
-    const char *last_cat = NULL;
-    int         matched  = 0;
-    for (int i = 0; g_mc_catalog[i].category != NULL; i++)
+    for (int i = 0; i < MC_SYNTAX_COUNT; i++)
     {
-        const mc_catalog_entry_t *e = &g_mc_catalog[i];
-        if (!catalog_entry_matches(e, pattern))
-        {
-            continue;
-        }
-        if (last_cat == NULL || strcmp(last_cat, e->category) != 0)
-        {
-            printf("\n%s\n", e->category);
-            printf("  %-29s %-18s %s\n", "TOKEN / SYNTAX", "OPCODE", "DESCRIPTION");
-            last_cat = e->category;
-        }
-        printf("  %-29s %-18s %s\n", e->syntax, e->opcode, e->descr);
-        matched++;
+        matched += list_row(g_mc_categories[0], NULL, g_mc_syntax[i][0], g_mc_syntax[i][1], pattern,
+                            json_mode, &last);
     }
-
-    int umatched = 0;
+    for (int c = 1; c < MC_CATEGORY_COUNT; c++)
+    {
+        for (int i = 0; i < MC_FUNC_COUNT; i++)
+        {
+            const mc_func_t *f = &g_mc_funcs[i];
+            if (func_category(f) == c)
+            {
+                matched += list_row(g_mc_categories[c], f->name, f->signature, f->help, pattern,
+                                    json_mode, &last);
+            }
+        }
+    }
+    if (json_mode)
+    {
+        printf("\n  ],\n  \"user_extensions\": [\n");
+        last = NULL;
+    }
+    int ext_count = milk_calc_ext_count();
     for (int i = 0; i < ext_count; i++)
     {
         const milk_calc_ext_entry_t *e = milk_calc_ext_get(i);
-        if (e == NULL || !ext_matches(e, pattern))
+        if (e == NULL)
         {
             continue;
-        }
-        if (umatched == 0)
-        {
-            printf("\n9. Loaded User C Extensions (-l / loadlib)\n");
-            printf("  %-29s %-18s %s\n", "TOKEN / SYNTAX", "OPCODE", "DESCRIPTION");
         }
         char sig[64];
         char desc[256];
         format_ext_info(e, sig, sizeof(sig), desc, sizeof(desc));
-        printf("  %-29s %-18s %s\n", sig, ext_kind_opcode(e->kind), desc);
-        umatched++;
-        matched++;
+        matched += list_row(MC_EXT_CATEGORY, e->name, sig, desc, pattern, json_mode, &last);
     }
-
-    if (matched == 0)
+    if (json_mode)
     {
-        printf("\n  No calculator functions or extensions matched '%s'.\n\n",
+        printf("\n  ]\n}\n");
+    }
+    else if (matched == 0)
+    {
+        printf("\n  No calculator function or extension matched '%s'.\n\n",
                (pattern != NULL) ? pattern : "");
-        fflush(stdout);
-        return 1;
     }
     fflush(stdout);
-    return 0;
+    return (matched > 0 || pattern == NULL || pattern[0] == '\0') ? 0 : 1;
 }

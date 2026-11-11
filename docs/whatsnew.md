@@ -23,6 +23,17 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-10** — `@calc --list` prints the calculator's own function table, one line per
+  function with its signature, and the operators, statements and constants; it showed a second,
+  hand-written table in the words of the removed engine, without the string functions. `--json`
+  gives `category`, `name`, `signature` and `description`. `@calc --explain` drops those words
+  too ("scalar statement", not "scalar tape"), shows the thread count of each fused pass, and
+  ends with the number of statements and steps. Usage errors of `@set`, `@calc`, `@test`,
+  `@exists`, `@source`, `@on` and `@config prompt` exit 2, as the other keywords do; `@exists`
+  with two entities is one. `gemm`, `gemv`, `syrk` and `symv` took and ignored trailing flag
+  arguments, and `zeros` a fourth one: these are errors now (a transposed operand is `A.T`). The
+  guide lists the limits of the grammar and the arguments of `roll`, `vec` and `posv` it left
+  out. See [Calculator](guide/calculator.md) `#cli` `#docs`
 - **2026-11-10** — Two session fixes. The bash prompt shows a watched value (`@config prompt
   watch`) and the session name as text: a `$(...)` in a stream keyword, an FPS value or the shell's
   session record ran as a command at the next prompt. The record is read only if it is a regular

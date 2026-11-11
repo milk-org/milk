@@ -115,6 +115,11 @@ carries integers on an exact 64-bit lane with the same rules, so `k * 3 % 1000` 
 text path for any integer variable or parameter `k` (a literal above $2^{53}$ is still read as a
 double).
 
+A call or a slice has no space before its `(` or `[` (`imean (cam)` and `im [0]` are syntax
+errors), and a slice applies to a name: give `f(x)` or `(a + b)` a name first. There is no unary
+`+`. A call takes at most 16 arguments, `[e1, e2, ...]` 16 elements, a multiple assignment 8
+targets, a comparison chain 8 comparisons, and a string literal 1023 bytes.
+
 ### Functions
 
 Functions (the math ones also apply per pixel to an image):
@@ -128,12 +133,12 @@ Functions (the math ones also apply per pixel to an image):
 | Image to tuple   | `m, s[, lo, hi] = istats(im)`: mean, std, min, and max; `cx, cy[, flux] = icentroid(im[, th])`: thresholded flux-weighted CoG; `px, py = iargmax(im)` / `iargmin(im)` (2-D) and `px, py, pz = iargmax(cube)` / `iargmin(cube)` (3-D; `-1` when all NaN) |
 | Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)`, `iamax(im)` (index of $\max \|x_i\|$) |
 | Along one axis   | `itot imin imax imean istd irms ivar norm asum`, `cumsum(im[,axis])` plus an axis: `imean(cube, 2)` is the mean frame |
-| Stencil / LUT    | `shift(im,dx[,dy])` (edge-clamped 2-D neighbor offset), `roll(im,dx[,dy])` (periodic wrap-around 2-D shift), `lut(x,tbl[,x0,dx])` (1-D linear LUT) |
-| Spatial / Remap  | `medfilt3(im)`, `medfilt5(im)`, `medfilt7(im)` ($3\times3$, $5\times5$, $7\times7$ median), `imin3(im)`, `imax3(im)` ($3\times3$ min/max erosion/dilation), `boxmean(im,r)` (separable $(2r+1)\times(2r+1)$ box mean, $r \in \{1..64\}$), `conv2(im,K)` (2-D convolution with odd kernel `K` up to $31\times31$), `gauss(im,sx[,sy])`, `interp2(im,xmap,ymap)`, `pixremap(im,map[,fill])`, `pixunmap(im,map[,n])`, `rprof(im[,cx,cy])` |
+| Stencil / LUT    | `shift(im,dx[,dy])` (edge-clamped 2-D neighbor offset), `roll(im,dx[,dy[,dz]])` (periodic wrap-around shift), `lut(x,tbl[,x0,dx])` (1-D linear LUT) |
+| Spatial / Remap  | `medfilt3(im)`, `medfilt5(im)`, `medfilt7(im)` ($3\times3$, $5\times5$, $7\times7$ median), `imin3(im)`, `imax3(im)` ($3\times3$ min/max erosion/dilation), `boxmean(im,r)` (separable $(2r+1)\times(2r+1)$ box mean, $r \in \{1..64\}$), `conv2(im,K)` (2-D convolution with odd kernel `K` up to $31\times31$), `gauss(im,sx[,sy])`, `bblur1pix(im[,amp,niter])`, `rotate2d(im[,angle])`, `circsym(im[,cx,cy])`, `circasym(im[,cx,cy])`, `interp2(im,xmap,ymap)`, `pixremap(im,map[,fill])`, `pixunmap(im,map[,n])`, `rprof(im[,cx,cy])` |
 | Temporal / Delay | `streamdelay(im[,weights], delay=..., unit=..., interp=..., avemode=..., window=..., buffsize=...)`: per-call-site ring-buffer delay, fractional interpolation, causal window average (`avemode` 1..4), or 1-D FIR filter in seconds (`unit=0`) or frames (`unit=1`) |
-| Image to image   | `where(c,a,b)`, `transpose(im)` (or `im.T`), `reshape(im,nx[,ny,nz])`, `rot90(im[,k])`, `hstack(A,B,...)`, `vstack(A,B,...)`, `dstack(A,B,...)`, `cat(axis,A,B,...)`, `vec(x0,...)` (or `[x0, ...]`), `linspace(a,b,n)`, `[expr for x = a:b[:s], ...]`, `zeros(nx[,ny[,nz]])`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)` (or `A @ B`), `outer(x,y)`, `einsum("subscripts",A[,B])` |
-| BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)` |
-| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B)`, `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])`, `s = svd(A)` / `U, s, Vt = svd(A)` (thin SVD), `w = eigh(C)` / `w, V = eigh(C)` (symmetric eigendecomposition, ascending) |
+| Image to image   | `where(c,a,b)`, `transpose(im)` (or `im.T`), `reshape(im,nx[,ny,nz])`, `rot90(im[,k])`, `hstack(A,B,...)`, `vstack(A,B,...)`, `dstack(A,B,...)`, `cat(axis,A,B,...)`, `vec(x0,...)` (or `[x0, ...]`; `vec(im)` flattens an image), `linspace(a,b,n)`, `[expr for x = a:b[:s], ...]`, `zeros(nx[,ny[,nz]])`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)` (or `A @ B`), `outer(x,y)`, `einsum("subscripts",A[,B])` |
+| BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)`; a transposed operand is written `A.T` |
+| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B[,uplo])` (`"L"` by default), `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])`, `s = svd(A)` / `U, s, Vt = svd(A)` (thin SVD), `w = eigh(C)` / `w, V = eigh(C)` (symmetric eigendecomposition, ascending) |
 | Spectral (FFTW)  | `fft(im)` (forward 1-D/2-D/3-D DFT to complex float, or complex double for float64 input), `ifft(im)` ($1/N$-normalized inverse DFT), `fftshift(im)` (swap half-spaces on all axes) |
 | Coordinates/PRNG | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle from `(cx, cy)`, by default `(xsize/2, ysize/2)`; `rand([im[, seed]])` ($[0,1)$), `randn([im[, seed]])` ($\mathcal{N}(0,1)$) |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
@@ -302,17 +307,19 @@ parameters under `Parameters`):
   its flag.
 - Statements of the program language, on top of the calculator's:
   - `if <scalar>: <statement>` runs a single statement when the condition is not 0
-    (`if imax(cam) > 60000: skip`, `if _n % 100 == 0: post(out)`).
+    (`if imax(cam) > 60000: skip`, `if _n % 100 == 0: post(out)`); this form takes no `elif`
+    or `else`.
   - `if <cond> { ... } elif <cond> { ... } else { ... }` groups multiple statements into
-    conditional blocks; conditions are kept as compiled scalar programs (`< 1` µs per check).
+    conditional blocks (`else if` is written `elif`); conditions are kept as compiled scalar programs (`< 1` µs per check).
   - `for k = start:stop[:step] { ... }` runs a bounded loop (inclusive of `stop`, default `step`
     `1`); more than 100,000 iterations in a frame is an error.
   - `local name = <expr>` (or `L:name = <expr>` / `@L:name = <expr>`) creates a process-private
     scratch image that is not exported to `/dev/shm`. When a `local` image is consumed only by
     the immediately following compatible statement in the same basic block, the compiler merges
     both statements into one cache-resident pass and elides the intermediate memory write.
-  - `def f(x, a, ...) = <expr>` defines an inline function, at most 64 of them with up to 8
-    parameters. A call is inlined: each parameter is replaced by its argument, so reductions,
+  - `def f(x, a, ...) = <expr>` defines an inline function, at most 64 of them with 1 to 8
+    parameters; a call may name them (`f(im, a=2)`), and a `def` may call another one, 4 deep at
+    most. A call is inlined: each parameter is replaced by its argument, so reductions,
     library functions and slices of a parameter work as if written out (`def avg(x) = imean(x)`,
     `def nrm(x) = x / imax(x)`); the compiler computes a pure argument once per pixel. An argument
     that draws random numbers or keeps state (`rand`, `ema`, `post`, a C extension) may be used
@@ -438,9 +445,11 @@ A pass runs in float32 when every operand and destination is `float` or an 8- or
 keeps its pass in double. `@calc --explain` shows which.
 
 `@calc --explain "<statements>"` compiles the statements as a unit would and prints, per statement,
-how it executes (a compiled C `.so` pass with its operand count, precision, thread count, and
-generated C loop body, a pass merged into an earlier statement, a scalar tape, or a BLAS/library
-kernel). It does not run them, so no image or variable is written or created. A pass whose shape is
+how it executes: a fused pass with its shape, precision, operand count and thread count (the one
+this session gives a pass of that size; a unit's `.procinfo.NBthread` can differ), a statement
+merged into an earlier pass, a scalar statement, or a constructor or library step. The last line
+gives the number of statements and of steps they run in. It does not run them, so no image or
+variable is written or created. A pass whose shape is
 only known at run time, such as a slice of a target the statements create, shows `a shape set at run
 time`, and operand shapes that do not match are reported when the statement runs.
 

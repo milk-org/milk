@@ -3,11 +3,11 @@
 Purpose:     a script must behave the same in any bash that sourced milk.bash and in milk-cli,
              which runs its lines in a bash co-process; these tests run the language end to end.
 Does:        checks what milk.bash defines (builtins, keyword functions, module commands), @help,
-             the banner, the [milk] prompt label and @unload; that the prompt shows a watched
-             value or a session name without running it; stream modifiers (@S: @L: @T<type>:);
-             @get and @set on streams, FITS keywords and FPSs; @calc on images, slices and
-             entities; @test, @exists, @waitfor, @waitany, @grab, @on, @source, @defer and
-             pipelines; @{...} in milk-cli -s, -c and piped input, and through CLICommands; calc
+             the banner, the [milk] prompt label and @unload; that the prompt shows a watched value
+             or a session name without running it; that usage errors exit 2; stream modifiers (@S:
+             @L: @T<type>:); @get and @set on streams, FITS keywords and FPSs; @calc on images,
+             slices and entities; @test, @exists, @waitfor, @waitany, @grab, @on, @source, @defer
+             and pipelines; @{...} in milk-cli -s, -c and piped input, and through CLICommands; calc
              mode; that milk.bash loads nothing without libmilkbash.so; that waits release the
              stream's semaphore slots.
 Covers:      scripts/milk.bash; the libmilkbash.so builtins and the client code they call
@@ -131,6 +131,37 @@ echo "ran=$(ls | grep -c '^run_')"
     assert r"milk:$(touch run_name)\w" in value(res.stdout, "novars"), out
     assert value(res.stdout, "link") == "[]", out
     assert value(res.stdout, "ran") == "0", out
+
+
+def test_usage_errors_exit_2(tmp_path):
+    """A keyword called with a missing or surplus argument says how it is used and exits 2
+    (docs/guide/scripting.md, "Exit Status"); `-h` is help for the keywords bash overrides.
+    """
+    cases = {
+        "set": "@set",
+        "calc": "@calc",
+        "test": "@test",
+        "exists": "@exists",
+        "exists2": "@exists s.a s.b",
+        "running": "@running",
+        "source": "@source",
+        "on": "@on",
+        "on1": "@on s.a",
+        "onstop": "@on --stop",
+        "watch": "@config prompt watch",
+        "unwatch": "@config prompt unwatch",
+        "preset": "@config prompt preset",
+        "prompt": "@config prompt nosuchword",
+    }
+    script = "".join(f'{cmd} 2>{k}.err; echo "{k}=$?"\n' for k, cmd in cases.items())
+    res = milk_bash(
+        script + '@restore -h | grep -qi "restore" && echo "help=ok"', tmp_path
+    )
+    out = res.stdout + res.stderr
+    for k in cases:
+        assert value(res.stdout, k) == "2", f"{cases[k]}: {out}"
+        assert "sage:" in (tmp_path / f"{k}.err").read_text(), f"{cases[k]}: {out}"
+    assert value(res.stdout, "help") == "ok", out
 
 
 def test_stream_modifiers_all_types():
