@@ -16,6 +16,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-10** — Two session fixes. The bash prompt shows a watched value (`@config prompt
+  watch`) and the session name as text: a `$(...)` in a stream keyword, an FPS value or the shell's
+  session record ran as a command at the next prompt. The record is read only if it is a regular
+  file of the user. Ctrl-C, or a shell that goes away, during a keyword the session runs itself
+  (`@pipe`, `@ls`, `@assert`, `@snapshot`…) stops that keyword with status 130: it ended a session
+  server that had no terminal. See [Scripting](guide/scripting.md) `#cli`
 - **2026-11-10** — Calculator fixes. `:` before a function call is a slice, range or `?:`
   separator again (`im[k:min(a, b)]`, `for i = lo:floor(hi)`, `c ? a:sqrt(b)`); only a loaded C
   extension takes a `:label`. `skip` works right before `}`. Filters, matrix and FFT functions and

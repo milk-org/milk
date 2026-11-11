@@ -3,7 +3,8 @@
 Purpose:     a script must behave the same in any bash that sourced milk.bash and in milk-cli,
              which runs its lines in a bash co-process; these tests run the language end to end.
 Does:        checks what milk.bash defines (builtins, keyword functions, module commands), @help,
-             the banner, the [milk] prompt label and @unload; stream modifiers (@S: @L: @T<type>:);
+             the banner, the [milk] prompt label and @unload; that the prompt shows a watched
+             value or a session name without running it; stream modifiers (@S: @L: @T<type>:);
              @get and @set on streams, FITS keywords and FPSs; @calc on images, slices and
              entities; @test, @exists, @waitfor, @waitany, @grab, @on, @source, @defer and
              pipelines; @{...} in milk-cli -s, -c and piped input, and through CLICommands; calc
@@ -99,6 +100,37 @@ def test_builtin_loaded_and_commands_registered():
         """)
     assert res.returncode == 0, res.stderr
     assert "OK" in res.stdout
+
+
+def test_prompt_shows_data_and_never_runs_it(tmp_path):
+    """What the prompt shows of a watched value or a session name is data: bash expands PS1, and a
+    `$(...)` or a backslash in it must stay text, with promptvars and without. The record of the
+    shell's session is read only if it is a regular file of ours."""
+    res = milk_bash(
+        r"""
+mem.mk2Dim "@S:pim" 4 4 >/dev/null
+@set s.pim.kw.NOTE='$(touch run_kw)'
+@config prompt watch s.pim.kw.NOTE
+_milk_apply_ps1; echo "kw=${PS1@P}"
+@config prompt clear
+rec="${TMPDIR:-/tmp}/.milk_active_sock_${_MILK_OV_ID}"; sock="$MILKCLI_SOCK"
+printf '%s' '@milk-cli-0-$(touch run_name)\w' > "$rec"
+_milk_apply_ps1; echo "name=${PS1@P}"
+shopt -u promptvars; _milk_apply_ps1; echo "novars=${PS1@P}"; shopt -s promptvars
+rm -f "$rec"; unset _MILK_SERVER_NAME; export MILKCLI_SOCK="$sock"
+printf '%s' '@milk-cli-0-linked' > target; ln -s "$PWD/target" "$rec"
+_milk_apply_ps1; echo "link=[${_MILK_SERVER_NAME:-}]"
+rm -f "$rec"
+echo "ran=$(ls | grep -c '^run_')"
+""",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "NOTE=$(touch run_kw)" in value(res.stdout, "kw"), out
+    assert r"milk:$(touch run_name)\w" in value(res.stdout, "name"), out
+    assert r"milk:$(touch run_name)\w" in value(res.stdout, "novars"), out
+    assert value(res.stdout, "link") == "[]", out
+    assert value(res.stdout, "ran") == "0", out
 
 
 def test_stream_modifiers_all_types():

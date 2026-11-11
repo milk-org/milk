@@ -11,9 +11,10 @@ Does:        a server that cannot listen makes @session new fail with its reason
              signals and its files go; a private server ends with its shell, a named one survives
              it, and neither keeps the caller's descriptors; $NOTIFY_SOCKET gets READY=1, then
              STOPPING=1 on SIGTERM; Ctrl-C stops a long @calc while the session answers other
-             requests; a crash in a C extension leaves the session running; a shell keeps one
-             connection between requests and starts the server again after it ended; captured
-             command output is complete.
+             requests; Ctrl-C or a lost shell stops a keyword the session runs itself (@pipe) and
+             the session goes on; a crash in a C extension leaves the session running; a shell
+             keeps one connection between requests and starts the server again after it ended;
+             captured command output is complete.
 Covers:      the server start (libmilkscript/ipc/milk_ipc_common.c, on
              src/engine/libmilkcommon/process/milk_detach.c), its readiness and accept loop
              (libmilkscript/server/milk_server.c), the stop (libmilkscript/client/milk_sessions.c),
@@ -212,6 +213,27 @@ def test_ctrl_c_stops_a_running_calc_while_the_session_answers(tmp_path):
     assert int(value(res.stdout, "loop_ms")) < 5000, out
     assert "interrupted" in (tmp_path / "loop.err").read_text(), out
     assert value(res.stdout, "after") == "6", out
+
+
+def test_ctrl_c_or_a_lost_shell_in_a_session_keyword_keeps_the_session(tmp_path):
+    """A keyword the session runs itself (@pipe here) has no command frame of its own: Ctrl-C and
+    the hang-up of its shell stop it; the session and its local image remain."""
+    res = milk_bash(
+        'mem.mk2Dim "@L:loc" 4 4 >/dev/null; @calc "loc = 5"\n'
+        'loop="x = 0; for i = 1:100000 { for j = 1:100000 { x = i + j } }"\n'
+        '( @pipe "$loop" 2>loop.err; echo "loop_rc=$?" ) & pid=$!\n'
+        "sleep 1; kill -INT $pid; wait $pid\n"
+        '@calc -v m "imean(loc)"; echo "after_int=$m"\n'
+        '( @pipe "$loop" 2>/dev/null ) & pid=$!\n'
+        "sleep 1; kill -KILL $pid; wait $pid 2>/dev/null\n"
+        '@calc -v m "imean(loc)"; echo "after_kill=$m"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "loop_rc") == "130", out
+    assert "interrupted" in (tmp_path / "loop.err").read_text(), out
+    assert value(res.stdout, "after_int") == "5", out
+    assert value(res.stdout, "after_kill") == "5", out
 
 
 def test_a_crash_in_calc_keeps_the_session(tmp_path):

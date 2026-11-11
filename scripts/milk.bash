@@ -109,14 +109,18 @@ if IFS= read -r __milk_l < "/proc/$$/stat" 2>/dev/null; then
 fi
 _MILK_OV_ID="${UID:-$(id -u)}_$$_${__milk_st}"
 unset __milk_st __milk_l __milk_f
-_milk_ov_file="${TMPDIR:-/tmp}/.milk_active_sock_${_MILK_OV_ID}"
-if [[ -f "${_milk_ov_file}" ]]; then
-    export MILKCLI_SOCK="$(<"${_milk_ov_file}")"
+# _milk_use_recorded_session: use the session that this shell's record file names; 1 if none. The
+# file is in a directory anyone can write: as the C reader (milk_ipc_resolve_sockpath()), trust only
+# a regular file of ours
+_milk_use_recorded_session() {
+    local f="${TMPDIR:-/tmp}/.milk_active_sock_${_MILK_OV_ID}"
+    [[ -f "${f}" && ! -L "${f}" && -O "${f}" ]] || return 1
+    export MILKCLI_SOCK="$(<"${f}")"
     export _MILK_SERVER_NAME="${MILKCLI_SOCK#@milk-cli-*-}"
-elif [[ -z "${MILKCLI_SOCK:-}" ]]; then
+}
+if ! _milk_use_recorded_session && [[ -z "${MILKCLI_SOCK:-}" ]]; then
     export MILKCLI_SOCK="${_MILK_LOCAL_SOCK}"
 fi
-unset _milk_ov_file
 
 # ---------------------------------------------------------------------------
 # 4. Load the C builtins (libmilkbash.so); without them milk is not loaded
@@ -670,7 +674,7 @@ _milk_unload_impl() {
     fi
 
     # 5. Restore PROMPT_COMMAND and PS1
-    unset _MILK_PROMPT_WATCH _MILK_PROMPT_PRESET _MILK_PROMPT_PLAIN 2>/dev/null || true
+    unset _MILK_PROMPT_WATCH _MILK_PROMPT_PRESET _MILK_PROMPT_PLAIN _MILK_PS1_TXT 2>/dev/null || true
     if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
         local -a __new_pc=()
         local __pc_item
@@ -946,11 +950,29 @@ declare -ga _MILK_PROMPT_WATCH=()
 declare -g  _MILK_PROMPT_PRESET="${_MILK_PROMPT_PRESET:-std}"
 declare -g  _MILK_PROMPT_PLAIN="[milk]"
 _MILK_PS1_PREFIX='\[\033[1;36m\][milk]\[\033[0m\] '
+declare -ga _MILK_PS1_TXT=()
+
+# _milk_ps1_text <text>: set REPLY to what shows <text> in PS1 as it is. A session name, a stream
+# keyword or an FPS value is data that others can write, and bash runs a $(...) it finds in PS1:
+# PS1 gets a reference to a slot of _MILK_PS1_TXT instead, which bash expands once. Without
+# promptvars PS1 runs nothing, and only its backslashes are doubled
+_milk_ps1_text() {
+    local t="${1//[[:cntrl:]]/}"
+    if shopt -q promptvars; then
+        REPLY="\${_MILK_PS1_TXT[${#_MILK_PS1_TXT[@]}]}"
+        _MILK_PS1_TXT+=("${t}")
+    else
+        REPLY="${t//\\/\\\\}"
+    fi
+}
 
 _milk_build_prompt_strings() {
-    local head="milk"
+    local head="milk" ps1_head="milk" REPLY
+    _MILK_PS1_TXT=()
     if [[ -n "${_MILK_SERVER_NAME:-}" ]]; then
         head="milk:${_MILK_SERVER_NAME}"
+        _milk_ps1_text "${_MILK_SERVER_NAME}"
+        ps1_head="milk:${REPLY}"
     fi
 
     local plain="[${head}"
@@ -960,7 +982,8 @@ _milk_build_prompt_strings() {
         local shmb="${MILK_SHM_DIR%/}"
         shmb="${shmb##*/}"
         plain+=" | shm:${shmb}"
-        ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;35m\]shm:${shmb}\[\033[0m\]"
+        _milk_ps1_text "shm:${shmb}"
+        ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;35m\]${REPLY}\[\033[0m\]"
     fi
 
     if [[ "${_MILK_PROMPT_PRESET:-std}" != "minimal" && ${#_MILK_PROMPT_WATCH[@]} -gt 0 ]]; then
@@ -992,7 +1015,8 @@ _milk_build_prompt_strings() {
                     *)              clr="0;33" ;;
                 esac
                 plain+=" | ${lbl}:${val}"
-                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[${clr}m\]${lbl}:${val}\[\033[0m\]"
+                _milk_ps1_text "${lbl}:${val}"
+                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[${clr}m\]${REPLY}\[\033[0m\]"
             elif [[ "${spec}" == *.fps || "${spec}" == *.fps_hz ]]; then
                 if [[ ${has_lbl} -eq 0 ]]; then
                     tmp="${spec#*.}"
@@ -1002,13 +1026,15 @@ _milk_build_prompt_strings() {
                     printf -v val '%.0f' "${val}" 2>/dev/null || true
                 fi
                 plain+=" | ${lbl}:${val}Hz"
-                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;36m\]${lbl}:${val}Hz\[\033[0m\]"
+                _milk_ps1_text "${lbl}:${val}Hz"
+                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;36m\]${REPLY}\[\033[0m\]"
             else
                 if [[ ${has_lbl} -eq 0 ]]; then
                     lbl="${spec##*.}"
                 fi
                 plain+=" | ${lbl}=${val}"
-                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;37m\]${lbl}=${val}\[\033[0m\]"
+                _milk_ps1_text "${lbl}=${val}"
+                ps1_items+=" \[\033[0;90m\]|\[\033[0m\] \[\033[0;37m\]${REPLY}\[\033[0m\]"
             fi
         done
     fi
@@ -1016,20 +1042,16 @@ _milk_build_prompt_strings() {
     plain+="]"
     _MILK_PROMPT_PLAIN="${plain}"
     if [[ -z "${ps1_items}" ]]; then
-        _MILK_PS1_PREFIX="\[\033[1;36m\][${head}]\[\033[0m\] "
+        _MILK_PS1_PREFIX="\[\033[1;36m\][${ps1_head}]\[\033[0m\] "
     else
-        _MILK_PS1_PREFIX="\[\033[1;36m\][${head}\[\033[0m\]${ps1_items}\[\033[1;36m\]]\[\033[0m\] "
+        _MILK_PS1_PREFIX="\[\033[1;36m\][${ps1_head}\[\033[0m\]${ps1_items}\[\033[1;36m\]]\[\033[0m\] "
     fi
 }
 
 _milk_apply_ps1() {
     local __milk_last_rc=$?
     _milk_defer_orphans
-    local __ov="${TMPDIR:-/tmp}/.milk_active_sock_${_MILK_OV_ID}"
-    if [[ -f "${__ov}" ]]; then
-        export MILKCLI_SOCK="$(<"${__ov}")"
-        export _MILK_SERVER_NAME="${MILKCLI_SOCK#@milk-cli-*-}"
-    fi
+    _milk_use_recorded_session || true
     if [[ -n "${MILK_NO_PROMPT:-}" ]]; then
         if [[ -n "${_MILK_ORIG_PS1+x}" ]]; then
             PS1="${_MILK_ORIG_PS1}"

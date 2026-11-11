@@ -1232,6 +1232,19 @@ static void restore_call_env(void)
     }
 }
 
+/* The body of a CALL request (milk_server_run_guarded()) */
+typedef struct
+{
+    int    argc;
+    char **argv;
+} call_args_t;
+
+static int call_body(void *arg)
+{
+    call_args_t *ca = (call_args_t *) arg;
+    return milk_server_dispatch_argv(ca->argc, ca->argv);
+}
+
 /**
  * @brief Execute a `MILK_MSG_CALL` payload.
  */
@@ -1303,15 +1316,12 @@ int milk_server_exec_call(int            client_fd,
     unsigned int nbcmd_before  = data.NBcmd;
     int          digits_before = cli_float_digits;
 
-    // also in forked workers (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them
-    int has_watcher = watcher_begin(client_fd, listen_fd, log_cmd);
-
-    int rc = milk_server_dispatch_argv((int) argc, argv);
-
-    if (has_watcher)
-    {
-        watcher_end();
-    }
+    // watched in forked workers too (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them.
+    // Guarded as a whole: Ctrl-C during a keyword (@ls, @pipe, @assert...) or between a module
+    // command's own frame and the end of the CALL stops it, not the session
+    call_args_t ca     = { (int) argc, argv };
+    int         rc     = milk_server_run_guarded(client_fd, listen_fd, log_cmd, call_body, &ca);
+    g_call_interrupted = g_call_interrupted || (rc == 130); /* milk-cli: abort its command line */
 
     fflush(stdout);
     fflush(stderr);
