@@ -421,16 +421,18 @@ commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
 
 Every image expression or reduction statement is lowered to a typed AST, normalized by algebraic and
 fusion passes, emitted as restricted C99 source with `#pragma omp simd` loops (rows are split across
-the calculator's thread team), compiled into
-`${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/<key>.so`, and kept loaded in a
-4096-entry in-memory table. Run-time compiles (these kernels, [`-l` C
+the calculator's thread team), compiled into `<key>.so` in the kernel cache, and kept loaded in a
+4096-entry in-memory table. The cache is `$MILK_CALC_CACHE` if set, else
+`${XDG_CACHE_HOME:-~/.cache}/milk/calc`, which a reboot keeps; where that directory cannot be used
+(no home, not writable, mounted noexec) it is `${TMPDIR:-/tmp}/milk-calc-cache-<uid>`. On a
+real-time machine whose home is on a network file system, set `MILK_CALC_CACHE` to a local disk. Run-time compiles (these kernels, [`-l` C
 extensions](#auto-compilation-and-caching-l-lib) and `milk-cc`) use `$MILK_CALC_CC` (default: the
 compiler milk was built with) and one flag list, `MILK_CC_FLAGS` in `CMakeLists.txt`:
 `-O3 -pipe -march=native -ffast-math -fno-finite-math-only -mno-recip -fopenmp-simd` (NaN tests and
 divisions stay IEEE); kernels add `-fno-associative-math` so they round as scalar evaluation does.
 The key covers the source, compiler, flags and CPU; the cache directory must be a real directory
-owned by you (a symlink or another user's directory is refused), and the oldest kernels are deleted
-beyond 4096. Runtime scalar values, slice bounds (`im[k:k+7, :]`), `shift`/`roll`
+owned by you (a symlink or another user's directory is refused), and beyond 4096 kernels those
+loaded longest ago are deleted. Runtime scalar values, slice bounds (`im[k:k+7, :]`), `shift`/`roll`
 offsets, and live SHM properties (`s.`, `f.`, `p.`) are passed in the kernel's call argument struct
 rather than baked into the C source, so changing a variable or slice offset in a loop reuses the
 already-loaded `.so` with zero recompilation.

@@ -1223,6 +1223,10 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
  * false or meets Ctrl-C (mcalc_cancelled) ends the text. Text without `;` or a newline is one
  * statement and goes to eval_bash_inner() as written.
  *
+ * A statement is parsed again there, and an image statement a third time by mcalc_prog_new():
+ * this is deliberate. A lex and parse costs under 1 us where the call costs 25 us or more, and
+ * the statement cache skips both for a text it has seen (measured 2026-11).
+ *
  * Return: 1 on success, 0 on syntax or evaluation error
  */
 static int eval_bash_text(const char *input, int is_test, int *out_rc)

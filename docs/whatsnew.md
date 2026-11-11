@@ -23,6 +23,19 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — A session starts with the core modules only; the 15 standard modules are no
+  longer loaded at every start (a `milk-cli` start takes 29 ms, was 39, and 7 MB less), but at the
+  first use of one of their commands, as installed modules already were. `@help <module>`,
+  `@help <module.cmd>`, `@help -k` and command completion now know every installed module, loaded
+  or not. `milk-cli-all`, or `MILKCLI_ADD_LIBS`, loads modules at start.
+  See [Scripting](guide/scripting.md) `#cli` `#performance`
+- **2026-11-11** — The calculator's kernel cache is `~/.cache/milk/calc` by default
+  (`$XDG_CACHE_HOME/milk/calc`), no longer `/tmp/milk-calc-cache-<uid>`: kernels survive a reboot.
+  `/tmp` is used where the home directory cannot be; `MILK_CALC_CACHE` still names another place
+  (a local disk, on a machine whose home is on a network file system). A full cache deletes the
+  kernels loaded longest ago, no longer the first compiled. An old `/tmp/milk-calc-cache-<uid>`
+  can be removed.
+  See [Calculator](guide/calculator.md) `#performance` `#cli`
 - **2026-11-11** — Calculator: a function called with the wrong kind of argument answers with
   its signature (`imean: expected imean(im[, mask])`), from one table of argument kinds.
   See [Calculator](guide/calculator.md) `#cli`

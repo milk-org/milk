@@ -111,14 +111,28 @@ def test_help_and_per_call_arguments(tmp_path):
 
 
 def test_autoload_and_thin_client(tmp_path):
+    """A session starts with the core modules: an installed module loads at the first use of
+    one of its commands, and search, completion and help know it before that.
+    """
     env, _ = _env()
-    env["MILKCLI_ADD_LIBS"] = "none"
+    env.pop("MILKCLI_ADD_LIBS", None)
     res = milk_cli_env(
-        'imgen.mkgauss gau 16 16 3 1 >/dev/null; echo "rc=$?"\n@exists s.gau && echo made=1',
+        'echo "m0=$(@module list | grep -c image_gen)"\n'
+        'echo "k=$(@help -k gaussian | grep -c imgen.mkgauss)"\n'
+        'echo "c=$(milkcomplete imgen.mkg cmd | grep -c imgen.mkgauss)"\n'
+        'echo "m1=$(@module list | grep -c image_gen)"\n'
+        'imgen.mkgauss gau 16 16 3 1 >/dev/null; echo "rc=$?"\n@exists s.gau && echo made=1\n'
+        'echo "m2=$(@module list | grep -c image_gen)"\n'
+        'echo "h=$(@help psf | grep -c psfseqmeas)"\n'
+        'echo "hc=$(@help imgfilt.gaussfilt | grep -c gaussfilt)"',
         tmp_path,
         env,
     )
-    assert value(res.stdout, "rc") == "0" and value(res.stdout, "made") == "1"
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0" and value(res.stdout, "made") == "1", out
+    got = {k: value(res.stdout, k) for k in ("m0", "k", "c", "m1", "m2")}
+    assert got == {"m0": "0", "k": "1", "c": "1", "m1": "0", "m2": "1"}, out
+    assert int(value(res.stdout, "h")) >= 1 and int(value(res.stdout, "hc")) >= 1, out
 
     ldd_out = subprocess.run(
         ["ldd", str(_install_dir() / "lib" / "libmilkbash.so")],

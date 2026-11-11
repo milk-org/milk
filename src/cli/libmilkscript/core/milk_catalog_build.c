@@ -579,3 +579,42 @@ int milk_catalog_autoload(const char *key)
     }
     return milk_cmd_lookup(key) >= 0;
 }
+
+/**
+ * milk_catalog_pending - Tell whether a catalogued command waits for its module to be loaded
+ * @i: Index into the catalog
+ *
+ * Return: 1 if the module of the @i-th command is installed but not loaded in this session
+ */
+int milk_catalog_pending(size_t i)
+{
+    const char *mod = milk_catalog_load_at(i);
+    return mod != NULL && strcmp(mod, "milk") != 0 && !milk_module_loaded(mod);
+}
+
+/**
+ * milk_catalog_autoload_name - Quietly load what @name names in the catalog
+ * @name: A command key (`imgen.mkgauss`) or a module's short name (`imgen`)
+ *
+ * Help and completion use it, so that they know an installed module as they know a loaded one.
+ *
+ * Return: 1 if the catalog has command @name or a command `<name>.<cmd>`, 0 otherwise
+ */
+int milk_catalog_autoload_name(const char *name)
+{
+    size_t n   = (name != NULL) ? strlen(name) : 0;
+    int    hit = 0;
+    for (size_t i = 0; n > 0 && i < milk_catalog_count(); i++)
+    {
+        const char *k = milk_catalog_key_at(i);
+        if (strncmp(k, name, n) == 0 && (k[n] == '\0' || k[n] == '.'))
+        {
+            hit = 1;
+            if (milk_catalog_pending(i))
+            {
+                milk_catalog_autoload(k);
+            }
+        }
+    }
+    return hit;
+}

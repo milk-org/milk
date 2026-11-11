@@ -23,6 +23,7 @@ typedef struct
 {
     char *key;
     char *load;
+    char *info; /* the command's summary ("" when the line has none) */
 } cat_ent_t;
 
 static cat_ent_t *g_cat; /* sorted by key */
@@ -48,7 +49,7 @@ static int cmp_cat(const void *a, const void *b)
  * catalog_add - Parse a TSV catalog line and append its command entry to `g_cat`
  * @line: Writable line buffer (`<key>\t<module_loadname>[\t<description>]`)
  *
- * Splits @line at the first tab character and stores duplicated `key` and `load`
+ * Splits @line at its tab characters and stores duplicated `key`, `load` and `info`
  * strings in the dynamically grown `g_cat` array.
  *
  * Return: void
@@ -63,12 +64,18 @@ static void catalog_add(char *line)
     {
         return;
     }
-    g_cat                           = q;
-    *tab                            = '\0';
-    tab[1 + strcspn(tab + 1, "\t")] = '\0';
-    g_cat[g_ncat].key               = strdup(line);
-    g_cat[g_ncat].load              = strdup(tab + 1);
-    if (g_cat[g_ncat].key != NULL && g_cat[g_ncat].load != NULL)
+    g_cat      = q;
+    *tab       = '\0';
+    char *load = tab + 1;
+    char *info = load + strcspn(load, "\t");
+    if (*info == '\t')
+    {
+        *info++ = '\0';
+    }
+    g_cat[g_ncat].key  = strdup(line);
+    g_cat[g_ncat].load = strdup(load);
+    g_cat[g_ncat].info = strdup(info);
+    if (g_cat[g_ncat].key != NULL && g_cat[g_ncat].load != NULL && g_cat[g_ncat].info != NULL)
     {
         g_ncat++;
     }
@@ -201,4 +208,18 @@ const char *milk_catalog_load_at(size_t i)
 {
     catalog_load();
     return (i < g_ncat) ? g_cat[i].load : NULL;
+}
+
+/** milk_catalog_key_at - Command key of the catalog entry at index @i, or NULL */
+const char *milk_catalog_key_at(size_t i)
+{
+    catalog_load();
+    return (i < g_ncat) ? g_cat[i].key : NULL;
+}
+
+/** milk_catalog_info_at - Summary of the command at index @i ("" when it has none), or NULL */
+const char *milk_catalog_info_at(size_t i)
+{
+    catalog_load();
+    return (i < g_ncat) ? g_cat[i].info : NULL;
 }

@@ -38,9 +38,20 @@ const char *milk_catalog_module(const char *key);
 /** milk_catalog_autoload() - load the module of command @key; 1 if @key now exists. */
 int milk_catalog_autoload(const char *key);
 
-/** milk_catalog_count() - number of catalogued commands; milk_catalog_load_at() - @i-th module. */
+/** milk_catalog_count() - number of catalogued commands, sorted by key; of the @i-th one:
+ * milk_catalog_key_at() its key, milk_catalog_load_at() its module's load name,
+ * milk_catalog_info_at() its summary. */
 size_t      milk_catalog_count(void);
+const char *milk_catalog_key_at(size_t i);
 const char *milk_catalog_load_at(size_t i);
+const char *milk_catalog_info_at(size_t i);
+
+/** milk_catalog_pending() - 1 if the @i-th command's module is installed but not loaded yet. */
+int milk_catalog_pending(size_t i);
+
+/** milk_catalog_autoload_name() - load the module of command @name, or the modules whose commands
+ * are `<name>.<cmd>` (a module's short name); 1 if the catalog has such a command. */
+int milk_catalog_autoload_name(const char *name);
 
 /** milk_module_loaded() - 1 if the module with load name @loadname is loaded. */
 int milk_module_loaded(const char *loadname);

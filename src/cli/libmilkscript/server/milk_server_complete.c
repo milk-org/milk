@@ -42,6 +42,7 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps.h"
 #include "fps_streamname_parse.h"
+#include "milk_catalog.h"
 #include "milk_entity_ns.h"
 #include "milk_proto.h"
 #include "milk_server_internal.h"
@@ -77,6 +78,19 @@ static size_t complete_commands(const char *prefix, char *out, size_t outsz)
         int         n;
 
         if (dot != NULL && (strncmp(k, prefix, blen) == 0 || strncmp(dot + 1, prefix, blen) == 0) &&
+            (n = snprintf(out + pos, outsz - pos, "%s\n", k)) > 0 && pos + (size_t) n < outsz)
+        {
+            pos += (size_t) n;
+        }
+    }
+    for (size_t i = 0; !kw && i < milk_catalog_count(); i++) /* installed modules not loaded yet */
+    {
+        const char *k   = milk_catalog_key_at(i);
+        const char *dot = strchr(k, '.');
+        int         n;
+
+        if (dot != NULL && milk_catalog_pending(i) &&
+            (strncmp(k, prefix, blen) == 0 || strncmp(dot + 1, prefix, blen) == 0) &&
             (n = snprintf(out + pos, outsz - pos, "%s\n", k)) > 0 && pos + (size_t) n < outsz)
         {
             pos += (size_t) n;
@@ -440,6 +454,7 @@ static int find_server_cmd(const char *cmdname)
         return -1;
     }
 
+    milk_catalog_autoload(cmdname); /* the signature of a command whose module is not loaded yet */
     int exact = milk_cmd_lookup(cmdname);
     if (exact >= 0)
     {

@@ -9,8 +9,9 @@
  * Purpose:     external tools (`xargs`, `find -exec`, `timeout`, `parallel`) run module commands
  *              and keywords without a shell that loaded libmilkbash.so.
  * Does:        runs a subcommand (call, complete, translate, shutdown) or a callable keyword
- *              named without its `@` (get, set, calc, waitfor, ...) through its milk_client_*
- *              call; run through a link, takes the command or keyword from the link's name;
+ *              named without its `@` (get, set, calc, waitfor, ...): the client command of
+ *              that name (milk_client_cmd()), which the bash builtins run too; run through a
+ *              link, takes the command or keyword from the link's name;
  *              any other word is a module command, sent to the session.
  * Used by:     the links in libexec/milk/bin (`<module.cmd>`, `@<keyword>`) that
  *              `milk-cli --catalog` writes (milk_catalog_build.c); python/tests/cli/conftest.py
@@ -74,131 +75,28 @@ static void print_usage(const char *prog)
 }
 
 /**
- * join_args - Concatenate an argument vector into a single space-separated string
- * @argc: Number of arguments in @argv
- * @argv: Array of argument strings
- *
- * Allocates a heap buffer containing all elements of @argv separated by single
- * spaces. Caller is responsible for freeing the returned string.
- *
- * Return: Newly allocated space-joined string, or NULL on allocation failure
- */
-static char *join_args(int argc, char **argv)
-{
-    size_t tot = 1;
-    for (int i = 0; i < argc; i++)
-    {
-        tot += strlen(argv[i]) + 1;
-    }
-    char *out = (char *) malloc(tot);
-    if (out == NULL)
-    {
-        return NULL;
-    }
-    out[0]     = '\0';
-    size_t pos = 0;
-    for (int i = 0; i < argc; i++)
-    {
-        int n = snprintf(out + pos, tot - pos, "%s%s", (i > 0) ? " " : "", argv[i]);
-        if (n > 0)
-        {
-            pos += (size_t) n;
-        }
-    }
-    return out;
-}
-
-/**
  * dispatch_subcommand - Route a `milk-call` subcommand to its client handler
  * @sub:  Subcommand name (e.g., `call`, `get`, `set`, `calc`, `waitfor`)
  * @argc: Number of arguments following @sub
  * @argv: Argument array following @sub
  *
- * Matches @sub against built-in client operations and executes the corresponding
- * `milk_client_*` function. Returns -1 if @sub is not a known subcommand so the
- * caller can fall back to treating it as a milk command name.
+ * Runs the client command called @sub (milk_client_cmd()), or `args`, `translate` and the
+ * removed `server`, which are milk-call's own. Returns -1 if @sub is not a known subcommand so
+ * the caller can fall back to treating it as a milk command name.
  *
  * Return: Non-negative exit status of the subcommand, or -1 if @sub is unrecognized
  */
 static int dispatch_subcommand(const char *sub, int argc, char **argv)
 {
-    if (strcmp(sub, "call") == 0)
+    const milk_client_cmd_t *c = milk_client_cmd(sub);
+    if (c != NULL)
     {
-        int flags     = 0;
-        int start_idx = 0;
-        for (; start_idx < argc && (strcmp(argv[start_idx], "--async") == 0 ||
-                                    strcmp(argv[start_idx], "--frontend") == 0 ||
-                                    strcmp(argv[start_idx], "--nowait") == 0);
-             start_idx++)
-        {
-            flags |= (argv[start_idx][2] == 'a')   ? MILK_CALL_ASYNC
-                     : (argv[start_idx][2] == 'f') ? MILK_CALL_FRONTEND
-                                                   : MILK_CALL_NOWAIT;
-        }
-        return milk_client_call(argc - start_idx, argv + start_idx, flags, NULL);
-    }
-    if (strcmp(sub, "get") == 0)
-    {
-        return milk_client_get_argv(argc, argv, NULL);
-    }
-    if (strcmp(sub, "set") == 0)
-    {
-        return milk_client_set_argv(argc, argv, NULL);
-    }
-    if (strcmp(sub, "calc") == 0)
-    {
-        return milk_client_calc_argv(argc, argv, NULL);
-    }
-    if (strcmp(sub, "test") == 0)
-    {
-        char *expr = join_args(argc, argv);
-        int   rc   = milk_client_test(expr ? expr : "", NULL);
-        free(expr);
-        return rc;
-    }
-    if (strcmp(sub, "exists") == 0)
-    {
-        int         check_running = 0;
-        const char *spec          = NULL;
-        for (int i = 0; i < argc; i++)
-        {
-            if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--running") == 0)
-            {
-                check_running = 1;
-            }
-            else if (spec == NULL)
-            {
-                spec = argv[i];
-            }
-        }
-        return milk_client_exists(spec, check_running, NULL);
-    }
-    if (strcmp(sub, "waitfor") == 0)
-    {
-        return milk_client_waitfor(argc, argv, NULL);
-    }
-    if (strcmp(sub, "waitany") == 0)
-    {
-        return milk_client_waitany(argc, argv, NULL);
-    }
-    if (strcmp(sub, "sleep") == 0)
-    {
-        return milk_client_sleep_argv(argc, argv, NULL);
+        return c->fn(argc, argv, NULL);
     }
     if (strcmp(sub, "args") ==
         0) /* plain assignments: milk-call cannot make locals or end the caller */
     {
         return milk_client_args(argc, argv, "@args", 0, NULL);
-    }
-    if (strcmp(sub, "grab") == 0)
-    {
-        return milk_client_grab(argc, argv, NULL);
-    }
-    if (strcmp(sub, "complete") == 0)
-    {
-        const char *prefix    = (argc >= 1) ? argv[0] : "";
-        const char *comp_type = (argc >= 2) ? argv[1] : "arg";
-        return milk_client_complete(prefix, comp_type, NULL);
     }
     if (strcmp(sub, "translate") == 0)
     {
@@ -267,26 +165,10 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
         }
         return 1;
     }
-    if (strcmp(sub, "session") == 0)
-    {
-        return milk_client_session(argc, argv, NULL);
-    }
     if (strcmp(sub, "server") == 0)
     {
         fprintf(stderr, "milk-call: server was removed; use: session (@session)\n");
         return 2;
-    }
-    if (strcmp(sub, "log") == 0)
-    {
-        return milk_client_log(argc, argv, NULL);
-    }
-    if (strcmp(sub, "ls") == 0)
-    {
-        return milk_client_ls(argc, argv, NULL);
-    }
-    if (strcmp(sub, "shutdown") == 0 || strcmp(sub, "unload") == 0)
-    {
-        return milk_client_shutdown(NULL);
     }
 
     return -1;

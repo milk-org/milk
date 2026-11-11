@@ -12,7 +12,7 @@
  * Does:        registers the commands of module `milk` (milk.ci, milk.fpsdump) and the root
  *              command `help`; lets other files register more milk.<name> commands between
  *              milk_module_begin() and milk_module_end(); loads the core modules, then the
- *              modules named in $MILKCLI_ADD_LIBS, or a default list.
+ *              modules named in $MILKCLI_ADD_LIBS, if any (the others load on first use).
  * Used by:     milkscript_init() (milkscript_api.c), which milk-cli, milk-script and a
  *              milk-cli server call at start-up; CLIcore_cmd_registry.c, which adds milk-cli's
  *              own milk.<name> commands.
@@ -33,7 +33,7 @@ void milk_module_end(void);
 /** milk_register_builtin_commands() - register the built-in milk.* commands and the help commands. */
 void milk_register_builtin_commands(void);
 
-/** milk_session_load_modules() - load the core modules, then $MILKCLI_ADD_LIBS (default list; "none"). */
+/** milk_session_load_modules() - load the core modules, then those $MILKCLI_ADD_LIBS names. */
 void milk_session_load_modules(void);
 
 #endif /* MILK_BUILTIN_MODULE_H */

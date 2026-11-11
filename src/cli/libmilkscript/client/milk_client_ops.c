@@ -1869,3 +1869,141 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
     }
     return 1;
 }
+
+/* ============================================================
+ *  Commands by Name
+ * ============================================================ */
+
+/* call [--async] [--frontend] [--nowait] <cmd> [args...]; no command is not an error */
+static int cmd_call(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    int flags = 0;
+    int i     = 0;
+    for (; i < argc; i++)
+    {
+        int f = (strcmp(argv[i], "--async") == 0)      ? MILK_CALL_ASYNC
+                : (strcmp(argv[i], "--frontend") == 0) ? MILK_CALL_FRONTEND
+                : (strcmp(argv[i], "--nowait") == 0)   ? MILK_CALL_NOWAIT
+                                                       : 0;
+        if (f == 0)
+        {
+            break;
+        }
+        flags |= f;
+    }
+    return (i < argc) ? milk_client_call(argc - i, argv + i, flags, hooks) : 0;
+}
+
+static int cmd_set(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    return (argc < 1) ? milk_lexicon_usage("set", stderr) : milk_client_set_argv(argc, argv, hooks);
+}
+
+/* milk-cli takes a bare @calc itself (calc mode) */
+static int cmd_calc(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    return (argc < 1) ? milk_lexicon_usage("calc", stderr)
+                      : milk_client_calc_argv(argc, argv, hooks);
+}
+
+/* test <words...>: the words, joined by spaces, are the condition */
+static int cmd_test(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    if (argc < 1)
+    {
+        return milk_lexicon_usage("test", stderr);
+    }
+    size_t tot = 1;
+    for (int i = 0; i < argc; i++)
+    {
+        tot += strlen(argv[i]) + 1;
+    }
+    char *expr = (char *) malloc(tot);
+    if (expr == NULL)
+    {
+        return 2;
+    }
+    size_t pos = 0;
+    expr[0]    = '\0';
+    for (int i = 0; i < argc; i++)
+    {
+        pos += (size_t) snprintf(expr + pos, tot - pos, "%s%s", (i > 0) ? " " : "", argv[i]);
+    }
+    int rc = milk_client_test(expr, hooks);
+    free(expr);
+    return rc;
+}
+
+/* exists [-r] <entity>: one entity */
+static int cmd_exists(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    int         check_running = 0;
+    int         extra         = 0;
+    const char *spec          = NULL;
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--running") == 0)
+        {
+            check_running = 1;
+        }
+        else if (spec == NULL)
+        {
+            spec = argv[i];
+        }
+        else
+        {
+            extra = 1;
+        }
+    }
+    return (spec == NULL || extra) ? milk_lexicon_usage("exists", stderr)
+                                   : milk_client_exists(spec, check_running, hooks);
+}
+
+/* complete <prefix> [cmd|arg] */
+static int cmd_complete(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    return milk_client_complete((argc >= 1) ? argv[0] : "", (argc >= 2) ? argv[1] : "arg", hooks);
+}
+
+static int cmd_shutdown(int argc, char **argv, const milk_client_hooks_t *hooks)
+{
+    (void) argc;
+    (void) argv;
+    return milk_client_shutdown(hooks);
+}
+
+/**
+ * milk_client_cmd - Look up a client command by name
+ * @name: `get`, `calc`, `waitfor`, ...: the bash builtin `milk<name>` and `milk-call <name>`
+ *
+ * Return: The command, or NULL when the client has none of that name
+ */
+const milk_client_cmd_t *milk_client_cmd(const char *name)
+{
+    static const milk_client_cmd_t cmds[] = {
+        { "call", cmd_call },
+        { "get", milk_client_get_argv },
+        { "set", cmd_set },
+        { "calc", cmd_calc },
+        { "test", cmd_test },
+        { "exists", cmd_exists },
+        { "waitfor", milk_client_waitfor },
+        { "waitany", milk_client_waitany },
+        { "sleep", milk_client_sleep_argv },
+        { "grab", milk_client_grab },
+        { "complete", cmd_complete },
+        { "session", milk_client_session },
+        { "log", milk_client_log },
+        { "ls", milk_client_ls },
+        { "shutdown", cmd_shutdown },
+        { "unload", cmd_shutdown },
+    };
+    for (size_t i = 0; name != NULL && i < sizeof(cmds) / sizeof(cmds[0]); i++)
+    {
+        if (strcmp(name, cmds[i].name) == 0)
+        {
+            return &cmds[i];
+        }
+    }
+    return NULL;
+}

@@ -18,10 +18,11 @@
  *              MILK_CC_FLAGS, the JIT's own flags, the CPUID feature bits (the flags hold
  *              -march=native) and the compiler binary's mtime, size and inode; the part of the hash
  *              over the core prelude, which starts every kernel, is also computed once. The cache
- *              directory, $MILK_CALC_CACHE or $TMPDIR/milk-calc-cache-<euid>, must be a real
- *              directory owned by the user (mode 0700); files are written under a temporary name
- *              and renamed, so no process loads a partial file; beyond 4096 .so files the oldest
- *              are deleted. mc_cc_build(), mc_cc_cache_dir() and mc_cc_key() are also the compile
+ *              directory ($MILK_CALC_CACHE; else ~/.cache/milk/calc, which a reboot keeps; else
+ *              $TMPDIR/milk-calc-cache-<euid>) must be a real directory owned by the user (mode
+ *              0700); files are written under a temporary name
+ *              and renamed, so no process loads a partial file; beyond 4096 .so files those
+ *              loaded longest ago are deleted (a load sets the file's date). mc_cc_build(), mc_cc_cache_dir() and mc_cc_key() are also the compile
  *              step, cache and key of `-l` C extensions.
  * Used by:     plan/mc_plan.c (mc_cc_compile_prog(), after code generation), ext/mc_ext_loader.c
  *              (`-l` extensions). Declared in plan/mc_plan.h.
@@ -32,6 +33,10 @@
  *              docs/guide/calculator.md, "Fusion & Cost Model" and
  *              "Auto-Compilation and Caching (`-l` / `--lib`)".
  */
+
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE /* ST_NOEXEC */
+#endif
 
 #if defined(__x86_64__) || defined(__i386__)
 #    include <cpuid.h>
@@ -46,6 +51,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -382,16 +388,55 @@ static void mem_cache_insert(uint64_t h1, uint64_t h2, mc_kernel_fn fn, const ch
 /* ========================================================================== */
 
 /**
+ * cache_dir_check - Create if needed, and validate, cache directory @dir
+ * @dir:   Directory path
+ * @err:   Error message buffer
+ * @errsz: Size of @err in bytes
+ *
+ * Verifies with `lstat()` that the path is a real directory (not a symlink) owned by
+ * `geteuid()`, and sets its mode to `0700`: nobody else can plant a library in it.
+ *
+ * Return: 0 on success, -1 on error
+ */
+static int cache_dir_check(const char *dir, char *err, size_t errsz)
+{
+    struct stat st;
+    if (lstat(dir, &st) != 0)
+    {
+        if (mkdir(dir, 0700) != 0 && errno != EEXIST)
+        {
+            snprintf(err, errsz, "cannot create cache dir '%s': %s", dir, strerror(errno));
+            return -1;
+        }
+        if (lstat(dir, &st) != 0)
+        {
+            snprintf(err, errsz, "cannot stat cache dir '%s': %s", dir, strerror(errno));
+            return -1;
+        }
+    }
+    if (!S_ISDIR(st.st_mode) || st.st_uid != geteuid())
+    {
+        snprintf(err, errsz, "unsafe cache directory '%s'", dir);
+        return -1;
+    }
+    if ((st.st_mode & 0777) != 0700)
+    {
+        (void) chmod(dir, 0700);
+    }
+    return 0;
+}
+
+/**
  * mc_cc_cache_dir - Resolve, create, and validate the on-disk kernel and extension cache directory
  * @dir_out: Output buffer receiving the validated directory path
  * @dir_sz:  Size of @dir_out in bytes
  * @err:     Error message buffer
  * @errsz:   Size of @err in bytes
  *
- * Uses `$MILK_CALC_CACHE` if set, otherwise `$TMPDIR/milk-calc-cache-<euid>`
- * (defaulting to `/tmp`). Verifies with `lstat()` that the path is a real
- * directory (not a symlink) owned by `geteuid()` with mode `0700` to prevent
- * symlink/privilege-escalation attacks in `/tmp`.
+ * `$MILK_CALC_CACHE` if set. Else the user's cache directory, which a reboot keeps:
+ * `$XDG_CACHE_HOME/milk/calc`, by default `~/.cache/milk/calc`. Where that cannot be used (no
+ * home, not writable, a file system mounted noexec), `$TMPDIR/milk-calc-cache-<euid>`
+ * (`/tmp` by default). Each is checked by cache_dir_check().
  *
  * Return: 0 on success, -1 on error
  */
@@ -401,41 +446,41 @@ int mc_cc_cache_dir(char *dir_out, size_t dir_sz, char *err, size_t errsz)
     if (env_dir != NULL && env_dir[0] != '\0')
     {
         snprintf(dir_out, dir_sz, "%s", env_dir);
-    }
-    else
-    {
-        const char *tmp = getenv("TMPDIR");
-        if (tmp == NULL || tmp[0] == '\0')
-        {
-            tmp = "/tmp";
-        }
-        snprintf(dir_out, dir_sz, "%s/milk-calc-cache-%u", tmp, (unsigned) geteuid());
+        return cache_dir_check(dir_out, err, errsz);
     }
 
-    struct stat st;
-    if (lstat(dir_out, &st) != 0)
+    const char *xdg  = getenv("XDG_CACHE_HOME");
+    const char *home = getenv("HOME");
+    char        base[256];
+    int n = (xdg != NULL && xdg[0] == '/')     ? snprintf(base, sizeof(base), "%s", xdg)
+            : (home != NULL && home[0] == '/') ? snprintf(base, sizeof(base), "%s/.cache", home)
+                                               : -1;
+    if (n > 0 && (size_t) n < sizeof(base) && (size_t) n + sizeof("/milk/calc") <= dir_sz)
     {
-        if (mkdir(dir_out, 0700) != 0 && errno != EEXIST)
+        char           why[256];
+        struct statvfs vfs;
+        snprintf(dir_out, dir_sz, "%s/milk/calc", base);
+        if (access(dir_out, F_OK) != 0) /* first use: its parents */
         {
-            snprintf(err, errsz, "cannot create cache dir '%s': %s", dir_out, strerror(errno));
-            return -1;
+            char milk[280];
+            snprintf(milk, sizeof(milk), "%s/milk", base);
+            (void) mkdir(base, 0700);
+            (void) mkdir(milk, 0700);
         }
-        if (lstat(dir_out, &st) != 0)
+        if (cache_dir_check(dir_out, why, sizeof(why)) == 0 && access(dir_out, W_OK | X_OK) == 0 &&
+            statvfs(dir_out, &vfs) == 0 && (vfs.f_flag & ST_NOEXEC) == 0)
         {
-            snprintf(err, errsz, "cannot stat cache dir '%s': %s", dir_out, strerror(errno));
-            return -1;
+            return 0;
         }
     }
-    if (!S_ISDIR(st.st_mode) || S_ISLNK(st.st_mode) || st.st_uid != geteuid())
+
+    const char *tmp = getenv("TMPDIR");
+    if (tmp == NULL || tmp[0] == '\0')
     {
-        snprintf(err, errsz, "unsafe cache directory '%s'", dir_out);
-        return -1;
+        tmp = "/tmp";
     }
-    if ((st.st_mode & 0777) != 0700)
-    {
-        (void) chmod(dir_out, 0700);
-    }
-    return 0;
+    snprintf(dir_out, dir_sz, "%s/milk-calc-cache-%u", tmp, (unsigned) geteuid());
+    return cache_dir_check(dir_out, err, errsz);
 }
 
 /**
@@ -464,11 +509,12 @@ static int cmp_prune_mtime(const void *a, const void *b)
 }
 
 /**
- * maybe_prune_cache - Evict oldest `.so`/`.c` pairs if the disk cache exceeds capacity
+ * maybe_prune_cache - Evict the `.so`/`.c` pairs loaded longest ago if the disk cache is full
  * @dir_path: Path to the kernel cache directory
  *
  * When the count of `<32-hex>.so` files in @dir_path exceeds `MC_DISK_MAX_ENTRIES`
- * (4096), sorts entries by `st_mtime` and unlinks the oldest entries down to
+ * (4096), sorts entries by `st_mtime` (set at each load, load_so_kernel()) and unlinks the
+ * oldest entries down to
  * `MC_DISK_MAX_ENTRIES - MC_DISK_PRUNE_COUNT` to amortize directory scans.
  *
  * Return: void
@@ -743,6 +789,7 @@ static mc_kernel_fn load_so_kernel(const char *so_path, const char *key, char *e
         snprintf(err, errsz, "dlsym('mc_k') failed in '%s'", so_path);
         return NULL;
     }
+    (void) utimensat(AT_FDCWD, so_path, NULL, 0); /* its date is its last load: pruning keeps it */
     return fn;
 }
 

@@ -4,7 +4,7 @@
 
 /**
  * @file mc_scalar_ops.c
- * @brief Scalar arithmetic/string kernels and zero-heap `mcalc_local()` fast path.
+ * @brief Scalar arithmetic/string kernels and the `mcalc_local()` fast path.
  *
  * Purpose:     one implementation of the scalar operators, so that a number comes out the same in
  *              the session and in a shell, and a fast path that lets a shell evaluate a numeric
@@ -15,13 +15,13 @@
  *              mc_val_to_str() formats a value; mc_scalar_str_fn() runs `strlen`, `toupper`,
  *              `tolower`, `substr`, `replace`, `hex`, `oct` and `bin`. mcalc_local() evaluates an
  *              expression of numbers, operators, `pi`, `nan`, `inf`, in_local math functions and
- *              numeric `s.`/`f.`/`p.` properties on the stack, with no AST and no heap, through
+ *              numeric `s.`/`f.`/`p.` properties on the tokens of mc_lex(), with no AST, through
  *              the same operator code; for anything else (variables, images, strings,
  *              assignments) it returns 0 and the caller sends the text to the session.
  * Used by:     run/mc_scalar_eval.c (operators, `pow`, string functions); mcalc_local() by
  *              `@calc`, `@test` and `@{...}` in every shell (milk_client_ops.c). Declared in
  *              front/mc_ast.h and mcalc.h.
- * Uses:        front/mc_lex.c (number and name scanners, operator precedence), mc_func.c
+ * Uses:        front/mc_lex.c (mc_lex(), operator precedence), mc_func.c
  *              (function table, mc_truth()), milk_shm_prop.h and milk_entity_ns.h (milkprop).
  * See also:    run/mc_scalar_eval.c (the full scalar evaluator); docs/guide/calculator.md,
  *              "Calculator (`@calc`, `@test`, `@pipe`)" and "Operators".
@@ -467,259 +467,56 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
 #endif /* !MILK_BASH_CLIENT */
 
 /* ========================================================================= */
-/* Zero-Allocation Stack Evaluator (mcalc_local)                             */
+/* Evaluator on Tokens, for the Shell (mcalc_local)                           */
 /* ========================================================================= */
 
-#define MC_LOCAL_MAX_TOK 128
+#define MC_LOCAL_MAX_TOK 128 /* a longer expression goes to the session: bounds the recursion */
 
 /**
- * struct mc_ltok_t - Compact stack token for `mcalc_local()`
- * @type: Token type
- * @l:    Integer literal value when `@type == MC_TOK_LONG`
- * @d:    Floating-point value when `@type == MC_TOK_DOUBLE`
- * @fn:   Resolved `in_local` function descriptor when `@type == MC_TOK_IDENT`
- */
-typedef struct
-{
-    mc_tok_type_t    type;
-    long             l;
-    double           d;
-    const mc_func_t *fn;
-} mc_ltok_t;
-
-/**
- * struct mc_lexp_t - Stack-allocated token stream and parser state for `mcalc_local()`
- * @t:    Fixed-capacity array of compact tokens
- * @n:    Number of tokens pushed into @t
+ * struct mc_lexp_t - State of `mcalc_local()` on the tokens of mc_lex()
+ * @t:    Tokens, ended by `MC_TOK_EOF`
  * @pos:  Current consumption cursor during recursive evaluation
  * @bail: Non-zero if syntax error or unsupported construct encountered
  */
 typedef struct
 {
-    mc_ltok_t t[MC_LOCAL_MAX_TOK];
-    int       n;
-    int       pos;
-    int       bail;
+    const mc_tok_t *t;
+    int             pos;
+    int             bail;
 } mc_lexp_t;
 
 /**
- * lpush - Append one compact token to a stack `mc_lexp_t` stream
- * @x:    Target local token stream
- * @type: Token type
- * @l:    Integer payload
- * @d:    Double payload
- * @fn:   Function pointer payload (for `MC_TOK_IDENT`)
+ * local_name - Value of a name the shell can read by itself
+ * @x:    Active local expression state (`bail` is set for any other name)
+ * @name: `pi`, `nan`, `inf`, or the path of a numeric `s.`/`f.`/`p.` property (`s.cam.cnt0`),
+ *        read from shared memory
  *
- * Return: 0 on success, -1 if `MC_LOCAL_MAX_TOK` capacity is reached
+ * Return: The value, or 0 with `x->bail` set: a variable, an image, a string property
  */
-static int lpush(mc_lexp_t *x, mc_tok_type_t type, long l, double d, const mc_func_t *fn)
+static mc_val_t local_name(mc_lexp_t *x, const char *name)
 {
-    if (x->n >= MC_LOCAL_MAX_TOK - 1)
-    {
-        return -1;
-    }
-    x->t[x->n++] = (mc_ltok_t) { type, l, d, fn };
-    return 0;
-}
-
-/**
- * scan_local_op - Match an operator or punctuation token in `mcalc_local()`
- * @p:   Input pointer positioned at candidate operator
- * @len: Output byte length of matched token (1 or 2)
- *
- * Return: Matched `mc_tok_type_t`, or `MC_TOK_EOF` if not a local operator
- */
-static mc_tok_type_t scan_local_op(const char *p, int *len)
-{
-    static const struct
-    {
-        char          s[3];
-        mc_tok_type_t t;
-    } two[]                            = { { "<=", MC_TOK_LE },         { ">=", MC_TOK_GE },
-                                           { "==", MC_TOK_EQ },         { "!=", MC_TOK_NE },
-                                           { "&&", MC_TOK_AND },        { "||", MC_TOK_OR },
-                                           { "+=", MC_TOK_ADD_ASSIGN }, { "-=", MC_TOK_SUB_ASSIGN },
-                                           { "*=", MC_TOK_MUL_ASSIGN }, { "/=", MC_TOK_DIV_ASSIGN },
-                                           { "<<", MC_TOK_SHL },        { ">>", MC_TOK_SHR },
-                                           { "^^", MC_TOK_BXOR } };
-    static const char          one_s[] = "+-*/%<>!()|&~,=?:";
-    static const mc_tok_type_t one_t[] = {
-        MC_TOK_PLUS, MC_TOK_MINUS, MC_TOK_MUL,    MC_TOK_DIV,    MC_TOK_MOD,  MC_TOK_LT,
-        MC_TOK_GT,   MC_TOK_NOT,   MC_TOK_LPAREN, MC_TOK_RPAREN, MC_TOK_BOR,  MC_TOK_BAND,
-        MC_TOK_BNOT, MC_TOK_COMMA, MC_TOK_ASSIGN, MC_TOK_QUEST,  MC_TOK_COLON
-    };
-
-    for (size_t i = 0; i < sizeof(two) / sizeof(two[0]); i++)
-    {
-        if (p[0] == two[i].s[0] && p[1] == two[i].s[1])
-        {
-            *len = 2;
-            return two[i].t;
-        }
-    }
-    const char *c = (*p != '\0') ? strchr(one_s, *p) : NULL;
-    if (c != NULL)
-    {
-        *len = 1;
-        return one_t[c - one_s];
-    }
-    return MC_TOK_EOF;
-}
-
-/**
- * match_local_fn - Match a built-in function call `name(` supported by `mcalc_local()`
- * @p:      Input pointer positioned at candidate identifier
- * @out_fn: Output pointer receiving the matched `mc_func_t` descriptor
- *
- * Only functions flagged with `fn->in_local == 1` are accepted; any other
- * function returns 0 so `mcalc_local()` declines the expression and lets the
- * full evaluator handle it.
- *
- * Return: Bytes consumed including the opening `(`, or 0 if not a local function
- */
-static size_t match_local_fn(const char *p, const mc_func_t **out_fn)
-{
-    size_t k = 0;
-    while (isalnum((unsigned char) p[k]) || p[k] == '_')
-    {
-        k++;
-    }
-    if (k == 0 || p[k] != '(')
-    {
-        return 0;
-    }
-    const mc_func_t *fn = mc_func_find_len(p, k);
-    if (fn == NULL || !fn->in_local)
-    {
-        return 0;
-    }
-    *out_fn = fn;
-    return k + 1; /* include '(' */
-}
-
-/**
- * lex_local_entity - Resolve a numeric shared-memory property `s/f/p.<name>.<prop>` inline
- * @p: Input pointer positioned at candidate dotted entity reference
- * @x: Target local token stream receiving the resolved numeric literal token(s)
- *
- * Reads a numeric shared-memory stream/FPS/process property (`s.`, `f.`, `p.`) as the session's
- * resolver does: the same path rule (mc_scan_ident()) and typed reader (milk_shm_prop_get_num()).
- *
- * Return: Number of bytes consumed from @p, or 0 if not a numeric SHM property
- */
-static size_t lex_local_entity(const char *p, mc_lexp_t *x)
-{
-    size_t e = mc_scan_ident(p);
-    char   tok[256];
-    if (e == 0 || e >= sizeof(tok))
-    {
-        return 0;
-    }
-    memcpy(tok, p, e);
-    tok[e]             = '\0';
-    const char    *d1  = strchr(tok, '.');
-    milk_ns_kind_t k   = milk_entity_ns_kind(tok, NULL);
+    const char    *d1  = strchr(name, '.');
+    milk_ns_kind_t k   = milk_entity_ns_kind(name, NULL);
     double         d   = 0.0;
     long           l   = 0;
     int            isl = 0;
+    if (strcmp(name, "pi") == 0)
+    {
+        return mk_d(M_PI);
+    }
+    if (strcmp(name, "nan") == 0 || strcmp(name, "inf") == 0)
+    {
+        uint64_t cbits = (name[0] == 'n') ? 0x7ff8000000000000ULL : 0x7ff0000000000000ULL;
+        memcpy(&d, &cbits, sizeof(double));
+        return mk_d(d);
+    }
     if (d1 == NULL || strchr(d1 + 1, '.') == NULL || k == MILK_NS_NONE || k == MILK_NS_LOCAL ||
-        milk_shm_prop_get_num(tok, &d, &l, &isl) != 0 ||
-        lpush(x, isl ? MC_TOK_LONG : MC_TOK_DOUBLE, l, d, NULL) != 0)
+        milk_shm_prop_get_num(name, &d, &l, &isl) != 0)
     {
-        return 0;
+        x->bail = 1;
+        return mk_l(0);
     }
-    return e;
-}
-
-/**
- * lex_local - Tokenize a pure scalar expression into a stack `mc_lexp_t` buffer
- * @s: Null-terminated expression string
- * @x: Output stack token stream
- *
- * Rejects assignment operators, variables, image references, strings, and
- * non-`in_local` functions by returning -1 so the caller falls back to the
- * full calculator pipeline.
- *
- * Return: 0 if the entire expression was tokenized for local evaluation, -1 otherwise
- */
-static int lex_local(const char *s, mc_lexp_t *x)
-{
-    x->n    = 0;
-    x->pos  = 0;
-    x->bail = 0;
-    for (const char *p = s; *p != '\0';)
-    {
-        const mc_func_t *fn = NULL;
-        mc_tok_type_t    type;
-        long             l   = 0;
-        double           d   = 0.0;
-        int              len = 0;
-        size_t           n   = 0;
-
-        if (*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        else if ((type = scan_local_op(p, &len)) != MC_TOK_EOF)
-        {
-            if (mc_op_prec(type) == 0 && type != MC_TOK_QUEST)
-            {
-                return -1;
-            }
-            if (lpush(x, type, 0, 0.0, NULL) != 0)
-            {
-                return -1;
-            }
-            p += len;
-        }
-        else if ((n = mc_scan_number(p, &type, &l, &d)) > 0)
-        {
-            if (isalnum((unsigned char) p[n]) || p[n] == '_' || p[n] == '.' ||
-                lpush(x, type, l, d, NULL) != 0)
-            {
-                return -1;
-            }
-            p += n;
-        }
-        else if ((n = match_local_fn(p, &fn)) > 0)
-        {
-            if (lpush(x, MC_TOK_IDENT, 0, 0.0, fn) != 0)
-            {
-                return -1;
-            }
-            p += n;
-        }
-        else if ((isalpha((unsigned char) *p) || *p == '_') && (n = lex_local_entity(p, x)) > 0)
-        {
-            p += n;
-        }
-        else if (strncmp(p, "pi", 2) == 0 && !isalnum((unsigned char) p[2]) && p[2] != '_' &&
-                 p[2] != '.')
-        {
-            if (lpush(x, MC_TOK_DOUBLE, 0, M_PI, NULL) != 0)
-            {
-                return -1;
-            }
-            p += 2;
-        }
-        else if ((strncmp(p, "nan", 3) == 0 || strncmp(p, "inf", 3) == 0) &&
-                 !isalnum((unsigned char) p[3]) && p[3] != '_' && p[3] != '.')
-        {
-            uint64_t cbits = (p[0] == 'n') ? 0x7ff8000000000000ULL : 0x7ff0000000000000ULL;
-            memcpy(&d, &cbits, sizeof(double));
-            if (lpush(x, MC_TOK_DOUBLE, 0, d, NULL) != 0)
-            {
-                return -1;
-            }
-            p += 3;
-        }
-        else
-        {
-            return -1;
-        }
-    }
-    x->t[x->n].type = MC_TOK_EOF;
-    return (x->n > 0) ? 0 : -1;
+    return isl ? mk_l(l) : mk_d(d);
 }
 
 static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live);
@@ -751,8 +548,8 @@ static void lexpect(mc_lexp_t *x, mc_tok_type_t t)
  */
 static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
 {
-    const mc_ltok_t *k = &x->t[x->pos];
-    mc_val_t         v;
+    const mc_tok_t *k = &x->t[x->pos];
+    mc_val_t        v;
 
     if (x->bail || k->type == MC_TOK_EOF)
     {
@@ -763,9 +560,9 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
     switch (k->type)
     {
     case MC_TOK_LONG:
-        return mk_l(k->l);
+        return mk_l(k->lval);
     case MC_TOK_DOUBLE:
-        return mk_d(k->d);
+        return mk_d(k->dval);
     case MC_TOK_MINUS:
         v = eval_local_primary(x, live);
         return (v.type == MC_VAL_LONG) ? mk_l((long) (0UL - (unsigned long) v.lval))
@@ -782,9 +579,17 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
         return v;
     case MC_TOK_IDENT:
     {
+        /* name( is a call of a function the shell has; any other name is a constant or a property */
+        const mc_func_t *fn =
+            (k->no_space_after && k[1].type == MC_TOK_LPAREN) ? mc_func_find(k->sval) : NULL;
+        if (fn == NULL || !fn->in_local)
+        {
+            return local_name(x, k->sval);
+        }
+        x->pos++; /* the '(' */
         mc_val_t va[3] = { 0 };
         double   a[3]  = { 0.0, 0.0, 0.0 };
-        int      nargs = k->fn->min_args;
+        int      nargs = fn->min_args;
         for (int i = 0; i < nargs && !x->bail; i++)
         {
             if (i > 0)
@@ -799,23 +604,23 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
         {
             return mk_d(0.0);
         }
-        if (nargs == 2 && k->fn->id == MC_ID_pow)
+        if (nargs == 2 && fn->id == MC_ID_pow)
         {
             mc_val_t r;
             mc_scalar_pow(&va[0], &va[1], &r);
             return r;
         }
-        if (nargs == 1 && k->fn->fn1 != NULL)
+        if (nargs == 1 && fn->fn1 != NULL)
         {
-            return mk_d(k->fn->fn1(a[0]));
+            return mk_d(fn->fn1(a[0]));
         }
-        if (nargs == 2 && k->fn->fn2 != NULL)
+        if (nargs == 2 && fn->fn2 != NULL)
         {
-            return mk_d(k->fn->fn2(a[0], a[1]));
+            return mk_d(fn->fn2(a[0], a[1]));
         }
-        if (nargs == 3 && k->fn->fn3 != NULL)
+        if (nargs == 3 && fn->fn3 != NULL)
         {
-            return mk_d(k->fn->fn3(a[0], a[1], a[2]));
+            return mk_d(fn->fn3(a[0], a[1], a[2]));
         }
         x->bail = 1;
         return mk_d(0.0);
@@ -834,7 +639,7 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
  *
  * Evaluates binary operators, chained relational comparisons (`a <= x <= b`),
  * short-circuiting `&&`/`||`, and ternary `c ? t : f` directly on the token
- * stream without building an AST.
+ * stream without building an AST. An assignment is declined.
  *
  * Return: Evaluated `mc_val_t`
  */
@@ -850,6 +655,11 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
         {
             break;
         }
+        if (prec == 0) /* an assignment: the session's */
+        {
+            x->bail = 1;
+            break;
+        }
         x->pos++;
         if (op == MC_TOK_QUEST)
         {
@@ -860,7 +670,7 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
             left        = c ? tv : fv;
             continue;
         }
-        int next = (op == MC_TOK_QUEST || mc_is_assign_tok(op)) ? prec : prec + 1;
+        int next = prec + 1;
         if (live && (op == MC_TOK_AND || op == MC_TOK_OR) &&
             (!isnan(val_num(&left)) && val_num(&left) != 0.0) == (op == MC_TOK_OR))
         {
@@ -904,14 +714,14 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
 }
 
 /**
- * mcalc_local - Fast zero-heap evaluator for pure scalar and SHM-property expressions
+ * mcalc_local - Fast evaluator for pure scalar and SHM-property expressions
  * @expr:   Null-terminated expression string to evaluate
  * @digits: Significant digits for `%.*g` floating-point formatting
  * @out:    Output string buffer receiving the formatted scalar result
  * @outsz:  Capacity of @out buffer in bytes
  * @truth:  Optional output receiving boolean truth value (1 if non-zero and non-NaN, else 0)
  *
- * Evaluates @expr on the stack without touching `milk_data` or heap memory. If
+ * Evaluates the tokens of mc_lex() without an AST and without touching `milk_data`. If
  * @expr uses variables, images, strings, assignments, or non-local functions,
  * returns 0 so the caller can fall back to the full calculator.
  *
@@ -919,12 +729,13 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
  */
 int mcalc_local(const char *expr, int digits, char *out, size_t outsz, int *truth)
 {
-    mc_lexp_t x;
-    if (expr == NULL || lex_local(expr, &x) != 0)
+    static _Thread_local mc_tok_list_t tl;
+    if (expr == NULL || mc_lex(expr, &tl) != 0 || tl.ntok == 0 || tl.ntok >= MC_LOCAL_MAX_TOK)
     {
         return 0;
     }
-    mc_val_t v = eval_local_expr(&x, 0, 1);
+    mc_lexp_t x = { tl.toks, 0, 0 };
+    mc_val_t  v = eval_local_expr(&x, 0, 1);
     if (x.bail || x.t[x.pos].type != MC_TOK_EOF)
     {
         return 0;

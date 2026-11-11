@@ -11,7 +11,8 @@ Does:        checks multiple, nested and istats reductions; bitwise operators; b
              exit statuses and error positions; zero divisors; failed image assignments; that
              an argument beyond those a function reads is an error; stream prefixes after
              `if` and on slices, name and string lengths, and names that are not variables;
-             the argument kinds of the catalog.
+             the argument kinds of the catalog; that the shell's own evaluation and the
+             session's agree.
 Covers:      the calculator (src/calc: front/, run/mc_scalar_eval.c, run/mc_scalar_ops.c,
              mc_eval.c, mc_func.c, and plan/ and jit/ for image statements); @calc, @test,
              @assert and @waitfor (src/cli/libmilkscript: client/, server/milk_server_eval.c);
@@ -837,3 +838,34 @@ def test_argument_kinds_come_from_the_catalog(tmp_path):
     assert [
         ln for ln in res.stdout.splitlines() if ln[:2] in ("G:", "B:", "M:")
     ] == [], out
+
+
+def test_shell_and_session_give_the_same_numbers(tmp_path):
+    """A numeric expression of literals, operators, constants, math functions and properties is
+    evaluated in the shell, with no request to the session, and has the value the session
+    gives the same text; a comment is skipped there too.
+    """
+    exprs = [
+        "42", "--3", ".5", "1e5", "0x1F", "0b101", "9223372036854775808", "1+2*3", "7 / 2",
+        "-7 % 3", "7.5 % 2", "1 << 4", "6 & 3", "6 | 3", "6 ^^ 3", "~5", "!5", "!nan",
+        "1 < 2 < 3", "1 < 3 < 2", "1 < 2 <= 2 > 1", "1 == 2 < 3", "0 && (1 / 0)", "1 || (1 / 0)",
+        "1 ? 2 : 3 ? 4 : 5", "0 ? 2 : 0 ? 4 : 5", "nan ? 1 : 2", "pi * 2", "-inf", "sin(pi / 2)",
+        "sqrt(-1)", "pow(2, 10)", "pow(2, 0.5)", "pow(2, 64)", "atan2(1, 1)", "clamp(5, 0, 3)",
+        "max(1, min(5, 3))", "sin( 1 )", "s.cam.xsize * 2", "s.cam.naxis == 2", "-s.cam.ysize",
+        "sin(s.cam.xsize)", "2 + 3 << 1", "1 | 2 & 3", "1 || 0 && 0", "0.1 + 0.2", "5 % 2.5",
+    ]  # fmt: skip
+    (tmp_path / "e.txt").write_text("\n".join(exprs) + "\n")
+    res = milk_bash(
+        CAM + '@calc "one = 1" >/dev/null; n0=$(@log --all --json | wc -l)\n'
+        'while read -r e; do @calc -v v "$e"; echo "L:$e => $v"; done <e.txt\n'
+        '@calc -v c "s.cam.xsize # width"; n1=$(@log --all --json | wc -l)\n'
+        'while read -r e; do @calc -v v "($e) * one"; echo "S:$e => $v"; done <e.txt\n'
+        'n2=$(@log --all --json | wc -l); echo "c=$c"; echo "n=$((n1 - n0)),$((n2 - n1))"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    shell = [ln[2:] for ln in res.stdout.splitlines() if ln.startswith("L:")]
+    session = [ln[2:] for ln in res.stdout.splitlines() if ln.startswith("S:")]
+    assert len(shell) == len(exprs) and shell == session, out
+    assert value(res.stdout, "c") == "8", out
+    assert value(res.stdout, "n") == f"0,{len(exprs)}", out  # no request, then one each

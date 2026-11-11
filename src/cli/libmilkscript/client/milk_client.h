@@ -167,4 +167,15 @@ int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks);
 }
 #endif
 
+/* A command of the client by name: the bash builtin milk<name> (and the keyword @<name>) and
+ * `milk-call <name>` run the same function, on the same arguments */
+typedef struct
+{
+    const char *name;
+    int (*fn)(int argc, char **argv, const milk_client_hooks_t *hooks);
+} milk_client_cmd_t;
+
+/** milk_client_cmd() - the client command called @name (`get`, `calc`, `waitfor`, ...), or NULL. */
+const milk_client_cmd_t *milk_client_cmd(const char *name);
+
 #endif /* MILK_CLIENT_H */

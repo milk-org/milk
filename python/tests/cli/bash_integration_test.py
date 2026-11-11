@@ -135,7 +135,8 @@ echo "ran=$(ls | grep -c '^run_')"
 
 def test_usage_errors_exit_2(tmp_path):
     """A keyword called with a missing or surplus argument says how it is used and exits 2
-    (docs/guide/scripting.md, "Exit Status"); `-h` is help for the keywords bash overrides.
+    (docs/guide/scripting.md, "Exit Status"), as a builtin and through milk-call, which run
+    the same client command; `-h` is help for the keywords bash overrides.
     """
     cases = {
         "set": "@set",
@@ -143,6 +144,10 @@ def test_usage_errors_exit_2(tmp_path):
         "test": "@test",
         "exists": "@exists",
         "exists2": "@exists s.a s.b",
+        "mcset": "milk-call set",
+        "mccalc": "milk-call calc",
+        "mctest": "milk-call test",
+        "mcexists": "milk-call exists s.a s.b",
         "source": "@source",
         "on": "@on",
         "on1": "@on s.a",

@@ -909,14 +909,6 @@ int milk_server_dispatch_argv(int argc, char **argv)
     {
         return milk_ls_exec(argc - 1, argv + 1);
     }
-    if (strcmp(cmdname, "module") == 0)
-    {
-        return milk_server_module(argc, argv);
-    }
-    if (strcmp(cmdname, "config") == 0)
-    {
-        return milk_server_config(argc, argv);
-    }
     if (strcmp(cmdname, "history") == 0)
     {
         int handled = 0;
@@ -926,41 +918,24 @@ int milk_server_dispatch_argv(int argc, char **argv)
             return hrc;
         }
     }
-    if (strcmp(cmdname, "streamcat") == 0)
+    /* the keywords the session runs (MILK_KW_SERVER in the keyword table), and the two commands
+     * behind @grab --stdout and @replay --stdin */
+    static const struct
     {
-        return milk_server_streamcat(argc, argv);
-    }
-    if (strcmp(cmdname, "streamwrite") == 0)
+        const char *name;
+        int (*fn)(int argc, char **argv);
+    } kw[] = { { "module", milk_server_module },       { "config", milk_server_config },
+               { "streamcat", milk_server_streamcat }, { "streamwrite", milk_server_streamwrite },
+               { "replay", milk_server_replay },       { "snapshot", milk_shm_prop_snapshot },
+               { "diff", milk_shm_prop_diff },         { "restore", milk_shm_prop_restore },
+               { "assert", milk_server_assert },       { "set", milk_server_set_argv },
+               { "pipe", milk_server_batch_or_pipe } };
+    for (size_t i = 0; i < sizeof(kw) / sizeof(kw[0]); i++)
     {
-        return milk_server_streamwrite(argc, argv);
-    }
-    if (strcmp(cmdname, "replay") == 0)
-    {
-        return milk_server_replay(argc, argv);
-    }
-    if (strcmp(cmdname, "snapshot") == 0)
-    {
-        return milk_shm_prop_snapshot(argc, argv);
-    }
-    if (strcmp(cmdname, "diff") == 0)
-    {
-        return milk_shm_prop_diff(argc, argv);
-    }
-    if (strcmp(cmdname, "restore") == 0)
-    {
-        return milk_shm_prop_restore(argc, argv);
-    }
-    if (strcmp(cmdname, "assert") == 0)
-    {
-        return milk_server_assert(argc, argv);
-    }
-    if (strcmp(cmdname, "set") == 0)
-    {
-        return milk_server_set_argv(argc, argv);
-    }
-    if (strcmp(cmdname, "pipe") == 0)
-    {
-        return milk_server_batch_or_pipe(argc, argv);
+        if (strcmp(cmdname, kw[i].name) == 0)
+        {
+            return kw[i].fn(argc, argv);
+        }
     }
 
     /* Direct entity path invocation (@s.im.xsize, @s.im.kw.KEY=val, @f.fps.param=val) */

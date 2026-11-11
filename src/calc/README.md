@@ -17,7 +17,8 @@ and standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit for the `milk
 3. **Planner, C Code Generator & `.so` Cache (`mc_plan.c`, `mc_emit.c`, `mc_cc.c`, `mc_exec.c`)**:
    Fuses elementwise image operations, slices/views, stencils (`shift`, `roll`), `lut`, `ema`, and
    reductions into C OpenMP/SIMD loops compiled into cached shared objects
-   (`${MILK_CALC_CACHE:-${TMPDIR:-/tmp}/milk-calc-cache-<uid>}/<key>.so`).
+   (`<key>.so` in `$MILK_CALC_CACHE`, by default `~/.cache/milk/calc`: see
+   [Calculator](../../docs/guide/calculator.md), "Fusion & Cost Model").
 4. **Reductions, Spatial Pre-Stages & Linear Algebra (`mc_reduce.c`, `mc_prestage.c`, `linalg/`)**:
    Single-pass full-image, masked, and axis reductions, spatial filters (`medfilt*`, `gauss`,
    `conv2`, `boxmean`, `imin3`, `imax3`), in-place BLAS/LAPACK solvers (`@`, `.T`, `svd`, `eigh`,

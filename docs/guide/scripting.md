@@ -94,9 +94,12 @@ listing, `-h` help.
 
 Each command has one name, `<module>.<command>`. It is a bash function in every front-end, defined
 from the catalog written at install (`share/milk/catalog.bash`); `libexec/milk/bin` holds links for
-external tools (`xargs`, `timeout`). A module is loaded the first time one of its commands runs.
-`@module list [--all]` shows the modules, and `@module load <name|file.so> [--as <short>]` loads a
-module ahead of time or one that is not installed.
+external tools (`xargs`, `timeout`). A session starts with the core modules (memory, FITS I/O,
+arithmetic, tools); any other installed module is loaded the first time one of its commands runs.
+Help, `@help -k` and completion know its commands before that. `@module list [--all]` shows the
+modules, and `@module load <name|file.so> [--as <short>]` loads a module ahead of time or one that
+is not installed; `MILKCLI_ADD_LIBS` names modules to load at start, and `milk-cli-all` starts with
+the standard ones loaded.
 
 ```bash
 mem.mk2Dim im 512 512              # make a 2-D image

@@ -31,6 +31,7 @@
 
 #include "computeunit.h"
 #include "fps_connect.h"
+#include "milk_catalog.h"
 #include "milk_cmd_args.h"
 #include "milk_keywords.h"
 #include "milk_entity_ns.h"
@@ -489,6 +490,17 @@ static errno_t help_search(const char *pattern)
             found++;
         }
     }
+    for (size_t i = 0; i < milk_catalog_count(); i++) /* installed modules not loaded yet */
+    {
+        const char *key  = milk_catalog_key_at(i);
+        const char *info = milk_catalog_info_at(i);
+        if (milk_catalog_pending(i) &&
+            (regexec(&re, key, 0, NULL, 0) == 0 || regexec(&re, info, 0, NULL, 0) == 0))
+        {
+            printf(COLORCMD "%-25s" COLORRESET " %s\n", key, info);
+            found++;
+        }
+    }
     regfree(&re);
     if (found == 0)
     {
@@ -563,6 +575,7 @@ errno_t help()
     {
         return RETURN_SUCCESS;
     }
+    milk_catalog_autoload_name(topic); /* an installed module, or one of its commands */
     if (milk_cmd_lookup(topic) >= 0)
     {
         return help_command(topic);

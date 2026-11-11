@@ -455,6 +455,56 @@ def test_calc_bench(size: int):
         )
 
 
+def test_kernel_cache_location(tmp_path):
+    """Without MILK_CALC_CACHE the kernels go to the user's cache directory, ~/.cache/milk/calc
+    or $XDG_CACHE_HOME/milk/calc (mode 0700), and under $TMPDIR when there is no usable home.
+    """
+    run = (
+        "mem.mk2Dim a 32 32 >/dev/null; mem.mk2Dim o 32 32 >/dev/null\n"
+        "@calc 'o = a * 3.0 + 2.0'; echo \"rc=$?\"\n"
+    )
+    cases = {
+        "home": ('export HOME="$PWD/h"; mkdir "$HOME"', "h/.cache/milk/calc"),
+        "xdg": (
+            'export HOME="$PWD/h2" XDG_CACHE_HOME="$PWD/x"; mkdir "$HOME"',
+            "x/milk/calc",
+        ),
+        "tmp": (
+            'export HOME=/nonexistent/none TMPDIR="$PWD/t"; mkdir "$TMPDIR"',
+            f"t/milk-calc-cache-{os.geteuid()}",
+        ),
+    }
+    for name, (env, where) in cases.items():
+        res = milk_bash(
+            f"unset MILK_CALC_CACHE XDG_CACHE_HOME; {env}\n" + run, tmp_path
+        )
+        out = f"{name}: {res.stdout}{res.stderr}"
+        assert "rc=0" in res.stdout, out
+        assert len(list((tmp_path / where).glob("*.so"))) == 1, out
+        assert (tmp_path / where).stat().st_mode & 0o777 == 0o700, out
+    assert not (tmp_path / "h2" / ".cache").exists()  # XDG_CACHE_HOME comes first
+
+
+def test_loading_a_cached_kernel_marks_it_as_used(tmp_path):
+    """A full cache deletes the kernels loaded longest ago: a load from disk sets the file's date."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    script = (
+        "mem.mk2Dim a 32 32 >/dev/null; mem.mk2Dim o 32 32 >/dev/null\n"
+        "@calc 'o = a * 3.0 + 2.0'\n"
+    )
+    env = {"MILK_CALC_CACHE": str(cache)}
+    res = milk_bash(script, tmp_path, extra_env=env)
+    so = list(cache.glob("*.so"))
+    assert res.returncode == 0 and len(so) == 1, res.stdout + res.stderr
+    os.utime(so[0], (1.0e9, 1.0e9))
+    res = milk_bash(script, tmp_path, extra_env=env)  # another session: found on disk
+    assert res.returncode == 0 and len(list(cache.glob("*.so"))) == 1, (
+        res.stdout + res.stderr
+    )
+    assert so[0].stat().st_mtime > 1.5e9, so[0].stat().st_mtime
+
+
 def test_runtime_bounds_and_offsets_compile_single_kernel(tmp_path):
     """50 different slice bounds or shift/roll offsets compile exactly one .so in MILK_CALC_CACHE."""
     cache_slice = tmp_path / "cache_slice"

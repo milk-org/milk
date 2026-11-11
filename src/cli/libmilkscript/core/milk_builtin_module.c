@@ -9,8 +9,9 @@
  * The commands are MILK_RUNNABLE definitions, registered with milk_register_runnable().
  * milk_module_begin() registers module `milk` once, under its reserved short name, and makes it
  * the module of the commands registered until milk_module_end(). The core modules load in a fixed
- * order: memory, iofits (when built with cfitsio), arith, tools. $MILKCLI_ADD_LIBS replaces the
- * default list of extra modules; "none" or an empty value loads none.
+ * order: memory, iofits (when built with cfitsio), arith, tools. The other installed modules
+ * load when one of their commands is first used (milk_catalog.h); $MILKCLI_ADD_LIBS names
+ * modules to load at start.
  */
 
 #include <stdio.h>
@@ -25,13 +26,6 @@
 #include "milk_config.h"
 #include "milk_runnable.h"
 #include "milk_builtin_module.h"
-
-/* Loaded in every front-end after the core modules, unless $MILKCLI_ADD_LIBS says otherwise */
-static const char *const default_extra_modules =
-    "milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,"
-    "milkimgreduce,"
-    "milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milk_module_example,milkpsf,"
-    "milkstatistic,milkZernikePolyn";
 
 static int g_milk_midx = -1;
 
@@ -113,8 +107,8 @@ void milk_register_builtin_commands(void)
  * milk_session_load_modules - Load core modules and configured extra modules at startup
  *
  * Loads the `COREMOD` shared libraries (`memory`, `iofits`, `arith`, `tools`) followed
- * by the comma/space/semicolon-separated list in `$MILKCLI_ADD_LIBS` (or the default
- * standard plugin list when unset).
+ * by the comma/space/semicolon-separated list in `$MILKCLI_ADD_LIBS`, if any ("none" names
+ * none). Every other installed module loads on first use of one of its commands.
  *
  * Return: void
  */
@@ -128,11 +122,7 @@ void milk_session_load_modules(void)
     load_module_shared("milkCOREMODtools");
 
     const char *extra = getenv("MILKCLI_ADD_LIBS");
-    if (extra == NULL)
-    {
-        extra = default_extra_modules;
-    }
-    if (extra[0] == '\0' || strcmp(extra, "none") == 0)
+    if (extra == NULL || extra[0] == '\0' || strcmp(extra, "none") == 0)
     {
         return;
     }
