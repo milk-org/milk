@@ -1067,11 +1067,10 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     else if (s->kind == MC_STMT_EXPR && s->u.expr != NULL && s->u.expr->kind == MC_EXPR_CALL &&
              s->u.expr->u.call.fn != NULL && s->u.expr->u.call.nargs >= 2)
     {
-        const char      *fnm  = s->u.expr->u.call.fn->name;
+        const mc_fn_id_t fnm  = s->u.expr->u.call.fn->id;
         const mc_expr_t *last = s->u.expr->u.call.args[s->u.expr->u.call.nargs - 1];
-        if (strcmp(fnm, "gemm") == 0 || strcmp(fnm, "gemv") == 0 || strcmp(fnm, "symv") == 0 ||
-            strcmp(fnm, "syrk") == 0 || strcmp(fnm, "ger") == 0 || strcmp(fnm, "axpy") == 0 ||
-            strcmp(fnm, "scal") == 0)
+        if (fnm == MC_ID_gemm || fnm == MC_ID_gemv || fnm == MC_ID_symv || fnm == MC_ID_syrk ||
+            fnm == MC_ID_ger || fnm == MC_ID_axpy || fnm == MC_ID_scal)
         {
             is_assign = 1;
             if (last->kind == MC_EXPR_IDENT)

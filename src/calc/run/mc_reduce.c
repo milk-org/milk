@@ -109,25 +109,25 @@ static inline int is_complex_dt(uint8_t dt)
 }
 
 /**
- * mc_map_reduce_op - Map a calculator reduction function name to an `arith_reduce_op` enum
- * @name: Reduction function identifier (e.g. `"itot"`, `"imean"`, `"irms"`, `"dot"`)
+ * mc_map_reduce_op - Map a calculator reduction function to an `arith_reduce_op` enum
+ * @fn: Id of the reduction function (e.g. `MC_ID_itot`, `MC_ID_imean`, `MC_ID_dot`)
  *
  * Return: Corresponding `ARITH_RED_*` constant, or `ARITH_RED_ALL` as fallback
  */
-int mc_map_reduce_op(const char *name)
+int mc_map_reduce_op(mc_fn_id_t fn)
 {
-    return (strcmp(name, "itot") == 0)     ? ARITH_RED_SUM
-           : (strcmp(name, "imean") == 0)  ? ARITH_RED_MEAN
-           : (strcmp(name, "imin") == 0)   ? ARITH_RED_MIN
-           : (strcmp(name, "imax") == 0)   ? ARITH_RED_MAX
-           : (strcmp(name, "istd") == 0)   ? ARITH_RED_STD
-           : (strcmp(name, "irms") == 0)   ? ARITH_RED_RMS
-           : (strcmp(name, "ivar") == 0)   ? ARITH_RED_VAR
-           : (strcmp(name, "norm") == 0)   ? ARITH_RED_NORM
-           : (strcmp(name, "asum") == 0)   ? ARITH_RED_ASUM
-           : (strcmp(name, "icount") == 0) ? ARITH_RED_COUNT
-           : (strcmp(name, "dot") == 0)    ? ARITH_RED_DOT
-                                           : ARITH_RED_ALL;
+    return (fn == MC_ID_itot)     ? ARITH_RED_SUM
+           : (fn == MC_ID_imean)  ? ARITH_RED_MEAN
+           : (fn == MC_ID_imin)   ? ARITH_RED_MIN
+           : (fn == MC_ID_imax)   ? ARITH_RED_MAX
+           : (fn == MC_ID_istd)   ? ARITH_RED_STD
+           : (fn == MC_ID_irms)   ? ARITH_RED_RMS
+           : (fn == MC_ID_ivar)   ? ARITH_RED_VAR
+           : (fn == MC_ID_norm)   ? ARITH_RED_NORM
+           : (fn == MC_ID_asum)   ? ARITH_RED_ASUM
+           : (fn == MC_ID_icount) ? ARITH_RED_COUNT
+           : (fn == MC_ID_dot)    ? ARITH_RED_DOT
+                                  : ARITH_RED_ALL;
 }
 
 /**
@@ -1000,16 +1000,16 @@ static double mc_percentile(const mc_red_src_t *s1, const IMAGE *mask, double fr
  */
 static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *err, size_t errsz)
 {
-    const char  *fn    = call_expr->u.call.fn->name;
-    int          nargs = call_expr->u.call.nargs;
-    int          rc    = 0;
-    mc_red_src_t s1;
-    mc_red_src_t s2;
+    const mc_fn_id_t fn    = call_expr->u.call.fn->id;
+    int              nargs = call_expr->u.call.nargs;
+    int              rc    = 0;
+    mc_red_src_t     s1;
+    mc_red_src_t     s2;
     s1.tmp_id = -1;
     s2.tmp_id = -1;
 
     /* Family 1: median, percentile, and matrix trace (require materialized `s1.im`). */
-    if (strcmp(fn, "imedian") == 0 || strcmp(fn, "perc") == 0 || strcmp(fn, "trace") == 0)
+    if (fn == MC_ID_imedian || fn == MC_ID_perc || fn == MC_ID_trace)
     {
         if (mc_prepare_red_src(call_expr->u.call.args[0], -1, 0, &s1, err, errsz) != 0)
         {
@@ -1017,21 +1017,20 @@ static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *e
         }
         double res  = 0.0;
         double frac = 0.5;
-        if (strcmp(fn, "trace") == 0)
+        if (fn == MC_ID_trace)
         {
             uint64_t M = s1.ishape[0];
             uint64_t N = (s1.naxis >= 2) ? s1.ishape[1] : 1;
             res = arith_image_reduce_lane(s1.im, s1.dt, 0, (M < N) ? M : N, M + 1, ARITH_RED_SUM);
         }
-        else if (strcmp(fn, "perc") == 0 &&
+        else if (fn == MC_ID_perc &&
                  mc_eval_scalar_d(call_expr->u.call.args[1], &frac, err, errsz) != 0)
         {
             rc = -1;
         }
-        else if ((strcmp(fn, "imedian") == 0 && nargs == 2) ||
-                 (strcmp(fn, "perc") == 0 && nargs == 3))
+        else if ((fn == MC_ID_imedian && nargs == 2) || (fn == MC_ID_perc && nargs == 3))
         {
-            const mc_expr_t *mk_e = call_expr->u.call.args[(strcmp(fn, "perc") == 0) ? 2 : 1];
+            const mc_expr_t *mk_e = call_expr->u.call.args[(fn == MC_ID_perc) ? 2 : 1];
             if (mc_prepare_red_src(mk_e, -1, 0, &s2, err, errsz) != 0 || s1.naxis != s2.naxis ||
                 memcmp(s1.ishape, s2.ishape, 12) != 0)
             {
@@ -1075,10 +1074,10 @@ static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *e
     }
 
     /* Family 2: linear index extremum (`iargmax`, `iargmin`, `iamax`). */
-    if (strcmp(fn, "iargmax") == 0 || strcmp(fn, "iargmin") == 0 || strcmp(fn, "iamax") == 0)
+    if (fn == MC_ID_iargmax || fn == MC_ID_iargmin || fn == MC_ID_iamax)
     {
         int64_t idx  = -1;
-        int     mode = (strcmp(fn, "iargmin") == 0) ? 1 : (strcmp(fn, "iamax") == 0) ? 2 : 0;
+        int     mode = (fn == MC_ID_iargmin) ? 1 : (fn == MC_ID_iamax) ? 2 : 0;
         rc           = run_argext_reduce(&s1, has_im2 ? &s2 : NULL, mode, &idx, err, errsz);
         mc_release_red_src(&s1);
         mc_release_red_src(&s2);
@@ -1146,8 +1145,8 @@ static int reduce_pair_once(const mc_expr_t *c0,
                             char            *err,
                             size_t           errsz)
 {
-    arith_reduce_op op0  = (arith_reduce_op) mc_map_reduce_op(c0->u.call.fn->name);
-    arith_reduce_op op1  = (arith_reduce_op) mc_map_reduce_op(c1->u.call.fn->name);
+    arith_reduce_op op0  = (arith_reduce_op) mc_map_reduce_op(c0->u.call.fn->id);
+    arith_reduce_op op1  = (arith_reduce_op) mc_map_reduce_op(c1->u.call.fn->id);
     int             comb = arith_reduce_op_promote(op0, op1);
     if (comb < 0)
     {
@@ -1346,7 +1345,7 @@ static void cent_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
 static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz)
 {
     const mc_expr_t *call  = s->u.multi.rhs[0];
-    const char      *fn    = call->u.call.fn->name;
+    const mc_fn_id_t fn    = call->u.call.fn->id;
     int              nlhs  = s->u.multi.nlhs;
     int              nargs = call->u.call.nargs;
     int              rc    = 0;
@@ -1360,7 +1359,7 @@ static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_
     {
         return -1;
     }
-    if (strcmp(fn, "istats") == 0)
+    if (fn == MC_ID_istats)
     {
         if (nargs == 2 && mc_prepare_red_src(call->u.call.args[1], -1, 1, &s2, err, errsz) != 0)
         {
@@ -1377,7 +1376,7 @@ static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_
             vals[j].dval = arith_stat_finish_inline(&acc, ops[j], 0);
         }
     }
-    else if (strcmp(fn, "icentroid") == 0)
+    else if (fn == MC_ID_icentroid)
     {
         double th = 0.0;
         if (nargs == 2 && mc_eval_scalar_d(call->u.call.args[1], &th, err, errsz) != 0)
@@ -1405,13 +1404,13 @@ static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_
         {
             mc_release_red_src(&s1);
             return (nlhs > (int) s1.naxis)
-                       ? red_err(err, errsz, "%s: cannot unpack %d coordinates from %uD image", fn,
-                                 nlhs, (unsigned) s1.naxis)
+                       ? red_err(err, errsz, "%s: cannot unpack %d coordinates from %uD image",
+                                 call->u.call.fn->name, nlhs, (unsigned) s1.naxis)
                        : -1;
         }
         int64_t flat = -1;
-        rc = run_argext_reduce(&s1, (nargs == 2) ? &s2 : NULL, (strcmp(fn, "iargmin") == 0) ? 1 : 0,
-                               &flat, err, errsz);
+        rc = run_argext_reduce(&s1, (nargs == 2) ? &s2 : NULL, (fn == MC_ID_iargmin) ? 1 : 0, &flat,
+                               err, errsz);
         int64_t nx        = (int64_t) s1.ishape[0];
         int64_t ny        = (int64_t) s1.ishape[1];
         int64_t coords[3] = { (flat < 0) ? -1 : (flat % nx), (flat < 0) ? -1 : ((flat / nx) % ny),

@@ -408,7 +408,7 @@ void mc_eval_src_block_d(const mc_red_src_t *s, uint64_t off, int len, double *r
 int mc_eval_scalar_d(const mc_expr_t *e, double *out, char *err, size_t errsz);
 
 /* Map a reduction function name to its `arith_reduce_op` enum value. */
-int mc_map_reduce_op(const char *name);
+int mc_map_reduce_op(mc_fn_id_t fn);
 
 /* Compute the maximum finite value of reduction source @s into *@out_max. */
 int mc_run_stat_max(const mc_red_src_t *s, double *out_max, char *err, size_t errsz);

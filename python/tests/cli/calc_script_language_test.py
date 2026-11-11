@@ -10,7 +10,8 @@ Does:        checks multiple, nested and istats reductions; bitwise operators; b
              checked before it runs; order statistics and argmax; number and image conditions;
              exit statuses and error positions; zero divisors; failed image assignments; that
              an argument beyond those a function reads is an error; stream prefixes after
-             `if` and on slices, name and string lengths, and names that are not variables.
+             `if` and on slices, name and string lengths, and names that are not variables;
+             the argument kinds of the catalog.
 Covers:      the calculator (src/calc: front/, run/mc_scalar_eval.c, run/mc_scalar_ops.c,
              mc_eval.c, mc_func.c, and plan/ and jit/ for image statements); @calc, @test,
              @assert and @waitfor (src/cli/libmilkscript: client/, server/milk_server_eval.c);
@@ -796,3 +797,43 @@ def test_whole_image_steps_store_integers_as_passes_do(tmp_path):
     out = res.stdout + res.stderr
     assert value(res.stdout, "dt") == "UINT8", out
     assert value(res.stdout, "v") == "44,44,255,255", out
+
+
+def test_argument_kinds_come_from_the_catalog(tmp_path):
+    """A function called with an image where a number goes, a number where an image goes, or
+    half of an optional pair fails with its signature; the forms the signature shows run.
+    """
+    good = [
+        "rand()", "rand(3)", "o = rand(a, 3)", "o = lut(a, t)", "o = lut(a, t, 0, 1)",
+        "lut(0.5, t)", "o = ir(a, 3, 4)", "o = gauss(a, 1, 2)", "o = cumsum(a, 1)",
+        "o = pixunmap(a, m)", "o = rprof(a, 8, 8)", "imean(a, m)", "o = imean(a, 0)",
+        "icount(a)", "dot(a, b)", "x, y = icentroid(a, 2)", "p, q = istats(a, m)",
+        "imedian(a, m)", "perc(a, 0.5, m)", "strlen(s)", "hex(255)", "substr(s, 0, 2)",
+        'replace(s, "a", "x")', 'o = einsum("ij,jk->ik", a, b)', "o = cat(0, a, b)",
+        "o = dstack(a, b, a)", "o = rot90(a, 2)", "o = fft(a)", "u = svd(a)", "o = cplx(a, 1)",
+    ]  # fmt: skip
+    bad = [
+        "o = rand(3, a)", "o = rand(a, b)", "o = lut(a, t, 0)", "o = lut(a, 3)", "o = ix(3)",
+        "o = ix(a, 1)", "o = medfilt3(3)", "o = gauss(a, b)", "o = conv2(a, 3)",
+        "o = cumsum(a, b)", "o = pixunmap(a, m, b)", "o = rprof(a, 8)", "imean(3)",
+        'imean(a, "x")', "icount(a, m)", "dot(a, 3)", "x, y = icentroid(a, m)",
+        "p, q = istats(a, 3)", "imedian(a, 3)", "perc(a, m)", "trace(3)", "strlen(a)",
+        "substr(3, 0, 2)", 'replace(s, 1, "x")', "o = einsum(a, a, b)", "o = cat(a, a, b)",
+        "o = cat(0, a, 3)", "o = hstack(a, 3)", "o = rot90(a, b)", "o = fft(3)", "u = svd(3)",
+    ]  # fmt: skip
+    (tmp_path / "good.txt").write_text("\n".join(good) + "\n")
+    (tmp_path / "bad.txt").write_text("\n".join(bad) + "\n")
+    res = milk_bash(
+        "mem.mk2Dim a 16 16 >/dev/null; mem.mk2Dim b 16 16 >/dev/null\n"
+        "@calc 'a = ix(a) + 1; b = iy(b) + 2; t = linspace(0, 1, 16); m = a > 3; s = \"abc\"'\n"
+        'while read -r e; do @calc "$e" >/dev/null 2>>g.err || echo "G:$e"; done <good.txt\n'
+        'while read -r e; do @calc "$e" >/dev/null 2>e.txt && echo "B:$e"\n'
+        '  f=${e#*= }; grep -q "${f%%(*}: expected ${f%%(*}(" e.txt || echo "M:$e"; done <bad.txt\n'
+        "echo done=1",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "done") == "1", out
+    assert [
+        ln for ln in res.stdout.splitlines() if ln[:2] in ("G:", "B:", "M:")
+    ] == [], out

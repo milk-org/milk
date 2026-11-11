@@ -453,7 +453,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
     }
 
     /* Explicit stream post directive: post(stream_name) */
-    if (fn->kind == MC_FN_PROG && strcmp(fn->name, "post") == 0)
+    if (fn->kind == MC_FN_PROG && fn->id == MC_ID_post)
     {
         imageID id = mc_resolve_or_autoconnect_image(e->u.call.args[0]->u.ident.name);
         if (id < 0)
@@ -484,7 +484,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
                 return sc_err(err, errsz, "String cannot be converted to number");
             }
         }
-        if (strcmp(fn->name, "pow") == 0)
+        if (fn->id == MC_ID_pow)
         {
             mc_scalar_pow(&args[0], &args[1], out);
             return 0;
@@ -506,7 +506,7 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
 
     case MC_FN_PRNG:
     {
-        int    kind = (strcmp(fn->name, "randn") == 0) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
+        int    kind = (fn->id == MC_ID_randn) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
         double seed = (nargs == 1) ? to_double(&args[0]) : (double) arith_next_rng_seed();
         *out        = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = arith_rng_draw(kind, seed) };
         return 0;
@@ -523,12 +523,12 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
         {
             return sc_err(err, errsz, "String cannot be converted to number");
         }
-        *out = (strcmp(fn->name, "real") == 0 || strcmp(fn->name, "conj") == 0)
-                   ? args[0]
-                   : (mc_val_t) { .type = MC_VAL_DOUBLE,
-                                  .dval = (strcmp(fn->name, "imag") == 0)
-                                              ? 0.0
-                                              : atan2(0.0, to_double(&args[0])) };
+        *out =
+            (fn->id == MC_ID_real || fn->id == MC_ID_conj)
+                ? args[0]
+                : (mc_val_t) { .type = MC_VAL_DOUBLE,
+                               .dval =
+                                   (fn->id == MC_ID_imag) ? 0.0 : atan2(0.0, to_double(&args[0])) };
         return 0;
 
     case MC_FN_PROG:

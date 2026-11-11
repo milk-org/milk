@@ -532,7 +532,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
 {
     const mc_expr_t *rhs = cs->rhs_expr;
 
-    int     is_ifft = (strcmp(rhs->u.call.fn->name, "ifft") == 0);
+    int     is_ifft = (rhs->u.call.fn->id == MC_ID_ifft);
     int     src_tmp = 0, rc = 0;
     imageID src_id = -1;
     if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &src_id, &src_tmp, err,
@@ -848,9 +848,9 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
                              char            *err,
                              size_t           errsz)
 {
-    const char *fn     = rhs->u.call.fn->name;
-    int         is_cat = (strcmp(fn, "cat") == 0);
-    int         axis   = (strcmp(fn, "hstack") == 0) ? 0 : (strcmp(fn, "vstack") == 0) ? 1 : 2;
+    const mc_fn_id_t fn     = rhs->u.call.fn->id;
+    int              is_cat = (fn == MC_ID_cat);
+    int              axis   = (fn == MC_ID_hstack) ? 0 : (fn == MC_ID_vstack) ? 1 : 2;
     if (is_cat)
     {
         double axd = 0.0;
@@ -916,7 +916,7 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
                 if (d != axis && s[d] != out_sz[d])
                 {
                     rc = fs_err(err, errsz, "%s: non-concatenated axis %d size mismatch (%u vs %u)",
-                                fn, d, out_sz[d], s[d]);
+                                rhs->u.call.fn->name, d, out_sz[d], s[d]);
                     goto done;
                 }
             }
@@ -1088,17 +1088,17 @@ int mc_exec_fft_or_stack(mcalc_prog_t   *prog,
 {
     mc_slot_t       *slot = &prog->slots[cs->slot_idx];
     const mc_expr_t *rhs  = cs->rhs_expr;
-    const char      *fn   = rhs->u.call.fn->name;
+    const mc_fn_id_t fn   = rhs->u.call.fn->id;
 
-    if (strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0)
+    if (fn == MC_ID_fft || fn == MC_ID_ifft)
     {
         return exec_fft_or_ifft(slot, cs, avoid_id, in_unit, err, errsz);
     }
-    if (strcmp(fn, "fftshift") == 0)
+    if (fn == MC_ID_fftshift)
     {
         return exec_fftshift(slot, rhs, avoid_id, in_unit, err, errsz);
     }
-    if (strcmp(fn, "rot90") == 0)
+    if (fn == MC_ID_rot90)
     {
         return exec_rot90(slot, rhs, avoid_id, in_unit, err, errsz);
     }
@@ -1144,17 +1144,15 @@ int mc_exec_linalg_or_ext(mcalc_prog_t   *prog,
     {
         return mc_exec_blas_call(prog, cs, avoid_id, in_unit, err, errsz);
     }
-    const char *fn = rhs->u.call.fn->name;
-    if (strcmp(fn, "fft") == 0 || strcmp(fn, "ifft") == 0 || strcmp(fn, "fftshift") == 0 ||
-        strcmp(fn, "hstack") == 0 || strcmp(fn, "vstack") == 0 || strcmp(fn, "dstack") == 0 ||
-        strcmp(fn, "cat") == 0 || strcmp(fn, "rot90") == 0)
+    const mc_fn_id_t fn = rhs->u.call.fn->id;
+    if (fn == MC_ID_fft || fn == MC_ID_ifft || fn == MC_ID_fftshift || fn == MC_ID_hstack ||
+        fn == MC_ID_vstack || fn == MC_ID_dstack || fn == MC_ID_cat || fn == MC_ID_rot90)
     {
         return mc_exec_fft_or_stack(prog, cs, avoid_id, in_unit, err, errsz);
     }
-    if (strcmp(fn, "trsv") == 0 || strcmp(fn, "trsm") == 0 || strcmp(fn, "gesv") == 0 ||
-        strcmp(fn, "posv") == 0 || strcmp(fn, "gels") == 0 || strcmp(fn, "solve") == 0 ||
-        strcmp(fn, "inv") == 0 || strcmp(fn, "pinv") == 0 || strcmp(fn, "svd") == 0 ||
-        strcmp(fn, "eigh") == 0)
+    if (fn == MC_ID_trsv || fn == MC_ID_trsm || fn == MC_ID_gesv || fn == MC_ID_posv ||
+        fn == MC_ID_gels || fn == MC_ID_solve || fn == MC_ID_inv || fn == MC_ID_pinv ||
+        fn == MC_ID_svd || fn == MC_ID_eigh)
     {
         return mc_exec_lapack_call(prog, cs, avoid_id, in_unit, err, errsz);
     }

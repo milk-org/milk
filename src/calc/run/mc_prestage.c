@@ -377,16 +377,22 @@ static uint8_t select_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
                : (pref_dt ? pref_dt : _DATATYPE_FLOAT);
 }
 
+/** medfilt_radius - radius of the median filter @fn (1 for `medfilt3`, 2, 3), 0 for another one */
+static int medfilt_radius(mc_fn_id_t fn)
+{
+    return (fn == MC_ID_medfilt3) ? 1 : (fn == MC_ID_medfilt5) ? 2 : (fn == MC_ID_medfilt7) ? 3 : 0;
+}
+
 /**
  * is_spatial_filter - Check whether @fn is a spatial filter run by COREMOD_arith
- * @fn: Built-in function name
+ * @fn: Id of a built-in function
  *
  * Return: 1 for `gauss`, `boxmean`, `conv2`, `medfilt3/5/7`, `imin3` and `imax3`, else 0
  */
-static int is_spatial_filter(const char *fn)
+static int is_spatial_filter(mc_fn_id_t fn)
 {
-    return strcmp(fn, "gauss") == 0 || strcmp(fn, "boxmean") == 0 || strcmp(fn, "conv2") == 0 ||
-           strncmp(fn, "medfilt", 7) == 0 || strcmp(fn, "imin3") == 0 || strcmp(fn, "imax3") == 0;
+    return fn == MC_ID_gauss || fn == MC_ID_boxmean || fn == MC_ID_conv2 ||
+           medfilt_radius(fn) > 0 || fn == MC_ID_imin3 || fn == MC_ID_imax3;
 }
 
 /**
@@ -414,10 +420,10 @@ static int exec_spatial_filter(mc_slot_t          *slot,
                                size_t              errsz)
 {
     const mc_expr_t *rhs   = cs->rhs_expr;
-    const char      *fn    = rhs->u.call.fn->name;
+    const mc_fn_id_t fn    = rhs->u.call.fn->id;
     int              nargs = rhs->u.call.nargs;
-    int              is_cv = (strcmp(fn, "conv2") == 0);
-    int              is_bm = (strcmp(fn, "boxmean") == 0);
+    int              is_cv = (fn == MC_ID_conv2);
+    int              is_bm = (fn == MC_ID_boxmean);
     double           p1    = 0.0;
     double           p2    = 0.0;
     imageID          kid   = -1;
@@ -425,7 +431,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
 
     if ((is_cv || is_bm) && s1->naxis != 2)
     {
-        return pre_err(err, errsz, "%s: expected 2D image", fn);
+        return pre_err(err, errsz, "%s: expected 2D image", rhs->u.call.fn->name);
     }
     if (is_cv)
     {
@@ -450,7 +456,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     {
         return -1;
     }
-    if (strcmp(fn, "gauss") == 0 && (p1 < 0.0 || p2 < 0.0))
+    if (fn == MC_ID_gauss && (p1 < 0.0 || p2 < 0.0))
     {
         return pre_err(err, errsz, "gauss: sigma must be non-negative");
     }
@@ -469,7 +475,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     {
         rc = -1;
     }
-    else if (strcmp(fn, "gauss") == 0)
+    else if (fn == MC_ID_gauss)
     {
         rc = arith_image_gauss2d_im(s1->im, dst, p1, (nargs == 3) ? p2 : p1, 0, sb, sc);
     }
@@ -481,13 +487,13 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     {
         rc = arith_image_conv2d_im(s1->im, dst, &milk_data.image[kid], sb, sc);
     }
-    else if (strncmp(fn, "medfilt", 7) == 0)
+    else if (medfilt_radius(fn) > 0)
     {
-        rc = (arith_image_medfilt2d_im(s1->im, dst, (fn[7] - '1') / 2) == RETURN_SUCCESS) ? 0 : -1;
+        rc = (arith_image_medfilt2d_im(s1->im, dst, medfilt_radius(fn)) == RETURN_SUCCESS) ? 0 : -1;
     }
     else
     {
-        rc = arith_image_minmax3_im(s1->im, dst, strcmp(fn, "imax3") == 0, sb, sc);
+        rc = arith_image_minmax3_im(s1->im, dst, fn == MC_ID_imax3, sb, sc);
     }
     if (k_tmp)
     {
@@ -495,7 +501,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     }
     if (rc != 0)
     {
-        return pre_err(err, errsz, "%s: cannot filter this image", fn);
+        return pre_err(err, errsz, "%s: cannot filter this image", rhs->u.call.fn->name);
     }
     mc_out_post(oid);
     return 0;
@@ -525,10 +531,10 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
 {
     mc_slot_t       *slot  = &prog->slots[cs->slot_idx];
     const mc_expr_t *rhs   = cs->rhs_expr;
-    const char      *fn    = rhs->u.call.fn->name;
+    const mc_fn_id_t fn    = rhs->u.call.fn->id;
     int              nargs = rhs->u.call.nargs;
-    int              is_pu = (strcmp(fn, "pixunmap") == 0);
-    int              is_rp = (strcmp(fn, "rprof") == 0);
+    int              is_pu = (fn == MC_ID_pixunmap);
+    int              is_rp = (fn == MC_ID_rprof);
     int              rc    = 0;
     mc_red_src_t     s1    = { .tmp_id = -1 };
     mc_red_src_t     s2    = { .tmp_id = -1 };
@@ -538,8 +544,8 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
         return -1;
     }
 
-    int is_sf = is_spatial_filter(fn);
-    int is_ax = !is_pu && !is_rp && !is_sf && strcmp(fn, "ema") != 0 && strcmp(fn, "cumsum") != 0;
+    int     is_sf = is_spatial_filter(fn);
+    int     is_ax = !is_pu && !is_rp && !is_sf && fn != MC_ID_ema && fn != MC_ID_cumsum;
     uint8_t pref_dt =
         (s1.dt == _DATATYPE_DOUBLE || s1.dt == _DATATYPE_INT64 || s1.dt == _DATATYPE_UINT64 ||
          (is_ax && (s1.dt == _DATATYPE_INT32 || s1.dt == _DATATYPE_UINT32)))
@@ -548,7 +554,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
     uint8_t out_dt = select_out_dt(slot, pref_dt);
 
     /* Case 1: Exponential moving average `ema(im, alpha)`. */
-    if (strcmp(fn, "ema") == 0)
+    if (fn == MC_ID_ema)
     {
         double alpha = 0.0;
         if (mc_eval_scalar_d(rhs->u.call.args[1], &alpha, err, errsz) != 0)
@@ -621,7 +627,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
     }
 
     /* Case 2: Cumulative prefix sum `cumsum(im[, axis])`. */
-    if (strcmp(fn, "cumsum") == 0)
+    if (fn == MC_ID_cumsum)
     {
         double axd = 0.0;
         if ((nargs == 2 && mc_eval_scalar_d(rhs->u.call.args[1], &axd, err, errsz) != 0) ||
@@ -733,7 +739,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
         {
             mc_release_red_src(&s1);
             mc_release_red_src(&s2);
-            return pre_err(err, errsz, "%s: invalid bin count", fn);
+            return pre_err(err, errsz, "%s: invalid bin count", rhs->u.call.fn->name);
         }
 
         uint32_t osz[3] = { (uint32_t) nbins, 1, 1 };

@@ -515,15 +515,14 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
         (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_REDUCE_L ||
          rhs->u.call.fn->kind == MC_FN_STENCIL_LIB ||
-         (rhs->u.call.fn->kind == MC_FN_PROG && strcmp(rhs->u.call.fn->name, "ema") == 0)))
+         (rhs->u.call.fn->kind == MC_FN_PROG && rhs->u.call.fn->id == MC_ID_ema)))
     {
         return mc_exec_prestage(prog, cs, avoid_id, in_unit, err, errsz);
     }
 
     /* Vector literal `[a, b, c]` or multi-scalar `vec(a, b, c)` */
     if (rhs->kind == MC_EXPR_VEC_LIT ||
-        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
-         strcmp(rhs->u.call.fn->name, "vec") == 0 &&
+        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL && rhs->u.call.fn->id == MC_ID_vec &&
          (rhs->u.call.nargs != 1 || rhs->u.call.args[0]->res_kind != MC_RES_IMAGE)))
     {
         int n = (rhs->kind == MC_EXPR_VEC_LIT) ? rhs->u.vec_lit.nelem : rhs->u.call.nargs;
@@ -547,12 +546,12 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
         return (oid < 0) ? -1 : (mc_out_post(oid), 0);
     }
 
-    const char *fn =
-        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL) ? rhs->u.call.fn->name : "";
+    const mc_fn_id_t fn =
+        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL) ? rhs->u.call.fn->id : MC_ID_NONE;
     int nargs = (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.nargs : 0;
 
     /* Analytic array generators: `linspace`, `zeros`, `eye` */
-    if (strcmp(fn, "linspace") == 0 || strcmp(fn, "zeros") == 0 || strcmp(fn, "eye") == 0)
+    if (fn == MC_ID_linspace || fn == MC_ID_zeros || fn == MC_ID_eye)
     {
         double v[3] = { 0.0, 0.0, 0.0 };
         for (int i = 0; i < nargs; i++)
@@ -562,8 +561,8 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                 return -1;
             }
         }
-        int      is_ls  = (strcmp(fn, "linspace") == 0);
-        int      is_eye = (strcmp(fn, "eye") == 0);
+        int      is_ls  = (fn == MC_ID_linspace);
+        int      is_eye = (fn == MC_ID_eye);
         uint32_t sz[3]  = { 1, 1, 1 };
         if (is_ls && (llround(v[2]) <= 0 || llround(v[2]) > 1048576))
         {
@@ -573,7 +572,8 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
         {
             if (llround(v[i]) <= 0)
             {
-                return exec_err(err, errsz, "%s: dimensions must be positive", fn);
+                return exec_err(err, errsz, "%s: dimensions must be positive",
+                                rhs->u.call.fn->name);
             }
             sz[i] = (uint32_t) llround(v[i]);
         }
@@ -614,8 +614,8 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     }
 
     if (rhs->kind != MC_EXPR_CALL || rhs->u.call.ext_id >= 0 ||
-        (strcmp(fn, "vec") != 0 && strcmp(fn, "reshape") != 0 && strcmp(fn, "transpose") != 0 &&
-         strcmp(fn, "outer") != 0 && strcmp(fn, "diag") != 0))
+        (fn != MC_ID_vec && fn != MC_ID_reshape && fn != MC_ID_transpose && fn != MC_ID_outer &&
+         fn != MC_ID_diag))
     {
         return mc_exec_linalg_or_ext(prog, cs, avoid_id, in_unit, err, errsz);
     }
@@ -632,13 +632,13 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     }
     const IMAGE *src = &milk_data.image[src_id];
 
-    if (strcmp(fn, "vec") == 0 || strcmp(fn, "reshape") == 0)
+    if (fn == MC_ID_vec || fn == MC_ID_reshape)
     {
         uint64_t nel      = src->md[0].nelement;
         uint64_t prod_pos = 1;
         uint8_t  ndims    = 1;
         uint32_t sz[3]    = { (uint32_t) nel, 1, 1 };
-        if (strcmp(fn, "reshape") == 0)
+        if (fn == MC_ID_reshape)
         {
             ndims        = (uint8_t) (nargs - 1);
             long dims[3] = { 1, 1, 1 };
@@ -683,7 +683,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                              ? -1
                              : (mc_out_post(oid), 0);
     }
-    else if (strcmp(fn, "transpose") == 0)
+    else if (fn == MC_ID_transpose)
     {
         if (src->md[0].naxis != 1 && src->md[0].naxis != 2)
         {
@@ -699,7 +699,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                           ? -1
                           : (mc_out_post(oid), 0);
     }
-    else if (strcmp(fn, "outer") == 0)
+    else if (fn == MC_ID_outer)
     {
         uint64_t M = 0;
         uint64_t N = 0;
@@ -725,7 +725,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                  ? -1
                  : (mc_out_post(oid), 0);
     }
-    else if (strcmp(fn, "diag") == 0)
+    else if (fn == MC_ID_diag)
     {
         double kd = 0.0;
         if ((nargs == 2 && mc_eval_scalar_d(rhs->u.call.args[1], &kd, err, errsz) != 0) ||

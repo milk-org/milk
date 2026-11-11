@@ -158,7 +158,7 @@ static int is_ctor_call(const mc_expr_t *e)
            (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
            (fn != NULL && e->res_kind == MC_RES_IMAGE &&
             (fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L ||
-             (fn->kind == MC_FN_PROG && strcmp(fn->name, "ema") == 0)));
+             (fn->kind == MC_FN_PROG && fn->id == MC_ID_ema)));
 }
 
 /**
@@ -613,11 +613,11 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         case MC_FN_GATHER:
             if (e->u.call.args[0]->res_kind != MC_RES_IMAGE ||
                 e->u.call.args[1]->res_kind != MC_RES_IMAGE ||
-                (e->u.call.nargs == 3 && (strcmp(e->u.call.fn->name, "interp2") == 0) !=
+                (e->u.call.nargs == 3 && (e->u.call.fn->id == MC_ID_interp2) !=
                                              (e->u.call.args[2]->res_kind == MC_RES_IMAGE)))
             {
                 return plan_err(w->err, w->errsz,
-                                (strcmp(e->u.call.fn->name, "interp2") == 0)
+                                (e->u.call.fn->id == MC_ID_interp2)
                                     ? "interp2: expected interp2(im, xmap, ymap)"
                                     : "pixremap: expected pixremap(im, map[, fill])");
             }

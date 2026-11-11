@@ -1152,7 +1152,7 @@ int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
                    : ext_err(err, errsz, "unknown multi-output extension '%s'", rhs->u.call.name);
     }
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
-        (strcmp(rhs->u.call.fn->name, "svd") == 0 || strcmp(rhs->u.call.fn->name, "eigh") == 0))
+        (rhs->u.call.fn->id == MC_ID_svd || rhs->u.call.fn->id == MC_ID_eigh))
     {
         return mc_exec_multi_svd_or_eigh(prog, s, in_unit, err, errsz);
     }
