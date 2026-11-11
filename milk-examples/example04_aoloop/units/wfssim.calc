@@ -1,9 +1,11 @@
 # Simulated WFS camera (test hardware, on a timer): each pixel is the wavefront phase,
 #   turbulence (AR(1) coefficients of the modes Tmodes) + DM shape through the influence functions IF
-#   + read noise, inside the pupil. wfphase is the phase without the noise: the corrected
-#   wavefront, read by the PSF unit (--psf).
+#   + read noise, inside the pupil, delayed by delay frames (fractional values interpolate).
+#   wfphase is the phase without the noise or the camera delay: the corrected wavefront, read by
+#   the PSF unit (--psf).
 tcoef = ar * tcoef + sqrt(1 - ar * ar) * tamp * randn(tamp)
 local turb = Tmodes @ tcoef
 local dmph = IF @ reshape(dm, nact)
 wfphase = tgain * turb + dmph
-wfsim = wfphase + noise * wfspup * randn(wfspup)
+local wfs0 = wfphase + noise * wfspup * randn(wfspup)
+wfsim = streamdelay(wfs0, delay=delay, unit=1, interp=1)

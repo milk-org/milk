@@ -10,20 +10,27 @@ point. There is no optical simulation.
 
 ## The loop
 
-| Unit        | Program                                    | Trigger  | Role (cacao equivalent)                        |
-| ----------- | ------------------------------------------ | -------- | ---------------------------------------------- |
-| `wfssim`    | [`wfssim.calc`](units/wfssim.calc)         | 2 kHz    | test hardware: phase = turbulence + DM, noise  |
-| `dmtrig`    | `milk-fpsexec-mem-trigmerge`               | channels | fires when any DM channel is written           |
-| `dmcomb`    | [`dmcomb.calc`](units/dmcomb.calc)         | `dmtrig` | `dm` = sum of `dmch0..3`, clipped (DMcomb)     |
-| `acquwfs`   | [`acquwfs.calc`](units/acquwfs.calc)       | `wfsim`  | dark and reference subtraction (acquWFS)       |
-| `wfs2modes` | [`wfs2modes.calc`](units/wfs2modes.calc)   | `wfss`   | `mval = CM.T @ wfss` (MVM to modes)            |
-| `mfilt`     | [`mfilt.calc`](units/mfilt.calc)           | `mval`   | leaky integrator, modal gains, clip (mfilt)    |
-| `modes2dm`  | [`modes2dm.calc`](units/modes2dm.calc)     | `mint`   | `dmch1 = M2A @ mint` (MVM to DM)               |
+| Unit        | Program                                    | Trigger  | Role (cacao equivalent)                              |
+| ----------- | ------------------------------------------ | -------- | ---------------------------------------------------- |
+| `wfssim`    | [`wfssim.calc`](units/wfssim.calc)         | 2 kHz    | test hardware: phase = turbulence + DM, noise, delay |
+| `dmtrig`    | `milk-fpsexec-mem-trigmerge`               | channels | fires when any DM channel is written                 |
+| `dmcomb`    | [`dmcomb.calc`](units/dmcomb.calc)         | `dmtrig` | `dm` = sum of `dmch0..3`, clipped (DMcomb)           |
+| `acquwfs`   | [`acquwfs.calc`](units/acquwfs.calc)       | `wfsim`  | dark and reference subtraction (acquWFS)             |
+| `wfs2modes` | [`wfs2modes.calc`](units/wfs2modes.calc)   | `wfss`   | `mval = CM.T @ wfss` (MVM to modes)                  |
+| `mfilt`     | [`mfilt.calc`](units/mfilt.calc)           | `mval`   | leaky integrator, modal gains, clip (mfilt)          |
+| `modes2dm`  | [`modes2dm.calc`](units/modes2dm.calc)     | `mint`   | `dmch1 = M2A @ mint` (MVM to DM)                     |
 
 ```text
 wfssim -> wfsim -> acquwfs -> wfss -> wfs2modes -> mval -> mfilt -> mint -> modes2dm -> dmch1
 dmch0..3 -> dmtrig -> dmcomb -> dm -> (read by wfssim at its next frame)
 ```
+
+`wfssim` delays the WFS frame `wfsim` by `f.wfssim.delay` frames (`2` by default, via
+`streamdelay` with linear interpolation for fractional values; `wfphase` is not delayed). Together
+with the one-frame sample-and-hold before `wfssim` reads `dm`, the total loop lag is three frames,
+where a pure integrator goes unstable above a gain of $2\sin(\pi / 10) \approx 0.62$; `f.mfilt.gain`
+therefore defaults to `0.3`. Setting `f.wfssim.delay=0` and `f.mfilt.gain=0.5` drops the closed-loop
+residual from about `0.06` to `0.04`.
 
 A unit has a single trigger stream, so the DM combiner needs `trigmerge` to wake on any of its four
 channels ([Merging triggers](../../docs/guide/procinfo.md#merging-triggers)).
@@ -94,12 +101,13 @@ the same `MILK_PROC_DIR`: `measure` reads the first one running. `stop` removes 
 runs `@session prune` there for the session files that the script's shells left.
 
 ```bash
-source milk.bash; @set f.mfilt.gain=0.3 f.wfssim.noise=0.05
+source milk.bash; @set f.mfilt.gain=0.25 f.wfssim.delay=1.5 f.wfssim.noise=0.05
 ```
 
 Live parameters: `f.mfilt.gain`, `.mult`, `.limit` and `.loopON`; `f.wfssim.ar` (turbulence
-correlation per frame, 1 freezes it), `.tgain` and `.noise`; `f.dmcomb.maxstroke`. Modal gains are
-the stream `mgain`.
+correlation per frame, 1 freezes it), `.tgain`, `.noise` and `.delay` (WFS delay in frames, plus
+`.streamdelay.avemode` and `.streamdelay.window` for temporal window filtering);
+`f.dmcomb.maxstroke`. Modal gains are the stream `mgain`.
 
 ## One unit for the whole iteration
 
@@ -133,8 +141,9 @@ source milk.bash; @calc "imax(psf)"
 ```
 
 `f.psf.rad` sets the radians per phase unit (default 1). At 1, the Strehl ratio is about 0.95 with
-the loop open and 0.998 closed. `@set f.psf.rad=10` shows a speckled PSF: a peak of 0.07 open and
-0.87 closed, averaged over 400 frames.
+the loop open and 0.996 closed. `@set f.psf.rad=10` shows a speckled PSF: a peak of about 0.07–0.14
+open and 0.68 closed at the default 2-frame WFS delay (`0.87` at `f.wfssim.delay=0` and
+`f.mfilt.gain=0.5`), averaged over 400 frames.
 
 The unit is busy about 70 µs per frame, mostly in the calculator's `fft` and `fftshift` steps.
 FFTW alone does this 72x72 transform in 11 µs. At 2 kHz it keeps up on a core of its own, but it
@@ -155,7 +164,8 @@ options combine, e.g. `./aoloop.sh --fused --psf --threads 1 start`.
 ## Performance
 
 `./aoloop.sh measure` on an i9-12950HX laptop (powersave governor, no real-time priority, another
-copy of the loop running), one unit per step:
+copy of the loop running; shown at `f.wfssim.delay=0`, `gain=0.5` — with the default 2-frame WFS
+delay and `gain=0.3`, the closed-loop residual is about `0.062`), one unit per step:
 
 ```text
 residual RMS over 4000 frames (phase units): loop open 0.304087870746984, closed 0.0431277827185886

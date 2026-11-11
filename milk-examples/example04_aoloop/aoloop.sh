@@ -30,7 +30,7 @@ SIM="wfssim"                                              # test hardware
 SPLIT="dmtrig dmcomb acquwfs wfs2modes mfilt modes2dm"    # the AO loop, one unit per step
 FUSED="aoloop"                                            # the AO loop, one unit (--fused)
 STEPS="acquwfs wfs2modes mfilt modes2dm dmcomb"           # the programs that the fused unit runs
-MFILT="loopON:int=0 gain:float=0.5 mult:float=0.99 limit:float=10"
+MFILT="loopON:int=0 gain:float=0.3 mult:float=0.99 limit:float=10"
 DMCOMB="maxstroke:float=1"
 STREAMS="dmch0 dmch1 dmch2 dmch3 dm dmtrig wfspup IF Tmodes tamp tcoef wfsim wfphase wfsdark wfsref
          wfss CM M2A mgain mval mint tcam latency psfE psf"
@@ -106,7 +106,7 @@ start() {
                        for $xy, z = 0:$((NTURB - 1))]" || exit 1
     @calc "S:tamp = [0.3 * pow(sq(floor((z+1)/6)) + sq((z+1)%6), -11/12) for z = 0:$((NTURB - 1))]; S:tcoef = tamp * 0" || exit 1
     @calc "S:wfsim = zeros($WFSNX, $WFSNX); S:wfphase = wfsim" || exit 1
-    unit wfssim "" "ar:float=0.995 tgain:float=1 noise:float=0.01 nact:int=$NACT" "$(echo "1 / $RATE" | bc -l)"
+    unit wfssim "" "ar:float=0.995 tgain:float=1 noise:float=0.01 delay:float=2 nact:int=$NACT" "$(echo "1 / $RATE" | bc -l)"
 
     # calibration, computed from the model: the response matrix of a phase WFS is IF itself.
     # Modes are its right singular vectors: M2A maps mode coefficients to DM shapes, CM maps WFS
