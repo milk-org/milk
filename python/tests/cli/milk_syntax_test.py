@@ -540,7 +540,7 @@ def test_property_modifier_and_keyword_tables_agree(tmp_path):
     assert [n for n in names if f"`{n}`" not in bullet] == [], bullet
     assert value(res.stdout, "mods").split() == ["@TC64:", "@TC128:"], out
     kws = value(res.stdout, "kw").split()
-    assert len(kws) == 28, out
+    assert len(kws) == 27, out
     section = text[text.index("## Keywords") : text.index("## Module Commands")]
     table = "".join(ln for ln in section.splitlines(True) if ln.startswith("|"))
     assert sorted(kws) == sorted(re.findall(r"`@(\w+)`", table)), table

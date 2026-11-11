@@ -777,7 +777,7 @@ static void format_entry_line(const milk_srvlog_entry_t *e, int json_mode, int c
 /**
  * print_log_help - Print usage and command-line option reference for `@log`
  *
- * Writes `@log` / `@session log` flags and usage examples to stdout.
+ * Writes `@log` flags and usage examples to stdout.
  *
  * Return: void
  */
@@ -787,7 +787,7 @@ static void print_log_help(void)
 }
 
 /**
- * @brief Execute the `@log` / `@session log` query, search, or live-follow command.
+ * @brief Execute the `@log` query, search, or live-follow command.
  */
 int milk_srvlog_cmd_log(const char                *default_sockpath,
                         int                        argc,
@@ -821,9 +821,14 @@ int milk_srvlog_cmd_log(const char                *default_sockpath,
                 last_n = 20;
             }
         }
-        else if (strcmp(a, "-a") == 0 || strcmp(a, "--all") == 0)
+        else if (strcmp(a, "--all") == 0)
         {
             show_all = 1;
+        }
+        else if (strcmp(a, "-a") == 0)
+        {
+            fprintf(stderr, "@log: -a was removed; use: --all\n");
+            return 2;
         }
         else if ((strcmp(a, "-g") == 0 || strcmp(a, "--grep") == 0) && i + 1 < argc)
         {

@@ -838,12 +838,13 @@ static int cmd_ls(int json, const milk_client_hooks_t *hooks)
 /* The verbs @server had, for the hint (start, list, local, detach, stop, attach) */
 static const char *session_old_verb(const char *verb)
 {
-    static const char *const map[][2] = { { "start", "new <name> (or use <name>)" },
-                                          { "list", "ls" },
-                                          { "local", "leave" },
-                                          { "detach", "leave" },
-                                          { "stop", "end" },
-                                          { "attach", "log -f" } };
+    static const char *const map[][2] = { { "start", "@session new <name> (or use <name>)" },
+                                          { "list", "@session ls" },
+                                          { "local", "@session leave" },
+                                          { "detach", "@session leave" },
+                                          { "stop", "@session end" },
+                                          { "attach", "@log -f" },
+                                          { "log", "@log" } };
 
     for (size_t i = 0; i < sizeof(map) / sizeof(map[0]); i++)
     {
@@ -1263,7 +1264,7 @@ static void print_session_help(void)
 }
 
 /**
- * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, save, log).
+ * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, save).
  */
 int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
@@ -1317,15 +1318,10 @@ int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *ho
                 "@session restore: from a shell, which runs the file (source <file> does too)\n");
         return 2;
     }
-    if (strcmp(verb, "log") == 0)
-    {
-        milk_ipc_resolve_sockpath(hooks, cur, sizeof(cur), 0);
-        return milk_srvlog_cmd_log(cur, argc - 1, argv + 1, hooks);
-    }
     const char *now = session_old_verb(verb);
     if (now != NULL)
     {
-        fprintf(stderr, "@session: %s is @session %s\n", verb, now);
+        fprintf(stderr, "@session: %s is %s\n", verb, now);
         return 2;
     }
     fprintf(stderr, "@session: unknown verb '%s'\n", verb);

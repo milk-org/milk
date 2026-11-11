@@ -114,7 +114,7 @@ fi
 
 CC_BIN="${MILK_CALC_CC:-@CMAKE_C_COMPILER@}"
 # The calculator's run-time compile flags (MILK_CC_FLAGS in CMakeLists.txt, written in at configure
-# time): .so files built here match `@calc -l file.c` and the JIT
+# time): .so files built here match `@calc --lib file.c` and the JIT
 read -r -a CC_FLAGS <<< "@MILK_CC_FLAGS@"
 
 # Collect include directories under $PREFIX/include

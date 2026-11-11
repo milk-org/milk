@@ -275,7 +275,7 @@ MILK_CALC_EXT_EXPORT(MILK_CALC_REG_IMG("crash_now", crash_img, crash_now));
     res = milk_bash(
         'mem.mk2Dim "@L:loc" 4 4 >/dev/null; @calc "loc = 5"\n'
         'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 3"\n'
-        '@calc -l crash.c "o = crash_now(im)" 2>crash.err; echo "crash_rc=$?"\n'
+        '@calc --lib crash.c "o = crash_now(im)" 2>crash.err; echo "crash_rc=$?"\n'
         '@calc -v m "imean(loc)"; echo "loc=$m"',  # a local image: this session's server lives
         tmp_path,
     )

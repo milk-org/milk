@@ -7,7 +7,9 @@ Does:        the sequencer (milk-seq, `seq.*`, and the `q.` namespace in @get, @
              ...), the fpslist.txt deployment and tmux scripts, the FIFO and tmux headers,
              fpsCTRL's command FIFO options, `p.X.tmux` (now `p.X.unit`); the stream logger, which
              ran in tmux, runs as a unit; removed calculator spellings (ln, fabs, urand, grand,
-             nrm2, trunc, _PI, `if ... end`, `for ... end`, --tokens).
+             nrm2, trunc, _PI, `if ... end`, `for ... end`, --tokens); the keywords @running and
+             `@session log`, and the option letters that had two meanings (@calc -l, @restore -n,
+             @log -a, @assert -e).
 Covers:      the rename table (libmilkscript/core/milk_renames.c, `milkls --rename`), the `q.`
              hint (src/prop/milk_entity_ns.h), the unit-argument check
              (libmilkscript/core/CLIcore_checkargs_fps.c), src/tui/fpsCTRL/milk-fpsCTRL.c,
@@ -305,3 +307,54 @@ def test_removed_spellings_name_their_replacement(tmp_path):
     ):
         assert hint in err, err
     assert err.count("'--tokens' was removed") == 2, err
+
+
+def test_removed_keywords_and_option_letters(tmp_path):
+    """@running and @session log name their replacement; a one-letter option that had another
+    meaning in another keyword is refused with its long form, and nothing runs: @restore -n
+    does not apply the snapshot, which --dry-run only lists.
+    """
+    res = milk_bash(
+        CAM + '@running s.cam 2>>e.txt; echo "run=$?"; @exists -r s.cam; echo "ex=$?"\n'
+        '@session log 2>>e.txt; echo "slog=$?"; @log --all >/dev/null; echo "log=$?"\n'
+        '@log -a 2>>e.txt; echo "la=$?"; @assert -e s.cam 2>>e.txt; echo "ae=$?"\n'
+        '@assert --exists s.cam; echo "aex=$?"; @calc -l none.c "1" 2>>e.txt; echo "cl=$?"\n'
+        '@set s.cam.kw.G=1; @snapshot -o b.snap "s.cam*" >/dev/null; @set s.cam.kw.G=2\n'
+        '@restore -n b.snap 2>>e.txt; echo "rn=$? $(@get s.cam.kw.G)"\n'
+        '@restore --undo -n 2>>e.txt; echo "un=$? $(@get s.cam.kw.G)"\n'
+        '@restore --dry-run b.snap >dry.txt; echo "dry=$? $(@get s.cam.kw.G)"\n'
+        '@restore b.snap >/dev/null; echo "app=$? $(@get s.cam.kw.G)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    err = (tmp_path / "e.txt").read_text()
+    got = {
+        k: value(res.stdout, k)
+        for k in "run ex slog log la ae aex cl rn un dry app".split()
+    }
+    assert got == {
+        "run": "127",
+        "ex": "0",
+        "slog": "2",
+        "log": "0",
+        "la": "2",
+        "ae": "2",
+        "aex": "0",
+        "cl": "2",
+        "rn": "2 2",
+        "un": "2 2",
+        "dry": "0 2",
+        "app": "0 1",
+    }, (
+        out + err
+    )
+    for hint in (
+        "@running was removed; use: @exists -r",
+        "@session: log is @log",
+        "@log: -a was removed; use: --all",
+        "@assert: -e was removed; use: --exists",
+        "@calc: -l was removed: use --lib",
+        "@restore: -n was removed; use: --dry-run",
+    ):
+        assert hint in err, err
+    assert err.count("@restore: -n was removed") == 2, err

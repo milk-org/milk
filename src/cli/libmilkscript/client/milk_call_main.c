@@ -173,10 +173,6 @@ static int dispatch_subcommand(const char *sub, int argc, char **argv)
         }
         return milk_client_exists(spec, check_running, NULL);
     }
-    if (strcmp(sub, "running") == 0)
-    {
-        return milk_client_exists((argc >= 1) ? argv[0] : NULL, 1, NULL);
-    }
     if (strcmp(sub, "waitfor") == 0)
     {
         return milk_client_waitfor(argc, argv, NULL);

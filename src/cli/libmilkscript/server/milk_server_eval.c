@@ -369,9 +369,14 @@ int milk_server_assert(int argc, char **argv)
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--exists") == 0)
+        if (strcmp(argv[i], "--exists") == 0)
         {
             chk_exists = 1;
+        }
+        else if (strcmp(argv[i], "-e") == 0)
+        {
+            fprintf(stderr, "@assert: -e was removed; use: --exists\n");
+            return 2;
         }
         else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--running") == 0)
         {

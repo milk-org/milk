@@ -177,7 +177,7 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         {
             timeout = argv[i] + 10;
         }
-        else if ((strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--sem") == 0) && i + 1 < argc)
+        else if (strcmp(argv[i], "--sem") == 0 && i + 1 < argc)
         {
             sem_str = argv[++i];
         }
@@ -1035,7 +1035,7 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
         {
             timeout = argv[i] + 10;
         }
-        else if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fits") == 0) && i + 1 < argc)
+        else if (strcmp(argv[i], "--fits") == 0 && i + 1 < argc)
         {
             fits_raw = argv[++i];
         }

@@ -23,6 +23,13 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — Keywords: `@running` is removed (`@exists -r`), and `@session log` (`@log`). A
+  one-letter option now has one meaning in every keyword: `@calc -l` is `--lib`, `@restore -n` is
+  `--dry-run`, `@log -a` is `--all`, `@assert -e` is `--exists`; the old spellings fail with a
+  message that names the new one. The short options that were not in the help and clashed are gone
+  (`@replay -r -l -d`, `@grab -f`, `@on -s -1`, `@waitfor -s`, `@config prompt -s`), and `@on`
+  refuses an option it does not know.
+  See [Scripting](guide/scripting.md) `#cli`
 - **2026-11-11** — `rand` and `randn` have new generators: the values for a given seed change.
   Every distinct seed gives another image, from a 64-bit key: `rand(im, 1)` and
   `rand(im, 4294967297)` were the same, as were two fractional seeds, and the 32 bits of state

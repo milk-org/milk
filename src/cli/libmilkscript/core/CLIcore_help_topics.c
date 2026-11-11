@@ -706,7 +706,7 @@ static void help_topic_procinfo(void)
            " Set trigger mode (IMMEDIATE, SEMAPHORE, CNT0, DELAY...)\n");
     printf("  " C_CMD "@waitfor p.<name> [ST] " C_RST
            "Wait until process reaches state (IDLE, PAUSED, RUNNING)\n");
-    printf("  " C_CMD "@running p.<name>      " C_RST
+    printf("  " C_CMD "@exists -r p.<name>    " C_RST
            "Exit 0 if processinfo exists and PID is alive\n");
     printf("\n");
     printf(C_HDR "2. Standalone OS Tools:\n" C_RST);

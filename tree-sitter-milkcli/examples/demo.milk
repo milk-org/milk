@@ -140,7 +140,7 @@ iofits.saveFITS dm0ref ./dm0ref.fits > /dev/null 2>&1
 # ---- Logical operators ----
 [ -f ./config.txt ] && source ./config.txt
 [ -z "$GAIN" ] || echo "GAIN is set"
-! @running f.${LOOPNAME} && @set f.${LOOPNAME}.runstart
+! @exists -r f.${LOOPNAME} && @set f.${LOOPNAME}.runstart
 
 echo "Script complete" # trailing comment
 exit 0

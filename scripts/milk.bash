@@ -328,7 +328,7 @@ export PROCINFO_NCPU
 export PROCINFO_NPROC="${PROCINFO_NPROC:-0}"
 
 _milk_on_usage() {
-    echo "Usage: @on [--once|-1] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | @on [...] --when \"<expr>\" [--hold <sec>] [--level] \"<cmd>\" | @on [--once] [--scoped] --every <sec> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
+    echo "Usage: @on [--once] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | @on [...] --when \"<expr>\" [--hold <sec>] [--level] \"<cmd>\" | @on [--once] [--scoped] --every <sec> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
 }
 
 _milk_on_manage() {
@@ -354,7 +354,7 @@ _milk_on_manage() {
             _MILK_ON_PIDS=() _MILK_ON_TARGETS=() _MILK_ON_CMDS=()
             return 0
             ;;
-        --stop|-s)
+        --stop)
             local sel="${2:-}" idx pid tgt stopped=0
             if [[ -z "${sel}" ]]; then
                 echo "Usage: @on --stop <id|pid|target>" >&2
@@ -444,7 +444,7 @@ _milk_on_impl() {
         return 2
     fi
     case "${1:-}" in
-        --list|--clear|--stop|-s)
+        --list|--clear|--stop)
             _milk_on_manage "$@"
             return $?
             ;;
@@ -464,7 +464,7 @@ _milk_on_impl() {
             --every)
                 (( $# >= 2 )) || { _milk_on_usage; return 2; }
                 every="$2"; shift 2 ;;
-            --once|-1)
+            --once)
                 once=1; shift ;;
             --scoped)
                 scoped=1; shift ;;
@@ -485,6 +485,10 @@ _milk_on_impl() {
                 timeout_sec="$2"; shift 2 ;;
             --timeout=*)
                 timeout_sec="${1#*=}"; shift ;;
+            --)
+                break ;;
+            -*)
+                _milk_on_usage; return 2 ;;
             *)
                 break ;;
         esac
@@ -702,7 +706,6 @@ _milk_unload_impl() {
 #    (milk_keywords.c) for this front-end; shell keywords are implemented by _milk_<name>_impl.
 #    With libmilkbash loaded, the builtin keywords are builtins named @<name> instead (section 4).
 # ---------------------------------------------------------------------------
-_milk_running_impl() { milkexists -r "$@"; }
 # @session restore FILE: run the script that @session save wrote, in this shell's session; the units it
 # lists are not started
 _milk_session_restore() {
@@ -754,14 +757,15 @@ declare -ga __MILK_UNDO=()
     esac
 }
 
-# @restore --undo [-n] [N]: set back the values the last N @set calls (1) overwrote, where they still
-# hold what was written; -n lists them
+# @restore --undo [--dry-run] [N]: set back the values the last N @set calls (1) overwrote, where they
+# still hold what was written; --dry-run lists them
 _milk_undo_impl() {
     local dry=0 n=1 k i e line rest name old new cur rc=0 note
     local -a keys lines
-    if [[ ${1-} == -n ]]; then dry=1; shift; fi
+    if [[ ${1-} == -n ]]; then echo "@restore: -n was removed; use: --dry-run" >&2; return 2; fi
+    if [[ ${1-} == --dry-run ]]; then dry=1; shift; fi
     if (( $# > 1 )) || [[ $# -eq 1 && ! $1 =~ ^[1-9][0-9]*$ ]]; then
-        echo "Usage: @restore --undo [-n] [N]" >&2
+        echo "Usage: @restore --undo [--dry-run] [N]" >&2
         return 2
     fi
     (( $# )) && n=$1
@@ -1100,7 +1104,7 @@ _milk_prompt_unwatch() {
 _milk_prompt_impl() {
     local sub="${1:-status}"
     case "${sub}" in
-        status|--status|-s)
+        status|--status)
             _milk_build_prompt_strings
             local st="ENABLED"
             [[ -n "${MILK_NO_PROMPT:-}" ]] && st="DISABLED"

@@ -30,7 +30,7 @@ typedef struct
 #define TMUX_GONE \
     "milk-fps-runstop / milk-fps-rm -f (units have no tmux session; milk-fps-log NAME)"
 #define SERVER_GONE \
-    "@session (start -> new or use, list -> ls, local -> leave, stop -> end, attach -> log -f)"
+    "@session (start -> new or use, list -> ls, local -> leave, stop -> end, attach -> @log -f)"
 
 /* Command words: bare built-in names moved to module `milk`, removed aliases, and words replaced
  * by the 27 keywords */
@@ -74,6 +74,7 @@ static const rename_t cmd_renames[] = {
     { "@help-milk", "@help milk", W },
     /* values */
     { "@", "@calc \"<expr>\"", A },
+    { "@running", "@exists -r", W },
     { "@fpsset", "@set f.<fps>.<param>=<value>", A },
     { "@procstat", "@get p.<proc>.list, or @ls -l 'p.*'", A },
     { "@procctl", "@set p.<proc>.ctrl=<action>", A },

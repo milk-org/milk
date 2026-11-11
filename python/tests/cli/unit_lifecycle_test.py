@@ -632,20 +632,20 @@ def test_group_writable_fps_is_refused(tmp_path):
 
 def test_set_run_and_conf_report_unit_states(tmp_path):
     """@set f.X.run|conf=start|stop return once done; status, run and conf are the unit states (conf
-    is not mistaken for the conf.* parameters); @running and @ls follow the run process.
+    is not mistaken for the conf.* parameters); @exists -r and @ls follow the run process.
     """
     res = lt_bash(
         "calc_unit s1 o1\n"
         'echo "s0=$(@get f.s1.status)"; echo "c0=$(@get f.s1.conf)"\n'
         '@set f.s1.run=start >start.log 2>&1; echo "start=$?"\n'
         'echo "s1=$(@get f.s1.status)"; echo "r1=$(@get f.s1.run)"\n'
-        'echo "up=$(@running f.s1 && echo y)"\n'
+        'echo "up=$(@exists -r f.s1 && echo y)"\n'
         '@ls -l "f.*" | grep -c "s1 *running" | sed "s/^/ls=/"\n'
         '@set f.s1.conf=start >conf.log 2>&1; echo "conf=$?"; echo "c1=$(@get f.s1.conf)"\n'
         'echo "ts=$(@get f.s1.conf.timestring)"\n'
         '@set f.s1.conf=stop f.s1.run=stop >stop.log 2>&1; echo "stop=$?"\n'
         'echo "s2=$(@get f.s1.status)"; echo "c2=$(@get f.s1.conf)"\n'
-        'echo "up2=$(@running f.s1 || echo n)"',
+        'echo "up2=$(@exists -r f.s1 || echo n)"',
         tmp_path,
         "",
     )

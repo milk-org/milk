@@ -149,7 +149,7 @@ int milk_client_complete(const char                *prefix,
 int milk_client_shutdown(const milk_client_hooks_t *hooks);
 
 /**
-     * @brief Manage sessions (`@session status|ls|new|use|leave|who|end|prune|log`).
+     * @brief Manage sessions (`@session status|ls|new|use|leave|who|end|prune|save`).
      */
 int milk_client_session(int argc, char **argv, const milk_client_hooks_t *hooks);
 

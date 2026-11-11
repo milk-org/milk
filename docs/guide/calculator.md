@@ -492,7 +492,7 @@ describes the tiers, their registration macros, how their parameters appear in a
 
 ### Auto-Compilation and Caching (`-l` / `--lib`)
 
-Passing a `.c` file to `@calc -l my_kernels.c "..."` or
+Passing a `.c` file to `@calc --lib my_kernels.c "..."` or
 `milk-fpsexec-milk-calc -l my_kernels.c ...` compiles it as a kernel is compiled (same compiler,
 flags and cache directory, see [Fusion & Cost Model](#fusion-cost-model)) into `ext_<key>.so`, keyed
 on the file's path and contents, reuses that `.so` until the file changes, and loads it via

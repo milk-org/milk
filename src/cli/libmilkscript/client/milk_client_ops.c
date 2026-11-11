@@ -5,7 +5,7 @@
 /**
  * @file milk_client_ops.c
  * @brief The client calls that run module commands and read or write values: `@get`, `@set`
- *        (and its undo journal), `@calc`, `@test`, `@exists`, `@running`.
+ *        (and its undo journal), `@calc`, `@test`, `@exists`.
  *
  * Purpose:     the frequent calls need no request: the shell reads and writes shared memory and
  *              evaluates scalar statements in its own process; the session does the rest.
@@ -1683,7 +1683,12 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
             *((argv[i][1] == 'v') ? &names : &arr) = argv[i + 1];
             i += 2;
         }
-        else if (i + 1 < argc && (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--lib") == 0))
+        else if (i + 1 < argc && strcmp(argv[i], "-l") == 0)
+        {
+            fprintf(stderr, "milk: @calc: -l was removed: use --lib\n");
+            return 2;
+        }
+        else if (i + 1 < argc && strcmp(argv[i], "--lib") == 0)
         {
             if (nlibs < 16)
             {
@@ -1705,7 +1710,7 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
             {
                 json_mode = 1;
             }
-            else if (j + 1 < argc && (strcmp(argv[j], "-l") == 0 || strcmp(argv[j], "--lib") == 0))
+            else if (j + 1 < argc && strcmp(argv[j], "--lib") == 0)
             {
                 if (nlibs < 16)
                 {
@@ -1757,7 +1762,7 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
             {
                 json_mode = 1;
             }
-            else if (j + 1 < argc && (strcmp(argv[j], "-l") == 0 || strcmp(argv[j], "--lib") == 0))
+            else if (j + 1 < argc && strcmp(argv[j], "--lib") == 0)
             {
                 j++;
             }
@@ -1810,9 +1815,9 @@ int milk_client_test(const char *expr, const milk_client_hooks_t *hooks)
 }
 
 /**
- * milk_client_exists - Check whether entity @spec exists or is actively running (`@exists` / `@running`)
+ * milk_client_exists - Check whether entity @spec exists or is actively running (`@exists [-r]`)
  * @spec:          Entity specification (`s.im`, `f.fps`, `p.proc`, `l.im`)
- * @check_running: Non-zero for `@running`, 0 for `@exists`
+ * @check_running: Non-zero for `@exists -r`, 0 for `@exists`
  * @hooks:         Optional shell variable hooks
  *
  * Checks `/dev/shm` directly first via `milk_shm_prop_exists()`, and queries a

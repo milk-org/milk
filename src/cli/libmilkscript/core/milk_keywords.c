@@ -22,13 +22,13 @@
 static const milk_keyword_t keywords[] = {
     /* values and expressions */
     { "calc", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
-      "@calc [-v <var>[,<var>...] | -a <arr>] [-l <file.c|so>] [--list [<pat>] [--json]] "
+      "@calc [-v <var>[,<var>...] | -a <arr>] [--lib <file.c|so>] [--list [<pat>] [--json]] "
       "[--explain] [\"<expr>[; <expr>...]\"]",
       "Evaluate image or scalar expressions (no args in milk-cli: toggle calc mode)",
       "  -v a,b      bind the values of the last statements (an assignment's value is the assigned "
       "one)\n"
       "  -a <arr>    bind the pixels of an image result into an indexed array\n"
-      "  -l, --lib <file>  load user C extension (.c or .so) into the session\n"
+      "  --lib <file>  load user C extension (.c or .so) into the session\n"
       "  --list [p]  list built-in operators and functions & loaded C extensions\n"
       "              (add --json for JSON output)\n"
       "  --explain   compile the statements as a unit would and print how each one runs\n"
@@ -43,14 +43,14 @@ static const milk_keyword_t keywords[] = {
       "  @calc -a row \"im1[*, 10]\"\n"
       "  @calc --list stencil\n"
       "  @calc --explain \"out = cam * gain; z = cplx(out, out)\"",
-      "-v -a -l --lib --list --explain --json --help", NULL },
+      "-v -a --lib --list --explain --json --help", NULL },
     { "test", MILK_KW_BUILTIN, MILK_KW_ALL, 1, "@test \"<boolean-expr>\"",
       "Evaluate a boolean expression: exit status 0 if true, 1 if false",
       "  Made for bash conditionals (if, while, &&); no subshell.",
       "  if @test \"imax(im1) > 100.0\"; then echo saturated; fi\n"
       "  while @test \"s.cam0.cnt0 < 50\"; do @sleep 0.01; done" },
     { "assert", MILK_KW_SERVER, MILK_KW_ALL, 1,
-      "@assert [<expr> | [-e] [-r] [--fps-min <hz>] [--max-age <s>] [--cnt-min <N>] [--dim "
+      "@assert [<expr> | [--exists] [-r] [--fps-min <hz>] [--max-age <s>] [--cnt-min <N>] [--dim "
       "<WxH[xD]>] "
       "<entity>] [\"message\"]",
       "Check an expression or a stream/FPS/process health invariant; fail loudly",
@@ -58,7 +58,7 @@ static const milk_keyword_t keywords[] = {
       "  Entity mode: existence, running owner, frame rate, age, cnt0 or geometry.",
       "  @assert \"istd(wfs) < 0.5\" \"WFS residual diverged\"\n"
       "  @assert --running --fps-min 500 s.wfs_cam \"camera degraded\"",
-      "--exists -e --running -r --fps-min --max-age --cnt-min --dim -m --msg", NULL },
+      "--exists --running -r --fps-min --max-age --cnt-min --dim -m --msg", NULL },
     { "get", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
       "@get [-v <var>|-a <arr>|-A <assoc>|--json] <spec> | @get [<var>=]<spec>... | "
       "@get --watch [T] <spec>...",
@@ -95,11 +95,8 @@ static const milk_keyword_t keywords[] = {
       "  @set f.loop.run=start" },
     { "exists", MILK_KW_BUILTIN, MILK_KW_ALL, 1, "@exists [-r] <entity>",
       "Exit status 0 if the stream, local image, FPS or process exists",
-      "  -r  also require its owner process to be alive (same as @running)",
-      "  @exists s.cam0 && echo yes" },
-    { "running", MILK_KW_SHELL, MILK_KW_ALL, 1, "@running <entity>",
-      "Exit status 0 if the entity exists and its owner process is alive", "",
-      "  @running f.loop || @set f.loop.run=start" },
+      "  -r  also require its owner process to be alive",
+      "  @exists s.cam0 && echo yes\n  @exists -r f.loop || @set f.loop.run=start" },
     { "ls", MILK_KW_BUILTIN, MILK_KW_ALL, 1, "@ls [-l|-1|-a <arr>|--json|--local] [<pattern>...]",
       "List streams, local images, FPS and processes",
       "  Patterns select a namespace: 's.*' streams, 'f.*' FPS, 'p.*' processes.",
@@ -139,8 +136,8 @@ static const milk_keyword_t keywords[] = {
       "  @on --when 'imax(cam0) > 60000' --hold 0.5 -- echo saturated\n"
       "  @on --every 1 -- '@get s.cam0.cnt0 >> counts.txt'\n"
       "  @on --stop 1",
-      "--once -1 --scoped --max-hz --cooldown --timeout -t --when --hold --level --every --list "
-      "--stop -s --clear",
+      "--once --scoped --max-hz --cooldown --timeout -t --when --hold --level --every --list "
+      "--stop --clear",
       NULL },
     { "sleep", MILK_KW_BUILTIN, MILK_KW_ALL, 0,
       "@sleep <seconds> | @sleep --every <seconds>|--hz <rate> [--late <var>] <var>",
@@ -161,7 +158,7 @@ static const milk_keyword_t keywords[] = {
       "  @grab -t 1 s.cam0 l.dark\n"
       "  @grab --fits telem.fits --timestamps telem.txt s.cam0 100\n"
       "  @grab --stdout --raw s.cam0 | python3 analyze.py",
-      "--fits -f --timestamps --ts --timeout -t --stdout --raw -a", NULL },
+      "--fits --timestamps --ts --timeout -t --stdout --raw -a", NULL },
     { "replay", MILK_KW_SERVER, MILK_KW_ALL, 1,
       "@replay [--fps <hz>|--dt <sec>] [--count <N>] [--loop] <cube_or_fits> <dst_stream> | "
       "@replay --stdin [--raw] [--dtype <type>] <stream> [xsize [ysize [zsize]]]",
@@ -171,21 +168,23 @@ static const milk_keyword_t keywords[] = {
       "needed",
       "  @replay --fps 200 telem.fits cam0_sim\n"
       "  python3 gen.py | @replay --stdin --dtype F32 cam0 128 128",
-      "--fps -r --count -n --loop -l --stdin --raw --dtype", NULL },
+      "--fps --count -n --loop --stdin --raw --dtype", NULL },
     { "snapshot", MILK_KW_SERVER, MILK_KW_ALL, 1, "@snapshot [-o <file>] [<pattern>...]",
       "Save FPS parameters and stream keywords", "", "  @snapshot -o base.snap 'f.loop*' 's.cam*'",
       "-o --output", NULL },
     { "diff", MILK_KW_SERVER, MILK_KW_ALL, 1, "@diff <snap_file> [<pattern>...]",
       "Compare a snapshot with the live state (status 1 if they differ)", "", "  @diff base.snap" },
     { "restore", MILK_KW_SERVER, MILK_KW_ALL, 1,
-      "@restore [-n] <snap_file> [<pattern>...] | @restore --undo [-n] [N]",
-      "Apply a snapshot back to the live state (-n: dry run), or undo this shell's last @set calls",
+      "@restore [--dry-run] <snap_file> [<pattern>...] | @restore --undo [--dry-run] [N]",
+      "Apply a snapshot back to the live state (--dry-run: only list the changes), or undo this "
+      "shell's last @set calls",
       "  --undo [N]  set back the values the last N @set calls of this shell overwrote (FPS\n"
       "              parameters, stream keywords), where they still hold what was written; the\n"
-      "              others are left as they are, with a warning (status 1). -n lists them.",
-      "  @restore -n base.snap\n"
+      "              others are left as they are, with a warning (status 1). --dry-run lists\n"
+      "              them.",
+      "  @restore --dry-run base.snap\n"
       "  @restore --undo 3",
-      "--undo --dry-run -n", NULL },
+      "--undo --dry-run", NULL },
     { "pipe", MILK_KW_SERVER, MILK_KW_ALL, 1,
       "@pipe \"<cmd1> |> <cmd2> |> ...\" | @pipe \"<cmd1>; <cmd2>\"",
       "Run several milk commands and expressions in one request; '_' is the image the previous "
@@ -224,9 +223,8 @@ static const milk_keyword_t keywords[] = {
       "  measure s.cam0 .n=50" },
     { "session", MILK_KW_SHELL, MILK_KW_ALL, 1,
       "@session [status [<name>] | ls [--json] | new <name> [-d] [--idle <T>] | use <name> | "
-      "leave | who [<name>] | end [<name>|--all] [--units] | prune | save <file> | restore <file> "
-      "| "
-      "log ...]",
+      "leave | who [<name>] | end [<name>|--all] [--units] | prune | save <file> | restore "
+      "<file>]",
       "Show, start, join, leave or end sessions: the milk-cli servers that hold images and "
       "variables",
       "  status [<name>]        this shell's session, or session <name>\n"
@@ -245,7 +243,6 @@ static const milk_keyword_t keywords[] = {
       "  save <file>            write the session's state as a milk script, images in <file>.d/\n"
       "  restore <file>         run that script in this shell's session (units: listed, not "
       "started)\n"
-      "  log [...]              the session's command log (@log)\n"
       "  A shell's own session starts on its first command and ends with the shell (inside "
       "milk-cli:\n"
       "  milk-cli's); scripts started from the shell use it too. A named one is shared by the "
@@ -256,7 +253,7 @@ static const milk_keyword_t keywords[] = {
       "  @session new bench1 --idle 2h\n"
       "  @session use bench1\n"
       "  @session end bench1 --units",
-      NULL, "status ls new use leave who end prune save restore log" },
+      NULL, "status ls new use leave who end prune save restore" },
     { "module", MILK_KW_SERVER, MILK_KW_ALL, 0,
       "@module [list [--all]] | @module load <name|file.so> [--as <short>]",
       "List the loaded modules, or load one (commands of installed modules load on first use)",
@@ -285,11 +282,11 @@ static const milk_keyword_t keywords[] = {
       "  @unload" },
     /* introspection */
     { "log", MILK_KW_BUILTIN, MILK_KW_ALL, 1,
-      "@log [-n <N>|-a] [-g <pat>] [-e] [--slow <ms>] [--since <dur>] [-f] [-s <name>] [--json] "
+      "@log [-n <N>|--all] [-g <pat>] [-e] [--slow <ms>] [--since <dur>] [-f] [-s <name>] [--json] "
       "[--clear] [<pattern>]",
       "Show the session's recent commands with timing and status",
       "  -n, --last <N>        the last N matching entries (20)\n"
-      "  -a, --all             every entry in the ring buffer\n"
+      "      --all             every entry in the ring buffer\n"
       "  -g, --grep <regex>    case-insensitive extended regex on the command and its output\n"
       "  -e, --errors          failed commands only (status not 0)\n"
       "      --slow <ms>       commands slower than <ms> ms only\n"
@@ -297,10 +294,9 @@ static const milk_keyword_t keywords[] = {
       "  -f, --follow          live-tail new commands and outputs\n"
       "  -s, --session <name>  the log of session <name>\n"
       "      --json            JSON Lines\n"
-      "      --clear           clear the session's ring buffer\n"
-      "  Also: @session log [options] [<pattern>].",
+      "      --clear           clear the session's ring buffer",
       "  @log -n 20\n  @log -e",
-      "-n --last -a --all -g --grep -e --errors --slow --since -f --follow -s --session --json "
+      "-n --last --all -g --grep -e --errors --slow --since -f --follow -s --session --json "
       "--clear -h --help",
       NULL },
     { "help", MILK_KW_SERVER, MILK_KW_ALL, 0,

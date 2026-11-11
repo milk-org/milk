@@ -192,7 +192,7 @@ No manual compiler invocation is needed — pass `-l wfskernels.c` directly:
 
 ```bash
 # One-shot in @calc:
-@calc -l wfskernels.c "clean = despike3x3(col_demean(nlcorr(wfscam - dark))) * flat"
+@calc --lib wfskernels.c "clean = despike3x3(col_demean(nlcorr(wfscam - dark))) * flat"
 
 # Persistent compute unit:
 milk-fpsexec-milk-calc -n wfsprep -t wfscam -l wfskernels.c \
@@ -461,7 +461,7 @@ milk-cc wfskernels.c -o wfskernels.so
 milk-fpsexec-milk-calc -n wfsprep -l ./wfskernels.so -f wfsprep.calc exec
 
 # Inspect the built-in functions, operators, and any loaded C extension kernels/params:
-@calc -l wfskernels.c --list
+@calc --lib wfskernels.c --list
 milk-fpsexec-milk-calc -l ./wfskernels.so --list
 ```
 

@@ -210,7 +210,7 @@ MILK_CALC_EXT_EXPORT(
         f"""
 mem.mk2Dim "@S:im_sp" 5 5 >/dev/null
 @calc "im_sp = 10; im_sp[2,2] = 30"
-@calc -l "{c_file}" "clean = despike3x3(im_sp)"
+@calc --lib "{c_file}" "clean = despike3x3(im_sp)"
 echo "max=$(@get s.clean.max) min=$(@get s.clean.min) mean=$(@get s.clean.mean)"
 """,
         tmp_path,
@@ -568,7 +568,7 @@ MILK_CALC_EXT_EXPORT(
 @calc --list --json interp2 | grep -q '"name": "interp2", "signature": "interp2(im, xmap, ymap)"' && echo "json=ok"
 @calc --list | grep -qE "fprog|TOK_|FKEPT|FI_" || echo "words=ok"
 @calc --list nosuchfunction >/dev/null; echo "none=$?"
-@calc -l "{c_file}" --list my_gain_op | grep -q "Tier 1 block kernel" && echo "ext_bash=ok"
+@calc --lib "{c_file}" --list my_gain_op | grep -q "Tier 1 block kernel" && echo "ext_bash=ok"
 milk-fpsexec-milk-calc -l "{c_file}" --list my_gain_op | grep -q "my_gain_op(x)" && echo "ext_unit=ok"
 """,
         tmp_path,
@@ -602,7 +602,7 @@ def test_builtin_module_exported_kernels(tmp_path):
 mem.mk2Dim "@S:im_in" 16 16 >/dev/null
 @calc "im_in = exp(-0.1 * (pow(ix(im_in) - 8, 2) + pow(iy(im_in) - 8, 2)))"
 
-# 1. Built-in module kernels usable directly in @calc without -l
+# 1. Built-in module kernels usable directly in @calc without --lib
 @calc "im_rot0 = rotate2d(im_in, angle = 0.0)"
 @calc "im_blur = bblur1pix(im_in, amp = 0.1, niter = 2)"
 @calc "im_csym = circsym(im_in, cx = 8.0, cy = 8.0)"
@@ -730,9 +730,9 @@ def test_extensions_compile_like_jit_kernels(tmp_path):
     cache = tmp_path / "cache"
     res = milk_bash(
         'mem.mk2Dim im 4 4 >/dev/null; @calc "im = 2; im[1, 1] = nan"\n'
-        '@calc -l nanfix.c "o = nanfix(im)"; echo "rc=$?"\n'
+        '@calc --lib nanfix.c "o = nanfix(im)"; echo "rc=$?"\n'
         '@calc -v t "itot(o)"; echo "tot=$t"\n'
-        '@calc -l bad.c "o2 = 1" 2>bad.err; echo "bad_rc=$?"\n'
+        '@calc --lib bad.c "o2 = 1" 2>bad.err; echo "bad_rc=$?"\n'
         'milk-cc -v --shared nanfix.c -o nf.so >cc.out 2>&1; echo "cc_rc=$?"',
         tmp_path,
         extra_env={"MILK_CALC_CACHE": str(cache)},
@@ -753,7 +753,7 @@ def test_extensions_compile_like_jit_kernels(tmp_path):
         ({"MILK_CALC_CACHE": str(tmp_path / "link")}, "unsafe cache directory"),
     ):
         res = milk_bash(
-            '@calc -l nanfix.c "1" 2>e.txt; echo "rc=$?"', tmp_path, extra_env=env
+            '@calc --lib nanfix.c "1" 2>e.txt; echo "rc=$?"', tmp_path, extra_env=env
         )
         assert value(res.stdout, "rc") != "0", res.stdout + res.stderr
         assert msg in (tmp_path / "e.txt").read_text(), res.stdout + res.stderr
@@ -815,9 +815,9 @@ def test_parameter_tables_the_packer_cannot_hold_are_refused(tmp_path):
     )
     res = milk_bash(
         'mem.mk2Dim a5 4 4 >/dev/null; @calc "a5 = 3"\n'
-        '@calc -l big17.c "o5 = big(a5)" 2>err17.log; echo "rc17=$?"\n'
-        '@calc -l strp.c "o5s = strp(a5)" 2>errs.log; echo "rcstr=$?"\n'
-        '@calc -l ok16.c "o5k = ok(a5)" 2>errok.log; echo "rcok=$?"\n'
+        '@calc --lib big17.c "o5 = big(a5)" 2>err17.log; echo "rc17=$?"\n'
+        '@calc --lib strp.c "o5s = strp(a5)" 2>errs.log; echo "rcstr=$?"\n'
+        '@calc --lib ok16.c "o5k = ok(a5)" 2>errok.log; echo "rcok=$?"\n'
         '@calc -v m "imean(o5k)"; echo "ok=$m"',
         tmp_path,
     )
@@ -838,9 +838,9 @@ def test_edited_extension_is_loaded_again(tmp_path):
     )
     res = milk_bash(
         'mem.mk2Dim a6 4 4 >/dev/null; @calc "a6 = 5"\n'
-        '@calc -l edit.c "o6 = twice(a6)"; @calc -v m1 "imean(o6)"\n'
+        '@calc --lib edit.c "o6 = twice(a6)"; @calc -v m1 "imean(o6)"\n'
         "sed -i 's/2.0f/3.0f/' edit.c\n"
-        '@calc -l edit.c "o6 = twice(a6)"; @calc -v m2 "imean(o6)"; echo "m=$m1,$m2"',
+        '@calc --lib edit.c "o6 = twice(a6)"; @calc -v m2 "imean(o6)"; echo "m=$m1,$m2"',
         tmp_path,
     )
     assert value(res.stdout, "m") == "10,15", res.stdout + res.stderr
@@ -860,7 +860,7 @@ def test_operator_with_too_many_ports_is_refused(tmp_path):
         for ln in EXT_BIND_C.splitlines()
     ]
     (tmp_path / "many.c").write_text("\n".join(lines) + "\n")
-    res = milk_bash('@calc -l many.c "1" 2>many.err; echo "rc=$?"', tmp_path)
+    res = milk_bash('@calc --lib many.c "1" 2>many.err; echo "rc=$?"', tmp_path)
     out = res.stdout + res.stderr + (tmp_path / "many.err").read_text()
     assert value(res.stdout, "rc") != "0", out
     assert "at most 8" in out, out

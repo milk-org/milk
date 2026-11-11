@@ -53,7 +53,7 @@ def test_builtin_loaded_and_commands_registered():
         for f in @calc @test @get @set @exists @ls @waitfor @waitany @sleep @grab @log @defer; do
             [[ "$(type -t "$f")" == "builtin" ]]
         done
-        for f in @running @replay @on @source @session @help @pipe @module @config @unload; do
+        for f in @replay @on @source @session @help @pipe @module @config @unload; do
             [[ "$(type -t "$f")" == "function" ]]
         done
         [[ "$(type -t mem.mk2Dim)" == "function" ]]
@@ -82,7 +82,7 @@ def test_builtin_loaded_and_commands_registered():
         [[ "${banner_out}" == *"milk v"*"bash integration loaded"* ]]
         [[ "${banner_out}" == *"for help"* ]]
         source "${MILK_INSTALLDIR}/bin/milk.bash"
-        [[ "$(type -t @calc)" == "builtin" && "$(type -t @running)" == "function" && -z "$(type -t @)" ]]
+        [[ "$(type -t @calc)" == "builtin" && "$(type -t @replay)" == "function" && -z "$(type -t @)" ]]
         [[ "${PS1}" == *"[milk]"*"user@host:$ " ]]
         ps1_once="${PS1}"
         source "${MILK_INSTALLDIR}/bin/milk.bash"
@@ -143,7 +143,6 @@ def test_usage_errors_exit_2(tmp_path):
         "test": "@test",
         "exists": "@exists",
         "exists2": "@exists s.a s.b",
-        "running": "@running",
         "source": "@source",
         "on": "@on",
         "on1": "@on s.a",

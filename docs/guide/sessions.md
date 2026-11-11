@@ -70,8 +70,8 @@ See also: [Scripting](scripting.md) · [CLI Syntax](CLIcore.md) · [FIFO Command
   command line returns; inside `milk-cli`, `exit` does.
 - What a session's server prints goes to the file `@session status` names,
   `milk-srv.<uid>.<name>.out`, next to its log `milk-srv.<uid>.<name>.log.shm` in `MILK_SHM_DIR`; a
-  session that ends by itself leaves both until `@session ls` or `prune` removes them. `@session log`
-  (or `@log`) shows the commands it ran. Shells record the session they use in
+  session that ends by itself leaves both until `@session ls` or `prune` removes them. `@log`
+  shows the commands it ran. Shells record the session they use in
   `${TMPDIR:-/tmp}/.milk_active_sock_<uid>_<pid>_<start>`. A named session can also run as a
   systemd user service ([systemd Services](../operations/systemd.md#7-a-named-session-as-a-service)).
 
@@ -119,9 +119,9 @@ and stream FITS keywords:
 ```bash
 @snapshot -o base.json 'f.loop*' 's.cam*'     # FPS parameters and stream keywords to JSON
 @diff base.json                               # compare with the live state
-@restore -n base.json                         # dry run, then without -n to apply
+@restore --dry-run base.json                  # list the changes, then without it to apply
 @restore --undo                               # set back what this shell's last @set changed
-@restore --undo -n 5                          # list what its last 5 @set calls changed
+@restore --undo --dry-run 5                   # list what its last 5 @set calls changed
 @assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
 @assert --running --fps-min 500 s.cam "camera stalled"
 @assert --max-age 0.1 --cnt-min 100 --dim 128x128 s.cam   # last frame at most 0.1 s old, ...

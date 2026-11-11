@@ -734,7 +734,7 @@ milk-call server ls 2>c.log; echo "call=$?"
     assert value(res.stdout, "server") == "127", out
     assert (
         "milk: @server was removed; use: @session (start -> new or use, list -> ls, local -> leave, "
-        "stop -> end, attach -> log -f)" in logs["s"]
+        "stop -> end, attach -> @log -f)" in logs["s"]
     ), out
     assert value(res.stdout, "verb") == "2", out
     assert "@session: start is @session new <name> (or use <name>)" in logs["v"], out

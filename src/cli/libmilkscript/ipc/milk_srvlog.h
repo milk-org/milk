@@ -168,7 +168,7 @@ void milk_srvlog_client_record(const char            *sockpath,
 void milk_srvlog_server_close(milk_srvlog_shm_t *shm, int unlink_file);
 
 /**
- * @brief Execute the `@log` / `@session log` query, search, or live-follow command.
+ * @brief Execute the `@log` query, search, or live-follow command.
  */
 int milk_srvlog_cmd_log(const char                *default_sockpath,
                         int                        argc,
@@ -193,7 +193,7 @@ int milk_srvlog_session_list_units(const char *name, FILE *fp);
 int milk_srvlog_session_join(const char *name, const char *bin, char *sock, size_t socksz);
 
 /**
- * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, save, log).
+ * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, save).
  */
 int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *hooks);
 

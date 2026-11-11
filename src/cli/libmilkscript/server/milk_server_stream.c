@@ -804,7 +804,7 @@ int milk_server_streamcat(int argc, char **argv)
     const char *sname    = NULL;
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--raw") == 0)
+        if (strcmp(argv[i], "--raw") == 0)
         {
             raw_mode = 1;
         }
@@ -948,11 +948,11 @@ int milk_server_streamwrite(int argc, char **argv)
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--raw") == 0)
+        if (strcmp(argv[i], "--raw") == 0)
         {
             raw_mode = 1;
         }
-        else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--dtype") == 0) && i + 1 < argc)
+        else if (strcmp(argv[i], "--dtype") == 0 && i + 1 < argc)
         {
             has_dtype = 1;
             dtype_str = argv[++i];
@@ -1191,7 +1191,7 @@ int milk_server_replay(int argc, char **argv)
 
     for (int i = 1; i < argc; i++)
     {
-        if ((strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--fps") == 0) && i + 1 < argc)
+        if (strcmp(argv[i], "--fps") == 0 && i + 1 < argc)
         {
             fps_hz = strtod(argv[++i], NULL);
         }
@@ -1207,7 +1207,7 @@ int milk_server_replay(int argc, char **argv)
         {
             max_frames = strtol(argv[i] + 8, NULL, 10);
         }
-        else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--loop") == 0)
+        else if (strcmp(argv[i], "--loop") == 0)
         {
             loop_forever = 1;
         }

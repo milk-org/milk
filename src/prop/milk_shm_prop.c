@@ -1868,9 +1868,14 @@ int milk_shm_prop_restore(int argc, char **argv)
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "--dry-run") == 0 || strcmp(argv[i], "-n") == 0)
+        if (strcmp(argv[i], "--dry-run") == 0)
         {
             dry_run = 1;
+        }
+        else if (strcmp(argv[i], "-n") == 0)
+        {
+            fprintf(stderr, "@restore: -n was removed; use: --dry-run\n");
+            return 2;
         }
         else if (is_snapshot_filter_arg(argv[i]))
         {
@@ -1887,7 +1892,7 @@ int milk_shm_prop_restore(int argc, char **argv)
 
     if (in_file == NULL)
     {
-        fprintf(stderr, "Usage: @restore [--dry-run|-n] <snapshot.json> [glob_filter...]\n");
+        fprintf(stderr, "Usage: @restore [--dry-run] <snapshot.json> [glob_filter...]\n");
         return 1;
     }
 

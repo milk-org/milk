@@ -31,7 +31,7 @@ See also: [Calculator & Compute Units](calculator.md) · [Sessions](sessions.md)
 | ----------------------------- | ------------------------------------------------------------------------- |
 | `word args`                   | bash                                                                      |
 | `module.command args`         | a module command: a bash function defined from the install catalog       |
-| `@keyword args`               | one of the 28 [keywords](#keywords)                                      |
+| `@keyword args`               | one of the 27 [keywords](#keywords)                                      |
 | `@{expr}` inside a word       | an entity path reads a property, anything else goes to the calculator    |
 | `\@{`                         | a literal `@{`                                                            |
 | `<anything> -h`, `--help`     | help                                                                      |
@@ -72,7 +72,7 @@ log they come from, `~/.milk_history_log`, is never trimmed: delete it to start 
 
 | Group         | Keywords                                                                        |
 | ------------- | ------------------------------------------------------------------------------- |
-| values        | `@calc` `@test` `@assert` `@get` `@set` `@exists` `@running` `@ls`              |
+| values        | `@calc` `@test` `@assert` `@get` `@set` `@exists` `@ls`                         |
 | events        | `@waitfor` `@waitany` `@on` `@sleep`                                            |
 | data          | `@grab` `@replay` `@snapshot` `@diff` `@restore` `@pipe`                        |
 | program       | `@source` `@defer` `@args` `@module` `@config` `@session` `@unload`              |
@@ -86,7 +86,9 @@ says why and loads nothing.
 `@help -k <regex>` searches commands, keywords and topics. The expression keywords (`@calc`,
 `@test`, `@assert`) take `--help` only, as `-h` is a valid expression. The prompt parts of `@history`
 (`search`, `save`, `--stats`, `--tui`) and the REPL settings of `@config` exist only at the milk-cli
-prompt.
+prompt. A one-letter option has one meaning in all the keywords that take it: `-v <var>` and
+`-a <arr>` bind the output, `-t <sec>` is a timeout, `-n <N>` a count, `-r` running, `-l` a long
+listing, `-h` help.
 
 ## Module Commands
 
@@ -256,7 +258,7 @@ sweep_gain() {
 
 ```bash
 @exists s.cam && echo yes          # exit status 0 if the entity exists
-@running f.loop                    # 0 if the FPS or process runs
+@exists -r f.loop                  # 0 if the FPS or process also runs
 @ls                                # table of streams, FPS and processes
 @ls 's.cam*'                       # one namespace, with a glob
 @ls -a list 'f.*'                  # names into an array (also -1, -l)
@@ -349,7 +351,7 @@ snippet, on each frame of a trigger stream or on a timer, without C code: see
 ```bash
 @snapshot -o base.json 'f.loop*' 's.cam*'     # FPS parameters and stream keywords to JSON
 @diff base.json                               # compare with the live state
-@restore -n base.json                         # dry run, then without -n to apply
+@restore --dry-run base.json                  # list the changes, then without it to apply
 @restore --undo                               # set back what this shell's last @set changed
 @assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
 @assert --running --fps-min 500 s.cam "camera stalled"
@@ -435,8 +437,11 @@ word, 2 for a removed option or verb. Nothing rewrites a file: change it from th
 this list:
 
 - `@server` → `@session`, with `start` → `new` (or `use` for a session that runs), `list` → `ls`,
-  `local` → `leave`, `stop` → `end`, `attach` → `log -f`; `@log --server` → `@log --session`;
+  `local` → `leave`, `stop` → `end`, `attach` → `@log -f`; `@log --server` → `@log --session`;
   `source milk.bash --server NAME` → `source milk.bash --session NAME` (`-s` is not milk's any more);
+- `@running` → `@exists -r`; `@session log` → `@log`;
+- one-letter options that had another meaning elsewhere: `@calc -l` → `--lib`, `@restore -n` →
+  `--dry-run`, `@log -a` → `--all`, `@assert -e` → `--exists`;
 - `@listim`, `@mem.listim`, `listim` → `mem.listim`; `@ci` → `milk.ci`;
 - `@ x = e` → `@calc "x = e"`, or `@calc -v x "e"` to read the value into `$x`;
 - `@s.cam.xsize` → `@get s.cam.xsize`, `@f.loop.gain=0.2` → `@set f.loop.gain=0.2`, inline
@@ -461,7 +466,7 @@ fpsCTRL scheduler screen) was removed: a queued workflow is a milk script. The o
 | milk-seq                                     | milk script                                                      |
 | -------------------------------------------- | ---------------------------------------------------------------- |
 | `repeat N` … `endrepeat`                     | `for i in $(seq N); do …; done`                                  |
-| `if_fps_status X running` … `endif`          | `if @running f.X; then …; fi`, tested when reached               |
+| `if_fps_status X running` … `endif`          | `if @exists -r f.X; then …; fi`, tested when reached             |
 | `wait_fps X running`, `wait_fps X norun`     | `@waitfor f.X running -t <sec>`, `@waitfor f.X stopped -t <sec>` |
 | `runwait X`                                  | `@waitfor f.X stopped -t <sec>`                                  |
 | `confstart X`, `runstart X`, `runstop X`     | `@set f.X.conf=start`, `@set f.X.run=start`, `@set f.X.run=stop` |
@@ -507,7 +512,7 @@ Tune an FPS gain until a stream settles:
 
 ```bash
 #!/usr/bin/env milk-script
-@running f.loop || @set f.loop.run=start
+@exists -r f.loop || @set f.loop.run=start
 for g in 0.1 0.2 0.3 0.4; do
     @set f.loop.gain="$g"
     @waitfor s.dmdisp 20 -t 2
@@ -615,7 +620,7 @@ generator script after installing new milk modules:
 
 ## Bringing Your Own Compiled C Code (`milk_calc_ext.h` & `milk-cc`)
 
-`@calc -l file.c` and `milk-fpsexec-milk-calc -l` load C extensions, and `milk-cc unit.c` builds a
+`@calc --lib file.c` and `milk-fpsexec-milk-calc -l` load C extensions, and `milk-cc unit.c` builds a
 standalone unit: see **[C Extensions (`milk_calc_ext.h` & `milk-cc`)](calc_c_extensions.md)**.
 
 ---
