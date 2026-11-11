@@ -9,7 +9,8 @@
  * Purpose:     let a user bring C kernels into `@calc` and milk.calc with `-l file.c` and no build
  *              step, and give the run time and the FPS of a unit one rule for which argument
  *              binds which input or parameter.
- * Does:        mcalc_ext_load() loads a file once per canonical path. A `.c` file is compiled
+ * Does:        mcalc_ext_load() loads a file once per canonical path and modification time. A
+ *              `.c` file is compiled
  *              with mc_cc_build() (the compiler, flags and cache directory of the JIT) into
  *              `ext_<key>.so`, keyed on the ABI version, the path and the file contents
  *              (mc_cc_key() adds compiler, flags and CPU); a cached `.so` is reused. The
@@ -41,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -53,8 +55,9 @@
 /* Maximum number of canonical library paths tracked for idempotent loading. */
 #define CALC_EXT_MAX_LIBS 32
 
-static char loaded_libs[CALC_EXT_MAX_LIBS][PATH_MAX];
-static int  n_loaded_libs = 0;
+static char            loaded_libs[CALC_EXT_MAX_LIBS][PATH_MAX];
+static struct timespec loaded_mtime[CALC_EXT_MAX_LIBS];
+static int             n_loaded_libs = 0;
 
 /* ============================================================================================== */
 /* On-Demand `.c` -> `.so` Compilation                                                            */
@@ -225,7 +228,9 @@ static int compile_c_to_so(const char *c_path,
  * @errsz: Capacity of @err in bytes
  *
  * Deduplicates canonicalized paths against `loaded_libs[]` so loading the same file repeatedly is
- * a fast no-op.
+ * a fast no-op. A file modified since it was loaded is loaded again: its entries replace the old
+ * ones, and the cached statements, which may hold state the old code made, are dropped first. A
+ * `.so` rebuilt at the same path stays as loaded: dlopen() returns the library it already has.
  *
  * Return: 0 on success, -1 on compilation, `dlopen`, `dlsym`, or registration failure
  */
@@ -239,11 +244,20 @@ int mcalc_ext_load(const char *path, char *err, size_t errsz)
     char        so_path[PATH_MAX];
     const char *canon = realpath(path, rpath_buf);
     canon             = (canon != NULL) ? canon : path;
-    for (int i = 0; i < n_loaded_libs; i++)
+    struct stat st    = { 0 };
+    int         slot  = -1;
+    (void) stat(canon, &st); /* a missing file fails below, at fopen() or dlopen() */
+    for (int i = 0; i < n_loaded_libs && slot < 0; i++)
     {
         if (strcmp(loaded_libs[i], canon) == 0)
         {
-            return 0;
+            if (st.st_mtim.tv_sec == loaded_mtime[i].tv_sec &&
+                st.st_mtim.tv_nsec == loaded_mtime[i].tv_nsec)
+            {
+                return 0;
+            }
+            slot = i;
+            mc_stmt_cache_clear();
         }
     }
     const char *dl_target = canon;
@@ -273,9 +287,14 @@ int mcalc_ext_load(const char *path, char *err, size_t errsz)
         dlclose(dl);
         return -1;
     }
-    if (n_loaded_libs < CALC_EXT_MAX_LIBS)
+    if (slot < 0 && n_loaded_libs < CALC_EXT_MAX_LIBS)
     {
-        snprintf(loaded_libs[n_loaded_libs++], PATH_MAX, "%s", canon);
+        slot = n_loaded_libs++;
+        snprintf(loaded_libs[slot], PATH_MAX, "%s", canon);
+    }
+    if (slot >= 0)
+    {
+        loaded_mtime[slot] = st.st_mtim;
     }
     return 0;
 }

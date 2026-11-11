@@ -92,6 +92,9 @@ const char *mc_const_removed(const char *name);
 /** mc_is_reserved_const() - 1 if @name is the constant pi, nan or inf (reserved names). */
 int mc_is_reserved_const(const char *name);
 
+/** mc_is_stream_prefix() - 1 if @name is S or L, the stream prefix letters: not variable names. */
+int mc_is_stream_prefix(const char *name);
+
 /** mc_func_find_len() - look up a built-in function by name slice (@name, @len). */
 const mc_func_t *mc_func_find_len(const char *name, size_t len);
 

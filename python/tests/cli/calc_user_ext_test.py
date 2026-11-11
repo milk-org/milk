@@ -279,6 +279,35 @@ echo "mean=$(@get s.out_col.mean) min=$(@get s.out_col.min) max=$(@get s.out_col
     assert value(res.stdout, "mean") == "10 min=7 max=13", res.stdout + res.stderr
 
 
+def test_failed_kernel_leaves_its_target_readable(tmp_path):
+    """A whole-image kernel that fails stops the statement and clears its target's write flag."""
+    (tmp_path / "failing.c").write_text(r"""
+#include "milk_calc_ext.h"
+
+static int failing_img(IMAGE *out, const IMAGE *in, const void *P)
+{
+    (void) out;
+    (void) in;
+    (void) P;
+    return 1;
+}
+
+MILK_CALC_EXT_EXPORT(MILK_CALC_REG_IMG("failing", failing_img, NULL));
+""")
+    res = milk_bash(
+        """
+mem.mk2Dim "@S:fin" 4 4 >/dev/null; mem.mk2Dim "@S:fout" 4 4 >/dev/null
+@calc "fin = 1"; @calc "fout = 3"
+milk-fpsexec-milk-calc -n u_fail -l failing.c -e "fout = failing(fin)" exec >/dev/null 2>&1
+echo "rc=$?"
+@get -A st s.fout.stats; echo "torn=${st[torn]} mean=${st[mean]}"
+""",
+        tmp_path,
+    )
+    assert value(res.stdout, "rc") != "0", res.stdout + res.stderr
+    assert value(res.stdout, "torn") == "0 mean=3", res.stdout + res.stderr
+
+
 def test_tier2_stateful_multi_port_operator(tmp_path):
     """Tier 2 (`MILK_CALC_OP_DECLARE` / `MILK_CALC_REG_OP`):
     Multi-input / multi-output stateful operator (`shslopes`) with:
@@ -782,3 +811,41 @@ def test_parameter_tables_the_packer_cannot_hold_are_refused(tmp_path):
     assert "at most 16" in (tmp_path / "err17.log").read_text(), out
     assert "cannot pack" in (tmp_path / "errs.log").read_text(), out
     assert value(res.stdout, "rcok") == "0" and value(res.stdout, "ok") == "6", out
+
+
+def test_edited_extension_is_loaded_again(tmp_path):
+    """A `.c` file changed after its first load replaces what it registered."""
+    (tmp_path / "edit.c").write_text(
+        _ext_blk(
+            "twice",
+            ['    X(".g", g, FPTYPE_FLOAT64, 1.0, FPFLAG_DEFAULT_INPUT, "unused")'],
+        )
+    )
+    res = milk_bash(
+        'mem.mk2Dim a6 4 4 >/dev/null; @calc "a6 = 5"\n'
+        '@calc -l edit.c "o6 = twice(a6)"; @calc -v m1 "imean(o6)"\n'
+        "sed -i 's/2.0f/3.0f/' edit.c\n"
+        '@calc -l edit.c "o6 = twice(a6)"; @calc -v m2 "imean(o6)"; echo "m=$m1,$m2"',
+        tmp_path,
+    )
+    assert value(res.stdout, "m") == "10,15", res.stdout + res.stderr
+
+
+def test_operator_with_too_many_ports_is_refused(tmp_path):
+    """Nine input ports used to load and overrun the per-call port arrays."""
+    ports = (
+        '#define MOP_PORTS(X) X(IN, frame, MILK_PORT_IMAGE, 0, "Input") '
+        + " ".join(
+            f'X(IN, e{i}, MILK_PORT_IMAGE, MILK_PORT_OPT, "extra")' for i in range(8)
+        )
+        + ' X(OUT, o, MILK_PORT_IMAGE, 0, "Output")'
+    )
+    lines = [
+        ports if ln.startswith("#define MOP_PORTS") else ln
+        for ln in EXT_BIND_C.splitlines()
+    ]
+    (tmp_path / "many.c").write_text("\n".join(lines) + "\n")
+    res = milk_bash('@calc -l many.c "1" 2>many.err; echo "rc=$?"', tmp_path)
+    out = res.stdout + res.stderr + (tmp_path / "many.err").read_text()
+    assert value(res.stdout, "rc") != "0", out
+    assert "at most 8" in out, out

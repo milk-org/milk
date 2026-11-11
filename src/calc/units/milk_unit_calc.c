@@ -159,8 +159,8 @@ static char *source_text(const char *inline_str, const char *fpath, char *err, s
  * is_fixed - Check whether a parameter name collides with built-in variables or reserved subtrees
  * @name: Candidate parameter name (without leading dot)
  *
- * Rejects built-in frame variables (`_n`, `_t`, `_dt`, `_cnt0`, `_ts`, `_missed`, `_torn`)
- * and reserved FPS subtrees (`unit`, `conf`, `procinfo`).
+ * Rejects built-in frame variables (`_n`, `_t`, `_dt`, `_cnt0`, `_ts`, `_missed`, `_torn`),
+ * reserved FPS subtrees (`unit`, `conf`, `procinfo`) and the stream prefix letters `S` and `L`.
  *
  * Return: 1 if @name is reserved, 0 otherwise.
  */
@@ -169,7 +169,7 @@ static int is_fixed(const char *name)
     return strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0 ||
            strcmp(name, "_cnt0") == 0 || strcmp(name, "_ts") == 0 || strcmp(name, "_missed") == 0 ||
            strcmp(name, "_torn") == 0 || strcmp(name, "unit") == 0 || strcmp(name, "conf") == 0 ||
-           strcmp(name, "procinfo") == 0;
+           strcmp(name, "procinfo") == 0 || strcmp(name, "S") == 0 || strcmp(name, "L") == 0;
 }
 
 static int is_bound(const char *name)

@@ -892,6 +892,10 @@ static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
             snprintf(err + el, errsz - el, " in '%s'", p->stmt_texts[st->first_stmt_idx]);
         }
     }
+    if (rc != 0)
+    {
+        mc_out_abort();
+    }
     return rc;
 }
 

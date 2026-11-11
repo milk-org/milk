@@ -10,13 +10,14 @@ Does:        zeros() shapes; one program with `if <scalar>: <statement>`, `skip`
              nothing; ema() and accumulators that start at zero on frame 0; an edit that does not
              compile leaves the unit running; an output written twice is posted once per tick; a
              parameter set during a slow tick keeps its value; torn reads under a fast producer
-             are run again and counted (`_torn`). A unit started with `run` on a stream whose
+             are run again and counted (`_torn`), in a pass, a reduction and a whole-image step
+             alike. A unit started with `run` on a stream whose
              semaphore was posted before it started processes that frame first (tick 0), so the
              frames posted by the test start at tick 1.
 Covers:      milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c), the program runner
              (src/calc/run/mc_prog.c), the rings (plan/mc_history.c), the parser and resolver
              (front/mc_parse.c, front/mc_resolve.c), ema (run/mc_prestage.c), torn-read retries
-             (run/mc_exec.c).
+             (run/mc_exec.c, run/mc_reduce.c).
 Uses:        conftest.py: milk_bash, value, CAM, UNIT_HELPERS; the HELPERS and STOP shell
              functions.
 See also:    docs/guide/calculator.md, "Compute Units Without C"; units_sessions_test.py
@@ -108,6 +109,21 @@ def test_guards_skip_post_metadata_and_history(tmp_path):
     # the saturated frame is skipped: diff keeps its value, cnt is not updated, but the ring records it
     assert value(res.stdout, "b") == "5,7", out
     assert value(res.stdout, "c") == "-4980,7", out
+
+
+def test_skip_ends_a_block(tmp_path):
+    """`skip` right before `}` skips the frame, as before a newline or `;`."""
+    (tmp_path / "sk.calc").write_text("if imax(cam) > 1000 { skip }\nout = cam\n")
+    res = milk_bash(
+        HELPERS + 'mem.mk2Dim "@S:out" 4 4 >/dev/null; @calc "out = 1; cam = 5000"\n'
+        'milk-fpsexec-milk-calc -n sk -f sk.calc exec >sk.log 2>&1; echo "rc=$?"\n'
+        'echo "kept=$(@get s.out.mean)"; @calc "cam = 7"\n'
+        'milk-fpsexec-milk-calc -n sk -f sk.calc exec >>sk.log 2>&1; echo "ran=$(@get s.out.mean)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "sk.log").read_text()
+    assert value(res.stdout, "rc") == "0", out
+    assert value(res.stdout, "kept") == "1" and value(res.stdout, "ran") == "7", out
 
 
 def test_if_without_colon_and_prev_depth_are_errors(tmp_path):
@@ -257,6 +273,33 @@ def test_torn_counter_with_fast_producer(tmp_path):
         tmp_path,
     )
     out = res.stdout + res.stderr
+    assert value(res.stdout, "alone") == "0", out
+    assert int(value(res.stdout, "with") or 0) > 0, out
+    assert value(res.stdout, "error") == "[]", out
+
+
+@pytest.mark.parametrize(
+    "stmt",
+    ["m = imean(src); out = m", "out = gauss(src, 1)", "out = fftshift(src)"],
+    ids=["reduction", "filter", "linalg"],
+)
+def test_torn_counter_outside_elementwise_passes(tmp_path, stmt):
+    """A reduction, a filter and a library step reading a stream rewritten at full speed count torn reads too."""
+    res = milk_bash(
+        STOP
+        + 'mem.mk2Dim "@S:src" 128 128 >/dev/null; mem.mk2Dim "@S:out" 128 128 >/dev/null; @calc "src = 1"\n'
+        'milk-fpsexec-milk-calc -n prod -t src -e "src = src + 1" fpsinit >/dev/null\n'
+        f'milk-fpsexec-milk-calc -n cons -t out -p "torn:int=0 m:float=0" -e "{stmt}; torn = _torn" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n cons run >cons.log 2>&1 & pc=$!\n"
+        "sleep 0.4; mem.imsetsempost out -1 >/dev/null; sleep 0.4\n"
+        'echo "alone=$(@get f.cons.torn)"\n'
+        "milk-fpsexec-milk-calc -n prod run >prod.log 2>&1 & pp=$!\n"
+        "sleep 0.4; mem.imsetsempost src -1 >/dev/null; sleep 0.8\n"
+        'echo "with=$(@get f.cons.torn)"; echo "error=[$(@get f.cons.unit.error)]"\n'
+        "stop $pp; stop $pc",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "cons.log").read_text()
     assert value(res.stdout, "alone") == "0", out
     assert int(value(res.stdout, "with") or 0) > 0, out
     assert value(res.stdout, "error") == "[]", out

@@ -13,12 +13,14 @@
  *              leave around the name, and refuses the name of a built-in function
  *              (mc_func_find()), a stencil radius outside 1..3, and a parameter table with more
  *              than MILK_CALC_MAX_PARAMS fields, a struct over MILK_CALC_PARAM_BYTES, or a field
- *              that is not numeric or whose size or offset does not fit its FPTYPE_*. It copies
+ *              that is not numeric or whose size or offset does not fit its FPTYPE_*, and an
+ *              operator with more than MILK_CALC_MAX_PORTS input or output ports. It copies
  *              the name; an entry registered again under the same name replaces the old one in
  *              place. milk_calc_ext_find(), milk_calc_ext_get() and milk_calc_ext_count() look
  *              entries up. At most 64 entries (CALC_EXT_MAX_ENTRIES).
  * Used by:     ext/mc_ext_loader.c (loaded libraries) and the MILK_CALC_MODULE_EXPORT constructor
- *              (ext/mc_ext_builtin.c) to register; front/mc_resolve.c, ext/mc_ext_exec.c,
+ *              (ext/mc_ext_builtin.c) to register; front/mc_lex.c (which names take a
+ *              `:label`), front/mc_resolve.c, ext/mc_ext_exec.c,
  *              ext/mc_ext_loader.c, linalg/mc_linalg_blas.c and mc_func.c (`@calc --list`) to
  *              look up. Declared in milk_calc_ext.h.
  * Uses:        milk_calc_ext.h, mc_func.h (built-in names are reserved).
@@ -205,6 +207,17 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
     }
     if (check_param_set(cname, e, err, errsz) != 0)
     {
+        return -1;
+    }
+    const milk_calc_op_ports_t *pts = (e->get_ports != NULL) ? e->get_ports() : NULL;
+    if (pts != NULL && (pts->nin < 0 || pts->nin > MILK_CALC_MAX_PORTS || pts->nout < 0 ||
+                        pts->nout > MILK_CALC_MAX_PORTS))
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "'%s': %d input and %d output ports, at most %d of each", cname,
+                     pts->nin, pts->nout, MILK_CALC_MAX_PORTS);
+        }
         return -1;
     }
     for (int i = 0; i < ext_nentries; i++)

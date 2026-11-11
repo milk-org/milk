@@ -27,7 +27,7 @@
  *              linalg/ (mc_eval_scalar_d()). Declared in plan/mc_plan.h and front/mc_ast.h.
  * Uses:        COREMOD_arith (image_stats.h accumulators, arith_team.h), run/mc_prog.c,
  *              plan/mc_plan.c and front/mc_resolve.c (sub-programs), run/mc_scalar_eval.c,
- *              run/mc_out.c, milk_omp_team.h.
+ *              run/mc_out.c, run/mc_exec.c (mc_torn_begin(), mc_torn_again()), milk_omp_team.h.
  * See also:    run/mc_prestage.c (reductions along one axis); docs/guide/calculator.md,
  *              "Functions" and "Fusion & Cost Model".
  * Constraints: compiled with -ffinite-math-only for speed (src/calc/CMakeLists.txt): test NaN
@@ -984,7 +984,7 @@ static double mc_percentile(const mc_red_src_t *s1, const IMAGE *mask, double fr
 }
 
 /**
- * mc_exec_reduce_scalar - Evaluate a scalar-returning image reduction call
+ * reduce_scalar_once - Evaluate a scalar-returning image reduction call once
  * @call_expr: `MC_EXPR_CALL` AST node for the reduction function
  * @out:       Output scalar value (`MC_VAL_DOUBLE` or `MC_VAL_LONG`)
  * @err:       Error message buffer
@@ -998,7 +998,7 @@ static double mc_percentile(const mc_red_src_t *s1, const IMAGE *mask, double fr
  *
  * Return: 0 on success, -1 on error
  */
-int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, size_t errsz)
+static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *err, size_t errsz)
 {
     const char  *fn    = call_expr->u.call.fn->name;
     int          nargs = call_expr->u.call.nargs;
@@ -1102,7 +1102,30 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
 }
 
 /**
- * mc_exec_reduce_pair - Fuse two compatible reductions on the same input into a single pass
+ * mc_exec_reduce_scalar - Evaluate a scalar reduction call under the torn-frame rule
+ * @call_expr: `MC_EXPR_CALL` AST node for the reduction function
+ * @out:       Output scalar value (`MC_VAL_DOUBLE` or `MC_VAL_LONG`)
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Runs reduce_scalar_once() again while a shared stream it read was torn (mc_torn_begin()).
+ *
+ * Return: 0 on success, -1 on error
+ */
+int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, size_t errsz)
+{
+    mc_torn_t t;
+    int       rc;
+    mc_torn_begin(&t, &call_expr, 1, 0);
+    do
+    {
+        rc = reduce_scalar_once(call_expr, out, err, errsz);
+    } while (mc_torn_again(&t, rc));
+    return rc;
+}
+
+/**
+ * reduce_pair_once - Fuse two compatible reductions on the same input into a single pass
  * @c0:    First reduction `MC_EXPR_CALL` node
  * @c1:    Second reduction `MC_EXPR_CALL` node on an identical argument AST
  * @o0:    Output pointer for the first reduction result
@@ -1116,12 +1139,12 @@ int mc_exec_reduce_scalar(const mc_expr_t *call_expr, mc_val_t *out, char *err, 
  *
  * Return: 0 on success, -1 if the operations cannot be combined or evaluation fails
  */
-int mc_exec_reduce_pair(const mc_expr_t *c0,
-                        const mc_expr_t *c1,
-                        double          *o0,
-                        double          *o1,
-                        char            *err,
-                        size_t           errsz)
+static int reduce_pair_once(const mc_expr_t *c0,
+                            const mc_expr_t *c1,
+                            double          *o0,
+                            double          *o1,
+                            char            *err,
+                            size_t           errsz)
 {
     arith_reduce_op op0  = (arith_reduce_op) mc_map_reduce_op(c0->u.call.fn->name);
     arith_reduce_op op1  = (arith_reduce_op) mc_map_reduce_op(c1->u.call.fn->name);
@@ -1144,6 +1167,36 @@ int mc_exec_reduce_pair(const mc_expr_t *c0,
         *o0 = arith_stat_finish_inline(&acc, op0, 0);
         *o1 = arith_stat_finish_inline(&acc, op1, 0);
     }
+    return rc;
+}
+
+/**
+ * mc_exec_reduce_pair - Evaluate two reductions of one input under the torn-frame rule
+ * @c0:    First reduction `MC_EXPR_CALL` node
+ * @c1:    Second reduction `MC_EXPR_CALL` node on an identical argument AST
+ * @o0:    Output pointer for the first reduction result
+ * @o1:    Output pointer for the second reduction result
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Runs reduce_pair_once() again while a shared stream it read was torn (mc_torn_begin()).
+ *
+ * Return: 0 on success, -1 if the operations cannot be combined or evaluation fails
+ */
+int mc_exec_reduce_pair(const mc_expr_t *c0,
+                        const mc_expr_t *c1,
+                        double          *o0,
+                        double          *o1,
+                        char            *err,
+                        size_t           errsz)
+{
+    mc_torn_t t;
+    int       rc;
+    mc_torn_begin(&t, &c0, 1, 0); /* @c1 reads the same argument */
+    do
+    {
+        rc = reduce_pair_once(c0, c1, o0, o1, err, errsz);
+    } while (mc_torn_again(&t, rc));
     return rc;
 }
 
@@ -1276,7 +1329,7 @@ static void cent_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
 }
 
 /**
- * mc_exec_multi_reduce - Execute a multi-LHS unpacking reduction statement
+ * multi_reduce_once - Execute a multi-LHS unpacking reduction statement once
  * @s:     `MC_STMT_MULTI_ASSIGN` statement whose sole RHS is a multi-return reduction call
  * @out:   Output pointer receiving the last unpacked scalar value
  * @err:   Error message buffer
@@ -1290,7 +1343,7 @@ static void cent_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
  *
  * Return: 0 on success, -1 on error
  */
-int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz)
+static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz)
 {
     const mc_expr_t *call  = s->u.multi.rhs[0];
     const char      *fn    = call->u.call.fn->name;
@@ -1380,5 +1433,29 @@ int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t er
         out->lval = vals[j].lval;
         out->dval = vals[j].dval;
     }
+    return rc;
+}
+
+/**
+ * mc_exec_multi_reduce - Execute a multi-LHS reduction statement under the torn-frame rule
+ * @s:     `MC_STMT_MULTI_ASSIGN` statement whose sole RHS is a multi-return reduction call
+ * @out:   Output pointer receiving the last unpacked scalar value
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Runs multi_reduce_once() again while a shared stream it read was torn (mc_torn_begin()).
+ *
+ * Return: 0 on success, -1 on error
+ */
+int mc_exec_multi_reduce(const mc_stmt_t *s, mc_val_t *out, char *err, size_t errsz)
+{
+    const mc_expr_t *call = s->u.multi.rhs[0];
+    mc_torn_t        t;
+    int              rc;
+    mc_torn_begin(&t, &call, 1, 0);
+    do
+    {
+        rc = multi_reduce_once(s, out, err, errsz);
+    } while (mc_torn_again(&t, rc));
     return rc;
 }

@@ -365,6 +365,32 @@ def test_reserved_constants_and_per_shell_digits(tmp_path):
     assert value(res.stdout, "d15") == "0.666666666666667", out
 
 
+def test_stream_prefix_letters_are_not_variable_names(tmp_path):
+    """`S` and `L` name images only: as a number, `im[S:n]` would read `S:n` as a stream."""
+    res = milk_bash(
+        'mem.mk2Dim im 4 4 >/dev/null; @calc "im = 2"\n'
+        + "".join(
+            f'@calc "{stmt}" 2>>e.txt; echo "{key}=$?"\n'
+            for key, stmt in (
+                ("var", "S = 3"),
+                ("multi", "x, L = 1, 2"),
+                ("loop", "for L = 1:3 { y = L }"),
+                ("def", "def f(S) = S + 1"),
+            )
+        )
+        + 'milk-fpsexec-milk-calc -n up -p "S:int=0" -e "S = 1" fpsinit 2>>e.txt; echo "par=$?"\n'
+        '@calc "L = im + 1; S = L * 2; S:shr = im * 2; L:loc = im + 1"; echo "img=$?"\n'
+        '@calc -v t "itot(S) + itot(L) + itot(S:shr) + itot(L:loc)"; echo "tot=$t"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "e.txt").read_text()
+    for key in ("var", "multi", "loop", "def", "par"):
+        assert value(res.stdout, key) != "0", key + "\n" + out
+    assert (tmp_path / "e.txt").read_text().count("is a stream prefix") == 4, out
+    # 16 pixels each of 6, 3, 4 and 3
+    assert value(res.stdout, "img") == "0" and value(res.stdout, "tot") == "256", out
+
+
 def test_stored_variables_keep_every_digit(tmp_path):
     """A variable keeps the exact value assigned, whatever the printed digits."""
     res = milk_bash(
@@ -649,3 +675,35 @@ def test_audit_regressions_and_edge_cases(tmp_path):
     assert value(res.stdout, "h10") == "20", out
     assert value(res.stdout, "solve_neg") not in (None, "0"), out
     assert value(res.stdout, "tri_bad") not in (None, "0"), out
+
+
+def test_colon_before_a_call_is_a_separator(tmp_path):
+    """`:` before `name(` ends a slice bound, a range bound or a ?: branch; only a C extension
+    takes a `:label`."""
+    res = milk_bash(
+        'mem.mk2Dim im 8 8 >/dev/null; @calc "im = ix(im) + 4; k = 2; n = 5"\n'
+        '@calc -v a "itot(im[k:min(n, 6), 0])"; echo "slice=$a"\n'
+        '@calc -v b "k > 1 ? k:sqrt(16)"; echo "tern=$b"\n'
+        '@calc "acc = 0; for i = k:floor(5.5) { acc = acc + i }"; @calc -v c "acc"; echo "range=$c"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "slice") == "14", out  # pixels x = 2..5 hold 2..5
+    assert value(res.stdout, "tern") == "2", out
+    assert value(res.stdout, "range") == "14", out
+
+
+def test_whole_image_steps_store_integers_as_passes_do(tmp_path):
+    """Into an integer stream a value is truncated toward zero and wraps, whatever computes it."""
+    res = milk_bash(
+        "mem.mk2Dim src 4 4 >/dev/null; mem.mk2Dim neg 4 4 >/dev/null\n"
+        '@calc "src = 300.7; neg = -1.5"\n'
+        'for n in p1 c1 p2 c2; do mem.mk2Dim "@STU8:$n" 4 4 >/dev/null; done\n'
+        '@calc "p1 = src + 0; c1 = fftshift(src); p2 = neg + 0; c2 = fftshift(neg)"\n'
+        '@calc -v a,b,c,d "p1[0,0]; c1[0,0]; p2[0,0]; c2[0,0]"; echo "v=$a,$b,$c,$d"\n'
+        'echo "dt=$(@get s.c1.dtype)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "dt") == "UINT8", out
+    assert value(res.stdout, "v") == "44,44,255,255", out

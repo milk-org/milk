@@ -99,7 +99,10 @@ Operators, loosest first:
 `^` is not an operator (write `pow(a, b)`; `^^` is bitwise XOR). The built-in constants `pi` ($\pi$),
 `nan` (`NAN`), and `inf` (`INFINITY`; `-inf` via unary `-`) are reserved: they cannot be assigned,
 and no variable, image or bash variable of the same name shadows them. Built-in function names are
-reserved too: a `def` or a C extension cannot take one. Integer operands give an integer result, except `/` and a
+reserved too: a `def` or a C extension cannot take one. `S` and `L`, the letters of the
+[stream prefixes](#calculator-calc-test-pipe) `S:name` and `L:name`, name images only
+(`U, S, Vt = svd(A)`): they cannot be a variable, a loop variable, a `def` parameter or a unit
+parameter, since `im[S:n]` would read `S:n` as a stream. Integer operands give an integer result, except `/` and a
 negative power (`pow(2, 62) + 1` is exact, `pow(2, -1)` is 0.5); an integer result that overflows
 becomes a double. `%` and `fmod` give C's `fmod` while $|x/y| < 2^{52}$, and NaN beyond, on numbers
 and images alike (`wrap_pi` likewise while $|x| < 2^{52} \cdot 2\pi$). A number divided by 0, or
@@ -286,13 +289,16 @@ parameters under `Parameters`):
   `_ts` (its write time, seconds since the epoch) and `_missed` (trigger frames skipped before
   it, 0 when the unit keeps up), and `_torn` (see the next point). Without a trigger stream,
   `_cnt0` is `_n`, and `_ts` and `_missed` are 0.
-- Every shared input stream a statement's pass reads, not only the trigger, is read under the
-  torn-frame rule that stream statistics (`s.cam.mean`) and `@grab` also follow: a read is torn
-  when a write was under way as it began or ended, or the stream's counter moved during it; a torn
-  pass runs again 100 µs later, up to 4 reads in all, then keeps the last one. A pass that reads
-  what it writes (`acc += cam`, `acc = 0.9 * acc + cam`) is not run again, since that would apply
-  it twice. `_torn` counts the torn reads; a steadily growing `_torn` means a producer faster than
-  the unit, or a writer that never clears its flag.
+- Every shared input stream a statement reads, not only the trigger, is read under the torn-frame
+  rule that stream statistics (`s.cam.mean`) and `@grab` also follow: a read is torn when a write
+  was under way as it began or ended, or the stream's counter moved during it. What read it runs
+  again 100 µs later, up to 4 reads in all, then keeps the last one: an element-wise pass, a
+  reduction (`imean(cam)`), or a whole-image step (a filter, a matrix or FFT function, a C
+  extension), which is posted once, after its last run. A statement that would apply twice is not
+  run again: one that reads what it writes (`acc += cam`, `acc = 0.9 * acc + cam`,
+  `gemm(1, A, B, 1, C)`), an `ema()`, a Tier 2 extension operator. `_torn` counts the torn reads;
+  a steadily growing `_torn` means a producer faster than the unit, or a writer that never clears
+  its flag.
 - Statements of the program language, on top of the calculator's:
   - `if <scalar>: <statement>` runs a single statement when the condition is not 0
     (`if imax(cam) > 60000: skip`, `if _n % 100 == 0: post(out)`).
@@ -309,7 +315,8 @@ parameters under `Parameters`):
     library functions and slices of a parameter work as if written out (`def avg(x) = imean(x)`,
     `def nrm(x) = x / imax(x)`); the compiler computes a pure argument once per pixel. An argument
     that draws random numbers or keeps state (`rand`, `ema`, `post`, a C extension) may be used
-    only once in the body. A `def` is a statement of its own, not inside `if` or `for`. In `@calc`
+    only once in the body. A `def` is a statement of its own, not inside `if` or `for`, and
+    belongs to the text that holds it: the statements do not see a `def` of `.unit.init`. In `@calc`
     its body is checked when it is defined: every name other than a parameter, and every function,
     must exist; in a unit, where the body may use a name the program creates later, at each call.
   - `ema(expr, alpha)` maintains a per-call-site persistent exponential moving average image or
@@ -372,7 +379,9 @@ parameters under `Parameters`):
   `@get`, `@waitfor` and other units. A `stream` parameter (`in:stream=cam0`, `out:stream=out0`)
   binds an input or output stream name dynamically so `@set f.dsub.in=cam1` re-targets the unit on
   the next frame.
-- An error stops the loop: a bad statement, or an image whose size or type changed.
+- An error stops the loop: a bad statement, or an image whose size or type changed. The target of
+  the statement that failed is not posted, and its write flag is cleared, so its readers do not
+  see a torn frame from then on.
 - FPS strings hold 63 characters, so longer programs go in a file (`-f` or `-I`). `-p` may be longer
   on the `fpsinit` or `exec` command line that creates the FPS.
 
@@ -461,8 +470,10 @@ Passing a `.c` file to `@calc -l my_kernels.c "..."` or
 `milk-fpsexec-milk-calc -l my_kernels.c ...` compiles it as a kernel is compiled (same compiler,
 flags and cache directory, see [Fusion & Cost Model](#fusion-cost-model)) into `ext_<key>.so`, keyed
 on the file's path and contents, reuses that `.so` until the file changes, and loads it via
-`dlopen()`; a compile error reports the compiler's first error line. A `.c` file is compiled as C;
-there is no C++ path. `MILK_CALC_LIBS` (files separated by spaces, `,` or `:`)
+`dlopen()`; a compile error reports the compiler's first error line. A `.c` file edited after it
+was loaded is compiled and loaded again the next time it is named, and replaces what it
+registered; a `.so` rebuilt at the same path is taken by a new session or unit only. A `.c` file
+is compiled as C; there is no C++ path. `MILK_CALC_LIBS` (files separated by spaces, `,` or `:`)
 loads extensions in every calculator call, and a `loadlib <file>` statement loads one from
 calculator text.
 

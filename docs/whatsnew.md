@@ -16,6 +16,20 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-10** — Calculator fixes. `:` before a function call is a slice, range or `?:`
+  separator again (`im[k:min(a, b)]`, `for i = lo:floor(hi)`, `c ? a:sqrt(b)`); only a loaded C
+  extension takes a `:label`. `skip` works right before `}`. Filters, matrix and FFT functions and
+  C extensions store into an integer stream as element-wise statements do, truncated toward zero
+  and wrapped; they rounded and saturated. A `.c` extension edited after it was loaded is compiled
+  and loaded again, and an operator with more than 8 input or output ports is refused at load.
+  `S` and `L` name images only: as variables, `im[S:n]` read `S:n` as a stream.
+  See [Calculator](guide/calculator.md) and [C Extensions](guide/calc_c_extensions.md) `#cli`
+- **2026-11-10** — The calculator's torn-frame rule now covers every statement that reads a shared
+  stream, not only element-wise passes: a reduction (`imean(cam)`), a filter, a matrix or FFT
+  function and a C extension are run again after a torn read, and `_torn` counts them. A statement
+  that fails after it began to write its target clears the target's write flag, so readers no
+  longer see every later read of that stream as torn. See
+  [Compute Units Without C](guide/calculator.md#compute-units-without-c) `#streams` `#cli`
 - **2026-11-08** — `mem.trigmerge` (`milk-fpsexec-mem-trigmerge`) merges the triggers of up to 16
   streams, any-of or all-of, into one small stream a unit triggers on. It records which inputs fired,
   their counters, how many frames each moved and their write times; `-loopd` caps the rate. See

@@ -26,7 +26,9 @@
  *              and `@waitfor` (milk_client_stream.c); the server's milk_server_vars.c (calc
  *              mode). Declared in front/mc_ast.h.
  * Uses:        milk_entity_ns.h (entity path prefixes), ImageStreamIO/ImageStruct.h
- *              (STRINGMAXLEN_IMAGE_NAME), mcalc_sub_prog_free() (run/mc_prog.c).
+ *              (STRINGMAXLEN_IMAGE_NAME), mcalc_sub_prog_free() (run/mc_prog.c),
+ *              milk_calc_ext_find() (ext/mc_ext_registry.c: `name:label(` is one token only
+ *              for a loaded C extension).
  * See also:    front/mc_parse.c (the next stage); docs/guide/calculator.md, "Operators".
  * Constraints: also compiled into libmilkbash.so (the thin client every shell loads), which
  *              uses only mc_lex(), the scanners and mc_op_prec(); the AST functions are left
@@ -42,6 +44,9 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "front/mc_ast.h"
 #include "milk_entity_ns.h"
+#ifndef MILK_BASH_CLIENT
+#    include "milk_calc_ext.h"
+#endif
 
 /* ========================================================================= */
 /* Operator Precedence and Numeric Literal Scanning                          */
@@ -272,14 +277,35 @@ static int is_ns_prefix_only(const char *start, size_t len)
     return 0;
 }
 
+/* 1 when @name[0..n) is a loaded C extension, the only names that take a `:label` (the shell
+ * client has none) */
+static int is_ext_name(const char *name, size_t n)
+{
+#ifdef MILK_BASH_CLIENT
+    (void) name;
+    (void) n;
+    return 0;
+#else
+    char buf[64];
+    if (n >= sizeof(buf))
+    {
+        return 0;
+    }
+    memcpy(buf, name, n);
+    buf[n] = '\0';
+    return milk_calc_ext_find(buf) >= 0;
+#endif
+}
+
 /**
  * mc_scan_ident - Scan an identifier, qualified stream name, or labeled extension call
  * @start: Input pointer positioned at the start of the identifier
  *
  * Handles leading `@S:`, `@L:`, `@F:`, `S:`, and `L:` stream location
- * modifiers, dotted property paths (`s.im.cnt0`), and labeled user extension
- * calls (`my_op:label(...)`), while stopping before a postfix `.T` transpose
- * suffix on a complete identifier.
+ * modifiers, dotted property paths (`s.im.cnt0`), and labeled calls of a loaded
+ * C extension (`my_op:label(...)`; after any other name the `:` is a slice, range
+ * or `?:` separator, as in `im[k:min(a, b)]`), while stopping before a postfix
+ * `.T` transpose suffix on a complete identifier.
  *
  * Return: Number of bytes in the identifier token
  */
@@ -328,7 +354,8 @@ size_t mc_scan_ident(const char *start)
     }
 
     /* Support labeled extension calls like my_op:stage2( */
-    if (*p == ':' && (isalpha((unsigned char) p[1]) || p[1] == '_'))
+    if (*p == ':' && (isalpha((unsigned char) p[1]) || p[1] == '_') &&
+        is_ext_name(start, (size_t) (p - start)))
     {
         const char *q = p + 1;
         while (isalnum((unsigned char) *q) || *q == '_')

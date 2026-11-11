@@ -38,6 +38,7 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
+#include "libmilkdata/milkdata_torn_frame.h"
 #include "front/mc_ast.h"
 #include "mcalc.h"
 
@@ -284,6 +285,9 @@ imageID mc_tmp_steal_slot(mc_slot_t *slot);
 /* Publish an updated image (`md->write=0`, `cnt0++`, post semaphores if shared). */
 void mc_out_post(imageID id);
 
+/* After a failed step: clear the write flag of the targets it prepared and did not post. */
+void mc_out_abort(void);
+
 /* Immediately publish an image (`post(stream)`), bypassing deferred batching. */
 void mc_out_post_now(imageID id);
 
@@ -313,6 +317,26 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
 
 /* Execute a single elementwise pass @pass on the persistent worker team. */
 int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, size_t errsz);
+
+#define MC_TORN_MAX 16 /* shared streams one step or reduction is watched on */
+
+/* The shared streams a step other than an elementwise pass reads, for the torn-frame rule. */
+typedef struct
+{
+    imageID           id[MC_TORN_MAX];
+    milk_frame_mark_t mark[MC_TORN_MAX];
+    int               n;
+    int               keep;  /* it keeps state or writes what it reads: counted, not run again */
+    int               over;  /* more than MC_TORN_MAX streams: the others are not watched */
+    int               outer; /* the passes and reductions it runs leave the rule to it */
+    int               tries;
+} mc_torn_t;
+
+/* Before a step or reduction reads the shared streams of @exprs (@keep: it cannot run twice). */
+void mc_torn_begin(mc_torn_t *t, const mc_expr_t *const *exprs, int n, int keep);
+
+/* After it ran with @rc: 1 when a read was torn and it is to run again, else 0 (and @t is done). */
+int mc_torn_again(mc_torn_t *t, int rc);
 
 /* Execute a constructor/shape step @cs. */
 int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err, size_t errsz);

@@ -605,6 +605,20 @@ int mc_is_reserved_const(const char *name)
 }
 
 /**
+ * mc_is_stream_prefix - Check whether @name is `S` or `L`, the letters of `S:name` and `L:name`
+ * @name: Bare identifier
+ *
+ * They name images only (`U, S, Vt = svd(A)`): a variable of that name before `:` (`im[S:n]`)
+ * would read as a stream prefix.
+ *
+ * Return: 1 if @name is `S` or `L`, 0 otherwise
+ */
+int mc_is_stream_prefix(const char *name)
+{
+    return name != NULL && (name[0] == 'S' || name[0] == 'L') && name[1] == '\0';
+}
+
+/**
  * mc_func_table - Return the complete built-in function table and entry count
  * @out_count: Optional output pointer receiving `MC_FUNC_COUNT`
  *

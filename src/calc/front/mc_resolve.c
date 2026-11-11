@@ -95,6 +95,10 @@ typedef struct
     uint32_t     created_size[MC_MAX_CREATED_VARS][3];
 } mc_resolve_ctx_t;
 
+/* S and L, the letters of S:name and L:name, name images only: as a number, `im[S:n]` would read
+ * `S:n` as a stream */
+#define PREFIX_VAR_MSG "'%s' is a stream prefix (S:name, L:name): it can name an image, not %s"
+
 /**
  * res_err - Record the first resolution error message into the context buffer
  * @ctx: Active resolver context
@@ -1242,6 +1246,11 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     imageID imid = is_prop ? -1 : mc_resolve_or_autoconnect_image(target->u.ident.name);
     int     cdt  = (imid == -1 && !is_prop) ? created_var_op(ctx, bare, 0) : 0;
     long    vid  = (is_prop || imid != -1 || (cdt > 0 && cdt != 255)) ? -1 : variable_ID(bare);
+    if (!is_prop && imid == -1 && (cdt == 0 || cdt == 255) && rhs->res_kind != MC_RES_IMAGE &&
+        mc_is_stream_prefix(bare))
+    {
+        return res_err(ctx, PREFIX_VAR_MSG, bare, "a variable");
+    }
     if (is_prop || (vid != -1 && milk_data.variable[vid].type != 3))
     {
         target->u.ident.id_kind = is_prop ? MC_ID_PROP : MC_ID_VAR;
@@ -1683,8 +1692,12 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
                                        : (imid != -1 || (cdt > 0 && cdt != 255)) ? MC_ID_IMAGE
                                        : rhs_im                                  ? MC_ID_NEW
                                                                                  : MC_ID_VAR;
-                lhs->u.ident.im_id   = imid;
-                lhs->u.ident.var_id  = (is_prop || imid != -1 || rhs_im) ? -1 : vid;
+                if (lhs->u.ident.id_kind == MC_ID_VAR && mc_is_stream_prefix(lhs->u.ident.bare))
+                {
+                    return res_err(ctx, PREFIX_VAR_MSG, lhs->u.ident.bare, "a variable");
+                }
+                lhs->u.ident.im_id  = imid;
+                lhs->u.ident.var_id = (is_prop || imid != -1 || rhs_im) ? -1 : vid;
                 s->needs_image |= (imid != -1 || (cdt > 0 && cdt != 255) || rhs_im);
                 const mc_expr_t *re  = s->u.multi.rhs[(nrhs == nlhs) ? j : 0];
                 uint8_t          rdt = rhs_im ? (re->res_dt ? re->res_dt : _DATATYPE_FLOAT)
@@ -1731,6 +1744,10 @@ static int resolve_stmt_list(mc_resolve_ctx_t *ctx, mc_stmt_t *s)
             {
                 return res_err(ctx, "'%s' is a constant: it cannot be a loop variable",
                                s->u.for_stmt.var);
+            }
+            if (mc_is_stream_prefix(s->u.for_stmt.var))
+            {
+                return res_err(ctx, PREFIX_VAR_MSG, s->u.for_stmt.var, "a loop variable");
             }
             created_var_op(ctx, s->u.for_stmt.var, 255);
             if (resolve_stmt_list(ctx, s->u.for_stmt.body) != 0)

@@ -209,7 +209,8 @@ On first load, `milk` compiles `wfskernels.c` and reuses the cached `.so` until 
 
 A parameter table holds at most 16 numeric fields (`FPTYPE_FLOAT64/32`, `INT64/32`, `UINT64/32`,
 `ONOFF`) in a struct of at most 256 bytes; a library whose table breaks this, or declares a string
-field, is refused at load with the offending parameter named.
+field, is refused at load with the offending parameter named. So is a Tier 2 operator with more
+than 8 input or 8 output ports.
 
 When a C kernel or operator declares parameters via `MILK_CALC_PARAMS(name, PARAM_MACRO)`,
 `milk-fpsexec-milk-calc` inspects every call site in the `.calc` program (`-e`, `-f`, `-i`, `-I`)
@@ -223,6 +224,8 @@ and applies three rules:
 2. **Instance labels (`func:label(...)`) disambiguate multiple calls**:
    - Calling `despike3x3:coarse(raw)` and `despike3x3:fine(a)` exposes two independent FPS
      parameter groups: `.coarse.th` and `.fine.th`.
+   - Only the name of a loaded extension takes a label: after any other name, `:` before a call
+     is a slice, range or `?:` separator (`im[k:min(a, b)]`).
 3. **Call-site bound arguments are hidden from FPS**:
    - Calling `despike3x3:fine(a, th = 3.0 * rms)` binds `th` to the `.calc` expression `3.0 * rms`
      and omits `.fine.th` from the FPS so external users cannot accidentally fight the internal

@@ -124,13 +124,14 @@ static mc_stmt_cache_t g_stmt_cache[MC_STMT_CACHE_MAX];
 static uint64_t        g_stmt_lru_clock = 0;
 
 /**
- * stmt_cache_clear - Free and invalidate all entries in the single-statement LRU cache
+ * mc_stmt_cache_clear - Free and invalidate all entries in the single-statement LRU cache
  *
- * Called whenever user-defined functions (`def`) or fallback variables are reset.
+ * Called whenever user-defined functions (`def`) or fallback variables are reset, and before a
+ * C extension is loaded again (ext/mc_ext_loader.c).
  *
  * Return: void
  */
-static void stmt_cache_clear(void)
+void mc_stmt_cache_clear(void)
 {
     for (int i = 0; i < MC_STMT_CACHE_MAX; i++)
     {
@@ -228,7 +229,7 @@ void mc_host_str_set(const char *name, const char *val)
 void mc_host_str_clear(void)
 {
     memset(g_fb_vars, 0, sizeof(g_fb_vars));
-    stmt_cache_clear();
+    mc_stmt_cache_clear();
 }
 
 /* ============================================================================================== */
@@ -250,7 +251,7 @@ void mcalc_udef_clear(void)
         mc_expr_free(g_udefs[i].body);
     }
     g_nudefs = 0;
-    stmt_cache_clear();
+    mc_stmt_cache_clear();
 }
 
 static mcalc_udef_t g_udefs_saved[MCALC_UDEF_MAX];
@@ -361,7 +362,7 @@ int mcalc_udef_add(const char *name, int nargs, const char arg_names[][64], stru
         snprintf(g_udefs[idx].arg_names[i], sizeof(g_udefs[idx].arg_names[i]), "%s", arg_names[i]);
     }
     g_udefs[idx].body = body;
-    stmt_cache_clear();
+    mc_stmt_cache_clear();
     return idx;
 }
 
@@ -1165,6 +1166,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     memset(&result, 0, sizeof(result));
     if (mc_scalar_exec_stmt(s, &result, err, sizeof(err)) != 0)
     {
+        mc_out_abort();
         mc_stmt_free(s);
         report_err(input, err[0] != '\0' ? err : "evaluation error");
         return 0;

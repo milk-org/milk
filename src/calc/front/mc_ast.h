@@ -402,6 +402,9 @@ int mc_lex(const char *src, mc_tok_list_t *out);
 /** mc_udef_add_stmt() - register the def of statement @s (taking its body); -1 with @err on error. */
 int mc_udef_add_stmt(mc_stmt_t *s, char *err, size_t errsz);
 
+/** mc_stmt_cache_clear() - drop the compiled statements `@calc` keeps (mc_eval.c). */
+void mc_stmt_cache_clear(void);
+
 /** mc_udef_save() / mc_udef_restore() - copy the def table, and put that copy back. */
 void mc_udef_save(void);
 void mc_udef_restore(void);

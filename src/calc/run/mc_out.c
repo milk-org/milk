@@ -16,7 +16,8 @@
  *              mc_tmp_release() keep up to 4 released scratch images (`_tmpcalcpool0..3`,
  *              256 MiB in all), so per-frame clones, binned slices and reduction inputs are not
  *              allocated each time; the `_tmpcalcsub*` images of cached sub-programs stay until
- *              mc_tmp_release_force() or mcalc_tmp_cleanup(). mc_out_post() posts a target;
+ *              mc_tmp_release_force() or mcalc_tmp_cleanup(). mc_out_post() posts a target
+ *              (mc_out_abort() clears the write flag of those a failed step left unposted);
  *              between mc_post_defer() and mc_post_flush() it queues shared streams, so a run
  *              wakes each reader once. mc_format_image_summary() and mc_format_pixel_line() print
  *              `name [dims] type` and the pixels of `@calc -a`.
@@ -50,6 +51,7 @@
 #define MC_POOL_N 4
 #define MC_POOL_BYTES ((size_t) 256 << 20)
 #define MC_MAX_PIXELS 1048576
+#define MC_POST_MAX 64 /* outputs of one run queued for a post, or open at once */
 
 /* ========================================================================== */
 /* Temporary Image Pool (`_tmpcalcpool0..3`)                                  */
@@ -58,8 +60,10 @@
 static imageID g_pool_ids[MC_POOL_N] = { -1, -1, -1, -1 };
 static long    g_tmp_seq             = 1;
 static int     g_post_defer          = 0;
-static imageID g_post_ids[64];
+static imageID g_post_ids[MC_POST_MAX];
 static int     g_post_n = 0;
+static imageID g_open_ids[MC_POST_MAX]; /* prepared (write flag set), not posted yet */
+static int     g_open_n = 0;
 
 /**
  * im_bytes - Compute total pixel buffer size in bytes for an `IMAGE`
@@ -332,6 +336,69 @@ void mcalc_tmp_cleanup(void)
 /* ========================================================================== */
 
 /**
+ * out_open - Set the write flag of target @id and note it until it is posted
+ * @id: `imageID` of a target a step is about to write
+ *
+ * Return: @id
+ */
+static imageID out_open(imageID id)
+{
+    milk_data.image[id].md[0].write = 1;
+    for (int i = 0; i < g_open_n; i++)
+    {
+        if (g_open_ids[i] == id)
+        {
+            return id;
+        }
+    }
+    if (g_open_n < MC_POST_MAX)
+    {
+        g_open_ids[g_open_n++] = id;
+    }
+    return id;
+}
+
+/**
+ * out_close - Forget target @id: it is posted, or queued for a post
+ * @id: `imageID` passed to out_open()
+ *
+ * Return: void
+ */
+static void out_close(imageID id)
+{
+    for (int i = 0; i < g_open_n; i++)
+    {
+        if (g_open_ids[i] == id)
+        {
+            g_open_ids[i] = g_open_ids[--g_open_n];
+            return;
+        }
+    }
+}
+
+/**
+ * mc_out_abort - Clear the write flag of the targets a failed step prepared and did not post
+ *
+ * A step that fails between mc_out_prepare() and mc_out_post() leaves its target as it is: not
+ * posted, and no longer flagged as being written, so readers do not see a torn frame for ever.
+ *
+ * Return: void
+ */
+void mc_out_abort(void)
+{
+    for (int i = 0; i < g_open_n; i++)
+    {
+        imageID id = g_open_ids[i];
+        if (milk_data.image != NULL && id >= 0 && id < milk_data.NB_MAX_IMAGE &&
+            milk_data.image[id].used && milk_data.image[id].md != NULL)
+        {
+            milk_data.image[id].md[0].write = 0;
+        }
+    }
+    g_open_n = 0;
+}
+
+/**
  * mc_out_prepare - Resolve, validate, or allocate the output `IMAGE` for a slot
  * @slot:    Destination program slot
  * @naxis:   Required number of axes (`1..3`)
@@ -430,17 +497,15 @@ imageID mc_out_prepare(mc_slot_t     *slot,
                 }
                 return -1;
             }
-            im->md[0].write   = 1;
             slot->im_id       = id;
             slot->checked_gen = tgen;
-            return id;
+            return out_open(id);
         }
         if (im->md[0].shared == 0 && same_shape && im->md[0].datatype == dt && !want_shm)
         {
-            im->md[0].write   = 1;
             slot->im_id       = id;
             slot->checked_gen = tgen;
-            return id;
+            return out_open(id);
         }
         if (im->md[0].shared == 1)
         {
@@ -489,10 +554,9 @@ imageID mc_out_prepare(mc_slot_t     *slot,
         slot->existed_at_plan = 1;
         slot->orig_dt         = dt;
     }
-    milk_data.image[id].md[0].write = 1;
-    slot->im_id                     = id;
-    slot->checked_gen               = milk_table_generation();
-    return id;
+    slot->im_id       = id;
+    slot->checked_gen = milk_table_generation();
+    return out_open(id);
 }
 
 /**
@@ -513,6 +577,7 @@ void mc_out_post(imageID id)
         return;
     }
     IMAGE *im = &milk_data.image[id];
+    out_close(id);
     if (im->md == NULL || !im->md[0].shared)
     {
         if (im->md != NULL)
@@ -561,6 +626,7 @@ void mc_out_post_now(imageID id)
     {
         return;
     }
+    out_close(id);
     for (int i = 0; i < g_post_n; i++)
     {
         if (g_post_ids[i] == id)
@@ -645,10 +711,14 @@ void mc_post_flush(void *processinfo)
  * A queued stream was written earlier in this run and keeps `md[0].write = 1` until
  * mc_post_flush(); a later statement reading it must not mistake that for a torn frame.
  *
- * Return: 1 if @id is in the deferred-post queue, 0 otherwise
+ * Return: 1 if @id is in the deferred-post queue, or the queue is full; 0 otherwise
  */
 int mc_post_pending(imageID id)
 {
+    if (g_post_defer && g_post_n == MC_POST_MAX) /* later posts were not queued: any may be ours */
+    {
+        return 1;
+    }
     for (int i = 0; g_post_defer && i < g_post_n; i++)
     {
         if (g_post_ids[i] == id)

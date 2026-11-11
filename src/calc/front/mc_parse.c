@@ -947,6 +947,12 @@ static mc_stmt_t *parse_def_stmt(mc_parse_ctx_t *ctx, const mc_tok_t *def_tok)
             parse_err(ctx, at, "def: expected a parameter name");
             return s;
         }
+        if (mc_is_stream_prefix(at->sval))
+        {
+            parse_err(ctx, at, "def: '%s' is a stream prefix (S:name, L:name), not a parameter",
+                      at->sval);
+            return s;
+        }
         snprintf(s->def.args[s->def.nargs++], sizeof(s->def.args[0]), "%s", at->sval);
         if (cur_tok(ctx)->type != MC_TOK_COMMA)
         {
@@ -993,7 +999,8 @@ static mc_stmt_t *parse_stmt_tokens(mc_parse_ctx_t *ctx)
     if (t->type == MC_TOK_IDENT && strcmp(t->sval, "skip") == 0)
     {
         const mc_tok_t *nx = &ctx->tl->toks[ctx->tl->pos + 1];
-        if (nx->type == MC_TOK_EOF || nx->type == MC_TOK_NEWLINE || nx->type == MC_TOK_SEMI)
+        if (nx->type == MC_TOK_EOF || nx->type == MC_TOK_NEWLINE || nx->type == MC_TOK_SEMI ||
+            nx->type == MC_TOK_RBRACE)
         {
             advance_tok(ctx);
             mc_stmt_t *s = (mc_stmt_t *) calloc(1, sizeof(mc_stmt_t));

@@ -17,11 +17,14 @@
  *              first when the write is not pointwise, is sliced or changes the type. Shared inputs
  *              follow the torn-frame rule (milkdata_torn_frame.h): a torn pass runs again, up to
  *              MILK_FRAME_TRIES reads in all, unless it reads what it writes; each torn read is
- *              counted (mcalc_torn_count(), `_torn` in a unit). A `/=` with a zero divisor pixel
- *              fails and leaves its target as it was.
+ *              counted (mcalc_torn_count(), `_torn` in a unit). mc_torn_begin() and
+ *              mc_torn_again() apply the same rule around the steps that read stream memory
+ *              themselves: constructor steps here, reductions in run/mc_reduce.c. A `/=` with a
+ *              zero divisor pixel fails and leaves its target as it was.
  * Used by:     run/mc_prog.c (each step of a run); mc_write_im_pix(), mc_resolve_or_eval_im()
  *              and mc_select_ctor_out_dt() also by run/mc_prestage.c, ext/mc_ext_exec.c and
- *              linalg/; mcalc_torn_count() by units/milk_unit_calc.c. Declared in
+ *              linalg/; mc_torn_begin() and mc_torn_again() by run/mc_reduce.c;
+ *              mcalc_torn_count() by units/milk_unit_calc.c. Declared in
  *              plan/mc_plan.h, linalg/mc_linalg.h and mcalc.h.
  * Uses:        plan/mc_views.c (views, broadcast), run/mc_out.c (targets, scratch images,
  *              posts), run/mc_reduce.c (scalar operands), COREMOD_arith (arith_team.h, image
@@ -50,18 +53,21 @@
 #include "COREMOD_memory/image_ID.h"
 #include "linalg/mc_linalg.h"
 #include "plan/mc_plan.h"
+#include "milk_calc_ext.h"
 
 /* ========================================================================== */
 /* Telemetry, Error Reporting & Pixel Write Helpers                           */
 /* ========================================================================== */
 
 static uint64_t g_torn_count = 0;
+/* depth of the steps that watch their streams themselves (mc_torn_begin()) */
+static _Thread_local int g_torn_outer = 0;
 
 /**
  * mcalc_torn_count - Return the cumulative count of torn shared-memory reads
  *
- * Incremented atomically whenever `mc_exec_pass()` finds a read of a shared
- * input stream torn (milk_frame_clean()), whether or not the pass runs again.
+ * Incremented atomically whenever a pass, a whole-image step or a reduction finds a
+ * read of a shared input stream torn (milk_frame_clean()), whether or not it runs again.
  *
  * Return: Total number of torn reads observed in this process
  */
@@ -111,56 +117,59 @@ static inline int is_complex_dt(uint8_t dt)
  * @im:  Target `IMAGE` structure
  * @dt:  Target datatype (`_DATATYPE_*`)
  * @idx: Linear 0-based element index
- * @v:   Value to store (rounded and clamped to range for 8/16/32-bit integer types)
+ * @v:   Value to store
+ *
+ * An integer type takes @v as the compiled kernels store it (mc_st_* in jit/mc_prelude.h):
+ * truncated toward zero, then wrapped into the type; NaN and infinities store 0.
  *
  * Return: void
  */
 void mc_write_im_pix(IMAGE *im, uint8_t dt, uint64_t idx, double v)
 {
-    int64_t  si = llround(v);
-    uint64_t ui = (v <= 0.0) ? 0 : (uint64_t) (v + 0.5);
-#define CLAMP_S(lo, hi) ((si < (lo)) ? (lo) : (si > (hi)) ? (hi) : si)
     if (dt == _DATATYPE_FLOAT)
     {
         im->array.F[idx] = (float) v;
+        return;
     }
-    else if (dt == _DATATYPE_DOUBLE)
+    if (dt == _DATATYPE_DOUBLE)
     {
         im->array.D[idx] = v;
+        return;
     }
-    else if (dt == _DATATYPE_UINT8)
+    /* beyond the int64 range a double is a multiple of 2^11: its low 32 bits are fmod()'s */
+    int64_t si = !isfinite(v) ? 0 : (fabs(v) < 0x1p63) ? (int64_t) v : (int64_t) fmod(v, 0x1p32);
+    if (dt == _DATATYPE_UINT8)
     {
-        im->array.UI8[idx] = (ui > 255) ? 255 : (uint8_t) ui;
+        im->array.UI8[idx] = (uint8_t) si;
     }
     else if (dt == _DATATYPE_INT8)
     {
-        im->array.SI8[idx] = (int8_t) CLAMP_S(-128, 127);
+        im->array.SI8[idx] = (int8_t) si;
     }
     else if (dt == _DATATYPE_UINT16)
     {
-        im->array.UI16[idx] = (ui > 65535) ? 65535 : (uint16_t) ui;
+        im->array.UI16[idx] = (uint16_t) si;
     }
     else if (dt == _DATATYPE_INT16)
     {
-        im->array.SI16[idx] = (int16_t) CLAMP_S(-32768, 32767);
+        im->array.SI16[idx] = (int16_t) si;
     }
     else if (dt == _DATATYPE_UINT32)
     {
-        im->array.UI32[idx] = (ui > 4294967295ULL) ? 4294967295U : (uint32_t) ui;
+        im->array.UI32[idx] = (uint32_t) si;
     }
     else if (dt == _DATATYPE_INT32)
     {
-        im->array.SI32[idx] = (int32_t) CLAMP_S(-2147483648LL, 2147483647);
+        im->array.SI32[idx] = (int32_t) si;
     }
     else if (dt == _DATATYPE_UINT64)
     {
-        im->array.UI64[idx] = (v <= 0.0) ? 0 : (uint64_t) v;
+        im->array.UI64[idx] = (v >= 0x1p63 && v < 0x1p64) ? (uint64_t) v : (uint64_t) si;
     }
     else if (dt == _DATATYPE_INT64)
     {
-        im->array.SI64[idx] = (int64_t) v;
+        im->array.SI64[idx] = si;
     }
-#undef CLAMP_S
 }
 
 /* ========================================================================== */
@@ -238,6 +247,26 @@ static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
 }
 
 /**
+ * expr_im_id - Image a name or slice node reads
+ * @e: `MC_EXPR_IDENT` or `MC_EXPR_SLICE` node
+ *
+ * Return: the `imageID` cached on the node while it still holds that name, else the one
+ *         mc_resolve_or_autoconnect_image() finds, or -1
+ */
+static imageID expr_im_id(const mc_expr_t *e)
+{
+    int         is_sl = (e->kind == MC_EXPR_SLICE);
+    imageID     id    = is_sl ? e->u.slice.im_id : e->u.ident.im_id;
+    const char *bare  = is_sl ? e->u.slice.bare : e->u.ident.bare;
+    if (id < 0 || id >= milk_data.NB_MAX_IMAGE || !milk_data.image[id].used ||
+        strcmp(milk_data.image[id].name, bare) != 0)
+    {
+        id = mc_resolve_or_autoconnect_image(is_sl ? e->u.slice.name : e->u.ident.name);
+    }
+    return id;
+}
+
+/**
  * mc_resolve_or_eval_im - Resolve an image identifier or evaluate a compound image expression
  * @e:         Image argument expression
  * @avoid_id:  Destination `imageID` to avoid aliasing with (cloned if equal), or -1
@@ -270,17 +299,156 @@ int mc_resolve_or_eval_im(const mc_expr_t *e,
         *is_tmp = (*out_id >= 0);
         return (*out_id >= 0) ? 0 : -1;
     }
-    imageID id = e->u.ident.im_id;
-    if (id < 0 || id >= milk_data.NB_MAX_IMAGE || !milk_data.image[id].used ||
-        strcmp(milk_data.image[id].name, e->u.ident.bare) != 0)
-    {
-        id = mc_resolve_or_autoconnect_image(e->u.ident.name);
-    }
-    *out_id = (id < 0) ? -1 : (id == avoid_id) ? clone_to_tmp(id) : id;
-    *is_tmp = (id >= 0 && id == avoid_id && *out_id >= 0);
+    imageID id = expr_im_id(e);
+    *out_id    = (id < 0) ? -1 : (id == avoid_id) ? clone_to_tmp(id) : id;
+    *is_tmp    = (id >= 0 && id == avoid_id && *out_id >= 0);
     return (id < 0)         ? exec_err(err, errsz, "unknown image '%s'", e->u.ident.name)
            : (*out_id >= 0) ? 0
                             : exec_err(err, errsz, "failed to clone aliased image");
+}
+
+/* ========================================================================== */
+/* Torn-Frame Rule Outside Elementwise Passes                                 */
+/* ========================================================================== */
+
+/**
+ * torn_collect - Add the shared streams expression @e reads to @t
+ * @t: Set being filled
+ * @e: Expression tree (may be NULL)
+ *
+ * A stream this run wrote and has not posted yet is ours and is left out. A call that keeps
+ * state (`ema`, a Tier 2 extension operator) or an assignment sets `t->keep`.
+ *
+ * Return: void
+ */
+static void torn_collect(mc_torn_t *t, const mc_expr_t *e)
+{
+    if (e == NULL)
+    {
+        return;
+    }
+    if ((e->kind == MC_EXPR_IDENT && e->res_kind == MC_RES_IMAGE) || e->kind == MC_EXPR_SLICE)
+    {
+        imageID id   = expr_im_id(e);
+        int     seen = (id < 0 || milk_data.image[id].md[0].shared != 1 || mc_post_pending(id));
+        for (int i = 0; !seen && i < t->n; i++)
+        {
+            seen = (t->id[i] == id);
+        }
+        if (!seen && t->n < MC_TORN_MAX)
+        {
+            t->id[t->n++] = id;
+        }
+        else if (!seen)
+        {
+            t->over = 1;
+        }
+    }
+    else if (e->kind == MC_EXPR_ASSIGN)
+    {
+        t->keep = 1;
+    }
+    else if (e->kind == MC_EXPR_CALL)
+    {
+        const milk_calc_ext_entry_t *ext = (e->u.call.fn == NULL && e->u.call.ext_id >= 0)
+                                               ? milk_calc_ext_get(e->u.call.ext_id)
+                                               : NULL;
+        t->keep |= (e->u.call.fn != NULL && e->u.call.fn->kind == MC_FN_PROG) ||
+                   (ext != NULL && ext->kind == MILK_EXT_OP);
+    }
+    mc_expr_t **kids[MC_MAX_ARGS];
+    int         nk = mc_expr_child_slots((mc_expr_t *) e, kids);
+    for (int i = 0; i < nk; i++)
+    {
+        torn_collect(t, *kids[i]);
+    }
+}
+
+/**
+ * mc_torn_begin - Note the shared streams a whole-image step or a reduction is about to read
+ * @t:     Set to fill; pass it to mc_torn_again() after each run of the step
+ * @exprs: Expressions the step evaluates
+ * @n:     Number of entries in @exprs
+ * @keep:  1 when the step cannot run twice (a compound assignment)
+ *
+ * These steps read stream memory directly (BLAS, LAPACK, FFT, filters, extensions, reductions),
+ * so the rule of mc_exec_pass() is applied around them: mark, run, check, run again. While such a
+ * step may run again, the passes and reductions it runs inside leave the rule to it. Its posts are
+ * queued until mc_torn_again() is done, so readers get the last run only.
+ *
+ * Return: void
+ */
+void mc_torn_begin(mc_torn_t *t, const mc_expr_t *const *exprs, int n, int keep)
+{
+    t->n     = 0;
+    t->keep  = keep;
+    t->over  = 0;
+    t->outer = 0;
+    t->tries = 1;
+    for (int i = 0; g_torn_outer == 0 && i < n; i++)
+    {
+        torn_collect(t, exprs[i]);
+    }
+    if (t->n == 0)
+    {
+        return;
+    }
+    t->outer = (!t->keep && !t->over);
+    g_torn_outer += t->outer;
+    mc_post_defer(1);
+    for (int i = 0; i < t->n; i++)
+    {
+        t->mark[i] = milk_frame_mark(&milk_data.image[t->id[i]]);
+    }
+}
+
+/**
+ * mc_torn_again - Check the reads of a step that mc_torn_begin() watches
+ * @t:  Set filled by mc_torn_begin()
+ * @rc: What the step returned
+ *
+ * A watched stream that the step itself wrote (its post is queued) is no torn read: the step
+ * reads what it writes and is not run again. A torn read is counted once per run.
+ *
+ * Return: 1 after a torn read when the step is to run again (after milk_frame_wait()), else 0
+ */
+int mc_torn_again(mc_torn_t *t, int rc)
+{
+    if (t->n == 0)
+    {
+        return 0;
+    }
+    int torn = 0;
+    for (int i = 0; rc == 0 && i < t->n; i++)
+    {
+        const IMAGE *im = &milk_data.image[t->id[i]];
+        if (mc_post_pending(t->id[i]))
+        {
+            t->keep = 1;
+        }
+        else
+        {
+            torn |= !milk_frame_clean(im, t->mark[i]);
+        }
+    }
+    if (torn)
+    {
+        __atomic_fetch_add(&g_torn_count, 1, __ATOMIC_RELAXED);
+    }
+    if (torn && !t->keep && t->tries < MILK_FRAME_TRIES)
+    {
+        t->tries++;
+        milk_frame_wait();
+        for (int i = 0; i < t->n; i++)
+        {
+            t->mark[i] = milk_frame_mark(&milk_data.image[t->id[i]]);
+        }
+        return 1;
+    }
+    g_torn_outer -= t->outer;
+    t->n = 0;
+    mc_post_flush(NULL);
+    return 0;
 }
 
 /* ========================================================================== */
@@ -306,7 +474,7 @@ uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
 }
 
 /**
- * mc_exec_ctor - Execute a constructor, shape, prestage, or linear algebra step
+ * exec_ctor_once - Execute a constructor, shape, prestage, or linear algebra step once
  * @prog:    Enclosing planned program
  * @cs:      Constructor step descriptor
  * @in_unit: 1 if executing inside a persistent FPS unit
@@ -323,7 +491,11 @@ uint8_t mc_select_ctor_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
  *
  * Return: 0 on success, -1 on error
  */
-int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err, size_t errsz)
+static int exec_ctor_once(mcalc_prog_t   *prog,
+                          mc_ctor_step_t *cs,
+                          int             in_unit,
+                          char           *err,
+                          size_t          errsz)
 {
     if (cs->multi_stmt != NULL)
     {
@@ -611,6 +783,34 @@ done_src:
     {
         mc_tmp_release(src2_id);
     }
+    return rc;
+}
+
+/**
+ * mc_exec_ctor - Execute a whole-image step under the torn-frame rule
+ * @prog:    Enclosing planned program
+ * @cs:      Constructor step descriptor
+ * @in_unit: 1 if executing inside a persistent FPS unit
+ * @err:     Error message buffer
+ * @errsz:   Size of @err in bytes
+ *
+ * Runs exec_ctor_once() again while a shared stream it read was torn (mc_torn_begin()); a
+ * compound assignment (`C += A @ B`) is not run again.
+ *
+ * Return: 0 on success, -1 on error
+ */
+int mc_exec_ctor(mcalc_prog_t *prog, mc_ctor_step_t *cs, int in_unit, char *err, size_t errsz)
+{
+    const mc_stmt_t        *ms = cs->multi_stmt;
+    const mc_expr_t *const *exprs =
+        (ms != NULL) ? (const mc_expr_t *const *) ms->u.multi.rhs : &cs->rhs_expr;
+    mc_torn_t t;
+    int       rc;
+    mc_torn_begin(&t, exprs, (ms != NULL) ? ms->u.multi.nrhs : 1, cs->assign_op != MC_TOK_ASSIGN);
+    do
+    {
+        rc = exec_ctor_once(prog, cs, in_unit, err, errsz);
+    } while (mc_torn_again(&t, rc));
     return rc;
 }
 
@@ -1125,8 +1325,9 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         rerun_ok &= !(is_out_im && !pass->ops[i].is_out);
         /* an output of an earlier statement keeps its write flag until the run posts it */
         is_sh_in[i] =
-            (!pass->ops[i].is_scalar && !pass->ops[i].is_out && !is_out_im && views[i].dt != 0 &&
-             milk_data.image[views[i].im_id].md[0].shared == 1 && !mc_post_pending(views[i].im_id));
+            (g_torn_outer == 0 && !pass->ops[i].is_scalar && !pass->ops[i].is_out && !is_out_im &&
+             views[i].dt != 0 && milk_data.image[views[i].im_id].md[0].shared == 1 &&
+             !mc_post_pending(views[i].im_id));
     }
 
     for (int attempt = 0; attempt < MILK_FRAME_TRIES; attempt++)

@@ -55,7 +55,7 @@ extensions), `linalg/` and `units/`.
 | `plan/mc_plan.c` | AST-to-pass planner, basic-block fusion, and local scratch elision |
 | `jit/mc_emit.c` | C source generator for the kernels of elementwise passes (OpenMP/SIMD) |
 | `jit/mc_cc.c` | Run-time compiler driver (JIT kernels and `.c` extensions, `MILK_CC_FLAGS`), on-disk (`<key>.so`) and in-memory kernel cache |
-| `run/mc_exec.c` | Elementwise pass and constructor step execution with torn-read retry protection |
+| `run/mc_exec.c` | Elementwise pass and constructor step execution; the torn-read retry of passes, whole-image steps and reductions |
 | `run/mc_reduce.c` | Single-pass full-image, masked, pair, and tuple (`istats`, `icentroid`, `iarg*`) reductions |
 | `run/mc_prestage.c` | Axis reductions, `cumsum`, `pixunmap`, `rprof`, `gauss`, `medfilt*`, `conv2`, `boxmean`, and `ema` pre-stages |
 | `mc_eval.c` | Top-level `mcalc_eval_bash`, `mcalc_eval_str`, `mcalc_eval_math_to_val`, the LRU program cache, and the `def` table |
