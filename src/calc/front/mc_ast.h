@@ -38,6 +38,7 @@
 
 #define MC_TOK_STR_MAX 1024
 #define MC_IDENT_MAX 256    /* size of a bare identifier buffer */
+#define MC_NAME_MAX 80      /* size of a plain name: the lexer refuses more than 79 characters */
 #define MC_MAX_TOKENS 65536 /* a guard: the token list grows as needed */
 #define MC_MAX_ARGS 16
 #define MC_MAX_LHS 8
@@ -175,7 +176,7 @@ typedef struct
 /* Comprehension generator axis: var = start : stop [: step] */
 typedef struct
 {
-    char       var[64];
+    char       var[MC_NAME_MAX];
     mc_expr_t *start;
     mc_expr_t *stop;
     mc_expr_t *step; /* NULL for default step 1 */
@@ -356,7 +357,7 @@ struct mc_stmt
 
         struct
         {
-            char               var[64];
+            char               var[MC_NAME_MAX];
             mc_expr_t         *start;
             mc_expr_t         *stop;
             mc_expr_t         *step; /* NULL for default 1 */
@@ -500,8 +501,6 @@ void mc_val_to_str(const mc_val_t *v, char *buf, size_t bufsz, int use_float_dig
 /** mc_scalar_str_fn() - evaluate scalar string function @fn on @args into @out. */
 const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t *out);
 
-/** mc_is_numeric_env_var() - return 1 if environment variable @s holds a valid number. */
-int mc_is_numeric_env_var(const char *s);
 
 /** mc_resolve_or_autoconnect_image() - look up or auto-connect image stream @name. */
 long mc_resolve_or_autoconnect_image(const char *name);

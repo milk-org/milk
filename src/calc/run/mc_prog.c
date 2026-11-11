@@ -36,10 +36,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "libfps/fps_types.h"
 #include "libmilkcommon/milkDebugTools.h"
 #include "libmilkdata/milkdata.h"
+#include "libprocessinfo/processinfo.h"
 #include "COREMOD_memory/create_variable.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/read_shmim.h"
@@ -698,6 +700,46 @@ static void clear_prog_plan(mcalc_prog_t *p)
     p->cap_steps = 0;
 }
 
+#define MC_REMAP_CHECK_S 0.5 /* seconds between two checks for re-created streams */
+
+static const char *g_prog_trigger =
+    NULL; /* trigger stream of the unit program that runs, or NULL */
+
+/**
+ * remap_recreated_streams - Reopen the shared streams of @p that another process re-created
+ * @p: Program, or cached block, whose slots are checked
+ *
+ * A stream that is deleted and created again is a new file: the old mapping never changes
+ * again. mc_resolve_or_autoconnect_image() compares the inode, reopens the stream in its table
+ * slot and bumps the table generation, so the caller validates its slots again and re-plans if
+ * the shape or type changed. One stat() per stream is too much for every tick of a fast unit:
+ * the check runs at most every MC_REMAP_CHECK_S. The trigger stream is left to libprocessinfo
+ * (processtools_trigger.c), which also picks its semaphore again.
+ */
+static void remap_recreated_streams(mcalc_prog_t *p)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
+    double t = (double) now.tv_sec + 1.0e-9 * (double) now.tv_nsec;
+    if (t - p->remap_check_t < MC_REMAP_CHECK_S)
+    {
+        return;
+    }
+    p->remap_check_t = t;
+    for (int i = 0; i < p->nslots; i++)
+    {
+        const mc_slot_t *s  = &p->slots[i];
+        const IMAGE     *im = (s->im_id >= 0 && s->im_id < milk_data.NB_MAX_IMAGE)
+                                  ? &milk_data.image[s->im_id]
+                                  : NULL;
+        if (im != NULL && im->used && im->md != NULL && im->md[0].shared == 1 &&
+            (g_prog_trigger == NULL || strcmp(s->bare, g_prog_trigger) != 0))
+        {
+            (void) mc_resolve_or_autoconnect_image(s->name);
+        }
+    }
+}
+
 /**
  * mc_prog_slots_valid - Verify that all image slots in @p still match their planned metadata
  * @p:        Planned program to check
@@ -955,11 +997,15 @@ int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, si
             *io_prog = sub;
         }
     }
-    else if (!mc_prog_slots_valid(sub,
-                                  sub->plan_gen == milk_table_generation() && sub->plan_gen != 0) &&
-             replan_prog_in_place(sub, in_unit, err, errsz) != 0)
+    else
     {
-        return -1;
+        remap_recreated_streams(sub);
+        if (!mc_prog_slots_valid(sub,
+                                 sub->plan_gen == milk_table_generation() && sub->plan_gen != 0) &&
+            replan_prog_in_place(sub, in_unit, err, errsz) != 0)
+        {
+            return -1;
+        }
     }
     int rc = run_prog_steps(sub, in_unit, err, errsz);
     if (rc == 0)
@@ -1002,6 +1048,12 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     {
         g_prog_unit_depth++;
     }
+    const char *saved_trigger = g_prog_trigger;
+    if (p->processinfo != NULL)
+    {
+        g_prog_trigger = ((const PROCESSINFO *) p->processinfo)->triggerstreamname;
+    }
+    remap_recreated_streams(p);
     int same_gen = (p->plan_gen == milk_table_generation() && p->plan_gen != 0);
     int rc =
         (!mc_prog_slots_valid(p, same_gen) && replan_prog_in_place(p, in_unit, err, errsz) != 0)
@@ -1015,7 +1067,8 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     {
         g_prog_unit_depth--;
     }
-    g_prog_skip = saved_skip;
+    g_prog_skip    = saved_skip;
+    g_prog_trigger = saved_trigger;
     mc_post_flush(p->processinfo);
     if (rc == 0)
     {

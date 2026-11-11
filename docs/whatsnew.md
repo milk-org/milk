@@ -23,6 +23,21 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-10** — Calculator and command-line fixes.
+  - Calculator: a unit maps again, within half a second, an input stream that another process
+    deleted and created again (it kept reading the old file). `@S:name` after `if` and `elif` is
+    a stream; `L:name[...]` no longer attaches the shared stream `name`; a loop or comprehension
+    variable may be as long as any name; a string variable holds 1023 bytes (it was cut at 511)
+    and a longer literal is an error; an SVD or eigendecomposition that does not converge is an
+    error. A number in the environment of the session or the unit is no longer a name: use a
+    bash variable or a `-p` parameter.
+  - `im[mask] *= flat[mask]` was never accepted: the slicing guide now shows `im[mask] *= flat`.
+  - Command line: `milk-cli -F PATH` uses PATH (it removed the file there and used an
+    auto-named FIFO), makes a new FIFO for its user only, and refuses a path that is not a FIFO
+    of that user; a failed `@grab` shows its message in the calling shell; `@{s.dm*.xsize}` is
+    not matched against file names; `@args -h` typed at a prompt keeps the shell; a file named
+    `STOPCLI` no longer ends `milk-cli`; a command sent with another `MILK_SHM_DIR` leaves the
+    session's log in place. `#cli` `#streams`
 - **2026-11-10** — `@calc --list` prints the calculator's own function table, one line per
   function with its signature, and the operators, statements and constants; it showed a second,
   hand-written table in the words of the removed engine, without the string functions. `--json`

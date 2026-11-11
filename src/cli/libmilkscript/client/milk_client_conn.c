@@ -589,7 +589,13 @@ int milk_client_await_response(int                        fd,
             break;
         }
 
-        if (hdr.type == MILK_MSG_VALUE && pl != NULL && hdr.len > 0)
+        if (hdr.type == MILK_MSG_VALUE && pl != NULL && hdr.len > 0 &&
+            (hdr.flags & MILK_FLAG_ERRTEXT) != 0)
+        {
+            fprintf(stderr, "%s\n",
+                    (const char *) pl); /* the request ran where our stderr is not */
+        }
+        else if (hdr.type == MILK_MSG_VALUE && pl != NULL && hdr.len > 0)
         {
             if (value_buf != NULL && value_sz > 0)
             {

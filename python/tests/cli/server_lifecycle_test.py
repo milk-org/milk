@@ -12,7 +12,8 @@ Does:        a server that cannot listen makes @session new fail with its reason
              it, and neither keeps the caller's descriptors; $NOTIFY_SOCKET gets READY=1, then
              STOPPING=1 on SIGTERM; Ctrl-C stops a long @calc while the session answers other
              requests; Ctrl-C or a lost shell stops a keyword the session runs itself (@pipe) and
-             the session goes on; a crash in a C extension leaves the session running; a shell
+             the session goes on; a command sent with another MILK_SHM_DIR leaves the
+             session's log where it is; a crash in a C extension leaves the session running; a shell
              keeps one connection between requests and starts the server again after it ended;
              captured command output is complete.
 Covers:      the server start (libmilkscript/ipc/milk_ipc_common.c, on
@@ -234,6 +235,24 @@ def test_ctrl_c_or_a_lost_shell_in_a_session_keyword_keeps_the_session(tmp_path)
     assert "interrupted" in (tmp_path / "loop.err").read_text(), out
     assert value(res.stdout, "after_int") == "5", out
     assert value(res.stdout, "after_kill") == "5", out
+
+
+def test_a_call_from_another_shm_dir_leaves_the_session_log(tmp_path):
+    """A command sent with another MILK_SHM_DIR runs, and the session's log, which is how other
+    shells find the session, stays one file in the directory the session started in."""
+    res = milk_bash(
+        '@calc "x = 1"; A=$MILK_SHM_DIR; B=$(mktemp -d "$PWD/shmB.XXXX")\n'
+        "before=$(ls -i $A | grep milk-srv | sort | tr '\\n' ' ')\n"
+        'MILK_SHM_DIR=$B mem.mk2Dim "@S:other" 4 4 >/dev/null; echo "rc=$?"\n'
+        "after=$(ls -i $A | grep milk-srv | sort | tr '\\n' ' ')\n"
+        '[ "$before" = "$after" ] && echo "home=same"; echo "stray=$(ls $B | grep -c milk-srv)"\n'
+        '@log -n 1 | grep -q "mem.mk2Dim" && echo "logged=1"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0" and value(res.stdout, "home") == "same", out
+    assert value(res.stdout, "stray") == "0", out
+    assert value(res.stdout, "logged") == "1", out
 
 
 def test_a_crash_in_calc_keeps_the_session(tmp_path):

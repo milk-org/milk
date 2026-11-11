@@ -4,7 +4,7 @@ Purpose:     milk-cli is both the interactive prompt and a script runner: its ex
              Ctrl-C behave as in bash, no piped line is lost or held back, and it finds its own
              install without any setup.
 Does:        `exit` in a subshell does not end milk-cli, and a bare `exit` keeps the last
-             status; an EXIT trap runs; Ctrl-C at a pty prompt stops a loop and keeps the shell's
+             status; a file named STOPCLI does not end it; an EXIT trap runs; Ctrl-C at a pty prompt stops a loop and keeps the shell's
              variables; calc-mode lines follow the shell's quoting and comments and the
              calculator's strings; `milk-cli -h` lists the options milk-cli takes;
              `@config sessionlog` logs each line read; 400 000 piped lines all run; piped lines
@@ -70,6 +70,14 @@ def test_subshell_and_bare_exit(tmp_path):
     assert "two" in res.stdout
     res2 = milk_script("false\nexit", tmp_path)
     assert res2.returncode == 1
+
+
+def test_a_file_named_stopcli_does_not_end_milk_cli(tmp_path):
+    """A file `STOPCLI` in the directory milk-cli runs in is a file like any other."""
+    (tmp_path / "STOPCLI").touch()
+    res = milk_cli_script('echo "ran=1"', tmp_path)
+    assert value(res.stdout, "ran") == "1", res.stdout + res.stderr
+    assert res.returncode == 0, res.stdout + res.stderr
 
 
 def test_time_and_exit_trap(tmp_path):

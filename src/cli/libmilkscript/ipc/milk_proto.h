@@ -51,6 +51,7 @@
     0x10U /* CALL: fail at once ("busy") rather than wait for another shell's */
 #define MILK_FLAG_EXPLAIN 0x20U /* CALC: print how the statements would run (@calc --explain) */
 #define MILK_FLAG_KEEP 0x40U    /* DONE: the connection stays open for the shell's next request */
+#define MILK_FLAG_ERRTEXT 0x80U /* VALUE: a message for the caller's stderr, not a result */
 
 /* Client -> Server message opcodes */
 enum milk_msg_type

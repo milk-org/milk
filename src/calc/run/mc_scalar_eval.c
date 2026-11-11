@@ -10,8 +10,8 @@
  *              and string statements, single pixels, entity properties, reductions to numbers,
  *              and the `if`/`for` statements that steer a program.
  * Does:        mc_scalar_eval_expr() evaluates literals, calculator variables
- *              (milk_data.variable[]), string variables (mc_host_str_get()), numeric environment
- *              variables, `s.`/`f.`/`p.` properties (milk_shm_prop.h), single pixels `im[x, y]`
+ *              (milk_data.variable[]), string variables (mc_host_str_get()),
+ *              `s.`/`f.`/`p.` properties (milk_shm_prop.h), single pixels `im[x, y]`
  *              of any datatype, function calls (math, `where`, random numbers, strings, complex
  *              parts, `lut`, a scalar `ema` kept on its call node, `post(name)`) and reductions
  *              (run/mc_reduce.c). An assignment writes a variable, a property
@@ -230,7 +230,7 @@ void mc_store_scalar_var(const char *bare, long *io_vid, const mc_val_t *v)
  *
  * Checks pre-resolved constants,
  * shared-memory entity properties, `milk_data.variable[]` (with cached
- * `var_id`), host/environment variables, and fallback constants (`pi`, `nan`,
+ * `var_id`), host string variables, and fallback constants (`pi`, `nan`,
  * `inf`).
  *
  * Return: 0 on success, -1 on error
@@ -285,21 +285,12 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
         return 0;
     }
 
-    /* 4. Host string variable, or numeric environment variable */
+    /* 4. Host string variable */
     const char *cval = mc_host_str_get(bare);
     if (cval != NULL)
     {
         out->type = MC_VAL_STRING;
         snprintf(out->sval, sizeof(out->sval), "%s", cval);
-        return 0;
-    }
-    if (mc_is_numeric_env_var(bare))
-    {
-        const char *ev  = getenv(bare);
-        char       *ep1 = NULL;
-        long        lv  = strtol(ev, &ep1, 0);
-        *out = (*ep1 == '\0') ? (mc_val_t) { .type = MC_VAL_LONG, .lval = lv }
-                              : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = strtod(ev, NULL) };
         return 0;
     }
 

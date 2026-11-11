@@ -246,6 +246,13 @@ static inline int is_ident_char(int c)
     return isalnum(c) || c == '_' || c == '.' || c == '$';
 }
 
+/** is_stmt_word() - 1 if @w starts a statement or a condition: `@S:` after it is a prefix, not
+ * a matrix product (`local @S:x`, `if @S:x[0,0] > 0`). */
+static int is_stmt_word(const char *w)
+{
+    return strcmp(w, "local") == 0 || strcmp(w, "if") == 0 || strcmp(w, "elif") == 0;
+}
+
 /**
  * is_ns_prefix_only - Check if a scanned prefix is solely a namespace qualifier
  * @start: Pointer to start of identifier token
@@ -597,7 +604,7 @@ int mc_lex(const char *src, mc_tok_list_t *out)
             int after_opnd = (nt > 0 && (out->toks[nt - 1].type == MC_TOK_LONG ||
                                          out->toks[nt - 1].type == MC_TOK_DOUBLE ||
                                          (out->toks[nt - 1].type == MC_TOK_IDENT &&
-                                          strcmp(out->toks[nt - 1].sval, "local") != 0) ||
+                                          !(is_pfx && is_stmt_word(out->toks[nt - 1].sval))) ||
                                          out->toks[nt - 1].type == MC_TOK_RPAREN ||
                                          out->toks[nt - 1].type == MC_TOK_RBRACK ||
                                          out->toks[nt - 1].type == MC_TOK_DOT_T));
@@ -692,8 +699,15 @@ int mc_lex(const char *src, mc_tok_list_t *out)
                 return -1;
             }
             size_t slen = (size_t) (p - start);
-            tok_text(out, &used, t, NULL, start,
-                     (slen < MC_TOK_STR_MAX) ? slen : (MC_TOK_STR_MAX - 1));
+            if (slen >= MC_TOK_STR_MAX)
+            {
+                out->err_line = t->line;
+                out->err_col  = t->col;
+                snprintf(out->errmsg, sizeof(out->errmsg), "string literal longer than %d bytes",
+                         MC_TOK_STR_MAX - 1);
+                return -1;
+            }
+            tok_text(out, &used, t, NULL, start, slen);
             p++;
             col++;
             t->len = (int) (p - ts);

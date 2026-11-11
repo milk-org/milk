@@ -1147,8 +1147,9 @@ static int              g_call_env_n       = 0;
 static int              g_call_shm_changed = 0;
 
 /**
- * apply_shm_dir_env() - re-resolve the SHM dir and reopen the server log if MILK_SHM_DIR moved
- * (@force: re-resolve even when MILK_SHM_DIR is unset). Returns 1 if it re-resolved.
+ * apply_shm_dir_env() - re-resolve the SHM dir if MILK_SHM_DIR moved (@force: re-resolve even when
+ * MILK_SHM_DIR is unset). Returns 1 if it re-resolved. The session's log stays where the session
+ * started: it is the registry entry other shells find and prune it by, for every request.
  */
 static int apply_shm_dir_env(int force)
 {
@@ -1161,13 +1162,6 @@ static int apply_shm_dir_env(int force)
     dcquiet     = 1;
     setSHMdir();
     dcquiet = saved_q;
-    if (g_srvlog_shm != NULL && g_srvlog_sockpath[0] != '\0')
-    {
-        uint32_t old_flags = g_srvlog_shm->flags;
-        milk_srvlog_server_close(g_srvlog_shm, 0);
-        g_srvlog_shm = milk_srvlog_server_init(g_srvlog_sockpath, 0, old_flags);
-        milk_server_refresh_log_stats();
-    }
     return 1;
 }
 

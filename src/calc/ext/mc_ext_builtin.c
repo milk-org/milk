@@ -20,8 +20,7 @@
  *              /dev/shm file was recreated (new inode), and attaches a /dev/shm stream not yet
  *              loaded; mc_parse_ident_streamname() replaces a FPTYPE_STREAMNAME variable by the
  *              stream it names and strips the prefix; mc_set_expr_from_im() copies the type and
- *              shape of an image to an AST node; mc_is_numeric_env_var() tells whether an
- *              environment variable holds a number.
+ *              shape of an image to an AST node.
  * Used by:     the kernels: front/mc_resolve.c (lookup by name), ext/mc_ext_exec.c (run); the
  *              helpers: front/mc_resolve.c, plan/mc_plan.c, plan/mc_history.c, run/,
  *              ext/mc_ext_exec.c, linalg/. Declared in front/mc_ast.h.
@@ -245,27 +244,6 @@ MILK_CALC_MODULE_EXPORT(
 /* ============================================================================================== */
 /* Stream and Identifier Resolution Helpers                                                       */
 /* ============================================================================================== */
-
-/**
- * mc_is_numeric_env_var - Check whether environment variable @s is set to a valid number
- * @s: Environment variable name
- *
- * Used during identifier resolution to distinguish numeric environment variables from unresolved
- * identifiers.
- *
- * Return: 1 if `getenv(s)` is non-empty and parses completely via `strtod()`, 0 otherwise
- */
-int mc_is_numeric_env_var(const char *s)
-{
-    const char *ev   = getenv(s);
-    char       *endp = NULL;
-    if (ev == NULL || ev[0] == '\0')
-    {
-        return 0;
-    }
-    (void) strtod(ev, &endp);
-    return endp != ev && *endp == '\0';
-}
 
 /**
  * mc_resolve_or_autoconnect_image - Resolve an image by name or attach to `/dev/shm/<bare>.im.shm`

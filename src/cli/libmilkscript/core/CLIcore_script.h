@@ -18,8 +18,8 @@
  */
 
 #define CLI_MAX_VARS 256
-#define CLI_VAR_NAMELEN 80 /* as calculator variable and image names */
-#define CLI_VAR_VALLEN 512
+#define CLI_VAR_NAMELEN 80  /* as calculator variable and image names */
+#define CLI_VAR_VALLEN 1024 /* as a calculator string (MC_TOK_STR_MAX) */
 
 /* A string variable of the calculator (its numbers live in dcvar) */
 typedef struct

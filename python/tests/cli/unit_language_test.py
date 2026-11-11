@@ -11,7 +11,8 @@ Does:        zeros() shapes; one program with `if <scalar>: <statement>`, `skip`
              compile leaves the unit running; an output written twice is posted once per tick; a
              parameter set during a slow tick keeps its value; torn reads under a fast producer
              are run again and counted (`_torn`), in a pass, a reduction and a whole-image step
-             alike. A unit started with `run` on a stream whose
+             alike; an input stream that another process creates again is mapped again. A unit
+             started with `run` on a stream whose
              semaphore was posted before it started processes that frame first (tick 0), so the
              frames posted by the test start at tick 1.
 Covers:      milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c), the program runner
@@ -254,6 +255,26 @@ def test_set_during_slow_ticks_is_not_overwritten(tmp_path):
     log = (tmp_path / "run.log").read_text()
     assert int(value(res.stdout, "cnt") or 0) > 50, res.stdout + res.stderr + log
     assert value(res.stdout, "bad") == "0", res.stdout + res.stderr + log
+
+
+def test_recreated_input_stream_is_read_again(tmp_path):
+    """A stream that is not the trigger, deleted and created again by another process while the
+    unit runs, is mapped again within half a second: the unit must not go on reading the old file.
+    """
+    res = milk_bash(
+        UNIT_HELPERS + 'mem.mk2Dim "@S:dark" 8 8 >/dev/null; @calc "dark = 1"\n'
+        'milk-fpsexec-milk-calc -n rc1 -t cam -e "out = cam - dark" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n rc1 run >run.log 2>&1 & pid=$!\n"
+        'sleep 0.6; @calc "cam = 5"; sleep 0.3; echo "before=$(@get s.out.mean)"\n'
+        'mem.rmshmim dark >/dev/null; mem.mk2Dim "@S:dark" 8 8 >/dev/null; @calc "dark = 3"\n'
+        'for v in 6 7 8 9; do @calc "cam = $v"; sleep 0.25; done\n'
+        'echo "after=$(@get s.out.mean)"; echo "error=[$(@get f.rc1.unit.error)]"; stop $pid',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "before") == "4", out
+    assert value(res.stdout, "after") == "6", out  # 9 - 3; 8 with the old dark
+    assert value(res.stdout, "error") == "[]", out
 
 
 def test_torn_counter_with_fast_producer(tmp_path):

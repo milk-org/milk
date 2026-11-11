@@ -9,7 +9,8 @@ Does:        checks multiple, nested and istats reductions; bitwise operators; b
              name lookup and `end`; reserved constants and per-shell digits; that a text is
              checked before it runs; order statistics and argmax; number and image conditions;
              exit statuses and error positions; zero divisors; failed image assignments; that
-             an argument beyond those a function reads is an error.
+             an argument beyond those a function reads is an error; stream prefixes after
+             `if` and on slices, name and string lengths, and names that are not variables.
 Covers:      the calculator (src/calc: front/, run/mc_scalar_eval.c, run/mc_scalar_ops.c,
              mc_eval.c, mc_func.c, and plan/ and jit/ for image statements); @calc, @test,
              @assert and @waitfor (src/cli/libmilkscript: client/, server/milk_server_eval.c);
@@ -364,6 +365,63 @@ def test_reserved_constants_and_per_shell_digits(tmp_path):
     assert value(res.stdout, "image") == "6.28318530717959", out
     assert value(res.stdout, "d6") == "0.666667", out
     assert value(res.stdout, "d15") == "0.666666666666667", out
+
+
+def test_prefixes_names_and_checks(tmp_path):
+    """`@S:name` after `if` and `elif` is a stream, not a matrix product; `L:name[...]` does not
+    attach the shared stream `name`; a loop or comprehension variable may be as long as any name;
+    a string holds 1023 bytes and a longer literal is an error; a def refuses a comprehension
+    variable named as a parameter; the second operand of a comparison chain is checked; a number
+    in the environment of the session is not a name; a mask index on the right says where it goes.
+    """
+    k70 = "k" * 70
+    res = milk_bash(
+        't() { r=; @calc -v r "$1" 2>"$2.err"; echo "$2=$? $r"; }\n'
+        'mem.mk2Dim "@S:xs" 8 8 >/dev/null; mem.mk2Dim im 8 8 >/dev/null\n'
+        'mem.mk2Dim mask 8 8 >/dev/null; @calc "xs = 4; im = 1; mask = 1"\n'
+        "t 'a = 0; if @S:xs[0,0] > 0 { a = 1 }; a' if\n"
+        "t 'a = 0; if 0 { a = 1 } elif @S:xs[0,0] > 0 { a = 2 }; a' elif\n"
+        "t 'B = im @S:xs; itot(B)' matmul\n"
+        'echo \'mem.mk2Dim "@S:uo" 8 8 >/dev/null; @calc "uo = 4"\' | milk-script -q -\n'
+        "t 'y = L:uo[0:3,0]; itot(y)' lslice\n"
+        "t 'y = uo[0:3,0]; itot(y)' slice\n"
+        f"t 'tot = 0; for {k70} = 1:3 {{ tot = tot + {k70} }}; tot' for\n"
+        f"t 'itot([{k70} * 2 for {k70} = 0:3])' comp\n"
+        "l600=$(printf 'a%.0s' $(seq 600)); l1100=$(printf 'a%.0s' $(seq 1100))\n"
+        't "s = \\"$l600\\"; strlen(s)" str600\n'
+        't "s = \\"$l1100\\"; strlen(s)" str1100\n'
+        "t 'def h(k) = itot([k * 2 for k = 0:3]); h(5)' defcomp\n"
+        '@calc --explain "x = 1 < nosuch < 3" >chain.out 2>&1; echo "chain=$?"\n'
+        "unset MILKTESTENVNUM; t 'MILKTESTENVNUM + 1' env\n"
+        "t 'im[mask] *= im[mask]' rmask",
+        tmp_path,
+        extra_env={"MILKTESTENVNUM": "41"},
+    )
+    out = res.stdout + res.stderr
+
+    def err(k):
+        return (tmp_path / f"{k}.err").read_text()
+
+    assert value(res.stdout, "if") == "0 1" and value(res.stdout, "elif") == "0 2", out
+    assert value(res.stdout, "matmul") == "0 2048", out
+    assert value(res.stdout, "lslice").startswith("2") and "not found" in err(
+        "lslice"
+    ), out
+    assert value(res.stdout, "slice") == "0 16", out
+    assert (
+        value(res.stdout, "for") == "0 6" and value(res.stdout, "comp") == "0 12"
+    ), out
+    assert value(res.stdout, "str600") == "0 600", out
+    assert value(res.stdout, "str1100").startswith("2"), out
+    assert "string literal longer than 1023 bytes" in err("str1100"), out
+    assert value(res.stdout, "defcomp").startswith("2"), out
+    assert "is a parameter and a comprehension variable" in err("defcomp"), out
+    assert value(res.stdout, "chain") != "0", out
+    assert "undefined identifier 'nosuch'" in (tmp_path / "chain.out").read_text(), out
+    assert value(res.stdout, "env").startswith("2") and "undefined identifier" in err(
+        "env"
+    ), out
+    assert "a mask index goes on the assignment target only" in err("rmask"), out
 
 
 def test_surplus_arguments_are_errors(tmp_path):

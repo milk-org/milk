@@ -131,8 +131,11 @@ Slicing or boolean masks can be used on the left-hand side of assignments (`=`, 
 ```bash
 @calc "im[10:19,10:19] = 0.0"     # zero a 10x10 region inside im
 @calc "im[im > 4000] = 4000"      # clamp pixels where im > 4000 in place
-@calc "im[mask] *= flat[mask]"    # update only pixels where mask != 0
+@calc "im[mask] *= flat"          # update only pixels where mask != 0
 ```
+
+A mask index goes on the target only: the right-hand side is written with whole images, and only
+the pixels the mask selects are computed and stored.
 
 ## Performance
 

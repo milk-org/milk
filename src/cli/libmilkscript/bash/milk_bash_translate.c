@@ -207,8 +207,11 @@ static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, in
     }
     else
     {
-        sbuf_append_str(out, funsub ? "milkget -v REPLY " : "milkget ");
-        sbuf_append_mem(out, body, n);
+        /* quoted as the calculator text is: bash expands `$n` in the path, and neither splits
+         * the result nor matches `s.dm*.xsize` against file names */
+        sbuf_append_str(out, funsub ? "milkget -v REPLY \"" : "milkget \"");
+        sbuf_append_dq_escaped(out, body, n, !dq);
+        sbuf_append_ch(out, '"');
     }
     sbuf_append_str(out, " || __milk_inline_err $?");
     if (!is_calc)
@@ -501,9 +504,9 @@ static int emit_assign_inline(const char *s, size_t n, int d, sbuf_t *out)
     }
     else
     {
-        sbuf_append_ch(out, ' ');
-        sbuf_append_mem(out, b, bn);
-        sbuf_append_str(out, " || __milk_inline_err $?");
+        sbuf_append_str(out, " \"");
+        sbuf_append_dq_escaped(out, b, bn, dq);
+        sbuf_append_str(out, "\" || __milk_inline_err $?");
         append_inline_label(out, b, bn);
     }
     sbuf_append_ch(out, ' ');

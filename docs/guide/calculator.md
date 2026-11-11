@@ -387,8 +387,8 @@ parameters under `Parameters`):
   than bursting to catch up.
 - Names are shared streams: the unit is its own process, so a session's local images and calculator
   variables are out of its reach. A statement that makes a new image creates it as a stream. Shared
-  streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are remapped
-  automatically.
+  streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are mapped again:
+  the trigger after its next timeout, the others within half a second.
 - The `-p` parameters are calculator variables that `@set` changes while the loop runs. A
   statement that assigns one (`total = itot(out)`) writes it back to the FPS on each frame, for
   `@get`, `@waitfor` and other units. A `stream` parameter (`in:stream=cam0`, `out:stream=out0`)

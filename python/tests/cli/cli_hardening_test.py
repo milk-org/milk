@@ -126,6 +126,35 @@ def test_fifo_large_input(tmp_path):
     assert_no_crash(m.proc.returncode)
 
 
+def test_fifo_named_path_runs_commands(tmp_path):
+    """`-F PATH` makes its FIFO at PATH, for this user only, and runs the lines written to it."""
+    fifo = tmp_path / "named_fifo"
+    with milk_proc(["-f", "-F", str(fifo)], stdin=subprocess.PIPE) as m:
+        end = time.time() + 5
+        while time.time() < end and not fifo.exists():
+            time.sleep(0.05)
+        assert fifo.is_fifo(), "no FIFO at the path given to -F"
+        assert (fifo.stat().st_mode & 0o777) == 0o600
+        with open(fifo, "w") as f:
+            f.write("echo fifo_named_ok\nexit\n")
+        try:
+            out, _ = m.proc.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            pytest.fail("milk-cli hung on FIFO input")
+    assert_no_crash(m.proc.returncode)
+    assert "fifo_named_ok" in out, out
+
+
+def test_fifo_refuses_a_path_that_is_not_its_fifo(tmp_path):
+    """A file at the `-F` path is neither read as commands nor removed."""
+    path = tmp_path / "notes.txt"
+    path.write_text("echo must_not_run\n")
+    rc, out = run_milk(["-f", "-F", str(path)])
+    assert rc != 0 and "is not a FIFO" in out, out
+    assert "must_not_run" not in out.replace("echo must_not_run", ""), out
+    assert path.read_text() == "echo must_not_run\n"
+
+
 # --- Section 6: interactive fault isolation ---------------------------------
 def test_pty_sigsegv_intercepted():
     with milk_proc([], pty_mode=True) as m:

@@ -206,10 +206,11 @@ typedef struct mcalc_prog
     unsigned char *assigned;
     int            nvars;
     void          *processinfo;
-    uint64_t       plan_gen;    /* milk_table_generation() at plan time */
-    imageID        last_im_id;  /* last produced/updated imageID */
-    mc_val_t       last_scalar; /* last scalar value if final step was scalar */
-    int            last_was_im; /* 1 if final step produced an image */
+    uint64_t       plan_gen;      /* milk_table_generation() at plan time */
+    double         remap_check_t; /* CLOCK_MONOTONIC s of the last check for re-created streams */
+    imageID        last_im_id;    /* last produced/updated imageID */
+    mc_val_t       last_scalar;   /* last scalar value if final step was scalar */
+    int            last_was_im;   /* 1 if final step produced an image */
 } mcalc_prog_t;
 
 /* Run-time C compiles (mc_cc.c), shared by JIT kernels and `-l` extensions: the checked cache

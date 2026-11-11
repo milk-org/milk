@@ -37,6 +37,7 @@
 #include <math.h>
 #include <poll.h>
 #include <semaphore.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -366,6 +367,29 @@ static void set_image_kw_long(IMAGE *im, const char *kname, int64_t val, const c
 }
 
 /**
+ * grab_err - Report an error of a GRAB request to its caller
+ * @client_fd: The caller's connection
+ * @fmt:       printf format of the message, without a newline
+ *
+ * The request runs in a thread and brought no descriptors: fd 2 is the server's output file, or
+ * the stderr of another shell's command that runs meanwhile. The text goes to the caller, whose
+ * stderr shows it (MILK_FLAG_ERRTEXT).
+ */
+__attribute__((format(printf, 2, 3))) static void grab_err(int client_fd, const char *fmt, ...)
+{
+    char    msg[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+    if (client_fd < 0 || milk_proto_send(client_fd, MILK_MSG_VALUE, MILK_FLAG_ERRTEXT, msg,
+                                         (uint32_t) strlen(msg) + 1) != 0)
+    {
+        fprintf(stderr, "%s\n", msg);
+    }
+}
+
+/**
  * @brief Execute `@grab`: capture @nframes consecutive frames from @sname_raw into @outname.
  *
  * When @nframes == 1 and input stream has naxis <= 2, @outname is created with matching
@@ -392,7 +416,7 @@ int milk_server_grab(int         client_fd,
     }
     if ((unsigned long) nframes > UINT32_MAX) // cube depth is a 32-bit axis
     {
-        fprintf(stderr, "ERROR: @grab: too many frames (%ld)\n", nframes);
+        grab_err(client_fd, "ERROR: @grab: too many frames (%ld)", nframes);
         return 1;
     }
     FPS_STREAMNAME_PARSED sp_in = fps_streamname_parse(sname_raw);
@@ -418,7 +442,7 @@ int milk_server_grab(int         client_fd,
     if (in_im == NULL || in_im->md == NULL)
     {
         milk_server_cmd_unlock();
-        fprintf(stderr, "ERROR: @grab: stream '%s' not found\n", sname);
+        grab_err(client_fd, "ERROR: @grab: stream '%s' not found", sname);
         return 1;
     }
 
@@ -492,7 +516,7 @@ int milk_server_grab(int         client_fd,
         ts_fp = fopen(ts_path, "w");
         if (ts_fp == NULL)
         {
-            fprintf(stderr, "ERROR: @grab: cannot open timestamps file '%s'\n", ts_path);
+            grab_err(client_fd, "ERROR: @grab: cannot open timestamps file '%s'", ts_path);
             if (is_temp_cube)
             {
                 delete_image_ID(cube.name, DELETE_IMAGE_ERRMODE_IGNORE);
@@ -574,7 +598,7 @@ int milk_server_grab(int         client_fd,
         if (grab_image_alive(&cube) < 0 || (in_local && grab_image_alive(&in) < 0))
         {
             milk_server_cmd_unlock();
-            fprintf(stderr, "ERROR: @grab: image deleted during the grab\n");
+            grab_err(client_fd, "ERROR: @grab: image deleted during the grab");
             rc = 1;
             break;
         }
@@ -624,7 +648,7 @@ int milk_server_grab(int         client_fd,
             milk_server_cmd_unlock();
             if (!cube_ok)
             {
-                fprintf(stderr, "ERROR: @grab: image deleted during the grab\n");
+                grab_err(client_fd, "ERROR: @grab: image deleted during the grab");
                 rc = 1;
                 break;
             }
@@ -675,7 +699,7 @@ int milk_server_grab(int         client_fd,
             rc = 1;
         }
 #else
-        fprintf(stderr, "ERROR: @grab: FITS support not compiled in (USE_CFITSIO=OFF)\n");
+        grab_err(client_fd, "ERROR: @grab: FITS support not compiled in (USE_CFITSIO=OFF)");
         rc = 1;
 #endif
     }

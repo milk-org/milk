@@ -12,7 +12,7 @@
  * Does:        mc_resolve_prog_ex() walks the statements in order. A name is a constant (pi, nan,
  *              inf: never shadowed), a comprehension variable, an image (a /dev/shm stream is
  *              connected on demand; an image an earlier statement creates counts), a variable of
- *              milk_data.variable[], a host string or numeric environment variable, or an entity
+ *              milk_data.variable[], a host string, or an entity
  *              property (s.<stream>.<prop>, f.<fps>.<prop>, p.<proc>.<prop>). An unknown name is an
  *              error, except where a scalar condition may skip it (if branches, ?:, &&, ||). A
  *              slice is a pixel, a sub-image or a mask (`im[mask] = ...`). A def call becomes a
@@ -89,7 +89,7 @@ typedef struct
     const char  *self_init_bare;
     const IMAGE *self_init_im;
     char         created_vars[MC_MAX_CREATED_VARS][256];
-    char         comp_vars[3][64];
+    char         comp_vars[3][MC_NAME_MAX];
     uint8_t      created_dt[MC_MAX_CREATED_VARS]; /* 255 = scalar var, >0 = image dt */
     uint8_t      created_naxis[MC_MAX_CREATED_VARS];
     uint32_t     created_size[MC_MAX_CREATED_VARS][3];
@@ -277,7 +277,7 @@ static int resolve_lazy(mc_resolve_ctx_t *ctx, mc_expr_t *e, int lazy)
  * 2. Existing or auto-connected shared/local images in `milk_data.image[]`, or
  *    images created by an earlier statement in the same program.
  * 3. Core numeric/string variables in `milk_data.variable[]`.
- * 4. Host string variables (`mc_host_str_get`) and numeric environment variables.
+ * 4. Host string variables (`mc_host_str_get`).
  * 5. Shared-memory entity properties (`s.<stream>.<prop>`, `f.<fps>.<prop>`,
  *    `p.<proc>.<prop>`).
  * 6. Built-in IEEE-754 constants (`pi`, `nan`, `inf`) or a self-initializing
@@ -343,20 +343,12 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
         return 0;
     }
 
-    /* Check host string bindings, numeric environment variables, or created scalars */
+    /* Check host string bindings or created scalars */
     const char *cval = mc_host_str_get(bare);
-    const char *env  = (cval == NULL && mc_is_numeric_env_var(bare)) ? getenv(bare) : NULL;
-    if (cval != NULL || env != NULL || cdt == 255)
+    if (cval != NULL || cdt == 255)
     {
-        char *ep = NULL;
-        if (env != NULL)
-        {
-            (void) strtol(env, &ep, 0);
-        }
         e->u.ident.id_kind = MC_ID_VAR;
-        e->res_kind        = (cval != NULL)                 ? MC_RES_STRING
-                             : (env != NULL && *ep == '\0') ? MC_RES_SCALAR_L
-                                                            : MC_RES_SCALAR_D;
+        e->res_kind        = (cval != NULL) ? MC_RES_STRING : MC_RES_SCALAR_D;
         return 0;
     }
 
@@ -423,7 +415,7 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
 static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
 {
     mc_parse_ident_streamname(e->u.slice.name, e->u.slice.bare, NULL);
-    imageID imid = mc_resolve_or_autoconnect_image(e->u.slice.bare);
+    imageID imid = mc_resolve_or_autoconnect_image(e->u.slice.name); /* L:x never attaches S:x */
     int     cdt  = (imid == -1) ? created_var_op(ctx, e->u.slice.bare, 0) : 0;
     if (imid == -1 && (cdt <= 0 || cdt == 255))
     {
@@ -483,9 +475,13 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
     }
     if (e->u.slice.naxis > im_naxis || bad_bnd)
     {
+        int rhs_mask = (!is_lhs && e->u.slice.naxis == 1 && e->u.slice.axes[0].start != NULL &&
+                        e->u.slice.axes[0].start->res_kind == MC_RES_IMAGE);
         return (e->u.slice.naxis > im_naxis)
                    ? res_err(ctx, "slice axis %d > naxis %d", e->u.slice.naxis - 1, im_naxis)
-                   : res_err(ctx, "Invalid slice bound expression");
+               : rhs_mask ? res_err(ctx, "a mask index goes on the assignment target only: "
+                                         "write im[mask] = expr, with whole images in expr")
+                          : res_err(ctx, "Invalid slice bound expression");
     }
 
     e->u.slice.is_single_pixel = single;
@@ -577,7 +573,6 @@ static int def_name_known(const char *name)
     snprintf(raw, sizeof(raw), "%s", name);
     mc_parse_ident_streamname(raw, bare, &loc);
     return mc_is_reserved_const(bare) || variable_ID(bare) != -1 || mc_host_str_get(bare) != NULL ||
-           mc_is_numeric_env_var(bare) ||
            (strchr(name, '.') != NULL && milk_entity_ns_kind(name, NULL) != MILK_NS_NONE) ||
            mc_resolve_or_autoconnect_image(raw) != -1;
 }
@@ -651,7 +646,7 @@ static int check_def_names(mc_expr_t  *e,
             return 0; /* post(stream) names a stream to post, not a value */
         }
     }
-    char inner[MCALC_UDEF_MAXARGS + 3 * MC_MAX_SLICE_AX][64];
+    char inner[MCALC_UDEF_MAXARGS + 3 * MC_MAX_SLICE_AX][MC_NAME_MAX];
     int  ninner = 0;
     if (e->kind == MC_EXPR_COMP) /* the generator variables are bound in the comprehension */
     {
@@ -744,6 +739,15 @@ static int subst_params(mc_resolve_ctx_t   *ctx,
     }
     for (int k = 0; k < u->nargs; k++)
     {
+        for (int g = 0; e->kind == MC_EXPR_COMP && g < e->u.comp.ngens; g++)
+        {
+            if (strcmp(e->u.comp.gens[g].var, u->arg_names[k]) == 0)
+            {
+                /* the argument would replace the comprehension's own variable */
+                return res_err(ctx, "def '%s': '%s' is a parameter and a comprehension variable",
+                               u->name, u->arg_names[k]);
+            }
+        }
         if (e->kind == MC_EXPR_IDENT && strcmp(e->u.ident.name, u->arg_names[k]) == 0)
         {
             mc_expr_t *a = mc_expr_clone(args[k]);
@@ -1295,8 +1299,7 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     }
 
     if (op != MC_TOK_ASSIGN &&
-        ((mc_host_str_get(bare) == NULL && !mc_is_numeric_env_var(bare) && cdt == 0) ||
-         rhs->res_kind == MC_RES_IMAGE))
+        ((mc_host_str_get(bare) == NULL && cdt == 0) || rhs->res_kind == MC_RES_IMAGE))
     {
         return (rhs->res_kind == MC_RES_IMAGE)
                    ? res_err(ctx, "'%s' is a variable (calculator or bash), not an image", bare)
@@ -1461,7 +1464,8 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     case MC_EXPR_CHAIN:
         for (int i = 0; i <= e->u.chain.nops; i++)
         {
-            if (resolve_lazy(ctx, e->u.chain.operands[i], i > 0 && !e->needs_image) != 0)
+            /* a < b always runs: only the operands after b may be skipped */
+            if (resolve_lazy(ctx, e->u.chain.operands[i], i > 1 && !e->needs_image) != 0)
             {
                 return -1;
             }

@@ -472,7 +472,7 @@ int milkdefer_builtin(WORD_LIST *list)
  *
  * Binds parsed values as local variables of the calling function (or globals at a
  * script's top level, including `@source`'d scripts) and exits the caller on `-h`
- * or usage error.
+ * or usage error: the function returns, the script exits. Typed at a prompt it only returns.
  *
  * Return: 0 on success, 2 on usage error
  */
@@ -503,8 +503,14 @@ int milkargs_builtin(WORD_LIST *list)
     {
         return 0;
     }
-    rc = (rc == 1) ? 0 : 2;
-    snprintf(end, sizeof(end), (infn || (sl != NULL && *sl > 0)) ? "return %d" : "exit %d", rc);
+    rc                    = (rc == 1) ? 0 : 2;
+    int        can_return = (infn || (sl != NULL && *sl > 0));
+    const int *ia         = (const int *) dlsym(RTLD_DEFAULT, "interactive_shell");
+    if (!can_return && ia != NULL && *ia != 0)
+    {
+        return rc; /* typed at a prompt: there is no caller to end, and `exit` would close the shell */
+    }
+    snprintf(end, sizeof(end), can_return ? "return %d" : "exit %d", rc);
     bash_hook_eval(end, NULL); /* does not come back */
     return rc;
 }

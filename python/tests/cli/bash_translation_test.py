@@ -75,6 +75,20 @@ def test_inline_result_not_globbed(tmp_path):
     assert "a.zz" not in res.stdout
 
 
+def test_inline_entity_path_is_not_a_file_pattern(tmp_path):
+    """`@{s.t7.kw.*}` reaches milk as written: bash must not match it against file names (with
+    failglob the line failed), nor split a `$n` in it."""
+    (tmp_path / "s.t7.kw.zz").touch()
+    res = milk_cli_script(
+        "shopt -s failglob\nmem.mk2Dim t7 4 4\n@set s.t7.kw.OBS night\n"
+        'n="t7"\necho "all=@{s.t7.kw.*}"\necho one=@{s.$n.kw.OBS}',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "all") == "OBS", out  # kw.* lists the keyword names
+    assert value(res.stdout, "one") == "night", out
+
+
 def test_multiword_value_not_truncated(tmp_path):
     res = milk_cli_script(
         'mem.mk2Dim t9 4 4\n@set s.t9.kw.OBS="Sub aru"\necho "setrc=$?"\n@get -v v s.t9.kw.OBS\necho "v=$v"',
@@ -109,12 +123,13 @@ def test_lineno_matches_source(tmp_path):
 @pytest.mark.parametrize(
     "src, must_have, must_not_have",
     [
-        ("xs=@{s.${cam}.xsize}\n", "{ milkget -v xs s.${cam}.xsize ||", "calc"),
-        ("x=@{s.c.xsize}\n", "{ milkget -v x s.c.xsize ||", "calc"),
-        ('x="@{s.c.xsize}"\n', "{ milkget -v x s.c.xsize ||", "REPLY"),
+        ("xs=@{s.${cam}.xsize}\n", '{ milkget -v xs "s.${cam}.xsize" ||', "calc"),
+        ("x=@{s.c.xsize}\n", '{ milkget -v x "s.c.xsize" ||', "calc"),
+        ('x="@{s.c.xsize}"\n', '{ milkget -v x "s.c.xsize" ||', "REPLY"),
         ("a && y=@{1+2} || b\n", 'a && { milkcalc -v y "1+2" ||', None),
-        ("w=@{s.c.xsize} cmd\n", "${| milkget -v REPLY s.c.xsize", None),
-        ("export z=@{s.c.xsize}\n", "${| milkget -v REPLY s.c.xsize", None),
+        ("w=@{s.c.xsize} cmd\n", '${| milkget -v REPLY "s.c.xsize"', None),
+        ("export z=@{s.c.xsize}\n", '${| milkget -v REPLY "s.c.xsize"', None),
+        ("echo @{s.dm*.xsize}\n", '${| milkget -v REPLY "s.dm*.xsize"', None),
         (
             'echo "${@s.c.xsize}" @s.c.xsize\n',
             'echo "${@s.c.xsize}" @s.c.xsize',

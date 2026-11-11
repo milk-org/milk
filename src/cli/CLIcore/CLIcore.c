@@ -251,33 +251,47 @@ errno_t function_parameter_structure_load__cli()
  */
 int cli_fifo_open(const char *path)
 {
-    /* Close any existing FIFO first */
-    if (data.fifoON == 1)
+    /* @path may be data.fifoname (-F), which closing clears */
+    char want[STRINGMAXLEN_FULLFILENAME] = "";
+    if (path != NULL)
+    {
+        snprintf(want, sizeof(want), "%s", path);
+    }
+
+    /* Close the FIFO that is open, if any */
+    if (data.fifofd >= 0)
     {
         cli_fifo_close();
     }
 
     /* Set the path */
-    if (path != NULL && path[0] != '\0')
+    if (want[0] != '\0')
     {
-        snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", path);
+        snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", want);
     }
     else
     {
         WRITE_FULLFILENAME(data.fifoname, "%s/.%s.fifo.%07d", dcshmdir, data.processname, getpid());
     }
 
-    /* Create the FIFO if it doesn't exist */
+    /* Create the FIFO if it doesn't exist. Every line read from it runs as a command: a new one
+     * is private, and an existing path must be a FIFO of this user that not everyone can write */
     struct stat sb;
-    if (stat(data.fifoname, &sb) != 0)
+    if (lstat(data.fifoname, &sb) != 0)
     {
-        if (mkfifo(data.fifoname, 0666) != 0)
+        if (mkfifo(data.fifoname, 0600) != 0)
         {
             printf("\033[31mfifo: cannot create"
                    " '%s': %s\033[0m\n",
                    data.fifoname, strerror(errno));
             return -1;
         }
+    }
+    else if (!S_ISFIFO(sb.st_mode) || sb.st_uid != getuid() || (sb.st_mode & 002) != 0)
+    {
+        printf("\033[31mfifo: '%s' is not a FIFO of this user, or everyone can write it\033[0m\n",
+               data.fifoname);
+        return -1;
     }
 
     data.fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
@@ -304,14 +318,14 @@ int cli_fifo_open(const char *path)
  */
 void cli_fifo_close(void)
 {
-    if (data.fifofd >= 0)
+    if (data.fifofd >= 0) /* remove only a FIFO this process had open, never a path it refused */
     {
         close(data.fifofd);
         data.fifofd = -1;
-    }
-    if (data.fifoON == 1 && data.fifoname[0] != '\0')
-    {
-        unlink(data.fifoname);
+        if (data.fifoname[0] != '\0')
+        {
+            unlink(data.fifoname);
+        }
     }
     data.fifoON      = 0;
     data.fifoname[0] = '\0';
@@ -1010,13 +1024,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
         data.CMDexecuted        = 0;
         data.CLIexecuteCMDready = 0;
-
-        if ((fp = fopen("STOPCLI", "r")) != NULL)
-        {
-            fprintf(stdout, "STOPCLI FILE FOUND. Exiting...\n");
-            fclose(fp);
-            exit(3);
-        }
 
         if (Listimfile == 1)
         {

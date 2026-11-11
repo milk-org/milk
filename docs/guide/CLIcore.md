@@ -492,6 +492,10 @@ This allows external processes to send commands to a running `milk-cli` process.
 | `-f` / `--fifoflag`           | Enable fifo; path auto-generated     |
 | `-F PATH` / `--fifoname=PATH` | Enable fifo; use `PATH` as fifo file |
 
+Every line written to the fifo runs as a command. A fifo that `milk-cli` creates can be read and
+written by its user only; an existing `PATH` must be a fifo of that user that not everyone can
+write, and is removed when `milk-cli` exits.
+
 The auto-generated path follows the template (with a 7-digit zero-padded PID):
 
 ```text

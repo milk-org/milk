@@ -554,7 +554,7 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
 }
 
 /**
- * run_svd_d - Compute thin SVD `A = U * diag(S) * Vt` via LAPACKE_dgesdd or Jacobi fallback
+ * run_svd_d - Compute thin SVD `A = U * diag(S) * Vt` via LAPACKE_dgesdd or Jacobi
  * @m:      Number of rows of @A
  * @n:      Number of columns of @A
  * @A:      Column-major `m x n` matrix (overwritten on exit when LAPACKE is used)
@@ -562,18 +562,21 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
  * @S_out:  Output array of `min(m, n)` singular values in descending order
  * @Vt_out: Optional output `min(m, n) x n` transposed right singular vectors (NULL for S only)
  *
+ * Jacobi runs without LAPACKE, and when dgesdd refuses its input (info < 0: a NaN or Inf, @A is
+ * untouched). When dgesdd does not converge (info > 0) @A is overwritten: that is a failure.
+ *
  * Return: 0 on success, -1 on failure
  */
 static int run_svd_d(int m, int n, double *A, double *U_out, double *S_out, double *Vt_out)
 {
 #ifdef HAVE_LAPACKE
-    int q = (m < n) ? m : n;
-    if ((U_out == NULL && Vt_out == NULL &&
-         LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'N', m, n, A, m, S_out, NULL, 1, NULL, 1) == 0) ||
-        (U_out != NULL &&
-         LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'S', m, n, A, m, S_out, U_out, m, Vt_out, q) == 0))
+    int q    = (m < n) ? m : n;
+    int info = (U_out == NULL && Vt_out == NULL)
+                   ? LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'N', m, n, A, m, S_out, NULL, 1, NULL, 1)
+                   : LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'S', m, n, A, m, S_out, U_out, m, Vt_out, q);
+    if (info >= 0)
     {
-        return 0;
+        return (info == 0) ? 0 : -1;
     }
 #endif
     return jacobi_svd_d(m, n, A, U_out, S_out, Vt_out);
@@ -586,10 +589,12 @@ static int run_svd_d(int m, int n, double *A, double *U_out, double *S_out, doub
  * @want_v: Non-zero to compute orthonormal eigenvectors into @C
  * @w_out:  Output array of @n eigenvalues sorted in ascending order
  *
- * Symmetrizes @C in place (`0.5 * (C + C^T)`) before solving via `LAPACKE_dsyevd`,
- * falling back to classical two-sided Jacobi diagonalization if LAPACKE is unavailable.
+ * Symmetrizes @C in place (`0.5 * (C + C^T)`) before solving via `LAPACKE_dsyevd`. Classical
+ * two-sided Jacobi diagonalization runs without LAPACKE, and when dsyevd refuses its input
+ * (info < 0: a NaN or Inf, @C is untouched). When dsyevd does not converge (info > 0) @C is
+ * overwritten: that is a failure.
  *
- * Return: 0 on success, -1 on allocation failure
+ * Return: 0 on success, -1 on failure
  */
 static int run_eigh_d(int n, double *C, int want_v, double *w_out)
 {
@@ -601,9 +606,10 @@ static int run_eigh_d(int n, double *C, int want_v, double *w_out)
         }
     }
 #ifdef HAVE_LAPACKE
-    if (LAPACKE_dsyevd(LAPACK_COL_MAJOR, want_v ? 'V' : 'N', 'L', n, C, n, w_out) == 0)
+    int info = LAPACKE_dsyevd(LAPACK_COL_MAJOR, want_v ? 'V' : 'N', 'L', n, C, n, w_out);
+    if (info >= 0)
     {
-        return 0;
+        return (info == 0) ? 0 : -1;
     }
 #endif
     double *V = calloc((size_t) (n * n), sizeof(double));
@@ -990,6 +996,10 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
         rc           = (!A_d || !S_d) ? lap_err(err, errsz, "%s: out of memory", fn)
                        : is_eigh      ? run_eigh_d((int) N, A_d, 0, S_d)
                                       : run_svd_d((int) M, (int) N, A_d, NULL, S_d, NULL);
+        if (rc != 0)
+        {
+            (void) lap_err(err, errsz, "%s: did not converge", fn); /* unless a message is set */
+        }
         if (rc == 0)
         {
             uint32_t sz[3] = { (uint32_t) Q, 1, 1 };
@@ -1207,6 +1217,10 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
              ? lap_err(err, errsz, "%s: out of memory", fn)
          : is_eigh ? run_eigh_d((int) N, A_d, 1, S_d)
                    : run_svd_d((int) M, (int) N, A_d, U_d, S_d, Vt_d);
+    if (rc != 0)
+    {
+        (void) lap_err(err, errsz, "%s: did not converge", fn); /* unless a message is set */
+    }
 
     int            nlhs      = is_eigh ? 2 : 3;
     const double  *bufs[3]   = { is_eigh ? S_d : U_d, is_eigh ? A_d : S_d, Vt_d };

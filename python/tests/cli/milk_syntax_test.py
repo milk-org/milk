@@ -129,7 +129,7 @@ def test_autoload_and_thin_client(tmp_path):
 
 
 def test_inline_expansion_and_calc_parity(tmp_path):
-    assert "milkget -v x s.cam.xsize" in translate("x=@{s.cam.xsize}\n")
+    assert 'milkget -v x "s.cam.xsize"' in translate("x=@{s.cam.xsize}\n")
     res = milk_cli_script(
         "mem.mk2Dim ia 6 4 >/dev/null\n"
         'x=@{s.ia.xsize}; echo "a=$x rc=$?"\n'

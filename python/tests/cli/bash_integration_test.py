@@ -164,6 +164,39 @@ def test_usage_errors_exit_2(tmp_path):
     assert value(res.stdout, "help") == "ok", out
 
 
+def test_args_typed_at_a_prompt_keeps_the_shell(tmp_path):
+    """`@args` ends its caller on `-h` or a bad value: a function returns, a script exits. Typed
+    at an interactive prompt there is no caller, and the shell must stay."""
+    res = milk_bash(
+        "bash --norc -i 2>i.err <<IN\n"
+        'source "$MILK_INSTALLDIR/bin/milk.bash"\n'
+        "@args n:int=3 -- -h >/dev/null\n"
+        'echo "help=\\$?"\n'
+        "@args n:int=3 -- notanumber 2>/dev/null\n"
+        'echo "bad=\\$?"\n'
+        "IN\n"
+        'f() { @args n:int=3 -- "$@"; echo "n=$n"; }; f 5; f x 2>/dev/null; echo "fn=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "help") == "0" and value(res.stdout, "bad") == "2", out
+    assert value(res.stdout, "n") == "5" and value(res.stdout, "fn") == "2", out
+
+
+def test_grab_error_reaches_the_caller(tmp_path):
+    """@grab runs in a thread of the session, which has its own stderr: the message of a failed
+    @grab must come back to the shell that asked."""
+    res = milk_bash(
+        '@grab s.nosuch 2 cube >g.out 2>g.err; echo "rc=$?"\n'
+        'echo "err=$(cat g.err)"; echo "out=[$(cat g.out)]"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "1", out
+    assert "stream 'nosuch' not found" in value(res.stdout, "err"), out
+    assert value(res.stdout, "out") == "[]", out
+
+
 def test_stream_modifiers_all_types():
     res = _run_bash("""
         # Location modifiers: @S: (shared) and @L: (local)
