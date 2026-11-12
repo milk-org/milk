@@ -102,7 +102,8 @@ running.
 A command that has to run alongside another one with its own input and output runs in a copy of the
 process: a later stage of a pipeline such as `@grab --stdout s.cam | @replay --stdin out`, a
 `milkcall --async` command, and `@replay`. Shared-memory streams it writes are visible to everyone,
-but local images and variables it creates are not kept.
+but local images and variables it creates are not kept. While a command runs, the copy is taken at
+its next safe point (see below), or after 50 ms when none comes.
 
 A session shared by several shells runs their commands one at a time too. A command that another
 shell (another process group) sends while a long one runs waits for it, and then runs with
@@ -117,8 +118,10 @@ a module command's processing loop, two steps of a `@pipe`. A command made of on
 large decomposition, a module command without a loop) has none: a read that has waited 2 s is
 told `milk: busy: <command> for N s`, with status 255, and those still waiting when it ends are
 answered then. Reads from the command's own process group (a stage of its pipeline, a background
-job of the same script) are answered at once by a copy of the session, which shows the images as
-they are at that instant, possibly half-written; such a copy ends after 30 s without an answer.
+job of the same script) are answered at the next safe point too, but the command may be waiting
+for their sender: when no safe point comes within 50 ms, a copy of the session answers, which
+shows the images as they are at that instant, possibly half-written. Such a copy ends after 30 s
+without an answer.
 
 Ctrl-C asks the session to stop the command. If the session does not answer (it is stopped, or
 stuck), a second Ctrl-C two seconds or more after the first gives the shell its prompt back, with

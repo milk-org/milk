@@ -28,7 +28,9 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   iterations of a calculator program), so it sees whole images, never one being rewritten. Such a
   read takes 0.04 ms from the command (0.8 ms before, for a completion); `@test` still costs about
   1 ms. Processing loops of module commands and the steps of a `@pipe` are safe points too. A
-  command with no safe point answers `busy` after 2 s (status 255).
+  command with no safe point answers `busy` after 2 s (status 255). The copies of the session
+  that run an `--async` command or a later stage of a pipeline are taken at a safe point as well
+  (or after 50 ms without one), so they start from whole images.
   See [Sessions](guide/sessions.md) `#cli` `#performance`
 - **2026-11-11** — Sessions: a read sent while a command runs (`@test`, `@get`, completion, from
   another shell or a background job) could wait for ever when it needed a lock the command held at

@@ -428,3 +428,24 @@ def test_processing_loops_and_pipes_have_safe_points(tmp_path, names):
     for what in ("loop", "pipe"):
         answered, worst_ms = [int(x) for x in value(res.stdout, what).split(",")]
         assert answered == 60 and worst_ms < 700, f"{what}: {out}"
+
+
+def test_copies_of_the_session_start_from_whole_images(tmp_path):
+    """A background job of the script that runs the command, and --async commands, are served
+    by copies of the session. Each copy is taken at a safe point of the command, here between
+    two iterations of a loop that rewrites an image: none sees a mix of two values."""
+    res = milk_bash(
+        '@calc "b = zeros(512, 512)"\n'
+        '( w=0; for i in $(seq 100); do @test "istd(b) == 0" && w=$((w+1)); done\n'
+        '  for i in $(seq 20); do milkcall --async pipe "S:sn$i = b + 0" >/dev/null; done\n'
+        '  echo "reads=$w" ) &\n'
+        '@calc "for i = 1:90000 { b = i }"; echo "main=$?"; wait; sleep 0.5\n'
+        'w=0; for i in $(seq 20); do @test "istd(sn$i) == 0" && w=$((w+1)); done\n'
+        'echo "copies=$w"',
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "main") == "0", out
+    assert value(res.stdout, "reads") == "100", out
+    assert value(res.stdout, "copies") == "20", out

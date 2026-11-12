@@ -172,53 +172,72 @@ static int wait_for_call(const call_watcher_ctx_t *ctx, int cfd)
     return ok ? 0 : -1;
 }
 
-/* Reads (GET, EXISTS, TEST, COMPLETE) of other shells that arrived while a command runs: the
- * command answers them at its next safe point (milk_server_safe_point()), where its images and
- * variables are whole. One that waits longer than MILK_SERVER_READ_WAIT_S is told the session is
- * busy; those left when the command returns are served by the main loop. */
-#define MILK_SERVER_READS_MAX 64
+/* Requests that arrived while a command runs and do not wait for it to end. The command answers
+ * them at its next safe point (milk_server_safe_point()), where its images and variables are
+ * whole. What happens to one that no safe point came for depends on its kind. Those left when
+ * the command returns are served by the main loop. */
+typedef enum
+{
+    Q_READ_OTHER, /* another shell's read: told the session is busy after MILK_SERVER_READ_WAIT_S */
+    Q_READ_OWN,   /* a read of the command's own process group: a copy answers it after
+                     MILK_SERVER_COPY_WAIT_S (the command may be waiting for its sender) */
+    Q_COPY        /* an --async command, or a stage of the command's pipeline: a copy runs it,
+                     taken at the safe point, or anyway after MILK_SERVER_COPY_WAIT_S */
+} queued_kind_t;
+
+#define MILK_SERVER_QUEUED_MAX 64
 #define MILK_SERVER_READ_WAIT_S 2.0
+#define MILK_SERVER_COPY_WAIT_S 0.05
 #define MILK_SERVER_RC_BUSY 255 /* as when the session cannot be reached: not a false @test */
 static struct
 {
     int             fd;
+    queued_kind_t   kind;
     struct timespec t;
-} g_reads[MILK_SERVER_READS_MAX];
-static int                   g_nreads        = 0; /* under g_qmu */
-static volatile sig_atomic_t g_reads_pending = 0; /* g_nreads != 0, read without the lock */
+} g_queued[MILK_SERVER_QUEUED_MAX];
+static int                   g_nqueued       = 0; /* under g_qmu */
+static volatile sig_atomic_t g_reads_pending = 0; /* g_nqueued != 0, read without the lock */
 
-/* Queue read @cfd for the next safe point. Return: 0, or -1 if the queue is full */
-static int read_enqueue(int cfd)
+static void serve_in_copy(int cfd, int listen_fd, int limit);
+
+/* Queue request @cfd for the next safe point. Return: 0, or -1 if the queue is full */
+static int queued_put(int cfd, queued_kind_t kind)
 {
     pthread_mutex_lock(&g_qmu);
-    int ok = (g_nreads < MILK_SERVER_READS_MAX);
+    int ok = (g_nqueued < MILK_SERVER_QUEUED_MAX);
     if (ok)
     {
-        g_reads[g_nreads].fd = cfd;
-        clock_gettime(CLOCK_MONOTONIC, &g_reads[g_nreads].t);
-        g_reads_pending = (++g_nreads != 0);
+        g_queued[g_nqueued].fd   = cfd;
+        g_queued[g_nqueued].kind = kind;
+        clock_gettime(CLOCK_MONOTONIC, &g_queued[g_nqueued].t);
+        g_reads_pending = (++g_nqueued != 0);
     }
     pthread_mutex_unlock(&g_qmu);
     return ok ? 0 : -1;
 }
 
-/* Take the oldest queued read, if it has waited @min_age seconds or more. Return: its fd, or -1 */
-static int read_dequeue(double min_age)
+/* Take the oldest queued request, or with @expired the oldest that has waited as long as its
+ * kind allows. Return: its fd (*@kind set), or -1 */
+static int queued_take(int expired, queued_kind_t *kind)
 {
-    int cfd = -1;
+    int             cfd = -1;
+    struct timespec now;
 
     pthread_mutex_lock(&g_qmu);
-    if (g_nreads > 0)
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    for (int i = 0; i < g_nqueued && cfd < 0; i++)
     {
-        struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        double age = (double) (now.tv_sec - g_reads[0].t.tv_sec) +
-                     1e-9 * (double) (now.tv_nsec - g_reads[0].t.tv_nsec);
-        if (age >= min_age)
+        double age = (double) (now.tv_sec - g_queued[i].t.tv_sec) +
+                     1e-9 * (double) (now.tv_nsec - g_queued[i].t.tv_nsec);
+        double max =
+            (g_queued[i].kind == Q_READ_OTHER) ? MILK_SERVER_READ_WAIT_S : MILK_SERVER_COPY_WAIT_S;
+        if (!expired || age >= max)
         {
-            cfd = g_reads[0].fd;
-            memmove(g_reads, g_reads + 1, (size_t) (--g_nreads) * sizeof(g_reads[0]));
-            g_reads_pending = (g_nreads != 0);
+            cfd   = g_queued[i].fd;
+            *kind = g_queued[i].kind;
+            memmove(g_queued + i, g_queued + i + 1,
+                    (size_t) (--g_nqueued - i) * sizeof(g_queued[0]));
+            g_reads_pending = (g_nqueued != 0);
         }
     }
     pthread_mutex_unlock(&g_qmu);
@@ -227,8 +246,15 @@ static int read_dequeue(double min_age)
 
 void milk_server_serve_waiting(int listen_fd, int *shutdown_flag)
 {
-    for (int cfd; (cfd = read_dequeue(0.0)) >= 0;) /* reads the command left unanswered */
+    queued_kind_t kind;
+    for (int cfd; (cfd = queued_take(0, &kind)) >= 0;) /* what the command left unanswered */
     {
+        if (kind == Q_COPY) /* not in the session itself: what it creates is not kept */
+        {
+            serve_in_copy(cfd, listen_fd, 0);
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+            continue;
+        }
         int keep = milk_server_can_keep(cfd);
         milk_server_conn_done(cfd, milk_server_handle_client(cfd, listen_fd, shutdown_flag, keep));
     }
@@ -277,6 +303,37 @@ static void read_stuck(int sig)
     _exit(1);
 }
 
+/* Answer request @cfd in a copy of the session, which answers and ends: what it creates is not
+ * kept. @limit: a read, which must not wait for ever. Called at a safe point by the thread that
+ * runs the command, or by the watcher when no safe point came in time. */
+static void serve_in_copy(int cfd, int listen_fd, int limit)
+{
+    pid_t pid = fork();
+    if (pid > 0)
+    {
+        g_srv_children = 1;
+    }
+    if (pid == 0)
+    {
+        sigset_t none; /* the watcher thread blocks all signals; its copy must not */
+        sigemptyset(&none);
+        pthread_sigmask(SIG_SETMASK, &none, NULL);
+        if (listen_fd >= 0)
+        {
+            close(listen_fd);
+        }
+        if (limit)
+        {
+            signal(SIGALRM, read_stuck);
+            alarm(MILK_SERVER_READ_LIMIT_S);
+        }
+        int dummy_shutdown = 0;
+        milk_server_handle_client(cfd, -1, &dummy_shutdown, 0); /* answers, the connection ends */
+        close(cfd);
+        _exit(0);
+    }
+}
+
 /**
  * watcher_take_client() - serve a request that arrives while a CALL runs, on a new connection or a
  * kept one; a MILK_CONN_* outcome for @cfd: a stream worker or the queue (the main loop serves it
@@ -323,9 +380,9 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
     {
         return MILK_CONN_TAKEN;
     }
-    // what another shell sends that changes the session waits for this CALL; its reads are
-    // answered by the CALL at its next safe point; async commands and the CALL's own process
-    // group (a pipeline, whose stages wait for each other) run alongside, in a fork
+    // what another shell sends that changes the session waits for this CALL. Reads, async
+    // commands and the CALL's own process group (a pipeline) do not: the CALL serves them at its
+    // next safe point, where its state is whole (queued_kind_t)
     int   reads = (ph.type == MILK_MSG_GET || ph.type == MILK_MSG_EXISTS ||
                    ph.type == MILK_MSG_TEST || ph.type == MILK_MSG_COMPLETE);
     pid_t pg    = peer_pgid(cfd);
@@ -339,35 +396,19 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
         reply_busy(ctx, cfd, keep, 1);
         return done;
     }
-    if (reads && (pg <= 0 || pg != ctx->pgid)) /* another shell's read: at the next safe point */
+    int           own  = (pg > 0 && pg == ctx->pgid);
+    queued_kind_t kind = !reads ? Q_COPY : own ? Q_READ_OWN : Q_READ_OTHER;
+    if (queued_put(cfd, kind) == 0) /* at the command's next safe point */
     {
-        if (read_enqueue(cfd) == 0)
-        {
-            return MILK_CONN_TAKEN;
-        }
+        return MILK_CONN_TAKEN;
+    }
+    if (kind == Q_READ_OTHER)
+    {
         reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY);
-        return MILK_CONN_CLOSE;
     }
-    pid_t pid = fork();
-    if (pid > 0)
+    else
     {
-        g_srv_children = 1;
-    }
-    if (pid == 0)
-    {
-        sigset_t none; /* this thread blocks all signals; the child must not */
-        sigemptyset(&none);
-        pthread_sigmask(SIG_SETMASK, &none, NULL);
-        close(ctx->listen_fd);
-        if (reads)
-        {
-            signal(SIGALRM, read_stuck);
-            alarm(MILK_SERVER_READ_LIMIT_S);
-        }
-        int dummy_shutdown = 0;
-        milk_server_handle_client(cfd, -1, &dummy_shutdown, 0); /* answers, the connection ends */
-        close(cfd);
-        _exit(0);
+        serve_in_copy(cfd, ctx->listen_fd, reads);
     }
     return MILK_CONN_CLOSE;
 }
@@ -398,7 +439,7 @@ static void *call_watcher_thread(void *arg)
         pfds[2].revents = 0;
 
         int nfds = (ctx->wake_fd >= 0) ? 3 : 2;
-        int tms  = (ctx->wake_fd >= 0) ? 200 : 20;
+        int tms  = g_reads_pending ? 10 : (ctx->wake_fd >= 0) ? 200 : 20; /* 10: their limits */
         int pr   = poll(pfds, (nfds_t) nfds, tms);
         if (nfds == 3 && (pfds[2].revents & POLLIN))
         {
@@ -407,9 +448,18 @@ static void *call_watcher_thread(void *arg)
             (void) rret;
             continue;
         }
-        for (int cfd; ctx->active && (cfd = read_dequeue(MILK_SERVER_READ_WAIT_S)) >= 0;)
+        queued_kind_t kind;
+        for (int cfd;
+             ctx->active && (cfd = queued_take(1, &kind)) >= 0;) /* no safe point in time */
         {
-            reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY); /* no safe point in time */
+            if (kind == Q_READ_OTHER)
+            {
+                reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY);
+            }
+            else
+            {
+                serve_in_copy(cfd, ctx->listen_fd, kind == Q_READ_OWN);
+            }
             milk_server_conn_done(cfd, MILK_CONN_CLOSE);
         }
         if (pr <= 0 || !ctx->active)
@@ -582,56 +632,49 @@ static void serve_read_at_safe_point(int cfd)
 {
     milk_frame_hdr_t ph;
 
-    if (recv(cfd, &ph, sizeof(ph), MSG_PEEK | MSG_DONTWAIT) != (ssize_t) sizeof(ph))
+    if (recv(cfd, &ph, sizeof(ph), MSG_PEEK | MSG_DONTWAIT) == (ssize_t) sizeof(ph))
     {
-        milk_server_conn_done(cfd, MILK_CONN_CLOSE);
-        return;
-    }
-    if (ph.type != MILK_MSG_TEST)
-    {
-        milk_server_serve_fast(cfd);
-        milk_server_conn_done(cfd, MILK_CONN_CLOSE);
-        return;
-    }
-    pid_t pid = fork();
-    if (pid > 0)
-    {
-        g_srv_children = 1;
-    }
-    if (pid == 0)
-    {
-        if (g_wctx.listen_fd >= 0)
+        if (ph.type == MILK_MSG_TEST)
         {
-            close(g_wctx.listen_fd);
+            serve_in_copy(cfd, g_wctx.listen_fd, 1);
         }
-        signal(SIGALRM, read_stuck);
-        alarm(MILK_SERVER_READ_LIMIT_S);
-        int dummy_shutdown = 0;
-        milk_server_handle_client(cfd, -1, &dummy_shutdown, 0);
-        close(cfd);
-        _exit(0);
+        else
+        {
+            milk_server_serve_fast(cfd);
+        }
     }
     milk_server_conn_done(cfd, MILK_CONN_CLOSE);
 }
 
 /**
- * milk_server_safe_point - Answer the reads that wait for the command running (milk_safe_point())
+ * milk_server_safe_point - Serve the requests that wait for a safe point of the command running
  *
- * Called by the thread that runs the command, at points where its images and variables are
- * whole: the reads see a state the command meant, never one it is in the middle of writing.
- * When no read waits, this is one test.
+ * Called (milk_safe_point()) by the thread that runs the command, at points where its images
+ * and variables are whole: a read sees a state the command meant, never one it is in the middle
+ * of writing, and a copy of the session (an --async command, a pipeline stage) starts from such
+ * a state. When nothing waits, this is one test.
  *
  * Return: void
  */
 void milk_server_safe_point(void)
 {
+    queued_kind_t kind;
+
     if (!g_reads_pending || !g_wctx.active || !pthread_equal(pthread_self(), g_wctx.main_tid))
     {
         return;
     }
-    for (int cfd; (cfd = read_dequeue(0.0)) >= 0;)
+    for (int cfd; (cfd = queued_take(0, &kind)) >= 0;)
     {
-        serve_read_at_safe_point(cfd);
+        if (kind == Q_COPY)
+        {
+            serve_in_copy(cfd, g_wctx.listen_fd, 0);
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+        }
+        else
+        {
+            serve_read_at_safe_point(cfd);
+        }
     }
 }
 
@@ -648,7 +691,7 @@ void milk_server_watcher_atfork_child(void)
     pthread_cond_init(&g_wcv, NULL);
     pthread_mutex_init(&g_qmu, NULL);
     g_nwaiting      = 0; /* the parent serves them */
-    g_nreads        = 0;
+    g_nqueued       = 0;
     g_reads_pending = 0;
     if (g_wctx.wake_fd >= 0)
     {
