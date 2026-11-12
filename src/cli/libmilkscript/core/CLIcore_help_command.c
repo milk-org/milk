@@ -515,49 +515,44 @@ static errno_t help_search(const char *pattern)
  */
 errno_t help()
 {
-    int         json_mode      = 0;
-    int         porcelain_mode = 0;
-    const char *topic          = NULL;
+    char          *words[data.cmdNBarg + 1];
+    int            n = 0;
+    milk_kw_args_t ka;
 
     for (int arg = 1; arg < data.cmdNBarg; arg++)
     {
-        const char *a = data.cmdargtoken[arg].val.string;
-        if (data.cmdargtoken[arg].type != CMDARGTOKEN_TYPE_STRING &&
-            data.cmdargtoken[arg].type != CMDARGTOKEN_TYPE_RAWSTRING)
+        if ((data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING ||
+             data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING) &&
+            data.cmdargtoken[arg].val.string[0] != '\0')
         {
-            continue;
-        }
-        if (strcmp(a, "--json") == 0)
-        {
-            json_mode = 1;
-        }
-        else if (strcmp(a, "--porcelain") == 0)
-        {
-            porcelain_mode = 1;
-        }
-        else if (strcmp(a, "-k") == 0)
-        {
-            if (arg + 1 >= data.cmdNBarg)
-            {
-                fprintf(stderr, "Usage: @help -k <regex>\n");
-                return RETURN_FAILURE;
-            }
-            return help_search(data.cmdargtoken[arg + 1].val.string);
-        }
-        else if (strcmp(a, "--tui") == 0)
-        {
-            if (milk_help_tui_hook == NULL)
-            {
-                fprintf(stderr, "@help --tui: only in the milk-cli REPL\n");
-                return RETURN_FAILURE;
-            }
-            return milk_help_tui_hook();
-        }
-        else if (a[0] != '\0')
-        {
-            topic = a;
+            words[n++] = data.cmdargtoken[arg].val.string;
         }
     }
+    if (milk_kw_parse("help", 0, &n, words, &ka))
+    {
+        milk_call_t *call = milk_args_call((int) data.cmdindex);
+        if (call != NULL)
+        {
+            call->usage_error = (ka.rc != 0); /* exit status 2 */
+        }
+        return (ka.rc == 0) ? RETURN_SUCCESS : RETURN_FAILURE;
+    }
+    if (milk_kw_opt(&ka, "-k") != NULL)
+    {
+        return help_search(milk_kw_opt(&ka, "-k"));
+    }
+    if (milk_kw_opt(&ka, "--tui") != NULL)
+    {
+        if (milk_help_tui_hook == NULL)
+        {
+            fprintf(stderr, "@help --tui: only in the milk-cli REPL\n");
+            return RETURN_FAILURE;
+        }
+        return milk_help_tui_hook();
+    }
+    int         json_mode      = (milk_kw_opt(&ka, "--json") != NULL);
+    int         porcelain_mode = (milk_kw_opt(&ka, "--porcelain") != NULL);
+    const char *topic          = (n > 0) ? words[n - 1] : NULL;
 
     help_format_mode = json_mode ? 1 : (porcelain_mode ? 2 : 0);
     if (topic == NULL)

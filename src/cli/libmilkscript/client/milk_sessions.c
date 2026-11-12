@@ -915,7 +915,10 @@ static void session_other_dir(const char *sock, char *dir, size_t dirsz)
 }
 
 /* new NAME [-d] [--idle T] */
-static int cmd_new(int argc, char **argv, const milk_client_hooks_t *hooks)
+static int cmd_new(int                        argc,
+                   char                     **argv,
+                   const milk_kw_args_t      *ka,
+                   const milk_client_hooks_t *hooks)
 {
     const char       *name   = NULL;
     int               detach = 0;
@@ -925,37 +928,18 @@ static int cmd_new(int argc, char **argv, const milk_client_hooks_t *hooks)
                                .creator_pid = milk_ipc_shell_pid(hooks),
                                .is_named    = 1 };
 
-    for (int i = 1; i < argc; i++)
+    const char *idle = milk_kw_opt(ka, "--idle");
+    if (milk_kw_only(ka, "new", "-d --idle") != 0 || argc > 2)
     {
-        if (strcmp(argv[i], "-d") == 0)
-        {
-            detach = 1;
-        }
-        else if (strcmp(argv[i], "--idle") == 0)
-        {
-            if (i + 1 >= argc || !parse_duration(argv[++i], &opts.idle_s))
-            {
-                fprintf(stderr, "@session new: --idle takes a duration: 90, 30s, 10m, 2h or 1d\n");
-                return 2;
-            }
-        }
-        else if (strcmp(argv[i], "--tmux") == 0 || strcmp(argv[i], "-tmux") == 0)
-        {
-            fprintf(stderr,
-                    "@session new: --tmux was removed: sessions start detached, their output "
-                    "in the file @session status names\n");
-            return 2;
-        }
-        else if (argv[i][0] == '-' || name != NULL)
-        {
-            fprintf(stderr, "Usage: @session new <name> [-d] [--idle <T>]\n");
-            return 2;
-        }
-        else
-        {
-            name = argv[i];
-        }
+        return (argc > 2) ? milk_lexicon_usage("session", stderr) : 2;
     }
+    if (idle != NULL && !parse_duration(idle, &opts.idle_s))
+    {
+        fprintf(stderr, "@session new: --idle takes a duration: 90, 30s, 10m, 2h or 1d\n");
+        return 2;
+    }
+    name   = (argc > 1) ? argv[1] : NULL;
+    detach = (milk_kw_opt(ka, "-d") != NULL);
     if (!session_name_ok(name, "@session new", 0))
     {
         return 2;
@@ -1088,7 +1072,10 @@ static int cmd_who(const char *arg, const milk_client_hooks_t *hooks)
 }
 
 /* end [NAME|--all] [--units] */
-static int cmd_end(int argc, char **argv, const milk_client_hooks_t *hooks)
+static int cmd_end(int                        argc,
+                   char                     **argv,
+                   const milk_kw_args_t      *ka,
+                   const milk_client_hooks_t *hooks)
 {
     const char *arg   = NULL;
     const char *fsock = frontend_sock(hooks);
@@ -1098,26 +1085,13 @@ static int cmd_end(int argc, char **argv, const milk_client_hooks_t *hooks)
     char        sock[256];
     char        name[64];
 
-    for (int i = 1; i < argc; i++)
+    if (milk_kw_only(ka, "end", "--all --units") != 0 || argc > 2)
     {
-        if (strcmp(argv[i], "--all") == 0)
-        {
-            all = 1;
-        }
-        else if (strcmp(argv[i], "--units") == 0)
-        {
-            units = 1;
-        }
-        else if (argv[i][0] == '-' || arg != NULL)
-        {
-            fprintf(stderr, "Usage: @session end [<name>|--all] [--units]\n");
-            return 2;
-        }
-        else
-        {
-            arg = argv[i];
-        }
+        return (argc > 2) ? milk_lexicon_usage("session", stderr) : 2;
     }
+    arg   = (argc > 1) ? argv[1] : NULL;
+    all   = (milk_kw_opt(ka, "--all") != NULL);
+    units = (milk_kw_opt(ka, "--units") != NULL);
     milk_ipc_resolve_sockpath(hooks, cur, sizeof(cur), 0);
     if (all)
     {
@@ -1239,23 +1213,22 @@ static int cmd_prune(const milk_client_hooks_t *hooks)
     return 0;
 }
 
-/* print_session_help - usage of @session */
-static void print_session_help(void)
-{
-    milk_lexicon_print_help(milk_lexicon_keyword("session"), stdout);
-}
-
 /**
  * @brief Execute `@session` (status, ls, new, use, leave, who, end, prune, save).
  */
 int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    const char *verb = (argc > 0 && argv[0] != NULL) ? argv[0] : "status";
-    char        cur[256];
-
-    if (strcmp(verb, "-h") == 0 || strcmp(verb, "--help") == 0 || strcmp(verb, "help") == 0)
+    milk_kw_args_t ka;
+    char           cur[256];
+    if (milk_kw_parse("session", 0, &argc, argv, &ka))
     {
-        print_session_help();
+        return ka.rc;
+    }
+    const char *verb = (argc > 0) ? argv[0] : "status";
+
+    if (strcmp(verb, "help") == 0)
+    {
+        milk_lexicon_print_help(ka.k, stdout);
         return 0;
     }
     if (strcmp(verb, "status") == 0)
@@ -1264,11 +1237,11 @@ int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *ho
     }
     if (strcmp(verb, "ls") == 0)
     {
-        return cmd_ls(argc >= 2 && strcmp(argv[1], "--json") == 0, hooks);
+        return cmd_ls(milk_kw_opt(&ka, "--json") != NULL, hooks);
     }
     if (strcmp(verb, "new") == 0)
     {
-        return cmd_new(argc, argv, hooks);
+        return cmd_new(argc, argv, &ka, hooks);
     }
     if (strcmp(verb, "use") == 0)
     {
@@ -1284,7 +1257,7 @@ int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *ho
     }
     if (strcmp(verb, "end") == 0)
     {
-        return cmd_end(argc, argv, hooks);
+        return cmd_end(argc, argv, &ka, hooks);
     }
     if (strcmp(verb, "prune") == 0)
     {
@@ -1307,6 +1280,5 @@ int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *ho
         return 2;
     }
     fprintf(stderr, "@session: unknown verb '%s'\n", verb);
-    print_session_help();
-    return 2;
+    return milk_lexicon_usage("session", stderr);
 }

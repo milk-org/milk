@@ -1872,11 +1872,6 @@ int milk_shm_prop_restore(int argc, char **argv)
         {
             dry_run = 1;
         }
-        else if (strcmp(argv[i], "-n") == 0)
-        {
-            fprintf(stderr, "@restore: -n was removed; use: --dry-run\n");
-            return 2;
-        }
         else if (is_snapshot_filter_arg(argv[i]))
         {
             if (nfilters < 64)

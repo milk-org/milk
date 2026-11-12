@@ -284,8 +284,8 @@ _milk_source_impl() {
         __once=1
         shift
     fi
-    if [[ $# -eq 0 ]]; then
-        echo "Usage: @source [--once] <filename> [args...]" >&2
+    if [[ $# -eq 0 || "$1" == -?* ]]; then # an unknown option (a file of that name: ./-name)
+        milkls --usage source
         return 2
     fi
     if [[ ! -f "$1" ]]; then
@@ -328,7 +328,7 @@ export PROCINFO_NCPU
 export PROCINFO_NPROC="${PROCINFO_NPROC:-0}"
 
 _milk_on_usage() {
-    echo "Usage: @on [--once] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t|--timeout <sec>] <target[,target2...]> \"<cmd>\" | @on [...] --when \"<expr>\" [--hold <sec>] [--level] \"<cmd>\" | @on [--once] [--scoped] --every <sec> \"<cmd>\" | --list | --stop <id|pid|target> | --clear" >&2
+    milkls --usage on
 }
 
 _milk_on_manage() {
@@ -517,7 +517,7 @@ _milk_on_cond() {
     if [[ -n "${when}" && -n "${every}" ]] || (( $# == 0 )) ||
         [[ -n "${every}" && ! ${every} =~ ${num} ]] || [[ -n "${hold}" && ! ${hold} =~ ${num} ]] ||
         [[ -n "${every}" && ( -n "${hold}" || ${level} -eq 1 ) ]]; then
-        echo "Usage: @on [--once] [--scoped] [--max-hz <hz>] [--cooldown <sec>] [-t <sec>] --when \"<expr>\" [--hold <sec>] [--level] [--] <cmd...> | @on [--once] [--scoped] --every <sec> [--] <cmd...>" >&2
+        _milk_on_usage
         return 2
     fi
     if (( $# == 1 )); then action=$1; else action="$(printf '%q ' "$@")"; fi

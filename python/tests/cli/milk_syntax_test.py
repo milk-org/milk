@@ -12,7 +12,9 @@ Does:        keywords and namespaces (`milkls`), `@unload`, `@module load --as`,
              `@args` (also in a sourced file); calculator reductions, math, complex, BLAS, LAPACK
              and random functions, also against the module commands that compute the same
              images; the property, modifier and keyword lists against docs/guide/scripting.md;
-             a failed `@set` prints its error once.
+             a failed `@set` prints its error once; the options of the keywords: an unknown
+             one and a missing value are usage errors, `--opt=value`, the help and the
+             completion list come from the keyword table.
 Covers:      the bash builtins and hooks of libmilkbash.so (libmilkscript/bash/:
              milk_bash_builtins.c, milk_bash_hooks.c, milk_bash_defer.c, milk_bash_translate.c),
              the client (libmilkscript/client/milk_client_ops.c, milk_client_stream.c), the
@@ -597,3 +599,53 @@ def test_failed_set_prints_its_error_once(tmp_path):
     assert value(res.stdout, "lrc") == "0", res.stdout + res.stderr
     assert (tmp_path / "lim.log").read_text() == ""
     assert value(res.stdout, "lim") == "1", res.stdout + res.stderr
+
+
+def test_keyword_options_come_from_one_table(tmp_path):
+    """Every keyword reads its options with milk_kw_parse(), from its list in the keyword table:
+    the same errors everywhere, and help and completion show what the parser takes."""
+    bad = (
+        "@grab --bogus cam 1 x",
+        "@grab cam 1 x -t",
+        "@waitfor cam --bogus",
+        "@waitany cam --bogus",
+        "@sleep --bogus",
+        "@exists --bogus cam",
+        "@get --bogus cam.xsize",
+        "@set --bogus",
+        "@ls --bogus",
+        "@log --bogus",
+        "@replay --dt 0.1 cam out",
+        "@snapshot --bogus",
+        "@restore --bogus x.json",
+        "@module list --bogus",
+        "@session ls --bogus",
+        "@session end --json",
+        "@help --bogus",
+        "@source --bogus",
+    )
+    script = '@calc "cam = zeros(8, 8)"\n'
+    script += "".join(
+        f'{c} >/dev/null 2>>err.txt; echo "b{i}=$?"\n' for i, c in enumerate(bad)
+    )
+    script += (
+        '@grab --timeout=1 cam g1 && @grab cam -t 1 g2 && echo "eq=$?"\n'
+        '@calc -v v "-3 + 1"; echo "neg=$v"\n'
+        '@log --help | grep -c "commands slower than" | sed "s/^/help=/"\n'
+        'echo "comp=$(milkcomplete --t "arg:@waitfor:2:cam" | tr "\\n" " ")"\n'
+        'echo "hid=$(milkcomplete --f "arg:@set:1:@set" | tr "\\n" " ")"'
+    )
+    res = milk_bash(script, tmp_path)
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, f"b{i}") for i in range(len(bad))] == ["2"] * len(
+        bad
+    ), out
+    err = (tmp_path / "err.txt").read_text()
+    assert (
+        "@grab: unknown option --bogus" in err and "@grab: -t needs a value" in err
+    ), err
+    assert "@session: end does not take --json" in err and "usage: @waitany" in err, err
+    assert value(res.stdout, "eq") == "0" and value(res.stdout, "neg") == "-2", out
+    assert value(res.stdout, "help") == "1", out
+    assert value(res.stdout, "comp").split() == ["--timeout"], out
+    assert value(res.stdout, "hid") == "", out  # --flush-undo is internal: not offered

@@ -303,10 +303,10 @@ def test_removed_spellings_name_their_replacement(tmp_path):
         "use pi, exp(1)",
         "'if ... end' was removed",
         "'for ... end' was removed",
-        "'--tokens' was removed: use --list",
+        "@calc: --tokens was removed; use: --list",
+        "milk.calc: '--tokens' was removed: use --list",
     ):
         assert hint in err, err
-    assert err.count("'--tokens' was removed") == 2, err
 
 
 def test_removed_keywords_and_option_letters(tmp_path):
@@ -353,7 +353,7 @@ def test_removed_keywords_and_option_letters(tmp_path):
         "@session: log is @log",
         "@log: -a was removed; use: --all",
         "@assert: -e was removed; use: --exists",
-        "@calc: -l was removed: use --lib",
+        "@calc: -l was removed; use: --lib",
         "@restore: -n was removed; use: --dry-run",
     ):
         assert hint in err, err

@@ -110,35 +110,42 @@ static int module_list(int all)
  */
 int milk_server_module(int argc, char **argv)
 {
-    const char *sub = (argc >= 2) ? argv[1] : "list";
-
-    if (strcmp(sub, "list") == 0 && argc <= 3)
+    milk_kw_args_t ka;
+    argc--;
+    argv++;
+    if (milk_kw_parse("module", 0, &argc, argv, &ka))
     {
-        return module_list(argc == 3 && strcmp(argv[2], "--all") == 0);
+        return ka.rc;
     }
-    if (strcmp(sub, "load") == 0 && (argc == 3 || (argc == 5 && strcmp(argv[3], "--as") == 0)))
+    const char *sub = (argc >= 1) ? argv[0] : "list";
+    const char *as  = milk_kw_opt(&ka, "--as");
+
+    if (strcmp(sub, "list") == 0 && argc <= 1 && as == NULL)
     {
-        if (argc == 3 && milk_module_loaded(argv[2]))
+        return module_list(milk_kw_opt(&ka, "--all") != NULL);
+    }
+    if (strcmp(sub, "load") == 0 && argc == 2 && milk_kw_opt(&ka, "--all") == NULL)
+    {
+        if (as == NULL && milk_module_loaded(argv[1]))
         {
             return 0;
         }
-        if (argc == 5)
+        if (as != NULL)
         {
-            if (milk_shortname_check(argv[4], 0) != 0) /* reported; nothing is loaded */
+            if (milk_shortname_check(as, 0) != 0) /* reported; nothing is loaded */
             {
                 return 2;
             }
-            if (milk_module_loaded(argv[2]))
+            if (milk_module_loaded(argv[1]))
             {
-                fprintf(stderr, "milk: @module load: %s is already loaded\n", argv[2]);
+                fprintf(stderr, "milk: @module load: %s is already loaded\n", argv[1]);
                 return 1;
             }
-            snprintf(data.moduleshortname, STRINGMAXLEN_MODULE_SHORTNAME, "%s", argv[4]);
+            snprintf(data.moduleshortname, STRINGMAXLEN_MODULE_SHORTNAME, "%s", as);
         }
-        return (load_module_shared(argv[2]) == RETURN_SUCCESS) ? 0 : 1;
+        return (load_module_shared(argv[1]) == RETURN_SUCCESS) ? 0 : 1;
     }
-    milk_lexicon_usage("module", stderr);
-    return 2;
+    return milk_lexicon_usage("module", stderr);
 }
 
 /**

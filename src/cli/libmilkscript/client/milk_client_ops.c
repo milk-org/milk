@@ -796,51 +796,22 @@ static int get_watch(int                        n,
  */
 int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    const char *varname   = NULL;
-    const char *arrname   = NULL;
-    const char *assocname = NULL;
+    milk_kw_args_t ka;
+    if (milk_kw_parse("get", 0, &argc, argv, &ka))
+    {
+        return ka.rc;
+    }
+    const char *varname   = milk_kw_opt(&ka, "-v");
+    const char *arrname   = milk_kw_opt(&ka, "-a");
+    const char *assocname = milk_kw_opt(&ka, "-A");
     const char *spec      = NULL;
-    int         json_mode = 0;
-    int         nspec     = 0;
-    double      watch     = 0.0; /* --watch [T]: the period */
-    char      **specs     = (char **) calloc((size_t) argc + 1, sizeof(char *));
-    if (specs == NULL)
-    {
-        return 1;
-    }
-    for (int i = 0; i < argc; i++)
-    {
-        if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0)
-        {
-            json_mode = 1;
-        }
-        else if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
-        {
-            varname = argv[++i];
-        }
-        else if (strcmp(argv[i], "-a") == 0 && i + 1 < argc)
-        {
-            arrname = argv[++i];
-        }
-        else if (strcmp(argv[i], "-A") == 0 && i + 1 < argc)
-        {
-            assocname = argv[++i];
-        }
-        else if (strcmp(argv[i], "--watch") == 0)
-        {
-            watch = 0.5; /* entity paths never start with a digit: a number is the period */
-            if (i + 1 < argc && (isdigit((unsigned char) argv[i + 1][0]) || argv[i + 1][0] == '.'))
-            {
-                char *end = NULL;
-                watch     = strtod(argv[++i], &end);
-                watch     = (*end == '\0' && watch > 0.0) ? watch : -1.0;
-            }
-        }
-        else
-        {
-            specs[nspec++] = argv[i];
-        }
-    }
+    const char *wt        = milk_kw_opt(&ka, "--watch"); /* --watch [T]: the period */
+    int         json_mode = (milk_kw_opt(&ka, "--json") != NULL);
+    int         nspec     = argc;
+    char      **specs     = argv;
+    char       *end       = NULL;
+    double      watch     = (wt == NULL) ? 0.0 : (wt[0] == '\0') ? 0.5 : strtod(wt, &end);
+    watch                 = (end != NULL && (*end != '\0' || watch <= 0.0)) ? -1.0 : watch;
     for (int i = 0; watch != 0.0 && i < nspec; i++)
     {
         watch = (strchr(specs[i], '=') != NULL) ? -1.0 : watch;
@@ -851,7 +822,6 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
             (watch < 0.0 || nspec == 0 || varname != NULL || arrname != NULL || assocname != NULL)
                 ? -1
                 : get_watch(nspec, specs, json_mode, watch, hooks);
-        free(specs);
         if (rc < 0)
         {
             milk_lexicon_usage("get", stderr);
@@ -859,21 +829,18 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
         }
         return rc;
     }
-    spec = specs[0];
+    spec = (nspec > 0) ? specs[0] : NULL;
     if (nspec == 0 || ((varname != NULL || arrname != NULL || assocname != NULL) &&
                        (nspec > 1 || strchr(spec, '=') != NULL)))
     {
         milk_lexicon_usage("get", stderr);
-        free(specs);
         return 2;
     }
     if (varname == NULL && arrname == NULL && assocname == NULL)
     {
         int rc = get_specs(nspec, specs, json_mode, hooks);
-        free(specs);
         return rc;
     }
-    free(specs);
 
     char eff_spec[512];
     if (assocname != NULL)
@@ -1306,30 +1273,32 @@ static void undo_commit(undo_text_t *u, const milk_client_hooks_t *hooks)
  */
 int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    if (argc < 1 || argv == NULL || argv[0] == NULL)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("set", MILK_KW_OPTS_FIRST, &argc, argv, &ka))
     {
-        milk_lexicon_usage("set", stderr);
-        return 1;
+        return ka.rc;
     }
-    if (strcmp(argv[0], "--tui") == 0)
+    if (milk_kw_opt(&ka, "--tui") != NULL)
     {
         return milk_client_call_as("fparam", argc, argv, "--tui", NULL, 0, hooks);
     }
-    if (strcmp(argv[0], "--flush-undo") == 0) /* for @restore --undo */
+    if (milk_kw_opt(&ka, "--flush-undo") != NULL) /* for @restore --undo */
     {
         undo_flush(hooks);
         return 0;
     }
-    if (strcmp(argv[0], "--restore") ==
-        0) /* put the old values back when the caller's scope ends */
+    if (milk_kw_opt(&ka, "--restore") !=
+        NULL) /* put the old values back when the caller's scope ends */
     {
-        int rr = set_restore(argc - 1, argv + 1, hooks);
-        if (rr != 0 || argc == 1)
+        int rr = set_restore(argc, argv, hooks);
+        if (rr != 0 || argc == 0)
         {
             return rr;
         }
-        argc--;
-        argv++;
+    }
+    else if (argc < 1)
+    {
+        return milk_lexicon_usage("set", stderr);
     }
 
     int         rc   = 0;
@@ -1632,6 +1601,19 @@ static int client_calc_or_test(const char                *expr,
     return rc;
 }
 
+/** calc_libs() - append the `--lib <file>` values of @a to @libs (@n held, 16 at most) */
+static int calc_libs(const milk_kw_args_t *a, const char **libs, int n)
+{
+    for (int j = 0; j < a->nocc; j++)
+    {
+        if (strcmp(a->k->opts[a->occ[j].opt].names, "--lib") == 0 && n < 16)
+        {
+            libs[n++] = a->occ[j].val;
+        }
+    }
+    return n;
+}
+
 /**
  * milk_client_calc_argv - Parse and execute `@calc` command-line arguments (`--repl`, `-v`, `-a`, `<expr>...`)
  * @argc:  Argument count
@@ -1642,86 +1624,31 @@ static int client_calc_or_test(const char                *expr,
  */
 int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    const char *names = NULL;
-    const char *arr   = NULL;
-    const char *libs[16];
-    int         nlibs     = 0;
-    int         repl      = 0;
-    int         list_mode = 0;
-    int         json_mode = 0;
-    int         explain   = 0;
-    int         i         = 0;
-    while (i < argc)
+    milk_kw_args_t ka;
+    milk_kw_args_t kl; /* --list [<pat>] [--json] [--lib <file>]: in any order */
+    const char    *libs[16];
+    const char    *pat = NULL;
+    if (milk_kw_parse("calc", MILK_KW_OPTS_FIRST, &argc, argv, &ka))
     {
-        if (strcmp(argv[i], "--repl") == 0)
-        {
-            repl = 1;
-            i++;
-        }
-        else if (strcmp(argv[i], "--explain") == 0)
-        {
-            explain = 1;
-            i++;
-        }
-        else if (strcmp(argv[i], "--tokens") == 0)
-        {
-            fprintf(stderr, "milk: @calc: '%s' was removed: use --list\n", argv[i]);
-            return 2;
-        }
-        else if (strcmp(argv[i], "--list") == 0)
-        {
-            list_mode = 1;
-            i++;
-        }
-        else if (strcmp(argv[i], "--json") == 0)
-        {
-            json_mode = 1;
-            i++;
-        }
-        else if (i + 1 < argc && (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-a") == 0))
-        {
-            *((argv[i][1] == 'v') ? &names : &arr) = argv[i + 1];
-            i += 2;
-        }
-        else if (i + 1 < argc && strcmp(argv[i], "-l") == 0)
-        {
-            fprintf(stderr, "milk: @calc: -l was removed: use --lib\n");
-            return 2;
-        }
-        else if (i + 1 < argc && strcmp(argv[i], "--lib") == 0)
-        {
-            if (nlibs < 16)
-            {
-                libs[nlibs++] = argv[i + 1];
-            }
-            i += 2;
-        }
-        else
-        {
-            break;
-        }
+        return ka.rc;
     }
+    const char *names     = milk_kw_opt(&ka, "-v");
+    const char *arr       = milk_kw_opt(&ka, "-a");
+    int         repl      = (milk_kw_opt(&ka, "--repl") != NULL);
+    int         explain   = (milk_kw_opt(&ka, "--explain") != NULL);
+    int         list_mode = (milk_kw_opt(&ka, "--list") != NULL);
+    int         json_mode = (milk_kw_opt(&ka, "--json") != NULL);
+    int         nlibs     = calc_libs(&ka, libs, 0);
+    int         i         = 0;
     if (list_mode)
     {
-        const char *pat = NULL;
-        for (int j = i; j < argc; j++)
+        if (milk_kw_parse("calc", 0, &argc, argv, &kl))
         {
-            if (strcmp(argv[j], "--json") == 0)
-            {
-                json_mode = 1;
-            }
-            else if (j + 1 < argc && strcmp(argv[j], "--lib") == 0)
-            {
-                if (nlibs < 16)
-                {
-                    libs[nlibs++] = argv[++j];
-                }
-            }
-            else if (pat == NULL && argv[j][0] != '-')
-            {
-                pat = argv[j];
-            }
+            return kl.rc;
         }
+        json_mode |= (milk_kw_opt(&kl, "--json") != NULL);
+        nlibs = calc_libs(&kl, libs, nlibs);
+        pat   = (argc > 0 && argv[0][0] != '-') ? argv[0] : NULL;
         char sockpath[256];
         milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
         int srv_fd = (nlibs == 0) ? milk_ipc_connect_once(sockpath) : -1;
@@ -1755,22 +1682,6 @@ int milk_client_calc_argv(int argc, char **argv, const milk_client_hooks_t *hook
     }
     if (list_mode)
     {
-        const char *pat = NULL;
-        for (int j = i; j < argc; j++)
-        {
-            if (strcmp(argv[j], "--json") == 0)
-            {
-                json_mode = 1;
-            }
-            else if (j + 1 < argc && strcmp(argv[j], "--lib") == 0)
-            {
-                j++;
-            }
-            else if (pat == NULL && argv[j][0] != '-')
-            {
-                pat = argv[j];
-            }
-        }
         size_t cur = strlen(expr);
         snprintf(expr + cur, tot - cur, "%s__list_catalog%s%s%s", (cur > 0) ? "; " : "",
                  json_mode ? " --json" : "", (pat != NULL) ? " " : "", (pat != NULL) ? pat : "");
@@ -1937,26 +1848,13 @@ static int cmd_test(int argc, char **argv, const milk_client_hooks_t *hooks)
 /* exists [-r] <entity>: one entity */
 static int cmd_exists(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
-    int         check_running = 0;
-    int         extra         = 0;
-    const char *spec          = NULL;
-    for (int i = 0; i < argc; i++)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("exists", 0, &argc, argv, &ka))
     {
-        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--running") == 0)
-        {
-            check_running = 1;
-        }
-        else if (spec == NULL)
-        {
-            spec = argv[i];
-        }
-        else
-        {
-            extra = 1;
-        }
+        return ka.rc;
     }
-    return (spec == NULL || extra) ? milk_lexicon_usage("exists", stderr)
-                                   : milk_client_exists(spec, check_running, hooks);
+    return (argc != 1) ? milk_lexicon_usage("exists", stderr)
+                       : milk_client_exists(argv[0], milk_kw_opt(&ka, "-r") != NULL, hooks);
 }
 
 /* complete <prefix> [cmd|arg] */

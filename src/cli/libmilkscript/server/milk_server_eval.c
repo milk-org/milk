@@ -354,85 +354,26 @@ static int has_expr_operators(const char *s)
  */
 int milk_server_assert(int argc, char **argv)
 {
-    int         chk_exists  = 0;
-    int         chk_running = 0;
-    int         has_fps_min = 0;
-    double      fps_min     = 0.0;
-    int         has_max_age = 0;
-    double      max_age     = 0.0;
-    int         has_cnt_min = 0;
-    uint64_t    cnt_min     = 0;
-    const char *dim_spec    = NULL;
-    const char *msg         = NULL;
-    const char *pos[64];
-    int         npos = 0;
-
-    for (int i = 1; i < argc; i++)
+    milk_kw_args_t ka;
+    int            npos = argc - 1;
+    char         **pos  = argv + 1;
+    if (milk_kw_parse("assert", 0, &npos, pos, &ka))
     {
-        if (strcmp(argv[i], "--exists") == 0)
-        {
-            chk_exists = 1;
-        }
-        else if (strcmp(argv[i], "-e") == 0)
-        {
-            fprintf(stderr, "@assert: -e was removed; use: --exists\n");
-            return 2;
-        }
-        else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--running") == 0)
-        {
-            chk_running = 1;
-        }
-        else if (strcmp(argv[i], "--fps-min") == 0 && i + 1 < argc)
-        {
-            has_fps_min = 1;
-            fps_min     = strtod(argv[++i], NULL);
-        }
-        else if (strncmp(argv[i], "--fps-min=", 10) == 0)
-        {
-            has_fps_min = 1;
-            fps_min     = strtod(argv[i] + 10, NULL);
-        }
-        else if (strcmp(argv[i], "--max-age") == 0 && i + 1 < argc)
-        {
-            has_max_age = 1;
-            max_age     = strtod(argv[++i], NULL);
-        }
-        else if (strncmp(argv[i], "--max-age=", 10) == 0)
-        {
-            has_max_age = 1;
-            max_age     = strtod(argv[i] + 10, NULL);
-        }
-        else if (strcmp(argv[i], "--cnt-min") == 0 && i + 1 < argc)
-        {
-            has_cnt_min = 1;
-            cnt_min     = (uint64_t) strtoull(argv[++i], NULL, 10);
-        }
-        else if (strncmp(argv[i], "--cnt-min=", 10) == 0)
-        {
-            has_cnt_min = 1;
-            cnt_min     = (uint64_t) strtoull(argv[i] + 10, NULL, 10);
-        }
-        else if (strcmp(argv[i], "--dim") == 0 && i + 1 < argc)
-        {
-            dim_spec = argv[++i];
-        }
-        else if (strncmp(argv[i], "--dim=", 6) == 0)
-        {
-            dim_spec = argv[i] + 6;
-        }
-        else if ((strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--msg") == 0) && i + 1 < argc)
-        {
-            msg = argv[++i];
-        }
-        else if (strncmp(argv[i], "--msg=", 6) == 0)
-        {
-            msg = argv[i] + 6;
-        }
-        else if (npos < 64)
-        {
-            pos[npos++] = argv[i];
-        }
+        return ka.rc;
     }
+    const char *o_fps       = milk_kw_opt(&ka, "--fps-min");
+    const char *o_age       = milk_kw_opt(&ka, "--max-age");
+    const char *o_cnt       = milk_kw_opt(&ka, "--cnt-min");
+    int         chk_exists  = (milk_kw_opt(&ka, "--exists") != NULL);
+    int         chk_running = (milk_kw_opt(&ka, "-r") != NULL);
+    int         has_fps_min = (o_fps != NULL);
+    double      fps_min     = has_fps_min ? strtod(o_fps, NULL) : 0.0;
+    int         has_max_age = (o_age != NULL);
+    double      max_age     = has_max_age ? strtod(o_age, NULL) : 0.0;
+    int         has_cnt_min = (o_cnt != NULL);
+    uint64_t    cnt_min     = has_cnt_min ? (uint64_t) strtoull(o_cnt, NULL, 10) : 0;
+    const char *dim_spec    = milk_kw_opt(&ka, "--dim");
+    const char *msg         = milk_kw_opt(&ka, "-m");
 
     int any_flag = (chk_exists || chk_running || has_fps_min || has_max_age || has_cnt_min ||
                     dim_spec != NULL);

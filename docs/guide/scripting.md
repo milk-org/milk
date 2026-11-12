@@ -90,6 +90,13 @@ prompt. A one-letter option has one meaning in all the keywords that take it: `-
 `-a <arr>` bind the output, `-t <sec>` is a timeout, `-n <N>` a count, `-r` running, `-l` a long
 listing, `-h` help.
 
+The keywords read their options the same way, from the list that `@help <keyword>` prints and TAB
+completes: `--opt value` or `--opt=value`, before or after the other arguments, and `--` ends
+them. An unknown option, or one without its value, is a usage error (status 2) with the usage
+line; a number (`-1.5`) and a word with a blank are never options. Where free text follows
+(`@set`, `@defer`, `@source`, `@on`), the options come first. `@calc`, `@test` and `@assert` take
+a word they do not know as calculator text.
+
 ## Module Commands
 
 Each command has one name, `<module>.<command>`. It is a bash function in every front-end, defined

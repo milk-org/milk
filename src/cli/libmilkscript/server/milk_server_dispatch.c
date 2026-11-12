@@ -1126,16 +1126,27 @@ int milk_server_dispatch_argv(int argc, char **argv)
     {
         const char *name;
         int (*fn)(int argc, char **argv);
-    } kw[] = { { "module", milk_server_module },       { "config", milk_server_config },
-               { "streamcat", milk_server_streamcat }, { "streamwrite", milk_server_streamwrite },
-               { "replay", milk_server_replay },       { "snapshot", milk_shm_prop_snapshot },
-               { "diff", milk_shm_prop_diff },         { "restore", milk_shm_prop_restore },
-               { "assert", milk_server_assert },       { "set", milk_server_set_argv },
-               { "pipe", milk_server_batch_or_pipe } };
+        int check; /* libmilkprop reads these options itself: they are checked here first */
+    } kw[] = {
+        { "module", milk_server_module, 0 },       { "config", milk_server_config, 0 },
+        { "streamcat", milk_server_streamcat, 0 }, { "streamwrite", milk_server_streamwrite, 0 },
+        { "replay", milk_server_replay, 0 },       { "snapshot", milk_shm_prop_snapshot, 1 },
+        { "diff", milk_shm_prop_diff, 1 },         { "restore", milk_shm_prop_restore, 1 },
+        { "assert", milk_server_assert, 0 },       { "set", milk_server_set_argv, 0 },
+        { "pipe", milk_server_batch_or_pipe, 0 }
+    };
     for (size_t i = 0; i < sizeof(kw) / sizeof(kw[0]); i++)
     {
         if (strcmp(cmdname, kw[i].name) == 0)
         {
+            char          *words[argc];
+            int            n = argc - 1;
+            milk_kw_args_t ka;
+            memcpy(words, argv + 1, (size_t) n * sizeof(char *));
+            if (kw[i].check && milk_kw_parse(kw[i].name, 0, &n, words, &ka))
+            {
+                return ka.rc;
+            }
             return kw[i].fn(argc, argv);
         }
     }

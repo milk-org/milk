@@ -775,18 +775,6 @@ static void format_entry_line(const milk_srvlog_entry_t *e, int json_mode, int c
 }
 
 /**
- * print_log_help - Print usage and command-line option reference for `@log`
- *
- * Writes `@log` flags and usage examples to stdout.
- *
- * Return: void
- */
-static void print_log_help(void)
-{
-    milk_lexicon_print_help(milk_lexicon_keyword("log"), stdout);
-}
-
-/**
  * @brief Execute the `@log` query, search, or live-follow command.
  */
 int milk_srvlog_cmd_log(const char                *default_sockpath,
@@ -794,85 +782,27 @@ int milk_srvlog_cmd_log(const char                *default_sockpath,
                         char                     **argv,
                         const milk_client_hooks_t *hooks)
 {
-    int         last_n      = 20;
-    int         show_all    = 0;
-    int         errors_only = 0;
-    int         follow_mode = 0;
-    int         json_mode   = 0;
-    int         clear_mode  = 0;
-    uint64_t    min_dur_ns  = 0;
-    time_t      since_sec   = 0;
-    const char *pattern     = NULL;
-    const char *target_srv  = NULL;
-
-    for (int i = 0; i < argc; i++)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("log", 0, &argc, argv, &ka))
     {
-        const char *a = argv[i];
-        if (strcmp(a, "-h") == 0 || strcmp(a, "--help") == 0)
-        {
-            print_log_help();
-            return 0;
-        }
-        else if ((strcmp(a, "-n") == 0 || strcmp(a, "--last") == 0) && i + 1 < argc)
-        {
-            last_n = atoi(argv[++i]);
-            if (last_n <= 0)
-            {
-                last_n = 20;
-            }
-        }
-        else if (strcmp(a, "--all") == 0)
-        {
-            show_all = 1;
-        }
-        else if (strcmp(a, "-a") == 0)
-        {
-            fprintf(stderr, "@log: -a was removed; use: --all\n");
-            return 2;
-        }
-        else if ((strcmp(a, "-g") == 0 || strcmp(a, "--grep") == 0) && i + 1 < argc)
-        {
-            pattern = argv[++i];
-        }
-        else if (strcmp(a, "-e") == 0 || strcmp(a, "--errors") == 0)
-        {
-            errors_only = 1;
-        }
-        else if (strcmp(a, "--slow") == 0 && i + 1 < argc)
-        {
-            double ms  = strtod(argv[++i], NULL);
-            min_dur_ns = (ms > 0.0) ? (uint64_t) (ms * 1e6) : 0;
-        }
-        else if (strcmp(a, "--since") == 0 && i + 1 < argc)
-        {
-            since_sec = parse_since_spec(argv[++i]);
-        }
-        else if (strcmp(a, "-f") == 0 || strcmp(a, "--follow") == 0)
-        {
-            follow_mode = 1;
-        }
-        else if ((strcmp(a, "-s") == 0 || strcmp(a, "--session") == 0) && i + 1 < argc)
-        {
-            target_srv = argv[++i];
-        }
-        else if (strcmp(a, "--server") == 0)
-        {
-            fprintf(stderr, "@log: --server was removed; use: --session <name> (or -s <name>)\n");
-            return 2;
-        }
-        else if (strcmp(a, "--json") == 0)
-        {
-            json_mode = 1;
-        }
-        else if (strcmp(a, "--clear") == 0)
-        {
-            clear_mode = 1;
-        }
-        else if (a[0] != '-' && pattern == NULL)
-        {
-            pattern = a;
-        }
+        return ka.rc;
     }
+    const char *o_n         = milk_kw_opt(&ka, "-n");
+    const char *o_slow      = milk_kw_opt(&ka, "--slow");
+    const char *o_since     = milk_kw_opt(&ka, "--since");
+    int         last_n      = (o_n != NULL && atoi(o_n) > 0) ? atoi(o_n) : 20;
+    int         show_all    = (milk_kw_opt(&ka, "--all") != NULL);
+    int         errors_only = (milk_kw_opt(&ka, "-e") != NULL);
+    int         follow_mode = (milk_kw_opt(&ka, "-f") != NULL);
+    int         json_mode   = (milk_kw_opt(&ka, "--json") != NULL);
+    int         clear_mode  = (milk_kw_opt(&ka, "--clear") != NULL);
+    uint64_t    min_dur_ns  = (o_slow != NULL && strtod(o_slow, NULL) > 0.0)
+                                  ? (uint64_t) (strtod(o_slow, NULL) * 1e6)
+                                  : 0;
+    time_t      since_sec   = (o_since != NULL) ? parse_since_spec(o_since) : 0;
+    const char *target_srv  = milk_kw_opt(&ka, "-s");
+    const char *pattern     = milk_kw_opt(&ka, "-g");
+    pattern                 = (pattern == NULL && argc > 0) ? argv[0] : pattern;
 
     char sockpath[256];
     if (target_srv != NULL && target_srv[0] != '\0')

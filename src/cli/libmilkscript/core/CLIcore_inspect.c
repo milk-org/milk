@@ -941,49 +941,16 @@ static milk_ns_kind_t ls_ns_arg(const char *p, const char **pat)
  */
 int milk_ls_exec(int argc, char **argv)
 {
-    int         longmode   = 0;
-    int         quietmode  = 0;
-    int         jsonmode   = 0;
-    int         want_local = 0;
-    const char *raw_pat    = NULL;
-
-    for (int i = 0; i < argc; i++)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("ls", 0, &argc, argv, &ka))
     {
-        const char *tok = argv[i];
-        if (tok == NULL)
-        {
-            continue;
-        }
-        if (strcmp(tok, "-l") == 0 || strcmp(tok, "--long") == 0)
-        {
-            longmode = 1;
-        }
-        else if (strcmp(tok, "-1") == 0)
-        {
-            longmode = 0;
-        }
-        else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
-        {
-            quietmode = 1;
-        }
-        else if (strcmp(tok, "--json") == 0 || strcmp(tok, "-j") == 0)
-        {
-            jsonmode = 1;
-        }
-        else if (strcmp(tok, "--local") == 0)
-        {
-            want_local = 1;
-        }
-        else if (strcmp(tok, "-h") == 0 || strcmp(tok, "--help") == 0)
-        {
-            milk_lexicon_print_help(milk_lexicon_keyword("ls"), stdout);
-            return 0;
-        }
-        else if (raw_pat == NULL)
-        {
-            raw_pat = tok;
-        }
+        return ka.rc;
     }
+    int         longmode   = (milk_kw_opt(&ka, "-l") != NULL && milk_kw_opt(&ka, "-1") == NULL);
+    int         quietmode  = (milk_kw_opt(&ka, "-q") != NULL);
+    int         jsonmode   = (milk_kw_opt(&ka, "--json") != NULL);
+    int         want_local = (milk_kw_opt(&ka, "--local") != NULL);
+    const char *raw_pat    = (argc > 0) ? argv[0] : NULL;
 
     int         do_streams = 0;
     int         do_fps     = 0;

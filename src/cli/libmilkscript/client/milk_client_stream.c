@@ -155,59 +155,22 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     milk_ipc_sync_shm_env(hooks);
 
-    const char *target   = NULL;
-    const char *arg2     = "1";
-    int         has_arg2 = 0;
-    const char *timeout  = "0";
-    const char *sem_str  = NULL;
-    const char *cnt_str  = NULL;
-    int         next     = 0;
-
-    for (int i = 0; i < argc; i++)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("waitfor", 0, &argc, argv, &ka))
     {
-        if (strcmp(argv[i], "--next") == 0)
-        {
-            next = 1;
-        }
-        else if ((strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timeout") == 0) && i + 1 < argc)
-        {
-            timeout = argv[++i];
-        }
-        else if (strncmp(argv[i], "--timeout=", 10) == 0)
-        {
-            timeout = argv[i] + 10;
-        }
-        else if (strcmp(argv[i], "--sem") == 0 && i + 1 < argc)
-        {
-            sem_str = argv[++i];
-        }
-        else if (strncmp(argv[i], "--sem=", 6) == 0)
-        {
-            sem_str = argv[i] + 6;
-        }
-        else if (strcmp(argv[i], "--cnt") == 0 && i + 1 < argc)
-        {
-            cnt_str = argv[++i];
-        }
-        else if (strncmp(argv[i], "--cnt=", 6) == 0)
-        {
-            cnt_str = argv[i] + 6;
-        }
-        else if (target == NULL)
-        {
-            target = argv[i];
-        }
-        else
-        {
-            arg2     = argv[i];
-            has_arg2 = 1;
-        }
+        return ka.rc;
     }
+    const char *target   = (argc > 0) ? argv[0] : NULL;
+    int         has_arg2 = (argc > 1);
+    const char *arg2     = has_arg2 ? argv[argc - 1] : "1";
+    const char *timeout  = milk_kw_opt(&ka, "-t") ? milk_kw_opt(&ka, "-t") : "0";
+    const char *sem_str  = milk_kw_opt(&ka, "--sem");
+    const char *cnt_str  = milk_kw_opt(&ka, "--cnt");
+    int         next     = (milk_kw_opt(&ka, "--next") != NULL);
 
     if (target == NULL || target[0] == '\0')
     {
-        milk_lexicon_usage("waitfor", stderr);
-        return 1;
+        return milk_lexicon_usage("waitfor", stderr);
     }
     const char *gone = milk_entity_ns_removed(target);
     if (gone != NULL) /* q.x...: nothing will ever match */
@@ -602,21 +565,18 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
 {
     milk_ipc_sync_shm_env(hooks);
 
-    const char *streams[64];
-    int         nstreams    = 0;
-    double      timeout_sec = 0.0;
+    const char    *streams[64];
+    int            nstreams = 0;
+    milk_kw_args_t ka;
+    if (milk_kw_parse("waitany", 0, &argc, argv, &ka))
+    {
+        return ka.rc;
+    }
+    double timeout_sec = milk_kw_opt(&ka, "-t") ? strtod(milk_kw_opt(&ka, "-t"), NULL) : 0.0;
 
     for (int i = 0; i < argc; i++)
     {
-        if ((strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timeout") == 0) && i + 1 < argc)
-        {
-            timeout_sec = strtod(argv[++i], NULL);
-        }
-        else if (strncmp(argv[i], "--timeout=", 10) == 0)
-        {
-            timeout_sec = strtod(argv[i] + 10, NULL);
-        }
-        else if (nstreams < 64)
+        if (nstreams < 64)
         {
             const char *s = argv[i];
             while (*s == '@')
@@ -642,8 +602,7 @@ int milk_client_waitany(int argc, char **argv, const milk_client_hooks_t *hooks)
 
     if (nstreams == 0)
     {
-        milk_lexicon_usage("waitany", stderr);
-        return 1;
+        return milk_lexicon_usage("waitany", stderr);
     }
 
     IMAGE    imgs[64];
@@ -922,34 +881,16 @@ int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hoo
     {
         return sleep_until(mono_ns() + (int64_t) (sleep_seconds(argv[0]) * 1.0e9), hooks);
     }
-    for (int i = 0; i < argc; i++)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("sleep", 0, &argc, argv, &ka))
     {
-        if ((strcmp(argv[i], "--every") == 0 || strcmp(argv[i], "--hz") == 0) && i + 1 < argc &&
-            per < 0.0)
-        {
-            per = sleep_seconds(argv[i + 1]);
-            per = (argv[i][2] == 'h') ? ((per > 0.0) ? 1.0 / per : -1.0) : per;
-            i++;
-            if (per <= 0.0)
-            {
-                milk_lexicon_usage("sleep", stderr);
-                return 2;
-            }
-        }
-        else if (strcmp(argv[i], "--late") == 0 && i + 1 < argc && late == NULL)
-        {
-            late = argv[++i];
-        }
-        else if (var == NULL && argv[i][0] != '-')
-        {
-            var = argv[i];
-        }
-        else
-        {
-            milk_lexicon_usage("sleep", stderr);
-            return 2;
-        }
+        return ka.rc;
     }
+    const char *hz = milk_kw_opt(&ka, "--hz");
+    per  = sleep_seconds(hz ? hz : milk_kw_opt(&ka, "--every") ? milk_kw_opt(&ka, "--every") : "");
+    per  = (hz != NULL && per > 0.0) ? 1.0 / per : per;
+    late = milk_kw_opt(&ka, "--late");
+    var  = (argc == 1) ? argv[0] : NULL;
     if (per <= 0.0 || var == NULL || !milk_ipc_is_identifier(var) ||
         (late != NULL && !milk_ipc_is_identifier(late)))
     {
@@ -1018,53 +959,17 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
         return milk_client_call_as("streamcat", argc, argv, "--stdout", NULL, 0, hooks);
     }
 
-    const char *sname    = NULL;
-    const char *nframes  = NULL;
-    const char *outname  = NULL;
-    const char *timeout  = "0";
-    const char *fits_raw = NULL;
-    const char *ts_raw   = NULL;
-
-    for (int i = 0; i < argc; i++)
+    milk_kw_args_t ka;
+    if (milk_kw_parse("grab", 0, &argc, argv, &ka))
     {
-        if ((strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--timeout") == 0) && i + 1 < argc)
-        {
-            timeout = argv[++i];
-        }
-        else if (strncmp(argv[i], "--timeout=", 10) == 0)
-        {
-            timeout = argv[i] + 10;
-        }
-        else if (strcmp(argv[i], "--fits") == 0 && i + 1 < argc)
-        {
-            fits_raw = argv[++i];
-        }
-        else if (strncmp(argv[i], "--fits=", 7) == 0)
-        {
-            fits_raw = argv[i] + 7;
-        }
-        else if ((strcmp(argv[i], "--timestamps") == 0 || strcmp(argv[i], "--ts") == 0) &&
-                 i + 1 < argc)
-        {
-            ts_raw = argv[++i];
-        }
-        else if (strncmp(argv[i], "--timestamps=", 13) == 0)
-        {
-            ts_raw = argv[i] + 13;
-        }
-        else if (sname == NULL)
-        {
-            sname = argv[i];
-        }
-        else if (nframes == NULL)
-        {
-            nframes = argv[i];
-        }
-        else if (outname == NULL)
-        {
-            outname = argv[i];
-        }
+        return ka.rc;
     }
+    const char *sname    = (argc > 0) ? argv[0] : NULL;
+    const char *nframes  = (argc > 1) ? argv[1] : NULL;
+    const char *outname  = (argc > 2) ? argv[2] : NULL;
+    const char *timeout  = milk_kw_opt(&ka, "-t") ? milk_kw_opt(&ka, "-t") : "0";
+    const char *fits_raw = milk_kw_opt(&ka, "--fits");
+    const char *ts_raw   = milk_kw_opt(&ka, "--timestamps");
 
     if (outname == NULL && sname != NULL)
     {
@@ -1108,8 +1013,7 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     if (sname == NULL || nframes == NULL || outname == NULL ||
         (outname[0] == '\0' && fits_raw == NULL))
     {
-        milk_lexicon_usage("grab", stderr);
-        return 1;
+        return milk_lexicon_usage("grab", stderr);
     }
 
     char fits_abs[4096];
@@ -1526,6 +1430,10 @@ int milk_client_ls(int argc, char **argv, const milk_client_hooks_t *hooks)
             printf("%s\n", nw);
         }
         return (nw != NULL) ? 0 : 1;
+    }
+    if (argc >= 2 && strcmp(argv[0], "--usage") == 0) /* a keyword function's usage error */
+    {
+        return milk_lexicon_usage(argv[1], stderr);
     }
     if (argc >= 2 && strcmp(argv[0], "--help-keyword") == 0)
     {

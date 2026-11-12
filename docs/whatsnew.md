@@ -23,6 +23,15 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — Keyword options are written once, in the keyword table: one parser reads them
+  for every keyword, and `@help <keyword>` and TAB completion show that same list (11 keywords
+  with options had no completion). An unknown option or an option without its value is now a
+  usage error with status 2 everywhere; before, `@grab`, `@get`, `@waitfor`, `@waitany`,
+  `@replay`, `@ls`, `@log`, `@snapshot`, `@module` and `@session` took it as a name or a pattern,
+  or ignored it. `--opt=value` works for every option that takes a value. `@replay --dt`, which
+  the help listed but nothing read, is gone from the help (`--fps`). Usage errors of `@grab`,
+  `@waitfor`, `@waitany` and `@replay` return 2, not 1. See
+  [Scripting](guide/scripting.md), "Keywords" `#cli`
 - **2026-11-11** — Sessions: a read from another shell while a command runs (`@get`, `@exists`,
   `@test`, completion) is answered by the command at its next safe point (between two statements or
   iterations of a calculator program), so it sees whole images, never one being rewritten. Such a

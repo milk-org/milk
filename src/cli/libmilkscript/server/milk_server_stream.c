@@ -800,18 +800,18 @@ static uint8_t parse_dtype_name(const char *s)
  */
 int milk_server_streamcat(int argc, char **argv)
 {
-    int         raw_mode = 0;
-    const char *sname    = NULL;
-    for (int i = 1; i < argc; i++)
+    milk_kw_args_t ka;
+    argc--;
+    argv++;
+    if (milk_kw_parse("grab", 0, &argc, argv, &ka))
     {
-        if (strcmp(argv[i], "--raw") == 0)
-        {
-            raw_mode = 1;
-        }
-        else if (sname == NULL)
-        {
-            sname = argv[i];
-        }
+        return ka.rc;
+    }
+    int         raw_mode = (milk_kw_opt(&ka, "--raw") != NULL);
+    const char *sname    = (argc > 0) ? argv[0] : NULL;
+    if (sname == NULL)
+    {
+        return milk_lexicon_usage("grab", stderr);
     }
     if (sname == NULL)
     {
@@ -938,31 +938,24 @@ static int stdin_has_data(void)
  */
 int milk_server_streamwrite(int argc, char **argv)
 {
-    int         raw_mode  = 0;
-    int         has_dtype = 0;
-    const char *dtype_str = NULL;
+    milk_kw_args_t ka;
+    argc--;
+    argv++;
+    if (milk_kw_parse("replay", 0, &argc, argv, &ka))
+    {
+        return ka.rc;
+    }
+    int         raw_mode  = (milk_kw_opt(&ka, "--raw") != NULL);
+    const char *dtype_str = milk_kw_opt(&ka, "--dtype");
+    int         has_dtype = (dtype_str != NULL);
     const char *sname_raw = NULL;
     const char *pos[64];
     int         npos      = 0;
     int         use_stdin = 0;
 
-    for (int i = 1; i < argc; i++)
+    for (int i = 0; i < argc; i++) /* <stream> [xsize [ysize [zsize]]], and "-": from stdin */
     {
-        if (strcmp(argv[i], "--raw") == 0)
-        {
-            raw_mode = 1;
-        }
-        else if (strcmp(argv[i], "--dtype") == 0 && i + 1 < argc)
-        {
-            has_dtype = 1;
-            dtype_str = argv[++i];
-        }
-        else if (strncmp(argv[i], "--dtype=", 8) == 0)
-        {
-            has_dtype = 1;
-            dtype_str = argv[i] + 8;
-        }
-        else if (strcmp(argv[i], "-") == 0)
+        if (strcmp(argv[i], "-") == 0)
         {
             use_stdin = 1;
         }
@@ -975,7 +968,10 @@ int milk_server_streamwrite(int argc, char **argv)
             pos[npos++] = argv[i];
         }
     }
-
+    if (sname_raw == NULL)
+    {
+        return milk_lexicon_usage("replay", stderr);
+    }
     if (sname_raw == NULL)
     {
         milk_lexicon_usage("replay", stderr);
@@ -1183,44 +1179,24 @@ int milk_server_streamwrite(int argc, char **argv)
  */
 int milk_server_replay(int argc, char **argv)
 {
-    double      fps_hz       = 0.0;
-    long        max_frames   = 0;
-    int         loop_forever = 0;
-    const char *src_raw      = NULL;
-    const char *dst_raw      = NULL;
-
-    for (int i = 1; i < argc; i++)
+    milk_kw_args_t ka;
+    argc--;
+    argv++;
+    if (milk_kw_parse("replay", 0, &argc, argv, &ka))
     {
-        if (strcmp(argv[i], "--fps") == 0 && i + 1 < argc)
-        {
-            fps_hz = strtod(argv[++i], NULL);
-        }
-        else if (strncmp(argv[i], "--fps=", 6) == 0)
-        {
-            fps_hz = strtod(argv[i] + 6, NULL);
-        }
-        else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--count") == 0) && i + 1 < argc)
-        {
-            max_frames = strtol(argv[++i], NULL, 10);
-        }
-        else if (strncmp(argv[i], "--count=", 8) == 0)
-        {
-            max_frames = strtol(argv[i] + 8, NULL, 10);
-        }
-        else if (strcmp(argv[i], "--loop") == 0)
-        {
-            loop_forever = 1;
-        }
-        else if (src_raw == NULL)
-        {
-            src_raw = argv[i];
-        }
-        else if (dst_raw == NULL)
-        {
-            dst_raw = argv[i];
-        }
+        return ka.rc;
     }
-
+    const char *o_fps        = milk_kw_opt(&ka, "--fps");
+    const char *o_cnt        = milk_kw_opt(&ka, "-n");
+    double      fps_hz       = (o_fps != NULL) ? strtod(o_fps, NULL) : 0.0;
+    long        max_frames   = (o_cnt != NULL) ? strtol(o_cnt, NULL, 10) : 0;
+    int         loop_forever = (milk_kw_opt(&ka, "--loop") != NULL);
+    const char *src_raw      = (argc > 0) ? argv[0] : NULL;
+    const char *dst_raw      = (argc > 1) ? argv[1] : NULL;
+    if (src_raw == NULL || dst_raw == NULL)
+    {
+        return milk_lexicon_usage("replay", stderr);
+    }
     if (src_raw == NULL || dst_raw == NULL)
     {
         milk_lexicon_usage("replay", stderr);

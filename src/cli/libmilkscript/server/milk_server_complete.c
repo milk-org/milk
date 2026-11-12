@@ -890,7 +890,7 @@ static void add_word(const char *head,
  * @out:    Output buffer
  * @outsz:  Its size
  *
- * An option (`-...`) from `k->options`; otherwise the words of `k->words` for that position: its
+ * An option (`-...`) from the keyword's option list; otherwise the words of `k->words` for that position: its
  * first line for the first argument, the line `<prev>: ...` after the word @prev, else `*: ...` for
  * the second argument.
  *
@@ -905,10 +905,11 @@ static size_t complete_keyword(const milk_keyword_t *k,
 {
     const char *list = NULL;
     size_t      llen = 0;
-    if (prefix[0] == '-' && k->options != NULL)
+    char        opts[512];
+    if (prefix[0] == '-' && k->opts != NULL)
     {
-        list = k->options;
-        llen = strlen(list);
+        list = opts;
+        llen = milk_lexicon_options(k, opts, sizeof(opts));
     }
     for (const char *ln = (prefix[0] != '-') ? k->words : NULL; ln != NULL && list == NULL;
          ln             = (ln[strcspn(ln, "\n")] != '\0') ? ln + strcspn(ln, "\n") + 1 : NULL)

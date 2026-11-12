@@ -9,9 +9,11 @@
  *
  * Purpose:     each `@` keyword is defined once (where it works, how it is implemented, its help
  *              and its completion), and every consumer derives from that one table.
- * Does:        holds the keyword table and the bash word list; looks keywords up; prints a
- *              keyword's help, its usage line on a usage error, and the keyword list; tells
- *              whether a keyword's arguments are calculator text.
+ * Does:        holds the keyword table and the bash word list; looks keywords up; takes a
+ *              keyword's options out of its arguments (milk_kw_parse(): one parser, from the
+ *              option list of the table); prints a keyword's help, its usage line on a usage
+ *              error, and the keyword list; tells whether a keyword's arguments are calculator
+ *              text.
  * Used by:     the milk.bash keyword functions (`milkls --keywords --bash`); help
  *              (CLIcore_help_command.c, CLIcore_help_topics.c); completion and highlighting
  *              (milk_server_complete.c, CLIcore_UI_completion_tab.c); the reserved-name check
@@ -43,18 +45,27 @@ typedef enum
     MILK_KW_SERVER   /* `milkcall <name>`: a command handled by the milk-cli server */
 } milk_kw_impl_t;
 
+/* One option of a keyword */
 typedef struct
 {
-    const char    *name; /* without the sigil */
-    milk_kw_impl_t impl;
-    unsigned       avail;    /* MILK_KW_* front-ends */
-    int            callable; /* implemented by milk-call (gets a bin-farm link) */
-    const char    *synopsis;
-    const char    *summary;
-    const char    *details;  /* "" when none */
-    const char    *examples; /* "" when none */
-    const char    *options;  /* completion: its options, "-v --json ..." (NULL: none) */
-    const char    *words;    /* completion: the words of its first argument, then "<w>: ..." lines:
+    const char *names; /* its spellings: "-t --timeout" */
+    const char *arg;  /* "<sec>": it takes a value; "[T]": a number that may follow; NULL: a flag */
+    const char *help; /* shown by the help; NULL: accepted but not shown (internal);
+                          "!<what to do>": a removed spelling, refused with that text */
+} milk_kw_opt_t;
+
+typedef struct
+{
+    const char          *name; /* without the sigil */
+    milk_kw_impl_t       impl;
+    unsigned             avail;    /* MILK_KW_* front-ends */
+    int                  callable; /* implemented by milk-call (gets a bin-farm link) */
+    const char          *synopsis;
+    const char          *summary;
+    const char          *details;  /* "" when none */
+    const char          *examples; /* "" when none */
+    const milk_kw_opt_t *opts;     /* its options, ended by names == NULL (NULL: none) */
+    const char *words; /* completion: the words of its first argument, then "<w>: ..." lines:
                                 the words after <w> ("*:" after any other first argument) */
 } milk_keyword_t;
 
@@ -81,6 +92,47 @@ int milk_lexicon_usage(const char *name, FILE *fp);
 /** milk_lexicon_help_arg() - 1 if @arg asks keyword @k for its help: `--help`, or `-h` unless @k takes an
  * expression (`@calc -h` computes -h). */
 int milk_lexicon_help_arg(const milk_keyword_t *k, const char *arg);
+
+#define MILK_KW_NOPT 20 /* options of one keyword */
+#define MILK_KW_NOCC 24 /* options given in one call */
+
+#define MILK_KW_OPTS_FIRST 0x1 /* the options end at the first other word (free text follows) */
+
+/* The options of one call, as milk_kw_parse() found them */
+typedef struct
+{
+    const milk_keyword_t *k;
+    const char *val[MILK_KW_NOPT]; /* per option of k->opts: NULL not given, "" a flag (or an
+                                      optional number left out), else its value (the last) */
+    struct
+    {
+        int         opt; /* index in k->opts */
+        const char *val;
+    } occ[MILK_KW_NOCC]; /* every option given, in order (an option given several times) */
+    int nocc;
+    int rc; /* the exit status, when milk_kw_parse() returned non-zero */
+} milk_kw_args_t;
+
+/** milk_kw_parse() - take the options of keyword @name out of @argv (*@argc words, the first
+ * argument first) into @a; the other words stay in @argv, in order, *@argc their count.
+ * `--opt value` and `--opt=value`; `--` ends the options; a number (`-1.5`) and a word with a
+ * blank are never options. An unknown option, a missing value or a removed spelling: a message
+ * and the usage line, a->rc = 2 (keywords whose arguments are calculator text take such a word
+ * as text). `--help` (and `-h`, except for those keywords): the help, a->rc = 0.
+ * Return: 0, or non-zero when the caller returns a->rc. */
+int milk_kw_parse(const char *name, unsigned flags, int *argc, char **argv, milk_kw_args_t *a);
+
+/** milk_kw_opt() - the value of option @opt (one of its spellings) in @a: NULL if it was not
+ * given, "" for a flag. */
+const char *milk_kw_opt(const milk_kw_args_t *a, const char *opt);
+
+/** milk_kw_only() - 0 if every option given in @a is one of @allowed ("-d --idle"); else a
+ * message and the usage line, return 2. For a keyword whose forms take different options. */
+int milk_kw_only(const milk_kw_args_t *a, const char *what, const char *allowed);
+
+/** milk_lexicon_options() - the spellings of the options of @k that the help shows, and
+ * `--help`, separated by blanks, into @buf (completion). Return: the length. */
+size_t milk_lexicon_options(const milk_keyword_t *k, char *buf, size_t sz);
 
 /** milk_lexicon_takes_expr() - 1 if the arguments of keyword @k are calculator text (@calc @test
  * @assert). */

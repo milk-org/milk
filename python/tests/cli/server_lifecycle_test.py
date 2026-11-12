@@ -109,7 +109,7 @@ def test_failed_start_reports_why(tmp_path, names):
     ), out  # the end of its output
     assert value(res.stdout, "tmux") == "2", out
     assert (
-        "--tmux was removed: sessions start detached"
+        "--tmux was removed; sessions start detached"
         in (tmp_path / "tmux.log").read_text()
     ), out
 
