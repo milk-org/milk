@@ -1,4 +1,4 @@
-import os, shutil
+import os, shutil, tempfile
 
 import pytest
 
@@ -7,8 +7,9 @@ import pytest
 @pytest.fixture(scope="session", autouse=True)
 def ctfixt_change_MILK_SHM_DIR():
 
-    MILK_SHM_DIR_SPOOF = "/tmp/milk_shm_dir_pytest"
-    os.makedirs(MILK_SHM_DIR_SPOOF, exist_ok=True)
+    # One per pytest process, so that several can run side by side. No longer than the fixed name
+    # it replaces: a unit's --file path, built under it, holds 63 characters.
+    MILK_SHM_DIR_SPOOF = tempfile.mkdtemp(prefix="milk_pytest", dir="/tmp")
 
     # There was something more aggressive to reload the env at runtime, wasn't there?
     os.environ["MILK_SHM_DIR"] = MILK_SHM_DIR_SPOOF
@@ -18,14 +19,13 @@ def ctfixt_change_MILK_SHM_DIR():
     yield MILK_SHM_DIR_SPOOF
 
     # Fixture teardown here:
-    shutil.rmtree(MILK_SHM_DIR_SPOOF)
+    shutil.rmtree(MILK_SHM_DIR_SPOOF, ignore_errors=True)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def ctfixt_change_tmux_server():
     """Any tmux a test starts (the TUI drivers do) gets its socket here, away from the user's."""
-    TMUX_TMPDIR_SPOOF = "/tmp/milk_tmux_tmpdir_pytest"
-    os.makedirs(TMUX_TMPDIR_SPOOF, exist_ok=True)
+    TMUX_TMPDIR_SPOOF = tempfile.mkdtemp(prefix="milk_tmux_pytest", dir="/tmp")
 
     saved_tmux = os.environ.pop("TMUX", None)  # detach from any outer tmux client
     os.environ["TMUX_TMPDIR"] = TMUX_TMPDIR_SPOOF

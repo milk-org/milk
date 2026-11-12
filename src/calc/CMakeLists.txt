@@ -123,3 +123,11 @@ target_include_directories(
   milk-fpsexec-milk-calc PRIVATE $<TARGET_PROPERTY:${LIBNAME},INCLUDE_DIRECTORIES>)
 milk_configure_fpsexec(milk-fpsexec-milk-calc PREFIX milk)
 target_link_libraries(milk-fpsexec-milk-calc PUBLIC ${LIBNAME})
+
+if(BUILD_TESTING)
+  add_executable(test-mcalc-front tests/test_mcalc_front.c)
+  target_include_directories(test-mcalc-front
+                             PRIVATE $<TARGET_PROPERTY:${LIBNAME},INCLUDE_DIRECTORIES>)
+  target_link_libraries(test-mcalc-front PRIVATE ${LIBNAME})
+  add_test(NAME mcalc-front COMMAND test-mcalc-front)
+endif()

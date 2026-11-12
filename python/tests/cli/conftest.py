@@ -104,10 +104,19 @@ def _kill_by_cmdline(token: str) -> None:
                 os.kill(int(d), signal.SIGKILL)
 
 
+# The calculator caches its compiled kernels under HOME, which each test replaces by a temporary
+# one: name the developer's own cache, so that a kernel compiled by one test serves the others and
+# the next run.
+_KERNEL_CACHE = os.environ.get("MILK_CALC_CACHE") or str(
+    Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "milk" / "calc"
+)
+
+
 def _isolated_shm_env(
     extra_env: dict[str, str] | None = None,
 ) -> tuple[dict[str, str], str]:
-    """Build a subprocess env with an isolated MILK_SHM_DIR, MILK_PROC_DIR, and HOME."""
+    """Build a subprocess env with an isolated MILK_SHM_DIR, MILK_PROC_DIR, and HOME; the kernel
+    cache is shared."""
     install_dir = _install_dir()
     base_shm = os.environ.get("MILK_SHM_DIR", "/tmp")
     os.makedirs(base_shm, exist_ok=True)
@@ -124,9 +133,11 @@ def _isolated_shm_env(
             "MILK_SHM_DIR": shm_dir,
             "MILK_PROC_DIR": shm_dir,
             "HOME": str(home),
+            "MILK_CALC_CACHE": _KERNEL_CACHE,
             "MILK_QUIET": "1",
         }
     )
+    os.makedirs(_KERNEL_CACHE, mode=0o700, exist_ok=True)
     if extra_env:
         env.update(extra_env)
     return env, shm_dir

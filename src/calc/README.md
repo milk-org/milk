@@ -72,6 +72,7 @@ extensions), `linalg/` and `units/`.
 | `linalg/mc_linalg_lapack.c` | LAPACK linear solvers (`trsv`, `trsm`, `gesv`, `posv`, `gels`, `solve`, `inv`, `pinv`, `svd`, `eigh`) |
 | `linalg/mc_fft_stack.c` | FFTW (`fft`, `ifft`, `fftshift`), stacking (`hstack`, `vstack`, `dstack`, `cat`, `rot90`), and the top-level constructor dispatch |
 | `units/milk_unit_calc.c` | Standalone `milk-fpsexec-milk-calc` (`milk.calc`) compute unit |
+| `tests/test_mcalc_front.c` | C unit test (CTest `mcalc-front`) of the parts that need no session: tokens, statement trees, scalar operators, `mcalc_local()`, the function catalog |
 
 ---
 
