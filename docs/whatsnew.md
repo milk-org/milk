@@ -23,6 +23,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — Sessions: a read from another shell while a command runs (`@get`, `@exists`,
+  `@test`, completion) is answered by the command at its next safe point (between two statements or
+  iterations of a calculator program), so it sees whole images, never one being rewritten. Such a
+  read takes 0.04 ms from the command (0.8 ms before, for a completion); `@test` still costs about
+  1 ms. A command with no safe point answers `busy` after 2 s (status 255).
+  See [Sessions](guide/sessions.md) `#cli` `#performance`
 - **2026-11-11** — Sessions: a read sent while a command runs (`@test`, `@get`, completion, from
   another shell or a background job) could wait for ever when it needed a lock the command held at
   that instant, for example an FFT during an FFT. The copy of the session that answers it now

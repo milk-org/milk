@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libmilkcommon/milk_safepoint.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_memory/image_ID.h"
 #include "COREMOD_memory/variable_ID.h"
@@ -1211,6 +1212,7 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
         char *t    = mc_stmt_text(s, input);
         g_err_line = multiline ? s->line : 0; /* errors of this statement name its line */
         g_err_col  = 0;
+        milk_safe_point(); /* between two statements */
         if (mcalc_cancelled)
         {
             report_err(t, "interrupted");

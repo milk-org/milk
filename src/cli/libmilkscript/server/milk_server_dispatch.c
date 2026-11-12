@@ -127,7 +127,7 @@ static double call_seconds(const call_watcher_ctx_t *ctx)
 
 /* --nowait (or a full queue): the request fails at once, saying what the session runs; the
  * connection stays open if @keep */
-static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep)
+static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep, int32_t rc)
 {
     milk_frame_hdr_t hdr;
     uint8_t         *pl     = NULL;
@@ -135,7 +135,6 @@ static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep)
 
     if (milk_proto_recv(cfd, &hdr, &pl, fds) == 0)
     {
-        int32_t rc = 1;
         if (fds[2] >= 0)
         {
             dprintf(fds[2], "milk: busy: %s for %.0f s\n", ctx->cmd, call_seconds(ctx));
@@ -173,8 +172,66 @@ static int wait_for_call(const call_watcher_ctx_t *ctx, int cfd)
     return ok ? 0 : -1;
 }
 
+/* Reads (GET, EXISTS, TEST, COMPLETE) of other shells that arrived while a command runs: the
+ * command answers them at its next safe point (milk_server_safe_point()), where its images and
+ * variables are whole. One that waits longer than MILK_SERVER_READ_WAIT_S is told the session is
+ * busy; those left when the command returns are served by the main loop. */
+#define MILK_SERVER_READS_MAX 64
+#define MILK_SERVER_READ_WAIT_S 2.0
+#define MILK_SERVER_RC_BUSY 255 /* as when the session cannot be reached: not a false @test */
+static struct
+{
+    int             fd;
+    struct timespec t;
+} g_reads[MILK_SERVER_READS_MAX];
+static int                   g_nreads        = 0; /* under g_qmu */
+static volatile sig_atomic_t g_reads_pending = 0; /* g_nreads != 0, read without the lock */
+
+/* Queue read @cfd for the next safe point. Return: 0, or -1 if the queue is full */
+static int read_enqueue(int cfd)
+{
+    pthread_mutex_lock(&g_qmu);
+    int ok = (g_nreads < MILK_SERVER_READS_MAX);
+    if (ok)
+    {
+        g_reads[g_nreads].fd = cfd;
+        clock_gettime(CLOCK_MONOTONIC, &g_reads[g_nreads].t);
+        g_reads_pending = (++g_nreads != 0);
+    }
+    pthread_mutex_unlock(&g_qmu);
+    return ok ? 0 : -1;
+}
+
+/* Take the oldest queued read, if it has waited @min_age seconds or more. Return: its fd, or -1 */
+static int read_dequeue(double min_age)
+{
+    int cfd = -1;
+
+    pthread_mutex_lock(&g_qmu);
+    if (g_nreads > 0)
+    {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        double age = (double) (now.tv_sec - g_reads[0].t.tv_sec) +
+                     1e-9 * (double) (now.tv_nsec - g_reads[0].t.tv_nsec);
+        if (age >= min_age)
+        {
+            cfd = g_reads[0].fd;
+            memmove(g_reads, g_reads + 1, (size_t) (--g_nreads) * sizeof(g_reads[0]));
+            g_reads_pending = (g_nreads != 0);
+        }
+    }
+    pthread_mutex_unlock(&g_qmu);
+    return cfd;
+}
+
 void milk_server_serve_waiting(int listen_fd, int *shutdown_flag)
 {
+    for (int cfd; (cfd = read_dequeue(0.0)) >= 0;) /* reads the command left unanswered */
+    {
+        int keep = milk_server_can_keep(cfd);
+        milk_server_conn_done(cfd, milk_server_handle_client(cfd, listen_fd, shutdown_flag, keep));
+    }
     for (;;)
     {
         int cfd = -1;
@@ -266,8 +323,9 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
     {
         return MILK_CONN_TAKEN;
     }
-    // what another shell sends that changes the session waits for this CALL; reads, async commands
-    // and the CALL's own process group (a pipeline) run alongside, in a fork
+    // what another shell sends that changes the session waits for this CALL; its reads are
+    // answered by the CALL at its next safe point; async commands and the CALL's own process
+    // group (a pipeline, whose stages wait for each other) run alongside, in a fork
     int   reads = (ph.type == MILK_MSG_GET || ph.type == MILK_MSG_EXISTS ||
                    ph.type == MILK_MSG_TEST || ph.type == MILK_MSG_COMPLETE);
     pid_t pg    = peer_pgid(cfd);
@@ -278,8 +336,17 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
         {
             return MILK_CONN_TAKEN;
         }
-        reply_busy(ctx, cfd, keep);
+        reply_busy(ctx, cfd, keep, 1);
         return done;
+    }
+    if (reads && (pg <= 0 || pg != ctx->pgid)) /* another shell's read: at the next safe point */
+    {
+        if (read_enqueue(cfd) == 0)
+        {
+            return MILK_CONN_TAKEN;
+        }
+        reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY);
+        return MILK_CONN_CLOSE;
     }
     pid_t pid = fork();
     if (pid > 0)
@@ -339,6 +406,11 @@ static void *call_watcher_thread(void *arg)
             ssize_t rret = read(ctx->wake_fd, &v, sizeof(v)); /* the thread is reused: consume it */
             (void) rret;
             continue;
+        }
+        for (int cfd; ctx->active && (cfd = read_dequeue(MILK_SERVER_READ_WAIT_S)) >= 0;)
+        {
+            reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY); /* no safe point in time */
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE);
         }
         if (pr <= 0 || !ctx->active)
         {
@@ -502,6 +574,67 @@ static void watcher_end(void)
     pthread_mutex_unlock(&g_wmu);
 }
 
+/* Answer read @cfd from the command that runs, which is at a safe point. GET, EXISTS and
+ * COMPLETE need neither the command lock nor its stdio: here and now. TEST needs both, and the
+ * calculator, which the command may be using: a copy of the session answers it, taken here,
+ * where the state is whole and this thread holds no lock. */
+static void serve_read_at_safe_point(int cfd)
+{
+    milk_frame_hdr_t ph;
+
+    if (recv(cfd, &ph, sizeof(ph), MSG_PEEK | MSG_DONTWAIT) != (ssize_t) sizeof(ph))
+    {
+        milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+        return;
+    }
+    if (ph.type != MILK_MSG_TEST)
+    {
+        milk_server_serve_fast(cfd);
+        milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+        return;
+    }
+    pid_t pid = fork();
+    if (pid > 0)
+    {
+        g_srv_children = 1;
+    }
+    if (pid == 0)
+    {
+        if (g_wctx.listen_fd >= 0)
+        {
+            close(g_wctx.listen_fd);
+        }
+        signal(SIGALRM, read_stuck);
+        alarm(MILK_SERVER_READ_LIMIT_S);
+        int dummy_shutdown = 0;
+        milk_server_handle_client(cfd, -1, &dummy_shutdown, 0);
+        close(cfd);
+        _exit(0);
+    }
+    milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+}
+
+/**
+ * milk_server_safe_point - Answer the reads that wait for the command running (milk_safe_point())
+ *
+ * Called by the thread that runs the command, at points where its images and variables are
+ * whole: the reads see a state the command meant, never one it is in the middle of writing.
+ * When no read waits, this is one test.
+ *
+ * Return: void
+ */
+void milk_server_safe_point(void)
+{
+    if (!g_reads_pending || !g_wctx.active || !pthread_equal(pthread_self(), g_wctx.main_tid))
+    {
+        return;
+    }
+    for (int cfd; (cfd = read_dequeue(0.0)) >= 0;)
+    {
+        serve_read_at_safe_point(cfd);
+    }
+}
+
 /**
  * milk_server_watcher_atfork_child - Reset CALL watcher state in a forked child process
  *
@@ -514,7 +647,9 @@ void milk_server_watcher_atfork_child(void)
     pthread_mutex_init(&g_wmu, NULL); /* the watcher thread is not copied into the child */
     pthread_cond_init(&g_wcv, NULL);
     pthread_mutex_init(&g_qmu, NULL);
-    g_nwaiting = 0; /* the parent serves them */
+    g_nwaiting      = 0; /* the parent serves them */
+    g_nreads        = 0;
+    g_reads_pending = 0;
     if (g_wctx.wake_fd >= 0)
     {
         close(g_wctx.wake_fd);

@@ -40,6 +40,7 @@
 
 #include "libfps/fps_types.h"
 #include "libmilkcommon/milkDebugTools.h"
+#include "libmilkcommon/milk_safepoint.h"
 #include "libmilkdata/milkdata.h"
 #include "libprocessinfo/processinfo.h"
 #include "COREMOD_memory/create_variable.h"
@@ -896,6 +897,7 @@ static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
         {
             continue;
         }
+        milk_safe_point(); /* between two steps: the images the earlier ones wrote are whole */
         if (mcalc_cancelled)
         {
             snprintf(err, errsz, "interrupted");

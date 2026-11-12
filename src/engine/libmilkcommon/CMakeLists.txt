@@ -23,7 +23,7 @@ install(
   DESTINATION lib)
 install(FILES milkDebugTools.h milk_compiler.h milk_omp_team.h pixel_dispatch.h milk_types.h
               multiselect_parse.h milk_rt.h milk_path.h milk_spawn.h milk_syscalls.h
-              milk_detach.h milk_sdnotify.h milk_forkguard.h
+              milk_detach.h milk_sdnotify.h milk_forkguard.h milk_safepoint.h
         DESTINATION include/libmilkcommon)
 
 if(BUILD_TESTING)

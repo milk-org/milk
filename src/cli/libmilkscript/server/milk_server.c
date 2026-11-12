@@ -46,6 +46,7 @@
 #include "CLIcore.h"
 #include "libmilkcommon/milk_omp_team.h"
 #include "libmilkcommon/milk_compiler.h"
+#include "milk_safepoint.h"
 #include "milk_shm_prop.h"
 #include "milk_ipc_common.h"
 #include "milk_proto.h"
@@ -366,6 +367,7 @@ static pthread_once_t g_atfork_once = PTHREAD_ONCE_INIT;
 static void register_atfork_handler(void)
 {
     pthread_atfork(NULL, NULL, milk_child_reset_omp);
+    milk_safe_point_fn = milk_server_safe_point; /* a command answers waiting reads there */
 }
 
 /**
@@ -754,6 +756,28 @@ static int handle_fast_message(int                     client_fd,
     }
 
     return 0;
+}
+
+void milk_server_serve_fast(int cfd)
+{
+    milk_frame_hdr_t hdr;
+    uint8_t         *payload = NULL;
+    int              fds[4]  = { -1, -1, -1, -1 };
+    int              dummy   = 0;
+
+    if (milk_proto_recv(cfd, &hdr, &payload, fds) == 0)
+    {
+        mark_request();
+        handle_fast_message(cfd, -1, 0, &hdr, payload, &dummy);
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        if (fds[i] >= 0)
+        {
+            close(fds[i]);
+        }
+    }
+    free(payload);
 }
 
 /**

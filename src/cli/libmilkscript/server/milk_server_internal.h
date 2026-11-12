@@ -82,6 +82,11 @@ void milk_server_handle_complete(int         client_fd,
                                  const char *prefix,
                                  const char *comp_type);
 
+/** milk_server_serve_fast() - answer the GET, EXISTS or COMPLETE request that waits on @cfd,
+ * without the command lock: for the thread that runs a command, at a safe point. The connection
+ * is not kept. */
+void milk_server_serve_fast(int cfd);
+
 /* --- milk_server_dispatch.c --- */
 
 int milk_server_resolve_cmd_index(const char *name, int *out_ambig);
@@ -106,6 +111,10 @@ int milk_server_session_save(const char *path);
 
 /** milk_server_serve_waiting() - serve, in order, the requests that waited for the CALL that just ran. */
 void milk_server_serve_waiting(int listen_fd, int *shutdown_flag);
+
+/** milk_server_safe_point() - answer the reads that wait for the command running, which calls
+ * this where its state is whole (the hook of milk_safepoint.h). */
+void milk_server_safe_point(void);
 
 /** milk_server_run_guarded() - run request body @fn(@arg) watched on @client_fd (-1: not) and
  * fault-isolated; Ctrl-C stops the calculator at its next step. 130 if interrupted, 1 on a crash. */

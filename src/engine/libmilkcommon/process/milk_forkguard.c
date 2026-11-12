@@ -4,10 +4,14 @@
 
 /**
  * @file milk_forkguard.c
- * @brief Mutexes that stay usable in the child of a fork() (see milk_forkguard.h)
+ * @brief Mutexes that stay usable in the child of a fork() (see milk_forkguard.h), and the hook
+ *        of milk_safepoint.h: what a process with several users of its data needs.
  */
 
 #include "milk_forkguard.h"
+#include "milk_safepoint.h"
+
+void (*milk_safe_point_fn)(void) = NULL;
 
 #define FORK_GUARD_MAX 32
 

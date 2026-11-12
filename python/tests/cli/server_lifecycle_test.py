@@ -365,3 +365,32 @@ def test_second_ctrl_c_stops_waiting_for_a_session_that_does_not_answer(tmp_path
     assert value(res.stdout, "rc") == "130", out
     assert "no answer from the session" in out, out
     assert value(res.stdout, "after") == "1", out
+
+
+def test_reads_from_another_shell_are_answered_at_safe_points(tmp_path, names):
+    """While a command rewrites an image in a loop, another shell of the session reads it: each
+    read is answered between two iterations, so it never sees a mix of two values (istd is 0),
+    and completion works meanwhile. Answered at any instant, almost every read saw a mix.
+    """
+    name = names()
+    reader = (
+        'source "$MILK_INSTALLDIR/bin/milk.bash" --session '
+        + name
+        + " >/dev/null 2>&1; "
+        'w=0; m=0; c=0; for i in $(seq 150); do @test "istd(b) == 0" 2>/dev/null; '
+        "case $? in 0) w=$((w+1));; 1) m=$((m+1));; esac; "
+        '[ "$(milkcomplete mem.mk2 cmd | grep -c mem.mk2Dim)" = 1 ] && c=$((c+1)); done; '
+        'echo "whole=$w mixed=$m completed=$c" > reader.out'
+    )
+    res = milk_bash(
+        f"@session new {name} >/dev/null\n"
+        '@calc "b = zeros(512, 512)"\n'
+        f"setsid bash -c '{reader}' &\n"
+        '@calc "for i = 1:90000 { b = i }"; echo "main=$?"\n'
+        "wait; cat reader.out",
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "main") == "0", out
+    assert "whole=150 mixed=0 completed=150" in res.stdout, out

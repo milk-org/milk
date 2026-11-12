@@ -42,6 +42,7 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "libmilkcommon/milkDebugTools.h"
+#include "libmilkcommon/milk_safepoint.h"
 #include "libmilkdata/milk_type_dispatch.h"
 #include "libmilkdata/milkdata.h"
 #include "libprocessinfo/processinfo.h"
@@ -1008,6 +1009,7 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
         mc_store_scalar_var(s->u.for_stmt.var, &vid, &vstart);
         for (int iters = 0; !mc_prog_skip_active(); iters++)
         {
+            milk_safe_point(); /* between two iterations */
             if (mcalc_cancelled)
             {
                 return mc_err(err, errsz, "interrupted");

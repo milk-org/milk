@@ -107,10 +107,17 @@ but local images and variables it creates are not kept.
 A session shared by several shells runs their commands one at a time too. A command that another
 shell (another process group) sends while a long one runs waits for it, and then runs with
 everything the long one left; at a terminal it says `milk: waiting for '<command>'`, and Ctrl-C gives
-up without running it. Reads (`@get`, `@exists`, `@test`, completion) run alongside, in a copy of the
-session taken while the command runs: they see its images as they are at that instant, possibly
-half-written, and one that has not answered after 30 s ends with `the session is busy` (status 255).
-`milkcall --nowait <cmd>` fails at once instead, with `milk: busy: <command> for N s` and status 1.
+up without running it. `milkcall --nowait <cmd>` fails at once instead, with `milk: busy: <command>
+for N s` and status 1.
+
+Reads (`@get`, `@exists`, `@test`, completion) do not wait for the command to end. Those of another
+shell are answered by the command itself at its next safe point, where its images and variables are
+whole: between two statements, steps or loop iterations of a calculator program. A command made of
+one long step (a large decomposition, a module command) has none: a read that has waited 2 s is
+told `milk: busy: <command> for N s`, with status 255, and those still waiting when it ends are
+answered then. Reads from the command's own process group (a stage of its pipeline, a background
+job of the same script) are answered at once by a copy of the session, which shows the images as
+they are at that instant, possibly half-written; such a copy ends after 30 s without an answer.
 
 Ctrl-C asks the session to stop the command. If the session does not answer (it is stopped, or
 stuck), a second Ctrl-C two seconds or more after the first gives the shell its prompt back, with
