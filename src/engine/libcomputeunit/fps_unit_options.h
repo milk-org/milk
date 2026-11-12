@@ -53,7 +53,8 @@ typedef struct
     int                  params_opt;  /* index in @opts of the option that declares parameters */
     int (*declare)(const char *text); /* bind the parameters of a declaration */
     int (*find_params)(const char *fpsname); /* bind the declared parameters of an FPS */
-    const char *help_options;                /* "Unit Options" of -h */
+    int (*check)(void); /* build the program in the bindings; -1 after saying why not (or NULL) */
+    const char *help_options; /* "Unit Options" of -h */
 } milk_unit_desc;
 
 /** milk_unit_main() - run a unit's command line: unit options, FPS creation, then fpsexec main. */

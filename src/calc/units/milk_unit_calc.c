@@ -15,6 +15,12 @@
  *              it does not compile the previous statements keep running (stderr and the process
  *              message say why). .unit.init (or .unit.initfile) runs once before frame 0, and
  *              again, with the frame counters reset, when set; .unit.libs loads C extensions.
+ *              The libraries are loaded, the init statements run and the program built at start,
+ *              before the unit's starter returns (unit_prepare()); what fails then, such as a
+ *              stream that does not exist yet, is done again at the first frame. Unit options
+ *              given for a running unit are built by the command itself first (check_program()):
+ *              the unit then loads the kernels from the cache, and a program that does not
+ *              build is refused.
  *              .unit.params declares parameters, "name:type[=default][:help] ...", as calculator
  *              variables that @set changes live; a statement that assigns one writes it back to
  *              the FPS, unless another process set it meanwhile. The extension parameters that
@@ -416,6 +422,51 @@ static char *source_text(const char *inline_str, const char *fpath, char *err, s
     return t;
 }
 
+/** unit_vars() - bind the seven read-only frame variables after the parameters; the number of
+ * calculator variables. */
+static int unit_vars(void)
+{
+    int n = nbind - CALC_NFIXED;
+
+    cvars[n + 0] = (mcalc_binding) { "_n", FPTYPE_INT64, &frame_n };
+    cvars[n + 1] = (mcalc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
+    cvars[n + 2] = (mcalc_binding) { "_dt", FPTYPE_FLOAT64, &frame_dt };
+    cvars[n + 3] = (mcalc_binding) { "_cnt0", FPTYPE_INT64, &frame_cnt0 };
+    cvars[n + 4] = (mcalc_binding) { "_ts", FPTYPE_FLOAT64, &frame_ts };
+    cvars[n + 5] = (mcalc_binding) { "_missed", FPTYPE_INT64, &frame_missed };
+    cvars[n + 6] = (mcalc_binding) { "_torn", FPTYPE_INT64, &frame_torn };
+    return n + CALC_NBUILTIN;
+}
+
+/** check_program() - milk_unit_main()'s check: build the program that the unit options and the
+ * FPS of a running unit give, without running it. The kernels are then in the cache, where the
+ * unit finds them at its next frame. 0, or -1 after saying why it does not build. */
+static int check_program(void)
+{
+    char        err[512] = "";
+    char       *text     = NULL;
+    mcalc_prog *prog     = NULL;
+
+    if (expr[0] == '\0' && file[0] == '\0')
+    {
+        return 0;
+    }
+    milk_data_init(); /* the image and variable tables: fpsexec's main has not run yet */
+    if ((libs[0] == '\0' || mcalc_ext_load_list(libs, err, sizeof(err)) == 0) &&
+        (text = source_text(expr, file, err, sizeof(err))) != NULL)
+    {
+        prog = mcalc_prog_new(text, cvars, unit_vars(), err, sizeof(err));
+    }
+    free(text);
+    if (prog == NULL)
+    {
+        fprintf(stderr, "milk.calc: not applied: %s\n", err);
+        return -1;
+    }
+    mcalc_prog_free(prog);
+    return 0;
+}
+
 /** report - Print @msg to stderr, set `.unit.error`, and write processinfo message. */
 static void report(PROCESSINFO *pi, const char *msg)
 {
@@ -457,8 +508,6 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
         return 0;
     }
 
-    ctx->t_start       = now_sec();
-    ctx->t_prev        = ctx->t_start;
     frame_n            = 0;
     frame_t            = 0.0;
     frame_dt           = 0.0;
@@ -476,6 +525,7 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
                                                   err, errsz) != 0)
         {
             free(itext);
+            ctx->init_done = 0; /* at start: run again at the first frame */
             return -1;
         }
         free(itext);
@@ -491,34 +541,40 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
     return 0;
 }
 
-/** run_unit_frame_step - Update frame telemetry, recompile if needed, and run one frame. */
-static int run_unit_frame_step(PROCESSINFO   *processinfo,
-                               calc_loop_ctx *ctx,
-                               char          *err,
-                               size_t         errsz)
+/**
+ * unit_prepare - Load the libraries, run the init statements and build the program, each when
+ *                new or changed
+ * @processinfo: The unit's processinfo; NULL at start, before it exists
+ * @ctx:         Loop state
+ * @err:         Error message buffer
+ * @errsz:       Capacity of @err in bytes
+ *
+ * Called at start, so that the first frame finds the kernels compiled, then at each frame, where
+ * a changed program that does not build leaves the running statements.
+ *
+ * Return: 0, or -1 (@err) when a library does not load, the init statements fail or there is no
+ * program to run
+ */
+static int unit_prepare(PROCESSINFO *processinfo, calc_loop_ctx *ctx, char *err, size_t errsz)
 {
-    double   t_now          = now_sec();
     int      stream_changed = 0;
     uint64_t pe_cnt         = (ctx->pe >= 0) ? dcfpsptr->parray[ctx->pe].value_cnt : 0;
     uint64_t pf_cnt         = (ctx->pf >= 0) ? dcfpsptr->parray[ctx->pf].value_cnt : 0;
 
-    frame_t      = (frame_n == 0) ? 0.0 : (t_now - ctx->t_start);
-    frame_dt     = (frame_n == 0) ? 0.0 : (t_now - ctx->t_prev);
-    ctx->t_prev  = t_now;
-    frame_cnt0   = frame_n;
-    frame_ts     = 0.0;
-    frame_missed = 0;
-    frame_torn   = (int64_t) mcalc_torn_count();
-
-    if (processinfo != NULL && processinfo->trigger_image != NULL &&
-        processinfo->trigger_image->md != NULL)
+    if (libs[0] != '\0' &&
+        (!ctx->init_done ||
+         (ctx->pl >= 0 && dcfpsptr->parray[ctx->pl].value_cnt != ctx->libs_built)))
     {
-        const IMAGE_METADATA *tmd = processinfo->trigger_image->md;
-        frame_cnt0                = (int64_t) tmd->cnt0;
-        frame_ts     = (double) tmd->writetime.tv_sec + 1e-9 * (double) tmd->writetime.tv_nsec;
-        frame_missed = processinfo->triggermissedframe;
+        ctx->libs_built = (ctx->pl >= 0) ? dcfpsptr->parray[ctx->pl].value_cnt : 0;
+        if (mcalc_ext_load_list(libs, err, errsz) != 0)
+        {
+            return -1;
+        }
     }
-
+    if (run_unit_init_if_needed(ctx, err, errsz) != 0)
+    {
+        return -1;
+    }
     for (int k = 0; k < ctx->npar; k++)
     {
         long pidx = bindings[CALC_NFIXED + k]._fps_pindex;
@@ -565,7 +621,38 @@ static int run_unit_frame_step(PROCESSINFO   *processinfo,
         }
         free(text);
     }
-    if (ctx->prog == NULL || mcalc_prog_run(ctx->prog, err, errsz) != 0)
+    return (ctx->prog != NULL) ? 0 : -1;
+}
+
+/** run_unit_frame_step - Update frame telemetry and run one frame. */
+static int run_unit_frame_step(PROCESSINFO   *processinfo,
+                               calc_loop_ctx *ctx,
+                               char          *err,
+                               size_t         errsz)
+{
+    double t_now = now_sec();
+
+    if (frame_n == 0)
+    {
+        ctx->t_start = t_now;
+    }
+    frame_t      = t_now - ctx->t_start;
+    frame_dt     = (frame_n == 0) ? 0.0 : (t_now - ctx->t_prev);
+    ctx->t_prev  = t_now;
+    frame_cnt0   = frame_n;
+    frame_ts     = 0.0;
+    frame_missed = 0;
+    frame_torn   = (int64_t) mcalc_torn_count();
+
+    if (processinfo != NULL && processinfo->trigger_image != NULL &&
+        processinfo->trigger_image->md != NULL)
+    {
+        const IMAGE_METADATA *tmd = processinfo->trigger_image->md;
+        frame_cnt0                = (int64_t) tmd->cnt0;
+        frame_ts     = (double) tmd->writetime.tv_sec + 1e-9 * (double) tmd->writetime.tv_nsec;
+        frame_missed = processinfo->triggermissedframe;
+    }
+    if (mcalc_prog_run(ctx->prog, err, errsz) != 0)
     {
         return -1;
     }
@@ -598,15 +685,7 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     ctx.pi   = functionparameter_GetParamIndex(dcfpsptr, ".unit.init");
     ctx.pif  = functionparameter_GetParamIndex(dcfpsptr, ".unit.initfile");
     ctx.pl   = functionparameter_GetParamIndex(dcfpsptr, ".unit.libs");
-    ctx.npar = nbind - CALC_NFIXED;
-
-    cvars[ctx.npar + 0] = (mcalc_binding) { "_n", FPTYPE_INT64, &frame_n };
-    cvars[ctx.npar + 1] = (mcalc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
-    cvars[ctx.npar + 2] = (mcalc_binding) { "_dt", FPTYPE_FLOAT64, &frame_dt };
-    cvars[ctx.npar + 3] = (mcalc_binding) { "_cnt0", FPTYPE_INT64, &frame_cnt0 };
-    cvars[ctx.npar + 4] = (mcalc_binding) { "_ts", FPTYPE_FLOAT64, &frame_ts };
-    cvars[ctx.npar + 5] = (mcalc_binding) { "_missed", FPTYPE_INT64, &frame_missed };
-    cvars[ctx.npar + 6] = (mcalc_binding) { "_torn", FPTYPE_INT64, &frame_torn };
+    ctx.npar = unit_vars() - CALC_NBUILTIN;
 
     mcalc_prog_attach();
     error[0] = '\0';
@@ -617,26 +696,20 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     }
     processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
 
+    /* At start, before the unit's starter is told that the loop is active. What fails here (a
+     * stream that does not exist yet) is done again at the first frame, and reported there. */
+    fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 1);
+    if (unit_prepare(NULL, &ctx, err, sizeof(err)) != 0)
+    {
+        err[0] = '\0';
+    }
+
     MILK_PROCINFO_INIT(self)
+    mcalc_prog_set_processinfo(ctx.prog, processinfo);
     MILK_PROCINFO_LOOPSTART(self)
     {
-        if (libs[0] != '\0' &&
-            (!ctx.init_done ||
-             (ctx.pl >= 0 && dcfpsptr->parray[ctx.pl].value_cnt != ctx.libs_built)))
-        {
-            ctx.libs_built = (ctx.pl >= 0) ? dcfpsptr->parray[ctx.pl].value_cnt : 0;
-            if (mcalc_ext_load_list(libs, err, sizeof(err)) != 0)
-            {
-                report(processinfo, err);
-                processloopOK = 0;
-            }
-        }
-        if (err[0] == '\0' && run_unit_init_if_needed(&ctx, err, sizeof(err)) != 0)
-        {
-            report(processinfo, err);
-            processloopOK = 0;
-        }
-        if (err[0] == '\0' && run_unit_frame_step(processinfo, &ctx, err, sizeof(err)) != 0)
+        if (unit_prepare(processinfo, &ctx, err, sizeof(err)) != 0 ||
+            run_unit_frame_step(processinfo, &ctx, err, sizeof(err)) != 0)
         {
             report(processinfo, err);
             processloopOK = 0;
@@ -681,6 +754,7 @@ int main(int argc, char **argv)
         .params_opt  = 2,
         .declare     = declare,
         .find_params = find_params,
+        .check       = check_program,
         .help_options =
             "  -e, --expr EXPR       statements, ; between them (.unit.expr)\n"
             "  -t, --trigger STREAM  a frame of STREAM runs them (.unit.trigger)\n"

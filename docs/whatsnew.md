@@ -28,6 +28,14 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   cannot be reached, or that answers `busy`, now gives status 255 for `@get` as for the other
   keywords (it gave 1), and a request that cannot be sent says so. The messages on the socket are
   unchanged. See [Scripting](guide/scripting.md), "Errors and Exit Status" `#cli` `#refactor`
+- **2026-11-12** — A `milk-fpsexec-milk-calc` unit is prepared at start: it loads its libraries,
+  runs the init statements and compiles its statements before `runstart` returns (they were
+  compiled inside the first frame: about 0.1 s with an empty kernel cache). FFTW's planning
+  results are kept in the kernel cache, so an `fft` shape is planned once on a machine, not at
+  each start (0.15 to 0.6 s at the first frame for 72² to 1024²). Unit options given for a running
+  unit (`-e "..." set`) are built by the command first, and refused if they do not build: the
+  loop no longer runs the compiler (a 40 ms stall; `@set f.<unit>.unit.expr=...` still does). See
+  [Calculator](guide/calculator.md), "Compute Units Without C" `#performance` `#cli`
 - **2026-11-11** — Keyword options are written once, in the keyword table: one parser reads them
   for every keyword, and `@help <keyword>` and TAB completion show that same list (11 keywords
   with options had no completion). An unknown option or an option without its value is now a

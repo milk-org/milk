@@ -214,6 +214,73 @@ def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
     )
 
 
+def test_E8_calc_is_prepared_at_start(tmp_path):
+    """Before its first tick (here one period after the start) a unit has run the init statements
+    and compiled its statements into the kernel cache. What cannot be done at start, here
+    statements and init statements that read a stream created later, is done at the first tick.
+    """
+    res = milk_bash(
+        HELPERS + "export MILK_CALC_CACHE=$PWD/kc; mkdir kc\n"
+        'milk-fpsexec-milk-calc -n p1 -i "ini1 = cam * 0 + 2" -e "outp1 = sqrt(cam + ini1) * 1.75" '
+        "-loopd 2 fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n p1 -loopd 2 run >run1.log 2>&1 & pid=$!\n"
+        "until_file ini1\n"
+        "for _ in $(seq 30); do [ $(ls kc/*.so 2>/dev/null | wc -l) -ge 2 ] && break; sleep 0.05; done\n"
+        'echo "kernels=$(ls kc/*.so 2>/dev/null | wc -l)"\n'
+        'echo "tick0=$([ -e $MILK_SHM_DIR/outp1.im.shm ] && echo ran || echo waiting)"\n'
+        'until_file outp1; sleep 0.2; echo "first=$(@get s.outp1.mean)"; stop $pid\n'
+        'milk-fpsexec-milk-calc -n p2 -i "ini2 = late * 0 + 1" -e "outp2 = cam + late + ini2" '
+        "-loopd 1.5 fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n p2 -loopd 1.5 run >run2.log 2>&1 & pid=$!\n"
+        'sleep 0.4; mem.mk2Dim "@S:late" 4 4 >/dev/null; @calc "late = 10"\n'
+        "until_file outp2; sleep 0.2\n"
+        'echo "late=$(@get s.outp2.mean),[$(@get f.p2.unit.error)]"; stop $pid',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run2.log").read_text()
+    assert (
+        int(value(res.stdout, "kernels")) >= 2
+    ), out  # the init pass and the tick's pass
+    assert value(res.stdout, "tick0") == "waiting", out
+    assert value(res.stdout, "first") == "3.5", out
+    assert value(res.stdout, "late") == "13,[]", out
+
+
+def test_E8_calc_options_for_a_running_unit_are_built_first(tmp_path):
+    """Unit options given for a running unit are built by the command: statements that build
+    are applied, statements that do not are refused with status 1 and never reach the unit. A
+    stopped unit takes them as they are."""
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n c1 -t cam -p "gain:float=2" -e "outc = cam * gain" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n c1 run >run.log 2>&1 & pid=$!\n"
+        "until_file outc; sleep 0.3\n"
+        'milk-fpsexec-milk-calc -n c1 -e "outc = cam + gain" set >/dev/null; echo "good=$?"\n'
+        'frame 5; echo "a=$(@get s.outc.mean)"\n'
+        'milk-fpsexec-milk-calc -n c1 -e "outc = cam + nosuch" set >/dev/null 2>err.txt; echo "bad=$?"\n'
+        'frame 6; echo "b=$(@get s.outc.mean)"; echo "expr=$(@get f.c1.unit.expr)"; stop $pid\n'
+        'milk-fpsexec-milk-calc -n c1 -e "outc = cam + nosuch" set >/dev/null 2>&1\n'
+        'echo "stopped=$?,$(@get f.c1.unit.expr)"',
+        tmp_path,
+    )
+    log = (tmp_path / "run.log").read_text()
+    out = res.stdout + res.stderr + log
+    got = [value(res.stdout, k) for k in ("good", "a", "bad", "b", "expr", "stopped")]
+    assert got == [
+        "0",
+        "7",
+        "1",
+        "8",
+        "outc = cam + gain",
+        "0,outc = cam + nosuch",
+    ], out
+    assert (
+        "not applied: undefined identifier 'nosuch'"
+        in (tmp_path / "err.txt").read_text()
+    ), out
+    assert "still running the previous statements" not in log, out
+
+
 def test_E8_calc_isnan_isfinite_and_stale_stream_remap(tmp_path):
     """IEEE-754 bit-level isnan() and isfinite() work under -Ofast on scalars and images, and
     milk.calc automatically remaps a shared stream recreated with a new inode in /dev/shm.

@@ -11,7 +11,8 @@
  * precision, in 64-byte aligned scratch kept by the step, so FFTW's SIMD code applies: real input
  * takes a real-to-complex transform (half the work), mirrored into the other half of the
  * spectrum; complex input and ifft an in-place complex one. Plans stay in a 16-slot cache: a
- * compute unit plans each new shape with FFTW_MEASURE (up to seconds, once), the prompt with
+ * compute unit plans each new shape with FFTW_MEASURE (up to seconds, once on a machine: FFTW's
+ * planning results are kept in the kernel cache directory, fft_wisdom()), the prompt with
  * FFTW_ESTIMATE. With the FFTW threads libraries, plans run on the calculator's thread team.
  * FFTW's planner is not thread-safe, so plans are made and run under one lock. Without
  * HAVE_FFTW3, a separable 1-D DFT on each axis takes over. fftshift moves the zero frequency to
@@ -28,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef HAVE_FFTW3
 #    include <fftw3.h>
@@ -157,6 +159,44 @@ static void fft_threads_init(void)
 #    endif
 
 /**
+ * fft_wisdom - Read FFTW's planning results from the kernel cache directory, then write them back
+ * @is_dbl: Non-zero for the double precision library
+ * @save:   Non-zero to write the file, after a plan was timed
+ *
+ * The file `<key>.fftw` is per compiler, flags and CPU (mc_cc_key()), as the kernels are. Reading
+ * adds to what this process knows, so a write keeps what other units saved meanwhile; it replaces
+ * the file in one step. A file that cannot be read or written leaves planning as it was.
+ *
+ * Context: caller holds `g_fft_lock`, after fft_threads_init().
+ */
+static void fft_wisdom(int is_dbl, int save)
+{
+    char dir[512];
+    char key[33];
+    char path[600];
+    char tmp[640];
+    char err[64];
+    if (mc_cc_cache_dir(dir, sizeof(dir), err, sizeof(err)) != 0)
+    {
+        return;
+    }
+    mc_cc_key(is_dbl ? "fftw" : "fftwf", key);
+    snprintf(path, sizeof(path), "%s/%s.fftw", dir, key);
+    (void) (is_dbl ? fftw_import_wisdom_from_filename(path)
+                   : fftwf_import_wisdom_from_filename(path));
+    if (save)
+    {
+        snprintf(tmp, sizeof(tmp), "%s.%ld", path, (long) getpid());
+        if (!(is_dbl ? fftw_export_wisdom_to_filename(tmp)
+                     : fftwf_export_wisdom_to_filename(tmp)) ||
+            rename(tmp, path) != 0)
+        {
+            (void) unlink(tmp);
+        }
+    }
+}
+
+/**
  * fft_plan - Look up or make the plan of a transform on (@in, @out)
  * @naxis:  Transform rank (1, 2, or 3)
  * @sz:     Transform dimensions `[nx, ny, nz]` (fast axis `nx = sz[0]`)
@@ -164,7 +204,8 @@ static void fft_threads_init(void)
  * @kind:   `FFT_R2C`, `FFT_FWD` or `FFT_INV`
  * @nth:    Number of threads
  * @measure: Non-zero in a compute unit: plan with `FFTW_MEASURE` (it times candidate algorithms on
- *          scratch buffers, up to seconds once per shape), else `FFTW_ESTIMATE` (instant)
+ *          scratch buffers, up to seconds, unless the kept planning results hold this transform:
+ *          fft_wisdom()), else `FFTW_ESTIMATE` (instant)
  * @in:     Input buffer (64-byte aligned)
  * @out:    Output buffer (64-byte aligned; @in for the in-place complex kinds)
  *
@@ -208,7 +249,7 @@ static void *fft_plan(uint8_t        naxis,
         in  = scratch;
         out = (kind == FFT_R2C) ? (char *) scratch + a_in : scratch;
     }
-    unsigned flags = measure ? FFTW_MEASURE : FFTW_ESTIMATE;
+    unsigned flags = measure ? FFTW_MEASURE | FFTW_WISDOM_ONLY : FFTW_ESTIMATE;
     int      dims[3];
     for (int a = 0; a < naxis; a++)
     {
@@ -221,19 +262,31 @@ static void *fft_plan(uint8_t        naxis,
 #    endif
     int   sign = (kind == FFT_INV) ? FFTW_BACKWARD : FFTW_FORWARD;
     void *plan = NULL;
-    if (is_dbl)
+    if (measure)
     {
-        plan = (kind == FFT_R2C) ? (void *) fftw_plan_dft_r2c(naxis, dims, (double *) in,
-                                                              (fftw_complex *) out, flags)
-                                 : (void *) fftw_plan_dft(naxis, dims, (fftw_complex *) in,
-                                                          (fftw_complex *) out, sign, flags);
+        fft_wisdom(is_dbl, 0);
     }
-    else
+    /* a measured plan is first asked of the kept planning results, and timed if they lack it */
+    for (int timed = 0; timed < 2 && plan == NULL; timed++, flags &= ~FFTW_WISDOM_ONLY)
     {
-        plan = (kind == FFT_R2C) ? (void *) fftwf_plan_dft_r2c(naxis, dims, (float *) in,
-                                                               (fftwf_complex *) out, flags)
-                                 : (void *) fftwf_plan_dft(naxis, dims, (fftwf_complex *) in,
-                                                           (fftwf_complex *) out, sign, flags);
+        if (is_dbl)
+        {
+            plan = (kind == FFT_R2C) ? (void *) fftw_plan_dft_r2c(naxis, dims, (double *) in,
+                                                                  (fftw_complex *) out, flags)
+                                     : (void *) fftw_plan_dft(naxis, dims, (fftw_complex *) in,
+                                                              (fftw_complex *) out, sign, flags);
+        }
+        else
+        {
+            plan = (kind == FFT_R2C) ? (void *) fftwf_plan_dft_r2c(naxis, dims, (float *) in,
+                                                                   (fftwf_complex *) out, flags)
+                                     : (void *) fftwf_plan_dft(naxis, dims, (fftwf_complex *) in,
+                                                               (fftwf_complex *) out, sign, flags);
+        }
+        if (plan != NULL && timed && measure)
+        {
+            fft_wisdom(is_dbl, 1);
+        }
     }
     free(scratch);
     if (plan == NULL)

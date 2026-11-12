@@ -251,7 +251,8 @@ the command word then set the parameters that `-p` declares, in declaration orde
 milk-fpsexec-milk-calc -n dsub -t cam -p "gain:float=1" -e "out = (cam - dark) * gain" fpsinit 2.5
 milk-fpsexec-milk-calc -n dsub runstart         # in the background, returns once the loop runs
 milk-fpsexec-milk-calc -n dsub set 3.0          # read by the next frame (same as @set f.dsub.gain=3)
-@set f.dsub.unit.expr="out = cam * gain"        # compiled at the next frame (or: -e "..." set)
+@set f.dsub.unit.expr="out = cam * gain"        # compiled at the next frame, inside the loop
+milk-fpsexec-milk-calc -n dsub -e "out = cam * gain" set   # built by this command, then applied
 @get f.dsub.unit.error                          # why the loop stopped (empty while it runs)
 milk-fpsexec-milk-calc -n dsub runstop
 
@@ -288,10 +289,21 @@ parameters under `Parameters`):
 - `fpsinit`, and `exec` when the FPS does not exist yet, create the FPS from the unit options. On an
   existing FPS, `-e` `-t` `-f` `-i` `-I` (with `set`, `exec` or `runstart`) write their `.unit.*`
   entry, as `@set` does; `-p` cannot change: run `fpsinit` again to declare other parameters.
-- The statements are compiled when the loop starts, and again at the frame after `.unit.expr` or
-  `.unit.file` is set (set `.unit.file` again to read the file again). A change that does not
-  compile is not applied: the loop keeps running the previous statements and says why on stderr
-  and in its process message. `.unit.init` (or
+- **Prepared at start.** The unit loads its libraries, runs the init statements and compiles the
+  statements when it starts, before `runstart` returns: the first frame runs compiled kernels.
+  What cannot be done then, such as statements that read a stream created later, is done at the
+  first frame, as is the planning of an `fft` this machine has not run before
+  ([Fusion & Cost Model](#fusion-cost-model)).
+- **Changed while it runs.** The statements are compiled again at the frame after `.unit.expr` or
+  `.unit.file` is set (set `.unit.file` again to read the file again): with `@set`, the compiler
+  runs inside the loop, which misses frames meanwhile (tens of milliseconds). Unit options given
+  for a running unit (`-e "..." set`) are built by the command first: the loop then loads the
+  kernels from the cache, and statements that do not build are refused with status 1. The command
+  does not see the variables that the init statements created: statements that read one are
+  refused, so declare it as a parameter (`-p`), or use `@set`. A change that does not
+  compile in the loop is not applied: the loop keeps running the previous statements and says why
+  on stderr and in its process message.
+- `.unit.init` (or
   `.unit.initfile`) runs once before frame 0 to create accumulator streams or set initial values;
   changing `.unit.expr` or `.unit.file` live keeps that state intact, while setting `.unit.init` or
   `.unit.initfile` runs the initialization again and resets the frame counters. When a unit
@@ -481,8 +493,9 @@ kernels with clamped edges that filter a cube plane by plane, and `fft`, `ifft`,
 solvers) run as pre-stages into
 scratch images reused across frames from a 4-buffer (256 MiB) pool (`_tmpcalcpool<k>`). A unit plans
 each new `fft` or `ifft` shape with `FFTW_MEASURE`: the first frame that uses it can take up to
-seconds, and large transforms then run faster (about 5× on a 2048² complex one). `@calc` plans
-instantly with `FFTW_ESTIMATE`.
+seconds, and large transforms then run faster (about 5× on a 2048² complex one). FFTW's planning
+results are kept in the kernel cache (`<key>.fftw`), so this happens once on a machine for each
+shape and thread count, not at each start. `@calc` plans instantly with `FFTW_ESTIMATE`.
 
 ## Bringing Your Own Compiled C Code (`milk_calc_ext.h` & `milk-cc`)
 

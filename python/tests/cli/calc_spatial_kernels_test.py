@@ -372,6 +372,36 @@ def test_fft_in_a_unit_matches_numpy(tmp_path):
     np.testing.assert_allclose(fits.getdata(tmp_path / "o_Q.fits"), a, atol=1e-5)
 
 
+def test_fft_plans_of_a_unit_are_kept(tmp_path):
+    """A unit saves FFTW's planning results in the kernel cache (<key>.fftw): the next start
+    plans from them, writes nothing new, and its transform still matches numpy."""
+    a = np.random.default_rng(5).normal(size=(10, 12)).astype(np.float32)
+    fits.writeto(tmp_path / "a.fits", a, overwrite=True)
+    res = milk_bash(
+        "export MILK_CALC_CACHE=$PWD/kc; mkdir kc\n"
+        'iofits.loadfits "a.fits" a 0 >/dev/null; mem.mk2Dim "@S:cam" 12 10 >/dev/null\n'
+        '@calc "cam = a"\n'
+        'echo "fftw=$(ldd "$MILK_INSTALLDIR/lib/libmilkcalc.so" | grep -c fftw3f)"\n'
+        'milk-fpsexec-milk-calc -n uk -e "F = fft(cam)" exec >/dev/null 2>&1; echo "rc1=$?"\n'
+        'echo "kept=$(ls kc/*.fftw 2>/dev/null | wc -l)"; cat kc/*.fftw >first.fftw 2>/dev/null\n'
+        '@calc "F = F * 0"\n'
+        'milk-fpsexec-milk-calc -n uk exec >/dev/null 2>&1; echo "rc2=$?"\n'
+        'echo "same=$(cat kc/*.fftw 2>/dev/null | cmp -s - first.fftw && echo yes || echo no)"\n'
+        'echo "left=$(ls kc | grep -vc -e "\\.so$" -e "\\.c$" -e "\\.fftw$")"\n'
+        '@calc "R_F = real(F); I_F = imag(F)"\n'
+        'iofits.saveFITS R_F "o_R.fits" >/dev/null; iofits.saveFITS I_F "o_I.fits" >/dev/null',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc1") == "0" and value(res.stdout, "rc2") == "0", out
+    if value(res.stdout, "fftw") != "0":  # built with FFTW
+        assert value(res.stdout, "kept") == "1", out  # single precision only
+        assert value(res.stdout, "same") == "yes", out
+    assert value(res.stdout, "left") == "0", out  # no temporary file stays
+    got = fits.getdata(tmp_path / "o_R.fits") + 1j * fits.getdata(tmp_path / "o_I.fits")
+    np.testing.assert_allclose(got, np.fft.fft2(a), atol=1e-4)
+
+
 def test_interp2_bilinear_gather(tmp_path):
     """interp2(im, xmap, ymap) performs exact 2D sub-pixel bilinear interpolation with edge clamping."""
     res = milk_bash(

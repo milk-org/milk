@@ -292,11 +292,11 @@ static void values_to_new_fps(const milk_unit_desc *d, const milk_unit_args *a)
 }
 
 /**
- * show_fps_values - Load the values of an existing FPS into the bindings, for -h
+ * load_fps_values - Load the values of an existing FPS into the bindings
  * @d: Unit descriptor
  * @a: Parsed arguments; the unit options given still win
  */
-static void show_fps_values(const milk_unit_desc *d, const milk_unit_args *a)
+static void load_fps_values(const milk_unit_desc *d, const milk_unit_args *a)
 {
     FPS fps;
 
@@ -309,6 +309,29 @@ static void show_fps_values(const milk_unit_desc *d, const milk_unit_args *a)
 }
 
 /**
+ * check_running - Have the program that the unit options give a running unit built first
+ * @d: Unit descriptor
+ * @a: Parsed arguments
+ *
+ * A running unit builds a new program inside its loop: built here first, its kernels are in the
+ * cache, and a program that does not build never reaches the unit.
+ *
+ * Return: 0, or -1 when d->check() refused the program.
+ */
+static int check_running(const milk_unit_desc *d, const milk_unit_args *a)
+{
+    FPS_UNIT_STATUS st;
+
+    if (d->check == NULL || fps_unit_status(a->name, FPS_UNIT_RUN, &st) != 0 ||
+        !fps_unit_state_alive(st.state))
+    {
+        return 0;
+    }
+    load_fps_values(d, a);
+    return d->check();
+}
+
+/**
  * milk_unit_main - Run the command line of a unit without C
  * @argc: Argument count
  * @argv: Argument vector (the unit options are removed from it)
@@ -316,7 +339,8 @@ static void show_fps_values(const milk_unit_desc *d, const milk_unit_args *a)
  *
  * fpsinit, and exec when the FPS does not exist yet, create the FPS from the unit options:
  * -p declares the parameters that the values after the command word then set. On an existing FPS
- * the declared parameters are read back from it, and the other unit options are written into it.
+ * the declared parameters are read back from it, and the other unit options are written into it,
+ * for a running unit once their program builds (check_running()).
  * -h lists the parameters that -p declares, else those of the existing FPS.
  *
  * Return: Exit status: 0 on success, 2 on a usage error, else that of fpsexec main.
@@ -360,7 +384,7 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
         }
         if (a.help && exists && params == NULL)
         {
-            show_fps_values(d, &a);
+            load_fps_values(d, &a);
         }
     }
     else if (exists && d->find_params(a.name) != 0)
@@ -389,6 +413,10 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
         if (!values)
         {
             fprintf(stderr, "%s: unit options have no effect with %s\n", d->tag, a.cmd);
+        }
+        else if (check_running(d, &a) != 0)
+        {
+            return 1;
         }
         else if (opts_to_fps(d, &a) != 0)
         {
