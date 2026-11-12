@@ -14,10 +14,12 @@
  * in semReadPID[]: it is claimed with a compare-and-exchange, taken over from a dead process,
  * and never one this process already holds. A stream's first waiter keeps its slot in the cache
  * entry until the last unpin; an atexit() handler gives back the slots the cache still holds,
- * and pthread_atfork() handlers keep the mutex usable in a forked child.
+ * and milk_fork_guard() keeps the mutex usable in a forked child.
  */
 
 #include <pthread.h>
+
+#include "milk_forkguard.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,10 +84,16 @@ typedef struct
 } fps_ent_t;
 
 static pthread_mutex_t g_cache_lock = PTHREAD_MUTEX_INITIALIZER;
-static stream_ent_t    g_stream[SHM_CACHE_NSTREAM];
-static fps_ent_t       g_fps[SHM_CACHE_NFPS];
-static unsigned long   g_tick              = 0;
-static int             g_atexit_registered = 0;
+
+/* Whole and unlocked in a forked server child */
+__attribute__((constructor)) static void cache_lock_fork_guard(void)
+{
+    milk_fork_guard(&g_cache_lock);
+}
+static stream_ent_t  g_stream[SHM_CACHE_NSTREAM];
+static fps_ent_t     g_fps[SHM_CACHE_NFPS];
+static unsigned long g_tick              = 0;
+static int           g_atexit_registered = 0;
 
 /* Thread-local flag set when the last stream lookup found all 64 slots pinned */
 static __thread int g_cache_full = 0;
@@ -187,39 +195,6 @@ static void release_stream_sem(stream_ent_t *e)
  * ============================================================================ */
 
 /**
- * cache_fork_prepare - `pthread_atfork` prepare handler acquiring `g_cache_lock` before `fork()`
- *
- * Ensures that no other thread is midway through mutating the cache when a child
- * process is forked (e.g. for `--async` or `@replay`).
- *
- * Return: void
- */
-static void cache_fork_prepare(void)
-{
-    pthread_mutex_lock(&g_cache_lock);
-}
-
-/**
- * cache_fork_parent - `pthread_atfork` parent handler releasing `g_cache_lock` after `fork()`
- *
- * Return: void
- */
-static void cache_fork_parent(void)
-{
-    pthread_mutex_unlock(&g_cache_lock);
-}
-
-/**
- * cache_fork_child - `pthread_atfork` child handler reinitializing `g_cache_lock` in the child
- *
- * Return: void
- */
-static void cache_fork_child(void)
-{
-    pthread_mutex_init(&g_cache_lock, NULL);
-}
-
-/**
  * shm_cache_atexit - `atexit()` handler releasing all semaphore slots held by this process
  *
  * Iterates over all active stream cache entries under `g_cache_lock` and clears
@@ -303,7 +278,6 @@ static stream_ent_t *lookup_or_open_stream_locked(const char *name)
     if (!g_atexit_registered)
     {
         atexit(shm_cache_atexit);
-        pthread_atfork(cache_fork_prepare, cache_fork_parent, cache_fork_child);
         g_atexit_registered = 1;
     }
 

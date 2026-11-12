@@ -23,6 +23,12 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — Sessions: a read sent while a command runs (`@test`, `@get`, completion, from
+  another shell or a background job) could wait for ever when it needed a lock the command held at
+  that instant, for example an FFT during an FFT. The copy of the session that answers it now
+  starts with those locks free (`milk_fork_guard()` in libmilkcommon); a read with no answer after
+  30 s ends, and a second Ctrl-C gives the prompt back when the session does not answer the first.
+  See [Sessions](guide/sessions.md) `#cli`
 - **2026-11-11** — A session starts with the core modules only; the 15 standard modules are no
   longer loaded at every start (a `milk-cli` start takes 29 ms, was 39, and 7 MB less), but at the
   first use of one of their commands, as installed modules already were. `@help <module>`,

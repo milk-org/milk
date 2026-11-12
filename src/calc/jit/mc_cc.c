@@ -55,6 +55,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "libmilkcommon/milk_forkguard.h"
 #include "libmilkcommon/milk_spawn.h"
 #include "plan/mc_plan.h"
 #include "jit/mc_prelude.h"
@@ -102,6 +103,13 @@ static uint64_t        g_env_h2   = 0;
 static mc_mem_entry_t  g_mem_cache[MC_MEM_CACHE_CAP];
 static int             g_mem_hand = 0;
 static unsigned long   g_tmp_seq  = 0;
+
+/* A session forks while a command may be looking a kernel up: the child must not get the lock
+ * held, nor the table half-written */
+__attribute__((constructor)) static void cc_lock_fork_guard(void)
+{
+    milk_fork_guard(&g_cc_lock);
+}
 
 /**
  * hash_bytes - Mix an arbitrary byte buffer into a pair of 64-bit hash accumulators

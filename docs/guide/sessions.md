@@ -107,8 +107,14 @@ but local images and variables it creates are not kept.
 A session shared by several shells runs their commands one at a time too. A command that another
 shell (another process group) sends while a long one runs waits for it, and then runs with
 everything the long one left; at a terminal it says `milk: waiting for '<command>'`, and Ctrl-C gives
-up without running it. Reads (`@get`, `@exists`, `@test`, completion) run alongside. `milkcall
---nowait <cmd>` fails at once instead, with `milk: busy: <command> for N s` and status 1.
+up without running it. Reads (`@get`, `@exists`, `@test`, completion) run alongside, in a copy of the
+session taken while the command runs: they see its images as they are at that instant, possibly
+half-written, and one that has not answered after 30 s ends with `the session is busy` (status 255).
+`milkcall --nowait <cmd>` fails at once instead, with `milk: busy: <command> for N s` and status 1.
+
+Ctrl-C asks the session to stop the command. If the session does not answer (it is stopped, or
+stuck), a second Ctrl-C two seconds or more after the first gives the shell its prompt back, with
+status 130; the command may still run in the session.
 
 ## Snapshots, Undo, Assertions, and Logs
 

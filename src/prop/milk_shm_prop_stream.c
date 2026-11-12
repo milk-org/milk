@@ -18,6 +18,8 @@
 
 #include <math.h>
 #include <pthread.h>
+
+#include "milk_forkguard.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -250,25 +252,10 @@ typedef struct
 
 static pthread_mutex_t g_stats_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/** stats_fork_*() - keep g_stats_lock usable in a forked server child (see milk_shm_cache.c). */
-static void stats_fork_prepare(void)
+/* Whole and unlocked in a forked server child */
+__attribute__((constructor)) static void stats_lock_fork_guard(void)
 {
-    pthread_mutex_lock(&g_stats_lock);
-}
-
-static void stats_fork_parent(void)
-{
-    pthread_mutex_unlock(&g_stats_lock);
-}
-
-static void stats_fork_child(void)
-{
-    pthread_mutex_init(&g_stats_lock, NULL);
-}
-
-__attribute__((constructor)) static void stats_register_atfork(void)
-{
-    pthread_atfork(stats_fork_prepare, stats_fork_parent, stats_fork_child);
+    milk_fork_guard(&g_stats_lock);
 }
 static stats_cache_ent_t g_stats_cache[STATS_CACHE_N];
 static unsigned long     g_stats_tick = 0;

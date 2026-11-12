@@ -34,6 +34,7 @@
 #endif
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/milk_forkguard.h"
 #include "libmilkcommon/milk_omp_team.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/arith_team.h"
@@ -86,6 +87,12 @@ static int               g_fft_cache_next = 0;
 /* FFTW's planner is not thread-safe, and plans run on the calculator's thread team, which serves
  * one caller at a time: plans are made and executed under this lock. */
 static pthread_mutex_t g_fft_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* A session forks while a command may be in an FFT: the child must not get the lock held */
+__attribute__((constructor)) static void fft_lock_fork_guard(void)
+{
+    milk_fork_guard(&g_fft_lock);
+}
 
 #    ifdef HAVE_FFTW3_THREADS
 /**

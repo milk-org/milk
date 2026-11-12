@@ -8,6 +8,8 @@
  */
 
 #include <pthread.h>
+
+#include "milk_forkguard.h"
 #include <signal.h>
 
 #include "processinfo_internal.h"
@@ -161,6 +163,7 @@ int processinfo_CatchSignals()
     fatal_act.sa_flags   = SA_ONSTACK; // uses the caller's alternate stack if it set one
     fatal_act.sa_handler = processinfo_fatal_handler;
 
+    milk_fork_guard(&pi_mutex); // a child forked meanwhile must not get it held
     pthread_mutex_lock(&pi_mutex);
     if (pi_depth++ == 0)
     {

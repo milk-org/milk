@@ -325,3 +325,43 @@ def test_captured_command_output_is_complete(tmp_path):
         "1",
     ], out
     assert value(res.stdout, "err") not in (None, "0"), out
+
+
+def test_reads_during_a_command_do_not_inherit_its_locks(tmp_path):
+    """A read that arrives while a command runs is answered by a copy of the session. The copy
+    must not start with a lock the command held at that instant: reads that run an FFT while the
+    command runs FFTs all return (one of the first ten used to wait for ever).
+    """
+    res = milk_bash(
+        'mem.mk2Dim "@S:a" 512 512 >/dev/null; @calc "a = 1"\n'
+        '( n=0; for i in $(seq 200); do @test "imax(abs(fft(a))) >= 0" && n=$((n+1)); done\n'
+        '  echo "reads=$n" ) &\n'
+        '@calc "for i = 1:3000 { t = fft(a) }"; echo "main=$?"\n'
+        "wait",
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "main") == "0", out
+    assert value(res.stdout, "reads") == "200", out
+
+
+def test_second_ctrl_c_stops_waiting_for_a_session_that_does_not_answer(tmp_path):
+    """Ctrl-C is forwarded to the session; when it does not answer (stopped here), the client
+    keeps waiting, and a second Ctrl-C two seconds later returns 130. The session is intact.
+    """
+    res = milk_bash(
+        FUNCS + 'mem.mk2Dim "@S:a" 16 16 >/dev/null; p=$(srvpid); kill -STOP "$p"\n'
+        '( @calc "b = a + 1" 2>give.err; echo "rc=$?" ) & cp=$!\n'
+        "sleep 0.5; kill -INT $cp; sleep 0.5\n"
+        'echo "first=$(kill -0 $cp 2>/dev/null && echo waits || echo gone)"\n'
+        "sleep 2; kill -INT $cp; wait $cp\n"
+        'kill -CONT "$p"; @calc -v v "imean(a) + 1"; echo "after=$v"',
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "give.err").read_text()
+    assert value(res.stdout, "first") == "waits", out
+    assert value(res.stdout, "rc") == "130", out
+    assert "no answer from the session" in out, out
+    assert value(res.stdout, "after") == "1", out

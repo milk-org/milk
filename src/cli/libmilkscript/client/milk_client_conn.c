@@ -496,6 +496,9 @@ static void resync_commands(const milk_client_hooks_t *hooks)
     milk_client_end(fd);
 }
 
+/* A second Ctrl-C this long after the first, still without an answer, stops the wait */
+#define MILK_CLIENT_GIVE_UP_S 2.0
+
 /**
  * @brief Receive and process server response frames until `MILK_MSG_DONE`.
  *
@@ -545,7 +548,8 @@ int milk_client_await_response(int                        fd,
 
     int32_t final_rc = MILK_CLIENT_RC_TRANSPORT; // until DONE arrives, the transport failed
     int     resync   = 0;
-    int     queued   = 0; // the request waits for another shell's command
+    int     queued   = 0;   // the request waits for another shell's command
+    double  cancel_t = 0.0; // when Ctrl-C was first forwarded (0: not yet)
 
     for (;;)
     {
@@ -556,6 +560,26 @@ int milk_client_await_response(int                        fd,
             if (queued)
             {
                 break; // not started: hanging up drops it
+            }
+            struct timespec ts;
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            double now = (double) ts.tv_sec + 1e-9 * (double) ts.tv_nsec;
+            if (cancel_t > 0.0 && now - cancel_t >= MILK_CLIENT_GIVE_UP_S)
+            {
+                // the session did not answer the first Ctrl-C (stopped, or stuck): the shell
+                // gets its prompt back, and the connection is not used again
+                fprintf(stderr, "milk: no answer from the session: not waiting for it (the "
+                                "command may still run there)\n");
+                client_conn_t *c = conn_of(fd);
+                if (c != NULL)
+                {
+                    c->keep = 0;
+                }
+                break;
+            }
+            if (cancel_t == 0.0)
+            {
+                cancel_t = now;
             }
             milk_proto_send(fd, MILK_MSG_CANCEL, 0, NULL, 0);
         }

@@ -201,6 +201,25 @@ void milk_server_serve_waiting(int listen_fd, int *shutdown_flag)
     }
 }
 
+/* A read served in a forked copy takes milliseconds. One that has not answered after this many
+ * seconds is stuck (on a lock some library held at the fork): it ends instead of waiting for ever */
+#define MILK_SERVER_READ_LIMIT_S 30
+
+/* SIGALRM in the forked copy that serves a read: async-signal-safe calls only */
+static void read_stuck(int sig)
+{
+#define READ_LIMIT_TXT2(s) #s
+#define READ_LIMIT_TXT(s) READ_LIMIT_TXT2(s)
+    static const char msg[] = "milk: no answer to this read in " READ_LIMIT_TXT(
+        MILK_SERVER_READ_LIMIT_S) " s: the session is busy\n";
+    (void) sig;
+    if (write(STDERR_FILENO, msg, sizeof(msg) - 1) < 0)
+    {
+        /* nothing to do: the copy ends */
+    }
+    _exit(1);
+}
+
 /**
  * watcher_take_client() - serve a request that arrives while a CALL runs, on a new connection or a
  * kept one; a MILK_CONN_* outcome for @cfd: a stream worker or the queue (the main loop serves it
@@ -273,6 +292,11 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
         sigemptyset(&none);
         pthread_sigmask(SIG_SETMASK, &none, NULL);
         close(ctx->listen_fd);
+        if (reads)
+        {
+            signal(SIGALRM, read_stuck);
+            alarm(MILK_SERVER_READ_LIMIT_S);
+        }
         int dummy_shutdown = 0;
         milk_server_handle_client(cfd, -1, &dummy_shutdown, 0); /* answers, the connection ends */
         close(cfd);
