@@ -16,6 +16,7 @@
 
 #include "processinfo.h"
 #include "processinfo_procdirname.h"
+#include "processinfo_shm_link.h"
 #include "milkDebugTools.h"
 #include "milk_help.h"
 
@@ -188,20 +189,16 @@ int main(int argc, char *argv[])
             int   loopstat  = -1;
             int   pid_alive = 0;
 
-            int fd = open(fullpath, O_RDONLY);
-            if (fd != -1)
+            int          fd    = -1;
+            PROCESSINFO *pinfo = processinfo_shm_link_ro(fullpath, &fd);
+            if (pinfo != MAP_FAILED)
             {
-                PROCESSINFO *pinfo =
-                    (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
-                if (pinfo != MAP_FAILED)
-                {
-                    pid      = pinfo->PID;
-                    loopstat = pinfo->loopstat;
-                    /* alive = kill succeeds, or EPERM (process
-                     * exists but we lack permission to signal) */
-                    pid_alive = (kill(pid, 0) == 0 || errno == EPERM);
-                    munmap(pinfo, sizeof(PROCESSINFO));
-                }
+                pid      = pinfo->PID;
+                loopstat = pinfo->loopstat;
+                /* alive = kill succeeds, or EPERM (process
+                 * exists but we lack permission to signal) */
+                pid_alive = (kill(pid, 0) == 0 || errno == EPERM);
+                munmap(pinfo, sizeof(PROCESSINFO));
                 close(fd);
             }
 

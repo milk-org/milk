@@ -34,9 +34,7 @@
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 
-/* processinfo functions — linked via milkprocessinfo */
-extern PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
-extern errno_t      processinfo_procdirname(char *procdname);
+#include "processinfo_procdirname.h"
 
 
 /* ============================================================

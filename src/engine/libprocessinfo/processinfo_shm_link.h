@@ -10,6 +10,18 @@
 #ifndef _PROCESSINFO_SHM_LINK_H
 #define _PROCESSINFO_SHM_LINK_H
 
+#include "processinfo.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
+PROCESSINFO *processinfo_shm_link_ro(const char *pname, int *fd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -17,6 +17,8 @@
 #include <inttypes.h>
 
 #include "processinfo.h"
+#include "processinfo_shm_close.h"
+#include "processinfo_shm_link.h"
 
 #ifndef IGNORE_RESULT
 #    define IGNORE_RESULT(x) \
@@ -303,23 +305,10 @@ void read_procinfo_stats(bench_cfg_t *cfg, pid_t child_pid, pi_stats_t *out)
     /* Capture RAPL energy baseline for delta */
     long long rapl_start = read_rapl_energy();
 
-    int fd = open(shm_path, O_RDONLY);
-    if (fd < 0)
-    {
-        return;
-    }
-
-    struct stat st;
-    if (fstat(fd, &st) < 0)
-    {
-        close(fd);
-        return;
-    }
-
-    PROCESSINFO *pi = (PROCESSINFO *) mmap(NULL, (size_t) st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    int          fd = -1;
+    PROCESSINFO *pi = processinfo_shm_link_ro(shm_path, &fd);
     if (pi == MAP_FAILED)
     {
-        close(fd);
         return;
     }
 
@@ -394,8 +383,7 @@ void read_procinfo_stats(bench_cfg_t *cfg, pid_t child_pid, pi_stats_t *out)
         }
     }
 
-    munmap(pi, (size_t) st.st_size);
-    close(fd);
+    processinfo_shm_close(pi, fd);
 
     if (nv == 0)
     {
