@@ -29,10 +29,6 @@
          <lastmod>2026-11-12</lastmod>
     </url>
     <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/developer/DocumentingCode/</loc>
-         <lastmod>2026-11-12</lastmod>
-    </url>
-    <url>
          <loc>https://milk-org.github.io/milk/framework-dev/developer/WorkingWithGit/</loc>
          <lastmod>2026-11-12</lastmod>
     </url>
@@ -65,6 +61,10 @@
          <lastmod>2026-11-12</lastmod>
     </url>
     <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/developer/writing_docs/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
          <loc>https://milk-org.github.io/milk/framework-dev/guide/CLIcore/</loc>
          <lastmod>2026-11-12</lastmod>
     </url>
@@ -85,11 +85,43 @@
          <lastmod>2026-11-12</lastmod>
     </url>
     <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_conf/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_glossary/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_internals/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_operate/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_plans/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_provision/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_tour/</loc>
+         <lastmod>2026-11-12</lastmod>
+    </url>
+    <url>
          <loc>https://milk-org.github.io/milk/framework-dev/guide/procinfo/</loc>
          <lastmod>2026-11-12</lastmod>
     </url>
     <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/python/</loc>
+         <loc>https://milk-org.github.io/milk/framework-dev/guide/pyMilk/</loc>
          <lastmod>2026-11-12</lastmod>
     </url>
     <url>
