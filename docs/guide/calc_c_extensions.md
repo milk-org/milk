@@ -5,8 +5,8 @@ tags: [cli, fps, api, performance, guide]
 # Bringing Your Own Compiled C Code (`milk_calc_ext.h` & `milk-cc`)
 
 `milk` provides four progressive tiers for building real-time stream compute units — from pure
-`.calc` expressions with zero C code (Tier 0) to custom SIMD pixel/stencil/image kernels fused
-into `.calc` (Tier 1), stateful multi-port operators (Tier 2), and standalone `MILK_RUNNABLE`
+`.calc` expressions with zero C code (Tier 0) to custom SIMD pixel/stencil/image kernels called
+from `.calc` (Tier 1), stateful multi-port operators (Tier 2), and standalone `MILK_RUNNABLE`
 binaries compiled with a single command via `milk-cc` (Tier 3).
 
 ```mermaid
@@ -24,7 +24,7 @@ flowchart LR
 | Tier | What You Write | What `milk` Handles | Entry Point / Header |
 | :--- | :--- | :--- | :--- |
 | **0: Pure `.calc`** | A `.calc` program or `-e` expression | Compiles fused SIMD/OpenMP C kernels, runs on each trigger frame, manages FPS & `processinfo`, posts outputs | `milk-fpsexec-milk-calc` / `@calc` |
-| **1a: 1D SIMD Block Kernel** | A 1D per-pixel C function (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`) + parameter table | Fuses directly into the 1024-pixel L1 cache tile loop, auto-exposes parameters in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
+| **1a: 1D SIMD Block Kernel** | A 1D per-pixel C function (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`) + parameter table | Calls it on blocks of the image in parallel, as a step of its own before the fused pass; auto-exposes parameters in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **1b: 2D Stencil Kernel** | A $(2R+1)\times(2R+1)$ row-strip C function (`MILK_CALC_REG_STENCIL`, $R \in \{1,2,3\}$) | Pre-clamps image borders and feeds $2R+1$ row pointers of length $N + 2R$ per tile | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **1c: Whole-Image Kernel** | A 1-input / 1-output whole-image C function (`MILK_CALC_REG_IMG`) | Runs as an in-expression pre-stage with zero intermediate copy on bare `float32` streams | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **2: Stateful Multi-Port Operator** | `init` / `exec` / `free` C callbacks with named `IN`/`OUT` image & scalar ports (`MILK_CALC_OP_DECLARE`) | Allocates/resizes output streams (`milk_op_set_out_shape`), re-runs `init` on shape/CONF changes, exposes scalar outputs in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
@@ -35,7 +35,9 @@ flowchart LR
 ## Tier 0: Pure `.calc` (No C Code)
 
 **Use when:** the pipeline can be expressed with built-in `.calc` operators, slices, reductions,
-and control flow (`if`, `for`, `skip`, `hist`, `prev`).
+and control flow (`if`, `for`, `skip`, `hist`, `prev`). Per-pixel math of your own is a
+[`def`](calculator.md#compute-units-without-c): its calls are inlined into the fused pass, at the
+cost of the same math written out.
 
 ### `wfsprep.calc`
 
@@ -71,7 +73,11 @@ milk-fpsexec-milk-calc -n wfsprep runstart   # in the background
 **Use when:** you want to embed custom C math inside `.calc` expressions and keep declarative
 `.calc` composition. A Tier 1 kernel runs as a step of its own, before the fused pass that uses its
 result (`--explain` shows it as a pre-stage): a chain such as `nlcorr(A) * 2 + B` costs about twice
-the same math written inline.
+the same math written inline. Write a C kernel for what an expression cannot say (a table, a loop,
+bit operations). Math that an expression can say is faster as a `def` (Tier 0): the `nlcorr`
+kernel below shows the interface, and as
+`def nlcorr(x) = min(x, knee) * (1 + c2 * min(x, knee))`, with `knee` and `c2` declared parameters
+of the unit, it runs inside the fused pass.
 
 - **Tier 1a (`MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2`)**: 1-input or 2-input 1D SIMD block kernels,
   called on blocks of the image in parallel.
