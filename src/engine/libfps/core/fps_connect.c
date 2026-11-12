@@ -13,6 +13,7 @@
 
 #include "fps.h"
 #include "fps_globals.h"
+#include "milk_config.h"
 
 
 // #include "timeutils.h"
@@ -117,6 +118,18 @@ long fps_connect(const char *name, FPS *fps, int fpsconnectmode)
     {
         PRINT_ERROR("mmap failed: %s", strerror(errno));
         close(SM_fd);
+        return -1;
+    }
+
+    if (strncmp(fps->md->version, MILK_FUNCTION_PARAMETER_STRUCT_VERSION,
+                sizeof(fps->md->version)) != 0)
+    {
+        PRINT_ERROR("FPS %s: incompatible structure version (expected %s)", name,
+                    MILK_FUNCTION_PARAMETER_STRUCT_VERSION);
+        munmap(fps->md, file_stat.st_size);
+        fps->md = NULL;
+        close(SM_fd);
+        fps->SMfd = 0;
         return -1;
     }
 

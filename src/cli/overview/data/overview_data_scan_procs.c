@@ -94,33 +94,25 @@ void ov_scan_procs(OV_MODEL *model)
             }
             else
             {
-                int pfd = open(fpath, O_RDONLY);
-                if (pfd != -1)
+                int          pfd = -1;
+                PROCESSINFO *pm  = processinfo_shm_link_ro(fpath, &pfd);
+                if (pm != MAP_FAILED)
                 {
-                    PROCESSINFO *pm = (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ,
-                                                           MAP_SHARED, pfd, 0);
-                    if (pm != MAP_FAILED)
+                    if (s_pcache_nb >= OV_MAX_PROCS)
                     {
-                        if (s_pcache_nb >= OV_MAX_PROCS)
-                        {
-                            munmap(pm, sizeof(PROCESSINFO));
-                            close(pfd);
-                            continue;
-                        }
-
-                        ci = s_pcache_nb;
-                        memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
-                        s_pcache[ci].pid    = pid;
-                        s_pcache[ci].pinfo  = pm;
-                        s_pcache[ci].fd     = pfd;
-                        s_pcache[ci].in_use = 1;
-                        s_pcache_nb++;
-                        pinfo = pm;
-                    }
-                    else
-                    {
+                        munmap(pm, sizeof(PROCESSINFO));
                         close(pfd);
+                        continue;
                     }
+
+                    ci = s_pcache_nb;
+                    memset(&s_pcache[ci], 0, sizeof(ov_proc_cache_t));
+                    s_pcache[ci].pid    = pid;
+                    s_pcache[ci].pinfo  = pm;
+                    s_pcache[ci].fd     = pfd;
+                    s_pcache[ci].in_use = 1;
+                    s_pcache_nb++;
+                    pinfo = pm;
                 }
             }
         }

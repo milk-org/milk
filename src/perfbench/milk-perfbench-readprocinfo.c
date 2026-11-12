@@ -32,6 +32,8 @@
 
 #include "milk_help.h"
 #include "processinfo.h"
+#include "processinfo_shm_close.h"
+#include "processinfo_shm_link.h"
 
 /**
  * @brief Compare two longs for qsort.
@@ -196,33 +198,12 @@ int main(int argc, char *argv[])
     const char *shm_path = argv[1];
 
     /* Open and map the processinfo SHM file */
-    PROCESSINFO *pinfo;
-    size_t       pinfo_size;
+    int          fd    = -1;
+    PROCESSINFO *pinfo = processinfo_shm_link_ro(shm_path, &fd);
+    if (pinfo == MAP_FAILED)
     {
-        int fd = open(shm_path, O_RDONLY);
-        if (fd == -1)
-        {
-            fprintf(stderr, "ERROR: cannot open '%s': %s\n", shm_path, strerror(errno));
-            return 1;
-        }
-
-        struct stat st;
-        if (fstat(fd, &st) == -1)
-        {
-            fprintf(stderr, "ERROR: fstat failed: %s\n", strerror(errno));
-            close(fd);
-            return 1;
-        }
-        pinfo_size = (size_t) st.st_size;
-
-        pinfo = (PROCESSINFO *) mmap(NULL, pinfo_size, PROT_READ, MAP_SHARED, fd, 0);
-        close(fd); // fd no longer needed after mmap
-
-        if (pinfo == MAP_FAILED)
-        {
-            fprintf(stderr, "ERROR: mmap failed: %s\n", strerror(errno));
-            return 1;
-        }
+        fprintf(stderr, "ERROR: cannot map processinfo '%s'\n", shm_path);
+        return 1;
     }
 
     /* ----- Extract timing percentiles ----- */
@@ -299,7 +280,7 @@ int main(int argc, char *argv[])
     printf("  }\n");
     printf("}\n");
 
-    munmap(pinfo, pinfo_size);
+    processinfo_shm_close(pinfo, fd);
 
     return 0;
 }

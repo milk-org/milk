@@ -13,6 +13,7 @@
 
 #include "fps.h"
 #include "fps_globals.h"
+#include "milk_config.h"
 
 /**
  * @brief Create an FPS shared memory segment.
@@ -88,6 +89,9 @@ errno_t function_parameter_struct_create(long NBparamMAX, const char *name)
     fps.md->NBparamMAX = NBparamMAX;
 
     memset(fps.parray, 0, NBparamMAX * sizeof(*fps.parray));
+
+    strncpy(fps.md->version, MILK_FUNCTION_PARAMETER_STRUCT_VERSION, sizeof(fps.md->version) - 1);
+    fps.md->version[sizeof(fps.md->version) - 1] = '\0';
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
 
