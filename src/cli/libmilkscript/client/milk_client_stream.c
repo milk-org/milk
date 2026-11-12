@@ -225,39 +225,12 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
         snprintf(arg2_buf + cur, sizeof(arg2_buf) - cur, ";cnt=%s", cnt_str);
     }
 
-    char sockpath[256];
-    int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    if (fd < 0)
-    {
-        return MILK_CLIENT_RC_TRANSPORT;
-    }
-
-    size_t   l1  = strlen(target) + 1;
-    size_t   l2  = strlen(arg2_buf) + 1;
-    size_t   l3  = strlen(timeout) + 1;
-    uint32_t tot = (uint32_t) (l1 + l2 + l3);
-
-    uint8_t *buf = (uint8_t *) malloc(tot);
-    if (buf == NULL)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-    memcpy(buf, target, l1);
-    memcpy(buf + l1, arg2_buf, l2);
-    memcpy(buf + l1 + l2, timeout, l3);
-
-    int sret = milk_proto_send(fd, MILK_MSG_WAITFOR, 0, buf, tot);
-    free(buf);
-    if (sret != 0)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    milk_client_end(fd);
-    return rc;
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, target);
+    milk_pl_str(&p, arg2_buf);
+    milk_pl_str(&p, timeout);
+    return milk_client_request(milk_client_connect_or_start(hooks), hooks, MILK_MSG_WAITFOR, 0, &p,
+                               NULL, 0, NULL, 0);
 }
 
 /* @waitany: one thread per stream blocks on that stream's semaphore and signals an eventfd. */
@@ -1021,45 +994,15 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     resolve_client_path(fits_raw, fits_abs, sizeof(fits_abs));
     resolve_client_path(ts_raw, ts_abs, sizeof(ts_abs));
 
-    char sockpath[256];
-    int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    if (fd < 0)
-    {
-        return MILK_CLIENT_RC_TRANSPORT;
-    }
-
-    size_t   l1  = strlen(sname) + 1;
-    size_t   l2  = strlen(nframes) + 1;
-    size_t   l3  = strlen(outname) + 1;
-    size_t   l4  = strlen(timeout) + 1;
-    size_t   l5  = strlen(fits_abs) + 1;
-    size_t   l6  = strlen(ts_abs) + 1;
-    uint32_t tot = (uint32_t) (l1 + l2 + l3 + l4 + l5 + l6);
-
-    uint8_t *buf = (uint8_t *) malloc(tot);
-    if (buf == NULL)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-    memcpy(buf, sname, l1);
-    memcpy(buf + l1, nframes, l2);
-    memcpy(buf + l1 + l2, outname, l3);
-    memcpy(buf + l1 + l2 + l3, timeout, l4);
-    memcpy(buf + l1 + l2 + l3 + l4, fits_abs, l5);
-    memcpy(buf + l1 + l2 + l3 + l4 + l5, ts_abs, l6);
-
-    int sret = milk_proto_send(fd, MILK_MSG_GRAB, 0, buf, tot);
-    free(buf);
-    if (sret != 0)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    milk_client_end(fd);
-    return rc;
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, sname);
+    milk_pl_str(&p, nframes);
+    milk_pl_str(&p, outname);
+    milk_pl_str(&p, timeout);
+    milk_pl_str(&p, fits_abs);
+    milk_pl_str(&p, ts_abs);
+    return milk_client_request(milk_client_connect_or_start(hooks), hooks, MILK_MSG_GRAB, 0, &p,
+                               NULL, 0, NULL, 0);
 }
 
 /**
@@ -1161,39 +1104,13 @@ int milk_client_complete(const char                *prefix,
         comp_type = "arg";
     }
 
-    char sockpath[256];
-    int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    if (fd < 0)
-    {
-        return MILK_CLIENT_RC_TRANSPORT;
-    }
-
-    size_t   l1  = strlen(prefix) + 1;
-    size_t   l2  = strlen(comp_type) + 1;
-    uint32_t tot = (uint32_t) (l1 + l2);
-
-    uint8_t *buf = (uint8_t *) malloc(tot);
-    if (buf == NULL)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-    memcpy(buf, prefix, l1);
-    memcpy(buf + l1, comp_type, l2);
-
-    int sret = milk_proto_send(fd, MILK_MSG_COMPLETE, 0, buf, tot);
-    free(buf);
-    if (sret != 0)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-
-    char out[32768];
-    int  got_val = 0;
-    int  rc      = milk_client_await_response(fd, sockpath, hooks, out, sizeof(out), &got_val);
-    milk_client_end(fd);
-    if (rc == 0 && got_val)
+    char           out[32768];
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, prefix);
+    milk_pl_str(&p, comp_type);
+    int rc = milk_client_request(milk_client_connect_or_start(hooks), hooks, MILK_MSG_COMPLETE, 0,
+                                 &p, NULL, 0, out, sizeof(out));
+    if (rc == 0)
     {
         if (strncmp(out, "__MILK_COMPLETE_FITS__", 22) == 0)
         {
@@ -1227,16 +1144,11 @@ int milk_client_shutdown(const milk_client_hooks_t *hooks)
 {
     char sockpath[256];
     milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
-    int fd = milk_ipc_connect_once(sockpath);
-    if (fd < 0)
-    {
-        milk_client_close_owner_pipe();
-        return 0;
-    }
-
-    milk_proto_send(fd, MILK_MSG_SHUTDOWN, 0, NULL, 0);
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    close(fd);
+    int            fd   = milk_ipc_connect_once(sockpath);
+    milk_payload_t none = { 0 };
+    int rc = (fd < 0)
+                 ? 0
+                 : milk_client_request(fd, hooks, MILK_MSG_SHUTDOWN, 0, &none, NULL, 0, NULL, 0);
     milk_client_close_owner_pipe();
     return rc;
 }

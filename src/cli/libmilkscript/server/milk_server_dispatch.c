@@ -1309,11 +1309,10 @@ int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, si
     {
         return 1;
     }
-    const char *spec    = (const char *) payload;
-    size_t      o1      = strlen(spec) + 1;
-    const char *val     = (o1 < len) ? (const char *) (payload + o1) : NULL;
-    size_t      o2      = (val != NULL) ? (o1 + strlen(val) + 1) : len;
-    const char *comment = (o2 < len) ? (const char *) (payload + o2) : NULL;
+    uint32_t    off     = 0;
+    const char *spec    = milk_pl_next(payload, len, &off, NULL);
+    const char *val     = milk_pl_next(payload, len, &off, NULL);
+    const char *comment = milk_pl_next(payload, len, &off, NULL);
     if (val != NULL && val[0] == '\0' && strchr(spec, '=') != NULL)
     {
         val = NULL; // empty value slot: the value is in "spec=value"

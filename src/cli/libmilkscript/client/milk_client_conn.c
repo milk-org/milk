@@ -14,8 +14,8 @@
  *              own session (`milk-cli -q --server`) when none answers, tied to the shell by an
  *              owner pipe, or by its pid from a subshell or milk-call; never starts a named
  *              session; packs the shell variables a calculator expression names, and
- *              MILK_DPDIGITS; reads the replies until DONE, forwarding Ctrl-C (CANCEL) and
- *              window size changes (WINCH); defines the functions of new module commands when
+ *              MILK_DPDIGITS; sends every request (milk_client_request()) and reads its replies
+ *              until DONE, forwarding Ctrl-C (CANCEL) and window size changes (WINCH); defines the functions of new module commands when
  *              the session's registry generation changes.
  * Used by:     milk_client_ops.c and milk_client_stream.c (every request); milk_bash_hooks.c.
  *              Declared in milk_client_internal.h.
@@ -62,7 +62,7 @@ static uint32_t g_seen_gen = 0; /* registry generation of the server's last CALL
  * client_sigint_handler - Async-signal-safe SIGINT handler for active client calls
  * @sig: Signal number (`SIGINT`)
  *
- * Sets `g_client_sigint` so the response poll loop in `milk_client_await_response`
+ * Sets `g_client_sigint` so the response poll loop in `await_response`
  * can forward `MILK_MSG_CANCEL` to the server instead of terminating the client
  * process immediately.
  *
@@ -276,7 +276,7 @@ int milk_client_connect(const char *sockpath)
     struct stat st;
     if (hi < 0 || fstat(hi, &st) != 0)
     {
-        return (hi >= 0) ? hi : fd; /* not kept: milk_client_end() closes it */
+        return (hi >= 0) ? hi : fd; /* not kept: conn_end() closes it */
     }
     fd = hi;
     c  = (g_conns[0].fd < 0 || (g_conns[1].fd >= 0 && g_conns[0].used < g_conns[1].used))
@@ -288,9 +288,9 @@ int milk_client_connect(const char *sockpath)
     return fd;
 }
 
-/** milk_client_end() - the request on @fd is over: keep the connection if its reply said so, else
+/** conn_end() - the request on @fd is over: keep the connection if its reply said so, else
  * close it. */
-void milk_client_end(int fd)
+static void conn_end(int fd)
 {
     client_conn_t *c = conn_of(fd);
     if (c == NULL)
@@ -309,42 +309,39 @@ void milk_client_end(int fd)
 /**
  * @brief Connect to the active `milk-cli --server`, auto-starting it on demand.
  *
- * The connection is kept for the next request (milk_client_connect(), milk_client_end()).
+ * The connection is kept for the next request (milk_client_connect(), conn_end()).
  *
  * @param hooks        Optional shell callback hooks
- * @param sockpath_out Output buffer receiving the resolved socket path
- * @param sockpath_sz  Size of @sockpath_out in bytes
  * @return Connected socket fd (>= 0), or -1 on error
  */
-int milk_client_connect_or_start(const milk_client_hooks_t *hooks,
-                                 char                      *sockpath_out,
-                                 size_t                     sockpath_sz)
+int milk_client_connect_or_start(const milk_client_hooks_t *hooks)
 {
-    milk_ipc_resolve_sockpath(hooks, sockpath_out, sockpath_sz, 1);
-    int fd = milk_client_connect(sockpath_out);
+    char sockpath[256];
+    milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
+    int fd = milk_client_connect(sockpath);
     if (fd >= 0)
     {
         return fd;
     }
 
     char sname[64] = "";
-    milk_srvlog_parse_sock(sockpath_out, NULL, sname, sizeof(sname));
+    milk_srvlog_parse_sock(sockpath, NULL, sname, sizeof(sname));
     if (sname[0] != '\0' && !milk_ipc_is_numeric_str(sname)) // only @session new starts a named one
     {
         fprintf(stderr, "milk: session %s has ended: @session new %s, or @session leave\n", sname,
                 sname);
         return -1;
     }
-    if (autostart_server(hooks, sockpath_out) == 0)
+    if (autostart_server(hooks, sockpath) == 0)
     {
-        fd = milk_client_connect(sockpath_out);
+        fd = milk_client_connect(sockpath);
         if (fd >= 0)
         {
             return fd;
         }
     }
     fprintf(stderr, "ERROR: milk: unable to connect to or start milk-cli --server on '%s'\n",
-            sockpath_out);
+            sockpath);
     return -1;
 }
 
@@ -473,19 +470,17 @@ void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
  */
 static void resync_commands(const milk_client_hooks_t *hooks)
 {
-    static const char req[] = "\0cmd"; /* COMPLETE: prefix "", type "cmd" */
-    char              sockpath[256];
-    char              out[32768];
-    int               got = 0;
-    int               fd;
+    char           out[32768];
+    milk_payload_t p = { 0 };
 
-    if (hooks == NULL || hooks->def_cmd == NULL ||
-        (fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath))) < 0)
+    if (hooks == NULL || hooks->def_cmd == NULL)
     {
         return;
     }
-    if (milk_proto_send(fd, MILK_MSG_COMPLETE, 0, req, sizeof(req)) == 0 &&
-        milk_client_await_response(fd, sockpath, hooks, out, sizeof(out), &got) == 0 && got)
+    milk_pl_str(&p, ""); /* COMPLETE: prefix "", type "cmd" */
+    milk_pl_str(&p, "cmd");
+    if (milk_client_request(milk_client_connect_or_start(hooks), hooks, MILK_MSG_COMPLETE, 0, &p,
+                            NULL, 0, out, sizeof(out)) == 0)
     {
         for (char *save = NULL, *k = strtok_r(out, "\n", &save); k != NULL;
              k = strtok_r(NULL, "\n", &save))
@@ -493,7 +488,6 @@ static void resync_commands(const milk_client_hooks_t *hooks)
             hooks->def_cmd(k, hooks->ctx);
         }
     }
-    milk_client_end(fd);
 }
 
 /* A second Ctrl-C this long after the first, still without an answer, stops the wait */
@@ -506,25 +500,16 @@ static void resync_commands(const milk_client_hooks_t *hooks)
  * over the active socket connection while waiting.
  *
  * @param fd         Connected socket fd
- * @param sockpath   Socket path string
  * @param hooks      Optional shell callback hooks
  * @param value_buf  Optional buffer for `MILK_MSG_VALUE` (NULL to print to stdout)
  * @param value_sz   Capacity of @value_buf
- * @param got_value  Optional flag set to 1 if a `MILK_MSG_VALUE` frame arrived
  * @return Exit status returned by the server (or 130 on SIGINT)
  */
-int milk_client_await_response(int                        fd,
-                               const char                *sockpath,
-                               const milk_client_hooks_t *hooks,
-                               char                      *value_buf,
-                               size_t                     value_sz,
-                               int                       *got_value)
+static int await_response(int                        fd,
+                          const milk_client_hooks_t *hooks,
+                          char                      *value_buf,
+                          size_t                     value_sz)
 {
-    (void) sockpath;
-    if (got_value != NULL)
-    {
-        *got_value = 0;
-    }
     if (value_buf != NULL && value_sz > 0)
     {
         value_buf[0] = '\0';
@@ -624,10 +609,6 @@ int milk_client_await_response(int                        fd,
             if (value_buf != NULL && value_sz > 0)
             {
                 snprintf(value_buf, value_sz, "%s", (const char *) pl);
-                if (got_value != NULL)
-                {
-                    *got_value = 1;
-                }
             }
             else
             {
@@ -642,10 +623,9 @@ int milk_client_await_response(int                        fd,
         }
         else if (hdr.type == MILK_MSG_SETVAR && pl != NULL && hdr.len > 0)
         {
-            const char *vname = (const char *) pl;
-            size_t      o1    = strlen(vname) + 1;
-            const char *vval  = (o1 < hdr.len) ? (const char *) (pl + o1) : "";
-            milk_ipc_set_var(hooks, vname, vval, 0);
+            uint32_t    off   = 0;
+            const char *vname = milk_pl_next(pl, hdr.len, &off, "");
+            milk_ipc_set_var(hooks, vname, milk_pl_next(pl, hdr.len, &off, ""), 0);
         }
         else if (hdr.type == MILK_MSG_DEFCMD && pl != NULL && hdr.len > 0 && hooks != NULL &&
                  hooks->def_cmd != NULL)
@@ -667,7 +647,7 @@ int milk_client_await_response(int                        fd,
             client_conn_t *c = conn_of(fd);
             if (c != NULL)
             {
-                c->keep = (hdr.flags & MILK_FLAG_KEEP) != 0; /* else milk_client_end() closes it */
+                c->keep = (hdr.flags & MILK_FLAG_KEEP) != 0; /* else conn_end() closes it */
             }
             if (pl != NULL && hdr.len >= sizeof(int32_t))
             {
@@ -713,4 +693,40 @@ int milk_client_await_response(int                        fd,
         resync_commands(hooks);
     }
     return (int) final_rc;
+}
+
+void milk_client_pack_vars(milk_payload_t *p, const milk_packed_vars_t *pv)
+{
+    milk_pl_u32(p, (uint32_t) pv->count);
+    for (int i = 0; i < pv->count; i++)
+    {
+        milk_pl_str(p, pv->names[i]);
+        milk_pl_str(p, pv->vals[i]);
+    }
+}
+
+int milk_client_request(int                        fd,
+                        const milk_client_hooks_t *hooks,
+                        uint8_t                    type,
+                        uint8_t                    flags,
+                        milk_payload_t            *p,
+                        const int                 *fds,
+                        int                        nfds,
+                        char                      *out,
+                        size_t                     outsz)
+{
+    int rc = MILK_CLIENT_RC_TRANSPORT;
+    if (fd >= 0 && !p->bad &&
+        ((nfds > 0) ? milk_proto_send_with_fds(fd, type, flags, p->buf, p->len, fds, nfds)
+                    : milk_proto_send(fd, type, flags, p->buf, p->len)) == 0)
+    {
+        rc = await_response(fd, hooks, out, outsz);
+    }
+    else if (fd >= 0)
+    {
+        fprintf(stderr, "milk: the request could not be sent to the session\n");
+    }
+    free(p->buf);
+    conn_end(fd);
+    return rc;
 }

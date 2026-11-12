@@ -575,58 +575,38 @@ int milk_ipc_connect_once(const char *sockpath)
     return fd;
 }
 
-/**
- * @brief Send `MILK_MSG_PING` to @sockpath and verify `MILK_MSG_DONE` within 2 s.
- *
- * @param sockpath Target UNIX socket path
- * @return 1 if server responded to ping, 0 otherwise
- */
-int milk_ipc_ping_socket(const char *sockpath)
+/* Send the request @type (no payload) to @sockpath and wait at most 2 s for its DONE: a stopped
+ * or stuck server accepts the connection but never answers. Return: 1 answered, 0 no answer, -1
+ * unreachable. */
+static int ipc_ask(const char *sockpath, uint8_t type)
 {
     int fd = milk_ipc_connect_once(sockpath);
     if (fd < 0)
     {
-        return 0;
+        return -1;
     }
-    struct timeval tv = { 2, 0 }; // a stopped server accepts the connection but never answers
+    struct timeval tv = { 2, 0 };
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    int ok = 0;
-    if (milk_proto_send(fd, MILK_MSG_PING, 0, NULL, 0) == 0)
-    {
-        milk_frame_hdr_t hdr;
-        uint8_t         *pl = NULL;
-        if (milk_proto_recv(fd, &hdr, &pl, NULL) == 0 && hdr.type == MILK_MSG_DONE)
-        {
-            ok = 1;
-        }
-        free(pl);
-    }
+    milk_frame_hdr_t hdr;
+    uint8_t         *pl = NULL;
+    int              ok = milk_proto_send(fd, type, 0, NULL, 0) == 0 &&
+                          milk_proto_recv(fd, &hdr, &pl, NULL) == 0 && hdr.type == MILK_MSG_DONE;
+    free(pl);
     close(fd);
     return ok;
 }
 
-/**
- * @brief Send `MILK_MSG_SHUTDOWN` to @sockpath and wait at most 2 s for acknowledgment.
- *
- * @param sockpath Target UNIX socket path
- * @return 1 if shutdown frame was delivered, 0 if server was unreachable
- */
+/** milk_ipc_ping_socket() - 1 if the server at @sockpath answers a PING within 2 s. */
+int milk_ipc_ping_socket(const char *sockpath)
+{
+    return ipc_ask(sockpath, MILK_MSG_PING) == 1;
+}
+
+/** milk_ipc_shutdown_socket() - send SHUTDOWN to @sockpath; 0 if the server was unreachable. A
+ * stuck server does not hold its stopper for more than 2 s: signals come next. */
 int milk_ipc_shutdown_socket(const char *sockpath)
 {
-    int fd = milk_ipc_connect_once(sockpath);
-    if (fd < 0)
-    {
-        return 0;
-    }
-    struct timeval tv = { 2, 0 }; // a stuck server does not hold its stopper: signals come next
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    milk_proto_send(fd, MILK_MSG_SHUTDOWN, 0, NULL, 0);
-    milk_frame_hdr_t hdr;
-    uint8_t         *pl = NULL;
-    (void) milk_proto_recv(fd, &hdr, &pl, NULL);
-    free(pl);
-    close(fd);
-    return 1;
+    return ipc_ask(sockpath, MILK_MSG_SHUTDOWN) >= 0;
 }
 
 /* @bin as an absolute path: resolved if it has a '/', else looked up on PATH. Return: 0 or -1 */

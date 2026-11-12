@@ -325,17 +325,14 @@ void milk_server_outvars_diff(const char *outvars, const uint64_t *h, int n)
 /** send_setvar() - send one SETVAR frame (`name\0value\0`), whatever the value length. */
 static void send_setvar(int client_fd, const char *vname, const char *val)
 {
-    size_t   n1  = strlen(vname) + 1;
-    size_t   n2  = strlen(val) + 1;
-    uint8_t *pkt = (uint8_t *) malloc(n1 + n2);
-    if (pkt == NULL)
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, vname);
+    milk_pl_str(&p, val);
+    if (!p.bad)
     {
-        return;
+        milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, p.buf, p.len);
     }
-    memcpy(pkt, vname, n1);
-    memcpy(pkt + n1, val, n2);
-    milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) (n1 + n2));
-    free(pkt);
+    free(p.buf);
 }
 
 /**

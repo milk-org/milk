@@ -557,6 +557,8 @@ def test_E2_an_ended_session_is_not_restarted(tmp_path, sessions):
 @session new {n} >/dev/null
 other '@session end {n}' >/dev/null 2>&1
 mem.mk2Dim im 4 4 >/dev/null 2>err.log; echo "rc=$?"
+@get l.im.size >/dev/null 2>&1; echo "get=$?"
+@waitfor l.im -t 0.1 >/dev/null 2>&1; echo "wait=$?"
 echo "state=$(sstate {n})"
 @session leave >/dev/null; mem.mk2Dim im 4 4 >/dev/null; echo "own=$?"
 """,
@@ -564,7 +566,11 @@ echo "state=$(sstate {n})"
     )
     err = (tmp_path / "err.log").read_text()
     out = res.stdout + res.stderr + err
-    assert value(res.stdout, "rc") not in (None, "0"), out
+    assert (
+        value(res.stdout, "rc") == "255"
+    ), out  # every request: the session is not reached
+    assert value(res.stdout, "get") == "255", out
+    assert value(res.stdout, "wait") == "255", out
     assert (
         f"milk: session {n} has ended: @session new {n}, or @session leave" in err
     ), out

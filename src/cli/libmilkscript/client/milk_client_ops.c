@@ -244,30 +244,19 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
 
     int sw_stdin_fd = drain_stdin_to_memfd(argc, argv);
 
-    char        sockpath[256];
     const char *esock =
         (flags & MILK_CALL_FRONTEND) ? milk_ipc_get_var(hooks, "_MILK_FRONTEND_SOCK") : NULL;
     int fd;
-    if (esock != NULL && esock[0] != '\0')
+    if (esock != NULL && esock[0] != '\0') // milk-cli's own: never started from here
     {
-        snprintf(sockpath, sizeof(sockpath), "%s",
-                 esock); // milk-cli's own: never started from here
-        if ((fd = milk_client_connect(sockpath)) < 0)
+        if ((fd = milk_client_connect(esock)) < 0)
         {
-            fprintf(stderr, "milk: milk-cli's session does not answer (%s)\n", sockpath);
+            fprintf(stderr, "milk: milk-cli's session does not answer (%s)\n", esock);
         }
     }
     else
     {
-        fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    }
-    if (fd < 0)
-    {
-        if (sw_stdin_fd >= 0)
-        {
-            close(sw_stdin_fd);
-        }
-        return MILK_CLIENT_RC_TRANSPORT;
+        fd = milk_client_connect_or_start(hooks);
     }
 
     /* only calc text reads shell variables: `n` in `mem.mk2Dim im n 4` is no variable */
@@ -293,71 +282,26 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
         }
     }
 
-    size_t cap = sizeof(uint32_t) * 3 + 256;
+    milk_payload_t p = { 0 };
+    milk_pl_u32(&p, (uint32_t) argc);
     for (int i = 0; i < argc; i++)
     {
-        cap += strlen(argv[i]) + 1;
+        milk_pl_str(&p, argv[i]);
     }
+    milk_pl_u32(&p, nenv);
     for (uint32_t i = 0; i < nenv; i++)
     {
-        cap += strlen(env_kv[i]) + 1;
+        milk_pl_str(&p, env_kv[i]);
     }
-    for (int i = 0; i < pv.count; i++)
-    {
-        cap += strlen(pv.names[i]) + 1 + strlen(pv.vals[i]) + 1;
-    }
-
-    uint8_t *buf = (uint8_t *) malloc(cap);
-    if (buf == NULL)
-    {
-        if (sw_stdin_fd >= 0)
-        {
-            close(sw_stdin_fd);
-        }
-        milk_client_end(fd);
-        return 1;
-    }
-
-    uint32_t off   = 0;
-    uint32_t uargc = (uint32_t) argc;
-    memcpy(buf + off, &uargc, sizeof(uargc));
-    off += (uint32_t) sizeof(uargc);
-    for (int i = 0; i < argc; i++)
-    {
-        size_t l = strlen(argv[i]) + 1;
-        memcpy(buf + off, argv[i], l);
-        off += (uint32_t) l;
-    }
-
-    memcpy(buf + off, &nenv, sizeof(nenv));
-    off += (uint32_t) sizeof(nenv);
-    for (uint32_t i = 0; i < nenv; i++)
-    {
-        size_t l = strlen(env_kv[i]) + 1;
-        memcpy(buf + off, env_kv[i], l);
-        off += (uint32_t) l;
-    }
-
-    uint32_t nvars = (uint32_t) pv.count;
-    memcpy(buf + off, &nvars, sizeof(nvars));
-    off += (uint32_t) sizeof(nvars);
-    for (int i = 0; i < pv.count; i++)
-    {
-        size_t nl = strlen(pv.names[i]) + 1;
-        size_t vl = strlen(pv.vals[i]) + 1;
-        memcpy(buf + off, pv.names[i], nl);
-        off += (uint32_t) nl;
-        memcpy(buf + off, pv.vals[i], vl);
-        off += (uint32_t) vl;
-    }
+    milk_client_pack_vars(&p, &pv);
 
     int cwd_fd = open(".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     int fds[4] = { (sw_stdin_fd >= 0) ? sw_stdin_fd : STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO,
                    cwd_fd };
     uint8_t msg_flags = (uint8_t) ((async_flag ? MILK_FLAG_ASYNC : 0) |
                                    ((flags & MILK_CALL_NOWAIT) ? MILK_FLAG_NOWAIT : 0));
-    int     sret      = milk_proto_send_with_fds(fd, MILK_MSG_CALL, msg_flags, buf, off, fds,
-                                                 (cwd_fd >= 0) ? 4 : 3);
+    int     rc        = milk_client_request(fd, hooks, MILK_MSG_CALL, msg_flags, &p, fds,
+                                            (cwd_fd >= 0) ? 4 : 3, NULL, 0);
     if (sw_stdin_fd >= 0)
     {
         close(sw_stdin_fd);
@@ -366,16 +310,6 @@ int milk_client_call(int argc, char **argv, int flags, const milk_client_hooks_t
     {
         close(cwd_fd);
     }
-    free(buf);
-
-    if (sret != 0)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    milk_client_end(fd);
     return rc;
 }
 
@@ -409,24 +343,11 @@ int milk_client_get_buf(const char *spec, char *out, size_t outsz, const milk_cl
         return 1; /* milk_shm_prop_get gave the hint; the server knows no more */
     }
 
-    char sockpath[256];
-    int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    if (fd < 0)
-    {
-        return MILK_CLIENT_RC_TRANSPORT;
-    }
-
-    uint32_t slen = (uint32_t) (strlen(spec) + 1);
-    if (milk_proto_send(fd, MILK_MSG_GET, 0, spec, slen) != 0)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-
-    int got_val = 0;
-    int rc      = milk_client_await_response(fd, sockpath, hooks, out, outsz, &got_val);
-    milk_client_end(fd);
-    return (rc == 0 && got_val) ? 0 : 1;
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, spec);
+    int rc = milk_client_request(milk_client_connect_or_start(hooks), hooks, MILK_MSG_GET, 0, &p,
+                                 NULL, 0, out, outsz);
+    return (rc == 0 || rc == MILK_CLIENT_RC_TRANSPORT) ? rc : 1;
 }
 
 /**
@@ -543,47 +464,19 @@ int milk_client_set(const char                *spec,
         return 1; // it failed here with its message; the server runs the same write
     }
 
-    char sockpath[256];
-    int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    if (fd < 0)
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, spec);
+    if (val != NULL || comment != NULL)
     {
-        return MILK_CLIENT_RC_TRANSPORT;
+        milk_pl_str(&p, (val != NULL) ? val : ""); /* an empty slot keeps the comment in place */
     }
-
-    size_t   l1  = strlen(spec) + 1;
-    size_t   l3  = (comment != NULL) ? (strlen(comment) + 1) : 0;
-    size_t   l2  = (val != NULL) ? (strlen(val) + 1)
-                                 : (l3 > 0 ? 1 : 0); /* empty slot keeps comment in place */
-    uint32_t tot = (uint32_t) (l1 + l2 + l3);
-
-    uint8_t *buf = (uint8_t *) malloc(tot);
-    if (buf == NULL)
+    if (comment != NULL)
     {
-        milk_client_end(fd);
-        return 1;
+        milk_pl_str(&p, comment);
     }
-    memcpy(buf, spec, l1);
-    if (l2 > 0)
-    {
-        memcpy(buf + l1, (val != NULL) ? val : "", l2);
-    }
-    if (l3 > 0)
-    {
-        memcpy(buf + l1 + l2, comment, l3);
-    }
-
     int fds[3] = { STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO };
-    int sret   = milk_proto_send_with_fds(fd, MILK_MSG_SET, 0, buf, tot, fds, 3);
-    free(buf);
-    if (sret != 0)
-    {
-        milk_client_end(fd);
-        return 1;
-    }
-
-    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    milk_client_end(fd);
-    return rc;
+    return milk_client_request(milk_client_connect_or_start(hooks), hooks, MILK_MSG_SET, 0, &p, fds,
+                               3, NULL, 0);
 }
 
 /**
@@ -679,7 +572,12 @@ static int get_specs(int n, char **specs, int json_mode, const milk_client_hooks
             snprintf(js, sizeof(js), "json:%s", spec);
             spec = js;
         }
-        rc |= (milk_client_get(spec, (eq != NULL) ? name : NULL, hooks) != 0);
+        int r = milk_client_get(spec, (eq != NULL) ? name : NULL, hooks);
+        if (r == MILK_CLIENT_RC_TRANSPORT)
+        {
+            return r;
+        }
+        rc |= (r != 0);
     }
     return rc;
 }
@@ -1505,48 +1403,14 @@ static int client_calc_or_test(const char                *expr,
         return 0;
     }
 
-    char sockpath[256];
-    int  fd = milk_client_connect_or_start(hooks, sockpath, sizeof(sockpath));
-    if (fd < 0)
-    {
-        return MILK_CLIENT_RC_TRANSPORT;
-    }
-
     milk_packed_vars_t pv;
     pv.count = 0;
     milk_client_pack_digits(&pv, hooks);
     milk_client_collect_identifiers(&pv, hooks, expr);
 
-    size_t elen = strlen(expr) + 1;
-    size_t cap  = elen + sizeof(uint32_t);
-    for (int i = 0; i < pv.count; i++)
-    {
-        cap += strlen(pv.names[i]) + 1 + strlen(pv.vals[i]) + 1;
-    }
-
-    uint8_t *buf = (uint8_t *) malloc(cap);
-    if (buf == NULL)
-    {
-        milk_client_end(fd);
-        return 2;
-    }
-
-    uint32_t off = 0;
-    memcpy(buf + off, expr, elen);
-    off += (uint32_t) elen;
-
-    uint32_t nvars = (uint32_t) pv.count;
-    memcpy(buf + off, &nvars, sizeof(nvars));
-    off += (uint32_t) sizeof(nvars);
-    for (int i = 0; i < pv.count; i++)
-    {
-        size_t nl = strlen(pv.names[i]) + 1;
-        size_t vl = strlen(pv.vals[i]) + 1;
-        memcpy(buf + off, pv.names[i], nl);
-        off += (uint32_t) nl;
-        memcpy(buf + off, pv.vals[i], vl);
-        off += (uint32_t) vl;
-    }
+    milk_payload_t p = { 0 };
+    milk_pl_str(&p, expr);
+    milk_client_pack_vars(&p, &pv);
 
     /* the values to bind go to a memory file: a pipe read after DONE would block a large -a output */
     int bind      = !is_test && (names != NULL || arr != NULL);
@@ -1555,15 +1419,12 @@ static int client_calc_or_test(const char                *expr,
     int fds[4]    = { STDIN_FILENO, (out_fd >= 0) ? out_fd : STDOUT_FILENO, STDERR_FILENO, cwd_fd };
     uint8_t mtype = is_test ? MILK_MSG_TEST : MILK_MSG_CALC;
     uint8_t flags = !bind ? xflags : (arr != NULL) ? MILK_FLAG_PIXELS : MILK_FLAG_BIND;
-    int     sret = milk_proto_send_with_fds(fd, mtype, flags, buf, off, fds, (cwd_fd >= 0) ? 4 : 3);
+    int rc = milk_client_request(milk_client_connect_or_start(hooks), hooks, mtype, flags, &p, fds,
+                                 (cwd_fd >= 0) ? 4 : 3, NULL, 0);
     if (cwd_fd >= 0)
     {
         close(cwd_fd);
     }
-    free(buf);
-
-    int rc = (sret != 0) ? 2 : milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-    milk_client_end(fd);
 
     if (bind && out_fd >= 0)
     {
@@ -1758,24 +1619,12 @@ int milk_client_exists(const char *spec, int check_running, const milk_client_ho
         char sockpath[256];
         milk_ipc_resolve_sockpath(hooks, sockpath, sizeof(sockpath), 1);
         int fd = milk_client_connect(sockpath);
-        if (fd >= 0)
+        if (fd >= 0) /* no session: nothing of it exists */
         {
-            size_t   slen = strlen(s_norm) + 1;
-            uint8_t *pl   = (uint8_t *) malloc(slen + 1);
-            if (pl != NULL)
-            {
-                pl[0] = check_running ? 'R' : 'E';
-                memcpy(pl + 1, s_norm, slen);
-                if (milk_proto_send(fd, MILK_MSG_EXISTS, 0, pl, (uint32_t) (slen + 1)) == 0)
-                {
-                    int rc = milk_client_await_response(fd, sockpath, hooks, NULL, 0, NULL);
-                    free(pl);
-                    milk_client_end(fd);
-                    return rc;
-                }
-                free(pl);
-            }
-            milk_client_end(fd);
+            milk_payload_t p = { 0 };
+            milk_pl_add(&p, "E", 1);
+            milk_pl_str(&p, s_norm);
+            return milk_client_request(fd, hooks, MILK_MSG_EXISTS, 0, &p, NULL, 0, NULL, 0);
         }
     }
     return 1;

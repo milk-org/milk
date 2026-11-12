@@ -23,6 +23,11 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
   `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
   [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — Every request of a shell to its session is sent by one function
+  (`milk_client_request()`; 12 places built and sent their request by hand). A session that
+  cannot be reached, or that answers `busy`, now gives status 255 for `@get` as for the other
+  keywords (it gave 1), and a request that cannot be sent says so. The messages on the socket are
+  unchanged. See [Scripting](guide/scripting.md), "Errors and Exit Status" `#cli` `#refactor`
 - **2026-11-11** — Keyword options are written once, in the keyword table: one parser reads them
   for every keyword, and `@help <keyword>` and TAB completion show that same list (11 keywords
   with options had no completion). An unknown option or an option without its value is now a

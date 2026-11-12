@@ -9,7 +9,8 @@
  *
  * Purpose:     the client and the session read and write one frame format, defined once.
  * Does:        defines the frame header (magic, version, type, flags, payload length), the
- *              request and reply types (MILK_MSG_*) and their flags (MILK_FLAG_*); sends a frame
+ *              request and reply types (MILK_MSG_*) and their flags (MILK_FLAG_*); writes a
+ *              payload of strings and counts (milk_payload_t) and reads one; sends a frame
  *              in one sendmsg(), with up to 4 file descriptors (SCM_RIGHTS); receives one, taking
  *              the passed descriptors first so that every error path closes them, and tells a
  *              peer of another protocol version apart (-2).
@@ -416,6 +417,58 @@ static inline int milk_proto_recv(int               fd,
         memcpy(recv_fds, got_fds, sizeof(got_fds));
     }
     return 0;
+}
+
+/** A payload being written: strings (each with its NUL) and 32-bit counts, in order. */
+typedef struct
+{
+    uint8_t *buf;
+    uint32_t len;
+    uint32_t cap;
+    int      bad; /* out of memory: the payload is not sent */
+} milk_payload_t;
+
+static inline void milk_pl_add(milk_payload_t *p, const void *bytes, size_t n)
+{
+    if (!p->bad && p->len + n > p->cap)
+    {
+        uint32_t cap = (uint32_t) (2 * (p->len + n) + 64);
+        uint8_t *buf = (uint8_t *) realloc(p->buf, cap);
+        p->bad       = (buf == NULL);
+        p->buf       = p->bad ? p->buf : buf;
+        p->cap       = p->bad ? p->cap : cap;
+    }
+    if (!p->bad)
+    {
+        memcpy(p->buf + p->len, bytes, n);
+        p->len += (uint32_t) n;
+    }
+}
+
+static inline void milk_pl_str(milk_payload_t *p, const char *s)
+{
+    milk_pl_add(p, s, strlen(s) + 1);
+}
+
+static inline void milk_pl_u32(milk_payload_t *p, uint32_t v)
+{
+    milk_pl_add(p, &v, sizeof(v));
+}
+
+/** milk_pl_next() - the next string of a received payload of strings; @dflt past its end. */
+static inline const char *milk_pl_next(const uint8_t *payload,
+                                       uint32_t       len,
+                                       uint32_t      *off,
+                                       const char    *dflt)
+{
+    if (payload == NULL || *off >= len)
+    {
+        return dflt;
+    }
+    const char *s =
+        (const char *) payload + *off; /* milk_proto_recv() ends the payload with a NUL */
+    *off += (uint32_t) strlen(s) + 1;
+    return s;
 }
 
 #endif /* MILK_PROTO_H */

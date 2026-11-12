@@ -134,7 +134,7 @@ void milk_server_cmd_unlock(void)
 /* Connections kept between requests                                                              */
 /* ---------------------------------------------------------------------------------------------- */
 
-/* A shell keeps its connection between requests (milk_client_end()). The listening socket and the
+/* A shell keeps its connection between requests (milk_client_request()). The listening socket and the
  * kept connections are in one epoll set, which the loops poll (milk_server_ready_fd()). A kept
  * connection is armed once (EPOLLONESHOT): its request disarms it, and it is armed again when it is
  * kept after the reply. g_kept lists the kept ones, which a forked child closes. */
@@ -715,11 +715,10 @@ static int handle_fast_message(int                     client_fd,
 
     if (hdr->type == MILK_MSG_COMPLETE)
     {
-        const char *prefix = (payload != NULL) ? (const char *) payload : "";
-        size_t      plen   = strlen(prefix) + 1;
-        const char *comp_type =
-            (payload != NULL && plen < hdr->len) ? (const char *) (payload + plen) : "arg";
-        milk_server_handle_complete(client_fd, keep, prefix, comp_type);
+        uint32_t    off    = 0;
+        const char *prefix = milk_pl_next(payload, hdr->len, &off, "");
+        milk_server_handle_complete(client_fd, keep, prefix,
+                                    milk_pl_next(payload, hdr->len, &off, "arg"));
         return 1;
     }
 
@@ -792,75 +791,45 @@ static int handle_wait_or_grab_message(int                     client_fd,
                                        const uint8_t          *payload,
                                        const struct timespec  *ts_start)
 {
-    int32_t rc = 0;
+    int32_t  rc  = 1;
+    uint32_t len = hdr->len;
+    uint32_t off = 0;
+    char     log_cmd[MILK_SRVLOG_CMD_MAX];
 
-    if (hdr->type == MILK_MSG_WAITFOR)
+    if (hdr->type != MILK_MSG_WAITFOR && hdr->type != MILK_MSG_GRAB)
     {
-        char log_cmd[MILK_SRVLOG_CMD_MAX] = "@waitfor";
-        if (payload != NULL && hdr->len > 0)
-        {
-            const char *target = (const char *) payload;
-            size_t      o1     = strlen(target) + 1;
-            const char *arg2   = (o1 < hdr->len) ? (const char *) (payload + o1) : "";
-            size_t      o2     = o1 + strlen(arg2) + 1;
-            const char *tstr   = (o2 < hdr->len) ? (const char *) (payload + o2) : "0";
-            double      tsec   = strtod(tstr, NULL);
-            snprintf(log_cmd, sizeof(log_cmd), "@waitfor %s%s%s", target, arg2[0] ? " " : "", arg2);
-            rc = milk_server_waitfor(client_fd, target, arg2, tsec);
-        }
-        else
-        {
-            rc = 1;
-        }
-        if (g_srvlog_shm != NULL)
-        {
-            struct timespec ts_end;
-            clock_gettime(CLOCK_REALTIME, &ts_end);
-            milk_srvlog_record(g_srvlog_shm, ts_start, diff_timespec_ns(ts_start, &ts_end),
-                               client_pid, hdr->type, rc, log_cmd, "");
-        }
-        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
-        return 1;
+        return 0;
     }
-
-    if (hdr->type == MILK_MSG_GRAB)
+    const char *name = milk_pl_next(payload, len, &off, NULL); /* the target, or the stream */
+    snprintf(log_cmd, sizeof(log_cmd), "%s",
+             (hdr->type == MILK_MSG_WAITFOR) ? "@waitfor" : "@grab");
+    if (name != NULL && hdr->type == MILK_MSG_WAITFOR)
     {
-        char log_cmd[MILK_SRVLOG_CMD_MAX] = "@grab";
-        if (payload != NULL && hdr->len > 0)
-        {
-            const char *sname   = (const char *) payload;
-            size_t      o1      = strlen(sname) + 1;
-            const char *nfstr   = (o1 < hdr->len) ? (const char *) (payload + o1) : "1";
-            size_t      o2      = o1 + strlen(nfstr) + 1;
-            const char *outname = (o2 < hdr->len) ? (const char *) (payload + o2) : "";
-            size_t      o3      = o2 + strlen(outname) + 1;
-            const char *tstr    = (o3 < hdr->len) ? (const char *) (payload + o3) : "0";
-            size_t      o4      = o3 + strlen(tstr) + 1;
-            const char *fits_p  = (o4 < hdr->len) ? (const char *) (payload + o4) : "";
-            size_t      o5      = o4 + strlen(fits_p) + 1;
-            const char *ts_p    = (o5 < hdr->len) ? (const char *) (payload + o5) : "";
-            long        nf      = strtol(nfstr, NULL, 10);
-            double      tsec    = strtod(tstr, NULL);
-            snprintf(log_cmd, sizeof(log_cmd), "@grab %s %ld%s%s", sname, nf, outname[0] ? " " : "",
-                     outname);
-            rc = milk_server_grab(client_fd, sname, nf, outname, tsec, fits_p, ts_p);
-        }
-        else
-        {
-            rc = 1;
-        }
-        if (g_srvlog_shm != NULL)
-        {
-            struct timespec ts_end;
-            clock_gettime(CLOCK_REALTIME, &ts_end);
-            milk_srvlog_record(g_srvlog_shm, ts_start, diff_timespec_ns(ts_start, &ts_end),
-                               client_pid, hdr->type, rc, log_cmd, "");
-        }
-        milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
-        return 1;
+        const char *arg2 = milk_pl_next(payload, len, &off, "");
+        double      tsec = strtod(milk_pl_next(payload, len, &off, "0"), NULL);
+        snprintf(log_cmd, sizeof(log_cmd), "@waitfor %s%s%s", name, arg2[0] ? " " : "", arg2);
+        rc = milk_server_waitfor(client_fd, name, arg2, tsec);
     }
-
-    return 0;
+    else if (name != NULL)
+    {
+        long        nf      = strtol(milk_pl_next(payload, len, &off, "1"), NULL, 10);
+        const char *outname = milk_pl_next(payload, len, &off, "");
+        double      tsec    = strtod(milk_pl_next(payload, len, &off, "0"), NULL);
+        const char *fits_p  = milk_pl_next(payload, len, &off, "");
+        const char *ts_p    = milk_pl_next(payload, len, &off, "");
+        snprintf(log_cmd, sizeof(log_cmd), "@grab %s %ld%s%s", name, nf, outname[0] ? " " : "",
+                 outname);
+        rc = milk_server_grab(client_fd, name, nf, outname, tsec, fits_p, ts_p);
+    }
+    if (g_srvlog_shm != NULL)
+    {
+        struct timespec ts_end;
+        clock_gettime(CLOCK_REALTIME, &ts_end);
+        milk_srvlog_record(g_srvlog_shm, ts_start, diff_timespec_ns(ts_start, &ts_end), client_pid,
+                           hdr->type, rc, log_cmd, "");
+    }
+    milk_server_send_done(client_fd, keep, &rc, sizeof(rc));
+    return 1;
 }
 
 /**
