@@ -913,6 +913,7 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
  */
 static int batch_step_cb(char *seg, void *ctx)
 {
+    milk_server_safe_point(); /* between two steps: what the earlier ones made is whole */
     return exec_single_batch_step(seg, (char *) ctx, 256);
 }
 

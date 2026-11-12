@@ -112,8 +112,9 @@ for N s` and status 1.
 
 Reads (`@get`, `@exists`, `@test`, completion) do not wait for the command to end. Those of another
 shell are answered by the command itself at its next safe point, where its images and variables are
-whole: between two statements, steps or loop iterations of a calculator program. A command made of
-one long step (a large decomposition, a module command) has none: a read that has waited 2 s is
+whole: between two statements, steps or loop iterations of a calculator program, two iterations of
+a module command's processing loop, two steps of a `@pipe`. A command made of one long step (a
+large decomposition, a module command without a loop) has none: a read that has waited 2 s is
 told `milk: busy: <command> for N s`, with status 255, and those still waiting when it ends are
 answered then. Reads from the command's own process group (a stage of its pipeline, a background
 job of the same script) are answered at once by a copy of the session, which shows the images as

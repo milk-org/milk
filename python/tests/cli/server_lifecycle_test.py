@@ -394,3 +394,37 @@ def test_reads_from_another_shell_are_answered_at_safe_points(tmp_path, names):
     out = res.stdout + res.stderr
     assert value(res.stdout, "main") == "0", out
     assert "whole=150 mixed=0 completed=150" in res.stdout, out
+
+
+def test_processing_loops_and_pipes_have_safe_points(tmp_path, names):
+    """Another shell's completion is answered between two iterations of a module command's
+    processing loop, and between two steps of a @pipe: within milliseconds, where it would
+    otherwise wait for the command to end (or be told busy after 2 s)."""
+    name = names()
+    reader = (
+        'source "$MILK_INSTALLDIR/bin/milk.bash" --session '
+        + name
+        + " >/dev/null 2>&1; "
+        "ok=0; max=0; for i in $(seq 60); do t0=$EPOCHREALTIME; "
+        "milkcomplete mem.mk2 cmd >/dev/null 2>&1 && ok=$((ok+1)); "
+        "d=$(( (${EPOCHREALTIME/./} - ${t0/./}) / 1000 )); (( d > max )) && max=$d; "
+        'sleep 0.02; done; echo "$1=$ok,$max" >> reader.out'
+    )
+    steps = "; ".join(f"u{k} = svd(rand(zeros(500, 500), {k}))" for k in range(30))
+    res = milk_bash(
+        f"@session new {name} >/dev/null\n"
+        'mem.mk2Dim "@S:im" 256 256 >/dev/null; @calc "im = 1"\n'
+        "modex.imsum2 ..procinfo 1 >/dev/null; modex.imsum2 ..loopcntMax 300000 >/dev/null\n"
+        f"setsid bash -c '{reader}' sh loop &\n"
+        'SECONDS=0; modex.imsum2 im 1.0 >/dev/null; echo "loop_rc=$? loop_s=$SECONDS"; wait\n'
+        f"setsid bash -c '{reader}' sh pipe &\n"
+        f'SECONDS=0; @pipe "{steps}" >/dev/null; echo "pipe_rc=$? pipe_s=$SECONDS"; wait\n'
+        "cat reader.out",
+        tmp_path,
+        timeout=90,
+    )
+    out = res.stdout + res.stderr
+    assert "loop_rc=0" in res.stdout and "pipe_rc=0" in res.stdout, out
+    for what in ("loop", "pipe"):
+        answered, worst_ms = [int(x) for x in value(res.stdout, what).split(",")]
+        assert answered == 60 and worst_ms < 700, f"{what}: {out}"
