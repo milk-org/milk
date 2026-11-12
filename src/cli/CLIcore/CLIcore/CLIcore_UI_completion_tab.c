@@ -15,7 +15,7 @@
  *   fuzzy pass keeps the candidates that contain the word.
  *
  * @see CLIcore_UI_completion_menu.c for the interactive Zsh-style match grid.
- * @see CLIcore_UI_completion.c for prompt rendering and Levenshtein distance.
+ * @see CLIcore_UI_completion.c for prompt rendering.
  */
 
 #include <ctype.h>

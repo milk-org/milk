@@ -43,7 +43,6 @@ char *CLI_generator(const char *text, int state);
 /* The word CLI_generator() completes starts at rl_line_buffer[cli_comp_start] */
 extern int cli_comp_start;
 extern int cli_comp_end;
-int        levenshtein_distance(const char *s1, const char *s2);
 #endif
 
 /* CLIcore_UI_highlight.c */

@@ -105,4 +105,8 @@ void milk_args_print_call(int cmdi, int session, FILE *fp);
 /** milk_cmd_classify_arg() - classify CLI command argument @arg into data.cmdargtoken[data.cmdNBarg]. */
 void milk_cmd_classify_arg(const char *arg, int is_slice);
 
+/** milk_mkdir_p() - create directory @path and its missing parents (@path is written to while
+ * it runs); 0 or -1. */
+int milk_mkdir_p(char *path);
+
 #endif /* MILK_CMD_ARGS_H */

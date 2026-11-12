@@ -37,32 +37,6 @@
 /* ========================================================================== */
 
 /**
- * plan_err - Format the first planning error message and return -1
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Size of @err in bytes
- * @fmt:   printf-style format string
- *
- * Preserves the earliest error message if @err is already non-empty so that
- * cascading failures do not overwrite the root cause.
- *
- * Return: Always -1
- */
-__attribute__((format(printf, 3, 4))) static int plan_err(char       *err,
-                                                          size_t      errsz,
-                                                          const char *fmt,
-                                                          ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
  * is_float_exact_dt - Check if a datatype is exactly representable in float32
  * @dt: ImageStreamIO datatype code (`_DATATYPE_*`)
  *
@@ -76,17 +50,6 @@ static inline int is_float_exact_dt(uint8_t dt)
 {
     return dt == _DATATYPE_FLOAT || dt == _DATATYPE_UINT8 || dt == _DATATYPE_INT8 ||
            dt == _DATATYPE_UINT16 || dt == _DATATYPE_INT16;
-}
-
-/**
- * is_complex_dt - Check if a datatype is complex float or complex double
- * @dt: ImageStreamIO datatype code (`_DATATYPE_*`)
- *
- * Return: 1 if complex, 0 otherwise
- */
-static inline int is_complex_dt(uint8_t dt)
-{
-    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
 }
 
 /**
@@ -158,7 +121,7 @@ static int is_ctor_call(const mc_expr_t *e)
            (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.ext_id >= 0) ||
            (fn != NULL && e->res_kind == MC_RES_IMAGE &&
             (fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L ||
-             (fn->kind == MC_FN_PROG && fn->id == MC_ID_ema)));
+             (fn->kind == MC_FN_PROG && fn->id == MC_FID_ema)));
 }
 
 /**
@@ -219,7 +182,7 @@ static int check_expr_supported(const mc_expr_t *e, char *err, size_t errsz)
         (e->u.call.ext_id < 0 && e->u.call.fn) ? e->u.call.fn->kind : (mc_fn_kind_t) -1;
     return (e->u.call.ext_id >= 0 || fk >= 0)
                ? 0
-               : plan_err(err, errsz, "'%s' cannot run in a compiled program", e->u.call.name);
+               : mc_err(err, errsz, "'%s' cannot run in a compiled program", e->u.call.name);
 }
 
 /* ========================================================================== */
@@ -589,16 +552,16 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         case MC_FN_SHIFT:
             if (e->u.call.args[0]->res_kind != MC_RES_IMAGE)
             {
-                return plan_err(w->err, w->errsz, "%s: expected %s(im, dx[, dy])",
-                                e->u.call.fn->name, e->u.call.fn->name);
+                return mc_err(w->err, w->errsz, "%s: expected %s(im, dx[, dy])", e->u.call.fn->name,
+                              e->u.call.fn->name);
             }
             w->pass->uses_coords_or_stencil = 1;
             rc                              = walk_pass_expr(w, e->u.call.args[0], 0, 1, 0);
             for (int i = 1; i < e->u.call.nargs && rc == 0; i++)
             {
                 rc = (e->u.call.args[i]->res_kind == MC_RES_IMAGE)
-                         ? plan_err(w->err, w->errsz, "%s: expected %s(im, dx[, dy])",
-                                    e->u.call.fn->name, e->u.call.fn->name)
+                         ? mc_err(w->err, w->errsz, "%s: expected %s(im, dx[, dy])",
+                                  e->u.call.fn->name, e->u.call.fn->name)
                          : walk_pass_expr(w, e->u.call.args[i], 0, (i == 1), 0);
             }
             return rc;
@@ -613,13 +576,13 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
         case MC_FN_GATHER:
             if (e->u.call.args[0]->res_kind != MC_RES_IMAGE ||
                 e->u.call.args[1]->res_kind != MC_RES_IMAGE ||
-                (e->u.call.nargs == 3 && (e->u.call.fn->id == MC_ID_interp2) !=
+                (e->u.call.nargs == 3 && (e->u.call.fn->id == MC_FID_interp2) !=
                                              (e->u.call.args[2]->res_kind == MC_RES_IMAGE)))
             {
-                return plan_err(w->err, w->errsz,
-                                (e->u.call.fn->id == MC_ID_interp2)
-                                    ? "interp2: expected interp2(im, xmap, ymap)"
-                                    : "pixremap: expected pixremap(im, map[, fill])");
+                return mc_err(w->err, w->errsz,
+                              (e->u.call.fn->id == MC_FID_interp2)
+                                  ? "interp2: expected interp2(im, xmap, ymap)"
+                                  : "pixremap: expected pixremap(im, map[, fill])");
             }
             rc = walk_pass_expr(w, e->u.call.args[0], 0, 1, 1) ||
                  walk_pass_expr(w, e->u.call.args[1], 0, 0, 0);
@@ -696,10 +659,10 @@ static int add_pass_out(mcalc_prog_t    *prog,
                   rhs->res_dt != _DATATYPE_DOUBLE));
     if (sidx < 0 || (keep_t && !is_complex_dt(slot->orig_dt) && is_complex_dt(rhs->res_dt)))
     {
-        return plan_err(err, errsz,
-                        (sidx < 0) ? "failed to allocate slot"
-                                   : "Cannot store a complex image in a real one; use real(), "
-                                     "imag() or abs() first");
+        return mc_err(err, errsz,
+                      (sidx < 0) ? "failed to allocate slot"
+                                 : "Cannot store a complex image in a real one; use real(), "
+                                   "imag() or abs() first");
     }
     uint8_t         out_dt = keep_t ? slot->orig_dt : (rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT);
     plan_walk_ctx_t w      = { .prog       = prog,
@@ -712,7 +675,7 @@ static int add_pass_out(mcalc_prog_t    *prog,
         (lhs_sl != NULL && lhs_sl->u.slice.is_mask_index &&
          walk_pass_expr(&w, lhs_sl->u.slice.axes[0].start, 0, 0, 0) != 0))
     {
-        return plan_err(err, errsz, "failed to plan pass expression");
+        return mc_err(err, errsz, "failed to plan pass expression");
     }
     pass = w.pass;
     for (int j = 0; !keep_t && out_dt == _DATATYPE_FLOAT &&
@@ -733,12 +696,11 @@ static int add_pass_out(mcalc_prog_t    *prog,
     od.dt           = out_dt;
     od.op_naxis     = prog->slots[sidx].plan_naxis;
     memcpy(od.op_size, prog->slots[sidx].plan_size, sizeof(od.op_size));
-    od.is_out        = 1;
-    od.comp_gen_idx  = -1;
-    od.is_inplace_rw = (assign_op != MC_TOK_ASSIGN || lhs_sl != NULL);
-    od.has_slice     = (lhs_sl != NULL && !lhs_sl->u.slice.is_mask_index);
-    od.slice_expr    = lhs_sl;
-    int op_idx       = add_pass_op(pass, &od);
+    od.is_out       = 1;
+    od.comp_gen_idx = -1;
+    od.has_slice    = (lhs_sl != NULL && !lhs_sl->u.slice.is_mask_index);
+    od.slice_expr   = lhs_sl;
+    int op_idx      = add_pass_op(pass, &od);
     if (pass->nouts >= pass->cap_outs)
     {
         pass->cap_outs = (pass->cap_outs == 0) ? 4 : pass->cap_outs * 2;
@@ -746,14 +708,13 @@ static int add_pass_out(mcalc_prog_t    *prog,
     }
     mc_pass_out_t *po = &pass->outs[pass->nouts++];
     memset(po, 0, sizeof(*po));
-    po->op_idx      = op_idx;
-    po->mask_op_idx = -1;
-    po->slot_idx    = sidx;
-    po->stmt_idx    = stmt_idx;
-    po->assign_op   = assign_op;
-    po->rhs_expr    = rhs;
-    po->lhs_slice   = lhs_sl;
-    po->out_dt      = out_dt;
+    po->op_idx    = op_idx;
+    po->slot_idx  = sidx;
+    po->stmt_idx  = stmt_idx;
+    po->assign_op = assign_op;
+    po->rhs_expr  = rhs;
+    po->lhs_slice = lhs_sl;
+    po->out_dt    = out_dt;
     return (op_idx < 0 || pass->outs == NULL) ? -1 : 0;
 }
 
@@ -1080,7 +1041,6 @@ static mc_step_t *alloc_step(mcalc_prog_t *p, mc_step_kind_t kind, int stmt_idx)
 /**
  * mc_plan_build - Build execution steps, emit C kernels, and compile a program
  * @p:        Program with resolved AST (`p->ast_head`)
- * @has_vars: Unused legacy flag (retained for internal signature compatibility)
  * @err:      Error message buffer
  * @errsz:    Size of @err in bytes
  *
@@ -1093,9 +1053,8 @@ static mc_step_t *alloc_step(mcalc_prog_t *p, mc_step_kind_t kind, int stmt_idx)
  *
  * Return: 0 on success, -1 on error (with @err populated)
  */
-int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
+int mc_plan_build(mcalc_prog_t *p, char *err, size_t errsz)
 {
-    (void) has_vars;
     mc_expr_t *tmp_nodes[128] = { 0 };
     int        ntmp_nodes     = 0;
     int        rc             = -1;
@@ -1112,7 +1071,7 @@ int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz)
         {
             if (bad_s)
             {
-                (void) plan_err(err, errsz, "give as many values as names (a, b = x, y)");
+                (void) mc_err(err, errsz, "give as many values as names (a, b = x, y)");
             }
             goto done;
         }

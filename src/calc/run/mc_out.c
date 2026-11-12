@@ -651,24 +651,15 @@ void mc_out_post_now(imageID id)
 }
 
 /**
- * mc_post_defer - Enable or disable deferred shared-stream semaphore posting
- * @on: 1 to increment deferral nesting depth, 0 to reset deferral state
+ * mc_post_defer - Start deferring shared-stream posts until mc_post_flush(); calls nest
  *
  * Return: void
  */
-void mc_post_defer(int on)
+void mc_post_defer(void)
 {
-    if (on)
+    if (g_post_defer++ == 0)
     {
-        if (g_post_defer++ == 0)
-        {
-            g_post_n = 0;
-        }
-    }
-    else
-    {
-        g_post_defer = 0;
-        g_post_n     = 0;
+        g_post_n = 0;
     }
 }
 

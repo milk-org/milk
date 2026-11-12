@@ -77,42 +77,6 @@ uint64_t mcalc_torn_count(void)
 }
 
 /**
- * exec_err - Format the first runtime execution error message and return -1
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Size of @err in bytes
- * @fmt:   printf-style format string
- *
- * Preserves the earliest error message if @err is already non-empty.
- *
- * Return: Always -1
- */
-__attribute__((format(printf, 3, 4))) static int exec_err(char       *err,
-                                                          size_t      errsz,
-                                                          const char *fmt,
-                                                          ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
- * is_complex_dt - Check if an ImageStreamIO datatype is complex
- * @dt: Datatype code (`_DATATYPE_*`)
- *
- * Return: 1 if complex float or complex double, 0 otherwise
- */
-static inline int is_complex_dt(uint8_t dt)
-{
-    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
-}
-
-/**
  * mc_write_im_pix - Convert and store a double value into pixel @idx of image @im
  * @im:  Target `IMAGE` structure
  * @dt:  Target datatype (`_DATATYPE_*`)
@@ -291,7 +255,7 @@ int mc_resolve_or_eval_im(const mc_expr_t *e,
     *is_tmp = 0;
     if (e == NULL)
     {
-        return exec_err(err, errsz, "null image expression");
+        return mc_err(err, errsz, "null image expression");
     }
     if (e->kind != MC_EXPR_IDENT)
     {
@@ -302,9 +266,9 @@ int mc_resolve_or_eval_im(const mc_expr_t *e,
     imageID id = expr_im_id(e);
     *out_id    = (id < 0) ? -1 : (id == avoid_id) ? clone_to_tmp(id) : id;
     *is_tmp    = (id >= 0 && id == avoid_id && *out_id >= 0);
-    return (id < 0)         ? exec_err(err, errsz, "unknown image '%s'", e->u.ident.name)
+    return (id < 0)         ? mc_err(err, errsz, "unknown image '%s'", e->u.ident.name)
            : (*out_id >= 0) ? 0
-                            : exec_err(err, errsz, "failed to clone aliased image");
+                            : mc_err(err, errsz, "failed to clone aliased image");
 }
 
 /* ========================================================================== */
@@ -395,7 +359,7 @@ void mc_torn_begin(mc_torn_t *t, const mc_expr_t *const *exprs, int n, int keep)
     }
     t->outer = (!t->keep && !t->over);
     g_torn_outer += t->outer;
-    mc_post_defer(1);
+    mc_post_defer();
     for (int i = 0; i < t->n; i++)
     {
         t->mark[i] = milk_frame_mark(&milk_data.image[t->id[i]]);
@@ -515,14 +479,14 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
         (rhs->u.call.fn->kind == MC_FN_REDUCE_D || rhs->u.call.fn->kind == MC_FN_REDUCE_L ||
          rhs->u.call.fn->kind == MC_FN_STENCIL_LIB ||
-         (rhs->u.call.fn->kind == MC_FN_PROG && rhs->u.call.fn->id == MC_ID_ema)))
+         (rhs->u.call.fn->kind == MC_FN_PROG && rhs->u.call.fn->id == MC_FID_ema)))
     {
         return mc_exec_prestage(prog, cs, avoid_id, in_unit, err, errsz);
     }
 
     /* Vector literal `[a, b, c]` or multi-scalar `vec(a, b, c)` */
     if (rhs->kind == MC_EXPR_VEC_LIT ||
-        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL && rhs->u.call.fn->id == MC_ID_vec &&
+        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL && rhs->u.call.fn->id == MC_FID_vec &&
          (rhs->u.call.nargs != 1 || rhs->u.call.args[0]->res_kind != MC_RES_IMAGE)))
     {
         int n = (rhs->kind == MC_EXPR_VEC_LIT) ? rhs->u.vec_lit.nelem : rhs->u.call.nargs;
@@ -547,11 +511,11 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     }
 
     const mc_fn_id_t fn =
-        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL) ? rhs->u.call.fn->id : MC_ID_NONE;
+        (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL) ? rhs->u.call.fn->id : MC_FID_NONE;
     int nargs = (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.nargs : 0;
 
     /* Analytic array generators: `linspace`, `zeros`, `eye` */
-    if (fn == MC_ID_linspace || fn == MC_ID_zeros || fn == MC_ID_eye)
+    if (fn == MC_FID_linspace || fn == MC_FID_zeros || fn == MC_FID_eye)
     {
         double v[3] = { 0.0, 0.0, 0.0 };
         for (int i = 0; i < nargs; i++)
@@ -561,19 +525,18 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                 return -1;
             }
         }
-        int      is_ls  = (fn == MC_ID_linspace);
-        int      is_eye = (fn == MC_ID_eye);
+        int      is_ls  = (fn == MC_FID_linspace);
+        int      is_eye = (fn == MC_FID_eye);
         uint32_t sz[3]  = { 1, 1, 1 };
         if (is_ls && (llround(v[2]) <= 0 || llround(v[2]) > 1048576))
         {
-            return exec_err(err, errsz, "linspace: n must be in [1, 1048576]");
+            return mc_err(err, errsz, "linspace: n must be in [1, 1048576]");
         }
         for (int i = 0; !is_ls && i < nargs; i++)
         {
             if (llround(v[i]) <= 0)
             {
-                return exec_err(err, errsz, "%s: dimensions must be positive",
-                                rhs->u.call.fn->name);
+                return mc_err(err, errsz, "%s: dimensions must be positive", rhs->u.call.fn->name);
             }
             sz[i] = (uint32_t) llround(v[i]);
         }
@@ -614,8 +577,8 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     }
 
     if (rhs->kind != MC_EXPR_CALL || rhs->u.call.ext_id >= 0 ||
-        (fn != MC_ID_vec && fn != MC_ID_reshape && fn != MC_ID_transpose && fn != MC_ID_outer &&
-         fn != MC_ID_diag))
+        (fn != MC_FID_vec && fn != MC_FID_reshape && fn != MC_FID_transpose && fn != MC_FID_outer &&
+         fn != MC_FID_diag))
     {
         return mc_exec_linalg_or_ext(prog, cs, avoid_id, in_unit, err, errsz);
     }
@@ -632,13 +595,13 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     }
     const IMAGE *src = &milk_data.image[src_id];
 
-    if (fn == MC_ID_vec || fn == MC_ID_reshape)
+    if (fn == MC_FID_vec || fn == MC_FID_reshape)
     {
         uint64_t nel      = src->md[0].nelement;
         uint64_t prod_pos = 1;
         uint8_t  ndims    = 1;
         uint32_t sz[3]    = { (uint32_t) nel, 1, 1 };
-        if (fn == MC_ID_reshape)
+        if (fn == MC_FID_reshape)
         {
             ndims        = (uint8_t) (nargs - 1);
             long dims[3] = { 1, 1, 1 };
@@ -654,9 +617,9 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                 long d = llround(dv);
                 if (d <= 0 && !(d == -1 && neg_idx == -1))
                 {
-                    rc = exec_err(err, errsz,
-                                  (d == -1) ? "reshape: at most one dimension may be -1"
-                                            : "reshape: dimensions must be positive");
+                    rc = mc_err(err, errsz,
+                                (d == -1) ? "reshape: at most one dimension may be -1"
+                                          : "reshape: dimensions must be positive");
                     goto done_src;
                 }
                 neg_idx = (d == -1) ? i : neg_idx;
@@ -670,7 +633,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
             }
             if (prod_pos != nel)
             {
-                rc = exec_err(err, errsz, "reshape: element count mismatch");
+                rc = mc_err(err, errsz, "reshape: element count mismatch");
                 goto done_src;
             }
             sz[0] = (uint32_t) dims[0];
@@ -683,11 +646,11 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                              ? -1
                              : (mc_out_post(oid), 0);
     }
-    else if (fn == MC_ID_transpose)
+    else if (fn == MC_FID_transpose)
     {
         if (src->md[0].naxis != 1 && src->md[0].naxis != 2)
         {
-            rc = exec_err(err, errsz, "transpose: expected 1D or 2D image");
+            rc = mc_err(err, errsz, "transpose: expected 1D or 2D image");
             goto done_src;
         }
         uint32_t sz[3] = { (src->md[0].naxis == 2) ? src->md[0].size[1] : 1, src->md[0].size[0],
@@ -699,7 +662,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                           ? -1
                           : (mc_out_post(oid), 0);
     }
-    else if (fn == MC_ID_outer)
+    else if (fn == MC_FID_outer)
     {
         uint64_t M = 0;
         uint64_t N = 0;
@@ -712,7 +675,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
         const IMAGE *src2 = &milk_data.image[src2_id];
         if (!arith_image_is_1d_vec(src, &M) || !arith_image_is_1d_vec(src2, &N))
         {
-            rc = exec_err(err, errsz, "outer: expected 1D vector arguments");
+            rc = mc_err(err, errsz, "outer: expected 1D vector arguments");
             goto done_src;
         }
         uint32_t sz[3] = { (uint32_t) M, (uint32_t) N, 1 };
@@ -725,14 +688,14 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                  ? -1
                  : (mc_out_post(oid), 0);
     }
-    else if (fn == MC_ID_diag)
+    else if (fn == MC_FID_diag)
     {
         double kd = 0.0;
         if ((nargs == 2 && mc_eval_scalar_d(rhs->u.call.args[1], &kd, err, errsz) != 0) ||
             (src->md[0].naxis != 1 && src->md[0].naxis != 2))
         {
             rc = (src->md[0].naxis != 1 && src->md[0].naxis != 2)
-                     ? exec_err(err, errsz, "diag: expected 1D or 2D image")
+                     ? mc_err(err, errsz, "diag: expected 1D or 2D image")
                      : -1;
             goto done_src;
         }
@@ -749,7 +712,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
         uint64_t N = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
         if (!is_1d && (r0 >= M || c0 >= N))
         {
-            rc = exec_err(err, errsz, "diag: diagonal offset out of range");
+            rc = mc_err(err, errsz, "diag: diagonal offset out of range");
             goto done_src;
         }
         uint64_t L     = is_1d ? M : ((M - r0 < N - c0) ? (M - r0) : (N - c0));
@@ -941,7 +904,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         {
             free(views);
         }
-        return exec_err(err, errsz, "pass operand limit exceeded");
+        return mc_err(err, errsz, "pass operand limit exceeded");
     }
     memset(ops, 0, (size_t) pass->nops * sizeof(*ops));
     memset(views, 0, (size_t) pass->nops * sizeof(*views));
@@ -998,10 +961,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         }
         if (d->check_div_kind != 0 && ops[i].scalar == 0.0)
         {
-            rc = exec_err(err, errsz,
-                          (d->check_div_kind == 1)   ? "Division by zero"
-                          : (d->check_div_kind == 2) ? "Modulo by zero"
-                                                     : "lut: dx must be non-zero");
+            rc = mc_err(err, errsz,
+                        (d->check_div_kind == 1)   ? "Division by zero"
+                        : (d->check_div_kind == 2) ? "Modulo by zero"
+                                                   : "lut: dx must be non-zero");
             goto cleanup;
         }
     }
@@ -1030,15 +993,15 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         if (!arith_isfinite_d(da) || !arith_isfinite_d(db) || !arith_isfinite_d(dst) ||
             dst == 0.0 || (dst > 0.0 && db < da) || (dst < 0.0 && db > da))
         {
-            rc = exec_err(err, errsz,
-                          (dst == 0.0) ? "comprehension step cannot be zero"
-                                       : "comprehension range is empty");
+            rc = mc_err(err, errsz,
+                        (dst == 0.0) ? "comprehension step cannot be zero"
+                                     : "comprehension range is empty");
             goto cleanup;
         }
         double span = (db - da) / dst;
         if (span < 0.0 || span > 16777215.0)
         {
-            rc = exec_err(err, errsz, "comprehension range is empty");
+            rc = mc_err(err, errsz, "comprehension range is empty");
             goto cleanup;
         }
         vsz[g] = (uint32_t) (floor(span + 1e-9) + 1.0);
@@ -1061,7 +1024,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             mc_view_resolve(out->lhs_slice, id, 1, &views[out->op_idx], err, errsz) != 0 ||
             mc_view_merge_shape(&vnaxis, vsz, has_lhs_anchor, &views[out->op_idx], err, errsz) != 0)
         {
-            rc = (id < 0) ? exec_err(err, errsz, "unknown image '%s'", slot->name) : -1;
+            rc = (id < 0) ? mc_err(err, errsz, "unknown image '%s'", slot->name) : -1;
             goto cleanup;
         }
         slot->im_id    = id;
@@ -1091,7 +1054,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             if ((id < 0 || !milk_data.image[id].used) &&
                 (id = mc_resolve_or_autoconnect_image(prog->slots[d->slot_idx].name)) < 0)
             {
-                rc = exec_err(err, errsz, "unknown image '%s'", prog->slots[d->slot_idx].name);
+                rc = mc_err(err, errsz, "unknown image '%s'", prog->slots[d->slot_idx].name);
                 goto cleanup;
             }
             if (!d->is_expr_im)
@@ -1230,7 +1193,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                      views[k].vny != views[out->op_idx].vny ||
                      views[k].vnz != views[out->op_idx].vnz))
                 {
-                    rc = exec_err(err, errsz, "Mask size does not match target image");
+                    rc = mc_err(err, errsz, "Mask size does not match target image");
                     goto cleanup;
                 }
             }
@@ -1241,7 +1204,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                       mc_out_prepare(slot, vnaxis, vsz, out->out_dt, in_unit, err, errsz)) < 0 ||
                  mc_view_resolve(NULL, slot->im_id, 1, &views[out->op_idx], err, errsz) != 0)
         {
-            rc = (vnaxis == 0) ? exec_err(err, errsz, "cannot determine output image shape") : -1;
+            rc = (vnaxis == 0) ? mc_err(err, errsz, "cannot determine output image shape") : -1;
             goto cleanup;
         }
     }
@@ -1272,7 +1235,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             memcmp(rhs_sz, vsz, sizeof(vsz)) != 0 &&
             (views[i].vnx != vsz[0] || views[i].vny != vsz[1] || views[i].vnz != vsz[2]))
         {
-            rc = exec_err(err, errsz, "Dimension mismatch in image assignment");
+            rc = mc_err(err, errsz, "Dimension mismatch in image assignment");
             goto cleanup;
         }
         if (!pass->ops[i].is_table_arg)
@@ -1282,7 +1245,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         if (views[i].dt != pass->ops[i].dt ||
             (pass->is_1d_contig && !pass->ops[i].is_table_arg && !views[i].is_contig))
         {
-            rc = exec_err(err, errsz, "stream datatype or shape changed since plan");
+            rc = mc_err(err, errsz, "stream datatype or shape changed since plan");
             goto cleanup;
         }
         ops[i].base = (uint8_t *) milk_data.image[views[i].im_id].array.raw +
@@ -1367,7 +1330,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                            (size_t) dst->md[0].nelement *
                                (size_t) ImageStreamIO_typesize(dst->md[0].datatype));
                 }
-                rc = exec_err(err, errsz, "Division by zero");
+                rc = mc_err(err, errsz, "Division by zero");
                 goto cleanup;
             }
         }

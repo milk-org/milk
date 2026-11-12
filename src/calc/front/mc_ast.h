@@ -30,8 +30,10 @@
 #ifndef MILK_MC_AST_H
 #define MILK_MC_AST_H
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "mc_func.h"
 #include "mcalc.h"
@@ -375,6 +377,43 @@ struct mc_stmt
     } def;
 };
 
+/** is_complex_dt() - 1 if @dt is a complex ImageStreamIO datatype. */
+static inline int is_complex_dt(uint8_t dt)
+{
+    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
+}
+
+/** is_int_dt() - 1 if @dt is an integer ImageStreamIO datatype. */
+static inline int is_int_dt(uint8_t dt)
+{
+    return dt == _DATATYPE_UINT8 || dt == _DATATYPE_INT8 || dt == _DATATYPE_UINT16 ||
+           dt == _DATATYPE_INT16 || dt == _DATATYPE_UINT32 || dt == _DATATYPE_INT32 ||
+           dt == _DATATYPE_UINT64 || dt == _DATATYPE_INT64;
+}
+
+/**
+ * mc_err - Format a message into @err unless one is there already: the first error is kept
+ * @err:   Destination error buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ * @fmt:   printf-style format string
+ *
+ * Return: Always -1, to return from the caller with the message set
+ */
+__attribute__((format(printf, 3, 4))) static inline int mc_err(char       *err,
+                                                               size_t      errsz,
+                                                               const char *fmt,
+                                                               ...)
+{
+    if (err != NULL && errsz > 0 && err[0] == '\0')
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf(err, errsz, fmt, ap);
+        va_end(ap);
+    }
+    return -1;
+}
+
 /** mc_op_prec() - return binary/ternary operator precedence (-1 if not an infix operator). */
 int mc_op_prec(mc_tok_type_t t);
 
@@ -444,12 +483,6 @@ int mc_resolve_prog_ex(mc_stmt_t *prog, int in_unit, char *err, size_t errsz);
 static inline int mc_resolve_stmt(mc_stmt_t *s, char *err, size_t errsz)
 {
     return mc_resolve_prog_ex(s, 0, err, errsz);
-}
-
-/** mc_resolve_prog() - resolve all statements in program list @prog (0 on ok, -1 on error). */
-static inline int mc_resolve_prog(mc_stmt_t *prog, char *err, size_t errsz)
-{
-    return mc_resolve_prog_ex(prog, 0, err, errsz);
 }
 
 /** mcalc_sub_prog_free() - free a cached branch/loop sub-program without freeing its AST. */

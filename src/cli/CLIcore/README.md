@@ -23,7 +23,7 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
 - `CLIcore_cmd_registry.c` — Command registration table (`MILK_RUNNABLE` /
   `milk_register_runnable`).
 - `CLIcore/CLIcore_UI_completion.c` — Readline line acceptance, multiline
-  execution, and Levenshtein command suggestions.
+  execution.
 - `CLIcore/CLIcore_UI_completion_tab.c` — Tab completion and the hint line's
   suggestion (`CLI_generator()`, `CLI_completion()`): the word's context picks
   what to ask `milk_complete()`, the completer bash uses too.

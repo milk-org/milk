@@ -83,24 +83,6 @@ typedef struct
     uint64_t        total_errors;
 } session_info_t;
 
-/**
- * use_color_output - Check whether ANSI color escape sequences should be emitted
- *
- * Respects the `NO_COLOR` environment variable convention and checks whether
- * `STDOUT_FILENO` is attached to an interactive terminal.
- *
- * Return: 1 if color output should be used, 0 otherwise
- */
-static int use_color_output(void)
-{
-    const char *nc = getenv("NO_COLOR");
-    if (nc != NULL && nc[0] != '\0')
-    {
-        return 0;
-    }
-    return isatty(STDOUT_FILENO);
-}
-
 static int pid_alive(pid_t pid)
 {
     return pid > 0 && (kill(pid, 0) == 0 || errno == EPERM);
@@ -636,7 +618,7 @@ static int cmd_status(const char *arg, const milk_client_hooks_t *hooks)
     int own    = milk_ipc_is_numeric_str(name);
     int inproc = has && (si.flags & MILK_SRVFLAG_INPROC);
 
-    int         color = use_color_output();
+    int         color = milk_use_color_output();
     const char *c_hdr = color ? C_TITLE : "";
     const char *c_ok  = color ? C_CMD : "";
     const char *c_dim = color ? C_DIM : "";
@@ -718,7 +700,7 @@ static int cmd_ls(int json, const milk_client_hooks_t *hooks)
     milk_srvlog_get_dir(dirpath, sizeof(dirpath));
     size_t plen  = (size_t) snprintf(pfx, sizeof(pfx), "milk-srv.%u.", (unsigned) getuid());
     DIR   *dir   = opendir(dirpath);
-    int    color = use_color_output();
+    int    color = milk_use_color_output();
 
     if (json)
     {

@@ -221,17 +221,6 @@ void mc_host_str_set(const char *name, const char *val)
     }
 }
 
-/**
- * mc_host_str_clear - Clear all fallback string variables and flush the statement cache
- *
- * Return: void
- */
-void mc_host_str_clear(void)
-{
-    memset(g_fb_vars, 0, sizeof(g_fb_vars));
-    mc_stmt_cache_clear();
-}
-
 /* ============================================================================================== */
 /* User-Defined Inline Functions (`def f(x, ...) = body`)                                         */
 /* ============================================================================================== */
@@ -503,7 +492,7 @@ static void strip_arg_quotes(const char *lp, char *out, size_t outsz)
  * eval_special_directives - Handle top-level directives (`loadlib`, `--list`, `def`, blocks)
  * @input:   Raw statement string
  * @is_test: 1 when evaluating a boolean `@test` condition, 0 for normal `@calc`
- * @out_rc:  Optional output exit code (`0` on success)
+ * @out_rc:  Exit code (`0` on success)
  *
  * Return: 1 if a special directive was handled and succeeded, 0 if a directive failed, or -1 if
  *         @input is a normal expression/statement
@@ -525,10 +514,7 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
             report_err(input, lerr[0] != '\0' ? lerr : "failed to load extension library");
             return 0;
         }
-        if (out_rc != NULL)
-        {
-            *out_rc = 0;
-        }
+        *out_rc = 0;
         return 1;
     }
     if (strncmp(lp, "__list_catalog", 14) == 0 &&
@@ -548,10 +534,7 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
         char pat[256];
         strip_arg_quotes(lp, pat, sizeof(pat));
         int lrc = mcalc_print_catalog(pat, jmode);
-        if (out_rc != NULL)
-        {
-            *out_rc = lrc;
-        }
+        *out_rc = lrc;
         return 1;
     }
     int udef_rc = mcalc_udef_try_parse(input);
@@ -564,10 +547,7 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
             report_err(input, why);
             return 0;
         }
-        if (out_rc != NULL)
-        {
-            *out_rc = 0;
-        }
+        *out_rc = 0;
         return 1;
     }
     if (!is_test &&
@@ -585,10 +565,7 @@ static int eval_special_directives(const char *input, int is_test, int *out_rc)
             printf("\n");
             fflush(stdout);
         }
-        if (out_rc != NULL)
-        {
-            *out_rc = 0;
-        }
+        *out_rc = 0;
         return 1;
     }
     return -1;
@@ -710,6 +687,40 @@ static int emit_image_result(imageID im_id, int is_assign, int is_multi, const c
 }
 
 /**
+ * emit_stmt_result - Print what a statement gave
+ * @is_im_stmt: 1 for an image result (emit_image_result() of @im)
+ * @is_assign:  1 if the statement is an assignment
+ * @is_multi:   1 for a multiple assignment, which prints an empty line when binding
+ * @lhs_name:   Assigned name
+ * @im:         Image result
+ * @val:        Scalar result (emit_scalar_result())
+ *
+ * Return: 0, or -1 when the image cannot be shown
+ */
+static int emit_stmt_result(int             is_im_stmt,
+                            int             is_assign,
+                            int             is_multi,
+                            const char     *lhs_name,
+                            imageID         im,
+                            const mc_val_t *val)
+{
+    if (is_im_stmt)
+    {
+        return (emit_image_result(im, is_assign, is_multi, lhs_name) != 0) ? -1 : 0;
+    }
+    if (!is_multi)
+    {
+        emit_scalar_result(val, is_assign, lhs_name);
+    }
+    else if (mcalc_out_mode == MCALC_OUT_BIND)
+    {
+        printf("\n");
+        fflush(stdout);
+    }
+    return 0;
+}
+
+/**
  * expr_has_shadowed_var - Check if any scalar variable in @e is now shadowed by a new image
  * @e: AST expression node to inspect recursively
  *
@@ -821,7 +832,7 @@ static int validate_cached_prog(mcalc_prog_t *p, int same_gen)
  * @input:   Source statement string
  * @in_hash: Precomputed FNV-1a hash of @input
  * @in_len:  Byte length of @input
- * @out_rc:  Optional output exit code (`0` on success)
+ * @out_rc:  Exit code (`0` on success)
  *
  * Return: 1 if a valid cache entry was found and executed successfully, -1 if found but runtime
  *         execution failed, or 0 on cache miss / invalidated entry
@@ -853,29 +864,12 @@ static int try_stmt_cache_hit(const char *input, uint64_t in_hash, size_t in_len
             return -1;
         }
         e->table_gen = milk_table_generation();
-        if (e->is_im_stmt)
+        if (emit_stmt_result(e->is_im_stmt, e->is_assign, e->is_multi, e->lhs_name,
+                             e->prog->last_im_id, &e->prog->last_scalar) != 0)
         {
-            if (emit_image_result(e->prog->last_im_id, e->is_assign, e->is_multi, e->lhs_name) != 0)
-            {
-                return -1;
-            }
+            return -1;
         }
-        else if (e->is_multi)
-        {
-            if (mcalc_out_mode == MCALC_OUT_BIND)
-            {
-                printf("\n");
-                fflush(stdout);
-            }
-        }
-        else
-        {
-            emit_scalar_result(&e->prog->last_scalar, e->is_assign, e->lhs_name);
-        }
-        if (out_rc != NULL)
-        {
-            *out_rc = 0;
-        }
+        *out_rc = 0;
         return 1;
     }
     return 0;
@@ -962,10 +956,7 @@ static void store_stmt_cache(const char   *input,
 static int eval_bash_inner(const char *input, int is_test, int *out_rc)
 {
     mcalc_test_image = 0;
-    if (out_rc != NULL)
-    {
-        *out_rc = 2;
-    }
+    *out_rc          = 2;
     if (input == NULL)
     {
         return 0;
@@ -999,7 +990,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     if (!is_test && in_len > 0 && in_len < sizeof(g_stmt_cache[0].text))
     {
         int hit = try_stmt_cache_hit(input, in_hash, in_len, out_rc);
-        if (hit < 0 && out_rc != NULL)
+        if (hit < 0)
         {
             *out_rc = 1; /* a cached statement is valid: its error is a failure */
         }
@@ -1025,10 +1016,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     }
     if (p0 >= tl->ntok || tl->toks[p0].type == MC_TOK_EOF)
     {
-        if (out_rc != NULL)
-        {
-            *out_rc = is_test ? 1 : 0;
-        }
+        *out_rc = is_test ? 1 : 0;
         return 1;
     }
 
@@ -1046,7 +1034,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         report_err(input, err[0] != '\0' ? err : "evaluation error");
         return 0;
     }
-    if (out_rc != NULL && !is_test)
+    if (!is_test)
     {
         *out_rc = 1; /* valid syntax, names and arguments: from here an error is a failure, while
                       * @test keeps 2 for any error since 1 means false (as test(1) does) */
@@ -1069,8 +1057,8 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
     {
         const mc_fn_id_t fnm  = s->u.expr->u.call.fn->id;
         const mc_expr_t *last = s->u.expr->u.call.args[s->u.expr->u.call.nargs - 1];
-        if (fnm == MC_ID_gemm || fnm == MC_ID_gemv || fnm == MC_ID_symv || fnm == MC_ID_syrk ||
-            fnm == MC_ID_ger || fnm == MC_ID_axpy || fnm == MC_ID_scal)
+        if (fnm == MC_FID_gemm || fnm == MC_FID_gemv || fnm == MC_FID_symv || fnm == MC_FID_syrk ||
+            fnm == MC_FID_ger || fnm == MC_FID_axpy || fnm == MC_FID_scal)
         {
             is_assign = 1;
             if (last->kind == MC_EXPR_IDENT)
@@ -1101,10 +1089,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
             input);
         snprintf(mcalc_lasterr, sizeof(mcalc_lasterr), "the condition is an image");
         mcalc_test_image = 1;
-        if (out_rc != NULL)
-        {
-            *out_rc = 2;
-        }
+        *out_rc          = 2;
         return 0;
     }
 
@@ -1118,10 +1103,7 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
             {
                 return 0;
             }
-            if (out_rc != NULL)
-            {
-                *out_rc = 0;
-            }
+            *out_rc = 0;
             return 1;
         }
         mc_stmt_free(s);
@@ -1135,29 +1117,11 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         imageID  res_im  = prog->last_im_id;
         mc_val_t res_val = prog->last_scalar;
         store_stmt_cache(input, in_hash, in_len, is_im_stmt, is_assign, is_multi, lhs_name, prog);
-        if (is_im_stmt)
+        if (emit_stmt_result(is_im_stmt, is_assign, is_multi, lhs_name, res_im, &res_val) != 0)
         {
-            if (emit_image_result(res_im, is_assign, is_multi, lhs_name) != 0)
-            {
-                return 0;
-            }
+            return 0;
         }
-        else if (is_multi)
-        {
-            if (mcalc_out_mode == MCALC_OUT_BIND)
-            {
-                printf("\n");
-                fflush(stdout);
-            }
-        }
-        else
-        {
-            emit_scalar_result(&res_val, is_assign, lhs_name);
-        }
-        if (out_rc != NULL)
-        {
-            *out_rc = 0;
-        }
+        *out_rc = 0;
         return 1;
     }
 
@@ -1178,42 +1142,23 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         if (truthy < 0)
         {
             report_err(input, "a condition is a number, not a string");
-            if (out_rc != NULL)
-            {
-                *out_rc = 2;
-            }
+            *out_rc = 2;
             return 0;
         }
-        if (out_rc != NULL)
-        {
-            *out_rc = truthy ? 0 : 1;
-        }
+        *out_rc = truthy ? 0 : 1;
         return 1;
     }
 
-    if (s->kind == MC_STMT_MULTI_ASSIGN)
-    {
-        if (mcalc_out_mode == MCALC_OUT_BIND)
-        {
-            printf("\n");
-            fflush(stdout);
-        }
-    }
-    else
-    {
-        emit_scalar_result(&result, is_assign, lhs_name);
-    }
+    (void) emit_stmt_result(0, is_assign, is_multi, lhs_name, -1, &result);
 
     mc_stmt_free(s);
-    if (out_rc != NULL)
-    {
-        *out_rc = 0;
-    }
+    *out_rc = 0;
     return 1;
 }
 
 /**
- * eval_bash_text - Parse @input whole, then evaluate its statements one at a time
+ * mcalc_eval_bash - Parse @input whole, then evaluate its statements one at a time (`@calc`,
+ * `@test`)
  * @input:   Statements separated by `;` or newlines (blocks, comments and directives included)
  * @is_test: 1 for `@test`, 0 for `@calc`
  * @out_rc:  Optional exit status (`0` ok or true, `1` false or a failed `@calc` run, `2` error)
@@ -1229,8 +1174,13 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
  *
  * Return: 1 on success, 0 on syntax or evaluation error
  */
-static int eval_bash_text(const char *input, int is_test, int *out_rc)
+int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
 {
+    int rc_unused = 2;
+    if (out_rc == NULL) /* below, a status is always set */
+    {
+        out_rc = &rc_unused;
+    }
     if (input == NULL || strpbrk(input, ";\n") == NULL)
     {
         return eval_bash_inner(input, is_test, out_rc);
@@ -1246,10 +1196,7 @@ static int eval_bash_text(const char *input, int is_test, int *out_rc)
         g_err_col  = multiline ? s_tl.err_col : 0;
         report_err(input, (err[0] != '\0') ? err : s_tl.errmsg);
         g_err_line = 0;
-        if (out_rc != NULL)
-        {
-            *out_rc = 2;
-        }
+        *out_rc    = 2;
         return 0;
     }
     if (head != NULL && head->next == NULL)
@@ -1282,24 +1229,8 @@ static int eval_bash_text(const char *input, int is_test, int *out_rc)
         }
     }
     mc_stmt_free(head);
-    if (out_rc != NULL)
-    {
-        *out_rc = rc;
-    }
+    *out_rc = rc;
     return ok;
-}
-
-/**
- * mcalc_eval_bash - Evaluate calculator statements for `@calc` and `@test` (eval_bash_text())
- * @input:   Statements to evaluate
- * @is_test: 1 for boolean condition testing (`@test`), 0 for normal evaluation
- * @out_rc:  Optional exit status (`0` ok or true, `1` false or a failed `@calc` run, `2` error)
- *
- * Return: 1 on success, 0 on syntax or evaluation error
- */
-int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
-{
-    return eval_bash_text(input, is_test, out_rc);
 }
 
 /**

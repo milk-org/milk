@@ -53,6 +53,9 @@ When `milk.fifo create` is called without a path (or `-f` is passed at startup),
 `$MILK_SHM_DIR/.<processname>.fifo.<07d-PID>` (for example, `/milk/shm/.myctl.fifo.0012345` when
 started with `milk-cli -n myctl -f`).
 
+A fifo that `milk-cli` creates can be read and written by its user only. An existing path must be a
+fifo of that user that not everyone can write; it is removed when `milk-cli` exits.
+
 ## Startup Flags
 
 FIFOs can also be enabled at startup:

@@ -347,14 +347,14 @@ void mc_val_to_str(const mc_val_t *v, char *buf, size_t bufsz, int use_float_dig
  */
 const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t *out)
 {
-    if (fn->id == MC_ID_strlen)
+    if (fn->id == MC_FID_strlen)
     {
         char buf[MC_TOK_STR_MAX];
         mc_val_to_str(&args[0], buf, sizeof(buf), 0);
         *out = mk_l((long) strlen(buf));
         return NULL;
     }
-    if (fn->id == MC_ID_toupper || fn->id == MC_ID_tolower)
+    if (fn->id == MC_FID_toupper || fn->id == MC_FID_tolower)
     {
         mc_val_to_str(&args[0], out->sval, sizeof(out->sval), 0);
         int is_up = (fn->name[2] == 'u');
@@ -366,7 +366,7 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
         out->type = MC_VAL_STRING;
         return NULL;
     }
-    if (fn->id == MC_ID_substr)
+    if (fn->id == MC_FID_substr)
     {
         if (args[0].type != MC_VAL_STRING)
         {
@@ -386,7 +386,7 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
         out->type      = MC_VAL_STRING;
         return NULL;
     }
-    if (fn->id == MC_ID_replace)
+    if (fn->id == MC_FID_replace)
     {
         if (args[0].type != MC_VAL_STRING || args[1].type != MC_VAL_STRING ||
             args[2].type != MC_VAL_STRING)
@@ -433,7 +433,7 @@ const char *mc_scalar_str_fn(const mc_func_t *fn, const mc_val_t *args, mc_val_t
     /* Base-formatting functions: hex(n), oct(n), bin(n) */
     long iv   = (args[0].type == MC_VAL_LONG) ? args[0].lval : (long) val_num(&args[0]);
     out->type = MC_VAL_STRING;
-    if (fn->id == MC_ID_hex || fn->id == MC_ID_oct)
+    if (fn->id == MC_FID_hex || fn->id == MC_FID_oct)
     {
         snprintf(out->sval, sizeof(out->sval), (fn->name[0] == 'h') ? "0x%lx" : "0o%lo", iv);
         return NULL;
@@ -604,7 +604,7 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
         {
             return mk_d(0.0);
         }
-        if (nargs == 2 && fn->id == MC_ID_pow)
+        if (nargs == 2 && fn->id == MC_FID_pow)
         {
             mc_val_t r;
             mc_scalar_pow(&va[0], &va[1], &r);

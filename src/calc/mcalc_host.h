@@ -41,8 +41,4 @@ const char *mc_host_str_get(const char *name);
  * a NULL @val removes it. */
 void mc_host_str_set(const char *name, const char *val);
 
-/** mc_host_str_clear() - clear the internal fallback string variable table and the statement
- * cache. */
-void mc_host_str_clear(void);
-
 #endif /* MILK_MCALC_HOST_H */

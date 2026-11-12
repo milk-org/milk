@@ -64,29 +64,6 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
 /* ============================================================================================== */
 
 /**
- * ext_err - Format a diagnostic message into @err if not already populated
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Capacity of @err in bytes
- * @fmt:   printf-style format string
- *
- * Return: Always -1 for convenient tail-return error propagation
- */
-__attribute__((format(printf, 3, 4))) static int ext_err(char       *err,
-                                                         size_t      errsz,
-                                                         const char *fmt,
-                                                         ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
  * strip_dot - Skip a leading `'.'` on a parameter name specification
  * @s: Parameter or keyword string (may be NULL)
  *
@@ -118,7 +95,7 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
     const milk_calc_ext_entry_t *ext = milk_calc_ext_get(e->u.call.ext_id);
     if (ext == NULL)
     {
-        return ext_err(err, errsz, "unknown extension '%s'", e->u.call.name);
+        return mc_err(err, errsz, "unknown extension '%s'", e->u.call.name);
     }
     const milk_calc_param_set_t *pset = ext->get_params ? ext->get_params() : NULL;
     const milk_calc_op_ports_t  *pts  = ext->get_ports ? ext->get_ports() : NULL;
@@ -149,19 +126,18 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
         }
         if (!found)
         {
-            return ext_err(err, errsz, "%s: unknown keyword argument '%s'", ext->name, kw);
+            return mc_err(err, errsz, "%s: unknown keyword argument '%s'", ext->name, kw);
         }
     }
 
     if (ext->kind == MILK_EXT_OP && pts != NULL && nlhs > pts->nout)
     {
-        return ext_err(err, errsz, "%s: too many LHS targets (%d > %d)", ext->name, nlhs,
-                       pts->nout);
+        return mc_err(err, errsz, "%s: too many LHS targets (%d > %d)", ext->name, nlhs, pts->nout);
     }
     if (ext->kind != MILK_EXT_OP && nlhs > 1)
     {
-        return ext_err(err, errsz, "%s: single-output kernel cannot unpack into %d targets",
-                       ext->name, nlhs);
+        return mc_err(err, errsz, "%s: single-output kernel cannot unpack into %d targets",
+                      ext->name, nlhs);
     }
 
     int in_arg[MILK_CALC_MAX_PORTS];
@@ -182,23 +158,22 @@ int mc_ext_resolve_call(mc_expr_t *e, int nlhs, char *err, size_t errsz)
             {
                 continue;
             }
-            return is_op ? ext_err(err, errsz, "%s: missing required input port '%s'", ext->name,
-                                   pts->in_ports[p].name)
-                         : ext_err(err, errsz, "%s: expected %d image argument(s)", ext->name, nin);
+            return is_op ? mc_err(err, errsz, "%s: missing required input port '%s'", ext->name,
+                                  pts->in_ports[p].name)
+                         : mc_err(err, errsz, "%s: expected %d image argument(s)", ext->name, nin);
         }
         if (e->u.call.args[in_arg[p]]->res_kind != MC_RES_IMAGE &&
             !(is_op && pts->in_ports[p].kind == MILK_PORT_SCALAR))
         {
-            return ext_err(err, errsz, "%s: argument %d must be an image", ext->name,
-                           in_arg[p] + 1);
+            return mc_err(err, errsz, "%s: argument %d must be an image", ext->name, in_arg[p] + 1);
         }
     }
     for (int k = 0; pset != NULL && k < pset->nparams; k++)
     {
         if (par_arg[k] >= 0 && e->u.call.args[par_arg[k]]->res_kind == MC_RES_IMAGE)
         {
-            return ext_err(err, errsz, "%s: parameter %s takes a number, not an image", ext->name,
-                           strip_dot(pset->specs[k].name));
+            return mc_err(err, errsz, "%s: parameter %s takes a number, not an image", ext->name,
+                          strip_dot(pset->specs[k].name));
         }
     }
 
@@ -597,7 +572,7 @@ static int exec_ext_op(mcalc_prog_t                *prog,
     const milk_calc_param_set_t *pset = ext->get_params ? ext->get_params() : NULL;
     if (pts == NULL)
     {
-        return ext_err(err, errsz, "%s: missing operator port table", ext->name);
+        return mc_err(err, errsz, "%s: missing operator port table", ext->name);
     }
 
     milk_calc_op_ctx_t ctx;
@@ -636,8 +611,8 @@ static int exec_ext_op(mcalc_prog_t                *prog,
             {
                 continue;
             }
-            rc = ext_err(err, errsz, "%s: missing required input port '%s'", ext->name,
-                         pts->in_ports[p].name);
+            rc = mc_err(err, errsz, "%s: missing required input port '%s'", ext->name,
+                        pts->in_ports[p].name);
             goto done;
         }
         if (pts->in_ports[p].kind == MILK_PORT_SCALAR)
@@ -659,8 +634,8 @@ static int exec_ext_op(mcalc_prog_t                *prog,
             f32_ids[p] = ensure_f32_im(in_ids[p], &f32_tmp[p]);
             if (f32_ids[p] < 0)
             {
-                rc = ext_err(err, errsz, "%s: failed to convert input port '%s'", ext->name,
-                             pts->in_ports[p].name);
+                rc = mc_err(err, errsz, "%s: failed to convert input port '%s'", ext->name,
+                            pts->in_ports[p].name);
                 goto done;
             }
             ctx.in_img[p] = &milk_data.image[f32_ids[p]];
@@ -735,7 +710,7 @@ static int exec_ext_op(mcalc_prog_t                *prog,
         }
         if (ext->op_init != NULL && ext->op_init(&ctx, pbuf, &st->op_state) != 0)
         {
-            rc = ext_err(err, errsz, "user operator '%s' init failed", ext->name);
+            rc = mc_err(err, errsz, "user operator '%s' init failed", ext->name);
             goto done;
         }
         st->state_valid = 1;
@@ -846,7 +821,7 @@ static int exec_ext_op(mcalc_prog_t                *prog,
 
     if (ext->op_exec != NULL && ext->op_exec(&ctx, pbuf, st->op_state) != 0)
     {
-        rc = ext_err(err, errsz, "user operator '%s' exec failed", ext->name);
+        rc = mc_err(err, errsz, "user operator '%s' exec failed", ext->name);
         goto done_out;
     }
 
@@ -950,7 +925,7 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
     const milk_calc_ext_entry_t *ext  = milk_calc_ext_get(rhs->u.call.ext_id);
     if (ext == NULL)
     {
-        return ext_err(err, errsz, "unknown extension '%s'", rhs->u.call.name);
+        return mc_err(err, errsz, "unknown extension '%s'", rhs->u.call.name);
     }
     if (ext->kind == MILK_EXT_OP)
     {
@@ -995,12 +970,12 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
     const IMAGE *im0 = &milk_data.image[id0];
     if (n_img == 2 && milk_data.image[id1].md[0].nelement != im0->md[0].nelement)
     {
-        rc = ext_err(err, errsz, "%s: input image element count mismatch", ext->name);
+        rc = mc_err(err, errsz, "%s: input image element count mismatch", ext->name);
         goto done;
     }
     if (ext->kind == MILK_EXT_STENCIL && im0->md[0].naxis != 2)
     {
-        rc = ext_err(err, errsz, "%s: stencil kernel requires a 2D image", ext->name);
+        rc = mc_err(err, errsz, "%s: stencil kernel requires a 2D image", ext->name);
         goto done;
     }
 
@@ -1010,7 +985,7 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
     f1           = (n_img == 2) ? ensure_f32_im(id1, &ftmp1) : -1;
     if (f0 < 0 || (n_img == 2 && f1 < 0))
     {
-        rc = ext_err(err, errsz, "%s: failed to prepare float32 input buffer", ext->name);
+        rc = mc_err(err, errsz, "%s: failed to prepare float32 input buffer", ext->name);
         goto done;
     }
 
@@ -1030,7 +1005,7 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
     imageID wid = (out_dt == work_dt) ? oid : mc_tmp_image(im0->md[0].naxis, sz, work_dt);
     if (wid < 0)
     {
-        rc = ext_err(err, errsz, "%s: failed to allocate work buffer", ext->name);
+        rc = mc_err(err, errsz, "%s: failed to allocate work buffer", ext->name);
         goto done;
     }
     IMAGE *out = &milk_data.image[wid];
@@ -1043,7 +1018,7 @@ int mc_exec_ext_ctor(mcalc_prog_t   *prog,
             {
                 mc_tmp_release(wid);
             }
-            rc = ext_err(err, errsz, "user image kernel '%s' failed", ext->name);
+            rc = mc_err(err, errsz, "user image kernel '%s' failed", ext->name);
             goto done;
         }
     }
@@ -1149,13 +1124,13 @@ int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
         const milk_calc_ext_entry_t *ext = milk_calc_ext_get(rhs->u.call.ext_id);
         return (ext != NULL && ext->kind == MILK_EXT_OP)
                    ? exec_ext_op(prog, cs, ext, rhs, s, -1, in_unit, out, err, errsz)
-                   : ext_err(err, errsz, "unknown multi-output extension '%s'", rhs->u.call.name);
+                   : mc_err(err, errsz, "unknown multi-output extension '%s'", rhs->u.call.name);
     }
     if (rhs->kind == MC_EXPR_CALL && rhs->u.call.fn != NULL &&
-        (rhs->u.call.fn->id == MC_ID_svd || rhs->u.call.fn->id == MC_ID_eigh))
+        (rhs->u.call.fn->id == MC_FID_svd || rhs->u.call.fn->id == MC_FID_eigh))
     {
         return mc_exec_multi_svd_or_eigh(prog, s, in_unit, err, errsz);
     }
-    return ext_err(err, errsz, "'%s' has one result: assign it to one name",
-                   (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.name : "the expression");
+    return mc_err(err, errsz, "'%s' has one result: assign it to one name",
+                  (rhs->kind == MC_EXPR_CALL) ? rhs->u.call.name : "the expression");
 }

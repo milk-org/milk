@@ -29,6 +29,7 @@
 #include "CLIcore.h"
 #include "CLIcore_modules.h"
 #include "milk_catalog.h"
+#include "milk_cmd_args.h"
 #include "milk_cmd_index.h"
 #include "milk_keywords.h"
 
@@ -260,33 +261,6 @@ static int cmp_entry(const void *a, const void *b)
 }
 
 /**
- * mkdir_p - Recursively create a directory path and all missing parent directories
- * @path: Mutable directory path string
- *
- * Walks @path component by component, temporarily NUL-terminating each slash to
- * create intermediate directories with mode `0755`.
- *
- * Return: 0 on success (or if the directory already exists), -1 on error
- */
-static int mkdir_p(char *path)
-{
-    for (char *p = path + 1; *p != '\0'; p++)
-    {
-        if (*p == '/')
-        {
-            *p    = '\0';
-            int r = mkdir(path, 0755);
-            *p    = '/';
-            if (r != 0 && errno != EEXIST)
-            {
-                return -1;
-            }
-        }
-    }
-    return (mkdir(path, 0755) != 0 && errno != EEXIST) ? -1 : 0;
-}
-
-/**
  * clear_dir - Unlink all entries in @dir whose filenames end with @suffix
  * @dir:    Directory path to clean
  * @suffix: Required filename suffix to remove (or `""` to remove all files)
@@ -458,7 +432,7 @@ static int write_farm(char *dir, const entry_t *e, size_t n)
     char        p[CATALOG_PATHMAX];
     int         rc = 0;
 
-    if (mkdir_p(dir) != 0)
+    if (milk_mkdir_p(dir) != 0)
     {
         return -1;
     }
@@ -526,7 +500,7 @@ int milk_catalog_build(const char *prefix)
     qsort(e, n, sizeof(*e), cmp_entry);
 
     snprintf(p, sizeof(p), "%s/share/milk/catalog.d", prefix);
-    rc = mkdir_p(p);
+    rc = milk_mkdir_p(p);
     if (rc == 0)
     {
         clear_dir(p, ".tsv");

@@ -44,51 +44,6 @@
  * ============================================================================ */
 
 /**
- * lap_err - Format a diagnostic message into @err (if still empty) and return -1
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Capacity of @err in bytes
- * @fmt:   printf-style format string
- *
- * Preserves the first error recorded during execution by only writing into @err
- * when `err[0] == '\0'`.
- *
- * Return: Always -1
- */
-__attribute__((format(printf, 3, 4))) static int lap_err(char       *err,
-                                                         size_t      errsz,
-                                                         const char *fmt,
-                                                         ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
- * unwrap_trans - Follow user-function parameter bindings and strip an outer `transpose(X)`
- * @e:         Operand expression to inspect
- * @out_trans: Output flag set to 1 if an outer `transpose(...)` wrapper was stripped, else 0
- *
- * Return: Underlying operand expression inside `transpose(...)`, or @e (after param resolution)
- */
-static const mc_expr_t *unwrap_trans(const mc_expr_t *e, int *out_trans)
-{
-    *out_trans = 0;
-    if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.fn != NULL &&
-        e->u.call.fn->id == MC_ID_transpose && e->u.call.nargs == 1)
-    {
-        *out_trans = 1;
-        return e->u.call.args[0];
-    }
-    return e;
-}
-
-/**
  * eval_flag_char - Evaluate a string argument and extract a 1-character uppercase LAPACK option
  * @e:         Expression node expected to evaluate to a single-character option string
  * @c1:        First allowed uppercase option character (e.g. `'U'`, `'N'`, `'L'`)
@@ -110,16 +65,16 @@ static int eval_flag_char(const mc_expr_t *e,
 {
     mc_val_t v  = { 0 };
     int      tr = 0;
-    e           = unwrap_trans(e, &tr);
+    e           = mc_unwrap_transpose(e, &tr);
     if (tr || mc_scalar_eval_expr(e, &v, err, errsz) != 0 || v.type != MC_VAL_STRING ||
         v.sval[0] == '\0')
     {
-        return lap_err(err, errsz, "%s: expected string flag \"%c\" or \"%c\"", fname, c1, c2);
+        return mc_err(err, errsz, "%s: expected string flag \"%c\" or \"%c\"", fname, c1, c2);
     }
     char c = (char) toupper((unsigned char) v.sval[0]);
     if (c != c1 && c != c2)
     {
-        return lap_err(err, errsz, "%s: flag must be \"%c\" or \"%c\"", fname, c1, c2);
+        return mc_err(err, errsz, "%s: flag must be \"%c\" or \"%c\"", fname, c1, c2);
     }
     *out_c = c;
     return 0;
@@ -283,15 +238,16 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
 {
     const mc_fn_id_t fn     = rhs->u.call.fn->id;
     const char      *fname  = rhs->u.call.fn->name;
-    int              is_sm  = (fn == MC_ID_trsm);
+    int              is_sm  = (fn == MC_FID_trsm);
     int              nargs  = rhs->u.call.nargs;
     int              transA = 0, transB = 0;
-    const mc_expr_t *eA = unwrap_trans(rhs->u.call.args[0], &transA);
-    const mc_expr_t *eB = is_sm ? unwrap_trans(rhs->u.call.args[1], &transB) : rhs->u.call.args[1];
-    char             uplo  = 'U';
-    char             diag  = 'N';
-    char             side  = 'L';
-    double           alpha = 1.0;
+    const mc_expr_t *eA = mc_unwrap_transpose(rhs->u.call.args[0], &transA);
+    const mc_expr_t *eB =
+        is_sm ? mc_unwrap_transpose(rhs->u.call.args[1], &transB) : rhs->u.call.args[1];
+    char   uplo  = 'U';
+    char   diag  = 'N';
+    char   side  = 'L';
+    double alpha = 1.0;
 
     if ((nargs >= 3 &&
          eval_flag_char(rhs->u.call.args[2], 'U', 'L', fname, &uplo, err, errsz) != 0) ||
@@ -319,14 +275,14 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
     const IMAGE *imB = &milk_data.image[idB];
     if (imA->md[0].naxis != 2 || imA->md[0].size[0] != imA->md[0].size[1])
     {
-        rc = lap_err(err, errsz, "%s: A must be a 2D square matrix", fname);
+        rc = mc_err(err, errsz, "%s: A must be a 2D square matrix", fname);
         goto done;
     }
     uint64_t K = imA->md[0].size[0], M = 0, N = 1;
     if (!is_sm && (!arith_image_is_1d_vec(imB, &M) || M != K))
     {
-        rc = lap_err(err, errsz, "trsv: b must be a 1D vector of length %llu",
-                     (unsigned long long) K);
+        rc = mc_err(err, errsz, "trsv: b must be a 1D vector of length %llu",
+                    (unsigned long long) K);
         goto done;
     }
     if (is_sm)
@@ -334,8 +290,8 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
         mat_dims_2d(imB, transB, &M, &N);
         if (((side == 'L') ? M : N) != K)
         {
-            rc = lap_err(err, errsz, "trsm: incompatible dimensions (%llu vs %llu)",
-                         (unsigned long long) K, (unsigned long long) ((side == 'L') ? M : N));
+            rc = mc_err(err, errsz, "trsm: incompatible dimensions (%llu vs %llu)",
+                        (unsigned long long) K, (unsigned long long) ((side == 'L') ? M : N));
             goto done;
         }
     }
@@ -346,7 +302,7 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
     {
         free(A_d);
         free(B_d);
-        rc = lap_err(err, errsz, "%s: out of memory", fname);
+        rc = mc_err(err, errsz, "%s: out of memory", fname);
         goto done;
     }
     for (uint64_t i = 0; i < M * N; i++)
@@ -381,7 +337,7 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
         double *row = (double *) malloc(sizeof(double) * N);
         if (row == NULL)
         {
-            rc = lap_err(err, errsz, "%s: out of memory", fname);
+            rc = mc_err(err, errsz, "%s: out of memory", fname);
         }
         for (uint64_t i = 0; i < M && rc == 0; i++)
         {
@@ -699,7 +655,7 @@ static int run_eigh_d(int n, double *C, int want_v, double *w_out)
 
 /**
  * solve_linear_d - Solve `A * X = B` via Cholesky (`posv`), LU (`gesv`), QR/LQ (`gels`), or SVD
- * @fn:    Solver (`MC_ID_posv`, `MC_ID_gesv`, `MC_ID_gels` or `MC_ID_solve`)
+ * @fn:    Solver (`MC_FID_posv`, `MC_FID_gesv`, `MC_FID_gels` or `MC_FID_solve`)
  * @uplo:  Triangle selector (`'L'` or `'U'`) for `"posv"`
  * @M:     Row count of @A (and @B)
  * @N:     Column count of @A (and row count of @X_out)
@@ -727,34 +683,34 @@ static int solve_linear_d(mc_fn_id_t fn,
                           size_t     errsz)
 {
 #ifdef HAVE_LAPACKE
-    if (fn == MC_ID_posv)
+    if (fn == MC_FID_posv)
     {
         if (LAPACKE_dposv(LAPACK_COL_MAJOR, uplo, N, NRHS, A, N, B, N) != 0)
         {
-            return lap_err(err, errsz, "posv: matrix is not positive definite");
+            return mc_err(err, errsz, "posv: matrix is not positive definite");
         }
         memcpy(X_out, B, sizeof(double) * (size_t) (N * NRHS));
         return 0;
     }
-    if (fn == MC_ID_gesv || (fn == MC_ID_solve && M == N))
+    if (fn == MC_FID_gesv || (fn == MC_FID_solve && M == N))
     {
         int *ipiv = calloc((size_t) N, sizeof(int));
         int  info = ipiv ? LAPACKE_dgesv(LAPACK_COL_MAJOR, N, NRHS, A, N, ipiv, B, N) : -1;
         free(ipiv);
         if (info != 0)
         {
-            return lap_err(err, errsz, "%s: singular matrix", mc_func_name(fn));
+            return mc_err(err, errsz, "%s: singular matrix", mc_func_name(fn));
         }
         memcpy(X_out, B, sizeof(double) * (size_t) (N * NRHS));
         return 0;
     }
-    if (fn == MC_ID_gels || fn == MC_ID_solve)
+    if (fn == MC_FID_gels || fn == MC_FID_solve)
     {
         int     ldb  = (M > N) ? M : N;
         double *Bpad = calloc((size_t) (ldb * NRHS), sizeof(double));
         if (Bpad == NULL)
         {
-            return lap_err(err, errsz, "%s: out of memory", mc_func_name(fn));
+            return mc_err(err, errsz, "%s: out of memory", mc_func_name(fn));
         }
         for (int j = 0; j < NRHS; j++)
         {
@@ -766,7 +722,7 @@ static int solve_linear_d(mc_fn_id_t fn,
             memcpy(&X_out[j * N], &Bpad[j * ldb], sizeof(double) * (size_t) N);
         }
         free(Bpad);
-        return (info == 0) ? 0 : lap_err(err, errsz, "%s: rank-deficient matrix", mc_func_name(fn));
+        return (info == 0) ? 0 : mc_err(err, errsz, "%s: rank-deficient matrix", mc_func_name(fn));
     }
 #endif
     int     q  = (M < N) ? M : N;
@@ -778,7 +734,7 @@ static int solve_linear_d(mc_fn_id_t fn,
         free(U);
         free(S);
         free(Vt);
-        return lap_err(err, errsz, "%s: solver failed", mc_func_name(fn));
+        return mc_err(err, errsz, "%s: solver failed", mc_func_name(fn));
     }
     double tol = 1e-12 * ((M > N) ? M : N) * (S[0] > 0.0 ? S[0] : 1.0);
     memset(X_out, 0, sizeof(double) * (size_t) (N * NRHS));
@@ -813,7 +769,7 @@ static int solve_linear_d(mc_fn_id_t fn,
  * @err:       Error message buffer
  * @errsz:     Capacity of @err in bytes
  *
- * For `inv(A)`, solves `A * X = I` via LU factorization (`solve_linear_d(MC_ID_gesv, ...)`).
+ * For `inv(A)`, solves `A * X = I` via LU factorization (`solve_linear_d(MC_FID_gesv, ...)`).
  * For `pinv(A[, rcond])`, computes the thin SVD `A = U * diag(S) * Vt`, zeroes singular
  * values at or below `rcond * S[0]` (defaulting to `eps * max(M, N) * S[0]`), scales the
  * rows of `Vt` by `1 / S[k]`, and forms `Out = Vt^T * U^T`.
@@ -829,9 +785,9 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
 {
     const mc_fn_id_t fn     = rhs->u.call.fn->id;
     const char      *fname  = rhs->u.call.fn->name;
-    int              is_inv = (fn == MC_ID_inv);
+    int              is_inv = (fn == MC_FID_inv);
     int              transA = 0, tmpA = 0, rc = 0;
-    const mc_expr_t *eA    = unwrap_trans(rhs->u.call.args[0], &transA);
+    const mc_expr_t *eA    = mc_unwrap_transpose(rhs->u.call.args[0], &transA);
     double           rcond = -1.0;
     imageID          idA   = -1;
     if ((!is_inv && rhs->u.call.nargs == 2 &&
@@ -845,7 +801,7 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
     mat_dims_2d(imA, transA, &M, &N);
     if (is_inv && (imA->md[0].naxis != 2 || M != N))
     {
-        rc = lap_err(err, errsz, "inv: expected 2D square matrix");
+        rc = mc_err(err, errsz, "inv: expected 2D square matrix");
         goto done;
     }
 
@@ -855,7 +811,7 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
     {
         free(A_d);
         free(Out_d);
-        rc = lap_err(err, errsz, "%s: out of memory", fname);
+        rc = mc_err(err, errsz, "%s: out of memory", fname);
         goto done;
     }
 
@@ -866,8 +822,8 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
         {
             I_d[i * N + i] = 1.0;
         }
-        rc = (I_d == NULL) ? lap_err(err, errsz, "inv: out of memory")
-                           : solve_linear_d(MC_ID_gesv, 'L', (int) N, (int) N, (int) N, A_d, I_d,
+        rc = (I_d == NULL) ? mc_err(err, errsz, "inv: out of memory")
+                           : solve_linear_d(MC_FID_gesv, 'L', (int) N, (int) N, (int) N, A_d, I_d,
                                             Out_d, err, errsz);
         free(I_d);
     }
@@ -879,7 +835,7 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
         double *Vt = calloc((size_t) ((uint64_t) q * N), sizeof(double));
         if (!U || !S || !Vt || run_svd_d((int) M, (int) N, A_d, U, S, Vt) != 0)
         {
-            rc = lap_err(err, errsz, "pinv: SVD failed");
+            rc = mc_err(err, errsz, "pinv: SVD failed");
         }
         else
         {
@@ -966,17 +922,17 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
     const mc_fn_id_t fn    = rhs->u.call.fn->id;
     const char      *fname = rhs->u.call.fn->name;
 
-    if (fn == MC_ID_trsv || fn == MC_ID_trsm)
+    if (fn == MC_FID_trsv || fn == MC_FID_trsm)
     {
         return exec_trsv_or_trsm(slot, rhs, avoid_id, in_unit, err, errsz);
     }
-    if (fn == MC_ID_inv || fn == MC_ID_pinv)
+    if (fn == MC_FID_inv || fn == MC_FID_pinv)
     {
         return exec_pinv_or_inv(slot, rhs, avoid_id, in_unit, err, errsz);
     }
-    if (fn == MC_ID_svd || fn == MC_ID_eigh)
+    if (fn == MC_FID_svd || fn == MC_FID_eigh)
     {
-        int     is_eigh = (fn == MC_ID_eigh);
+        int     is_eigh = (fn == MC_FID_eigh);
         int     tmpA = 0, rc = 0;
         imageID idA = -1;
         if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &idA, &tmpA, err,
@@ -993,17 +949,17 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
             {
                 mc_tmp_release(idA);
             }
-            return lap_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
+            return mc_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
         }
         uint64_t Q   = (M < N) ? M : N;
         double  *A_d = alloc_mat_d(imA, 0, M, N);
         double  *S_d = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
-        rc           = (!A_d || !S_d) ? lap_err(err, errsz, "%s: out of memory", fname)
+        rc           = (!A_d || !S_d) ? mc_err(err, errsz, "%s: out of memory", fname)
                        : is_eigh      ? run_eigh_d((int) N, A_d, 0, S_d)
                                       : run_svd_d((int) M, (int) N, A_d, NULL, S_d, NULL);
         if (rc != 0)
         {
-            (void) lap_err(err, errsz, "%s: did not converge", fname); /* unless a message is set */
+            (void) mc_err(err, errsz, "%s: did not converge", fname); /* unless a message is set */
         }
         if (rc == 0)
         {
@@ -1024,17 +980,17 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
 
     /* Linear system solvers: gesv, posv, gels, solve */
     int              transA = 0, transB = 0;
-    const mc_expr_t *eA   = unwrap_trans(rhs->u.call.args[0], &transA);
-    const mc_expr_t *eB   = unwrap_trans(rhs->u.call.args[1], &transB);
+    const mc_expr_t *eA   = mc_unwrap_transpose(rhs->u.call.args[0], &transA);
+    const mc_expr_t *eB   = mc_unwrap_transpose(rhs->u.call.args[1], &transB);
     char             uplo = 'L';
     double           reg  = 0.0;
-    if ((fn == MC_ID_posv && rhs->u.call.nargs == 3 &&
+    if ((fn == MC_FID_posv && rhs->u.call.nargs == 3 &&
          eval_flag_char(rhs->u.call.args[2], 'L', 'U', fname, &uplo, err, errsz) != 0) ||
-        (fn == MC_ID_solve && rhs->u.call.nargs == 3 &&
+        (fn == MC_FID_solve && rhs->u.call.nargs == 3 &&
          mc_eval_scalar_d(rhs->u.call.args[2], &reg, err, errsz) != 0) ||
         reg < 0.0)
     {
-        return (reg < 0.0) ? lap_err(err, errsz, "solve: regularization lambda must be >= 0") : -1;
+        return (reg < 0.0) ? mc_err(err, errsz, "solve: regularization lambda must be >= 0") : -1;
     }
 
     imageID idA = -1, idB = -1;
@@ -1053,11 +1009,11 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
     uint64_t     M = 0, N = 0, MB = 0, NRHS = 1;
     mat_dims_2d(imA, transA, &M, &N);
     mat_dims_2d(imB, transB, &MB, &NRHS);
-    if (MB != M || ((fn == MC_ID_gesv || fn == MC_ID_posv) && M != N))
+    if (MB != M || ((fn == MC_FID_gesv || fn == MC_FID_posv) && M != N))
     {
-        rc = lap_err(err, errsz, "%s: incompatible matrix dimensions (%llu x %llu vs %llu x %llu)",
-                     fname, (unsigned long long) M, (unsigned long long) N, (unsigned long long) MB,
-                     (unsigned long long) NRHS);
+        rc = mc_err(err, errsz, "%s: incompatible matrix dimensions (%llu x %llu vs %llu x %llu)",
+                    fname, (unsigned long long) M, (unsigned long long) N, (unsigned long long) MB,
+                    (unsigned long long) NRHS);
         goto done_solve;
     }
 
@@ -1069,12 +1025,12 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
         free(A_d);
         free(B_d);
         free(X_d);
-        rc = lap_err(err, errsz, "%s: out of memory", fname);
+        rc = mc_err(err, errsz, "%s: out of memory", fname);
         goto done_solve;
     }
 
     /* Tikhonov-regularized solve: form smaller Gram matrix (N x N or M x M) + reg * I */
-    if (fn == MC_ID_solve && reg > 0.0)
+    if (fn == MC_FID_solve && reg > 0.0)
     {
         uint64_t K = (M >= N) ? N : M;
         uint64_t L = (M >= N) ? M : N;
@@ -1116,7 +1072,7 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
             }
             G[i * K + i] += reg;
         }
-        rc = solve_linear_d(MC_ID_posv, 'L', (int) K, (int) K, (int) NRHS, G, (M >= N) ? R : B_d,
+        rc = solve_linear_d(MC_FID_posv, 'L', (int) K, (int) K, (int) NRHS, G, (M >= N) ? R : B_d,
                             (M >= N) ? X_d : R, err, errsz);
         if (rc == 0 && M < N)
         {
@@ -1193,7 +1149,7 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
     const mc_expr_t *rhs     = s->u.multi.rhs[0];
     const mc_fn_id_t fn      = rhs->u.call.fn->id;
     const char      *fname   = rhs->u.call.fn->name;
-    int              is_eigh = (fn == MC_ID_eigh);
+    int              is_eigh = (fn == MC_FID_eigh);
     int              tmpA = 0, rc = 0;
     imageID          idA = -1;
 
@@ -1210,7 +1166,7 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
         {
             mc_tmp_release(idA);
         }
-        return lap_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
+        return mc_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
     }
     uint8_t out_dt = (imA->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
     uint64_t Q     = (M < N) ? M : N;
@@ -1220,12 +1176,12 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
     double  *Vt_d  = is_eigh ? NULL : calloc((size_t) (Q * N), sizeof(double));
 
     rc = (!A_d || !S_d || (!is_eigh && (!U_d || !Vt_d)))
-             ? lap_err(err, errsz, "%s: out of memory", fname)
+             ? mc_err(err, errsz, "%s: out of memory", fname)
          : is_eigh ? run_eigh_d((int) N, A_d, 1, S_d)
                    : run_svd_d((int) M, (int) N, A_d, U_d, S_d, Vt_d);
     if (rc != 0)
     {
-        (void) lap_err(err, errsz, "%s: did not converge", fname); /* unless a message is set */
+        (void) mc_err(err, errsz, "%s: did not converge", fname); /* unless a message is set */
     }
 
     int            nlhs      = is_eigh ? 2 : 3;

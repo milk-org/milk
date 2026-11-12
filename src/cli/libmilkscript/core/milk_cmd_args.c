@@ -453,7 +453,7 @@ static int args_dir(const char *key, char *buf, size_t sz)
 }
 
 /**
- * mkdir_p - Recursively create a directory path and all missing parent directories
+ * milk_mkdir_p - Recursively create a directory path and all missing parent directories
  * @path: Mutable directory path string
  *
  * Walks @path component by component, temporarily NUL-terminating each slash to
@@ -461,7 +461,7 @@ static int args_dir(const char *key, char *buf, size_t sz)
  *
  * Return: 0 on success (or if the directory already exists), -1 on error
  */
-static int mkdir_p(char *path)
+int milk_mkdir_p(char *path)
 {
     for (char *p = path + 1; *p != '\0'; p++)
     {
@@ -499,7 +499,7 @@ int milk_args_preset_save(int cmdi, const char *name)
     char  v[STRINGMAXLEN_CLICMDARG + 32];
     FILE *fp;
 
-    if (args_dir(c->key, dir, sizeof(dir)) != 0 || mkdir_p(dir) != 0)
+    if (args_dir(c->key, dir, sizeof(dir)) != 0 || milk_mkdir_p(dir) != 0)
     {
         fprintf(stderr, "milk: %s: cannot create the preset directory %s: %s\n", c->key, dir,
                 strerror(errno));

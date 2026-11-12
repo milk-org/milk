@@ -64,14 +64,14 @@ static void follow_sigint_handler(int sig)
 }
 
 /**
- * use_color_output - Check whether ANSI color escape sequences should be emitted
+ * milk_use_color_output - Check whether ANSI color escape sequences should be emitted
  *
  * Respects the `NO_COLOR` environment variable and checks whether `STDOUT_FILENO`
  * refers to a terminal device.
  *
  * Return: 1 if color output should be used, 0 otherwise
  */
-static int use_color_output(void)
+int milk_use_color_output(void)
 {
     const char *nc = getenv("NO_COLOR");
     if (nc != NULL && nc[0] != '\0')
@@ -949,7 +949,7 @@ int milk_srvlog_cmd_log(const char                *default_sockpath,
         has_regex = 1;
     }
 
-    int      color = use_color_output();
+    int      color = milk_use_color_output();
     uint64_t wseq  = __atomic_load_n(&shm->write_seq, __ATOMIC_ACQUIRE);
     uint64_t first = (wseq > MILK_SRVLOG_CAP) ? (wseq - MILK_SRVLOG_CAP + 1) : 1;
 

@@ -77,7 +77,6 @@ typedef struct
     uint8_t          dt;               /* _DATATYPE_* for image operand, 0 for scalar */
     int              is_scalar;        /* 1 if scalar parameter */
     int              is_out;           /* 1 if output operand */
-    int              is_inplace_rw;    /* 1 if +=, -=, *=, /= or slice/mask assign */
     int              is_non_pointwise; /* 1 if shift, roll, lut table, pixremap, interp2 */
     int              is_table_arg;     /* 1 if table/source arg not participating in pass shape */
     int              is_expr_im;       /* 1 if pre-evaluated image sub-expression in slice_expr */
@@ -94,16 +93,14 @@ typedef struct
 /* Planned output write inside an elementwise pass. */
 typedef struct
 {
-    int              op_idx;      /* index in pass->ops[], or -1 if elided local */
-    int              mask_op_idx; /* index of mask operand in pass->ops[], or -1 */
-    int              slot_idx;    /* index in prog->slots[] */
-    int              stmt_idx;    /* statement index in program */
-    mc_tok_type_t    assign_op;   /* MC_TOK_ASSIGN, MC_TOK_ADD_ASSIGN, etc. */
-    const mc_expr_t *rhs_expr;    /* RHS expression tree */
-    const mc_expr_t *lhs_slice;   /* LHS slice node if slice/mask assignment */
-    uint8_t          out_dt;      /* destination datatype */
-    int              is_elided;   /* 1 if elided to register local _l<slot_idx> */
-    int              defer_post;  /* 1 if shared stream post is deferred */
+    int              op_idx;    /* index in pass->ops[], or -1 if elided local */
+    int              slot_idx;  /* index in prog->slots[] */
+    int              stmt_idx;  /* statement index in program */
+    mc_tok_type_t    assign_op; /* MC_TOK_ASSIGN, MC_TOK_ADD_ASSIGN, etc. */
+    const mc_expr_t *rhs_expr;  /* RHS expression tree */
+    const mc_expr_t *lhs_slice; /* LHS slice node if slice/mask assignment */
+    uint8_t          out_dt;    /* destination datatype */
+    int              is_elided; /* 1 if elided to register local _l<slot_idx> */
 } mc_pass_out_t;
 
 /* Compiled elementwise pass. */
@@ -293,7 +290,7 @@ void mc_out_abort(void);
 void mc_out_post_now(imageID id);
 
 /* Enable or disable deferred semaphore/cnt0 posting for shared outputs. */
-void mc_post_defer(int on);
+void mc_post_defer(void);
 
 /* Flush all deferred output stream updates in a single batch. */
 void mc_post_flush(void *processinfo);
@@ -311,7 +308,7 @@ void mc_format_image_summary(imageID id, const char *assign_name, char *buf, siz
 char *mc_format_pixel_line(imageID id);
 
 /* Build execution steps and passes for resolved AST `p->ast_head`. */
-int mc_plan_build(mcalc_prog_t *p, int has_vars, char *err, size_t errsz);
+int mc_plan_build(mcalc_prog_t *p, char *err, size_t errsz);
 
 /* Emit C source code for @pass into a newly heap-allocated string `pass->c_src`. */
 int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t errsz);
@@ -369,9 +366,6 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
 
 /* Free any cached CSR or scratch buffers attached to @cs. */
 void mc_ctor_step_free(mc_ctor_step_t *cs);
-
-/* Clear the cached compound reduction sub-program table. */
-void mc_reduce_cache_clear(void);
 
 /* Mark unused local intermediate pass outputs as elided across @prog. */
 void mc_elide_unused_locals(mcalc_prog_t *prog);

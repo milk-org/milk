@@ -60,74 +60,25 @@
 /* ============================================================================================== */
 
 /**
- * mc_reduce_cache_clear - Clear any global reduction sub-program state
- *
- * Sub-programs are now attached directly to the AST expression node (`expr->sub_prog`) and freed
- * with the AST, so this entry point is retained as a no-op hook for API compatibility.
- *
- * Return: void
- */
-void mc_reduce_cache_clear(void)
-{
-}
-
-/**
- * red_err - Format a diagnostic message into @err if not already populated
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Capacity of @err in bytes
- * @fmt:   printf-style format string
- *
- * Preserves the first error encountered during nested evaluation by writing to @err only when
- * `err[0] == '\0'`.
- *
- * Return: Always -1 for convenient tail-return error propagation
- */
-__attribute__((format(printf, 3, 4))) static int red_err(char       *err,
-                                                         size_t      errsz,
-                                                         const char *fmt,
-                                                         ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
- * is_complex_dt - Check whether an ImageStreamIO datatype code is complex
- * @dt: ImageStreamIO `_DATATYPE_*` code
- *
- * Return: 1 if @dt is `_DATATYPE_COMPLEX_FLOAT` or `_DATATYPE_COMPLEX_DOUBLE`, 0 otherwise
- */
-static inline int is_complex_dt(uint8_t dt)
-{
-    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
-}
-
-/**
  * mc_map_reduce_op - Map a calculator reduction function to an `arith_reduce_op` enum
- * @fn: Id of the reduction function (e.g. `MC_ID_itot`, `MC_ID_imean`, `MC_ID_dot`)
+ * @fn: Id of the reduction function (e.g. `MC_FID_itot`, `MC_FID_imean`, `MC_FID_dot`)
  *
  * Return: Corresponding `ARITH_RED_*` constant, or `ARITH_RED_ALL` as fallback
  */
 int mc_map_reduce_op(mc_fn_id_t fn)
 {
-    return (fn == MC_ID_itot)     ? ARITH_RED_SUM
-           : (fn == MC_ID_imean)  ? ARITH_RED_MEAN
-           : (fn == MC_ID_imin)   ? ARITH_RED_MIN
-           : (fn == MC_ID_imax)   ? ARITH_RED_MAX
-           : (fn == MC_ID_istd)   ? ARITH_RED_STD
-           : (fn == MC_ID_irms)   ? ARITH_RED_RMS
-           : (fn == MC_ID_ivar)   ? ARITH_RED_VAR
-           : (fn == MC_ID_norm)   ? ARITH_RED_NORM
-           : (fn == MC_ID_asum)   ? ARITH_RED_ASUM
-           : (fn == MC_ID_icount) ? ARITH_RED_COUNT
-           : (fn == MC_ID_dot)    ? ARITH_RED_DOT
-                                  : ARITH_RED_ALL;
+    return (fn == MC_FID_itot)     ? ARITH_RED_SUM
+           : (fn == MC_FID_imean)  ? ARITH_RED_MEAN
+           : (fn == MC_FID_imin)   ? ARITH_RED_MIN
+           : (fn == MC_FID_imax)   ? ARITH_RED_MAX
+           : (fn == MC_FID_istd)   ? ARITH_RED_STD
+           : (fn == MC_FID_irms)   ? ARITH_RED_RMS
+           : (fn == MC_FID_ivar)   ? ARITH_RED_VAR
+           : (fn == MC_FID_norm)   ? ARITH_RED_NORM
+           : (fn == MC_FID_asum)   ? ARITH_RED_ASUM
+           : (fn == MC_FID_icount) ? ARITH_RED_COUNT
+           : (fn == MC_FID_dot)    ? ARITH_RED_DOT
+                                   : ARITH_RED_ALL;
 }
 
 /**
@@ -147,7 +98,7 @@ int mc_eval_scalar_d(const mc_expr_t *e, double *out, char *err, size_t errsz)
     mc_val_t v;
     if (mc_scalar_eval_expr(e, &v, err, errsz) != 0 || v.type == MC_VAL_STRING)
     {
-        return (v.type == MC_VAL_STRING) ? red_err(err, errsz, "expected numeric argument") : -1;
+        return (v.type == MC_VAL_STRING) ? mc_err(err, errsz, "expected numeric argument") : -1;
     }
     *out = (v.type == MC_VAL_LONG) ? (double) v.lval : v.dval;
     return 0;
@@ -238,7 +189,7 @@ mcalc_prog_t *mc_get_or_build_sub_prog(const mc_expr_t *expr, char *err, size_t 
     p->last_im_id      = -1;
 
     if ((need_re_resolve && mc_resolve_prog_ex(s, mc_prog_in_unit(), err, errsz) != 0) ||
-        mc_plan_build(p, 0, err, errsz) != 0)
+        mc_plan_build(p, err, errsz) != 0)
     {
         s->u.expr = NULL;
         mcalc_prog_free(p);
@@ -297,9 +248,9 @@ static int fill_red_src_im(mc_red_src_t *out, imageID id, char *err, size_t errs
     if (is_complex_dt(out->dt))
     {
         mc_release_red_src(out);
-        return red_err(err, errsz,
-                       "Function of real pixels applied to a complex image; use real(), "
-                       "imag() or abs() first");
+        return mc_err(err, errsz,
+                      "Function of real pixels applied to a complex image; use real(), "
+                      "imag() or abs() first");
     }
     return 0;
 }
@@ -338,7 +289,7 @@ int mc_prepare_red_src(const mc_expr_t *e,
     e           = e;
     if (e == NULL)
     {
-        return red_err(err, errsz, "null image expression");
+        return mc_err(err, errsz, "null image expression");
     }
 
     /* Fast path 1: direct image identifier. */
@@ -352,11 +303,11 @@ int mc_prepare_red_src(const mc_expr_t *e,
         }
         if (id < 0)
         {
-            return red_err(err, errsz, "unknown image '%s'", e->u.ident.name);
+            return mc_err(err, errsz, "unknown image '%s'", e->u.ident.name);
         }
         if (id == avoid_id && (id = out->tmp_id = clone_to_tmp(id)) < 0)
         {
-            return red_err(err, errsz, "failed to clone aliased image");
+            return mc_err(err, errsz, "failed to clone aliased image");
         }
         return fill_red_src_im(out, id, err, errsz);
     }
@@ -402,9 +353,9 @@ int mc_prepare_red_src(const mc_expr_t *e,
                 {
                     if (d->check_div_kind != 0 && out->ops[i].scalar == 0.0)
                     {
-                        return red_err(err, errsz,
-                                       (d->check_div_kind == 1) ? "Division by zero"
-                                                                : "Modulo by zero");
+                        return mc_err(err, errsz,
+                                      (d->check_div_kind == 1) ? "Division by zero"
+                                                               : "Modulo by zero");
                     }
                     return -1;
                 }
@@ -459,7 +410,7 @@ int mc_prepare_red_src(const mc_expr_t *e,
         (sidx >= 0) ? mc_tmp_steal_slot(&sub->slots[sidx]) : clone_to_tmp(sub->last_im_id);
     if (out->tmp_id < 0)
     {
-        return red_err(err, errsz, "failed to allocate temporary image");
+        return mc_err(err, errsz, "failed to allocate temporary image");
     }
     return fill_red_src_im(out, out->tmp_id, err, errsz);
 }
@@ -779,9 +730,9 @@ static int run_stat_reduce(const mc_red_src_t *s1,
 {
     if (s2 != NULL && (s1->naxis != s2->naxis || memcmp(s1->ishape, s2->ishape, 12) != 0))
     {
-        return red_err(err, errsz,
-                       (op == ARITH_RED_DOT) ? "dot: images must have the same dimensions"
-                                             : "The mask must have the image's size");
+        return mc_err(err, errsz,
+                      (op == ARITH_RED_DOT) ? "dot: images must have the same dimensions"
+                                            : "The mask must have the image's size");
     }
 
     uint64_t nblk = (s1->nel + MC_RED_BLK - 1) / MC_RED_BLK;
@@ -946,7 +897,7 @@ static int run_argext_reduce(const mc_red_src_t *s1,
 {
     if (s2 != NULL && (s1->naxis != s2->naxis || memcmp(s1->ishape, s2->ishape, 12) != 0))
     {
-        return red_err(err, errsz, "The mask must have the image's size");
+        return mc_err(err, errsz, "The mask must have the image's size");
     }
     uint64_t     nblk = (s1->nel + MC_RED_BLK - 1) / MC_RED_BLK;
     int          nth  = milk_omp_team_size(s1->nel, 262144);
@@ -1009,7 +960,7 @@ static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *e
     s2.tmp_id = -1;
 
     /* Family 1: median, percentile, and matrix trace (require materialized `s1.im`). */
-    if (fn == MC_ID_imedian || fn == MC_ID_perc || fn == MC_ID_trace)
+    if (fn == MC_FID_imedian || fn == MC_FID_perc || fn == MC_FID_trace)
     {
         if (mc_prepare_red_src(call_expr->u.call.args[0], -1, 0, &s1, err, errsz) != 0)
         {
@@ -1017,24 +968,24 @@ static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *e
         }
         double res  = 0.0;
         double frac = 0.5;
-        if (fn == MC_ID_trace)
+        if (fn == MC_FID_trace)
         {
             uint64_t M = s1.ishape[0];
             uint64_t N = (s1.naxis >= 2) ? s1.ishape[1] : 1;
             res = arith_image_reduce_lane(s1.im, s1.dt, 0, (M < N) ? M : N, M + 1, ARITH_RED_SUM);
         }
-        else if (fn == MC_ID_perc &&
+        else if (fn == MC_FID_perc &&
                  mc_eval_scalar_d(call_expr->u.call.args[1], &frac, err, errsz) != 0)
         {
             rc = -1;
         }
-        else if ((fn == MC_ID_imedian && nargs == 2) || (fn == MC_ID_perc && nargs == 3))
+        else if ((fn == MC_FID_imedian && nargs == 2) || (fn == MC_FID_perc && nargs == 3))
         {
-            const mc_expr_t *mk_e = call_expr->u.call.args[(fn == MC_ID_perc) ? 2 : 1];
+            const mc_expr_t *mk_e = call_expr->u.call.args[(fn == MC_FID_perc) ? 2 : 1];
             if (mc_prepare_red_src(mk_e, -1, 0, &s2, err, errsz) != 0 || s1.naxis != s2.naxis ||
                 memcmp(s1.ishape, s2.ishape, 12) != 0)
             {
-                rc = (err[0] == '\0') ? red_err(err, errsz, "The mask must have the image's size")
+                rc = (err[0] == '\0') ? mc_err(err, errsz, "The mask must have the image's size")
                                       : -1;
             }
             else
@@ -1069,15 +1020,15 @@ static int reduce_scalar_once(const mc_expr_t *call_expr, mc_val_t *out, char *e
         if (mc_eval_scalar_d(call_expr->u.call.args[1], &axd, err, errsz) != 0 || llround(axd) != 0)
         {
             mc_release_red_src(&s1);
-            return (err[0] == '\0') ? red_err(err, errsz, "Axis out of range") : -1;
+            return (err[0] == '\0') ? mc_err(err, errsz, "Axis out of range") : -1;
         }
     }
 
     /* Family 2: linear index extremum (`iargmax`, `iargmin`, `iamax`). */
-    if (fn == MC_ID_iargmax || fn == MC_ID_iargmin || fn == MC_ID_iamax)
+    if (fn == MC_FID_iargmax || fn == MC_FID_iargmin || fn == MC_FID_iamax)
     {
         int64_t idx  = -1;
-        int     mode = (fn == MC_ID_iargmin) ? 1 : (fn == MC_ID_iamax) ? 2 : 0;
+        int     mode = (fn == MC_FID_iargmin) ? 1 : (fn == MC_FID_iamax) ? 2 : 0;
         rc           = run_argext_reduce(&s1, has_im2 ? &s2 : NULL, mode, &idx, err, errsz);
         mc_release_red_src(&s1);
         mc_release_red_src(&s2);
@@ -1359,7 +1310,7 @@ static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_
     {
         return -1;
     }
-    if (fn == MC_ID_istats)
+    if (fn == MC_FID_istats)
     {
         if (nargs == 2 && mc_prepare_red_src(call->u.call.args[1], -1, 1, &s2, err, errsz) != 0)
         {
@@ -1376,7 +1327,7 @@ static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_
             vals[j].dval = arith_stat_finish_inline(&acc, ops[j], 0);
         }
     }
-    else if (fn == MC_ID_icentroid)
+    else if (fn == MC_FID_icentroid)
     {
         double th = 0.0;
         if (nargs == 2 && mc_eval_scalar_d(call->u.call.args[1], &th, err, errsz) != 0)
@@ -1404,13 +1355,13 @@ static int multi_reduce_once(const mc_stmt_t *s, mc_val_t *out, char *err, size_
         {
             mc_release_red_src(&s1);
             return (nlhs > (int) s1.naxis)
-                       ? red_err(err, errsz, "%s: cannot unpack %d coordinates from %uD image",
-                                 call->u.call.fn->name, nlhs, (unsigned) s1.naxis)
+                       ? mc_err(err, errsz, "%s: cannot unpack %d coordinates from %uD image",
+                                call->u.call.fn->name, nlhs, (unsigned) s1.naxis)
                        : -1;
         }
         int64_t flat = -1;
-        rc = run_argext_reduce(&s1, (nargs == 2) ? &s2 : NULL, (fn == MC_ID_iargmin) ? 1 : 0, &flat,
-                               err, errsz);
+        rc = run_argext_reduce(&s1, (nargs == 2) ? &s2 : NULL, (fn == MC_FID_iargmin) ? 1 : 0,
+                               &flat, err, errsz);
         int64_t nx        = (int64_t) s1.ishape[0];
         int64_t ny        = (int64_t) s1.ishape[1];
         int64_t coords[3] = { (flat < 0) ? -1 : (flat % nx), (flat < 0) ? -1 : ((flat / nx) % ny),

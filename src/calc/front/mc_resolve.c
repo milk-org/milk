@@ -123,20 +123,6 @@ __attribute__((format(printf, 2, 3))) static int res_err(mc_resolve_ctx_t *ctx,
     return -1;
 }
 
-/** is_complex_dt() - Return 1 if @dt is complex float or complex double. */
-static inline int is_complex_dt(uint8_t dt)
-{
-    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
-}
-
-/** is_int_dt() - Return 1 if @dt is one of the 8 signed/unsigned integer datatypes. */
-static inline int is_int_dt(uint8_t dt)
-{
-    return dt == _DATATYPE_UINT8 || dt == _DATATYPE_INT8 || dt == _DATATYPE_UINT16 ||
-           dt == _DATATYPE_INT16 || dt == _DATATYPE_UINT32 || dt == _DATATYPE_INT32 ||
-           dt == _DATATYPE_UINT64 || dt == _DATATYPE_INT64;
-}
-
 /**
  * set_expr_im - Mark expression @e as producing an image and copy shape from @im
  * @e:  Expression node to annotate
@@ -641,7 +627,7 @@ static int check_def_names(mc_expr_t  *e,
             snprintf(err, errsz, "def '%s': wrong number of arguments for '%s'", def, fname);
             return -1;
         }
-        if (fn != NULL && fn->id == MC_ID_post)
+        if (fn != NULL && fn->id == MC_FID_post)
         {
             return 0; /* post(stream) names a stream to post, not a value */
         }
@@ -959,7 +945,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     }
 
     /* Special directive: post(stream_name) takes a stream identifier without resolving as value */
-    if (e->u.call.fn != NULL && e->u.call.fn->id == MC_ID_post)
+    if (e->u.call.fn != NULL && e->u.call.fn->id == MC_FID_post)
     {
         mc_expr_t *a0 = (e->u.call.nargs == 1) ? e->u.call.args[0] : NULL;
         if (a0 == NULL || a0->kind != MC_EXPR_IDENT)
@@ -997,7 +983,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     if (nargs < fn->min_args || (fn->max_args >= 0 && nargs > fn->max_args) || nlhs < fn->min_lhs ||
         nlhs > fn->max_lhs)
     {
-        return (fn->id == MC_ID_trunc && nargs == 3)
+        return (fn->id == MC_FID_trunc && nargs == 3)
                    ? res_err(ctx, "'trunc(x, lo, hi)' was removed: use clamp(x, lo, hi)")
                : (nargs < fn->min_args || (fn->max_args >= 0 && nargs > fn->max_args))
                    ? res_err(ctx, "wrong number of arguments for '%s'", fn->name)
@@ -1019,8 +1005,8 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         any_dbl |= (e->u.call.args[i]->res_kind == MC_RES_IMAGE &&
                     (dt == _DATATYPE_DOUBLE || dt == _DATATYPE_COMPLEX_DOUBLE));
     }
-    if (any_cplx && fn->kind != MC_FN_CPLX && fn->id != MC_ID_abs && fn->id != MC_ID_reshape &&
-        fn->id != MC_ID_fft && fn->id != MC_ID_ifft && fn->id != MC_ID_fftshift)
+    if (any_cplx && fn->kind != MC_FN_CPLX && fn->id != MC_FID_abs && fn->id != MC_FID_reshape &&
+        fn->id != MC_FID_fft && fn->id != MC_FID_ifft && fn->id != MC_FID_fftshift)
     {
         return res_err(ctx, "Function of real pixels applied to a complex image; use real(), "
                             "imag() or abs() first");
@@ -1035,7 +1021,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     case MC_FN_SCALAR:
     case MC_FN_WHERE:
     case MC_FN_PROG:
-        if (fn->kind == MC_FN_PROG && fn->id != MC_ID_ema)
+        if (fn->kind == MC_FN_PROG && fn->id != MC_FID_ema)
         {
             return res_err(ctx, "function requires hist(stream, N) in a unit program");
         }
@@ -1058,15 +1044,15 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         return 0;
 
     case MC_FN_CPLX:
-        if ((fn->id == MC_ID_cplx || fn->id == MC_ID_expi) &&
+        if ((fn->id == MC_FID_cplx || fn->id == MC_FID_expi) &&
             (!any_im || any_cplx || e->u.call.args[0]->res_kind == MC_RES_STRING ||
              (nargs == 2 && e->u.call.args[1]->res_kind == MC_RES_STRING)))
         {
-            return res_err(ctx, (fn->id == MC_ID_expi) ? "expi: expected a real phase image"
+            return res_err(ctx, (fn->id == MC_FID_expi) ? "expi: expected a real phase image"
                                 : !any_im ? "cplx: needs at least one image"
                                           : "cplx: needs two real operands of the same size");
         }
-        e->needs_image = (fn->id == MC_ID_cplx || fn->id == MC_ID_expi) ? 1 : any_im;
+        e->needs_image = (fn->id == MC_FID_cplx || fn->id == MC_FID_expi) ? 1 : any_im;
         for (int i = 0; e->needs_image && i < nargs && e->res_naxis == 0; i++)
         {
             if (e->u.call.args[i]->res_naxis > 0)
@@ -1075,13 +1061,14 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                 memcpy(e->res_size, e->u.call.args[i]->res_size, sizeof(e->res_size));
             }
         }
-        e->res_dt   = (fn->id == MC_ID_cplx || fn->id == MC_ID_expi)
+        e->res_dt   = (fn->id == MC_FID_cplx || fn->id == MC_FID_expi)
                           ? (any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT)
-                      : (fn->id == MC_ID_conj) ? e->u.call.args[0]->res_dt
-                                               : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
-        e->res_kind = e->needs_image                                   ? MC_RES_IMAGE
-                      : (fn->id == MC_ID_real || fn->id == MC_ID_conj) ? e->u.call.args[0]->res_kind
-                                                                       : MC_RES_SCALAR_D;
+                      : (fn->id == MC_FID_conj) ? e->u.call.args[0]->res_dt
+                                                : (any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
+        e->res_kind = e->needs_image ? MC_RES_IMAGE
+                      : (fn->id == MC_FID_real || fn->id == MC_FID_conj)
+                          ? e->u.call.args[0]->res_kind
+                          : MC_RES_SCALAR_D;
         return 0;
 
     case MC_FN_PRNG:
@@ -1102,7 +1089,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
 
     case MC_FN_STR:
         e->needs_image = 0;
-        e->res_kind    = (fn->id == MC_ID_strlen) ? MC_RES_SCALAR_L : MC_RES_STRING;
+        e->res_kind    = (fn->id == MC_FID_strlen) ? MC_RES_SCALAR_L : MC_RES_STRING;
         return 0;
 
     case MC_FN_REDUCE_D:
@@ -1118,7 +1105,7 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         if (fn->kind == MC_FN_STENCIL_LIB)
         {
             set_expr_im(e, NULL, any_dbl ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT);
-            if (fn->id != MC_ID_pixunmap && fn->id != MC_ID_rprof && a0->res_naxis > 0)
+            if (fn->id != MC_FID_pixunmap && fn->id != MC_FID_rprof && a0->res_naxis > 0)
             {
                 e->res_naxis = a0->res_naxis;
                 memcpy(e->res_size, a0->res_size, sizeof(e->res_size));

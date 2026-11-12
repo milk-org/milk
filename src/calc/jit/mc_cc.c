@@ -238,15 +238,6 @@ static void init_env_hash(void)
     g_env_h2 = h2;
 }
 
-static void hash_src(uint64_t *h1, uint64_t *h2, const unsigned char *p, size_t n)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        *h1 = (*h1 ^ p[i]) * 0x100000001b3ULL;
-        *h2 = (*h2 ^ (uint64_t) (p[i] ^ 0x5aU)) * 0x9e3779b97f4a7c15ULL;
-    }
-}
-
 /* Hash state after the environment and MC_PRELUDE_CORE_SRC, which every kernel source starts with */
 static pthread_once_t g_pre_once = PTHREAD_ONCE_INIT;
 static uint64_t       g_pre_h1   = 0;
@@ -257,8 +248,8 @@ static void init_pre_hash(void)
     pthread_once(&g_env_once, init_env_hash);
     g_pre_h1 = g_env_h1;
     g_pre_h2 = g_env_h2;
-    hash_src(&g_pre_h1, &g_pre_h2, (const unsigned char *) MC_PRELUDE_CORE_SRC,
-             sizeof(MC_PRELUDE_CORE_SRC) - 1);
+    hash_bytes(&g_pre_h1, &g_pre_h2, (const unsigned char *) MC_PRELUDE_CORE_SRC,
+               sizeof(MC_PRELUDE_CORE_SRC) - 1);
 }
 
 /**
@@ -283,7 +274,7 @@ static void hash128(const char *cc, const char *src, uint64_t *out_h1, uint64_t 
     uint64_t h2  = pre ? g_pre_h2 : g_env_h2;
 
     src += pre ? plen : 0;
-    hash_src(&h1, &h2, (const unsigned char *) src, strlen(src));
+    hash_bytes(&h1, &h2, (const unsigned char *) src, strlen(src));
     for (const unsigned char *p = (const unsigned char *) cc; *p != '\0'; p++)
     {
         h1 = (h1 ^ *p) * 0x100000001b3ULL;
@@ -882,8 +873,8 @@ static mc_kernel_fn mc_cc_compile(const char *c_src,
  * @h2:       High 64-bit hash of `pa->c_src`
  * @key:      32-character hex cache key
  * @so_path:  Target `<cache_dir>/<key>.so` path
- * @uniq_idx: Unique cache-miss index (`>= 0` for the first occurrence of a missing key,
- *            or `-1` if satisfied from cache)
+ * @miss_i:   In entry number u of the array: the job of the u-th kernel to compile (the first
+ *            job with that key)
  */
 typedef struct
 {
@@ -892,8 +883,28 @@ typedef struct
     uint64_t   h2;
     char       key[33];
     char       so_path[512];
-    int        uniq_idx;
+    int        miss_i;
 } pass_job_t;
+
+/* Give kernel @fn of library @so_path to job @i and to the later jobs with the same key */
+static void jobs_set_kernel(pass_job_t  *jobs,
+                            int          npass,
+                            int          i,
+                            mc_kernel_fn fn,
+                            const char  *so_path)
+{
+    for (int k = i; k < npass; k++)
+    {
+        if (jobs[k].h1 == jobs[i].h1 && jobs[k].h2 == jobs[i].h2)
+        {
+            jobs[k].pa->fn = fn;
+            if (jobs[k].pa->so_path != so_path)
+            {
+                snprintf(jobs[k].pa->so_path, sizeof(jobs[k].pa->so_path), "%s", so_path);
+            }
+        }
+    }
+}
 
 /**
  * mc_cc_compile_prog - Compile all elementwise passes in a program, batching cache misses
@@ -956,8 +967,7 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
         {
             continue;
         }
-        jobs[j].pa       = &p->steps[st].pass;
-        jobs[j].uniq_idx = -1;
+        jobs[j].pa = &p->steps[st].pass;
         hash128(cc, jobs[j].pa->c_src, &jobs[j].h1, &jobs[j].h2);
         snprintf(jobs[j].key, sizeof(jobs[j].key), "%016llx%016llx",
                  (unsigned long long) jobs[j].h1, (unsigned long long) jobs[j].h2);
@@ -1019,11 +1029,7 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
                 snprintf(jobs[i].pa->so_path, sizeof(jobs[i].pa->so_path), "%s",
                          jobs[dup_of].pa->so_path);
             }
-            else
-            {
-                jobs[i].uniq_idx = jobs[dup_of].uniq_idx;
-            }
-            continue;
+            continue; /* else it gets its kernel with jobs[dup_of] */
         }
         if (access(jobs[i].so_path, R_OK) == 0)
         {
@@ -1039,7 +1045,7 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
             snprintf(jobs[i].pa->so_path, sizeof(jobs[i].pa->so_path), "%s", jobs[i].so_path);
             continue;
         }
-        jobs[i].uniq_idx = nmiss++;
+        jobs[nmiss++].miss_i = i;
     }
 
     if (nmiss == 0)
@@ -1049,29 +1055,14 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     }
     if (nmiss == 1)
     {
-        for (int i = 0; i < npass; i++)
+        int          i  = jobs[0].miss_i;
+        mc_kernel_fn fn = mc_cc_compile(jobs[i].pa->c_src, jobs[i].pa->so_path,
+                                        sizeof(jobs[i].pa->so_path), err, errsz);
+        if (fn != NULL)
         {
-            if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx == 0)
-            {
-                mc_kernel_fn fn = mc_cc_compile(jobs[i].pa->c_src, jobs[i].pa->so_path,
-                                                sizeof(jobs[i].pa->so_path), err, errsz);
-                if (fn == NULL)
-                {
-                    goto cleanup;
-                }
-                for (int k = i; k < npass; k++)
-                {
-                    if (jobs[k].h1 == jobs[i].h1 && jobs[k].h2 == jobs[i].h2)
-                    {
-                        jobs[k].pa->fn = fn;
-                        snprintf(jobs[k].pa->so_path, sizeof(jobs[k].pa->so_path), "%s",
-                                 jobs[i].pa->so_path);
-                    }
-                }
-                break;
-            }
+            jobs_set_kernel(jobs, npass, i, fn, jobs[i].pa->so_path);
+            rc = 0;
         }
-        rc = 0;
         goto cleanup;
     }
 
@@ -1087,25 +1078,22 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     int    need_coord   = 0;
     int    need_spatial = 0;
     int    sp_used[10]  = { 0 };
-    int    last_miss_i  = -1;
+    int    last_miss_i  = jobs[nmiss - 1].miss_i;
     size_t batch_cap = sizeof(MC_PRELUDE_CORE_SRC) + sizeof(MC_PRELUDE_COMPLEX_SRC) +
                        sizeof(MC_PRELUDE_COORD_SHIFT_SRC) + sizeof(MC_PRELUDE_SPATIAL_MACRO_SRC) +
                        sizeof(MC_PRELUDE_SPATIAL_ALL_SRC) + 256;
-    for (int i = 0; i < npass; i++)
+    for (int u = 0; u < nmiss; u++)
     {
-        if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx >= 0)
+        const char *src = jobs[jobs[u].miss_i].pa->c_src;
+        batch_cap += strlen(src) + 128;
+        need_complex |= (strstr(src, "<complex.h>") != NULL);
+        need_coord |= (strstr(src, "mc_cl(") != NULL);
+        for (int d = 0; d < 10; d++)
         {
-            const char *src = jobs[i].pa->c_src;
-            batch_cap += strlen(src) + 128;
-            need_complex |= (strstr(src, "<complex.h>") != NULL);
-            need_coord |= (strstr(src, "mc_cl(") != NULL);
-            for (int d = 0; d < 10; d++)
+            if (strstr(src, k_sp_defs[d]) != NULL)
             {
-                if (strstr(src, k_sp_defs[d]) != NULL)
-                {
-                    sp_used[d]   = 1;
-                    need_spatial = 1;
-                }
+                sp_used[d]   = 1;
+                need_spatial = 1;
             }
         }
     }
@@ -1131,26 +1119,18 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
 
     for (int u = 0; u < nmiss; u++)
     {
-        for (int i = 0; i < npass; i++)
+        int  i = jobs[u].miss_i;
+        char c_path[512];
+        if (write_source_atomically(cache_dir, jobs[i].key, seq + (unsigned long) u,
+                                    jobs[i].pa->c_src, strlen(jobs[i].pa->c_src), c_path,
+                                    sizeof(c_path), err, errsz) != 0)
         {
-            if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx == u)
-            {
-                last_miss_i = i;
-                char c_path[512];
-                if (write_source_atomically(cache_dir, jobs[i].key, seq + (unsigned long) u,
-                                            jobs[i].pa->c_src, strlen(jobs[i].pa->c_src), c_path,
-                                            sizeof(c_path), err, errsz) != 0)
-                {
-                    goto cleanup;
-                }
-                const char *fn_pos = strstr(jobs[i].pa->c_src, "void mc_k(");
-                const char *body   = (fn_pos != NULL) ? fn_pos : jobs[i].pa->c_src;
-                blen +=
-                    (size_t) snprintf(batch_src + blen, batch_cap - blen,
-                                      "#define mc_k mc_k_%s\n%s\n#undef mc_k\n", jobs[i].key, body);
-                break;
-            }
+            goto cleanup;
         }
+        const char *fn_pos = strstr(jobs[i].pa->c_src, "void mc_k(");
+        const char *body   = (fn_pos != NULL) ? fn_pos : jobs[i].pa->c_src;
+        blen += (size_t) snprintf(batch_src + blen, batch_cap - blen,
+                                  "#define mc_k mc_k_%s\n%s\n#undef mc_k\n", jobs[i].key, body);
     }
 
     int  pid = (int) getpid();
@@ -1176,23 +1156,16 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     }
 
     /* The other keys name the same library: hard-link it under a temp name, then rename */
-    for (int u = 0; u < nmiss; u++)
+    for (int u = 0; u < nmiss - 1; u++)
     {
-        for (int i = 0; i < npass; i++)
+        int  i = jobs[u].miss_i;
+        char so_tmp[600];
+        snprintf(so_tmp, sizeof(so_tmp), "%s.tmp.%d.%lu", jobs[i].so_path, pid, seq);
+        if (link(jobs[last_miss_i].so_path, so_tmp) != 0 || rename(so_tmp, jobs[i].so_path) != 0)
         {
-            if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx == u)
-            {
-                char so_tmp[600];
-                snprintf(so_tmp, sizeof(so_tmp), "%s.tmp.%d.%lu", jobs[i].so_path, pid, seq);
-                if (i != last_miss_i && (link(jobs[last_miss_i].so_path, so_tmp) != 0 ||
-                                         rename(so_tmp, jobs[i].so_path) != 0))
-                {
-                    snprintf(err, errsz, "cannot link '%s': %s", jobs[i].so_path, strerror(errno));
-                    (void) unlink(so_tmp);
-                    goto cleanup;
-                }
-                break;
-            }
+            snprintf(err, errsz, "cannot link '%s': %s", jobs[i].so_path, strerror(errno));
+            (void) unlink(so_tmp);
+            goto cleanup;
         }
     }
     maybe_prune_cache(cache_dir);
@@ -1206,36 +1179,21 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
 
     for (int u = 0; u < nmiss; u++)
     {
-        for (int i = 0; i < npass; i++)
+        int  i = jobs[u].miss_i;
+        char sym[64];
+        snprintf(sym, sizeof(sym), "mc_k_%s", jobs[i].key);
+        mc_kernel_fn fn  = NULL;
+        *(void **) (&fn) = dlsym(dl, sym);
+        if (fn == NULL)
         {
-            if (jobs[i].pa->fn == NULL && jobs[i].uniq_idx == u)
-            {
-                char sym[64];
-                snprintf(sym, sizeof(sym), "mc_k_%s", jobs[i].key);
-                mc_kernel_fn fn  = NULL;
-                *(void **) (&fn) = dlsym(dl, sym);
-                if (fn == NULL)
-                {
-                    dlclose(dl);
-                    snprintf(err, errsz, "dlsym('%s') failed in '%s'", sym,
-                             jobs[last_miss_i].so_path);
-                    goto cleanup;
-                }
-                pthread_mutex_lock(&g_cc_lock);
-                mem_cache_insert(jobs[i].h1, jobs[i].h2, fn, jobs[i].so_path);
-                pthread_mutex_unlock(&g_cc_lock);
-                for (int k = i; k < npass; k++)
-                {
-                    if (jobs[k].h1 == jobs[i].h1 && jobs[k].h2 == jobs[i].h2)
-                    {
-                        jobs[k].pa->fn = fn;
-                        snprintf(jobs[k].pa->so_path, sizeof(jobs[k].pa->so_path), "%s",
-                                 jobs[i].so_path);
-                    }
-                }
-                break;
-            }
+            dlclose(dl);
+            snprintf(err, errsz, "dlsym('%s') failed in '%s'", sym, jobs[last_miss_i].so_path);
+            goto cleanup;
         }
+        pthread_mutex_lock(&g_cc_lock);
+        mem_cache_insert(jobs[i].h1, jobs[i].h2, fn, jobs[i].so_path);
+        pthread_mutex_unlock(&g_cc_lock);
+        jobs_set_kernel(jobs, npass, i, fn, jobs[i].so_path);
     }
     rc = 0;
 

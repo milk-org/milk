@@ -42,32 +42,6 @@
  * ============================================================================ */
 
 /**
- * blas_err - Format a diagnostic message into @err (if still empty) and return -1
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Capacity of @err in bytes
- * @fmt:   printf-style format string
- *
- * Preserves the first error recorded during compilation or execution by only
- * writing into @err when `err[0] == '\0'`.
- *
- * Return: Always -1 to allow concise `return blas_err(...);` error paths
- */
-__attribute__((format(printf, 3, 4))) static int blas_err(char       *err,
-                                                          size_t      errsz,
-                                                          const char *fmt,
-                                                          ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
  * mc_multi_lhs_is_image - Check whether a specific LHS target of a multi-output call is an image
  * @rhs0:    Right-hand-side call expression of the multi-assignment statement
  * @lhs_idx: Zero-based index of the left-hand-side target being queried
@@ -93,7 +67,7 @@ int mc_multi_lhs_is_image(const mc_expr_t *rhs0, int lhs_idx)
                    : (lhs_idx == 0);
     }
     return rhs0->u.call.fn != NULL &&
-           (rhs0->u.call.fn->id == MC_ID_svd || rhs0->u.call.fn->id == MC_ID_eigh);
+           (rhs0->u.call.fn->id == MC_FID_svd || rhs0->u.call.fn->id == MC_FID_eigh);
 }
 
 /**
@@ -126,15 +100,16 @@ int mc_resolve_linalg_call(mc_expr_t *e,
     (void) any_im;
 
     /* Validate multi-LHS arity for matrix decompositions */
-    if ((fn == MC_ID_svd && nlhs != 1 && nlhs != 3) || (fn == MC_ID_eigh && nlhs != 1 && nlhs != 2))
+    if ((fn == MC_FID_svd && nlhs != 1 && nlhs != 3) ||
+        (fn == MC_FID_eigh && nlhs != 1 && nlhs != 2))
     {
-        return blas_err(err, errsz, "%s: wrong number of LHS targets", fname);
+        return mc_err(err, errsz, "%s: wrong number of LHS targets", fname);
     }
 
     /* Mark result as an image and infer output element datatype and static shape */
     e->needs_image = 1;
     e->res_kind    = MC_RES_IMAGE;
-    if (fn == MC_ID_zeros)
+    if (fn == MC_FID_zeros)
     {
         int all_long = 1;
         for (int i = 0; i < nargs; i++)
@@ -149,7 +124,7 @@ int mc_resolve_linalg_call(mc_expr_t *e,
             e->res_size[2] = (nargs >= 3) ? (uint32_t) e->u.call.args[2]->u.lval : 1;
         }
     }
-    else if (fn == MC_ID_eye && e->u.call.args[0]->kind == MC_EXPR_LONG &&
+    else if (fn == MC_FID_eye && e->u.call.args[0]->kind == MC_EXPR_LONG &&
              e->u.call.args[0]->u.lval > 0 &&
              (nargs == 1 ||
               (e->u.call.args[1]->kind == MC_EXPR_LONG && e->u.call.args[1]->u.lval > 0)))
@@ -159,14 +134,14 @@ int mc_resolve_linalg_call(mc_expr_t *e,
         e->res_size[1] = (nargs == 2) ? (uint32_t) e->u.call.args[1]->u.lval : e->res_size[0];
         e->res_size[2] = 1;
     }
-    else if (fn == MC_ID_vec)
+    else if (fn == MC_FID_vec)
     {
         e->res_naxis   = 1;
         e->res_size[0] = (uint32_t) nargs;
         e->res_size[1] = 1;
         e->res_size[2] = 1;
     }
-    else if (fn == MC_ID_reshape && nargs >= 2 && nargs <= 4)
+    else if (fn == MC_FID_reshape && nargs >= 2 && nargs <= 4)
     {
         int all_long = 1;
         for (int i = 1; i < nargs; i++)
@@ -181,28 +156,28 @@ int mc_resolve_linalg_call(mc_expr_t *e,
             e->res_size[2] = (nargs >= 4) ? (uint32_t) e->u.call.args[3]->u.lval : 1;
         }
     }
-    else if (fn == MC_ID_transpose && e->u.call.args[0]->res_naxis >= 1)
+    else if (fn == MC_FID_transpose && e->u.call.args[0]->res_naxis >= 1)
     {
         e->res_naxis   = 2;
         e->res_size[0] = (e->u.call.args[0]->res_naxis >= 2) ? e->u.call.args[0]->res_size[1] : 1;
         e->res_size[1] = e->u.call.args[0]->res_size[0];
         e->res_size[2] = 1;
     }
-    else if ((fn == MC_ID_fft || fn == MC_ID_ifft || fn == MC_ID_fftshift) &&
+    else if ((fn == MC_FID_fft || fn == MC_FID_ifft || fn == MC_FID_fftshift) &&
              e->u.call.args[0]->res_naxis > 0)
     {
         e->res_naxis = e->u.call.args[0]->res_naxis;
         memcpy(e->res_size, e->u.call.args[0]->res_size, sizeof(e->res_size));
     }
-    if (fn == MC_ID_fft || fn == MC_ID_ifft)
+    if (fn == MC_FID_fft || fn == MC_FID_ifft)
     {
         e->res_dt = any_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT;
     }
-    else if ((fn == MC_ID_fftshift || fn == MC_ID_reshape) && e->u.call.args[0]->res_dt != 0)
+    else if ((fn == MC_FID_fftshift || fn == MC_FID_reshape) && e->u.call.args[0]->res_dt != 0)
     {
         e->res_dt = e->u.call.args[0]->res_dt;
     }
-    else if (fn == MC_ID_vec || fn == MC_ID_zeros || fn == MC_ID_eye)
+    else if (fn == MC_FID_vec || fn == MC_FID_zeros || fn == MC_FID_eye)
     {
         e->res_dt = _DATATYPE_FLOAT;
     }
@@ -219,7 +194,7 @@ int mc_resolve_linalg_call(mc_expr_t *e,
  * ============================================================================ */
 
 /**
- * unwrap_transpose - Follow user-function parameter bindings and strip an outer `transpose(X)`
+ * mc_unwrap_transpose - Follow user-function parameter bindings and strip an outer `transpose(X)`
  * @e:         Operand expression to inspect
  * @out_trans: Output flag set to 1 if an outer `transpose(...)` wrapper was stripped, else 0
  *
@@ -228,11 +203,11 @@ int mc_resolve_linalg_call(mc_expr_t *e,
  *
  * Return: Underlying operand expression inside `transpose(...)`, or @e (after param resolution)
  */
-static const mc_expr_t *unwrap_transpose(const mc_expr_t *e, int *out_trans)
+const mc_expr_t *mc_unwrap_transpose(const mc_expr_t *e, int *out_trans)
 {
     *out_trans = 0;
     if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.fn != NULL &&
-        e->u.call.fn->id == MC_ID_transpose && e->u.call.nargs == 1)
+        e->u.call.fn->id == MC_FID_transpose && e->u.call.nargs == 1)
     {
         *out_trans = 1;
         return e->u.call.args[0];
@@ -263,10 +238,10 @@ static int is_scalar_subexpr(const mc_expr_t *e)
 static int is_mm_or_outer_call(const mc_expr_t *e, const mc_expr_t **out_call, int *out_is_outer)
 {
     if (e != NULL && e->kind == MC_EXPR_CALL && e->u.call.fn != NULL && e->u.call.nargs == 2 &&
-        (e->u.call.fn->id == MC_ID_matmul || e->u.call.fn->id == MC_ID_outer))
+        (e->u.call.fn->id == MC_FID_matmul || e->u.call.fn->id == MC_FID_outer))
     {
         *out_call     = e;
-        *out_is_outer = (e->u.call.fn->id == MC_ID_outer);
+        *out_is_outer = (e->u.call.fn->id == MC_FID_outer);
         return 1;
     }
     return 0;
@@ -555,12 +530,12 @@ static int resolve_inplace_target(const mc_expr_t *arg,
 {
     if (arg == NULL || arg->kind != MC_EXPR_IDENT)
     {
-        return blas_err(err, errsz, "%s: destination argument must be an existing image", fname);
+        return mc_err(err, errsz, "%s: destination argument must be an existing image", fname);
     }
     imageID id = mc_resolve_or_autoconnect_image(arg->u.ident.name);
     if (id < 0)
     {
-        return blas_err(err, errsz, "%s: unknown destination image '%s'", fname, arg->u.ident.name);
+        return mc_err(err, errsz, "%s: unknown destination image '%s'", fname, arg->u.ident.name);
     }
     *out_id = id;
     return 0;
@@ -603,12 +578,12 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     beta = m->has_beta ? (beta * m->beta_sign) : 0.0;
 
     int              transA = 0, transB = 0;
-    const mc_expr_t *eA =
-        m->is_outer ? m->call->u.call.args[0] : unwrap_transpose(m->call->u.call.args[0], &transA);
-    const mc_expr_t *eB =
-        m->is_outer ? m->call->u.call.args[1] : unwrap_transpose(m->call->u.call.args[1], &transB);
-    imageID idA = -1, idB = -1;
-    int     tmpA = 0, tmpB = 0, rc = 0;
+    const mc_expr_t *eA  = m->is_outer ? m->call->u.call.args[0]
+                                       : mc_unwrap_transpose(m->call->u.call.args[0], &transA);
+    const mc_expr_t *eB  = m->is_outer ? m->call->u.call.args[1]
+                                       : mc_unwrap_transpose(m->call->u.call.args[1], &transB);
+    imageID          idA = -1, idB = -1;
+    int              tmpA = 0, tmpB = 0, rc = 0;
     if (mc_resolve_or_eval_im(eA, avoid_id, in_unit, &idA, &tmpA, err, errsz) != 0 ||
         mc_resolve_or_eval_im(eB, avoid_id, in_unit, &idB, &tmpB, err, errsz) != 0)
     {
@@ -623,8 +598,8 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     if (dtA == _DATATYPE_COMPLEX_FLOAT || dtA == _DATATYPE_COMPLEX_DOUBLE ||
         dtB == _DATATYPE_COMPLEX_FLOAT || dtB == _DATATYPE_COMPLEX_DOUBLE)
     {
-        rc = blas_err(err, errsz, "%s: complex images are not supported",
-                      m->is_outer ? "outer" : "matmul");
+        rc = mc_err(err, errsz, "%s: complex images are not supported",
+                    m->is_outer ? "outer" : "matmul");
         goto done;
     }
     uint8_t pref_dt =
@@ -641,7 +616,7 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     {
         if (!arith_image_is_1d_vec(imA, &M) || !arith_image_is_1d_vec(imB, &N))
         {
-            rc = blas_err(err, errsz, "outer: expected 1D vector arguments");
+            rc = mc_err(err, errsz, "outer: expected 1D vector arguments");
             goto done;
         }
         out_sz[0] = (uint32_t) M;
@@ -650,7 +625,7 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     else if (arith_image_matmul_dims(imA, transA, imB, transB, &transA, &transB, &M, &K, &N,
                                      &out_naxis, out_sz) != 0)
     {
-        rc = blas_err(err, errsz, "matmul: incompatible dimensions");
+        rc = mc_err(err, errsz, "matmul: incompatible dimensions");
         goto done;
     }
 
@@ -669,8 +644,8 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
             milk_data.image[oid].md[0].size[0] != out_sz[0] ||
             (out_naxis == 2 && milk_data.image[oid].md[0].size[1] != out_sz[1]))
         {
-            rc = blas_err(err, errsz, "%s: destination '%s' dimension or type mismatch",
-                          m->is_outer ? "ger" : "gemm", slot->bare);
+            rc = mc_err(err, errsz, "%s: destination '%s' dimension or type mismatch",
+                        m->is_outer ? "ger" : "gemm", slot->bare);
             goto done;
         }
         slot->im_id = oid;
@@ -683,8 +658,8 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
                 0)
         {
             rc = (out_dt != _DATATYPE_FLOAT && out_dt != _DATATYPE_DOUBLE)
-                     ? blas_err(err, errsz, "%s: destination stream datatype mismatch",
-                                m->is_outer ? "outer" : "matmul")
+                     ? mc_err(err, errsz, "%s: destination stream datatype mismatch",
+                              m->is_outer ? "outer" : "matmul")
                      : -1;
             goto done;
         }
@@ -700,7 +675,7 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
     if (rc != 0)
     {
         dst->md[0].write = 0;
-        rc = blas_err(err, errsz, "%s: BLAS execution failed", m->is_outer ? "outer" : "matmul");
+        rc = mc_err(err, errsz, "%s: BLAS execution failed", m->is_outer ? "outer" : "matmul");
         goto done;
     }
     mc_out_post(oid);
@@ -753,7 +728,7 @@ static int exec_einsum(mc_slot_t       *slot,
     mc_val_t sv = { 0 };
     if (mc_scalar_eval_expr(rhs->u.call.args[0], &sv, err, errsz) != 0 || sv.type != MC_VAL_STRING)
     {
-        return blas_err(err, errsz, "einsum: first argument must be a subscript string");
+        return mc_err(err, errsz, "einsum: first argument must be a subscript string");
     }
     int     nin = rhs->u.call.nargs - 1, tmpA = 0, tmpB = 0, rc = 0;
     imageID idA = -1, idB = -1;
@@ -789,7 +764,7 @@ static int exec_einsum(mc_slot_t       *slot,
         size_t ll = (size_t) (arrow - sub);
         if (ll >= sizeof(lhs_s) || strlen(arrow + 2) >= sizeof(rhs_s))
         {
-            rc = blas_err(err, errsz, "einsum: subscript string too long");
+            rc = mc_err(err, errsz, "einsum: subscript string too long");
             goto done;
         }
         memcpy(lhs_s, sub, ll);
@@ -806,7 +781,7 @@ static int exec_einsum(mc_slot_t       *slot,
     if ((nin == 2 && (comma == NULL || strchr(comma + 1, ',') != NULL)) ||
         (nin == 1 && comma != NULL))
     {
-        rc = blas_err(err, errsz, "einsum: subscript operand count mismatch");
+        rc = mc_err(err, errsz, "einsum: subscript operand count mismatch");
         goto done;
     }
     if (comma != NULL)
@@ -833,8 +808,8 @@ static int exec_einsum(mc_slot_t       *slot,
         const IMAGE *im = ims[op];
         if (nd == 0 || nd > 3 || nd != (size_t) im->md[0].naxis)
         {
-            rc = blas_err(err, errsz, "einsum: operand %d rank (%u) does not match subscript '%s'",
-                          op, (unsigned) im->md[0].naxis, in_sub[op]);
+            rc = mc_err(err, errsz, "einsum: operand %d rank (%u) does not match subscript '%s'",
+                        op, (unsigned) im->md[0].naxis, in_sub[op]);
             goto done;
         }
         for (size_t d = 0; d < nd; d++)
@@ -842,7 +817,7 @@ static int exec_einsum(mc_slot_t       *slot,
             unsigned char c = (unsigned char) in_sub[op][d];
             if (!isalpha(c) || (cnt_of[c] > 0 && dim_of[c] != im->md[0].size[d]))
             {
-                rc = blas_err(err, errsz, "einsum: invalid or mismatched index '%c'", (char) c);
+                rc = mc_err(err, errsz, "einsum: invalid or mismatched index '%c'", (char) c);
                 goto done;
             }
             if (cnt_of[c] == 0)
@@ -883,7 +858,7 @@ static int exec_einsum(mc_slot_t       *slot,
     char     sum_idx[8]  = { 0 };
     if (out_nd > 3)
     {
-        rc = blas_err(err, errsz, "einsum: output rank > 3 is not supported");
+        rc = mc_err(err, errsz, "einsum: output rank > 3 is not supported");
         goto done;
     }
     for (size_t d = 0; d < out_nd; d++)
@@ -891,7 +866,7 @@ static int exec_einsum(mc_slot_t       *slot,
         unsigned char c = (unsigned char) rhs_s[d];
         if (cnt_of[c] == 0 || in_out[c])
         {
-            rc = blas_err(err, errsz, "einsum: invalid or repeated output index '%c'", (char) c);
+            rc = mc_err(err, errsz, "einsum: invalid or repeated output index '%c'", (char) c);
             goto done;
         }
         in_out[c] = 1;
@@ -1112,7 +1087,8 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
     const mc_expr_t *rhs  = cs->rhs_expr;
     alg_blas_match_t m;
 
-    if (rhs->kind != MC_EXPR_CALL || (rhs->u.call.fn != NULL && rhs->u.call.fn->id == MC_ID_matmul))
+    if (rhs->kind != MC_EXPR_CALL ||
+        (rhs->u.call.fn != NULL && rhs->u.call.fn->id == MC_FID_matmul))
     {
         /* `x += matmul(A, B)` / `x -= ...` accumulate into x: match_alg_blas() sets beta */
         if (rhs->kind == MC_EXPR_CALL && cs->assign_op != MC_TOK_ADD_ASSIGN &&
@@ -1124,14 +1100,14 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         }
         else if (!match_alg_blas(rhs, cs->target_expr, cs->assign_op, &m))
         {
-            return blas_err(err, errsz, "invalid algebraic BLAS expression");
+            return mc_err(err, errsz, "invalid algebraic BLAS expression");
         }
         return exec_matmul_or_alg(slot, cs->is_anon, &m, avoid_id, in_unit, err, errsz);
     }
 
     const mc_fn_id_t fn    = rhs->u.call.fn->id;
     const char      *fname = rhs->u.call.fn->name;
-    if (fn == MC_ID_einsum)
+    if (fn == MC_FID_einsum)
     {
         return exec_einsum(slot, rhs, avoid_id, in_unit, err, errsz);
     }
@@ -1145,7 +1121,7 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         return -1;
     }
 
-    if (fn == MC_ID_scal)
+    if (fn == MC_FID_scal)
     {
         if (resolve_inplace_target(rhs->u.call.args[1], fname, &idC, err, errsz) != 0)
         {
@@ -1157,10 +1133,10 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             return finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz);
         }
         milk_data.image[idC].md[0].write = 0;
-        return blas_err(err, errsz, "scal: expected float or double image");
+        return mc_err(err, errsz, "scal: expected float or double image");
     }
 
-    if (fn == MC_ID_axpy)
+    if (fn == MC_FID_axpy)
     {
         if (resolve_inplace_target(rhs->u.call.args[2], fname, &idC, err, errsz) != 0 ||
             mc_resolve_or_eval_im(rhs->u.call.args[1], idC, in_unit, &idA, &tmpA, err, errsz) != 0)
@@ -1178,12 +1154,12 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             milk_data.image[idC].md[0].write = 0;
         }
         return (rc == 0) ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                         : blas_err(err, errsz,
-                                    (rc == -2) ? "axpy: element count mismatch"
-                                               : "axpy: expected matching float or double images");
+                         : mc_err(err, errsz,
+                                  (rc == -2) ? "axpy: element count mismatch"
+                                             : "axpy: expected matching float or double images");
     }
 
-    if (fn == MC_ID_ger)
+    if (fn == MC_FID_ger)
     {
         if (resolve_inplace_target(rhs->u.call.args[3], fname, &idC, err, errsz) != 0 ||
             mc_resolve_or_eval_im(rhs->u.call.args[1], idC, in_unit, &idA, &tmpA, err, errsz) !=
@@ -1206,7 +1182,7 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             milk_data.image[idC].md[0].write = 0;
         }
         rc = ok ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                : blas_err(err, errsz, "ger: dimension or datatype mismatch");
+                : mc_err(err, errsz, "ger: dimension or datatype mismatch");
         if (tmpA)
         {
             mc_tmp_release(idA);
@@ -1218,10 +1194,10 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         return rc;
     }
 
-    if (fn == MC_ID_syrk)
+    if (fn == MC_FID_syrk)
     {
         int              transA = 0;
-        const mc_expr_t *eA     = unwrap_transpose(rhs->u.call.args[1], &transA);
+        const mc_expr_t *eA     = mc_unwrap_transpose(rhs->u.call.args[1], &transA);
         if (mc_eval_scalar_d(rhs->u.call.args[2], &beta, err, errsz) != 0 ||
             resolve_inplace_target(rhs->u.call.args[3], fname, &idC, err, errsz) != 0 ||
             mc_resolve_or_eval_im(eA, idC, in_unit, &idA, &tmpA, err, errsz) != 0)
@@ -1238,7 +1214,7 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             milk_data.image[idC].md[0].write = 0;
         }
         rc = ok ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                : blas_err(err, errsz, "syrk: dimension or datatype mismatch");
+                : mc_err(err, errsz, "syrk: dimension or datatype mismatch");
         if (tmpA)
         {
             mc_tmp_release(idA);
@@ -1246,15 +1222,15 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         return rc;
     }
 
-    if (fn == MC_ID_gemv || fn == MC_ID_symv || fn == MC_ID_gemm)
+    if (fn == MC_FID_gemv || fn == MC_FID_symv || fn == MC_FID_gemm)
     {
-        int              is_mm   = (fn == MC_ID_gemm);
-        int              is_symv = (fn == MC_ID_symv);
+        int              is_mm   = (fn == MC_FID_gemm);
+        int              is_symv = (fn == MC_FID_symv);
         int              transA = 0, transB = 0;
         const mc_expr_t *eA =
-            is_symv ? rhs->u.call.args[1] : unwrap_transpose(rhs->u.call.args[1], &transA);
+            is_symv ? rhs->u.call.args[1] : mc_unwrap_transpose(rhs->u.call.args[1], &transA);
         const mc_expr_t *eB =
-            is_mm ? unwrap_transpose(rhs->u.call.args[2], &transB) : rhs->u.call.args[2];
+            is_mm ? mc_unwrap_transpose(rhs->u.call.args[2], &transB) : rhs->u.call.args[2];
         if (mc_eval_scalar_d(rhs->u.call.args[3], &beta, err, errsz) != 0 ||
             resolve_inplace_target(rhs->u.call.args[4], fname, &idC, err, errsz) != 0 ||
             mc_resolve_or_eval_im(eA, idC, in_unit, &idA, &tmpA, err, errsz) != 0 ||
@@ -1277,7 +1253,7 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             imC->md[0].write = 0;
         }
         rc = ok ? finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz)
-                : blas_err(err, errsz, "%s: dimension or datatype mismatch", fname);
+                : mc_err(err, errsz, "%s: dimension or datatype mismatch", fname);
         if (tmpA)
         {
             mc_tmp_release(idA);
@@ -1289,5 +1265,5 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         return rc;
     }
 
-    return blas_err(err, errsz, "unknown BLAS function '%s'", fname);
+    return mc_err(err, errsz, "unknown BLAS function '%s'", fname);
 }

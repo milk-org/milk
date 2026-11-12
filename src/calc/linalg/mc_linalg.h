@@ -117,4 +117,7 @@ int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
                                 char            *err,
                                 size_t           errsz);
 
+/** mc_unwrap_transpose() - the operand inside an outer `transpose(X)` (*@out_trans = 1), else @e. */
+const mc_expr_t *mc_unwrap_transpose(const mc_expr_t *e, int *out_trans);
+
 #endif /* MILK_MC_LINALG_H */

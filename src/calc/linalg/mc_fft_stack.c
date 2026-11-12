@@ -50,32 +50,6 @@
  * Error Reporting and FFTW3 Plan Cache
  * ============================================================================ */
 
-/**
- * fs_err - Format a diagnostic message into @err (if still empty) and return -1
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Capacity of @err in bytes
- * @fmt:   printf-style format string
- *
- * Preserves the first error recorded during execution by only writing into @err
- * when `err[0] == '\0'`.
- *
- * Return: Always -1
- */
-__attribute__((format(printf, 3, 4))) static int fs_err(char       *err,
-                                                        size_t      errsz,
-                                                        const char *fmt,
-                                                        ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
 #ifdef HAVE_FFTW3
 /**
  * struct fft_cache_entry_t - Cached FFTW3/FFTW3F plan
@@ -532,7 +506,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
 {
     const mc_expr_t *rhs = cs->rhs_expr;
 
-    int     is_ifft = (rhs->u.call.fn->id == MC_ID_ifft);
+    int     is_ifft = (rhs->u.call.fn->id == MC_FID_ifft);
     int     src_tmp = 0, rc = 0;
     imageID src_id = -1;
     if (mc_resolve_or_eval_im(rhs->u.call.args[0], avoid_id, in_unit, &src_id, &src_tmp, err,
@@ -548,7 +522,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
         {
             mc_tmp_release(src_id);
         }
-        return fs_err(err, errsz, "%s: expected 1D, 2D, or 3D image", rhs->u.call.fn->name);
+        return mc_err(err, errsz, "%s: expected 1D, 2D, or 3D image", rhs->u.call.fn->name);
     }
     uint32_t sz[3] = {
         src->md[0].size[0],
@@ -567,7 +541,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
         {
             mc_tmp_release(src_id);
         }
-        return fs_err(err, errsz, "%s: '%s' is a real stream; the result is complex",
+        return mc_err(err, errsz, "%s: '%s' is a real stream; the result is complex",
                       rhs->u.call.fn->name, slot->bare);
     }
 
@@ -602,7 +576,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
             {
                 mc_tmp_release(src_id);
             }
-            return fs_err(err, errsz, "%s: out of memory", rhs->u.call.fn->name);
+            return mc_err(err, errsz, "%s: out of memory", rhs->u.call.fn->name);
         }
         cs->scratch_buf = nb;
         cs->scratch_cap = need;
@@ -640,7 +614,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
     pthread_mutex_unlock(&g_fft_lock);
     if (plan == NULL)
     {
-        rc = fs_err(err, errsz, "%s: FFTW cannot plan this transform", rhs->u.call.fn->name);
+        rc = mc_err(err, errsz, "%s: FFTW cannot plan this transform", rhs->u.call.fn->name);
     }
     else
     {
@@ -849,8 +823,8 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
                              size_t           errsz)
 {
     const mc_fn_id_t fn     = rhs->u.call.fn->id;
-    int              is_cat = (fn == MC_ID_cat);
-    int              axis   = (fn == MC_ID_hstack) ? 0 : (fn == MC_ID_vstack) ? 1 : 2;
+    int              is_cat = (fn == MC_FID_cat);
+    int              axis   = (fn == MC_FID_hstack) ? 0 : (fn == MC_FID_vstack) ? 1 : 2;
     if (is_cat)
     {
         double axd = 0.0;
@@ -861,7 +835,7 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
         long axl = llround(axd);
         if (axl < 0 || axl > 2)
         {
-            return fs_err(err, errsz, "cat: axis must be 0, 1, or 2");
+            return mc_err(err, errsz, "cat: axis must be 0, 1, or 2");
         }
         axis = (int) axl;
     }
@@ -915,7 +889,7 @@ static int exec_stack_or_cat(mc_slot_t       *slot,
             {
                 if (d != axis && s[d] != out_sz[d])
                 {
-                    rc = fs_err(err, errsz, "%s: non-concatenated axis %d size mismatch (%u vs %u)",
+                    rc = mc_err(err, errsz, "%s: non-concatenated axis %d size mismatch (%u vs %u)",
                                 rhs->u.call.fn->name, d, out_sz[d], s[d]);
                     goto done;
                 }
@@ -1017,7 +991,7 @@ static int exec_rot90(mc_slot_t       *slot,
         {
             mc_tmp_release(src_id);
         }
-        return fs_err(err, errsz, "rot90: expected 2D image");
+        return mc_err(err, errsz, "rot90: expected 2D image");
     }
     uint32_t nx     = src->md[0].size[0];
     uint32_t ny     = src->md[0].size[1];
@@ -1090,15 +1064,15 @@ int mc_exec_fft_or_stack(mcalc_prog_t   *prog,
     const mc_expr_t *rhs  = cs->rhs_expr;
     const mc_fn_id_t fn   = rhs->u.call.fn->id;
 
-    if (fn == MC_ID_fft || fn == MC_ID_ifft)
+    if (fn == MC_FID_fft || fn == MC_FID_ifft)
     {
         return exec_fft_or_ifft(slot, cs, avoid_id, in_unit, err, errsz);
     }
-    if (fn == MC_ID_fftshift)
+    if (fn == MC_FID_fftshift)
     {
         return exec_fftshift(slot, rhs, avoid_id, in_unit, err, errsz);
     }
-    if (fn == MC_ID_rot90)
+    if (fn == MC_FID_rot90)
     {
         return exec_rot90(slot, rhs, avoid_id, in_unit, err, errsz);
     }
@@ -1145,14 +1119,14 @@ int mc_exec_linalg_or_ext(mcalc_prog_t   *prog,
         return mc_exec_blas_call(prog, cs, avoid_id, in_unit, err, errsz);
     }
     const mc_fn_id_t fn = rhs->u.call.fn->id;
-    if (fn == MC_ID_fft || fn == MC_ID_ifft || fn == MC_ID_fftshift || fn == MC_ID_hstack ||
-        fn == MC_ID_vstack || fn == MC_ID_dstack || fn == MC_ID_cat || fn == MC_ID_rot90)
+    if (fn == MC_FID_fft || fn == MC_FID_ifft || fn == MC_FID_fftshift || fn == MC_FID_hstack ||
+        fn == MC_FID_vstack || fn == MC_FID_dstack || fn == MC_FID_cat || fn == MC_FID_rot90)
     {
         return mc_exec_fft_or_stack(prog, cs, avoid_id, in_unit, err, errsz);
     }
-    if (fn == MC_ID_trsv || fn == MC_ID_trsm || fn == MC_ID_gesv || fn == MC_ID_posv ||
-        fn == MC_ID_gels || fn == MC_ID_solve || fn == MC_ID_inv || fn == MC_ID_pinv ||
-        fn == MC_ID_svd || fn == MC_ID_eigh)
+    if (fn == MC_FID_trsv || fn == MC_FID_trsm || fn == MC_FID_gesv || fn == MC_FID_posv ||
+        fn == MC_FID_gels || fn == MC_FID_solve || fn == MC_FID_inv || fn == MC_FID_pinv ||
+        fn == MC_FID_svd || fn == MC_FID_eigh)
     {
         return mc_exec_lapack_call(prog, cs, avoid_id, in_unit, err, errsz);
     }

@@ -201,4 +201,7 @@ int milk_srvlog_cmd_session(int argc, char **argv, const milk_client_hooks_t *ho
 }
 #endif
 
+/** milk_use_color_output() - 1 if stdout is a terminal and NO_COLOR is not set. */
+int milk_use_color_output(void);
+
 #endif /* MILK_SRVLOG_H */

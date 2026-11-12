@@ -26,9 +26,6 @@
  *   on a positional argument of a known command, the
  *   completion mode switches to match the expected argument
  *   type (image stream, filename, FPS name, etc.).
- *
- * - **Levenshtein distance**: Used by the "did you mean?"
- *   suggestions when a command is not found.
  */
 
 #include <stdio.h>
@@ -329,58 +326,6 @@ static int cli_auto_indent_startup_hook(void)
 }
 
 /**
- * cli_calc_incomplete - Check if a `@calc` mode buffer has unclosed `{`, `(`, `[` or string
- * @s: Input buffer
- *
- * Return: 1 if @s needs more continuation lines, 0 otherwise
- */
-static int cli_calc_incomplete(const char *s)
-{
-    int depth = 0;
-    int in_q  = 0;
-    for (const char *p = s; p != NULL && *p != '\0'; p++)
-    {
-        if (in_q)
-        {
-            if (*p == '\\' && p[1] != '\0')
-            {
-                p++;
-            }
-            else if (*p == '"')
-            {
-                in_q = 0;
-            }
-            continue;
-        }
-        if (*p == '#')
-        {
-            while (*p != '\0' && *p != '\n')
-            {
-                p++;
-            }
-            if (*p == '\0')
-            {
-                break;
-            }
-            continue;
-        }
-        if (*p == '"')
-        {
-            in_q = 1;
-        }
-        else if (*p == '{' || *p == '(' || *p == '[')
-        {
-            depth++;
-        }
-        else if ((*p == '}' || *p == ')' || *p == ']') && depth > 0)
-        {
-            depth--;
-        }
-    }
-    return in_q || depth > 0;
-}
-
-/**
  * rl_cb_linehandler - Readline callback invoked when a complete input line is entered
  * @linein:Newly allocated line string from readline (freed before returning), or NULL on EOF
  *
@@ -410,7 +355,7 @@ void rl_cb_linehandler(char *linein)
 
     /* Handle multi-line continuation (quotes, here-documents, compound commands, trailing
      * operators and backslashes): milk_shell_incomplete() is the bash-aware check */
-    if (cli_calc_mode ? cli_calc_incomplete(multiline_buf) : milk_shell_incomplete(multiline_buf))
+    if (cli_calc_mode ? milk_calc_incomplete(multiline_buf) : milk_shell_incomplete(multiline_buf))
     {
         had_continuation = 1;
         rl_callback_handler_remove();
@@ -428,7 +373,7 @@ void rl_cb_linehandler(char *linein)
         }
         else
         {
-            while (cli_calc_mode ? cli_calc_incomplete(multiline_buf)
+            while (cli_calc_mode ? milk_calc_incomplete(multiline_buf)
                                  : milk_shell_incomplete(multiline_buf))
             {
                 size_t len       = strlen(multiline_buf);
@@ -682,48 +627,3 @@ errno_t runCLI_prompt(char *promptstring, char *prompt)
 
     return RETURN_SUCCESS;
 }
-
-
-/* ---- Levenshtein distance (fuzzy matching) ---- */
-
-#ifdef USE_READLINE
-
-/**
- * @brief Compute Levenshtein edit distance
- *
- * Used to suggest similar commands when a typed
- * command is not found ("did you mean?").
- */
-int levenshtein_distance(const char *s1, const char *s2)
-{
-    unsigned int  len1 = strlen(s1);
-    unsigned int  len2 = strlen(s2);
-    unsigned int *d    = (unsigned int *) xmalloc((len1 + 1) * (len2 + 1) * sizeof(unsigned int));
-
-    for (unsigned int i = 0; i <= len1; i++)
-    {
-        d[i * (len2 + 1)] = i;
-    }
-    for (unsigned int j = 0; j <= len2; j++)
-    {
-        d[j] = j;
-    }
-
-    for (unsigned int i = 1; i <= len1; i++)
-    {
-        for (unsigned int j = 1; j <= len2; j++)
-        {
-            unsigned int cost     = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
-            unsigned int min1     = d[(i - 1) * (len2 + 1) + j] + 1;
-            unsigned int min2     = d[i * (len2 + 1) + j - 1] + 1;
-            unsigned int min3     = d[(i - 1) * (len2 + 1) + j - 1] + cost;
-            unsigned int m        = (min1 < min2) ? min1 : min2;
-            d[i * (len2 + 1) + j] = (m < min3) ? m : min3;
-        }
-    }
-    int dist = d[len1 * (len2 + 1) + len2];
-    free(d);
-    return dist;
-}
-
-#endif

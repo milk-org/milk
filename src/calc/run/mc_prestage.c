@@ -56,29 +56,6 @@
 /* ============================================================================================== */
 
 /**
- * pre_err - Format a diagnostic message into @err if not already populated
- * @err:   Destination error buffer (may be NULL)
- * @errsz: Capacity of @err in bytes
- * @fmt:   printf-style format string
- *
- * Return: Always -1 for convenient tail-return error propagation
- */
-__attribute__((format(printf, 3, 4))) static int pre_err(char       *err,
-                                                         size_t      errsz,
-                                                         const char *fmt,
-                                                         ...)
-{
-    if (err != NULL && errsz > 0 && err[0] == '\0')
-    {
-        va_list ap;
-        va_start(ap, fmt);
-        vsnprintf(err, errsz, fmt, ap);
-        va_end(ap);
-    }
-    return -1;
-}
-
-/**
  * mc_ctor_step_free - Release cached CSR tables, extension states, and scratch buffers on @cs
  * @cs: Constructor step descriptor to clean up (may be NULL)
  *
@@ -359,28 +336,13 @@ static void seg_scatter_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi
 /* Pre-Stage Constructor Dispatcher                                                               */
 /* ============================================================================================== */
 
-/**
- * select_out_dt - Choose output datatype for a pre-stage destination slot
- * @slot:    Destination program slot
- * @pref_dt: Preferred datatype (`_DATATYPE_FLOAT` or `_DATATYPE_DOUBLE`) derived from input
- *
- * Preserves the existing datatype when writing to a pre-existing shared-memory stream so readers
- * attached to that stream are not disrupted.
- *
- * Return: Selected ImageStreamIO `_DATATYPE_*` code
- */
-static uint8_t select_out_dt(const mc_slot_t *slot, uint8_t pref_dt)
-{
-    return (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
-            milk_data.image[slot->im_id].md[0].shared == 1)
-               ? milk_data.image[slot->im_id].md[0].datatype
-               : (pref_dt ? pref_dt : _DATATYPE_FLOAT);
-}
-
 /** medfilt_radius - radius of the median filter @fn (1 for `medfilt3`, 2, 3), 0 for another one */
 static int medfilt_radius(mc_fn_id_t fn)
 {
-    return (fn == MC_ID_medfilt3) ? 1 : (fn == MC_ID_medfilt5) ? 2 : (fn == MC_ID_medfilt7) ? 3 : 0;
+    return (fn == MC_FID_medfilt3)   ? 1
+           : (fn == MC_FID_medfilt5) ? 2
+           : (fn == MC_FID_medfilt7) ? 3
+                                     : 0;
 }
 
 /**
@@ -391,8 +353,8 @@ static int medfilt_radius(mc_fn_id_t fn)
  */
 static int is_spatial_filter(mc_fn_id_t fn)
 {
-    return fn == MC_ID_gauss || fn == MC_ID_boxmean || fn == MC_ID_conv2 ||
-           medfilt_radius(fn) > 0 || fn == MC_ID_imin3 || fn == MC_ID_imax3;
+    return fn == MC_FID_gauss || fn == MC_FID_boxmean || fn == MC_FID_conv2 ||
+           medfilt_radius(fn) > 0 || fn == MC_FID_imin3 || fn == MC_FID_imax3;
 }
 
 /**
@@ -422,8 +384,8 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     const mc_expr_t *rhs   = cs->rhs_expr;
     const mc_fn_id_t fn    = rhs->u.call.fn->id;
     int              nargs = rhs->u.call.nargs;
-    int              is_cv = (fn == MC_ID_conv2);
-    int              is_bm = (fn == MC_ID_boxmean);
+    int              is_cv = (fn == MC_FID_conv2);
+    int              is_bm = (fn == MC_FID_boxmean);
     double           p1    = 0.0;
     double           p2    = 0.0;
     imageID          kid   = -1;
@@ -431,7 +393,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
 
     if ((is_cv || is_bm) && s1->naxis != 2)
     {
-        return pre_err(err, errsz, "%s: expected 2D image", rhs->u.call.fn->name);
+        return mc_err(err, errsz, "%s: expected 2D image", rhs->u.call.fn->name);
     }
     if (is_cv)
     {
@@ -448,7 +410,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
             {
                 mc_tmp_release(kid);
             }
-            return pre_err(err, errsz, "conv2: kernel K must be 2D with odd dimensions in [1, 31]");
+            return mc_err(err, errsz, "conv2: kernel K must be 2D with odd dimensions in [1, 31]");
         }
     }
     else if (nargs >= 2 && (mc_eval_scalar_d(rhs->u.call.args[1], &p1, err, errsz) != 0 ||
@@ -456,17 +418,17 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     {
         return -1;
     }
-    if (fn == MC_ID_gauss && (p1 < 0.0 || p2 < 0.0))
+    if (fn == MC_FID_gauss && (p1 < 0.0 || p2 < 0.0))
     {
-        return pre_err(err, errsz, "gauss: sigma must be non-negative");
+        return mc_err(err, errsz, "gauss: sigma must be non-negative");
     }
     if (is_bm && (llround(p1) < 1 || llround(p1) > 64))
     {
-        return pre_err(err, errsz, "boxmean: radius r must be in [1, 64]");
+        return mc_err(err, errsz, "boxmean: radius r must be in [1, 64]");
     }
 
-    imageID oid = mc_out_prepare(slot, s1->naxis, s1->ishape, select_out_dt(slot, rhs->res_dt),
-                                 in_unit, err, errsz);
+    imageID oid = mc_out_prepare(slot, s1->naxis, s1->ishape,
+                                 mc_select_ctor_out_dt(slot, rhs->res_dt), in_unit, err, errsz);
     void  **sb  = (void **) &cs->scratch_buf;
     size_t *sc  = &cs->scratch_cap;
     IMAGE  *dst = (oid >= 0) ? &milk_data.image[oid] : NULL;
@@ -475,7 +437,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     {
         rc = -1;
     }
-    else if (fn == MC_ID_gauss)
+    else if (fn == MC_FID_gauss)
     {
         rc = arith_image_gauss2d_im(s1->im, dst, p1, (nargs == 3) ? p2 : p1, 0, sb, sc);
     }
@@ -493,7 +455,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     }
     else
     {
-        rc = arith_image_minmax3_im(s1->im, dst, fn == MC_ID_imax3, sb, sc);
+        rc = arith_image_minmax3_im(s1->im, dst, fn == MC_FID_imax3, sb, sc);
     }
     if (k_tmp)
     {
@@ -501,7 +463,7 @@ static int exec_spatial_filter(mc_slot_t          *slot,
     }
     if (rc != 0)
     {
-        return pre_err(err, errsz, "%s: cannot filter this image", rhs->u.call.fn->name);
+        return mc_err(err, errsz, "%s: cannot filter this image", rhs->u.call.fn->name);
     }
     mc_out_post(oid);
     return 0;
@@ -533,8 +495,8 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
     const mc_expr_t *rhs   = cs->rhs_expr;
     const mc_fn_id_t fn    = rhs->u.call.fn->id;
     int              nargs = rhs->u.call.nargs;
-    int              is_pu = (fn == MC_ID_pixunmap);
-    int              is_rp = (fn == MC_ID_rprof);
+    int              is_pu = (fn == MC_FID_pixunmap);
+    int              is_rp = (fn == MC_FID_rprof);
     int              rc    = 0;
     mc_red_src_t     s1    = { .tmp_id = -1 };
     mc_red_src_t     s2    = { .tmp_id = -1 };
@@ -545,16 +507,16 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
     }
 
     int     is_sf = is_spatial_filter(fn);
-    int     is_ax = !is_pu && !is_rp && !is_sf && fn != MC_ID_ema && fn != MC_ID_cumsum;
+    int     is_ax = !is_pu && !is_rp && !is_sf && fn != MC_FID_ema && fn != MC_FID_cumsum;
     uint8_t pref_dt =
         (s1.dt == _DATATYPE_DOUBLE || s1.dt == _DATATYPE_INT64 || s1.dt == _DATATYPE_UINT64 ||
          (is_ax && (s1.dt == _DATATYPE_INT32 || s1.dt == _DATATYPE_UINT32)))
             ? _DATATYPE_DOUBLE
             : _DATATYPE_FLOAT;
-    uint8_t out_dt = select_out_dt(slot, pref_dt);
+    uint8_t out_dt = mc_select_ctor_out_dt(slot, pref_dt);
 
     /* Case 1: Exponential moving average `ema(im, alpha)`. */
-    if (fn == MC_ID_ema)
+    if (fn == MC_FID_ema)
     {
         double alpha = 0.0;
         if (mc_eval_scalar_d(rhs->u.call.args[1], &alpha, err, errsz) != 0)
@@ -627,14 +589,14 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
     }
 
     /* Case 2: Cumulative prefix sum `cumsum(im[, axis])`. */
-    if (fn == MC_ID_cumsum)
+    if (fn == MC_FID_cumsum)
     {
         double axd = 0.0;
         if ((nargs == 2 && mc_eval_scalar_d(rhs->u.call.args[1], &axd, err, errsz) != 0) ||
             llround(axd) < 0 || llround(axd) >= (long) s1.naxis)
         {
             mc_release_red_src(&s1);
-            return (err[0] == '\0') ? pre_err(err, errsz, "cumsum: axis out of range") : -1;
+            return (err[0] == '\0') ? mc_err(err, errsz, "cumsum: axis out of range") : -1;
         }
         uint8_t work_dt = (out_dt == _DATATYPE_DOUBLE || pref_dt == _DATATYPE_DOUBLE)
                               ? _DATATYPE_DOUBLE
@@ -716,7 +678,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
             {
                 mc_release_red_src(&s1);
                 mc_release_red_src(&s2);
-                return (err[0] == '\0') ? pre_err(err, errsz, "pixunmap: map size must match image")
+                return (err[0] == '\0') ? mc_err(err, errsz, "pixunmap: map size must match image")
                                         : -1;
             }
             if (nargs == 3 && llround(nd) > 0)
@@ -739,7 +701,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
         {
             mc_release_red_src(&s1);
             mc_release_red_src(&s2);
-            return pre_err(err, errsz, "%s: invalid bin count", rhs->u.call.fn->name);
+            return mc_err(err, errsz, "%s: invalid bin count", rhs->u.call.fn->name);
         }
 
         uint32_t osz[3] = { (uint32_t) nbins, 1, 1 };
@@ -851,7 +813,7 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
         llround(axd) >= (long) s1.naxis)
     {
         mc_release_red_src(&s1);
-        return (err[0] == '\0') ? pre_err(err, errsz, "Axis out of range") : -1;
+        return (err[0] == '\0') ? mc_err(err, errsz, "Axis out of range") : -1;
     }
     long     ax    = llround(axd);
     long     nax   = s1.naxis;

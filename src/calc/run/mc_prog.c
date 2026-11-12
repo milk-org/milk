@@ -621,7 +621,7 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         mcalc_prog_free(p);
         return NULL;
     }
-    if (mc_plan_build(p, vars != NULL, err, errsz) != 0)
+    if (mc_plan_build(p, err, errsz) != 0)
     {
         mcalc_prog_free(p);
         return NULL;
@@ -805,7 +805,7 @@ static int replan_prog_in_place(mcalc_prog_t *p, int in_unit, char *err, size_t 
         p->stmt_to_step[i] = -1;
     }
     return (mc_resolve_prog_ex(p->ast_head, in_unit, err, errsz) == 0 &&
-            mc_plan_build(p, in_unit, err, errsz) == 0)
+            mc_plan_build(p, err, errsz) == 0)
                ? 0
                : -1;
 }
@@ -987,7 +987,7 @@ int mc_exec_sub_prog(struct mcalc_prog **io_prog, mc_stmt_t *head, char *err, si
             sub->stmt_to_step[i] = -1;
         }
         if (mc_resolve_prog_ex(head, in_unit, err, errsz) != 0 ||
-            mc_plan_build(sub, in_unit, err, errsz) != 0)
+            mc_plan_build(sub, err, errsz) != 0)
         {
             mcalc_sub_prog_free(sub);
             return -1;
@@ -1041,7 +1041,7 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     p->last_was_im = 0;
     p->last_im_id  = -1;
     mc_prog_load_vars(p);
-    mc_post_defer(1);
+    mc_post_defer();
     int saved_skip = g_prog_skip;
     g_prog_skip    = 0;
     if (in_unit)

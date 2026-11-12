@@ -142,58 +142,6 @@ static char *trim_calc_line(char *s)
 }
 
 /**
- * calc_block_incomplete - Check if a calculator block has unclosed `{`, `(`, `[` or string
- * @s: Calculator text buffer
- *
- * Return: 1 if @s has an unclosed quote or positive bracket/paren/brace nesting depth, 0 otherwise
- */
-static int calc_block_incomplete(const char *s)
-{
-    int depth = 0;
-    int in_q  = 0;
-    for (const char *p = s; p != NULL && *p != '\0'; p++)
-    {
-        if (in_q)
-        {
-            if (*p == '\\' && p[1] != '\0')
-            {
-                p++;
-            }
-            else if (*p == '"')
-            {
-                in_q = 0;
-            }
-            continue;
-        }
-        if (*p == '#')
-        {
-            while (*p != '\0' && *p != '\n')
-            {
-                p++;
-            }
-            if (*p == '\0')
-            {
-                break;
-            }
-            continue;
-        }
-        if (*p == '"')
-        {
-            in_q = 1;
-        }
-        else if (*p == '{' || *p == '(' || *p == '[')
-        {
-            depth++;
-        }
-        else if ((*p == '}' || *p == ')' || *p == ']') && depth > 0)
-        {
-            depth--;
-        }
-    }
-    return in_q || depth > 0;
-}
-
-/**
  * cmdline_has_bare_calc - Check whether any line in @cmdline is a bare `@calc` mode toggle
  * @cmdline: Command line or multi-line script string
  *
@@ -493,7 +441,7 @@ int milk_bash_exec(const char *cmdline, int *out_exit_req)
                     sbuf_append_ch(&calc_buf, '\n');
                 }
                 sbuf_append_str(&calc_buf, trimmed);
-                if (!calc_block_incomplete(calc_buf.data))
+                if (!milk_calc_incomplete(calc_buf.data))
                 {
                     rc               = exec_calc_mode_line(calc_buf.data, &exreq);
                     calc_buf.len     = 0;

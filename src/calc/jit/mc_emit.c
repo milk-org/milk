@@ -117,17 +117,6 @@ __attribute__((format(printf, 2, 3))) static void eb_printf(emit_buf_t *b, const
 }
 
 /**
- * is_complex_dt - Check if an ImageStreamIO datatype is complex
- * @dt: Datatype code (`_DATATYPE_*`)
- *
- * Return: 1 if complex float or complex double, 0 otherwise
- */
-static inline int is_complex_dt(uint8_t dt)
-{
-    return dt == _DATATYPE_COMPLEX_FLOAT || dt == _DATATYPE_COMPLEX_DOUBLE;
-}
-
-/**
  * struct dt_info_t - C type and helper naming metadata for an ImageStreamIO datatype
  * @dt:  ImageStreamIO datatype code (`_DATATYPE_*`, or 0 for default float)
  * @ct:  C type specifier string (e.g. `"float"`, `"uint16_t"`, `"float _Complex"`)
@@ -186,7 +175,6 @@ static const dt_info_t *get_dt_info(uint8_t dt)
  *                    before the inner SIMD `x` loop
  * @wt:               Real working C type (`"float"` or `"double"`)
  * @ct:               Complex working C type (`"float _Complex"` or `"double _Complex"`)
- * @sub_t0:           Reserved sub-expression pointer
  * @cur_out_idx:      Index in `pass->outs[]` currently being emitted
  * @chain_seq:        Monotonic counter for unique local variable names (`_ch`, `_sh`)
  * @fast_x_interior:  1 when emitting the unit-stride interior `x` SIMD loop
@@ -203,7 +191,6 @@ typedef struct
     emit_buf_t         *pre_eb;
     const char         *wt;
     const char         *ct;
-    const mc_expr_t    *sub_t0;
     int                 cur_out_idx;
     int                 chain_seq;
     int                 fast_x_interior;
@@ -409,9 +396,9 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     case MC_FN_CPLX:
     {
         int is_c0 = (nargs >= 1 && is_complex_dt(e->u.call.args[0]->res_dt));
-        if (!is_c0 && (fn->id == MC_ID_imag || fn->id == MC_ID_real || fn->id == MC_ID_conj))
+        if (!is_c0 && (fn->id == MC_FID_imag || fn->id == MC_FID_real || fn->id == MC_FID_conj))
         {
-            if (fn->id == MC_ID_imag)
+            if (fn->id == MC_FID_imag)
             {
                 eb_printf(c->eb, "((%s)0)", c->wt);
             }
@@ -421,14 +408,14 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
             }
             return;
         }
-        c->used_complex |= (is_c0 || fn->id == MC_ID_cplx || fn->id == MC_ID_expi);
-        cfn = (fn->id == MC_ID_real)   ? (wd ? "creal" : "crealf")
-              : (fn->id == MC_ID_imag) ? (wd ? "cimag" : "cimagf")
-              : (fn->id == MC_ID_conj) ? (wd ? "conj" : "conjf")
-              : (fn->id == MC_ID_cplx) ? (wd ? "mc_cplxd" : "mc_cplxf")
-              : (fn->id == MC_ID_expi) ? (wd ? "mc_expid" : "mc_expif")
-              : is_c0                  ? (wd ? "mc_cargd" : "mc_cargf")
-                                       : (wd ? "mc_rargd" : "mc_rargf");
+        c->used_complex |= (is_c0 || fn->id == MC_FID_cplx || fn->id == MC_FID_expi);
+        cfn = (fn->id == MC_FID_real)   ? (wd ? "creal" : "crealf")
+              : (fn->id == MC_FID_imag) ? (wd ? "cimag" : "cimagf")
+              : (fn->id == MC_FID_conj) ? (wd ? "conj" : "conjf")
+              : (fn->id == MC_FID_cplx) ? (wd ? "mc_cplxd" : "mc_cplxf")
+              : (fn->id == MC_FID_expi) ? (wd ? "mc_expid" : "mc_expif")
+              : is_c0                   ? (wd ? "mc_cargd" : "mc_cargf")
+                                        : (wd ? "mc_rargd" : "mc_rargf");
         break;
     }
 
@@ -437,10 +424,10 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         c->used_coord_shift = 1;
         int op_idx          = resolve_im_arg_op(c, e->u.call.args[0], 0);
         int ref_op          = (op_idx >= 0) ? op_idx : c->pass->outs[c->cur_out_idx].op_idx;
-        int mode            = (fn->id == MC_ID_ix)   ? 0
-                              : (fn->id == MC_ID_iy) ? 1
-                              : (fn->id == MC_ID_ir) ? 2
-                                                     : 3;
+        int mode            = (fn->id == MC_FID_ix)   ? 0
+                              : (fn->id == MC_FID_iy) ? 1
+                              : (fn->id == MC_FID_ir) ? 2
+                                                      : 3;
         eb_printf(c->eb, "%s(_vnx%d, _vny%d, (int32_t)x, (int32_t)y, ",
                   wd ? "mc_coordd" : "mc_coordf", ref_op, ref_op);
         if (nargs == 3)
@@ -461,7 +448,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     {
         /* the key of its seed is made once per call; the row's start (_rlo, _rhi) lets the loop
          * work on the low 32 bits of the pixel index only */
-        int is_n = (fn->id == MC_ID_randn);
+        int is_n = (fn->id == MC_FID_randn);
         eb_printf(c->eb, "%s(_i, _rk%d, _rlo, _rhi)",
                   is_n ? (wd ? "mc_grandd" : "mc_grandf") : (wd ? "mc_urandd" : "mc_urandf"),
                   mc_find_scalar_op(c->pass, NULL, e, -1));
@@ -473,7 +460,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
         c->used_coord_shift = 1;
         int         op_idx  = resolve_im_arg_op(c, e->u.call.args[0], 0);
         const char *scast = (op_idx >= 0 && is_complex_dt(c->pass->ops[op_idx].dt)) ? c->ct : c->wt;
-        int         is_roll  = (fn->id == MC_ID_roll);
+        int         is_roll  = (fn->id == MC_FID_roll);
         int         sh_id    = ++c->chain_seq;
         emit_buf_t *saved_eb = c->eb;
         if (c->fast_x_interior && c->pre_eb != NULL)
@@ -512,7 +499,7 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     {
         c->used_spatial    = 1;
         int         is_lut = (fn->kind == MC_FN_LUT);
-        int         is_i2  = (fn->id == MC_ID_interp2);
+        int         is_i2  = (fn->id == MC_FID_interp2);
         int         tbl_op = resolve_im_arg_op(c, e->u.call.args[is_lut ? 1 : 0], 1);
         const char *sfx =
             get_dt_info((tbl_op >= 0) ? c->pass->ops[tbl_op].dt : _DATATYPE_FLOAT)->sfx;
@@ -548,12 +535,12 @@ static void emit_call(emit_ctx_t *c, const mc_expr_t *e)
     default:
     {
         double exp_v = 0.0;
-        if (fn->id == MC_ID_abs && is_complex_dt(e->u.call.args[0]->res_dt))
+        if (fn->id == MC_FID_abs && is_complex_dt(e->u.call.args[0]->res_dt))
         {
             c->used_complex = 1;
             cfn             = wd ? "mc_cabsd" : "mc_cabsf";
         }
-        else if (fn->id == MC_ID_pow && is_const_num(e->u.call.args[1], &exp_v) &&
+        else if (fn->id == MC_FID_pow && is_const_num(e->u.call.args[1], &exp_v) &&
                  (exp_v == 0.0 || exp_v == 1.0 || exp_v == 2.0 || exp_v == 3.0 || exp_v == -1.0 ||
                   exp_v == 0.5 || exp_v == -0.5))
         {
@@ -1014,7 +1001,7 @@ int mc_emit_pass(const mcalc_prog_t *prog, mc_pass_t *pass, char *err, size_t er
                 pe->u.call.fn->kind == MC_FN_PRNG)
             {
                 eb_printf(&k_eb, "    const uint64_t _rk%d = mc_rng_key(ops[%d].scalar, %d);\n", i,
-                          i, pe->u.call.fn->id == MC_ID_randn);
+                          i, pe->u.call.fn->id == MC_FID_randn);
             }
         }
         else

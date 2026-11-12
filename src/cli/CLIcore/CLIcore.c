@@ -138,11 +138,6 @@ static fd_set cli_fdin_set;
 /*-----------------------------------------
 *       Forward References
 */
-int user_function();
-/**
- * @brief atexit handler: performs CLI cleanup on exit.
- */
-void fnExit1(void);
 /**
  * @brief Initialize CLI command subsystem.
  *
@@ -150,13 +145,6 @@ void fnExit1(void);
  * loading infrastructure.
  */
 void runCLI_cmd_init();
-/**
- * @brief Free CLI resources on shutdown.
- *
- * Releases command tables, module handles, and
- * process state.
- */
-static void runCLI_free();
 
 static volatile sig_atomic_t sigwinch_received = 0;
 
@@ -1331,67 +1319,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
-}
-
-
-/**
- * runCLI_free - Release dynamically allocated CLI runtime tables and RNG state
- *
- * Frees the image table, variable table, FPS array, and random number generator
- * state when dynamic data allocation is used.
- *
- * Return: void
- */
-static void __attribute__((unused)) runCLI_free()
-{
-#ifndef DATA_STATIC_ALLOC
-    // Free
-    DEBUG_TRACEPOINT("free dcimg");
-    free(dcimg);
-
-    DEBUG_TRACEPOINT("free dcvar");
-    free(dcvar);
-
-    DEBUG_TRACEPOINT("free data.fps");
-    if (dcfpsarr == NULL)
-    {
-        printf("NULL pointer\n");
-    }
-    else
-    {
-        free(dcfpsarr);
-    }
-
-#endif
-    //  free(data.cmd);
-    DEBUG_TRACEPOINT("free dcrndgen");
-    milk_rng_free();
-}
-
-/**
- * user_function - Placeholder user callback that prints a two-dash progress marker
- *
- * Legacy hook retained for compatibility with external callers expecting a
- * default user_function() symbol.
- *
- * Return: Always 0
- */
-int user_function()
-{
-    printf("-");
-    fflush(stdout);
-    printf("-");
-    fflush(stdout);
-
-    return (0);
-}
-
-/**
- * @brief atexit handler: performs CLI cleanup on exit.
- */
-void fnExit1(void)
-{
-    //
 }
 
 

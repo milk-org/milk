@@ -128,4 +128,8 @@ void milk_bash_cmdfile_cleanup(void);
  */
 int milk_shell_incomplete(const char *src);
 
+/** milk_calc_incomplete() - 1 if calculator text @s has an open quote, brace, paren or bracket
+ * (milk_shell_lex.h). */
+int milk_calc_incomplete(const char *s);
+
 #endif /* MILK_BASH_H */

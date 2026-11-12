@@ -339,3 +339,55 @@ int milk_shell_incomplete(const char *src)
     msl_free(&m);
     return inc;
 }
+
+/**
+ * milk_calc_incomplete - Check if a calculator block has unclosed `{`, `(`, `[` or string
+ * @s: Calculator text buffer
+ *
+ * Return: 1 if @s has an unclosed quote or positive bracket/paren/brace nesting depth, 0 otherwise
+ */
+int milk_calc_incomplete(const char *s)
+{
+    int depth = 0;
+    int in_q  = 0;
+    for (const char *p = s; p != NULL && *p != '\0'; p++)
+    {
+        if (in_q)
+        {
+            if (*p == '\\' && p[1] != '\0')
+            {
+                p++;
+            }
+            else if (*p == '"')
+            {
+                in_q = 0;
+            }
+            continue;
+        }
+        if (*p == '#')
+        {
+            while (*p != '\0' && *p != '\n')
+            {
+                p++;
+            }
+            if (*p == '\0')
+            {
+                break;
+            }
+            continue;
+        }
+        if (*p == '"')
+        {
+            in_q = 1;
+        }
+        else if (*p == '{' || *p == '(' || *p == '[')
+        {
+            depth++;
+        }
+        else if ((*p == '}' || *p == ')' || *p == ']') && depth > 0)
+        {
+            depth--;
+        }
+    }
+    return in_q || depth > 0;
+}
