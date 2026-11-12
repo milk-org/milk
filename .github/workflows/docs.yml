@@ -24,7 +24,7 @@ on:
       - '.github/workflows/docs.yml'
 
 env:
-  DOCS_DEPLOY_BRANCHES: '["framework-dev", "vd/fdev/pipelines"]'
+  DOCS_DEPLOY_BRANCHES: '["framework-dev"]'
   DOCS_DEFAULT_VERSION: framework-dev
 
 jobs:

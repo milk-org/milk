@@ -1,0 +1,41 @@
+long_name = "pipelinebasic"
+name = "basic"
+loop_number = 0
+teardown_kill_tmux = true
+
+[compute_units.delay0]
+exec = 'milk-fpsexec-mem-streamdelay'
+
+[compute_units.delay0.fps]
+naive_mode = true
+delaysec = 0.01
+in_name = 'input'
+out_name = 'middle'
+procinfo.enabled = true
+procinfo.triggersname = '{compute_units.delay0.fps.in_name}'
+procinfo.triggermode = 3
+procinfo.triggertimeout = 0.1
+
+[compute_units.delay1]
+exec = 'milk-fpsexec-mem-streamdelay'
+
+[compute_units.delay1.fps]
+naive_mode = true
+delaysec = 0.01
+in_name = '{compute_units.delay0.fps.out_name}'
+out_name = 'output'
+procinfo.enabled = true
+procinfo.triggersname = '{compute_units.delay0.fps.out_name}'
+procinfo.triggermode = 3
+procinfo.triggertimeout = 0.1
+
+[systemlinkage.loopback]
+input = 'source_point'
+output = 'source_point'
+
+# shared and standalone are only for tests.
+[systemlinkage.shared]
+input = 'otherloop_output'
+middle = '{compute_units.delay0.fps.in_name}_remote'
+
+[systemlinkage.standalone]

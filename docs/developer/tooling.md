@@ -500,7 +500,7 @@ To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 !!! warning "This is global superseding"
     This approach is designed to supersede the system-wide installation with a development build.
-    This is not the same as running multiple, isolated versions. See [multiple versions here](../multiversion.md)
+    This is not the same as running multiple, isolated versions. See [multiple versions here](./multiversion.md)
 
 ### 6.2 Global install without sudo
 
@@ -546,8 +546,9 @@ gdb --args milk-fpsexec-mymodule exec <args...>
 (gdb) run
 # ... crash ...
 (gdb) bt full                    # backtrace with local variables
-(gdb) frame 2
-(gdb) print img.im->md->size[0]
+(gdb) frame 2                    # select a frame from the backtrace
+(gdb) print img.im->md->size[0]  # print info on one variable
+(gdb) info locals                # show local variables in the frame
 (gdb) info threads
 (gdb) thread apply all bt
 ```

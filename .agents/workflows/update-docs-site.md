@@ -4,14 +4,14 @@ description: Add or update pages on the MkDocs documentation site
 
 # Update Documentation Site
 
-Conventions, page checklist and tooling: `.agents/rules/documentation.md`,
-[`docs/developer/DocumentingCode.md`](../../docs/developer/DocumentingCode.md) and
-[`docs/developer/tooling.md`](../../docs/developer/tooling.md).
+Rules: [`docs/developer/writing_docs.md`](../../docs/developer/writing_docs.md). Checklist:
+`.agents/rules/documentation.md`. Restructuring a page: the `docs-writer` skill.
 
-1. Create or edit the page under the `docs/` subfolder matching its nav tab.
-2. Add it to `nav:` in `mkdocs.yml` and to `docs/index.md`; start it with `tags:` frontmatter.
-3. Build with link checking, fix every warning (warnings about `../` links to files outside `docs/`
-   are expected):
+1. Create or edit the page in the `docs/` folder and nav group of its audience.
+2. Add it to `nav:` in `mkdocs.yml` (and a card in `docs/index.md` for an entry-point page); start
+   it with the header line.
+3. Build with link checking and fix every warning (warnings about `../` links to files outside
+   `docs/` are expected):
 
    ```bash
    mkdocs build --strict -d /tmp/mkdocs-test

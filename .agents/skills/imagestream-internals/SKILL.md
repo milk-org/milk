@@ -44,7 +44,7 @@ Each stream creates a file at
 │ Keywords (kw[])             │
 │   - Named metadata values   │
 ├─────────────────────────────┤
-│ Semaphore File Data         │
+│ Semaphores                  │
 │   - sem_t per semaphore     │
 ├─────────────────────────────┤
 │ semReadPID[]                │

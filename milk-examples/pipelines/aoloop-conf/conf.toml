@@ -1,0 +1,18 @@
+long_name = "aoloop"
+name = "aoloop"
+loop_number = 0
+teardown_kill_tmux = true
+_ln = '{loop_number}' # alias
+
+[compute_units]
+acquWFS.exec   = 'cacao-fpsexec-cacaoiot-acqWFS'
+wfs2modes.exec = 'milk-fpsexec-linalg-MVMextract'
+mfilt.exec     = 'cacao-fpsexec-mfilt'
+modes2dm.exec  = 'milk-fpsexec-linalg-MVMextract'
+
+mlat.exec      = 'cacao-fpsexec-cacaopt-mlat'
+measlinresp.exec    = 'cacao-fpsexec-cacaoac-measlinresp'
+
+#include fps_details.toml
+
+[systemlinkage.minipyrsim]

@@ -15,9 +15,10 @@ Always point to duplicate or similar:
 Never duplicate between these folders, always link the agent to the human doc.
 
 You are TO NEVER use any `git` feature that:
-- manipulates branch, HEAD, tag pointers
 - interacts with github
 - overwrites any file in the working tree
+- you may create sub-branches and use speckit-foolery as upstream, and merge back into speckit_foolery branch.
+- `speckit-git-remote`, `speckit-git-initialize` cannot be used.
 
 ## Scope discipline
 
@@ -31,6 +32,10 @@ expand scope to compensate. Instead ask, e.g.:
   right, or do you already know the constraint I'm missing?"
 - "Should I do exactly this literally, and just flag edge cases I
   see, rather than handling them?"
+
+## Python work
+
+When work is labeled as "[python]", restrict scoping to the python directory as much as reasonable to reduce context creep.
 
 ## More
 

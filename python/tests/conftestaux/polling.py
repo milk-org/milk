@@ -5,6 +5,8 @@ from typing import Callable
 
 import pytest
 
+from milk.wait import wait_until
+
 
 def poll_until_or_fail(
     predicate: Callable[[], object],
@@ -14,11 +16,7 @@ def poll_until_or_fail(
 ) -> float:
     """Poll `predicate` until truthy; return elapsed seconds, or pytest.fail after `t`."""
     start = time.monotonic()
-    deadline = start + t
-    while not predicate():
-        if time.monotonic() >= deadline:
-            name = getattr(predicate, "__qualname__", repr(predicate))
-            pytest.fail(msg or f"{name} still falsy after {t}s")
-        if interval:
-            time.sleep(interval)
+    if not wait_until(predicate, t, interval or 0):
+        name = getattr(predicate, "__qualname__", repr(predicate))
+        pytest.fail(msg or f"{name} still falsy after {t}s")
     return time.monotonic() - start

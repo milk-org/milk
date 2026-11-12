@@ -66,13 +66,13 @@ Who might you be?
 
     [⮕ Build tiers](quickstart/build_tiers.md)
 
-- :material-console:{ .lg .middle } **CLI Overview**
+- :material-pipe:{ .lg .middle } **Pipelines**
 
     ***
 
-    Interactive shell, standalone executables, and scripting basics.
+    Deploy and operate sets of compute units from one configuration.
 
-    [⮕ CLI overview](quickstart/CLI_Overview.md)
+    [⮕ Pipelines](guide/pipelines.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
@@ -214,7 +214,7 @@ Who might you be?
 
 - **[What's New](whatsnew.md)** — recent features and upgrades
 - [CLI Syntax Reference](guide/CLIcore.md) · [Readline Keys](guide/helpreadline.md)
-- [Scripts Reference](guide/scripts.md) · [Python API](guide/python.md) · [Valkey Integration](guide/valkey.md)
+- [Scripts Reference](guide/scripts.md) · [pyMilk](guide/pyMilk.md) · [Valkey Integration](guide/valkey.md)
 - [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
   [fpsCTRL Reference](guide/fpsCTRL_reference.md)
 - [Working with Git](developer/WorkingWithGit.md) · [Code Assist Tools](developer/code_assist.md) ·

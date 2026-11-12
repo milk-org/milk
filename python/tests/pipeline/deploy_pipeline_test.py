@@ -1,108 +1,96 @@
 from __future__ import annotations
 
-import os, shutil
-import libtmux
 import pytest
-from pathlib import Path
 
-from milk.pipeline import Pipeline
-from milk.session import ComputeSession
-
-
-@pytest.fixture
-def pipeline(pytestconfig):
-    return Pipeline(pytestconfig.rootpath / "tests" / "resources", "pipelinebasic")
+from milk.errors import TaskDidNotSucceedError
+from milk.operate.pipeline import Pipeline
+from milk.provision.rootdir import init
+from milk.operate.tasks import Task
 
 
 @pytest.fixture
-def cloned_pipeline(pipeline: Pipeline):
-    # We're probably in some temp pwd.
-    os.makedirs("AOloop/", exist_ok=True)
-
-    cloned = pipeline.clone_to("./AOloop")  # new cloned pipeline obj
-    yield cloned
-
-    assert cloned.parent_folder.is_relative_to(os.getcwd())
-    if ".nox" in cloned.parent_folder.parts:
-        assert "tmp" in cloned.parent_folder.parts
-    else:
-        assert cloned.parent_folder.is_relative_to("/tmp")
-
-    # Kill all the tmuxes that are associated with the pipeline
-    tsrv = libtmux.Server()
-    for sname in cloned.sessions:
-        # TODO better tmux API integrated directly with session/pipeline
-        abs_name = cloned.get_session_abs_name(sname)
-        session = tsrv.sessions.get(session_name=abs_name, default=None)
-        if session is not None:
-            session.kill()
-
-    shutil.rmtree(cloned.conf_folder)
+def pipeline(pytestconfig, tmp_path):
+    conf = pytestconfig.rootpath / "tests" / "resources" / "pipelinebasic-conf"
+    return Pipeline(init(conf, parent=tmp_path))
 
 
-def test_make_pipeline(pipeline):
-    """
-    Test that we can instantiate the pipeline directly in the source test folder
-    """
-    pp: Pipeline = pipeline
-    assert pp.loop_number == 0
-    assert pp.long_name == "pipelinebasic"
+class TestManualPipeline:
 
-    assert pp.parent_folder.is_absolute()
-    # Check the pipeline is the one directly from this repos' test sources
-    # In the python/tests/resources folder
-    assert pp.parent_folder.is_relative_to(Path(__file__).parent.parent)
+    def test_make_pipeline(self, pipeline):
+        """
+        Test that we can instantiate the pipeline directly in the source test folder
+        """
+        pp: Pipeline = pipeline
+        assert pp.loop_number == 0
+        assert pp.long_name == "pipelinebasic"
 
+    def test_pipeline_var_substitution(self, pipeline):
+        pp: Pipeline = pipeline
+        assert pp.loop_number == 0
+        assert pp.long_name == "pipelinebasic"
 
-def test_make_cloned_pipeline(cloned_pipeline):
-    """
-    Clone the pipeline to a working folder
-    """
-    pp: Pipeline = cloned_pipeline
-    assert pp.loop_number == 0
-    assert pp.long_name == "pipelinebasic"
+        cus = pp.config.compute_units
+        assert (
+            cus["delay0"].fps["procinfo"]["triggersname"]
+            == cus["delay0"].fps["in_name"]
+        )
+        assert (
+            cus["delay1"].fps["procinfo"]["triggersname"]
+            == cus["delay0"].fps["out_name"]
+        )
+        assert cus["delay1"].fps["in_name"] == cus["delay0"].fps["out_name"]
 
-    assert pp.parent_folder.is_absolute()
-    assert pp.parent_folder.is_relative_to(os.getcwd())
-    if ".nox" in pp.parent_folder.parts:
-        assert "tmp" in pp.parent_folder.parts
-    else:
-        assert pp.parent_folder.is_relative_to("/tmp")
+    def test_make_cloned_pipeline(self, cloned_pipeline):
+        """
+        Clone the pipeline to a working folder
+        """
+        pp: Pipeline = cloned_pipeline
+        assert pp.loop_number == 0
+        assert pp.long_name == "pipelinebasic"
 
+    def test_deploy_fps_call_by_class(self, cloned_pipeline: Pipeline):
+        pp = cloned_pipeline
 
-def test_deploy_fps_call_by_class(cloned_pipeline: Pipeline):
-    pp = cloned_pipeline
+        from milk.operate.tasks import InitFPS
 
-    from milk.infra.deploy_tasks import DeployFPS, InitialFolderSetup
-    from milk.infra.task_models import NoCanTaskError
+        pp.task_do(InitFPS)
 
-    # Now forbidden because it MUST have a rootdir to perform a DeployFPS
-    with pytest.raises(NoCanTaskError):
-        pp.task_do(DeployFPS)
-    pp.task_do(InitialFolderSetup).task_do(DeployFPS)
+        for cu, compu in pp.compute_units.items():
+            assert compu.fps is not None
+            assert compu.fps.is_valid()
 
-    for sname in pp.sessions:
-        sesh = pp.get_session(sname)
-        assert sesh.fps is not None
-        assert sesh.fps.is_valid()
+            assert compu.fps.name == pp.config.fps_name(cu)
 
-        assert sesh.fps.name == pp.get_session_abs_name(sname)
+            compu.fps.destroy()
 
-        sesh.fps.destroy()
+    def test_task_not_succeeding(self, cloned_pipeline: Pipeline):
 
+        class Never(Task):
 
-def test_deploy_fps_call_by_instance(cloned_pipeline: Pipeline):
-    pp = cloned_pipeline
+            def can(self) -> bool:
+                return True
 
-    from milk.infra.deploy_tasks import (
-        DeployFPS,
-        InitialFolderSetup,
-        StartConfProcesses,
-    )
+            def success(self) -> bool:
+                return False
 
-    pp.task_do(InitialFolderSetup).task_do(DeployFPS).task_do(StartConfProcesses)
+            def forward(self) -> None: ...
 
-    for sname in pp.sessions:  # TODO this is bad naming urgh
-        sesh = pp.get_session(sname)
-        assert sesh.fps
-        assert sesh.fps.conf_isrunning()
+        with pytest.raises(TaskDidNotSucceedError) as failed:
+            cloned_pipeline.task_do(Never)
+        assert failed.value.task == "Never"
+        assert failed.value.pipeline == cloned_pipeline.short_name
+
+    def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
+        pp = cloned_pipeline
+
+        from milk.operate.tasks import ConfStart, InitFPS
+
+        pp.task_do(InitFPS)
+        pp.task_do(ConfStart)
+
+        live_names = set()
+        for compu in pp.compute_units.values():
+            assert compu.fps
+            assert compu.fps.conf_isrunning()
+            live_names.add(compu.fps.name)
+        assert live_names == {"basic_delay0", "basic_delay1"}
