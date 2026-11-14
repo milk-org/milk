@@ -16,11 +16,6 @@
 #    include <cublas_v2.h>
 #endif
 
-#ifdef HAVE_MAGMA
-#    include "magma_lapack.h"
-#    include "magma_v2.h"
-#endif
-
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "linalgebra_types.h"
@@ -56,11 +51,6 @@ float          cublasSgemv_alpha = 1.0;
 float          cublasSgemv_beta  = 0.0;
 #endif
 
-#ifdef HAVE_MAGMA
-int           INIT_MAGMA = 0;
-magma_queue_t magmaqueue;
-#endif
-
 static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 {
 #ifdef HAVE_CUDA
@@ -73,13 +63,6 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
     {
         gpumatmultconf[i].init  = 0;
         gpumatmultconf[i].alloc = 0;
-    }
-#endif
-
-#ifdef HAVE_MAGMA
-    if (!getenv("MILK_QUIET"))
-    {
-        printf("[MAGMA]");
     }
 #endif
 }
@@ -165,17 +148,6 @@ MW errno_t compute_SVD(IMGID    imgin,
 
 MW errno_t LINALGEBRA_printGPUMATMULTCONF(int index) MWF;
 
-MW errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
-                                                     const char *ID_Cmatrix_name,
-                                                     double      SVDeps,
-                                                     long        MaxNBmodes,
-                                                     const char *ID_VTmatrix_name,
-                                                     int         LOOPmode,
-                                                     int         testmode,
-                                                     int         precision,
-                                                     int         GPUdevice,
-                                                     imageID    *outID) MWF;
-
 errno_t PCAmatch(IMGID  imgmodesA,
                  IMGID  imgmodesB,
                  IMGID *imgoutcA,
@@ -183,16 +155,6 @@ errno_t PCAmatch(IMGID  imgmodesA,
                  IMGID *imgoutimA,
                  IMGID *imgoutimB,
                  int    GPUdev);
-
-MW long CLINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
-                                                 const char *IDmatAinv_name,
-                                                 const char *IDmatOut_name) MWF;
-
-MW int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
-                                                     const char *ID_Cmatrix_name,
-                                                     double      SVDeps,
-                                                     long        MaxNBmodes,
-                                                     const char *ID_VTmatrix_name) MWF;
 
 MW int LINALGEBRA_init() MWF;
 
@@ -221,9 +183,7 @@ MW int GPU_loop_MultMat_setup(int         index,
 
 errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUdev);
 
-void    matrixMulCPU(float *cMat, float *wfsVec, float *dmVec, int M, int N);
-MW void matrixMulCPU_BLAS(float *cMat, float *wfsVec, float *dmVec, int M, int N) MWF;
-void    matrixMulCPU_plain_or_OPENMP(float *cMat, float *wfsVec, float *dmVec, int M, int N);
+void matrixMulCPU(float *cMat, float *wfsVec, float *dmVec, int M, int N);
 
 #undef MW
 #undef MWF

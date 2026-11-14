@@ -55,13 +55,9 @@ static void sg_bfs_downstream(const OV_MODEL *m,
         {
             /* From stream, find proc/FPS consumers
              * via forward edges (src=this stream) */
-            for (int ei = 0; ei < m->nb_edges; ei++)
+            for (int k = m->adj_out_off[cur.node]; k < m->adj_out_off[cur.node + 1]; k++)
             {
-                const OV_EDGE *e = &m->edges[ei];
-                if (e->src_node != cur.node)
-                {
-                    continue;
-                }
+                const OV_EDGE *e = &m->edges[m->adj_out[k]];
 
                 if (!sg_edge_matches_mode_from_stream(e, mode))
                 {
@@ -88,14 +84,10 @@ static void sg_bfs_downstream(const OV_MODEL *m,
             /* From proc/FPS, find output streams
              * via forward edges (src=this proc/FPS,
              * tgt=stream) */
-            for (int ei = 0; ei < m->nb_edges; ei++)
+            for (int k = m->adj_out_off[cur.node]; k < m->adj_out_off[cur.node + 1]; k++)
             {
-                const OV_EDGE *e = &m->edges[ei];
-                if (e->src_node != cur.node)
-                {
-                    continue;
-                }
-                int next = e->tgt_node;
+                const OV_EDGE *e    = &m->edges[m->adj_out[k]];
+                int            next = e->tgt_node;
                 if (next < 0 || next >= m->nb_nodes)
                 {
                     continue;
@@ -199,14 +191,10 @@ static void sg_bfs_upstream(const OV_MODEL *m,
         {
             /* From stream, find proc/FPS that
              * produce it (edges where tgt=this) */
-            for (int ei = 0; ei < m->nb_edges; ei++)
+            for (int k = m->adj_in_off[cur.node]; k < m->adj_in_off[cur.node + 1]; k++)
             {
-                const OV_EDGE *e = &m->edges[ei];
-                if (e->tgt_node != cur.node)
-                {
-                    continue;
-                }
-                int next = e->src_node;
+                const OV_EDGE *e    = &m->edges[m->adj_in[k]];
+                int            next = e->src_node;
                 if (next < 0 || next >= m->nb_nodes)
                 {
                     continue;
@@ -226,13 +214,9 @@ static void sg_bfs_upstream(const OV_MODEL *m,
             /* From proc/FPS, find input streams
              * (edges where tgt=this proc/FPS,
              *  src=stream) */
-            for (int ei = 0; ei < m->nb_edges; ei++)
+            for (int k = m->adj_in_off[cur.node]; k < m->adj_in_off[cur.node + 1]; k++)
             {
-                const OV_EDGE *e = &m->edges[ei];
-                if (e->tgt_node != cur.node)
-                {
-                    continue;
-                }
+                const OV_EDGE *e = &m->edges[m->adj_in[k]];
 
                 if (!sg_edge_matches_mode_from_stream(e, mode))
                 {

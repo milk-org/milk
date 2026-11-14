@@ -899,7 +899,7 @@ static void procctrl_render_process_list(procctrl_context_t *ctx, int NBactive)
                 screenprint_setreverse();
             }
 
-            if (ctx->procinfoproc->selectedarray[pindex])
+            if (procctrl_is_selected(ctx, pindex))
             {
                 TUI_printfw("* ");
             }

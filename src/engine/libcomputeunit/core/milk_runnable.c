@@ -25,6 +25,7 @@ void milk_runnable_prepare(const MILK_RUNNABLE *r)
     cd->funcfpscliarg       = r->farg;
     cd->flags               = r->flags | (r->kind == MILK_RUNNABLE_FPS ? CLICMDFLAG_FPS : 0);
     cd->FPS_customCONFcheck = r->confcheck;
+    cd->outvars             = r->app.outvars;
 
     if (cd->cmdsettings == NULL)
     {

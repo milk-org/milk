@@ -166,14 +166,14 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
                 ov_buf_fg(255, 95, 75);
                 ov_buf_printf("Key: [ %s ]", entry->key);
                 ov_buf_fg(255, 80, 80);
-                ov_buf_printf("  ⚡ CONTROL MODE: ON (Ready)");
+                ov_buf_printf("  ▶ CONTROL MODE: ON (Ready)");
             }
             else
             {
                 ov_buf_fg(205, 140, 50);
                 ov_buf_printf("Key: [ %s ]", entry->key);
                 ov_buf_fg(205, 140, 50);
-                ov_buf_printf("  🔒 REQUIRES CONTROL MODE (Press 'c')");
+                ov_buf_printf("  ◆ REQUIRES CONTROL MODE (Press 'c')");
             }
         }
         else
@@ -245,7 +245,7 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
             const OV_STREAM *s = &m->streams[si];
             if (entry->flags & HF_CTRL_MODE)
             {
-                target_fg = (ov_rgb_t) { 255, 95, 75 };
+                target_fg = OV_FG_ERROR;
                 snprintf(tbuf, sizeof(tbuf), "Will delete stream '%s' (%s %s) from SHM", s->name,
                          s->size_str, render_dtype(s->datatype));
             }
@@ -270,7 +270,7 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
             const OV_PROC *p = &m->procs[pi];
             if (entry->flags & HF_CTRL_MODE)
             {
-                target_fg = (ov_rgb_t) { 255, 95, 75 };
+                target_fg = OV_FG_ERROR;
                 snprintf(tbuf, sizeof(tbuf), "Will signal process '%s' (PID %d, %s)", p->name,
                          (int) p->PID, p->statusmsg);
             }
@@ -295,7 +295,7 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
             const OV_FPS *f = &m->fps[fi];
             if (entry->flags & HF_CTRL_MODE)
             {
-                target_fg = (ov_rgb_t) { 255, 95, 75 };
+                target_fg = OV_FG_ERROR;
                 snprintf(tbuf, sizeof(tbuf), "Will control FPS module '%s' (run=%s, conf=%s)",
                          f->name, f->run_alive ? "ON" : "OFF", f->conf_alive ? "ON" : "OFF");
             }
@@ -316,9 +316,9 @@ void ov_help_render_detail(const OV_LAYOUT    *lay,
     }
     else if (entry->section == HS_GRAPH)
     {
-        if (m != NULL && lay->sel_graph >= 0 && lay->sel_graph < m->nb_nodes)
+        if (m != NULL && lay->sub[OV_SUB_CONN].sel >= 0 && lay->sub[OV_SUB_CONN].sel < m->nb_nodes)
         {
-            const OV_NODE *n = &m->nodes[lay->sel_graph];
+            const OV_NODE *n = &m->nodes[lay->sub[OV_SUB_CONN].sel];
             target_fg        = OV_FG_CONN;
             snprintf(tbuf, sizeof(tbuf), "Selected node '%s' (type: %s)", n->name,
                      (n->type == OV_NODE_STREAM) ? "Stream"

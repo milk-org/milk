@@ -142,6 +142,6 @@ echo "info.imgmon ..loopcntMax -1" >> $SF
 echo "info.imgmon ..RTprio 30" >> $SF
 echo "csetpmove RTmon" >> $SF
 echo "info.imgmon $1 10" >> $SF
-echo "exitCLI" >> $SF
+echo "exit" >> $SF
 milk -n ${pname} -f ${fifoname} -s ${SF}
 rm ${SF}

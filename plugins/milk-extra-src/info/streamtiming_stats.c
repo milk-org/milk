@@ -11,15 +11,11 @@
  */
 
 #include <math.h>
-#ifdef USE_NCURSES
-#    include <ncurses.h>
-#else
-#    define printw(...) printf(__VA_ARGS__)
-#    define attron(a)
-#    define attroff(a)
-#    define A_BOLD 0
-#    define COLOR_PAIR(c) 0
-#endif
+#define printw(...) printf(__VA_ARGS__)
+#define attron(a)
+#define attroff(a)
+#define A_BOLD 0
+#define COLOR_PAIR(c) 0
 #include <sched.h>
 
 #include <stdio.h>

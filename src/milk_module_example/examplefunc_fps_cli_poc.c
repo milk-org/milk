@@ -94,17 +94,14 @@
  *   pass the ADDRESS: &param_variable
  *
  * - String types (STREAMNAME, FILENAME, STRING, etc.)
- *   The sync function (sync_fps_to_local) stores a
- *   POINTER to the FPS shared-memory string buffer.
- *   Therefore:
- *     * If the variable will be read AFTER FPS sync
- *       (standalone/FPS mode), declare as char* and
- *       pass &ptr in FPS_PARAMS.
- *     * If the variable needs a default value for
- *       non-FPS mode, use a char[] buffer.  In
- *       FPS_PARAMS, pass the buffer name directly
- *       (it decays to char*, but the sync overwrites
- *       the first sizeof(char*) bytes with a pointer).
+ *   Declare as char[FUNCTION_PARAMETER_STRMAXLEN] and
+ *   pass the buffer name in FPS_PARAMS: the sync
+ *   function (sync_fps_to_local) copies the string
+ *   into it.
+ *
+ * - Never declare a parameter as a pointer (char *,
+ *   uint32_t *, ...): the sync would write the value
+ *   into the pointer itself.
  *
  * - ONOFF type: uses int32_t (0 = OFF, nonzero = ON)
  *
@@ -165,8 +162,8 @@ static char param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_strea
  *
  *   ptr         Pointer to the local C variable.
  *               - Scalars: use &variable
- *               - Strings: use buffer_name (decays
- *                 to char*) or &char_ptr_variable
+ *               - Strings: use buffer_name (a char
+ *                 [FUNCTION_PARAMETER_STRMAXLEN] array)
  *
  *   type        FPS parameter type enum:
  *               FPTYPE_INT32, FPTYPE_UINT32,
@@ -405,17 +402,21 @@ MILK_PARAMS_DEFINE(fpscli, FPS_PARAMS);
  * outside this file — always go through
  * fpscli_compute() to get proper processinfo
  * tracking.
+ *
+ * Returns the status of the last fpsexec() call,
+ * so the command fails when fpsexec() fails.
  */
 static MILK_HOT errno_t fpscli_compute(const MILK_RUNNABLE *self)
 {
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    fpsexec();
+    rc = fpsexec();
 
     MILK_PROCINFO_END(self)
 
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 

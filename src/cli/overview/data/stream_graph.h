@@ -28,6 +28,8 @@
 
 #define SG_MAX_LINEAGE 128
 #define SG_MAX_DEPTH 16
+#define SG_TREE_MAX_DEPTH \
+    64 /* CONNECTIONS tree levels: each recursion level uses about 32 KB of stack */
 
 /* =========================================================
  * Traversal modes
@@ -71,32 +73,28 @@ typedef struct
 } SG_LINEAGE_ENTRY;
 
 /**
- * SG_RENDER_NODE - flattened graph node for vertical rendering.
- */
-typedef struct
-{
-    int  node_idx;
-    int  depth;
-    int  order;
-    int  type;
-    char name[64];
-    int  is_loop;
-} SG_RENDER_NODE;
-
-/**
  * SG_TREE_NODE - flattened tree node for lineage rendering.
  */
 typedef struct
 {
     int  stream_idx;       /* Index in m->streams */
     int  is_target;        /* 1 if this is the target root stream */
-    int  is_target_proc;   /* 1 if the reader_name matches the target process */
+    int  is_target_proc;   /* 1 if the reader is the target process/FPS node */
+    int  reader_node_idx;  /* Node index of the reader, or -1 */
     int  depth;            /* Graph depth */
     int  is_loop;          /* 1 if this node closes a cycle */
     char name[64];         /* Stream name */
     char reader_name[64];  /* Name of the process/fps reading this stream */
     char tree_prefix[128]; /* Prefix strings for rendering (e.g. "|-- ") */
 } SG_TREE_NODE;
+
+/** sg_tree_reader_proc - m->procs index of the reader of tree row @rn, or -1 (none, or an FPS). */
+static inline int sg_tree_reader_proc(const OV_MODEL *m, const SG_TREE_NODE *rn)
+{
+    int ni = rn->reader_node_idx;
+    return (ni >= 0 && ni < m->nb_nodes && m->nodes[ni].type == OV_NODE_PROC) ? m->nodes[ni].index
+                                                                              : -1;
+}
 
 /**
  * SG_LINEAGE - complete lineage result for one stream.
@@ -159,21 +157,6 @@ void sg_compute_node_depths(const OV_MODEL *m, int start_node, sg_mode_t mode, i
  * Return: static string like "Trigger", "Input", "Full".
  */
 const char *sg_mode_label(sg_mode_t mode);
-
-/**
- * sg_compute_render_nodes - Computes a flattened, sorted list of nodes
- *                           for vertical graph rendering.
- * @m:          system model
- * @start_node: root node to traverse from
- * @mode:       traversal mode
- * @out_nodes:  pre-allocated array (size OV_MAX_NODES) to store result
- *
- * Returns: number of nodes placed in out_nodes.
- */
-int sg_compute_render_nodes(const OV_MODEL *m,
-                            int             start_node,
-                            sg_mode_t       mode,
-                            SG_RENDER_NODE *out_nodes);
 
 /**
  * sg_compute_render_tree - Computes a top-down flattened list of stream

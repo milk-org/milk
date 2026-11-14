@@ -22,7 +22,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
     int pr, pc, ph, pw;
     ov_help_get_rect(lay, &pr, &pc, &ph, &pw);
 
-    if (lay->help_mode == 1)
+    if (lay->help.mode == 1)
     {
         ov_help_render_intro(lay, pr, pc, ph, pw);
         return;
@@ -33,7 +33,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Draw outer panel border */
     const char *title =
-        (pw >= 84) ? "HELP & CONTROLS (1/i: Intro • 2/k: Controls • ↑↓ nav • / search • ESC close)"
+        (pw >= 84) ? "HELP & CONTROLS (1/i: Intro • 2: Controls • ↑↓ nav • / search • ESC close)"
                    : ((pw >= 54) ? "HELP & CONTROLS (1/i: Intro • / search • ESC close)" : "HELP");
     ov_draw_panel_border(pr, pc, ph, pw, title, OV_FG_BRIGHT, 1, 0);
 
@@ -77,11 +77,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_bold();
         ov_theme_fg(OV_FG_TITLE);
 
-        const char *vname = (lay->view == OV_VIEW_DASHBOARD) ? "DASH"
-                            : (lay->view == OV_VIEW_STREAMS) ? "STRM"
-                            : (lay->view == OV_VIEW_PROCS)   ? "PROC"
-                            : (lay->view == OV_VIEW_FPS)     ? "FPS"
-                                                             : "CONN";
+        const char *vname = ov_view_label(lay->view);
         const char *pname = (lay->focus == OV_FOCUS_STREAMS) ? "Streams"
                             : (lay->focus == OV_FOCUS_PROCS) ? "Processes"
                             : (lay->focus == OV_FOCUS_FPS)   ? "FPS"
@@ -154,7 +150,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_pos(pr + 2, pc + 2);
         ov_theme_bg(OV_BG_PANEL);
 
-        if (lay->help_search_active || lay->help_search[0] != '\0')
+        if (lay->help.search_active || lay->help.search[0] != '\0')
         {
             ov_buf_bold();
             ov_buf_fg(255, 220, 100);
@@ -163,7 +159,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_bg(OV_BG_PANEL);
 
             /* Search input box */
-            if (lay->help_search_active)
+            if (lay->help.search_active)
             {
                 ov_theme_bg(OV_BG_SELECTED);
                 ov_theme_fg(OV_FG_BRIGHT);
@@ -186,8 +182,8 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
             }
 
             char qdisp[48];
-            snprintf(qdisp, sizeof(qdisp), "%s%s", lay->help_search,
-                     lay->help_search_active ? "█" : "");
+            snprintf(qdisp, sizeof(qdisp), "%s%s", lay->help.search,
+                     lay->help.search_active ? "█" : "");
             ov_buf_printf(" %-*.*s ", qbox_w, qbox_w, qdisp);
 
             ov_buf_reset_attr();
@@ -196,7 +192,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
 
             /* Matches count */
             char count_str[32];
-            if (lay->help_search[0] == '\0')
+            if (lay->help.search[0] == '\0')
             {
                 snprintf(count_str, sizeof(count_str), " (type query)");
             }
@@ -209,7 +205,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
 
             /* Clear / cancel button */
             const char *btn_str =
-                (lay->help_search[0] == '\0') ? " [ESC: cancel] " : " [ESC: clear] ";
+                (lay->help.search[0] == '\0') ? " [ESC: cancel] " : " [ESC: clear] ";
             int used = 8 + qbox_w + 2 + (int) strlen(count_str);
             int rem  = inner_w - used - (int) strlen(btn_str);
             if (rem > 0)
@@ -268,7 +264,7 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* Cursor bounds check */
-    int sel = lay->help_sel;
+    int sel = lay->help.sel;
     if (sel < 0)
     {
         sel = 0;
@@ -286,12 +282,12 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* Render visible rows in list area */
-    if (lay->help_search[0] != '\0' && nvis == 0)
+    if (lay->help.search[0] != '\0' && nvis == 0)
     {
         ov_buf_pos(list_top + 1, pc + 4);
         ov_theme_bg(OV_BG_PANEL);
         ov_theme_fg(OV_FG_WARN);
-        ov_buf_printf("No matching commands found for \"%s\"", lay->help_search);
+        ov_buf_printf("No matching commands found for \"%s\"", lay->help.search);
         ov_buf_pos(list_top + 2, pc + 4);
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("Try searching: stream, proc, fps, kill, sort, filter, view");
@@ -335,10 +331,10 @@ void ov_render_help(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_DIM);
 
         int         used_div = 17;
-        const char *hint     = (lay->help_search[0] != '\0')
+        const char *hint     = (lay->help.search[0] != '\0')
                                    ? "[↑↓ nav • ESC clear search]"
                                    : "[↑↓ nav • →/← expand • [/] search • ESC close]";
-        int         hint_len = (int) strlen(hint);
+        int         hint_len = ov_str_display_width(hint); /* columns, not bytes */
         int         div_pad  = (pw - 2) - used_div - hint_len - 1;
         if (div_pad > 0)
         {

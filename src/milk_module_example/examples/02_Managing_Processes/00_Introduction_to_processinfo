@@ -28,5 +28,5 @@ modex.imsum2 ..procinfo 1
 modex.imsum2 ?
 
 # exit milk CLI
-exitCLI
+exit
 "

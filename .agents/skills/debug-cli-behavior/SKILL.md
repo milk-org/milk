@@ -31,7 +31,6 @@ the internal architecture that most bugs trace to.
 ### Basic command test
 
 ```bash
-source ~/src/milk/local/bin/milk-setup.bash
 echo "command args" | milk-cli 2>&1
 echo "Exit code: $?"
 ```
@@ -39,7 +38,6 @@ echo "Exit code: $?"
 ### Multi-line test
 
 ```bash
-source ~/src/milk/local/bin/milk-setup.bash
 milk-cli <<'EOF' 2>&1
 command1
 command2
@@ -50,7 +48,6 @@ echo "Exit code: $?"
 ### Capture both stdout and stderr separately
 
 ```bash
-source ~/src/milk/local/bin/milk-setup.bash
 echo "command" | milk-cli >out.txt 2>err.txt
 echo "Exit: $?"
 cat out.txt
@@ -60,9 +57,7 @@ cat err.txt
 ### Test with the robustness suite
 
 ```bash
-cd ~/src/milk
-bash tests/cli/run_cli_robustness_tests.sh \
-  --verbose 2>&1
+cd python && python3 -m pytest -q tests/cli/cli_robustness_test.py
 ```
 
 ## Crash Investigation
@@ -112,9 +107,9 @@ Common crash locations and their causes:
 | Crash location                 | Likely cause                                         |
 | ------------------------------ | ---------------------------------------------------- |
 | `CLIcore_checkargs.c`          | `nbarg` mismatch, missing `FPFLAG_PRIMARY_CLI_INPUT` |
-| `RegisterCLIcmd`               | `MILK_RUNNABLE` with NULL `.cli_func` / `.farg`, or `.nbarg` not matching `.farg` |
-| `cli_calc_eval.c`              | Stack underflow in expression evaluator              |
-| `cli_calc_tokenizer.c`         | Buffer overflow on long expressions                  |
+| `RegisterCLIcmd`               | `MILK_RUNNABLE` with NULL `.cli_func` / `.farg`      |
+| `mc_eval.c`                    | Expression evaluation in `src/calc/`                 |
+| `mc_lex.c` / `mc_parse.c`      | Lexer / Pratt parser in `src/calc/`                  |
 | `CLIcore_modules.c`            | Module load order, `dlopen` failure                  |
 | `image_ID()` / `variable_ID()` | Invalid image index, corrupted `data.image[]` array  |
 
@@ -174,26 +169,25 @@ found" issues.
 
 ## CLI Pipeline Architecture
 
-When `milk-cli` receives input, it flows through:
+A line at the milk-cli prompt is bash. milk-cli translates its `@{…}` and runs it in a bash
+co-process that sourced `milk.bash`, so from there it runs as in plain bash:
 
 ```
-readline → intercept check
-  → variable expansion (CLIcore_script_expand.c)
-  → special-form check (if/while/for/function)
-  → calc expression check (cli_calc_parser.c)
-  → CLI command lookup (CLIcore_UI_execute.c)
-  → shell bypass (system())
+CLIcore_UI_execute.c → milk_bash_exec.c (translation) → milk_bash_coproc.c (bash co-process)
+  @keyword    → libmilkbash builtin or milk.bash function (milk_keywords.c says which)
+  module.cmd  → shell function → milkcall → milk_client_ops.c → session server:
+                milk_server_dispatch.c → CLIcore_checkargs.c (arguments: milk_args_bind)
+  @calc text  → session server: milk_server_eval.c → src/calc/mc_eval.c
 ```
 
 ### Debugging each stage
 
-| Stage              | How to trace                                         |
-| ------------------ | ---------------------------------------------------- |
-| Intercept          | Check `CLIcore_script_intercept.c` for early returns |
-| Variable expansion | Print `line` before/after `expand_variables()`       |
-| Calc expression    | Check `cli_try_calc()` return value                  |
-| Command lookup     | Check `find_cmd()` return value                      |
-| Shell bypass       | Check `[shell bypass]` message on stderr             |
+| Stage           | How to trace                                                        |
+| --------------- | ------------------------------------------------------------------- |
+| Translation     | the same line in plain bash after `source milk.bash`                |
+| Keyword         | `type -t @get` (builtin or function), `@get --help`                 |
+| Module command  | `<cmd> --no-run ...` prints the resolved call; usage errors exit 2 |
+| Server request  | `@log -n 5` shows the session's last requests, status and timing   |
 
 ## Display / Prompt Issues
 
@@ -218,22 +212,8 @@ If characters are not echoed during input:
 
 ## Shared Memory Cleanup
 
-Stale SHM files from crashed processes can cause
-unexpected behavior:
-
-```bash
-# List all milk shared memory
-ls /dev/shm/*.im.shm /dev/shm/fps.* \
-  /dev/shm/proc.* 2>/dev/null
-
-# Clean specific entries
-rm /dev/shm/fps.<name>.shm
-rm /dev/shm/<stream>.im.shm
-
-# Kill orphaned tmux sessions
-tmux ls 2>/dev/null
-tmux kill-session -t <name>
-```
+Stale SHM files from crashed processes can cause unexpected behavior: list and remove them as
+[debugging.md §4.2](../../../docs/operations/debugging.md#42-shared-memory-leaks) says.
 
 ## Source File Reference
 
@@ -241,15 +221,13 @@ Key files for CLI debugging:
 
 | File                                 | Role                                        |
 | ------------------------------------ | ------------------------------------------- |
-| `CLIcore.c`                          | Main entry, module loading                  |
-| `CLIcore/CLIcore_modules.c`          | `load_module_shared()`, module registration |
-| `CLIcore/CLIcore_UI_execute.c`       | Command dispatch                            |
-| `CLIcore/CLIcore_script.c`           | Script interpreter main loop                |
-| `CLIcore/CLIcore_script_intercept.c` | Early interception (comments, blank lines)  |
-| `CLIcore/CLIcore_script_var.c`       | Variable assignment and lookup              |
-| `CLIcore/CLIcore_script_expand.c`    | Variable and command substitution           |
-| `CLIcore/CLIcore_checkargs.c`        | Argument validation                         |
-| `cli_calc_parser.c`                  | Arithmetic expression entry point           |
-| `cli_calc_tokenizer.c`               | Expression tokenizer                        |
-| `cli_calc_eval.c`                    | Expression evaluator (stack machine)        |
-| `cli_calc_functions.c`               | Built-in math functions                     |
+| `src/cli/CLIcore/CLIcore.c`                          | Main entry, module loading                  |
+| `libmilkscript/core/CLIcore_modules.c`               | `load_module_shared()`, module registration |
+| `libmilkscript/core/CLIcore_UI_execute.c`            | Prompt line execution                       |
+| `libmilkscript/bash/milk_bash_exec.c`                | `@{…}` translation, bash co-process         |
+| `libmilkscript/server/milk_server_dispatch.c`        | Command dispatch on the session server      |
+| `libmilkscript/core/CLIcore_checkargs.c`             | Argument binding and validation             |
+| `src/calc/mc_eval.c`                 | Arithmetic expression entry point           |
+| `src/calc/front/mc_lex.c`                  | Expression tokenizer                        |
+| `src/calc/front/mc_parse.c`                | Pratt parser                                |
+| `src/calc/run/mc_scalar_eval.c`               | Built-in scalar math & string functions     |

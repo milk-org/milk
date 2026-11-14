@@ -1,0 +1,1538 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file milk_server_dispatch.c
+ * @brief Command resolution, token population, and SET/CALL execution, and the guarded run of
+ *        every request body.
+ *
+ * Purpose:     a command a shell sends runs in the session as if typed there, one at a time, and
+ *              neither a crash nor Ctrl-C in it ends the session.
+ * Does:        runs a SET request, and a CALL request with the environment it carries
+ *              (MILK_SHM_DIR, ...), for that request only; routes the keywords the session runs
+ *              (@ls, @module, @config, @history, @grab --stdout, @replay, @snapshot, @diff,
+ *              @restore, @assert, @set, @pipe, @session, @log) and entity paths; finds a module
+ *              command (loading its module on first use), fills data.cmdargtoken[] from argv[]
+ *              without splitting words again, and runs it; sends back the variables it declares
+ *              as outputs, and DEFCMD when a module loaded. While a request body runs
+ *              (milk_server_run_guarded()), a watcher thread forwards Ctrl-C and window size
+ *              changes and serves other shells: reads alongside, a command that changes the
+ *              session queued until the CALL returns (or refused with --nowait).
+ * Used by:     milk_server.c (CALL and SET requests); milk_server_eval.c (@pipe steps, guarded
+ *              CALC and TEST); milk_server_admin.c. Declared in milk_server_internal.h.
+ * Uses:        CLIcore (data.cmd[], fault isolation), milk_cmd_index.h, milk_catalog.h (autoload),
+ *              milk_cmd_args.h (per-call arguments), milk_shm_prop.h (entities), mcalc.h,
+ *              milk_renames.h (removed spellings), milk_srvlog.h, milk_server_vars.c.
+ * See also:    milk_server_eval.c (@calc, @test, @assert, @pipe); docs/guide/sessions.md,
+ *              "Concurrent Commands Across Shells".
+ */
+
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+
+#include <ctype.h>
+#include <poll.h>
+#include <pthread.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/eventfd.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "milk_keywords.h"
+#include "CLIcore.h"
+#include "CLIcore_help.h"
+#include "CLIcore_memory.h"
+#include "CLIcore_script.h"
+#include "CLIcore_setSHMdir.h"
+#include "CLIcore_signals.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "mcalc.h"
+#include "milk_shm_prop.h"
+#include "milk_ipc_common.h"
+#include "milk_entity_ns.h"
+#include "milk_proto.h"
+#include "milk_server_internal.h"
+#include "milk_catalog.h"
+#include "milk_cmd_args.h"
+#include "milk_cmd_index.h"
+#include "milk_renames.h"
+#include "milk_srvlog.h"
+
+static volatile sig_atomic_t g_call_interrupted = 0; /* a CALL was aborted by SIGINT */
+
+/**
+ * milk_server_take_call_interrupt - Consume and clear the sticky SIGINT-aborted CALL flag
+ *
+ * Allows the server event loop to detect whether the just-finished `MILK_MSG_CALL`
+ * was aborted by `SIGINT` (`siglongjmp`) and report exit status 130 to the client.
+ *
+ * Return: 1 if the preceding CALL was interrupted by SIGINT, 0 otherwise.
+ */
+int milk_server_take_call_interrupt(void)
+{
+    int r              = g_call_interrupted;
+    g_call_interrupted = 0;
+    return r;
+}
+
+extern void handle_did_you_mean(const char *input_cmd);
+
+typedef struct
+{
+    int             client_fd;
+    int             listen_fd;
+    int             wake_fd;
+    pthread_t       main_tid;
+    volatile int    active;
+    pid_t           pgid; /* the CALL's process group: its requests (a pipeline) run alongside */
+    const char     *cmd;  /* the CALL's command line, which other shells' requests wait for */
+    struct timespec t0;
+} call_watcher_ctx_t;
+
+/* Requests that wait for the CALL running (another shell's), served by the main loop after it */
+volatile sig_atomic_t g_milk_server_crashed = 0;
+
+#define MILK_SERVER_WAITING_MAX 128
+static int             g_waiting[MILK_SERVER_WAITING_MAX];
+static int             g_nwaiting = 0;
+static pthread_mutex_t g_qmu      = PTHREAD_MUTEX_INITIALIZER;
+
+/* The process group of the peer of socket @fd, or -1 */
+static pid_t peer_pgid(int fd)
+{
+    struct ucred cred;
+    socklen_t    len = sizeof(cred);
+
+    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) != 0 || cred.pid <= 0)
+    {
+        return -1;
+    }
+    return getpgid(cred.pid);
+}
+
+/* Seconds the CALL has run */
+static double call_seconds(const call_watcher_ctx_t *ctx)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (double) (now.tv_sec - ctx->t0.tv_sec) + 1e-9 * (double) (now.tv_nsec - ctx->t0.tv_nsec);
+}
+
+/* --nowait (or a full queue): the request fails at once, saying what the session runs; the
+ * connection stays open if @keep */
+static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep, int32_t rc)
+{
+    milk_frame_hdr_t hdr;
+    uint8_t         *pl     = NULL;
+    int              fds[4] = { -1, -1, -1, -1 };
+
+    if (milk_proto_recv(cfd, &hdr, &pl, fds) == 0)
+    {
+        if (fds[2] >= 0)
+        {
+            dprintf(fds[2], "milk: busy: %s for %.0f s\n", ctx->cmd, call_seconds(ctx));
+        }
+        milk_server_send_done(cfd, keep, &rc, sizeof(rc));
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        if (fds[i] >= 0)
+        {
+            close(fds[i]);
+        }
+    }
+    free(pl);
+}
+
+/* @cfd waits for the CALL: its client is told, and the main loop serves it once the CALL
+ * returns (milk_server_serve_waiting()). Return: 0, or -1 if the queue is full */
+static int wait_for_call(const call_watcher_ctx_t *ctx, int cfd)
+{
+    char msg[320];
+
+    pthread_mutex_lock(&g_qmu);
+    int ok = (g_nwaiting < MILK_SERVER_WAITING_MAX);
+    if (ok)
+    {
+        g_waiting[g_nwaiting++] = cfd;
+    }
+    pthread_mutex_unlock(&g_qmu);
+    if (ok)
+    {
+        int n = snprintf(msg, sizeof(msg), "%.250s\t%.0f", ctx->cmd, call_seconds(ctx));
+        milk_proto_send(cfd, MILK_MSG_QUEUED, 0, msg, (uint32_t) n + 1);
+    }
+    return ok ? 0 : -1;
+}
+
+/* Requests that arrived while a command runs and do not wait for it to end. The command answers
+ * them at its next safe point (milk_server_safe_point()), where its images and variables are
+ * whole. What happens to one that no safe point came for depends on its kind. Those left when
+ * the command returns are served by the main loop. */
+typedef enum
+{
+    Q_READ_OTHER, /* another shell's read: told the session is busy after MILK_SERVER_READ_WAIT_S */
+    Q_READ_OWN,   /* a read of the command's own process group: a copy answers it after
+                     MILK_SERVER_COPY_WAIT_S (the command may be waiting for its sender) */
+    Q_COPY        /* an --async command, or a stage of the command's pipeline: a copy runs it,
+                     taken at the safe point, or anyway after MILK_SERVER_COPY_WAIT_S */
+} queued_kind_t;
+
+#define MILK_SERVER_QUEUED_MAX 64
+#define MILK_SERVER_READ_WAIT_S 2.0
+#define MILK_SERVER_COPY_WAIT_S 0.05
+#define MILK_SERVER_RC_BUSY 255 /* as when the session cannot be reached: not a false @test */
+static struct
+{
+    int             fd;
+    queued_kind_t   kind;
+    struct timespec t;
+} g_queued[MILK_SERVER_QUEUED_MAX];
+static int                   g_nqueued       = 0; /* under g_qmu */
+static volatile sig_atomic_t g_reads_pending = 0; /* g_nqueued != 0, read without the lock */
+
+static void serve_in_copy(int cfd, int listen_fd, int limit);
+
+/* Queue request @cfd for the next safe point. Return: 0, or -1 if the queue is full */
+static int queued_put(int cfd, queued_kind_t kind)
+{
+    pthread_mutex_lock(&g_qmu);
+    int ok = (g_nqueued < MILK_SERVER_QUEUED_MAX);
+    if (ok)
+    {
+        g_queued[g_nqueued].fd   = cfd;
+        g_queued[g_nqueued].kind = kind;
+        clock_gettime(CLOCK_MONOTONIC, &g_queued[g_nqueued].t);
+        g_reads_pending = (++g_nqueued != 0);
+    }
+    pthread_mutex_unlock(&g_qmu);
+    return ok ? 0 : -1;
+}
+
+/* Take the oldest queued request, or with @expired the oldest that has waited as long as its
+ * kind allows. Return: its fd (*@kind set), or -1 */
+static int queued_take(int expired, queued_kind_t *kind)
+{
+    int             cfd = -1;
+    struct timespec now;
+
+    pthread_mutex_lock(&g_qmu);
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    for (int i = 0; i < g_nqueued && cfd < 0; i++)
+    {
+        double age = (double) (now.tv_sec - g_queued[i].t.tv_sec) +
+                     1e-9 * (double) (now.tv_nsec - g_queued[i].t.tv_nsec);
+        double max =
+            (g_queued[i].kind == Q_READ_OTHER) ? MILK_SERVER_READ_WAIT_S : MILK_SERVER_COPY_WAIT_S;
+        if (!expired || age >= max)
+        {
+            cfd   = g_queued[i].fd;
+            *kind = g_queued[i].kind;
+            memmove(g_queued + i, g_queued + i + 1,
+                    (size_t) (--g_nqueued - i) * sizeof(g_queued[0]));
+            g_reads_pending = (g_nqueued != 0);
+        }
+    }
+    pthread_mutex_unlock(&g_qmu);
+    return cfd;
+}
+
+void milk_server_serve_waiting(int listen_fd, int *shutdown_flag)
+{
+    queued_kind_t kind;
+    for (int cfd; (cfd = queued_take(0, &kind)) >= 0;) /* what the command left unanswered */
+    {
+        if (kind == Q_COPY) /* not in the session itself: what it creates is not kept */
+        {
+            serve_in_copy(cfd, listen_fd, 0);
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+            continue;
+        }
+        int keep = milk_server_can_keep(cfd);
+        milk_server_conn_done(cfd, milk_server_handle_client(cfd, listen_fd, shutdown_flag, keep));
+    }
+    for (;;)
+    {
+        int cfd = -1;
+        pthread_mutex_lock(&g_qmu);
+        if (g_nwaiting > 0)
+        {
+            cfd = g_waiting[0];
+            memmove(g_waiting, g_waiting + 1, (size_t) (--g_nwaiting) * sizeof(g_waiting[0]));
+        }
+        pthread_mutex_unlock(&g_qmu);
+        if (cfd < 0)
+        {
+            return;
+        }
+        struct pollfd p = { cfd, POLLRDHUP, 0 };
+        if (poll(&p, 1, 0) > 0 && (p.revents & (POLLRDHUP | POLLHUP | POLLERR)))
+        {
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE); // its client gave up waiting (Ctrl-C)
+            continue;
+        }
+        milk_proto_send(cfd, MILK_MSG_QUEUED, 0, NULL, 0); // its turn: Ctrl-C cancels it now
+        int keep = milk_server_can_keep(cfd);
+        milk_server_conn_done(cfd, milk_server_handle_client(cfd, listen_fd, shutdown_flag, keep));
+    }
+}
+
+/* A read served in a forked copy takes milliseconds. One that has not answered after this many
+ * seconds is stuck (on a lock some library held at the fork): it ends instead of waiting for ever */
+#define MILK_SERVER_READ_LIMIT_S 30
+
+/* SIGALRM in the forked copy that serves a read: async-signal-safe calls only */
+static void read_stuck(int sig)
+{
+#define READ_LIMIT_TXT2(s) #s
+#define READ_LIMIT_TXT(s) READ_LIMIT_TXT2(s)
+    static const char msg[] = "milk: no answer to this read in " READ_LIMIT_TXT(
+        MILK_SERVER_READ_LIMIT_S) " s: the session is busy\n";
+    (void) sig;
+    if (write(STDERR_FILENO, msg, sizeof(msg) - 1) < 0)
+    {
+        /* nothing to do: the copy ends */
+    }
+    _exit(1);
+}
+
+/* Answer request @cfd in a copy of the session, which answers and ends: what it creates is not
+ * kept. @limit: a read, which must not wait for ever. Called at a safe point by the thread that
+ * runs the command, or by the watcher when no safe point came in time. */
+static void serve_in_copy(int cfd, int listen_fd, int limit)
+{
+    pid_t pid = fork();
+    if (pid > 0)
+    {
+        g_srv_children = 1;
+    }
+    if (pid == 0)
+    {
+        sigset_t none; /* the watcher thread blocks all signals; its copy must not */
+        sigemptyset(&none);
+        pthread_sigmask(SIG_SETMASK, &none, NULL);
+        if (listen_fd >= 0)
+        {
+            close(listen_fd);
+        }
+        if (limit)
+        {
+            signal(SIGALRM, read_stuck);
+            alarm(MILK_SERVER_READ_LIMIT_S);
+        }
+        int dummy_shutdown = 0;
+        milk_server_handle_client(cfd, -1, &dummy_shutdown, 0); /* answers, the connection ends */
+        close(cfd);
+        _exit(0);
+    }
+}
+
+/**
+ * watcher_take_client() - serve a request that arrives while a CALL runs, on a new connection or a
+ * kept one; a MILK_CONN_* outcome for @cfd: a stream worker or the queue (the main loop serves it
+ * once the CALL returns) may take it.
+ */
+static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
+{
+    int              keep = milk_server_can_keep(cfd);
+    int              done = keep ? MILK_CONN_KEEP : MILK_CONN_CLOSE;
+    struct timeval   to   = { 2, 0 };
+    milk_frame_hdr_t ph;
+    setsockopt(cfd, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to));
+    if (recv(cfd, &ph, sizeof(ph), MSG_PEEK | MSG_WAITALL) != (ssize_t) sizeof(ph))
+    {
+        return MILK_CONN_CLOSE;
+    }
+    if (ph.type == MILK_MSG_SHUTDOWN || ph.type == MILK_MSG_PING || ph.type == MILK_MSG_CANCEL ||
+        ph.type == MILK_MSG_WINCH)
+    {
+        milk_frame_hdr_t hdr;
+        uint8_t         *pl = NULL;
+        int32_t          rc = 0;
+        if (milk_proto_recv(cfd, &hdr, &pl, NULL) != 0)
+        {
+            return MILK_CONN_CLOSE;
+        }
+        free(pl);
+        if (hdr.type == MILK_MSG_SHUTDOWN) /* the main loop stops once the CALL returns */
+        {
+            g_milk_server_stop = 1;
+            milk_server_stop_listening(ctx->listen_fd);
+            keep = 0;
+            done = MILK_CONN_CLOSE;
+        }
+        if (hdr.type == MILK_MSG_SHUTDOWN || hdr.type == MILK_MSG_PING) /* else: sent as its own
+                                                                           request ended */
+        {
+            milk_server_send_done(cfd, keep, &rc, sizeof(rc));
+        }
+        return done;
+    }
+    if ((ph.type == MILK_MSG_WAITFOR || ph.type == MILK_MSG_GRAB) &&
+        milk_server_spawn_stream_worker(cfd) == 0)
+    {
+        return MILK_CONN_TAKEN;
+    }
+    // what another shell sends that changes the session waits for this CALL. Reads, async
+    // commands and the CALL's own process group (a pipeline) do not: the CALL serves them at its
+    // next safe point, where its state is whole (queued_kind_t)
+    int   reads = (ph.type == MILK_MSG_GET || ph.type == MILK_MSG_EXISTS ||
+                   ph.type == MILK_MSG_TEST || ph.type == MILK_MSG_COMPLETE);
+    pid_t pg    = peer_pgid(cfd);
+    if (!reads && !(ph.flags & MILK_FLAG_ASYNC) && (pg <= 0 || pg != ctx->pgid))
+    {
+        if (!(ph.type == MILK_MSG_CALL && (ph.flags & MILK_FLAG_NOWAIT)) &&
+            wait_for_call(ctx, cfd) == 0)
+        {
+            return MILK_CONN_TAKEN;
+        }
+        reply_busy(ctx, cfd, keep, 1);
+        return done;
+    }
+    int           own  = (pg > 0 && pg == ctx->pgid);
+    queued_kind_t kind = !reads ? Q_COPY : own ? Q_READ_OWN : Q_READ_OTHER;
+    if (queued_put(cfd, kind) == 0) /* at the command's next safe point */
+    {
+        return MILK_CONN_TAKEN;
+    }
+    if (kind == Q_READ_OTHER)
+    {
+        reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY);
+    }
+    else
+    {
+        serve_in_copy(cfd, ctx->listen_fd, reads);
+    }
+    return MILK_CONN_CLOSE;
+}
+
+/**
+ * @brief Background watcher thread active during a watched CALL, CALC or TEST request.
+ *
+ * Monitors @ctx->client_fd for `MILK_MSG_CANCEL` / `MILK_MSG_WINCH` / hangup
+ * (forwarding `SIGINT` / `SIGWINCH` to the main server thread) and serves the requests that
+ * arrive on new and kept connections (milk_server_ready_fd()): SHUTDOWN is recorded for the main loop,
+ * WAITFOR/GRAB get a worker thread, anything else (e.g. a pipeline stage that needs
+ * its own stdio) runs in a forked child.
+ */
+static void *call_watcher_thread(void *arg)
+{
+    call_watcher_ctx_t *ctx = (call_watcher_ctx_t *) arg;
+    while (ctx->active)
+    {
+        struct pollfd pfds[3];
+        pfds[0].fd      = ctx->client_fd;
+        pfds[0].events  = POLLIN | POLLHUP | POLLERR;
+        pfds[0].revents = 0;
+        pfds[1].fd      = (ctx->listen_fd >= 0) ? milk_server_ready_fd() : -1; /* and kept ones */
+        pfds[1].events  = POLLIN;
+        pfds[1].revents = 0;
+        pfds[2].fd      = ctx->wake_fd;
+        pfds[2].events  = POLLIN;
+        pfds[2].revents = 0;
+
+        int nfds = (ctx->wake_fd >= 0) ? 3 : 2;
+        int tms  = g_reads_pending ? 10 : (ctx->wake_fd >= 0) ? 200 : 20; /* 10: their limits */
+        int pr   = poll(pfds, (nfds_t) nfds, tms);
+        if (nfds == 3 && (pfds[2].revents & POLLIN))
+        {
+            uint64_t v;
+            ssize_t rret = read(ctx->wake_fd, &v, sizeof(v)); /* the thread is reused: consume it */
+            (void) rret;
+            continue;
+        }
+        queued_kind_t kind;
+        for (int cfd;
+             ctx->active && (cfd = queued_take(1, &kind)) >= 0;) /* no safe point in time */
+        {
+            if (kind == Q_READ_OTHER)
+            {
+                reply_busy(ctx, cfd, 0, MILK_SERVER_RC_BUSY);
+            }
+            else
+            {
+                serve_in_copy(cfd, ctx->listen_fd, kind == Q_READ_OWN);
+            }
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+        }
+        if (pr <= 0 || !ctx->active)
+        {
+            continue;
+        }
+
+        if (pfds[0].revents & (POLLIN | POLLHUP | POLLERR))
+        {
+            if (pfds[0].revents & POLLIN)
+            {
+                milk_frame_hdr_t hdr;
+                uint8_t         *pl = NULL;
+                if (milk_proto_recv(ctx->client_fd, &hdr, &pl, NULL) == 0)
+                {
+                    if (hdr.type == MILK_MSG_CANCEL)
+                    {
+                        dcsigINT = 1;
+                        pthread_kill(ctx->main_tid, SIGINT);
+                    }
+                    else if (hdr.type == MILK_MSG_WINCH)
+                    {
+                        pthread_kill(ctx->main_tid, SIGWINCH);
+                    }
+                    free(pl);
+                }
+                else
+                {
+                    dcsigINT = 1;
+                    pthread_kill(ctx->main_tid, SIGINT);
+                    break;
+                }
+            }
+            else
+            {
+                dcsigINT = 1;
+                pthread_kill(ctx->main_tid, SIGINT);
+                break;
+            }
+        }
+
+        if ((pfds[1].revents & POLLIN) && ctx->active)
+        {
+            int cfds[16];
+            int n = milk_server_take_ready(ctx->listen_fd, cfds, 16);
+            for (int i = 0; i < n; i++)
+            {
+                milk_server_conn_done(cfds[i], watcher_take_client(ctx, cfds[i]));
+            }
+        }
+    }
+    return NULL;
+}
+
+/* One watcher thread serves every CALL in turn (no thread creation per CALL). A request that ends
+ * within WATCH_AFTER_MS is not watched: it skips the hand-off with the watcher thread. */
+#define WATCH_AFTER_MS 2
+static call_watcher_ctx_t g_wctx    = { .client_fd = -1, .listen_fd = -1, .wake_fd = -1 };
+static pthread_mutex_t    g_wmu     = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t     g_wcv     = PTHREAD_COND_INITIALIZER;
+static unsigned long      g_wgen    = 0; /* CALLs handed to the watcher */
+static int                g_wbusy   = 0; /* the watcher is watching a CALL */
+static int                g_wawake  = 0; /* the watcher took the request: waits, or watches */
+static int                g_wthread = 0; /* the watcher thread runs in this process */
+
+/**
+ * watcher_main - Persistent background thread parking between watched requests
+ * @arg: Unused thread argument
+ *
+ * Reuses a single detached thread across all CALL, CALC and TEST requests to avoid
+ * per-request `pthread_create()` overhead.
+ *
+ * Return: Always NULL (never returns).
+ */
+static void *watcher_main(void *arg)
+{
+    (void) arg;
+    unsigned long served = 0;
+    pthread_mutex_lock(&g_wmu);
+    for (;;)
+    {
+        while (!g_wctx.active || g_wgen == served)
+        {
+            pthread_cond_wait(&g_wcv, &g_wmu);
+        }
+        served   = g_wgen;
+        g_wawake = 1;
+        pthread_mutex_unlock(&g_wmu);
+        struct pollfd wp = { g_wctx.wake_fd, POLLIN, 0 };
+        if (poll(&wp, 1, WATCH_AFTER_MS) > 0)
+        {
+            uint64_t v;
+            ssize_t  rret = read(g_wctx.wake_fd, &v, sizeof(v)); /* watcher_end() */
+            (void) rret;
+        }
+        pthread_mutex_lock(&g_wmu);
+        if (!g_wctx.active || g_wgen != served)
+        {
+            g_wawake = 0;
+            continue;
+        }
+        g_wbusy = 1;
+        pthread_mutex_unlock(&g_wmu);
+        call_watcher_thread(&g_wctx); /* until the CALL ends or the client hangs up */
+        pthread_mutex_lock(&g_wmu);
+        g_wbusy  = 0;
+        g_wawake = 0;
+        pthread_cond_broadcast(&g_wcv);
+    }
+    return NULL;
+}
+
+/** watcher_begin() - watch @client_fd (and accept on @listen_fd) while request @cmd runs; 0 if unavailable. */
+static int watcher_begin(int client_fd, int listen_fd, const char *cmd)
+{
+    pthread_mutex_lock(&g_wmu);
+    if (!g_wthread)
+    {
+        g_wctx.wake_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        sigset_t all, old; /* signals stay with the main thread (sig_handler may siglongjmp) */
+        sigfillset(&all);
+        pthread_sigmask(SIG_BLOCK, &all, &old);
+        pthread_t tid;
+        g_wthread = (g_wctx.wake_fd >= 0 && pthread_create(&tid, &attr, watcher_main, NULL) == 0);
+        pthread_sigmask(SIG_SETMASK, &old, NULL);
+        pthread_attr_destroy(&attr);
+    }
+    if (g_wthread)
+    {
+        g_wctx.client_fd = client_fd;
+        g_wctx.listen_fd = listen_fd;
+        g_wctx.main_tid  = pthread_self();
+        g_wctx.pgid      = peer_pgid(client_fd);
+        g_wctx.cmd       = cmd;
+        clock_gettime(CLOCK_MONOTONIC, &g_wctx.t0);
+        g_wctx.active = 1;
+        g_wgen++;
+        pthread_cond_signal(&g_wcv);
+    }
+    pthread_mutex_unlock(&g_wmu);
+    return g_wthread;
+}
+
+/** watcher_end() - stop watching the CALL; returns once the watcher no longer uses its fds. */
+static void watcher_end(void)
+{
+    pthread_mutex_lock(&g_wmu);
+    g_wctx.active = 0;
+    if (g_wawake) /* else the watcher sleeps, and wakes for the next request only */
+    {
+        uint64_t one  = 1;
+        ssize_t  wret = write(g_wctx.wake_fd, &one, sizeof(one));
+        (void) wret;
+    }
+    while (g_wbusy)
+    {
+        pthread_cond_wait(&g_wcv, &g_wmu);
+    }
+    pthread_mutex_unlock(&g_wmu);
+}
+
+/* Answer read @cfd from the command that runs, which is at a safe point. GET, EXISTS and
+ * COMPLETE need neither the command lock nor its stdio: here and now. TEST needs both, and the
+ * calculator, which the command may be using: a copy of the session answers it, taken here,
+ * where the state is whole and this thread holds no lock. */
+static void serve_read_at_safe_point(int cfd)
+{
+    milk_frame_hdr_t ph;
+
+    if (recv(cfd, &ph, sizeof(ph), MSG_PEEK | MSG_DONTWAIT) == (ssize_t) sizeof(ph))
+    {
+        if (ph.type == MILK_MSG_TEST)
+        {
+            serve_in_copy(cfd, g_wctx.listen_fd, 1);
+        }
+        else
+        {
+            milk_server_serve_fast(cfd);
+        }
+    }
+    milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+}
+
+/**
+ * milk_server_safe_point - Serve the requests that wait for a safe point of the command running
+ *
+ * Called (milk_safe_point()) by the thread that runs the command, at points where its images
+ * and variables are whole: a read sees a state the command meant, never one it is in the middle
+ * of writing, and a copy of the session (an --async command, a pipeline stage) starts from such
+ * a state. When nothing waits, this is one test.
+ *
+ * Return: void
+ */
+void milk_server_safe_point(void)
+{
+    queued_kind_t kind;
+
+    if (!g_reads_pending || !g_wctx.active || !pthread_equal(pthread_self(), g_wctx.main_tid))
+    {
+        return;
+    }
+    for (int cfd; (cfd = queued_take(0, &kind)) >= 0;)
+    {
+        if (kind == Q_COPY)
+        {
+            serve_in_copy(cfd, g_wctx.listen_fd, 0);
+            milk_server_conn_done(cfd, MILK_CONN_CLOSE);
+        }
+        else
+        {
+            serve_read_at_safe_point(cfd);
+        }
+    }
+}
+
+/**
+ * milk_server_watcher_atfork_child - Reset CALL watcher state in a forked child process
+ *
+ * Because `fork()` does not copy the background watcher thread, a forked pipeline
+ * worker must reinitialize the watcher mutex/condvar and clear `g_wthread` so it
+ * can spawn its own watcher if it executes a nested `MILK_MSG_CALL`.
+ */
+void milk_server_watcher_atfork_child(void)
+{
+    pthread_mutex_init(&g_wmu, NULL); /* the watcher thread is not copied into the child */
+    pthread_cond_init(&g_wcv, NULL);
+    pthread_mutex_init(&g_qmu, NULL);
+    g_nwaiting      = 0; /* the parent serves them */
+    g_nqueued       = 0;
+    g_reads_pending = 0;
+    if (g_wctx.wake_fd >= 0)
+    {
+        close(g_wctx.wake_fd);
+    }
+    g_wctx.wake_fd = -1;
+    g_wctx.active  = 0;
+    g_wbusy        = 0;
+    g_wawake       = 0;
+    g_wthread      = 0;
+}
+
+/**
+ * @brief Resolve a command name: exact `ns.cmd`, or an unambiguous short `cmd`.
+ *
+ * @param name      Command name without leading sigil
+ * @param out_ambig Set to 1 if multiple modules define the same short name
+ * @return Command index in `data.cmd[]`, or -1 if not found / ambiguous
+ */
+int milk_server_resolve_cmd_index(const char *name, int *out_ambig)
+{
+    *out_ambig = 0;
+    if (name == NULL || name[0] == '\0')
+    {
+        return -1;
+    }
+
+    /* 1. Exact registered key (hash index) */
+    int exact = milk_cmd_lookup(name);
+    if (exact >= 0)
+    {
+        return exact;
+    }
+
+    /* 2. If no dot in name, search for unambiguous "<ns>.<name>" */
+    if (strchr(name, '.') == NULL)
+    {
+        int match_idx = -1;
+        int match_cnt = 0;
+        for (unsigned int i = 0; i < data.NBcmd; i++)
+        {
+            const char *dot = strchr(data.cmd[i].key, '.');
+            if (dot != NULL && strcmp(dot + 1, name) == 0 && (dot - data.cmd[i].key) > 0)
+            {
+                match_idx = (int) i;
+                match_cnt++;
+            }
+            else if (data.cmd[i].moduleindex >= 0 &&
+                     data.module[data.cmd[i].moduleindex].shortname[0] != '\0' &&
+                     strcmp(data.cmd[i].key, name) == 0)
+            {
+                match_idx = (int) i;
+                match_cnt++;
+            }
+        }
+        if (match_cnt == 1)
+        {
+            return match_idx;
+        }
+        if (match_cnt > 1)
+        {
+            *out_ambig = 1;
+            fprintf(stderr, "\033[1;31mERROR:\033[0m ambiguous short command '@%s'; matches:\n",
+                    name);
+            for (unsigned int i = 0; i < data.NBcmd; i++)
+            {
+                const char *dot = strchr(data.cmd[i].key, '.');
+                if (dot != NULL && strcmp(dot + 1, name) == 0)
+                {
+                    fprintf(stderr, "  @%s\n", data.cmd[i].key);
+                }
+            }
+            return -1;
+        }
+    }
+
+    return -1;
+}
+
+/**
+ * @brief Handle built-in script/shell interceptors before `data.cmd[]` lookup.
+ *
+ * @return 1 if handled (exit code written to `*out_rc`), 0 if not an interceptor
+ */
+static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, int *out_rc)
+{
+    if (strcmp(cmdname, "session") == 0)
+    {
+        *out_rc = (argc == 3 && strcmp(argv[1], "save") == 0) // its client forwards save here
+                      ? milk_server_session_save(argv[2])
+                      : milk_srvlog_cmd_session(argc - 1, argv + 1, NULL);
+        return 1;
+    }
+    if (strcmp(cmdname, "server") == 0)
+    {
+        fprintf(stderr, "milk: @server was removed; use: %s\n", milk_rename_cmd("@server", NULL));
+        *out_rc = 127;
+        return 1;
+    }
+    if (strcmp(cmdname, "log") == 0)
+    {
+        *out_rc = milk_srvlog_cmd_log(getenv("MILKCLI_SOCK"), argc - 1, argv + 1, NULL);
+        return 1;
+    }
+    if ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
+        strcmp(argv[1], "-h") != 0 && strcmp(argv[1], "--help") != 0 && strcmp(argv[1], "-?") != 0)
+    {
+        if (argc == 2 && argv[1][0] != '-' &&
+            (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
+        {
+            cli_listim_glob(argv[1]);
+            *out_rc = 0;
+            return 1;
+        }
+        int         json_mode      = 0;
+        int         porcelain_mode = 0;
+        int         quiet_mode     = 0;
+        const char *pattern        = NULL;
+        for (int i = 1; i < argc; i++)
+        {
+            const char *tok = argv[i];
+            if (strcmp(tok, "--json") == 0)
+            {
+                json_mode = 1;
+            }
+            else if (strcmp(tok, "--porcelain") == 0)
+            {
+                porcelain_mode = 1;
+            }
+            else if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
+            {
+                quiet_mode = 1;
+            }
+            else if (tok[0] != '-')
+            {
+                pattern = tok;
+            }
+        }
+        if (json_mode || porcelain_mode || quiet_mode)
+        {
+            list_image_ID_with_opts(json_mode, porcelain_mode, quiet_mode, pattern);
+            *out_rc = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @brief Populate `data.cmdargtoken[]` from `argv[]` for command @cmdidx.
+ *
+ * @return 0 on success, 1 on parse/modifier error
+ */
+static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
+{
+    data.parseerror = 0;
+    mcalc_tmp_cleanup();
+    for (int i = 0; i < NB_ARG_MAX; i++)
+    {
+        data.cmdargtoken[i].type          = CMDARGTOKEN_TYPE_UNSOLVED;
+        data.cmdargtoken[i].val.string[0] = '\0';
+    }
+
+    data.cmdindex = cmdidx;
+    snprintf(data.cmdargtoken[0].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
+             data.cmd[cmdidx].key);
+    data.cmdargtoken[0].type = CMDARGTOKEN_TYPE_COMMAND;
+    data.cmdNBarg            = 1;
+
+    for (int i = 1; i < argc && data.cmdNBarg < NB_ARG_MAX - 1; i++)
+    {
+        const char *arg    = argv[i];
+        size_t      arglen = strlen(arg);
+        if (arglen >= STRINGMAXLEN_CMDARGTOKEN_VAL)
+        {
+            fprintf(stderr, "milk: %s: argument %d is longer than %d characters\n",
+                    data.cmd[cmdidx].key, i, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+            data.CMDerrstatus = RETURN_FAILURE;
+            return 1;
+        }
+        const char *brk = strchr(arg, '[');
+        int         is_slice =
+            (arg[0] != '@' && brk != NULL && brk > arg && arglen > 0 && arg[arglen - 1] == ']');
+        if (is_slice)
+        {
+            for (const char *p = arg; p < brk; p++)
+            {
+                if (!isalnum((unsigned char) *p) && *p != '_' && *p != '.' && *p != '-')
+                {
+                    is_slice = 0;
+                    break;
+                }
+            }
+        }
+        snprintf(data.cmdargtoken[data.cmdNBarg].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "%s",
+                 arg);
+
+        int            is_ns_stream_arg = 0;
+        milk_ns_kind_t ak               = milk_entity_ns_kind(arg, NULL);
+        if (!is_slice && (ak == MILK_NS_STREAM || ak == MILK_NS_LOCAL))
+        {
+            FPS_STREAMNAME_PARSED sp = fps_streamname_parse(arg);
+            if (!sp.error && sp.loc != '\0')
+            {
+                is_ns_stream_arg = 1;
+            }
+        }
+
+        /* `=` too: the expression parser would run `a=b` as an assignment */
+        if (!is_slice && (arg[0] == '-' || arg[0] == '/' || strchr(arg, ' ') != NULL ||
+                          strchr(arg, '\t') != NULL || strchr(arg, '=') != NULL || arg[0] == '@' ||
+                          is_ns_stream_arg))
+        {
+            data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
+            int is_help_cmd                      = (strcmp(data.cmd[cmdidx].key, "help") == 0);
+            if ((arg[0] == '@' || is_ns_stream_arg) && !is_help_cmd)
+            {
+                IMGID tmpid = imgid_make_from_name(arg);
+                if (tmpid.stream_parse_error)
+                {
+                    imgid_free(&tmpid);
+                    data.CMDerrstatus = RETURN_FAILURE;
+                    return 1;
+                }
+                if (tmpid.name[0] != '\0')
+                {
+                    char shmpath[512];
+                    snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, tmpid.name);
+                    if (image_ID(tmpid.name, dcimg, dcnimg) != -1 ||
+                        (tmpid.stream_loc != 'L' && access(shmpath, R_OK) == 0 &&
+                         read_sharedmem_image(tmpid.name, dcimg, dcnimg) != -1))
+                    {
+                        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+                    }
+                    else
+                    {
+                        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_STRING;
+                    }
+                }
+                imgid_free(&tmpid);
+            }
+        }
+        else
+        {
+            milk_cmd_classify_arg(arg, is_slice);
+            if (!is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_STRING)
+            {
+                char shmpath[512];
+                snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, arg);
+                if (access(shmpath, R_OK) == 0 && read_sharedmem_image(arg, dcimg, dcnimg) != -1)
+                {
+                    data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+                }
+            }
+            if (is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+            {
+                data.CMDerrstatus = RETURN_FAILURE;
+                return 1;
+            }
+        }
+        data.cmdNBarg++;
+    }
+    if ((strcmp(data.cmd[cmdidx].key, "rm") == 0 || strcmp(data.cmd[cmdidx].key, "mem.rm") == 0) &&
+        data.cmdNBarg == 2)
+    {
+        snprintf(data.cmdargtoken[2].val.string, STRINGMAXLEN_CMDARGTOKEN_VAL, "0");
+        data.cmdargtoken[2].val.numl = 0;
+        data.cmdargtoken[2].type     = CMDARGTOKEN_TYPE_LONG;
+        data.cmdNBarg                = 3;
+    }
+    data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
+    return 0;
+}
+
+/* Apply the `@set` items @argv (milk_set_item()); 1 if a write failed */
+static int set_items(int argc, char **argv)
+{
+    int rc = 0;
+    for (int i = 0; i < argc;)
+    {
+        milk_set_item_t it;
+        milk_set_item(argc, argv, &i, &it);
+        rc |= (milk_shm_prop_set(it.spec, it.val, it.comment) != 0);
+    }
+    return rc;
+}
+
+/**
+ * milk_server_set_argv - Execute the `@set` built-in command across one or more entity properties
+ * @argc: Argument count (including `set`)
+ * @argv: Argument vector (`set <entity> [=] [value] [comment] ...`)
+ *
+ * Parses one or more entity property assignments (`@set f.fps.param = val [comment]`)
+ * and applies each through `milk_shm_prop_set()`.
+ *
+ * Return: 0 if all properties were set, 1 if any property write failed or on usage error.
+ */
+int milk_server_set_argv(int argc, char **argv)
+{
+    if (argc < 2)
+    {
+        milk_lexicon_usage("set", stderr);
+        return 1;
+    }
+    return set_items(argc - 1, argv + 1);
+}
+
+/* The body run_isolated() runs for a CALL: data.cmd entry @arg's function */
+static int call_cmd_fp(void *arg)
+{
+    return (int) ((CMD *) arg)->fp();
+}
+
+/**
+ * run_isolated - Run @fn(@arg) in its own fault-isolation frame
+ * @fn:      Command or request body
+ * @arg:     Argument for @fn
+ * @fwd:     1: SIGINT only sets dcsigINT and mcalc_cancelled (the body stops itself); 0: SIGINT
+ *           aborts the body too
+ * @aborted: Set to 0, to 1 after a crash in this thread, or to 130 after SIGINT
+ *
+ * The caller's (REPL) frame is restored after. A Ctrl-C from before (mcalc_cancelled) is dropped.
+ *
+ * Return: @fn's status, or 1 if aborted
+ */
+static int run_isolated(int (*fn)(void *), void *arg, int fwd, int *aborted)
+{
+    sigjmp_buf outer_env;
+    memcpy(outer_env, *cli_get_repl_env(), sizeof(sigjmp_buf));
+    int          outer_armed = cli_is_fault_isolation_armed();
+    int          outer_fwd   = cli_get_sigint_forward();
+    volatile int rc          = 1;
+    *aborted                 = 0;
+    mcalc_cancelled          = 0;
+    cli_set_sigint_forward(fwd);
+    cli_fault_isolation_arm();
+    if (sigsetjmp(*cli_get_repl_env(), 1) == 0)
+    {
+        rc = fn(arg);
+    }
+    else
+    {
+        *aborted = dcsigINT ? 130 : 1;
+        g_milk_server_crashed |= (*aborted == 1);
+        dcsigINT  = 0;
+        dcsigSEGV = 0;
+        dcsigBUS  = 0;
+        dcsigABRT = 0;
+    }
+    memcpy(*cli_get_repl_env(), outer_env, sizeof(sigjmp_buf));
+    if (outer_armed)
+    {
+        cli_fault_isolation_arm();
+    }
+    else
+    {
+        cli_fault_isolation_disarm();
+    }
+    cli_set_sigint_forward(outer_fwd);
+    return rc;
+}
+
+/**
+ * milk_server_run_guarded - Run a request body watched and in a fault-isolation frame
+ * @client_fd: Client socket, watched for CANCEL and hang-up; -1: not watched
+ * @listen_fd: Listening socket: other shells' requests are served or queued meanwhile; or -1
+ * @cmd:       Request text that waiting shells are shown
+ * @fn:        Request body
+ * @arg:       Argument for @fn
+ *
+ * Ctrl-C (CANCEL) or SIGINT sets mcalc_cancelled: the calculator stops at its next statement,
+ * program step or loop iteration, and is never siglongjmp()ed out of a compile or a thread team.
+ * A crash in this thread aborts the request and keeps the session.
+ *
+ * Return: @fn's status, 130 if interrupted, 1 after a crash
+ */
+int milk_server_run_guarded(int         client_fd,
+                            int         listen_fd,
+                            const char *cmd,
+                            int (*fn)(void *),
+                            void *arg)
+{
+    int has_watcher = (client_fd >= 0) && watcher_begin(client_fd, listen_fd, cmd);
+    int aborted     = 0;
+    int rc          = run_isolated(fn, arg, 1, &aborted);
+    if (has_watcher)
+    {
+        watcher_end();
+    }
+    rc              = aborted ? aborted : mcalc_cancelled ? 130 : rc;
+    mcalc_cancelled = 0;
+    dcsigINT        = 0;
+    return rc;
+}
+
+/**
+ * @brief Dispatch a parsed `argv[]` command vector to built-ins, entities, or `data.cmd[]`.
+ *
+ * @param argc Argument count
+ * @param argv Argument vector
+ * @return Exit status (0 on success, non-zero on error)
+ */
+int milk_server_dispatch_argv(int argc, char **argv)
+{
+    if (argc <= 0 || argv[0] == NULL)
+    {
+        return 0;
+    }
+
+    const char *cmdname = argv[0];
+    if (cmdname[0] == '@')
+    {
+        cmdname++;
+    }
+
+    if (strcmp(cmdname, "ls") == 0)
+    {
+        return milk_ls_exec(argc - 1, argv + 1);
+    }
+    if (strcmp(cmdname, "history") == 0)
+    {
+        int handled = 0;
+        int hrc     = milk_server_history(argc, argv, &handled); /* @history <sub>; else below */
+        if (handled)
+        {
+            return hrc;
+        }
+    }
+    /* the keywords the session runs (MILK_KW_SERVER in the keyword table), and the two commands
+     * behind @grab --stdout and @replay --stdin */
+    static const struct
+    {
+        const char *name;
+        int (*fn)(int argc, char **argv);
+        int check; /* libmilkprop reads these options itself: they are checked here first */
+    } kw[] = {
+        { "module", milk_server_module, 0 },       { "config", milk_server_config, 0 },
+        { "streamcat", milk_server_streamcat, 0 }, { "streamwrite", milk_server_streamwrite, 0 },
+        { "replay", milk_server_replay, 0 },       { "snapshot", milk_shm_prop_snapshot, 1 },
+        { "diff", milk_shm_prop_diff, 1 },         { "restore", milk_shm_prop_restore, 1 },
+        { "assert", milk_server_assert, 0 },       { "set", milk_server_set_argv, 0 },
+        { "pipe", milk_server_batch_or_pipe, 0 }
+    };
+    for (size_t i = 0; i < sizeof(kw) / sizeof(kw[0]); i++)
+    {
+        if (strcmp(cmdname, kw[i].name) == 0)
+        {
+            char          *words[argc];
+            int            n = argc - 1;
+            milk_kw_args_t ka;
+            memcpy(words, argv + 1, (size_t) n * sizeof(char *));
+            if (kw[i].check && milk_kw_parse(kw[i].name, 0, &n, words, &ka))
+            {
+                return ka.rc;
+            }
+            return kw[i].fn(argc, argv);
+        }
+    }
+
+    /* Direct entity path invocation (@s.im.xsize, @s.im.kw.KEY=val, @f.fps.param=val) */
+    {
+        const char *dot1  = strchr(cmdname, '.');
+        size_t      nslen = (dot1 != NULL) ? (size_t) (dot1 - cmdname) : 0;
+        const char *dot2  = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
+        if (dot2 != NULL && milk_is_entity_ns_prefix(cmdname, nslen))
+        {
+            if (strchr(cmdname, '=') != NULL || (argc >= 3 && strcmp(argv[1], "=") == 0))
+            {
+                return set_items(argc, argv);
+            }
+            if (argc == 1)
+            {
+                const char *prop = dot2 + 1;
+                if (((strcmp(prop, "confstart") == 0 || strcmp(prop, "confstop") == 0 ||
+                      strcmp(prop, "confstep") == 0 || strcmp(prop, "runstart") == 0 ||
+                      strcmp(prop, "runstop") == 0 || strcmp(prop, "reset") == 0) &&
+                     milk_entity_ns_kind(cmdname, NULL) == MILK_NS_FPS) ||
+                    ((strcmp(prop, "pause") == 0 || strcmp(prop, "resume") == 0 ||
+                      strcmp(prop, "run") == 0 || strcmp(prop, "step") == 0 ||
+                      strcmp(prop, "incr") == 0 || strcmp(prop, "stop") == 0 ||
+                      strcmp(prop, "exit") == 0 || strcmp(prop, "kill") == 0) &&
+                     milk_entity_ns_kind(cmdname, NULL) == MILK_NS_PROC))
+                {
+                    return (milk_shm_prop_set(cmdname, "1", NULL) == 0) ? 0 : 1;
+                }
+                char val[1024];
+                if (milk_shm_prop_get(cmdname, val, sizeof(val)) == 0)
+                {
+                    printf("%s\n", val);
+                    return 0;
+                }
+                return 1;
+            }
+        }
+    }
+
+    /* Reconstruct data.CLIcmdline for commands and interceptors that inspect it */
+    {
+        size_t      pos = 0;
+        const char *k0  = (strcmp(cmdname, "mem.listim") == 0 && argc >= 2 &&
+                           (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
+                              ? "listim"
+                              : cmdname;
+        pos += (size_t) snprintf(data.CLIcmdline + pos, sizeof(data.CLIcmdline) - pos, "%s", k0);
+        for (int i = 1; i < argc && pos + 2 < sizeof(data.CLIcmdline); i++)
+        {
+            pos += (size_t) snprintf(data.CLIcmdline + pos, sizeof(data.CLIcmdline) - pos, " %s",
+                                     argv[i]);
+        }
+    }
+
+    int intercept_rc = 0;
+    if (try_dispatch_interceptor(cmdname, argc, argv, &intercept_rc))
+    {
+        return intercept_rc;
+    }
+
+    int ambig  = 0;
+    int cmdidx = milk_server_resolve_cmd_index(cmdname, &ambig);
+    if (cmdidx < 0 && !ambig && milk_catalog_autoload(cmdname)) /* first use of its module */
+    {
+        cmdidx = milk_server_resolve_cmd_index(cmdname, &ambig);
+    }
+    if (cmdidx < 0)
+    {
+        if (ambig)
+        {
+            return 2;
+        }
+        fprintf(stderr, "\033[1;31mmilk:\033[0m unknown command '@%s'\n", cmdname);
+        handle_did_you_mean(cmdname);
+        return 127;
+    }
+    if (argc >= 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
+    {
+        return (help_command(data.cmd[cmdidx].key) == RETURN_SUCCESS) ? 0 : 1; /* nothing runs */
+    }
+    int argrc = milk_args_begin(cmdidx, &argc, argv); /* --save= --load= --default --no-run -- */
+    if (argrc != 0)
+    {
+        return argrc;
+    }
+
+    static unsigned int ncall = 0;
+    if ((ncall++ & 15U) ==
+        0) /* it keeps 500 image / 100 variable slots spare: no need on every call */
+    {
+        memory_re_alloc();
+    }
+
+    {
+        size_t pos = 0;
+        pos += (size_t) snprintf(data.CLIcmdline + pos, sizeof(data.CLIcmdline) - pos, "%s",
+                                 data.cmd[cmdidx].key);
+        for (int i = 1; i < argc && pos + 2 < sizeof(data.CLIcmdline); i++)
+        {
+            pos += (size_t) snprintf(data.CLIcmdline + pos, sizeof(data.CLIcmdline) - pos, " %s",
+                                     argv[i]);
+        }
+    }
+
+    if (populate_cmdargtokens(cmdidx, argc, argv) != 0)
+    {
+        milk_args_end();
+        return 1;
+    }
+
+    data.cmd[cmdidx].callcount++;
+    data.CMDerrstatus = RETURN_FAILURE;
+
+    const char *outvars = data.cmd[cmdidx].outvars; /* the variables it sets for its caller */
+    uint64_t    outh[MILK_OUTVARS_MAX];
+    int         nout = (outvars != NULL) ? milk_server_outvars_snap(outvars, outh) : 0;
+
+    /* the command gets its own fault-isolation frame, which SIGINT aborts too */
+    int aborted        = 0;
+    data.CMDerrstatus  = run_isolated(call_cmd_fp, &data.cmd[cmdidx], 0, &aborted);
+    g_call_interrupted = g_call_interrupted || (aborted == 130);
+    milk_server_outvars_diff(outvars, outh, nout);
+    int usage = milk_args_end();
+    if (aborted)
+    {
+        return aborted;
+    }
+    if (usage)
+    {
+        mcalc_tmp_cleanup();
+        return 2;
+    }
+
+    if (data.CMDerrstatus != RETURN_SUCCESS)
+    {
+        printf("\n%c[%d;%dm ERROR %c[%d;m CLI function %s returns %d\n", (char) 27, 1, 31,
+               (char) 27, 0, data.cmd[cmdidx].key, data.CMDerrstatus);
+    }
+
+    mcalc_tmp_cleanup();
+
+    return (data.CMDerrstatus == RETURN_SUCCESS) ? 0 : 1;
+}
+
+/* The body of a SET request: @arg is { spec, value, comment } */
+static int set_body(void *arg)
+{
+    const char *const *req = (const char *const *) arg;
+    return (milk_shm_prop_set(req[0], req[1], req[2]) == 0) ? 0 : 1;
+}
+
+/**
+ * @brief Execute a `MILK_MSG_SET` payload.
+ */
+int milk_server_exec_set(const uint8_t *payload, uint32_t len, char *log_cmd, size_t log_cmd_sz)
+{
+    if (payload == NULL || len == 0)
+    {
+        return 1;
+    }
+    uint32_t    off     = 0;
+    const char *spec    = milk_pl_next(payload, len, &off, NULL);
+    const char *val     = milk_pl_next(payload, len, &off, NULL);
+    const char *comment = milk_pl_next(payload, len, &off, NULL);
+    if (val != NULL && val[0] == '\0' && strchr(spec, '=') != NULL)
+    {
+        val = NULL; // empty value slot: the value is in "spec=value"
+    }
+    snprintf(log_cmd, log_cmd_sz, "@set %s = %s", spec, val ? val : "");
+    const char *req[3] = { spec, val, comment };
+    return milk_server_run_guarded(-1, -1, log_cmd, set_body, req); /* quick: nothing to cancel */
+}
+
+/* Environment overrides sent with a CALL apply to that request only (restored afterwards). */
+#define CALL_ENV_MAX 8
+typedef struct
+{
+    char  name[128];
+    char *old; // NULL: was unset
+} call_env_saved_t;
+static call_env_saved_t g_call_env[CALL_ENV_MAX];
+static int              g_call_env_n       = 0;
+static int              g_call_shm_changed = 0;
+
+/**
+ * apply_shm_dir_env() - re-resolve the SHM dir if MILK_SHM_DIR moved (@force: re-resolve even when
+ * MILK_SHM_DIR is unset). Returns 1 if it re-resolved. The session's log stays where the session
+ * started: it is the registry entry other shells find and prune it by, for every request.
+ */
+static int apply_shm_dir_env(int force)
+{
+    const char *sd = getenv("MILK_SHM_DIR");
+    if (!force && (sd == NULL || strcmp(dcshmdir, sd) == 0))
+    {
+        return 0;
+    }
+    int saved_q = dcquiet;
+    dcquiet     = 1;
+    setSHMdir();
+    dcquiet = saved_q;
+    return 1;
+}
+
+/**
+ * @brief Unpack environment updates from `MILK_MSG_CALL` payload and re-init SHM dir if changed.
+ */
+static void unpack_call_env(const uint8_t *payload, uint32_t len, uint32_t *offset_io)
+{
+    uint32_t off = *offset_io;
+    g_call_env_n = 0;
+    if (off + sizeof(uint32_t) > len)
+    {
+        return;
+    }
+    uint32_t nenv = 0;
+    memcpy(&nenv, payload + off, sizeof(uint32_t));
+    off += (uint32_t) sizeof(uint32_t);
+    for (uint32_t i = 0; i < nenv && off < len; i++)
+    {
+        const char *kv = (const char *) (payload + off);
+        size_t      kl = strnlen(kv, len - off);
+        off += (uint32_t) (kl + 1);
+        const char *eq = strchr(kv, '=');
+        size_t      kn = (eq != NULL) ? (size_t) (eq - kv) : 0;
+        if (eq == NULL || kn == 0 || kn >= sizeof(g_call_env[0].name) ||
+            g_call_env_n >= CALL_ENV_MAX)
+        {
+            continue;
+        }
+        call_env_saved_t *e = &g_call_env[g_call_env_n++];
+        memcpy(e->name, kv, kn);
+        e->name[kn]     = '\0';
+        const char *cur = getenv(e->name);
+        e->old          = (cur != NULL) ? strdup(cur) : NULL;
+        setenv(e->name, eq + 1, 1);
+    }
+    g_call_shm_changed = apply_shm_dir_env(0);
+    *offset_io         = off;
+}
+
+/** restore_call_env() - undo unpack_call_env() so one client's environment never leaks to the next. */
+static void restore_call_env(void)
+{
+    while (g_call_env_n > 0)
+    {
+        call_env_saved_t *e = &g_call_env[--g_call_env_n];
+        if (e->old != NULL)
+        {
+            setenv(e->name, e->old, 1);
+            free(e->old);
+            e->old = NULL;
+        }
+        else
+        {
+            unsetenv(e->name);
+        }
+    }
+    if (g_call_shm_changed)
+    {
+        apply_shm_dir_env(1);
+        g_call_shm_changed = 0;
+    }
+}
+
+/* The body of a CALL request (milk_server_run_guarded()) */
+typedef struct
+{
+    int    argc;
+    char **argv;
+} call_args_t;
+
+static int call_body(void *arg)
+{
+    call_args_t *ca = (call_args_t *) arg;
+    return milk_server_dispatch_argv(ca->argc, ca->argv);
+}
+
+/**
+ * @brief Execute a `MILK_MSG_CALL` payload.
+ */
+int milk_server_exec_call(int            client_fd,
+                          int            listen_fd,
+                          const uint8_t *payload,
+                          uint32_t       len,
+                          char          *log_cmd,
+                          size_t         log_cmd_sz)
+{
+    if (payload == NULL || len < sizeof(uint32_t))
+    {
+        return 1;
+    }
+
+    uint32_t off  = 0;
+    uint32_t argc = 0;
+    memcpy(&argc, payload + off, sizeof(uint32_t));
+    off += (uint32_t) sizeof(uint32_t);
+
+    if (argc == 0 || argc > len - off) // every argument needs at least its NUL byte
+    {
+        fprintf(stderr, "milk: malformed CALL request (argc %u)\n", argc);
+        return 1;
+    }
+    char **argv = (char **) calloc((size_t) argc + 1, sizeof(char *));
+    if (argv == NULL)
+    {
+        return 1;
+    }
+    size_t   lpos  = 0;
+    uint32_t nargs = 0;
+    for (uint32_t i = 0; i < argc && off < len; i++, nargs++)
+    {
+        argv[i] = (char *) (payload + off);
+        off += (uint32_t) (strnlen(argv[i], len - off) + 1);
+        if (lpos + 2 < log_cmd_sz)
+        {
+            if (i > 0)
+            {
+                log_cmd[lpos++] = ' ';
+            }
+            size_t alen = strlen(argv[i]);
+            size_t rem  = log_cmd_sz - 1 - lpos;
+            size_t cp   = (alen < rem) ? alen : rem;
+            memcpy(log_cmd + lpos, argv[i], cp);
+            lpos += cp;
+            log_cmd[lpos] = '\0';
+        }
+    }
+    if (nargs < argc)
+    {
+        fprintf(stderr, "milk: malformed CALL request (%u of %u arguments)\n", nargs, argc);
+        free(argv);
+        return 1;
+    }
+
+    unpack_call_env(payload, len, &off);
+
+    if (off + sizeof(uint32_t) <= len)
+    {
+        uint32_t nvars = 0;
+        memcpy(&nvars, payload + off, sizeof(uint32_t));
+        off += (uint32_t) sizeof(uint32_t);
+        milk_server_sync_bash_vars(payload, len, nvars, &off, 0);
+    }
+
+    milk_server_outvars_send(-1); /* nothing queued by an earlier request survives */
+    unsigned int nbcmd_before  = data.NBcmd;
+    int          digits_before = cli_float_digits;
+
+    // watched in forked workers too (listen_fd < 0, ignored by poll): CANCEL/hang-up must stop them.
+    // Guarded as a whole: Ctrl-C during a keyword (@ls, @pipe, @assert...) or between a module
+    // command's own frame and the end of the CALL stops it, not the session
+    call_args_t ca     = { (int) argc, argv };
+    int         rc     = milk_server_run_guarded(client_fd, listen_fd, log_cmd, call_body, &ca);
+    g_call_interrupted = g_call_interrupted || (rc == 130); /* milk-cli: abort its command line */
+
+    fflush(stdout);
+    fflush(stderr);
+
+    milk_server_outvars_send(client_fd);
+    if (cli_float_digits != digits_before) /* the builtin formats scalar results itself */
+    {
+        char pkt[32];
+        int  n = snprintf(pkt, sizeof(pkt), "MILK_DPDIGITS%c%d", '\0', cli_float_digits);
+        milk_proto_send(client_fd, MILK_MSG_SETVAR, 0, pkt, (uint32_t) n + 1);
+    }
+
+    /* If a module was dynamically loaded (@module load), send DEFCMD */
+    for (unsigned int ci = nbcmd_before; ci < data.NBcmd; ci++)
+    {
+        const char *ck = data.cmd[ci].key;
+        if (ck[0] != '\0')
+        {
+            milk_proto_send(client_fd, MILK_MSG_DEFCMD, 0, ck, (uint32_t) (strlen(ck) + 1));
+            int midx = data.cmd[ci].moduleindex;
+            if (strchr(ck, '.') == NULL && midx >= 0 && data.module[midx].shortname[0] != '\0')
+            {
+                char qk[256];
+                snprintf(qk, sizeof(qk), "%s.%s", data.module[midx].shortname, ck);
+                milk_proto_send(client_fd, MILK_MSG_DEFCMD, 0, qk, (uint32_t) (strlen(qk) + 1));
+            }
+        }
+    }
+
+    free(argv);
+    restore_call_env();
+    return rc;
+}

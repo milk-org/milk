@@ -41,7 +41,8 @@ Typical values on modern hardware:
 
 ### 1.3. Stream Timing
 
-Use `milk-streamCTRL` to observe per-stream frame rates and detect bottlenecks in the pipeline.
+Use `milk-streamCTRL` (milk-CTRL's streams view) to observe per-stream frame rates and detect bottlenecks
+in the pipeline; its F6 CONNECTIONS view marks where a pipeline stalls.
 
 ---
 
@@ -53,11 +54,11 @@ thrashing.
 ### 2.1. Using `taskset`
 
 ```bash
-# Pin to core 4
-$ taskset -c 4 milk-fpsexec-mymodule fpsinit
+# Pin to core 4 (run in foreground or start background loop)
+$ taskset -c 4 milk-fpsexec-mymodule -n myunit runstart
 
 # Pin to cores 4-7
-$ taskset -c 4-7 milk-fpsexec-mymodule fpsinit
+$ taskset -c 4-7 milk-fpsexec-mymodule -n myunit runstart
 ```
 
 ### 2.2. Kernel Isolation (`isolcpus`)
@@ -82,25 +83,37 @@ Then only explicitly pinned processes will run on those cores.
 
 ### 3.1. `SCHED_FIFO`
 
-For latency-critical loops, elevate the scheduling policy:
+For latency-critical loops, elevate the scheduling policy (or configure `procinfo->RT_priority`):
 
 ```bash
-$ sudo chrt -f 49 milk-fpsexec-mymodule fpsinit
+$ sudo chrt -f 49 milk-fpsexec-mymodule -n myunit run
 ```
 
 Priority range: 1 (lowest) to 99 (highest). Avoid 99 which is reserved for kernel threads.
 
 ### 3.2. Permissions
 
-To allow non-root real-time scheduling:
+A process needs permission to use real-time priorities, and to lock its streams in RAM. Any one of
+these routes gives it:
 
-```bash
-# /etc/security/limits.d/milk.conf
-@realtime  -  rtprio  95
-@realtime  -  memlock unlimited
-```
+- An `rtprio` limit for the user:
 
-Add users to the `realtime` group.
+  ```bash
+  # /etc/security/limits.d/milk.conf
+  @realtime  -  rtprio  95
+  @realtime  -  memlock unlimited
+  ```
+
+  Add users to the `realtime` group.
+
+- A system-level systemd unit with `LimitRTPRIO=` and `LimitMEMLOCK=` (see
+  [User and System Units](systemd.md#4-user-and-system-units)).
+- A root-owned setuid `milk-makecsetandrt`, which applies a unit's `.procinfo.RTprio` and
+  `.procinfo.cset` when it starts (see
+  [Global install without sudo](../developer/tooling.md#62-global-install-without-sudo)).
+
+`milk-setup-caps` does not grant real-time priority: it only grants the perf-counter capability to
+`milk-CTRL`.
 
 ---
 
@@ -137,6 +150,17 @@ $ export MILK_SHM_HUGETLB=1
 When set, `ImageStreamIO_createIm_gpu()` uses `MAP_HUGETLB` for its `mmap()` call. If huge pages are
 unavailable, it falls back to normal pages automatically.
 
+### 4.3. Freed Memory
+
+milk-cli, milk-script and compute units keep the memory they free for reuse: blocks up to 32 MiB come
+from the heap, which is not trimmed while less than 256 MiB of it is free. A buffer that a loop frees
+and allocates again (a calculator temporary, a module's output image) then reuses the same pages
+instead of faulting fresh ones in each time, which costs about 300 µs per 2 MiB. Without this, glibc
+moves its thresholds as blocks are freed, and whether a loop pays that cost depended on what had been
+allocated before. The process keeps up to 256 MiB that it no longer uses; blocks larger than 32 MiB
+are still mapped and unmapped each time. To set other values, give glibc's own malloc tunables in
+`GLIBC_TUNABLES` (for example `glibc.malloc.trim_threshold=67108864`): milk then leaves malloc alone.
+
 ---
 
 ## 5. GPU Acceleration (CUDA)
@@ -145,14 +169,15 @@ unavailable, it falls back to normal pages automatically.
 
 ```bash
 $ cmake .. -DUSE_CUDA=ON \
-    -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+    -DCUDAToolkit_ROOT=/usr/local/cuda
 $ make -j$(nproc)
 ```
 
 ### 5.2. GPU Memory Pinning
 
-Use `cudaHostRegister()` to pin shared memory buffers for zero-copy GPU access. This is handled
-automatically by GPU-enabled modules (e.g., `linalgebra` with cuBLAS).
+No milk module pins stream buffers with `cudaHostRegister()`, so GPU-enabled modules (e.g.,
+`linalgebra` with cuBLAS) have no zero-copy access to shared memory: they copy stream data to and
+from the GPU.
 
 ### 5.3. Multi-GPU
 

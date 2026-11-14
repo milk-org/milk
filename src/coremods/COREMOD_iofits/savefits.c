@@ -9,6 +9,7 @@
  * V2 FPS framework migration.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,6 +66,12 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID         *imgin,
     COREMOD_iofits_data.FITSIO_status = 0;
     pthread_t self_id                 = pthread_self();
 
+    /* CFITSIO's "!name" (overwrite) is implied: the file is written aside, then renamed over name */
+    if (outputFITSname[0] == '!')
+    {
+        outputFITSname++;
+    }
+
     char fnametmp[STRINGMAXLEN_FILENAME];
     char fnametmpext[STRINGMAXLEN_FILENAME];
     WRITE_FILENAME(fnametmp, "%s.%d.%ld.tmp", outputFITSname, (int) getpid(), (long) self_id);
@@ -73,7 +80,7 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID         *imgin,
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
     if (imgin->ID == -1)
     {
-        return RETURN_SUCCESS;
+        return RETURN_FAILURE;
     }
 
     int bitpix =
@@ -113,7 +120,17 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID         *imgin,
     fits_write_img(fptr, ImageStreamIO_FITSIOdatatype(imgin->md->datatype), 1, nelements,
                    imgin->im->array.raw, &COREMOD_iofits_data.FITSIO_status);
     fits_close_file(fptr, &COREMOD_iofits_data.FITSIO_status);
-    rename(fnametmp, outputFITSname);
+    if (check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
+    {
+        remove(fnametmp);
+        return RETURN_FAILURE;
+    }
+    if (rename(fnametmp, outputFITSname) != 0)
+    {
+        PRINT_ERROR("cannot rename %s to %s: %s", fnametmp, outputFITSname, strerror(errno));
+        remove(fnametmp);
+        return RETURN_FAILURE;
+    }
     return RETURN_SUCCESS;
 }
 
@@ -207,12 +224,13 @@ static MILK_HOT errno_t savefits_compute(const MILK_RUNNABLE *self)
     IMGID in = imgid_make_from_name(savefits_inimname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
 
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec(&in);
+    rc = fpsexec(&in);
 
     MILK_PROCINFO_END(self)
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_iofits_savefits = {

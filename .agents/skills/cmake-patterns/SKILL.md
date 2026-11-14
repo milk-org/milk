@@ -14,39 +14,22 @@ description: Pointer to the module CMakeLists.txt
 
 ## Module CMakeLists.txt
 
-Follow `src/milk_module_example/CMakeLists.txt`.
-Skeleton, helpers and rules: `docs/programmers_guide.md` §6.
-Optional dependencies: `docs/developer/dependency_system.md`.
+Follow `src/milk_module_example/CMakeLists.txt`. Skeleton, helpers and rules:
+[programmers_guide.md §6](../../../docs/arch/programmers_guide.md#6-cmakeliststxt-conventions).
+Optional dependencies: [dependency_system.md](../../../docs/developer/dependency_system.md).
 
 ## Build Tier Constraints
 
-| Tier       | Available Libraries                               |
-| ---------- | ------------------------------------------------- |
-| Engine     | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| Core       | Engine + COREMOD\_{arith,memory,tools}            |
-| Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
-| Full       | Everything: CLIcore, all plugins                  |
-| Fpsexec    | Engine + regular COREMOD libs + module library    |
-
-Before adding a dependency, check
-`docs/arch/dependency_graph.md` to verify the link
-is allowed at your target's build tier.
+Libraries available at each tier, and which links are allowed:
+[dependency_graph.md §5](../../../docs/arch/dependency_graph.md#5-build-tiers-at-a-glance).
+Check it before adding a dependency.
 
 ## Conditional Compilation
 
-| Variable         | Default | Controls                      |
-| ---------------- | ------- | ----------------------------- |
-| `USE_CLI`        | `ON`    | Whether CLI targets are built |
-| `USE_CFITSIO`    | `ON`    | cfitsio-dependent modules     |
-| `USE_COREMODS`   | `ON`    | COREMOD compilation           |
-| `USE_STATIC_LTO` | `OFF`   | Static LTO builds             |
-| `VEC_REPORT`     | `OFF`   | GCC vectorization report      |
+CMake options: [build_tiers.md](../../../docs/quickstart/build_tiers.md#optional-dependencies)
+(`USE_CLI`, `USE_COREMODS`, `USE_PLUGINS`, `USE_CALC` in its tier table); `VEC_REPORT`:
+[performance.md §7](../../../docs/operations/performance.md#7-quick-checklist).
 
 ## Common Errors and Fixes
 
-| Error                                | Cause                            | Fix                                                     |
-| ------------------------------------ | -------------------------------- | ------------------------------------------------------- |
-| `undefined reference`                | Missing link dependency          | Add to `target_link_libraries`                          |
-| `No such file or directory` (header) | Missing include dir              | Add `target_include_directories` or link the owning lib |
-| `multiple definition`                | Non-static global in `.h`        | Make `extern` in `.h`, define in one `.c`               |
-| Path doubling in install             | `CMAKE_INSTALL_PREFIX` in target | Use only at configure time                              |
+See the [`diagnose-build-failure`](../diagnose-build-failure/SKILL.md) skill.

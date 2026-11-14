@@ -10,6 +10,7 @@
 #include "milk_runnable.h"
 #include "computeunit.h"
 
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Forward declarations
@@ -76,23 +77,9 @@ imageID basic_contract(const char *ID_name, const char *ID_name_out, int n1, int
 
     IMGID imgout       = imgid_make_from_name_2D(ID_name_out, naxes_out[0], naxes_out[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
-    for (uint32_t jj = 0; jj < naxes_out[1]; jj++)
-    {
-        for (uint32_t ii = 0; ii < naxes_out[0]; ii++)
-        {
-            for (int i = 0; i < n1; i++)
-            {
-                for (int j = 0; j < n2; j++)
-                {
-                    imgout.im->array.F[jj * naxes_out[0] + ii] +=
-                        imgin.im->array.F[(jj * n2 + j) * imgin.md->size[0] + ii * n1 + i];
-                }
-            }
-        }
-    }
+    arith_image_bin3d_im(imgin.im, imgout.im, n1, n2, 1);
 
     return imgout.ID;
 }
@@ -120,11 +107,6 @@ imageID basic_contract3D(const char *ID_name, const char *ID_name_out, int n1, i
     }
     else
     {
-        printf("(%ld x %ld x %ld)"
-               "  ->  "
-               "(%ld x %ld x %ld)\n",
-               (long) imgin.md->size[0], (long) imgin.md->size[1], (long) imgin.md->size[2],
-               (long) naxes_out[0], (long) naxes_out[1], (long) naxes_out[2]);
         imgout.mdt->naxis    = 3;
         imgout.mdt->size[0]  = naxes_out[0];
         imgout.mdt->size[1]  = naxes_out[1];
@@ -132,112 +114,9 @@ imageID basic_contract3D(const char *ID_name, const char *ID_name_out, int n1, i
         imgout.mdt->datatype = datatype;
     }
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
-    switch (datatype)
-    {
-    case _DATATYPE_FLOAT:
-        for (uint32_t jj = 0; jj < naxes_out[1]; jj++)
-        {
-            for (uint32_t ii = 0; ii < naxes_out[0]; ii++)
-            {
-                for (uint32_t kk = 0; kk < naxes_out[2]; kk++)
-                {
-                    for (int i = 0; i < n1; i++)
-                    {
-                        for (int j = 0; j < n2; j++)
-                        {
-                            for (int k = 0; k < n3; k++)
-                            {
-                                imgout.im->array
-                                    .F[kk * naxes_out[0] * naxes_out[1] + jj * naxes_out[0] + ii] +=
-                                    imgin.im->array
-                                        .F[(kk * n3 + k) * imgin.md->size[0] * imgin.md->size[1] +
-                                           (jj * n2 + j) * imgin.md->size[0] + ii * n1 + i];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        break;
-    case _DATATYPE_DOUBLE:
-        for (uint32_t jj = 0; jj < naxes_out[1]; jj++)
-        {
-            for (uint32_t ii = 0; ii < naxes_out[0]; ii++)
-            {
-                for (uint32_t kk = 0; kk < naxes_out[2]; kk++)
-                {
-                    for (int i = 0; i < n1; i++)
-                    {
-                        for (int j = 0; j < n2; j++)
-                        {
-                            for (int k = 0; k < n3; k++)
-                            {
-                                imgout.im->array
-                                    .D[kk * naxes_out[0] * naxes_out[1] + jj * naxes_out[0] + ii] +=
-                                    imgin.im->array
-                                        .D[(kk * n3 + k) * imgin.md->size[0] * imgin.md->size[1] +
-                                           (jj * n2 + j) * imgin.md->size[0] + ii * n1 + i];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        break;
-    case _DATATYPE_COMPLEX_FLOAT:
-        for (uint32_t jj = 0; jj < naxes_out[1]; jj++)
-        {
-            for (uint32_t ii = 0; ii < naxes_out[0]; ii++)
-            {
-                for (uint32_t kk = 0; kk < naxes_out[2]; kk++)
-                {
-                    long ooff = kk * naxes_out[0] * naxes_out[1] + jj * naxes_out[0] + ii;
-                    for (int i = 0; i < n1; i++)
-                    {
-                        for (int j = 0; j < n2; j++)
-                        {
-                            for (int k = 0; k < n3; k++)
-                            {
-                                long ioff = (kk * n3 + k) * imgin.md->size[0] * imgin.md->size[1] +
-                                            (jj * n2 + j) * imgin.md->size[0] + ii * n1 + i;
-                                imgout.im->array.CF[ooff].re += imgin.im->array.CF[ioff].re;
-                                imgout.im->array.CF[ooff].im += imgin.im->array.CF[ioff].im;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        break;
-    case _DATATYPE_COMPLEX_DOUBLE:
-        for (uint32_t jj = 0; jj < naxes_out[1]; jj++)
-        {
-            for (uint32_t ii = 0; ii < naxes_out[0]; ii++)
-            {
-                for (uint32_t kk = 0; kk < naxes_out[2]; kk++)
-                {
-                    long ooff = kk * naxes_out[0] * naxes_out[1] + jj * naxes_out[0] + ii;
-                    for (int i = 0; i < n1; i++)
-                    {
-                        for (int j = 0; j < n2; j++)
-                        {
-                            for (int k = 0; k < n3; k++)
-                            {
-                                long ioff = (kk * n3 + k) * imgin.md->size[0] * imgin.md->size[1] +
-                                            (jj * n2 + j) * imgin.md->size[0] + ii * n1 + i;
-                                imgout.im->array.CD[ooff].re += imgin.im->array.CD[ioff].re;
-                                imgout.im->array.CD[ooff].im += imgin.im->array.CD[ioff].im;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        break;
-    }
+    arith_image_bin3d_im(imgin.im, imgout.im, n1, n2, n3);
 
     DEBUG_TRACE_FEXIT();
 

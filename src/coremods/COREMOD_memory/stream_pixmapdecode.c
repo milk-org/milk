@@ -200,8 +200,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
         imgout_tmp.mdt->datatype = dcimg[IDin].md->datatype;
         imgout_tmp.mdt->shared   = 1;
         imgout_tmp.mdt->NBkw     = dcimg[IDin].md->NBkw;
-        imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgout_tmp);
+        imgid_create_registered(&imgout_tmp);
         IDout = imgout_tmp.ID;
     }
 
@@ -294,8 +293,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
         imgpixsl.mdt->size[0]  = sizearray[0];
         imgpixsl.mdt->size[1]  = sizearray[1];
         imgpixsl.mdt->datatype = _DATATYPE_UINT16;
-        imgpixsl.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgpixsl);
+        imgid_create_registered(&imgpixsl);
         imageID IDout_pixslice = imgpixsl.ID;
 
         for (long slice = 0; slice < NBslice; slice++)

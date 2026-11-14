@@ -13,6 +13,9 @@
 
 #include "dofft_internal.h"
 
+#include "COREMOD_arith/image_elem_block.h"
+#include "COREMOD_arith/image_spatial.h"
+
 int array_index(long size)
 {
     int i;
@@ -84,7 +87,7 @@ imageID FFT_do1dfft(const char *__restrict in_name, const char *__restrict out_n
     fftw_complex  *outptr_double;
 
     IMGID imgin = imgid_make_from_name(in_name);
-    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS)
+    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) == -1) /* the image's ID, or -1 */
     {
         return -1;
     }
@@ -109,8 +112,7 @@ imageID FFT_do1dfft(const char *__restrict in_name, const char *__restrict out_n
     imgout.mdt->datatype = datatype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     if (naxis == 1)
     {
@@ -263,274 +265,92 @@ imageID FFT_do1dfft(const char *__restrict in_name, const char *__restrict out_n
 
 /* 1d real -> complex fft */
 // supports single and double precision
+/* 1d real -> complex fft along x of each row of an image, or along z of each pixel of a cube;
+ * half spectra out (n/2+1 along that axis). Any real input type: float and double natively, the
+ * others as float. */
 imageID do1drfft(const char *__restrict in_name, const char *__restrict out_name)
 {
-    int            OK = 0;
-    fftwf_plan     plan;
-    fftw_plan      plan_double;
-    fftwf_complex *outptr;
-    fftw_complex  *outptr_double;
-    float         *inptr;
-    double        *inptr_double;
-
     IMGID imgin = imgid_make_from_name(in_name);
-    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS)
+    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) == -1) /* the image's ID, or -1 */
     {
         return -1;
     }
-
     long    naxis    = imgin.md->naxis;
     uint8_t datatype = imgin.md->datatype;
-
-    int *naxes = (int *) malloc(naxis * sizeof(int));
-    if (naxes == NULL)
+    int     is_dbl   = (datatype == _DATATYPE_DOUBLE);
+    if ((naxis != 2 && naxis != 3) || !arith_is_real_dt(datatype))
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        printf("Error : image dimension or type not appropriate for FFT\n");
         return -1;
     }
-
-    int fftaxis = 0;
-    if (naxis == 3)
-    {
-        fftaxis = 2;
-    }
-
-    uint32_t naxesout[3];
-    for (long i = 0; i < naxis; i++)
-    {
-        naxes[i]    = (int) imgin.md->size[i];
-        naxesout[i] = imgin.md->size[i];
-        if (i == fftaxis)
-        {
-            naxesout[i] = imgin.md->size[i] / 2 + 1;
-        }
-    }
-
-    uint8_t outtype;
-    if (datatype == _DATATYPE_DOUBLE)
-    {
-        outtype = _DATATYPE_COMPLEX_DOUBLE;
-    }
-    else
-    {
-        outtype = _DATATYPE_COMPLEX_FLOAT;
-    }
+    int      fftaxis = (naxis == 3) ? 2 : 0;
+    uint64_t nelem   = imgin.md->nelement;
+    int      n       = (int) imgin.md->size[fftaxis];
+    int      howmany = (int) (nelem / (uint64_t) n);
+    int      stride  = (naxis == 3) ? howmany : 1; /* between a line's samples, in and out */
+    int      idist   = (naxis == 3) ? 1 : n;       /* between lines */
+    int      odist   = (naxis == 3) ? 1 : n / 2 + 1;
 
     IMGID imgout      = imgid_make_from_name(out_name);
     imgout.mdt->naxis = naxis;
     for (long i = 0; i < naxis; i++)
     {
-        imgout.mdt->size[i] = naxesout[i];
+        imgout.mdt->size[i] = (i == fftaxis) ? (uint32_t) (n / 2 + 1) : imgin.md->size[i];
     }
-    imgout.mdt->datatype = outtype;
+    imgout.mdt->datatype = is_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
-
-    if (naxis == 2)
+    if (imgid_create_registered(&imgout) != RETURN_SUCCESS)
     {
-        if ((naxes[1] == 1) && (array_index(naxes[0]) != 100))
-        {
-            OK = 1;
-            if (datatype == _DATATYPE_FLOAT)
-            {
-                plan = fftwf_plan_dft_r2c_1d(naxes[0], imgin.im->array.F,
-                                             (fftwf_complex *) imgout.im->array.CF, FFTWOPTMODE);
-                fftwf_execute(plan);
-                fftwf_destroy_plan(plan);
-            }
-            else
-            {
-                plan_double = fftw_plan_dft_r2c_1d(
-                    naxes[0], imgin.im->array.D, (fftw_complex *) imgout.im->array.CD, FFTWOPTMODE);
-                fftw_execute(plan_double);
-                fftw_destroy_plan(plan_double);
-            }
-        }
-        else
-        {
-            OK = 1;
-            if (datatype == _DATATYPE_FLOAT)
-            {
-                inptr = (float *) malloc(sizeof(float) * naxes[0]);
-                if (inptr == NULL)
-                {
-                    PRINT_ERROR("malloc returns"
-                                " NULL pointer");
-                    return -1;
-                }
-
-                outptr = (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[0]);
-                if (outptr == NULL)
-                {
-                    PRINT_ERROR("malloc returns"
-                                " NULL pointer");
-                    return -1;
-                }
-
-                plan = fftwf_plan_dft_r2c_1d(naxes[0], inptr, outptr, FFTWOPTMODE);
-
-                for (long jj = 0; jj < naxes[1]; jj++)
-                {
-                    memcpy((char *) inptr,
-                           (char *) imgin.im->array.F + sizeof(float) * jj * naxes[0],
-                           sizeof(float) * naxes[0]);
-                    fftwf_execute(plan);
-                    memcpy((char *) imgout.im->array.CF + sizeof(complex_float) * jj * naxesout[0],
-                           outptr, sizeof(fftwf_complex) * naxesout[0]);
-                }
-                fftwf_destroy_plan(plan);
-                free(inptr);
-                free(outptr);
-            }
-            else
-            {
-                inptr_double = (double *) malloc(sizeof(double) * naxes[0]);
-                if (inptr_double == NULL)
-                {
-                    PRINT_ERROR("malloc returns"
-                                " NULL pointer");
-                    return -1;
-                }
-
-                outptr_double = (fftw_complex *) malloc(sizeof(fftw_complex) * naxes[0]);
-                if (outptr_double == NULL)
-                {
-                    PRINT_ERROR("malloc returns"
-                                " NULL pointer");
-                    return -1;
-                }
-
-                plan_double =
-                    fftw_plan_dft_r2c_1d(naxes[0], inptr_double, outptr_double, FFTWOPTMODE);
-
-                for (long jj = 0; jj < naxes[1]; jj++)
-                {
-                    memcpy((char *) inptr_double,
-                           (char *) imgin.im->array.D + sizeof(double) * jj * naxes[0],
-                           sizeof(double) * naxes[0]);
-                    fftw_execute(plan_double);
-                    memcpy((char *) imgout.im->array.CD + sizeof(complex_double) * jj * naxesout[0],
-                           outptr_double, sizeof(fftw_complex) * naxesout[0]);
-                }
-                fftw_destroy_plan(plan_double);
-                free(inptr_double);
-                free(outptr_double);
-            }
-        }
-    }
-    if (naxis == 3)
-    {
-        /* 1D FFT along last dimension */
-        OK              = 1;
-        uint64_t xysize = naxes[0];
-        xysize *= naxes[1];
-
-        if (datatype == _DATATYPE_FLOAT)
-        {
-            inptr  = (float *) malloc(sizeof(float) * naxes[2]);
-            outptr = (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[2]);
-
-            plan = fftwf_plan_dft_r2c_1d(naxes[2], inptr, outptr, FFTWOPTMODE);
-            for (uint32_t ii = 0; ii < xysize; ii++)
-            {
-                for (int i = 0; i < naxes[2]; i++)
-                {
-                    inptr[i] = imgin.im->array.F[i * xysize + ii];
-                }
-                fftwf_execute(plan);
-                for (uint32_t i = 0; i < naxesout[2]; i++)
-                {
-                    imgout.im->array.CF[i * xysize + ii].re = outptr[i][0];
-                    imgout.im->array.CF[i * xysize + ii].im = outptr[i][1];
-                }
-            }
-            free(inptr);
-            free(outptr);
-        }
-
-        if (datatype == _DATATYPE_UINT16)
-        {
-            printf("UINT16 data type\n");
-            inptr  = (float *) malloc(sizeof(float) * naxes[2]);
-            outptr = (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[2]);
-
-            plan = fftwf_plan_dft_r2c_1d(naxes[2], inptr, outptr, FFTWOPTMODE);
-            for (uint32_t ii = 0; ii < xysize; ii++)
-            {
-                for (int i = 0; i < naxes[2]; i++)
-                {
-                    inptr[i] = 1.0 * imgin.im->array.UI16[i * xysize + ii];
-                }
-                fftwf_execute(plan);
-                for (uint32_t i = 0; i < naxesout[2]; i++)
-                {
-                    imgout.im->array.CF[i * xysize + ii].re = outptr[i][0];
-                    imgout.im->array.CF[i * xysize + ii].im = outptr[i][1];
-                }
-            }
-            free(inptr);
-            free(outptr);
-        }
-
-        if (datatype == _DATATYPE_UINT32)
-        {
-            printf("UINT32 data type\n");
-            inptr  = (float *) malloc(sizeof(float) * naxes[2]);
-            outptr = (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[2]);
-
-            plan = fftwf_plan_dft_r2c_1d(naxes[2], inptr, outptr, FFTWOPTMODE);
-            for (uint32_t ii = 0; ii < xysize; ii++)
-            {
-                for (int i = 0; i < naxes[2]; i++)
-                {
-                    inptr[i] = 1.0 * imgin.im->array.UI32[i * xysize + ii];
-                }
-                fftwf_execute(plan);
-                for (uint32_t i = 0; i < naxesout[2]; i++)
-                {
-                    imgout.im->array.CF[i * xysize + ii].re = outptr[i][0];
-                    imgout.im->array.CF[i * xysize + ii].im = outptr[i][1];
-                }
-            }
-            free(inptr);
-            free(outptr);
-        }
-
-        if (datatype == _DATATYPE_UINT64)
-        {
-            printf("UINT64 data type\n");
-            inptr  = (float *) malloc(sizeof(float) * naxes[2]);
-            outptr = (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[2]);
-
-            plan = fftwf_plan_dft_r2c_1d(naxes[2], inptr, outptr, FFTWOPTMODE);
-            for (uint32_t ii = 0; ii < xysize; ii++)
-            {
-                for (int i = 0; i < naxes[2]; i++)
-                {
-                    inptr[i] = 1.0 * imgin.im->array.UI64[i * xysize + ii];
-                }
-                fftwf_execute(plan);
-                for (uint32_t i = 0; i < naxesout[2]; i++)
-                {
-                    imgout.im->array.CF[i * xysize + ii].re = outptr[i][0];
-                    imgout.im->array.CF[i * xysize + ii].im = outptr[i][1];
-                }
-            }
-            free(inptr);
-            free(outptr);
-        }
+        return -1;
     }
 
-    if (OK == 0)
+    int ok = 0;
+    if (is_dbl)
     {
-        printf("Error : image dimension"
-               " not appropriate"
-               " for FFT\n");
+        fftw_plan plan = fftw_plan_many_dft_r2c(1, &n, howmany, imgin.im->array.D, NULL, stride,
+                                                idist, (fftw_complex *) imgout.im->array.CD, NULL,
+                                                stride, odist, FFTWOPTMODE);
+        ok             = (plan != NULL);
+        if (ok)
+        {
+            fftw_execute(plan);
+            fftw_destroy_plan(plan);
+        }
     }
-    free(naxes);
-
+    else
+    {
+        float *in = imgin.im->array.F;
+        if (datatype != _DATATYPE_FLOAT) /* the integer types, as float */
+        {
+            in = (float *) fftwf_malloc(sizeof(float) * nelem);
+            for (uint64_t off = 0; in != NULL && off < nelem; off += ARITH_ELEM_BLK)
+            {
+                int len = (int) ((nelem - off < ARITH_ELEM_BLK) ? nelem - off : ARITH_ELEM_BLK);
+                arith_load_block_f_inline(imgin.im, off, len, in + off);
+            }
+        }
+        fftwf_plan plan = (in == NULL)
+                              ? NULL
+                              : fftwf_plan_many_dft_r2c(1, &n, howmany, in, NULL, stride, idist,
+                                                        (fftwf_complex *) imgout.im->array.CF, NULL,
+                                                        stride, odist, FFTWOPTMODE);
+        ok              = (plan != NULL);
+        if (ok)
+        {
+            fftwf_execute(plan);
+            fftwf_destroy_plan(plan);
+        }
+        if (in != NULL && in != imgin.im->array.F)
+        {
+            fftwf_free(in);
+        }
+    }
+    if (!ok)
+    {
+        printf("Error : FFTW could not plan the transform of %s\n", in_name);
+        return -1;
+    }
     return imgout.ID;
 }
 

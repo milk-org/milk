@@ -22,6 +22,11 @@ errno_t info_image_stats(const char *ID_name, const char *options);
  *  Command 1: imstats
  * ======================================= */
 
+/* the calculator variables info_image_stats() sets for the caller */
+#define IMSTATS_OUTVARS                                                                           \
+    "imsize0 imsize1 imsize2 vmin vmax vtot vrms vrmsp vrmsdp vmean vbx vby vp01 vp05 vp10 vp20 " \
+    "vp50 vp80 vp90 vp95 vp99 vp995 vp998 vp999"
+
 static char p1_in[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 
 #define FPS_PARAMS_1(X) \
@@ -32,8 +37,7 @@ MILK_PARAMS_DEFINE(image_stats_1, FPS_PARAMS_1);
 static MILK_HOT errno_t image_stats_1_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    info_image_stats(p1_in, "");
-    return RETURN_SUCCESS;
+    return info_image_stats(p1_in, "");
 }
 
 const MILK_RUNNABLE runnable_info_image_stats_1 = {
@@ -42,7 +46,8 @@ const MILK_RUNNABLE runnable_info_image_stats_1 = {
                  .cmdkey           = "imstats",
                  .description      = "image stats",
                  .description_long = "Compute detailed statistics of a 2D image (mean, rms, "
-                                     "min, max, percentiles) and write results to a file." },
+                                     "min, max, percentiles) and write results to a file.",
+                 .outvars          = IMSTATS_OUTVARS },
     .srcfile = __FILE__,
     MILK_PARAMS_REF(image_stats_1),
     .compute = image_stats_1_compute,
@@ -62,8 +67,7 @@ MILK_PARAMS_DEFINE(image_stats_2, FPS_PARAMS_2);
 static MILK_HOT errno_t image_stats_2_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    info_image_stats(p2_in, "fileout");
-    return RETURN_SUCCESS;
+    return info_image_stats(p2_in, "fileout");
 }
 
 const MILK_RUNNABLE runnable_info_image_stats_2 = {
@@ -72,7 +76,8 @@ const MILK_RUNNABLE runnable_info_image_stats_2 = {
                  .cmdkey           = "imstatsf",
                  .description      = "image stats with file output",
                  .description_long = "Compute detailed statistics of a 2D image (mean, rms, "
-                                     "min, max, percentiles) and write results to a file." },
+                                     "min, max, percentiles) and write results to a file.",
+                 .outvars          = IMSTATS_OUTVARS },
     .srcfile = __FILE__,
     MILK_PARAMS_REF(image_stats_2),
     .compute = image_stats_2_compute,
@@ -402,6 +407,15 @@ errno_t info_image_stats(const char *ID_name, const char *options)
             printf("\n");
             free(array);
         }
+    }
+    else
+    {
+        if (mode == 1 && fp != NULL)
+        {
+            fclose(fp);
+        }
+        fprintf(stderr, "ERROR: image \"%s\" not found\n", ID_name);
+        return RETURN_FAILURE;
     }
 
     if (mode == 1)

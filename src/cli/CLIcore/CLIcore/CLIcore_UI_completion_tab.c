@@ -4,1096 +4,370 @@
 
 /**
  * @file CLIcore_UI_completion_tab.c
+ * @brief Readline tab-completion for the milk-cli prompt, over the shared completer.
  *
- * @brief Tab-completion generator and dispatcher
+ * Role & Goal:
+ *   Implements `CLI_generator()` and `CLI_completion()` for the `milk-cli` interactive prompt
+ *   (TAB and the hint line). The context of the word (cli_ts_determine_completion_mode()) picks
+ *   what to ask milk_complete(), which bash uses too: command names, arguments, keyword
+ *   options and words, calculator text. Shell variables (`$name`) and file names are completed
+ *   here; a command that is not milk's completes file names, as in bash. When nothing matches, a
+ *   fuzzy pass keeps the candidates that contain the word.
  *
- * Contains CLI_generator() and CLI_completion()
- * which implement the readline tab-completion
- * engine for commands, streams, FPS, files, and
- * argument types.
- *
- * @see CLIcore_UI_completion.c for prompt, input
- *      handling, and Levenshtein distance.
+ * @see CLIcore_UI_completion_menu.c for the interactive Zsh-style match grid.
+ * @see CLIcore_UI_completion.c for prompt rendering.
  */
 
+#include <ctype.h>
 #include <stdio.h>
-#include <dirent.h>
-#include <sys/stat.h>
+#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #ifdef USE_READLINE
 #    include <readline/history.h>
 #    include <readline/readline.h>
 #endif
 
-#include <ctype.h>
-
+#include "milk_keywords.h"
 #include "CLIcore.h"
-#include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
-#include "fps_connect.h"
+#include "CLIcore_script.h"
+#include "milk_server.h"
 #include "treesitter/cli_treesitter.h"
 
 extern char **environ;
 
-
 #ifdef USE_READLINE
 
-/* ---- Tab-completion generator ---- */
-
-/**
- * @brief State for fuzzy fallback pass
- *
- * After a normal prefix-match pass, if nothing
- * matched and fuzzy is enabled, we restart with
- * substring match.
- */
+int cli_comp_start       = 0;
+int cli_comp_end         = 0;
 int generator_fuzzy_pass = 0;
 
 /**
- * @brief Generate tab-completion candidates
- *
- * Called repeatedly by readline to produce
- * matching candidates. The match mode
- * (commands, images, args, files, FPS)
- * determines the search space.
- *
- * On first call (state == 0), initializes
- * the search. Returns one match at a time,
- * or NULL when exhausted.
+ * @brief Return 1 if @candidate matches @query under the current prefix/fuzzy pass.
  */
-char *CLI_generator(const char *text, int state)
+static inline int match_prefix_or_fuzzy(const char *candidate, const char *query, size_t qlen)
 {
-    static unsigned int list_index;
-    static unsigned int len;
-    static int          matches_found_in_pass = 0;
-    char               *name;
+    if (generator_fuzzy_pass == 0)
+    {
+        return (strncmp(candidate, query, qlen) == 0) ? 1 : 0;
+    }
+    return (strstr(candidate, query) != NULL) ? 1 : 0;
+}
 
-#    define GEN_DUPSTR(s) (matches_found_in_pass++, dupstr(s))
+/**
+ * format_env_var_candidate - Format a variable name as a tab-completion candidate
+ * @vname:      Base variable identifier
+ * @has_dollar: Non-zero if the token starts with '$'
+ * @has_brace:  Non-zero if the token starts with '${'
+ * @is_array:   Non-zero to append '[@]}' when completing a braced array variable
+ *
+ * Wraps @vname in the sigil and brace syntax matching the user's current input
+ * prefix so readline replaces the token seamlessly.
+ *
+ * Return: Newly allocated candidate string via dupstr()
+ */
+static char *format_env_var_candidate(const char *vname,
+                                      int         has_dollar,
+                                      int         has_brace,
+                                      int         is_array)
+{
+    char buf[512];
+    if (has_brace)
+    {
+        snprintf(buf, sizeof(buf), is_array ? "${%s[@]}" : "${%s}", vname);
+    }
+    else if (has_dollar)
+    {
+        snprintf(buf, sizeof(buf), "$%s", vname);
+    }
+    else
+    {
+        snprintf(buf, sizeof(buf), "%s", vname);
+    }
+    return dupstr(buf);
+}
+
+/**
+ * @brief Generate shell, script, array, and environment variable candidates (`CLICOMPLETIONMODE_VARS_ENV`).
+ */
+static char *gen_vars_env_match(const char *text, int state)
+{
+    static int  var_phase;
+    static int  var_idx;
+    static int  has_dollar;
+    static int  has_brace;
+    static char vprefix[256];
+    static int  vpreflen;
 
     if (!state)
     {
-        list_index            = 0;
-        len                   = strlen(text);
-        generator_fuzzy_pass  = 0;
-        matches_found_in_pass = 0;
+        var_phase      = 0;
+        var_idx        = 0;
+        has_dollar     = (text[0] == '$');
+        has_brace      = (has_dollar && text[1] == '{');
+        const char *vp = has_brace ? (text + 2) : (has_dollar ? (text + 1) : text);
+        strncpy(vprefix, vp, sizeof(vprefix) - 1);
+        vprefix[sizeof(vprefix) - 1] = '\0';
+        vpreflen                     = (int) strlen(vprefix);
     }
 
-retry_fuzzy:
+    static const char *const special_vars[] = {
+        "?", "$", "!", "#", "0", "MCLIFIFO", "PROCINFO_NCPU", "PROCINFO_NPROC", NULL
+    };
 
-    if (data.CLImatchMode == CLICOMPLETIONMODE_COMMANDS)
+    while (var_phase == 0)
     {
-        /* Built-in keywords not in data.cmd[] */
-        static const char        *builtins[] = { "if",
-                                                 "elif",
-                                                 "else",
-                                                 "fi",
-                                                 "for",
-                                                 "while",
-                                                 "until",
-                                                 "do",
-                                                 "done",
-                                                 "case",
-                                                 "esac",
-                                                 "select",
-                                                 "function",
-                                                 ".",
-                                                 "source",
-                                                 "break",
-                                                 "continue",
-                                                 "return",
-                                                 "true",
-                                                 "false",
-                                                 "exit",
-                                                 "shift",
-                                                 "assert",
-                                                 "assigncheck",
-                                                 "dpdigits",
-                                                 "set",
-                                                 "export",
-                                                 "readonly",
-                                                 "local",
-                                                 "declare",
-                                                 "let",
-                                                 "eval",
-                                                 "type",
-                                                 "command",
-                                                 "trap",
-                                                 "watch",
-                                                 "time",
-                                                 "timeout",
-                                                 "wait",
-                                                 "wait_any",
-                                                 "printf",
-                                                 "echo",
-                                                 "getopts",
-                                                 "mapfile",
-                                                 "alias",
-                                                 "unalias",
-                                                 "basename",
-                                                 "dirname",
-                                                 "pushd",
-                                                 "popd",
-                                                 "dirs",
-                                                 "seq",
-                                                 "[[",
-                                                 "procctl",
-                                                 "procwait",
-                                                 "procstat",
-                                                 "waitfor_stream",
-                                                 "waitfor_fps",
-                                                 "on_update",
-                                                 "on_fpschange",
-                                                 "include_once",
-                                                 "savescript",
-                                                 "savehistory",
-                                                 NULL };
-        static const unsigned int nbuiltins =
-            sizeof(builtins) / sizeof(builtins[0]) - 1; /* exclude NULL */
-
-        /* Phase 1: registered commands */
-        while (list_index < data.NBcmd)
+        const char *sname = special_vars[var_idx++];
+        if (sname == NULL)
         {
-            name = data.cmd[list_index].key;
-            list_index++;
-            if (generator_fuzzy_pass == 0)
-            {
-                if (strncmp(name, text, len) == 0)
-                {
-                    return (GEN_DUPSTR(name));
-                }
-            }
-            else
-            {
-                /* Fuzzy: substring match */
-                if (strstr(name, text) != NULL)
-                {
-                    return (GEN_DUPSTR(name));
-                }
-            }
+            var_phase = 1;
+            var_idx   = 0;
+            break;
         }
-
-        /* Phase 2: built-in keywords */
-        unsigned int bi = list_index - data.NBcmd;
-        while (bi < nbuiltins)
+        if (match_prefix_or_fuzzy(sname, vprefix, (size_t) vpreflen))
         {
-            name = (char *) builtins[bi];
-            list_index++;
-            bi++;
-            if (generator_fuzzy_pass == 0)
-            {
-                if (strncmp(name, text, len) == 0)
-                {
-                    return (GEN_DUPSTR(name));
-                }
-            }
-            else
-            {
-                if (strstr(name, text) != NULL)
-                {
-                    return (GEN_DUPSTR(name));
-                }
-            }
+            return format_env_var_candidate(sname, has_dollar, has_brace, 0);
         }
     }
 
-    if (data.CLImatchMode == CLICOMPLETIONMODE_IMAGES)
+    while (var_phase == 1)
     {
-        static DIR *img_dirp = NULL;
-
-        if (!state)
+        if (var_idx >= CLI_MAX_VARS)
         {
-            if (img_dirp != NULL)
-            {
-                closedir(img_dirp);
-                img_dirp = NULL;
-            }
-            img_dirp = opendir(dcshmdir);
+            var_phase = 3;
+            var_idx   = 0;
+            break;
         }
-
-        if (img_dirp != NULL)
+        int i = var_idx++;
+        if (cli_vars[i].used && match_prefix_or_fuzzy(cli_vars[i].name, vprefix, (size_t) vpreflen))
         {
-            struct dirent *ent;
-            while ((ent = readdir(img_dirp)) != NULL)
-            {
-                char *ext = strstr(ent->d_name, ".im.shm");
-                if (ext != NULL && strcmp(ext, ".im.shm") == 0)
-                {
-                    char imgname[256];
-                    int  namelen = ext - ent->d_name;
-                    if (namelen > 255)
-                    {
-                        namelen = 255;
-                    }
-                    strncpy(imgname, ent->d_name, namelen);
-                    imgname[namelen] = '\0';
-
-                    if (generator_fuzzy_pass == 0)
-                    {
-                        if (strncmp(imgname, text, len) == 0)
-                        {
-                            return (GEN_DUPSTR(imgname));
-                        }
-                    }
-                    else
-                    {
-                        if (strstr(imgname, text) != NULL)
-                        {
-                            return (GEN_DUPSTR(imgname));
-                        }
-                    }
-                }
-            }
-            closedir(img_dirp);
-            img_dirp = NULL;
+            return format_env_var_candidate(cli_vars[i].name, has_dollar, has_brace, 0);
         }
     }
 
-    if (data.CLImatchMode == CLICOMPLETIONMODE_CMDARGS)
+    while (var_phase == 3)
     {
-        if (data.cmd[data.cmdindex].argdata != NULL)
+        if (environ == NULL || environ[var_idx] == NULL)
         {
-            while ((int) list_index < data.cmd[data.cmdindex].nbarg)
-            {
-                name = data.cmd[data.cmdindex].argdata[list_index].fpstag;
-                list_index++;
-                if (name != NULL && strncmp(name, text, len) == 0)
-                {
-                    return (GEN_DUPSTR(name));
-                }
-            }
+            var_phase = 4;
+            var_idx   = 0;
+            break;
         }
-    }
-
-    if (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
-    {
-        static DIR         *dirp = NULL;
-        static char         dirpart[512];
-        static char         prefix[256];
-        static unsigned int preflen;
-
-        if (!state)
+        const char *entry = environ[var_idx++];
+        const char *eq    = strchr(entry, '=');
+        if (eq == NULL)
         {
-            if (dirp != NULL)
-            {
-                closedir(dirp);
-                dirp = NULL;
-            }
-
-            const char *slash = strrchr(text, '/');
-            if (slash != NULL)
-            {
-                int dlen = (int) (slash - text) + 1;
-                if (dlen > (int) sizeof(dirpart) - 1)
-                {
-                    dlen = (int) sizeof(dirpart) - 1;
-                }
-                memcpy(dirpart, text, dlen);
-                dirpart[dlen] = '\0';
-                strncpy(prefix, slash + 1, sizeof(prefix) - 1);
-                prefix[sizeof(prefix) - 1] = '\0';
-            }
-            else
-            {
-                snprintf(dirpart, sizeof(dirpart), ".");
-                strncpy(prefix, text, sizeof(prefix) - 1);
-                prefix[sizeof(prefix) - 1] = '\0';
-            }
-            preflen = strlen(prefix);
-
-            dirp = opendir(dirpart);
+            continue;
         }
-
-        if (dirp != NULL)
+        char   ename[256];
+        size_t nlen = (size_t) (eq - entry);
+        if (nlen >= sizeof(ename))
         {
-            struct dirent *ent;
-            while ((ent = readdir(dirp)) != NULL)
-            {
-                if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
-                {
-                    continue;
-                }
-
-                if (strncmp(ent->d_name, prefix, preflen) == 0)
-                {
-                    char fullpath[1024];
-                    snprintf(fullpath, sizeof(fullpath), "%s/%s", dirpart, ent->d_name);
-
-                    char result[1024];
-                    if (strcmp(dirpart, ".") == 0)
-                    {
-                        snprintf(result, sizeof(result), "%s", ent->d_name);
-                    }
-                    else
-                    {
-                        snprintf(result, sizeof(result), "%s%s", dirpart, ent->d_name);
-                    }
-
-                    struct stat st;
-                    if (stat(fullpath, &st) == 0 && S_ISDIR(st.st_mode))
-                    {
-                        strncat(result, "/", sizeof(result) - strlen(result) - 1);
-                    }
-
-                    return GEN_DUPSTR(result);
-                }
-            }
-            closedir(dirp);
-            dirp = NULL;
+            nlen = sizeof(ename) - 1;
         }
-    }
+        strncpy(ename, entry, nlen);
+        ename[nlen] = '\0';
 
-    if (data.CLImatchMode == CLICOMPLETIONMODE_FPSPARAMS)
-    {
-        static DIR *fps_dirp = NULL;
-
-        if (!state)
+        int already_in_cli = 0;
+        for (int k = 0; k < CLI_MAX_VARS; k++)
         {
-            if (fps_dirp != NULL)
+            if (cli_vars[k].used && strcmp(cli_vars[k].name, ename) == 0)
             {
-                closedir(fps_dirp);
-                fps_dirp = NULL;
-            }
-            fps_dirp = opendir(dcshmdir);
-        }
-
-        if (fps_dirp != NULL)
-        {
-            struct dirent *ent;
-            while ((ent = readdir(fps_dirp)) != NULL)
-            {
-                if (strncmp(ent->d_name, "fps.", 4) != 0)
-                {
-                    continue;
-                }
-                char *ext = strstr(ent->d_name, ".datadir");
-                if (ext != NULL && strcmp(ext, ".datadir") == 0)
-                {
-                    char fpsname[256];
-                    int  namelen = ext - (ent->d_name + 4);
-                    if (namelen > 255)
-                    {
-                        namelen = 255;
-                    }
-                    strncpy(fpsname, ent->d_name + 4, namelen);
-                    fpsname[namelen] = '\0';
-
-                    if (generator_fuzzy_pass == 0)
-                    {
-                        if (strncmp(fpsname, text, len) == 0)
-                        {
-                            return GEN_DUPSTR(fpsname);
-                        }
-                    }
-                    else
-                    {
-                        if (strstr(fpsname, text) != NULL)
-                        {
-                            return GEN_DUPSTR(fpsname);
-                        }
-                    }
-                }
-            }
-            closedir(fps_dirp);
-            fps_dirp = NULL;
-        }
-    }
-
-    if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
-    {
-        const char *dot1 = strchr(text, '.');
-        const char *dot2 = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
-
-        if (dot2 != NULL)
-        {
-            static FPS  fps;
-            static int  fps_connected = 0;
-            static int  param_idx     = 0;
-            static char fps_target[128];
-            static char param_prefix[128];
-
-            if (!state)
-            {
-                param_idx    = 0;
-                size_t fnlen = (size_t) (dot2 - (dot1 + 1));
-                if (fnlen >= sizeof(fps_target))
-                {
-                    fnlen = sizeof(fps_target) - 1;
-                }
-                strncpy(fps_target, dot1 + 1, fnlen);
-                fps_target[fnlen] = '\0';
-
-                strncpy(param_prefix, dot2 + 1, sizeof(param_prefix) - 1);
-                param_prefix[sizeof(param_prefix) - 1] = '\0';
-
-                memset(&fps, 0, sizeof(FPS));
-                fps_connected =
-                    (fps_connect(fps_target, &fps, FPSCONNECT_SIMPLE) == 0 && fps.parray != NULL);
-            }
-
-            if (fps_connected)
-            {
-                while (param_idx < fps.md->NBparamMAX)
-                {
-                    int pi = param_idx++;
-                    if (!(fps.parray[pi].fpflag & FPFLAG_ACTIVE))
-                    {
-                        continue;
-                    }
-
-                    const char *pname = fps.parray[pi].keyword[0];
-                    if (pname == NULL || pname[0] == '\0')
-                    {
-                        continue;
-                    }
-
-                    int match = 0;
-                    if (generator_fuzzy_pass == 0)
-                    {
-                        if (strncmp(pname, param_prefix, strlen(param_prefix)) == 0)
-                        {
-                            match = 1;
-                        }
-                    }
-                    else if (strstr(pname, param_prefix) != NULL)
-                    {
-                        match = 1;
-                    }
-
-                    if (match)
-                    {
-                        char buf[256];
-                        snprintf(buf, sizeof(buf), "@fps.%s.%s", fps_target, pname);
-                        return GEN_DUPSTR(buf);
-                    }
-                }
-            }
-        }
-        else
-        {
-            static DIR *vfps_dirp = NULL;
-            if (!state)
-            {
-                if (vfps_dirp != NULL)
-                {
-                    closedir(vfps_dirp);
-                    vfps_dirp = NULL;
-                }
-                vfps_dirp = opendir(dcshmdir);
-            }
-            if (vfps_dirp != NULL)
-            {
-                struct dirent *ent;
-                while ((ent = readdir(vfps_dirp)) != NULL)
-                {
-                    if (strncmp(ent->d_name, "fps.", 4) == 0)
-                    {
-                        char *ext = strstr(ent->d_name, ".datadir");
-                        if (ext != NULL && strcmp(ext, ".datadir") == 0)
-                        {
-                            char fpsname[256];
-                            int  namelen = ext - (ent->d_name + 4);
-                            if (namelen > 240)
-                            {
-                                namelen = 240;
-                            }
-                            snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.", namelen,
-                                     ent->d_name + 4);
-
-                            if (generator_fuzzy_pass == 0)
-                            {
-                                if (strncmp(fpsname, text, len) == 0)
-                                {
-                                    return GEN_DUPSTR(fpsname);
-                                }
-                            }
-                            else if (strstr(fpsname, text) != NULL)
-                            {
-                                return GEN_DUPSTR(fpsname);
-                            }
-                        }
-                    }
-                }
-                closedir(vfps_dirp);
-                vfps_dirp = NULL;
-            }
-        }
-    }
-
-    if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)
-    {
-        static DIR *vseq_dirp = NULL;
-        if (!state)
-        {
-            if (vseq_dirp != NULL)
-            {
-                closedir(vseq_dirp);
-                vseq_dirp = NULL;
-            }
-            vseq_dirp = opendir(dcshmdir);
-        }
-        if (vseq_dirp != NULL)
-        {
-            struct dirent *ent;
-            while ((ent = readdir(vseq_dirp)) != NULL)
-            {
-                if (strncmp(ent->d_name, "seq.", 4) == 0)
-                {
-                    char *ext = strstr(ent->d_name, ".shm");
-                    if (ext != NULL && strcmp(ext, ".shm") == 0)
-                    {
-                        char seqname[256];
-                        int  namelen = ext - (ent->d_name + 4);
-                        if (namelen > 240)
-                        {
-                            namelen = 240;
-                        }
-                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.", namelen, ent->d_name + 4);
-
-                        if (generator_fuzzy_pass == 0)
-                        {
-                            if (strncmp(seqname, text, len) == 0)
-                            {
-                                return GEN_DUPSTR(seqname);
-                            }
-                        }
-                        else if (strstr(seqname, text) != NULL)
-                        {
-                            return GEN_DUPSTR(seqname);
-                        }
-                    }
-                }
-            }
-            closedir(vseq_dirp);
-            vseq_dirp = NULL;
-        }
-    }
-
-    if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
-    {
-        const char *dot1      = strchr(text, '.');
-        const char *dot2      = (dot1 != NULL) ? strchr(dot1 + 1, '.') : NULL;
-        int         has_brace = (text[0] == '$' && text[1] == '{');
-
-        if (dot2 != NULL)
-        {
-            static int         prop_idx       = 0;
-            static const char *stream_props[] = { "xsize", "ysize",    "zsize", "naxis",
-                                                  "type",  "typename", "nelem", "cnt0",
-                                                  "cnt1",  "sem",      NULL };
-            static char        stream_target[128];
-            static char        prop_prefix[64];
-
-            if (!state)
-            {
-                prop_idx     = 0;
-                size_t snlen = (size_t) (dot2 - (dot1 + 1));
-                if (snlen >= sizeof(stream_target))
-                {
-                    snlen = sizeof(stream_target) - 1;
-                }
-                strncpy(stream_target, dot1 + 1, snlen);
-                stream_target[snlen] = '\0';
-
-                strncpy(prop_prefix, dot2 + 1, sizeof(prop_prefix) - 1);
-                prop_prefix[sizeof(prop_prefix) - 1] = '\0';
-            }
-
-            while (stream_props[prop_idx] != NULL)
-            {
-                const char *sprop = stream_props[prop_idx++];
-                int         match = 0;
-                if (generator_fuzzy_pass == 0)
-                {
-                    if (strncmp(sprop, prop_prefix, strlen(prop_prefix)) == 0)
-                    {
-                        match = 1;
-                    }
-                }
-                else if (strstr(sprop, prop_prefix) != NULL)
-                {
-                    match = 1;
-                }
-
-                if (match)
-                {
-                    char buf[256];
-                    if (has_brace)
-                    {
-                        snprintf(buf, sizeof(buf), "${s.%s.%s}", stream_target, sprop);
-                    }
-                    else
-                    {
-                        snprintf(buf, sizeof(buf), "@s.%s.%s", stream_target, sprop);
-                    }
-                    return GEN_DUPSTR(buf);
-                }
-            }
-        }
-        else
-        {
-            static DIR *vstream_dirp = NULL;
-            if (!state)
-            {
-                if (vstream_dirp != NULL)
-                {
-                    closedir(vstream_dirp);
-                    vstream_dirp = NULL;
-                }
-                vstream_dirp = opendir(dcshmdir);
-            }
-            if (vstream_dirp != NULL)
-            {
-                struct dirent *ent;
-                while ((ent = readdir(vstream_dirp)) != NULL)
-                {
-                    char *ext = strstr(ent->d_name, ".im.shm");
-                    if (ext != NULL && strcmp(ext, ".im.shm") == 0)
-                    {
-                        char sname[256];
-                        int  namelen = ext - ent->d_name;
-                        if (namelen > 240)
-                        {
-                            namelen = 240;
-                        }
-                        if (has_brace)
-                        {
-                            snprintf(sname, sizeof(sname), "${s.%.*s.", namelen, ent->d_name);
-                        }
-                        else
-                        {
-                            snprintf(sname, sizeof(sname), "@s.%.*s.", namelen, ent->d_name);
-                        }
-
-                        if (generator_fuzzy_pass == 0)
-                        {
-                            if (strncmp(sname, text, len) == 0)
-                            {
-                                return GEN_DUPSTR(sname);
-                            }
-                        }
-                        else if (strstr(sname, text) != NULL)
-                        {
-                            return GEN_DUPSTR(sname);
-                        }
-                    }
-                }
-                closedir(vstream_dirp);
-                vstream_dirp = NULL;
-            }
-        }
-    }
-
-    if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_ENV)
-    {
-        static int  var_phase;
-        static int  var_idx;
-        static int  has_dollar;
-        static int  has_brace;
-        static char vprefix[256];
-        static int  vpreflen;
-
-        if (!state)
-        {
-            var_phase  = 0;
-            var_idx    = 0;
-            has_dollar = (text[0] == '$');
-            has_brace  = (has_dollar && text[1] == '{');
-
-            const char *vp = text;
-            if (has_brace)
-            {
-                vp = text + 2;
-            }
-            else if (has_dollar)
-            {
-                vp = text + 1;
-            }
-            strncpy(vprefix, vp, sizeof(vprefix) - 1);
-            vprefix[sizeof(vprefix) - 1] = '\0';
-            vpreflen                     = (int) strlen(vprefix);
-        }
-
-        /* Phase 0: special shell variables */
-        static const char *special_vars[] = {
-            "?", "$", "!", "#", "0", "MCLIFIFO", "PROCINFO_NCPU", "PROCINFO_NPROC", NULL
-        };
-
-        while (var_phase == 0)
-        {
-            const char *sname = special_vars[var_idx++];
-            if (sname == NULL)
-            {
-                var_phase = 1;
-                var_idx   = 0;
+                already_in_cli = 1;
                 break;
             }
-
-            int match = 0;
-            if (generator_fuzzy_pass == 0)
-            {
-                if (strncmp(sname, vprefix, vpreflen) == 0)
-                {
-                    match = 1;
-                }
-            }
-            else if (strstr(sname, vprefix) != NULL)
-            {
-                match = 1;
-            }
-
-            if (match)
-            {
-                char buf[512];
-                if (has_brace)
-                {
-                    snprintf(buf, sizeof(buf), "${%s}", sname);
-                }
-                else if (has_dollar)
-                {
-                    snprintf(buf, sizeof(buf), "$%s", sname);
-                }
-                else
-                {
-                    snprintf(buf, sizeof(buf), "%s", sname);
-                }
-                return GEN_DUPSTR(buf);
-            }
         }
-
-        /* Phase 1: CLI script variables */
-        while (var_phase == 1)
+        if (!already_in_cli && match_prefix_or_fuzzy(ename, vprefix, (size_t) vpreflen))
         {
-            if (var_idx >= CLI_MAX_VARS)
-            {
-                var_phase = 2;
-                var_idx   = 0;
-                break;
-            }
-
-            int i = var_idx++;
-            if (!cli_vars[i].used)
-            {
-                continue;
-            }
-
-            const char *vname = cli_vars[i].name;
-            int         match = 0;
-            if (generator_fuzzy_pass == 0)
-            {
-                if (strncmp(vname, vprefix, vpreflen) == 0)
-                {
-                    match = 1;
-                }
-            }
-            else if (strstr(vname, vprefix) != NULL)
-            {
-                match = 1;
-            }
-
-            if (match)
-            {
-                char buf[512];
-                if (has_brace)
-                {
-                    snprintf(buf, sizeof(buf), "${%s}", vname);
-                }
-                else if (has_dollar)
-                {
-                    snprintf(buf, sizeof(buf), "$%s", vname);
-                }
-                else
-                {
-                    snprintf(buf, sizeof(buf), "%s", vname);
-                }
-                return GEN_DUPSTR(buf);
-            }
-        }
-
-        /* Phase 2: CLI script arrays */
-        while (var_phase == 2)
-        {
-            if (var_idx >= CLI_MAX_ARRAYS)
-            {
-                var_phase = 3;
-                var_idx   = 0;
-                break;
-            }
-
-            int i = var_idx++;
-            if (!cli_arrays[i].used)
-            {
-                continue;
-            }
-
-            const char *aname = cli_arrays[i].name;
-            int         match = 0;
-            if (generator_fuzzy_pass == 0)
-            {
-                if (strncmp(aname, vprefix, vpreflen) == 0)
-                {
-                    match = 1;
-                }
-            }
-            else if (strstr(aname, vprefix) != NULL)
-            {
-                match = 1;
-            }
-
-            if (match)
-            {
-                char buf[512];
-                if (has_brace)
-                {
-                    snprintf(buf, sizeof(buf), "${%s[@]}", aname);
-                }
-                else if (has_dollar)
-                {
-                    snprintf(buf, sizeof(buf), "$%s", aname);
-                }
-                else
-                {
-                    snprintf(buf, sizeof(buf), "%s", aname);
-                }
-                return GEN_DUPSTR(buf);
-            }
-        }
-
-        /* Phase 3: Environment variables */
-        while (var_phase == 3)
-        {
-            if (environ == NULL || environ[var_idx] == NULL)
-            {
-                var_phase = 4;
-                var_idx   = 0;
-                break;
-            }
-
-            const char *entry = environ[var_idx++];
-            const char *eq    = strchr(entry, '=');
-            if (eq == NULL)
-            {
-                continue;
-            }
-
-            char   ename[256];
-            size_t nlen = (size_t) (eq - entry);
-            if (nlen >= sizeof(ename))
-            {
-                nlen = sizeof(ename) - 1;
-            }
-            strncpy(ename, entry, nlen);
-            ename[nlen] = '\0';
-
-            /* Avoid duplicating variables already in cli_vars */
-            int already_in_cli = 0;
-            for (int k = 0; k < CLI_MAX_VARS; k++)
-            {
-                if (cli_vars[k].used && strcmp(cli_vars[k].name, ename) == 0)
-                {
-                    already_in_cli = 1;
-                    break;
-                }
-            }
-            if (already_in_cli)
-            {
-                continue;
-            }
-
-            int match = 0;
-            if (generator_fuzzy_pass == 0)
-            {
-                if (strncmp(ename, vprefix, vpreflen) == 0)
-                {
-                    match = 1;
-                }
-            }
-            else if (strstr(ename, vprefix) != NULL)
-            {
-                match = 1;
-            }
-
-            if (match)
-            {
-                char buf[512];
-                if (has_brace)
-                {
-                    snprintf(buf, sizeof(buf), "${%s}", ename);
-                }
-                else if (has_dollar)
-                {
-                    snprintf(buf, sizeof(buf), "$%s", ename);
-                }
-                else
-                {
-                    snprintf(buf, sizeof(buf), "%s", ename);
-                }
-                return GEN_DUPSTR(buf);
-            }
+            return format_env_var_candidate(ename, has_dollar, has_brace, 0);
         }
     }
-
-    /* Fuzzy fallback: if prefix pass found
-     * nothing, restart with substring */
-    if (generator_fuzzy_pass == 0 && matches_found_in_pass == 0 && data.autocomplete_fuzzy)
-    {
-        generator_fuzzy_pass = 1;
-        list_index           = 0;
-        state                = 0;
-        goto retry_fuzzy;
-    }
-
-#    undef GEN_DUPSTR
-
-    return ((char *) NULL);
+    return NULL;
 }
 
-
-/* ---- TAB completion dispatcher ---- */
+/* What CLI_generator() gives for the word: candidates, file names, or shell variables */
+enum
+{
+    COMP_LIST,
+    COMP_FILES,
+    COMP_SHELLVARS
+};
 
 /**
- * @brief Readline custom completion dispatcher
+ * cli_complete_list - The completion candidates of word @full, at @start in @line, one per line
+ * @line:  The prompt line
+ * @start: Offset of the word in @line
+ * @full:  The word (the quoted text so far inside an open quote: its last word is completed)
+ * @out:   Output buffer (the candidates for COMP_LIST)
+ * @outsz: Its size
  *
- * Invoked on TAB. Uses Tree-sitter AST and statement-boundary
- * classification to determine completion mode based on cursor position
- * and the command/argument being typed.
+ * Return: COMP_LIST, COMP_FILES (readline completes file names) or COMP_SHELLVARS
  */
-char **CLI_completion(const char *text, int start, int __attribute__((unused)) end)
+static int g_comp_in_quote = 0; /* the candidates go on inside an open quote: do not close it */
+
+static int cli_complete_list(const char *line, int start, const char *full, char *out, size_t outsz)
 {
-    char **matches      = NULL;
-    char   cmdname[128] = "";
-    int    argidx       = 0;
-
-    int mode = cli_ts_determine_completion_mode(rl_line_buffer, start, text, cmdname,
-                                                sizeof(cmdname), &argidx);
-
-    if (mode >= 0)
+    /* Inside an open quote readline gives the quoted text so far: complete its last word */
+    size_t k = strlen(full);
+    while (k > 0 && strchr(" \t\n<>=;|&(", full[k - 1]) == NULL)
     {
-        data.CLImatchMode = mode;
+        k--;
+    }
+    const char *text         = full + k;
+    char        cmdname[128] = "";
+    char        ctype[512];
+    int         argidx = 0;
+    int         inl    = (strncmp(text, "@{", 2) == 0); /* inline calculator text: @{expr */
+    int         mode   = cli_ts_determine_completion_mode(line, start + (int) k, text, cmdname,
+                                                          sizeof(cmdname), &argidx);
+    g_comp_in_quote    = (k > 0);
+    start += (int) k;
+
+    out[0] = '\0';
+    if (inl || (cli_calc_mode && line[strspn(line, " \t")] != '@'))
+    {
+        snprintf(ctype, sizeof(ctype), "calc");
+    }
+    else if (mode == CLICOMPLETIONMODE_FILES)
+    {
+        return COMP_FILES;
+    }
+    else if (mode == CLICOMPLETIONMODE_VARS_ENV)
+    {
+        return COMP_SHELLVARS;
+    }
+    else if (mode == CLICOMPLETIONMODE_COMMANDS)
+    {
+        snprintf(ctype, sizeof(ctype), "cmd");
+    }
+    else if (mode >= 0) /* an entity path or a modifier */
+    {
+        snprintf(ctype, sizeof(ctype), "arg");
+    }
+    else if (strcmp(cmdname, "export") == 0 || strcmp(cmdname, "readonly") == 0 ||
+             strcmp(cmdname, "unset") == 0 || strcmp(cmdname, "local") == 0 ||
+             strcmp(cmdname, "declare") == 0)
+    {
+        return COMP_SHELLVARS;
+    }
+    else if (find_command_match(cmdname) < 0 && milk_lexicon_keyword(cmdname) == NULL)
+    {
+        return COMP_FILES; /* a command that is not milk's, as in bash */
     }
     else
     {
-        /* A command was found (cmdname), and cursor is on argument argidx */
-        if (text[0] == '.' && text[1] != '/' && text[1] != '.')
+        int p = start; /* the word before this one */
+        while (p > 0 && isspace((unsigned char) line[p - 1]))
         {
-            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
+            p--;
         }
-        else if (strcmp(cmdname, "loadfits") == 0 || strcmp(cmdname, "savefits") == 0 ||
-                 strcmp(cmdname, "saveFITS") == 0 || strcmp(cmdname, "source") == 0 ||
-                 strcmp(cmdname, ".") == 0 || strcmp(cmdname, "cat") == 0 ||
-                 strcmp(cmdname, "cd") == 0 || strcmp(cmdname, "ls") == 0 ||
-                 strcmp(cmdname, "vi") == 0 || strcmp(cmdname, "vim") == 0 ||
-                 strcmp(cmdname, "nano") == 0 || strcmp(cmdname, "head") == 0 ||
-                 strcmp(cmdname, "tail") == 0 || strcmp(cmdname, "cp") == 0 ||
-                 strcmp(cmdname, "mv") == 0 || strcmp(cmdname, "rm") == 0 ||
-                 strcmp(cmdname, "less") == 0 || strcmp(cmdname, "more") == 0 ||
-                 strcmp(cmdname, "include_once") == 0 || strcmp(cmdname, "savescript") == 0 ||
-                 strcmp(cmdname, "savehistory") == 0 || strcmp(cmdname, "run") == 0)
+        int b = p;
+        while (b > 0 && !isspace((unsigned char) line[b - 1]))
         {
-            data.CLImatchMode = CLICOMPLETIONMODE_FILES;
+            b--;
         }
-        else if (strcmp(cmdname, "fpsCTRL") == 0 || strcmp(cmdname, "fparam") == 0 ||
-                 strcmp(cmdname, "fpsload") == 0 || strcmp(cmdname, "dpsingle") == 0 ||
-                 strcmp(cmdname, "fpsconf") == 0 || strcmp(cmdname, "fpsrun") == 0 ||
-                 strcmp(cmdname, "fpsstop") == 0 || strcmp(cmdname, "waitfor_fps") == 0)
+        snprintf(ctype, sizeof(ctype), "arg:%s:%d:%.*s", cmdname, argidx + 1, p - b, line + b);
+    }
+
+    const char *w    = text + (inl ? 2 : 0);
+    size_t      keep = 0;
+    char        buf[32768];
+    size_t      n     = milk_complete(w, ctype, buf, sizeof(buf));
+    int         fuzzy = (n == 0 && data.autocomplete_fuzzy);
+    if (fuzzy) /* the candidates after the word's last '.' that contain the rest of it */
+    {
+        const char *dot = strrchr(w, '.');
+        char        cut[512];
+        keep = (dot != NULL) ? (size_t) (dot - w + 1) : 0;
+        snprintf(cut, sizeof(cut), "%.*s", (int) keep, w);
+        n = milk_complete(cut, ctype, buf, sizeof(buf));
+    }
+    generator_fuzzy_pass = fuzzy;
+    if (n > 0 && strncmp(buf, "__MILK_COMPLETE_F", 17) == 0) /* FILES or FITS */
+    {
+        return COMP_FILES;
+    }
+    size_t pos = 0;
+    for (char *c = buf; n > 0 && *c != '\0';)
+    {
+        size_t l    = strcspn(c, "\n");
+        char   save = c[l];
+        c[l]        = '\0';
+        if (l > 0 && (!fuzzy || (l >= keep && strstr(c + keep, w + keep) != NULL)))
         {
-            data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
+            int m = snprintf(out + pos, outsz - pos, "%.*s%s%s\n", (int) (text - full), full,
+                             inl ? "@{" : "", c);
+            pos += (m > 0 && pos + (size_t) m < outsz) ? (size_t) m : 0;
         }
-        else if (strcmp(cmdname, "export") == 0 || strcmp(cmdname, "readonly") == 0 ||
-                 strcmp(cmdname, "unset") == 0 || strcmp(cmdname, "local") == 0 ||
-                 strcmp(cmdname, "declare") == 0)
+        c[l] = save;
+        c += l + (save != '\0');
+    }
+    return COMP_LIST;
+}
+
+/**
+ * CLI_generator - Readline candidate generator: the next completion of @text
+ * @text:  The word being completed (it starts at `cli_comp_start` in `rl_line_buffer`)
+ * @state: 0 for the first call
+ *
+ * Return: a malloc()ed candidate, or NULL after the last one
+ */
+char *CLI_generator(const char *text, int state)
+{
+    static char  list[32768];
+    static char *next = NULL;
+    static int   kind = COMP_LIST;
+
+    if (!state)
+    {
+        generator_fuzzy_pass = 0;
+        kind = cli_complete_list(rl_line_buffer, cli_comp_start, text, list, sizeof(list));
+        next = list;
+    }
+    if (kind == COMP_FILES)
+    {
+        return rl_filename_completion_function(text, state);
+    }
+    if (kind == COMP_SHELLVARS)
+    {
+        char *m = gen_vars_env_match(text, state);
+        if (m == NULL && state == 0 && data.autocomplete_fuzzy) /* nothing starts with it */
         {
-            data.CLImatchMode = CLICOMPLETIONMODE_VARS_ENV;
+            generator_fuzzy_pass = 1;
+            m                    = gen_vars_env_match(text, 0);
         }
-        else
+        return m;
+    }
+    while (next != NULL && *next != '\0')
+    {
+        char  *nl = strchr(next, '\n');
+        size_t n  = (nl != NULL) ? (size_t) (nl - next) : strlen(next);
+        char  *c  = strndup(next, n);
+        next      = (nl != NULL) ? nl + 1 : NULL;
+        if (c != NULL && n > 0)
         {
-            /* Lookup registered milk command in data.cmd */
-            int cmdimatch    = find_command_match(cmdname);
-            int matched_mode = -1;
-
-            if (cmdimatch >= 0 && data.cmd[cmdimatch].argdata != NULL)
-            {
-                int cli_ai = 0;
-                for (int ai = 0; ai < data.cmd[cmdimatch].nbparam; ai++)
-                {
-                    if (data.cmd[cmdimatch].argdata[ai].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
-                    {
-                        if (cli_ai == argidx)
-                        {
-                            uint64_t atype = data.cmd[cmdimatch].argdata[ai].type;
-                            if (atype == CLIARG_FILENAME || atype == CLIARG_FITSFILENAME)
-                            {
-                                matched_mode = CLICOMPLETIONMODE_FILES;
-                            }
-                            else if (atype == CLIARG_FPSNAME)
-                            {
-                                matched_mode = CLICOMPLETIONMODE_FPSPARAMS;
-                            }
-                            else if (atype == CLIARG_IMG || atype == CLIARG_STREAM)
-                            {
-                                matched_mode = CLICOMPLETIONMODE_IMAGES;
-                            }
-                            break;
-                        }
-                        cli_ai++;
-                    }
-                }
-            }
-
-            if (matched_mode >= 0)
-            {
-                data.CLImatchMode = matched_mode;
-            }
-            else
-            {
-                data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
-            }
+            /* no space or closing quote after a path or a call: it goes on */
+            rl_completion_suppress_append = (c[n - 1] == '.' || c[n - 1] == '/' || c[n - 1] == '(');
+            rl_completion_suppress_quote  = rl_completion_suppress_append || g_comp_in_quote;
+            return c;
         }
+        free(c);
     }
+    return NULL;
+}
 
-    if (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
-    {
-        /* Use standard readline filename completion */
-        matches = rl_completion_matches((char *) text,
-                                        (rl_compentry_func_t *) rl_filename_completion_function);
-    }
-    else
-    {
-        /* Use custom generator for commands, images, fps parameters, etc. */
-        matches = rl_completion_matches((char *) text, &CLI_generator);
-    }
-
-    /* Prevent readline from falling back to default filename completion
-     * when our custom generators return NULL. */
-    rl_attempted_completion_over = 1;
-
-    /* Reset append char based on completion mode */
-    if (data.CLImatchMode == CLICOMPLETIONMODE_FILES)
-    {
-        rl_completion_append_character = '\0';
-    }
-    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
-    {
-        const char *d1                 = strchr(text, '.');
-        const char *d2                 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
-        rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
-    }
-    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
-    {
-        const char *d1                 = strchr(text, '.');
-        const char *d2                 = (d1 != NULL) ? strchr(d1 + 1, '.') : NULL;
-        rl_completion_append_character = (d2 != NULL) ? ' ' : '\0';
-    }
-    else if (data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)
-    {
-        rl_completion_append_character = '\0';
-    }
-    else
-    {
-        rl_completion_append_character = ' ';
-    }
-
+/**
+ * @brief Readline custom completion dispatcher invoked on TAB.
+ */
+char **CLI_completion(const char *text, int start, int end)
+{
+    cli_comp_start                 = start;
+    cli_comp_end                   = end;
+    rl_completion_append_character = ' ';
+    char **matches                 = rl_completion_matches((char *) text, &CLI_generator);
+    rl_attempted_completion_over   = 1;
     return matches;
 }
-#endif
+
+#endif /* USE_READLINE */

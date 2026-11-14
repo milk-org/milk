@@ -22,10 +22,10 @@
 #include "processtools.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_list_create.h"
+#include "quicksort.h"
 #include "milkDebugTools.h"
 #include "procCTRL_PIDcollectSystemInfo.h"
 #include "processinfo_scan_shm.h"
-#include "quicksort.h"
 #include "milk_help.h"
 
 static int loopOK = 1;
@@ -560,36 +560,13 @@ int main(int argc, char *argv[])
 
                             if (pinfo_mappings[i]->MeasureTiming != 0)
                             {
-                                long dtiter_array[PROCESSINFO_NBtimer - 1];
-                                long dtexec_array[PROCESSINFO_NBtimer - 1];
-
-                                for (int tindex = 0; tindex < PROCESSINFO_NBtimer - 1; tindex++)
+                                int64_t iter_ns, exec_ns;
+                                if (processinfo_timing_median(pinfo_mappings[i], &iter_ns,
+                                                              &exec_ns) > 0)
                                 {
-                                    int ti1 = (pinfo_mappings[i]->timerindex - tindex +
-                                               PROCESSINFO_NBtimer) %
-                                              PROCESSINFO_NBtimer;
-                                    int ti0 = (ti1 - 1 + PROCESSINFO_NBtimer) % PROCESSINFO_NBtimer;
-
-                                    dtiter_array[tindex] =
-                                        (pinfo_mappings[i]->texecstart[ti1].tv_nsec -
-                                         pinfo_mappings[i]->texecstart[ti0].tv_nsec) +
-                                        1000000000L * (pinfo_mappings[i]->texecstart[ti1].tv_sec -
-                                                       pinfo_mappings[i]->texecstart[ti0].tv_sec);
-
-                                    dtexec_array[tindex] =
-                                        (pinfo_mappings[i]->texecend[ti0].tv_nsec -
-                                         pinfo_mappings[i]->texecstart[ti0].tv_nsec) +
-                                        1000000000L * (pinfo_mappings[i]->texecend[ti0].tv_sec -
-                                                       pinfo_mappings[i]->texecstart[ti0].tv_sec);
+                                    pinfo_mappings[i]->dtmedian_iter_ns = (long) iter_ns;
+                                    pinfo_mappings[i]->dtmedian_exec_ns = (long) exec_ns;
                                 }
-
-                                quick_sort_long(dtiter_array, PROCESSINFO_NBtimer - 1);
-                                quick_sort_long(dtexec_array, PROCESSINFO_NBtimer - 1);
-
-                                pinfo_mappings[i]->dtmedian_iter_ns =
-                                    dtiter_array[(PROCESSINFO_NBtimer - 1) / 2];
-                                pinfo_mappings[i]->dtmedian_exec_ns =
-                                    dtexec_array[(PROCESSINFO_NBtimer - 1) / 2];
                             }
 
                             scan_shm->pinfodisp[i].dtmedian_iter_ns =

@@ -21,20 +21,20 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *immerge_inimname0 = NULL;
-static char     *immerge_inimname1 = NULL;
-static char     *immerge_outimname = NULL;
-static uint32_t *immerge_mergeaxis = NULL;
+static char     immerge_inimname0[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     immerge_inimname1[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     immerge_outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static uint32_t immerge_mergeaxis                               = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                              \
-    X(".in0name", &immerge_inimname0, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 0") \
-    X(".in1name", &immerge_inimname1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 1") \
-    X(".outname", &immerge_outimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
+#define FPS_PARAMS(X)                                                                             \
+    X(".in0name", immerge_inimname0, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 0") \
+    X(".in1name", immerge_inimname1, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image 1") \
+    X(".outname", immerge_outimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output image")  \
     X(".axis", &immerge_mergeaxis, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "merge axis")
 
 
@@ -50,11 +50,7 @@ static uint32_t *immerge_mergeaxis = NULL;
  */
 static MILK_HOT errno_t fpsexec(IMGID *id0, IMGID *id1, IMGID *idout)
 {
-    if (!immerge_mergeaxis)
-    {
-        return RETURN_FAILURE;
-    }
-    uint8_t mergeaxis = (uint8_t) *immerge_mergeaxis;
+    uint8_t mergeaxis = (uint8_t) immerge_mergeaxis;
 
     if (idout->ID == -1)
     {
@@ -133,16 +129,17 @@ static MILK_HOT errno_t image_merge3D_compute(const MILK_RUNNABLE *self)
     resolveIMGID(&id1, ERRMODE_ABORT, dcimg, dcnimg);
     IMGID idout = imgid_make_from_name(immerge_outimname);
 
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec(&id0, &id1, &idout);
+    rc = fpsexec(&id0, &id1, &idout);
     processinfo_update_output_stream(processinfo, idout.im, id0.im);
 
     MILK_PROCINFO_END(self)
     imgid_free(&id0);
     imgid_free(&id1);
     imgid_free(&idout);
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 

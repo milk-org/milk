@@ -23,43 +23,44 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
 
     === "Ubuntu / Debian"
         ```bash
-        sudo apt-get install gcc cmake pkg-config libcfitsio-dev libreadline-dev libfftw3-dev libgsl-dev tmux
+        sudo apt-get install gcc cmake pkg-config libcfitsio-dev libreadline-dev libfftw3-dev libopenblas-dev liblapacke-dev
         ```
 
     === "CentOS / RHEL / Fedora"
         ```bash
-        sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel fftw3-devel gsl-devel tmux
+        sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel fftw3-devel openblas-devel lapacke-devel
         ```
+
+    The C compiler milk was built with (or the one named in `MILK_CALC_CC`) is also invoked at
+    runtime to compile calculator image statements, `.c` extensions and `milk-cc` units.
 
 ??? note "Optional dependencies"
 
-    ### Optional
+    ### Core & CLI Options
 
-    | Dependency   | CMake option   | Default | Purpose                          |
-    | ------------ | -------------- | ------- | -------------------------------- |
-    | **cfitsio**  | `USE_CFITSIO`  | ON      | FITS file I/O (`COREMOD_iofits`) |
-    | **readline** | `USE_READLINE` | ON      | Interactive CLI line editing     |
-    | **GSL**      | `USE_GSL`      | ON      | Numerical routines in plugins    |
-    | **fftw3**    | —              | auto    | FFT (used by some plugins)       |
-    | **openMP**   | —              | auto    | Parallel processing              |
+    | Dependency      | CMake option     | Default | Purpose                                          |
+    | --------------- | ---------------- | ------- | ------------------------------------------------ |
+    | **cfitsio**     | `USE_CFITSIO`    | ON      | FITS file I/O (`COREMOD_iofits`)                 |
+    | **readline**    | `USE_READLINE`   | ON      | Interactive CLI line editing                     |
+    | **tree-sitter** | `USE_TREESITTER` | ON      | Bundled CLI syntax highlighting and formatter    |
+    | **fftw3**       | —                | auto    | Calculator `fft`/`ifft` (threaded in units with the FFTW threads libraries) and the `fft` plugin |
+    | **openMP**      | —                | auto    | Parallel loop execution                          |
 
-    ### Somewhat optional:
+    ### Linear Algebra & GPU Options
 
-    | Dependency          | Default | Purpose                                                     |
-    | ------------------- | ------- | ----------------------------------------------------------- |
-    | **MKL** (`mkl-sdl`) | auto    | Intel linear algebra; takes priority over OpenBLAS if found |
-    | **OpenBLAS**        | auto    | Linear algebra (plugins); preferred over standalone LAPACKE |
-    | **Lapacke**         | auto    | Linear algebra                                              |
-    | **CUDA**            | runtime | Nvidia GPU computation                                      |
-    | **MAGMA**           | runtime | Linear algebra library over CUDA                            |
-    | **tmux**            | runtime | Persistent shells for FPS compute units                     |
+    | Dependency          | CMake option   | Default | Purpose                                                     |
+    | ------------------- | -------------- | ------- | ----------------------------------------------------------- |
+    | **OpenBLAS**        | `USE_OPENBLAS` | ON      | Linear algebra on CPU (auto-disabled if not found)          |
+    | **LAPACKE**         | `USE_LAPACKE`  | ON      | Linear algebra routines (auto-disabled if not found)        |
+    | **MKL** (`mkl-sdl`) | `USE_MKL`      | OFF     | Intel linear algebra; takes priority over OpenBLAS when ON  |
+    | **CUDA**            | `USE_CUDA`     | OFF     | NVIDIA GPU computation                                      |
 
-    **lapacke** is often provided by either MKL or OpenBLAS.
-    If using neither, standalone lapacke is needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
+    **LAPACKE** is often provided by either MKL or OpenBLAS.
+    If using neither, standalone LAPACKE can be installed (`apt install liblapacke-dev` or `yum install lapacke-devel`).
 
 
 !!! tip
-    For a minimal POSIX-only build, all optional dependencies can be skipped. See
+    For a minimal build, all optional dependencies can be skipped. See
     [Build Tiers](build_tiers.md) for details.
 
 ??? abstract "GPU acceleration (optional)"
@@ -67,22 +68,16 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     For GPU-accelerated linear algebra:
 
     - Install **NVIDIA driver** and **CUDA toolkit**
-    - Install **MAGMA**
 
-    If cmake reports "No package 'magma' found", add the MAGMA pkg-config path to your shell
-    profile:
+**Clone:**
 
-    ```bash title="~/.bashrc"
-    export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
-    ```
-
-__Clone:__
 ```bash
 git clone --recursive https://github.com/milk-org/milk.git
 cd milk
 ```
 
-__Build:__
+**Build:**
+
 ```bash
 mkdir _build && cd _build
 cmake ..

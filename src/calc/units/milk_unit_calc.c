@@ -1,0 +1,819 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file milk_unit_calc.c
+ * @brief milk-fpsexec-milk-calc (milk.calc): a compute unit that runs calculator statements on
+ *        each frame.
+ *
+ * Purpose:     a compute unit without C code: calculator statements, compiled once, run on each
+ *              frame of a stream, with their parameters in the unit's FPS.
+ * Does:        .unit.expr (or the file .unit.file names) is compiled once and run on each frame
+ *              of .unit.trigger, else on each tick of the delay loop; a new .unit.expr or
+ *              .unit.file, or a changed stream parameter, is compiled at the next frame, and if
+ *              it does not compile the previous statements keep running (stderr and the process
+ *              message say why). .unit.init (or .unit.initfile) runs once before frame 0, and
+ *              again, with the frame counters reset, when set; .unit.libs loads C extensions.
+ *              The libraries are loaded, the init statements run and the program built at start,
+ *              before the unit's starter returns (unit_prepare()); what fails then, such as a
+ *              stream that does not exist yet, is done again at the first frame. Unit options
+ *              given for a running unit are built by the command itself first (check_program()):
+ *              the unit then loads the kernels from the cache, and a program that does not
+ *              build is refused.
+ *              .unit.params declares parameters, "name:type[=default][:help] ...", as calculator
+ *              variables that @set changes live; a statement that assigns one writes it back to
+ *              the FPS, unless another process set it meanwhile. The extension parameters that
+ *              no call argument binds, and the scalar outputs of extension calls, become FPS
+ *              entries too. Seven read-only variables describe the frame (_n, _t, _dt, _cnt0,
+ *              _ts, _missed, _torn). Names in the statements are shared streams, and a new image
+ *              target becomes one. An error stops the loop and is kept in .unit.error. On the
+ *              command line the program is given with unit options (-e -t -p -f -i -I -l), and
+ *              the values after the command word set the declared parameters, in declaration
+ *              order, as for any fpsexec; --list prints the calculator's catalog.
+ * Used by:     users and scripts, started as any fpsexec (fpsinit, runstart, ...), e.g.
+ *              scripts/milk-demopipeline.
+ * Uses:        libmilkcalc (mcalc.h: mcalc_prog_*, mcalc_ext_*); milk_runnable.h (the
+ *              processinfo loop); fps_unit_options.h (unit options, parameter declarations);
+ *              fps_modulevars_resync.h (writing assigned parameters back).
+ * See also:    run/mc_prog.c (programs); milk_unit_script.c (milk.script, the bash-snippet unit);
+ *              docs/guide/calculator.md, "Compute Units Without C".
+ * Constraints: built with MILK_NO_CLI and without libmilkscript (src/calc/CMakeLists.txt): it
+ *              runs without a session. At most 64 parameters, extension ones included; a
+ *              statement file must be under 64 KiB.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "milk_runnable.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "fps_modulevars_resync.h"
+#include "mcalc.h"
+#include "fps_args.h"
+#include "fps_unit_options.h"
+
+#define CALC_NFIXED 8
+#define CALC_ERROR 7 /* index of .unit.error */
+#define CALC_MAXPAR 64
+#define CALC_NBUILTIN 7
+#define CALC_MAXTEXT 65536
+
+static char expr[FUNCTION_PARAMETER_STRMAXLEN];
+static char trigger[FUNCTION_PARAMETER_STRMAXLEN];
+static char params[FUNCTION_PARAMETER_STRMAXLEN];
+static char file[FUNCTION_PARAMETER_STRMAXLEN];
+static char init_expr[FUNCTION_PARAMETER_STRMAXLEN];
+static char initfile[FUNCTION_PARAMETER_STRMAXLEN];
+static char libs[FUNCTION_PARAMETER_STRMAXLEN];
+static char error[FUNCTION_PARAMETER_STRMAXLEN];
+
+/* Fixed unit-definition entries under .unit.*, set by unit options (not positional values);
+ * user-declared parameters are appended at runtime */
+#define CALC_FIXED_PARAMS(X)                                                                      \
+    X(".unit.expr", expr, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,               \
+      "statements, ; between them (-e)")                                                          \
+    X(".unit.trigger", trigger, FPTYPE_STREAMNAME, 0,                                             \
+      FPFLAG_DEFAULT_INPUT | FPFLAG_TRIGGER_STREAM, "a frame of this stream runs them (-t)")      \
+    X(".unit.params", params, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT, "declared parameters (-p)") \
+    X(".unit.file", file, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,               \
+      "statements from this file (-f)")                                                           \
+    X(".unit.init", init_expr, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,          \
+      "statements run once at start (-i)")                                                        \
+    X(".unit.initfile", initfile, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,       \
+      "init statements from this file (-I)")                                                      \
+    X(".unit.libs", libs, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,               \
+      "compiled C/SO extension libraries (-l)")                                                   \
+    X(".unit.error", error, FPTYPE_STRING, 0, FPFLAG_DEFAULT_OUTPUT, "why the loop stopped")
+
+static FPS_CLI_BINDING bindings[CALC_NFIXED + CALC_MAXPAR] = { CALC_FIXED_PARAMS(FPS_X_BINDING) };
+static CLICMDARGDEF    calc_farg[]                         = { CALC_FIXED_PARAMS(FPS_X_FARG) };
+MILK_RUNNABLE_RT_DEFINE(calc);
+static int nbind = CALC_NFIXED;
+
+static union
+{
+    int64_t  i;
+    int32_t  i32;
+    uint64_t u;
+    uint32_t u32;
+    double   f;
+    float    f32;
+    int32_t  b;
+    char     s[FUNCTION_PARAMETER_STRMAXLEN];
+} pval[CALC_MAXPAR];
+static char          pkey[CALC_MAXPAR][FUNCTION_PARAMETER_KEYWORD_STRMAXLEN + 1];
+static char          pdescr[CALC_MAXPAR][FUNCTION_PARAMETER_DESCR_STRMAXLEN];
+static mcalc_binding cvars[CALC_MAXPAR + CALC_NBUILTIN];
+static int64_t       frame_n    = 0;
+static double        frame_t    = 0.0;
+static double        frame_dt   = 0.0;
+static int64_t       frame_cnt0 = 0;   /* _cnt0: the trigger frame's counter */
+static double        frame_ts   = 0.0; /* _ts: the trigger frame's write time (s, CLOCK_REALTIME) */
+static int64_t       frame_missed = 0; /* _missed: trigger frames skipped before this one */
+static int64_t frame_torn = 0; /* _torn: kept passes re-run because an input was being written */
+
+static errno_t compute(const MILK_RUNNABLE *self);
+
+static MILK_RUNNABLE unit_calc = {
+    .kind = MILK_RUNNABLE_FPS,
+    .app  = {
+        .fps_name    = "milkcalc",
+        .cmdkey      = "calc",
+        .description = "run calculator statements on each frame",
+        .description_long =
+            "Runs calculator statements (-e, or the file -f names) on each frame of the trigger "
+            "stream (-t), or once, or on each -loopd tick without one. -i or -I runs statements "
+            "once before frame 0. -p declares parameters that the statements read: the values "
+            "after the command word set them, in declaration order, and @set changes them while "
+            "it runs. Built-in variables: _n (frame index), _t and _dt (seconds), _cnt0, _ts and "
+            "_missed (the trigger frame's counter, write time and skipped frames), _torn (passes "
+            "re-run because an input stream was being written). Statements: "
+            "'if <scalar>: <statement>', 'if <cond> { ... } elif <cond> { ... } else { ... }', "
+            "'for k = start:stop[:step] { ... }', 'local name = <expr>', 'def f(x, ...) = <expr>', "
+            "'skip', 'post(name)', 'hist(s, N)', 'prev(s[, k])' and 'zeros(nx[, ny[, nz]])'.",
+    },
+    .srcfile     = __FILE__,
+    .bindings    = bindings,
+    .nb_bindings = CALC_NFIXED,
+    .farg        = calc_farg,
+    .nbarg       = (int) (sizeof(calc_farg) / sizeof(calc_farg[0])),
+    .rt          = &calc_rt,
+    .compute     = compute,
+};
+
+/**
+ * now_sec - Read the current monotonic clock time in seconds
+ *
+ * Queries `CLOCK_MONOTONIC` to compute elapsed time `_t` and frame delta `_dt`
+ * for calculator expressions without sensitivity to wall-clock adjustments.
+ *
+ * Return: Monotonic timestamp in floating-point seconds.
+ */
+static double now_sec(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double) ts.tv_sec + (double) ts.tv_nsec * 1e-9;
+}
+
+static char *source_text(const char *inline_str, const char *fpath, char *err, size_t errsz);
+
+/**
+ * is_fixed - Check whether a parameter name collides with built-in variables or reserved subtrees
+ * @name: Candidate parameter name (without leading dot)
+ *
+ * Rejects built-in frame variables (`_n`, `_t`, `_dt`, `_cnt0`, `_ts`, `_missed`, `_torn`),
+ * reserved FPS subtrees (`unit`, `conf`, `procinfo`) and the stream prefix letters `S` and `L`.
+ *
+ * Return: 1 if @name is reserved, 0 otherwise.
+ */
+static int is_fixed(const char *name)
+{
+    return strcmp(name, "_n") == 0 || strcmp(name, "_t") == 0 || strcmp(name, "_dt") == 0 ||
+           strcmp(name, "_cnt0") == 0 || strcmp(name, "_ts") == 0 || strcmp(name, "_missed") == 0 ||
+           strcmp(name, "_torn") == 0 || strcmp(name, "unit") == 0 || strcmp(name, "conf") == 0 ||
+           strcmp(name, "procinfo") == 0 || strcmp(name, "S") == 0 || strcmp(name, "L") == 0;
+}
+
+static int is_bound(const char *name)
+{
+    int npar = nbind - CALC_NFIXED;
+    for (int k = 0; k < npar; k++)
+    {
+        if (strcmp(cvars[k].name, name) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/** bind() - add declared parameter @name of @type, primary when writable (its value in pval[]
+ * stays to be set). */
+static int bind(const char *name, uint64_t type, uint64_t fpflag, const char *descr)
+{
+    int k       = nbind - CALC_NFIXED;
+    int primary = (fpflag & FPFLAG_WRITE) ? 1 : 0;
+
+    if (k == CALC_MAXPAR || is_fixed(name))
+    {
+        fprintf(stderr, "milk.calc: parameter '%s': %s\n", name,
+                is_fixed(name) ? "reserved" : "too many");
+        return -1;
+    }
+    memset(&pval[k], 0, sizeof(pval[k]));
+    snprintf(pkey[k], sizeof(pkey[k]), ".%s", name);
+    snprintf(pdescr[k], sizeof(pdescr[k]), "%s", (descr != NULL) ? descr : "");
+    bindings[nbind++] =
+        (FPS_CLI_BINDING) { pkey[k], &pval[k], type, primary, fpflag, pdescr[k], -2, -1 };
+    cvars[k] = (mcalc_binding) { pkey[k] + 1, type, &pval[k] };
+    return 0;
+}
+
+static void on_ext_param(const char *label, const milk_calc_param_spec_t *spec, int is_op, void *ud)
+{
+    int *rc = (int *) ud;
+    if (*rc != 0)
+    {
+        return;
+    }
+    char pname[128];
+    snprintf(pname, sizeof(pname), "%s.%s", label, spec->name);
+    if (is_bound(pname))
+    {
+        return;
+    }
+    uint64_t fpflag = spec->fpflags;
+    if (fpflag == 0)
+    {
+        fpflag = FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN;
+    }
+    else if (!is_op && (fpflag & FPFLAG_DEFAULT_INPUT))
+    {
+        fpflag |= FPFLAG_WRITERUN;
+    }
+    if (bind(pname, spec->fptype, fpflag, spec->descr) != 0)
+    {
+        *rc = -1;
+        return;
+    }
+    int k = nbind - CALC_NFIXED - 1;
+    switch (spec->fptype)
+    {
+    case FPTYPE_INT64:
+        pval[k].i = (int64_t) spec->def_num;
+        break;
+    case FPTYPE_INT32:
+        pval[k].i32 = (int32_t) spec->def_num;
+        break;
+    case FPTYPE_UINT64:
+        pval[k].u = (uint64_t) ((spec->def_num > 0.0) ? spec->def_num : 0.0);
+        break;
+    case FPTYPE_UINT32:
+        pval[k].u32 = (uint32_t) ((spec->def_num > 0.0) ? spec->def_num : 0.0);
+        break;
+    case FPTYPE_FLOAT64:
+        pval[k].f = spec->def_num;
+        break;
+    case FPTYPE_FLOAT32:
+        pval[k].f32 = (float) spec->def_num;
+        break;
+    case FPTYPE_ONOFF:
+        pval[k].b = (spec->def_num != 0.0) ? 1 : 0;
+        break;
+    default:
+        pval[k].s[0] = '\0';
+        break;
+    }
+}
+
+static void on_ext_scalar_out(const char *var_name, const char *descr, void *ud)
+{
+    int *rc = (int *) ud;
+    if (*rc != 0 || is_bound(var_name) || is_fixed(var_name))
+    {
+        return;
+    }
+    if (bind(var_name, FPTYPE_FLOAT64, FPFLAG_DEFAULT_OUTPUT, descr) != 0)
+    {
+        *rc = -1;
+    }
+}
+
+/** bind_declared() - milk_unit_declare()'s bind: a writable input, valued in pval[]. */
+static void *bind_declared(const char *name, uint64_t type, const char *help)
+{
+    return (bind(name, type, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, help) == 0)
+               ? (void *) &pval[nbind - CALC_NFIXED - 1]
+               : NULL;
+}
+
+/** declare() - bind the parameters of @text ("name:type[=default][:help]", blank-separated) and of -l. */
+static int declare(const char *text)
+{
+    int rc = milk_unit_declare("milk.calc", text, bind_declared);
+
+    if (rc == 0 && (libs[0] != '\0' || mcalc_ext_count() > 0))
+    {
+        char err[512] = "";
+        int  nbuiltin = mcalc_ext_count(); /* the built-in kernels: parameters only when called */
+        if (libs[0] != '\0' && mcalc_ext_load_list(libs, err, sizeof(err)) != 0)
+        {
+            fprintf(stderr, "milk.calc: %s\n", err);
+            return -1;
+        }
+        char *itext = (init_expr[0] != '\0' || initfile[0] != '\0')
+                          ? source_text(init_expr, initfile, err, sizeof(err))
+                          : NULL;
+        char *etext =
+            (expr[0] != '\0' || file[0] != '\0') ? source_text(expr, file, err, sizeof(err)) : NULL;
+        if (itext == NULL && etext == NULL && libs[0] != '\0')
+        {
+            int next = mcalc_ext_count();
+            for (int i = nbuiltin; i < next && rc == 0; i++)
+            {
+                const milk_calc_ext_entry_t *e = mcalc_ext_get(i);
+                const milk_calc_param_set_t *ps =
+                    (e != NULL && e->get_params != NULL) ? e->get_params() : NULL;
+                if (ps != NULL)
+                {
+                    for (int p = 0; p < ps->nparams && rc == 0; p++)
+                    {
+                        on_ext_param(e->name, &ps->specs[p], e->kind == MILK_EXT_OP, &rc);
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (itext != NULL)
+            {
+                mcalc_ext_scan_source(itext, on_ext_param, on_ext_scalar_out, &rc);
+            }
+            if (etext != NULL && rc == 0)
+            {
+                mcalc_ext_scan_source(etext, on_ext_param, on_ext_scalar_out, &rc);
+            }
+        }
+        free(itext);
+        free(etext);
+    }
+    return rc;
+}
+
+/** find_params() - bind the declared parameters of FPS @name (its one- or two-level parameters that are not
+ * fixed), with their current values. */
+static int find_params(const char *name)
+{
+    FPS fps;
+    int rc = 0;
+
+    if (fps_connect(name, &fps, FPSCONNECT_SIMPLE) == -1)
+    {
+        return 0;
+    }
+    long pl = functionparameter_GetParamIndex(&fps, ".unit.libs");
+    if (pl >= 0 && fps.parray[pl].val.string[0][0] != '\0')
+    {
+        char err[512] = "";
+        if (mcalc_ext_load_list(fps.parray[pl].val.string[0], err, sizeof(err)) != 0)
+        {
+            fprintf(stderr, "milk.calc %s: %s\n", name, err);
+            fps_disconnect(&fps);
+            return -1;
+        }
+    }
+    for (long i = 0; i < fps.md->NBparamMAX && rc == 0; i++)
+    {
+        const FPS_PARAM *p = &fps.parray[i];
+        if ((p->fpflag & FPFLAG_ACTIVE) && (p->keywordlevel == 2 || p->keywordlevel == 3) &&
+            !is_fixed(p->keyword[1]) &&
+            (p->type == FPTYPE_INT64 || p->type == FPTYPE_INT32 || p->type == FPTYPE_UINT64 ||
+             p->type == FPTYPE_UINT32 || p->type == FPTYPE_FLOAT64 || p->type == FPTYPE_FLOAT32 ||
+             p->type == FPTYPE_ONOFF || p->type == FPTYPE_STRING || p->type == FPTYPE_STREAMNAME ||
+             p->type == FPTYPE_FITSFILENAME || p->type == FPTYPE_FILENAME))
+        {
+            char bname[128];
+            if (p->keywordlevel == 2)
+            {
+                snprintf(bname, sizeof(bname), "%s", p->keyword[1]);
+            }
+            else
+            {
+                snprintf(bname, sizeof(bname), "%s.%s", p->keyword[1], p->keyword[2]);
+            }
+            rc = bind(bname, p->type, p->fpflag, p->description);
+            if (rc == 0)
+            {
+                sync_fps_to_local(&fps, i, &bindings[nbind - 1]);
+            }
+        }
+    }
+    fps_disconnect(&fps);
+    return rc;
+}
+
+/** source_text() - @fpath's content when @fpath is set, else @inline_str; NULL (@err) if it cannot be read. */
+static char *source_text(const char *inline_str, const char *fpath, char *err, size_t errsz)
+{
+    if (fpath[0] == '\0')
+    {
+        return strdup(inline_str);
+    }
+    FILE *fp = fopen(fpath, "r");
+    char *t  = (fp != NULL) ? calloc(1, CALC_MAXTEXT) : NULL;
+    if (t != NULL && fread(t, 1, CALC_MAXTEXT - 1, fp) == CALC_MAXTEXT - 1)
+    {
+        free(t);
+        t = NULL;
+        snprintf(err, errsz, "%s is longer than %d bytes", fpath, CALC_MAXTEXT - 1);
+    }
+    else if (t == NULL)
+    {
+        snprintf(err, errsz, "cannot read %s", fpath);
+    }
+    if (fp != NULL)
+    {
+        fclose(fp);
+    }
+    return t;
+}
+
+/** unit_vars() - bind the seven read-only frame variables after the parameters; the number of
+ * calculator variables. */
+static int unit_vars(void)
+{
+    int n = nbind - CALC_NFIXED;
+
+    cvars[n + 0] = (mcalc_binding) { "_n", FPTYPE_INT64, &frame_n };
+    cvars[n + 1] = (mcalc_binding) { "_t", FPTYPE_FLOAT64, &frame_t };
+    cvars[n + 2] = (mcalc_binding) { "_dt", FPTYPE_FLOAT64, &frame_dt };
+    cvars[n + 3] = (mcalc_binding) { "_cnt0", FPTYPE_INT64, &frame_cnt0 };
+    cvars[n + 4] = (mcalc_binding) { "_ts", FPTYPE_FLOAT64, &frame_ts };
+    cvars[n + 5] = (mcalc_binding) { "_missed", FPTYPE_INT64, &frame_missed };
+    cvars[n + 6] = (mcalc_binding) { "_torn", FPTYPE_INT64, &frame_torn };
+    return n + CALC_NBUILTIN;
+}
+
+/** check_program() - milk_unit_main()'s check: build the program that the unit options and the
+ * FPS of a running unit give, without running it. The kernels are then in the cache, where the
+ * unit finds them at its next frame. 0, or -1 after saying why it does not build. */
+static int check_program(void)
+{
+    char        err[512] = "";
+    char       *text     = NULL;
+    mcalc_prog *prog     = NULL;
+
+    if (expr[0] == '\0' && file[0] == '\0')
+    {
+        return 0;
+    }
+    milk_data_init(); /* the image and variable tables: fpsexec's main has not run yet */
+    if ((libs[0] == '\0' || mcalc_ext_load_list(libs, err, sizeof(err)) == 0) &&
+        (text = source_text(expr, file, err, sizeof(err))) != NULL)
+    {
+        prog = mcalc_prog_new(text, cvars, unit_vars(), err, sizeof(err));
+    }
+    free(text);
+    if (prog == NULL)
+    {
+        fprintf(stderr, "milk.calc: not applied: %s\n", err);
+        return -1;
+    }
+    mcalc_prog_free(prog);
+    return 0;
+}
+
+/** report - Print @msg to stderr, set `.unit.error`, and write processinfo message. */
+static void report(PROCESSINFO *pi, const char *msg)
+{
+    fprintf(stderr, "milk.calc %s: %s\n", dcfpsptr->md->name, msg);
+    snprintf(error, sizeof(error), "%s", msg);
+    functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", error);
+    if (pi != NULL)
+    {
+        processinfo_WriteMessage(pi, msg);
+    }
+}
+
+typedef struct
+{
+    mcalc_prog *prog;
+    long        pe;
+    long        pf;
+    long        pi;
+    long        pif;
+    long        pl;
+    uint64_t    built[2];
+    uint64_t    init_built[2];
+    uint64_t    libs_built;
+    uint64_t    stream_built[CALC_MAXPAR];
+    int         init_done;
+    double      t_start;
+    double      t_prev;
+    int         npar;
+} calc_loop_ctx;
+
+/** run_unit_init_if_needed - Execute `.unit.init` / `.unit.initfile` when first run or modified. */
+static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
+{
+    uint64_t pi_cnt  = (ctx->pi >= 0) ? dcfpsptr->parray[ctx->pi].value_cnt : 0;
+    uint64_t pif_cnt = (ctx->pif >= 0) ? dcfpsptr->parray[ctx->pif].value_cnt : 0;
+
+    if (ctx->init_done && pi_cnt == ctx->init_built[0] && pif_cnt == ctx->init_built[1])
+    {
+        return 0;
+    }
+
+    frame_n            = 0;
+    frame_t            = 0.0;
+    frame_dt           = 0.0;
+    ctx->init_done     = 1;
+    ctx->init_built[0] = pi_cnt;
+    ctx->init_built[1] = pif_cnt;
+    mcalc_prog_free(ctx->prog);
+    ctx->prog = NULL;
+
+    if (init_expr[0] != '\0' || initfile[0] != '\0')
+    {
+        unsigned char assigned[CALC_MAXPAR + CALC_NBUILTIN] = { 0 };
+        char         *itext = source_text(init_expr, initfile, err, errsz);
+        if (itext == NULL || mcalc_prog_exec_once(itext, cvars, ctx->npar + CALC_NBUILTIN, assigned,
+                                                  err, errsz) != 0)
+        {
+            free(itext);
+            ctx->init_done = 0; /* at start: run again at the first frame */
+            return -1;
+        }
+        free(itext);
+        for (int k = 0; k < ctx->npar; k++)
+        {
+            if (assigned[k])
+            {
+                /* guarded: a value set by another process (@set) since the frame read it wins */
+                fpsresync_modvar_to_fps(dcfpsptr, &bindings[CALC_NFIXED + k], 1);
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * unit_prepare - Load the libraries, run the init statements and build the program, each when
+ *                new or changed
+ * @processinfo: The unit's processinfo; NULL at start, before it exists
+ * @ctx:         Loop state
+ * @err:         Error message buffer
+ * @errsz:       Capacity of @err in bytes
+ *
+ * Called at start, so that the first frame finds the kernels compiled, then at each frame, where
+ * a changed program that does not build leaves the running statements.
+ *
+ * Return: 0, or -1 (@err) when a library does not load, the init statements fail or there is no
+ * program to run
+ */
+static int unit_prepare(PROCESSINFO *processinfo, calc_loop_ctx *ctx, char *err, size_t errsz)
+{
+    int      stream_changed = 0;
+    uint64_t pe_cnt         = (ctx->pe >= 0) ? dcfpsptr->parray[ctx->pe].value_cnt : 0;
+    uint64_t pf_cnt         = (ctx->pf >= 0) ? dcfpsptr->parray[ctx->pf].value_cnt : 0;
+
+    if (libs[0] != '\0' &&
+        (!ctx->init_done ||
+         (ctx->pl >= 0 && dcfpsptr->parray[ctx->pl].value_cnt != ctx->libs_built)))
+    {
+        ctx->libs_built = (ctx->pl >= 0) ? dcfpsptr->parray[ctx->pl].value_cnt : 0;
+        if (mcalc_ext_load_list(libs, err, errsz) != 0)
+        {
+            return -1;
+        }
+    }
+    if (run_unit_init_if_needed(ctx, err, errsz) != 0)
+    {
+        return -1;
+    }
+    for (int k = 0; k < ctx->npar; k++)
+    {
+        long pidx = bindings[CALC_NFIXED + k]._fps_pindex;
+        if (bindings[CALC_NFIXED + k].type == FPTYPE_STREAMNAME && pidx >= 0 &&
+            dcfpsptr->parray[pidx].value_cnt != ctx->stream_built[k])
+        {
+            stream_changed = 1;
+        }
+    }
+    if (ctx->prog == NULL || stream_changed || pe_cnt != ctx->built[0] || pf_cnt != ctx->built[1])
+    {
+        /* build, then swap: a change that does not compile leaves the running statements */
+        char       *text = source_text(expr, file, err, errsz);
+        mcalc_prog *prog = (text != NULL)
+                               ? mcalc_prog_new(text, cvars, ctx->npar + CALC_NBUILTIN, err, errsz)
+                               : NULL;
+        if (prog != NULL || ctx->prog == NULL)
+        {
+            mcalc_prog_free(ctx->prog);
+            ctx->prog = prog;
+            mcalc_prog_set_processinfo(ctx->prog, processinfo);
+        }
+        else
+        {
+            char msg[600];
+            snprintf(msg, sizeof(msg), "not applied, still running the previous statements: %s",
+                     err);
+            fprintf(stderr, "milk.calc %s: %s\n", dcfpsptr->md->name, msg);
+            if (processinfo != NULL)
+            {
+                processinfo_WriteMessage(processinfo, msg);
+            }
+            err[0] = '\0';
+        }
+        ctx->built[0] = pe_cnt;
+        ctx->built[1] = pf_cnt;
+        for (int k = 0; k < ctx->npar; k++)
+        {
+            long pidx = bindings[CALC_NFIXED + k]._fps_pindex;
+            if (pidx >= 0)
+            {
+                ctx->stream_built[k] = dcfpsptr->parray[pidx].value_cnt;
+            }
+        }
+        free(text);
+    }
+    return (ctx->prog != NULL) ? 0 : -1;
+}
+
+/** run_unit_frame_step - Update frame telemetry and run one frame. */
+static int run_unit_frame_step(PROCESSINFO   *processinfo,
+                               calc_loop_ctx *ctx,
+                               char          *err,
+                               size_t         errsz)
+{
+    double t_now = now_sec();
+
+    if (frame_n == 0)
+    {
+        ctx->t_start = t_now;
+    }
+    frame_t      = t_now - ctx->t_start;
+    frame_dt     = (frame_n == 0) ? 0.0 : (t_now - ctx->t_prev);
+    ctx->t_prev  = t_now;
+    frame_cnt0   = frame_n;
+    frame_ts     = 0.0;
+    frame_missed = 0;
+    frame_torn   = (int64_t) mcalc_torn_count();
+
+    if (processinfo != NULL && processinfo->trigger_image != NULL &&
+        processinfo->trigger_image->md != NULL)
+    {
+        const IMAGE_METADATA *tmd = processinfo->trigger_image->md;
+        frame_cnt0                = (int64_t) tmd->cnt0;
+        frame_ts     = (double) tmd->writetime.tv_sec + 1e-9 * (double) tmd->writetime.tv_nsec;
+        frame_missed = processinfo->triggermissedframe;
+    }
+    if (mcalc_prog_run(ctx->prog, err, errsz) != 0)
+    {
+        return -1;
+    }
+    for (int k = 0; k < ctx->npar; k++)
+    {
+        if (mcalc_prog_assigns(ctx->prog, k))
+        {
+            /* guarded: a value set by another process (@set) since the frame read it wins */
+            fpsresync_modvar_to_fps(dcfpsptr, &bindings[CALC_NFIXED + k], 1);
+        }
+    }
+    frame_n++;
+    return 0;
+}
+
+/**
+ * compute - Main processinfo frame loop compiling and executing calculator expressions
+ * @self: Pointer to the `MILK_RUNNABLE` descriptor for this compute unit
+ *
+ * Return: `RETURN_SUCCESS` on clean loop exit, `RETURN_FAILURE` if an expression error occurred.
+ */
+static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
+{
+    char          err[512] = "";
+    calc_loop_ctx ctx      = { 0 };
+    const char   *tname    = dcfpsptr->cmdset.triggerstreamname;
+
+    ctx.pe   = functionparameter_GetParamIndex(dcfpsptr, ".unit.expr");
+    ctx.pf   = functionparameter_GetParamIndex(dcfpsptr, ".unit.file");
+    ctx.pi   = functionparameter_GetParamIndex(dcfpsptr, ".unit.init");
+    ctx.pif  = functionparameter_GetParamIndex(dcfpsptr, ".unit.initfile");
+    ctx.pl   = functionparameter_GetParamIndex(dcfpsptr, ".unit.libs");
+    ctx.npar = unit_vars() - CALC_NBUILTIN;
+
+    mcalc_prog_attach();
+    error[0] = '\0';
+    functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", "");
+    if (tname[0] != '\0' && image_ID(tname, dcimg, dcnimg) == -1)
+    {
+        read_sharedmem_image(tname, dcimg, dcnimg); /* the processinfo trigger waits on it */
+    }
+    processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
+
+    /* At start, before the unit's starter is told that the loop is active. What fails here (a
+     * stream that does not exist yet) is done again at the first frame, and reported there. */
+    fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 1);
+    if (unit_prepare(NULL, &ctx, err, sizeof(err)) != 0)
+    {
+        err[0] = '\0';
+    }
+
+    MILK_PROCINFO_INIT(self)
+    mcalc_prog_set_processinfo(ctx.prog, processinfo);
+    MILK_PROCINFO_LOOPSTART(self)
+    {
+        if (unit_prepare(processinfo, &ctx, err, sizeof(err)) != 0 ||
+            run_unit_frame_step(processinfo, &ctx, err, sizeof(err)) != 0)
+        {
+            report(processinfo, err);
+            processloopOK = 0;
+        }
+    }
+    MILK_PROCINFO_END(self)
+
+    mcalc_prog_free(ctx.prog);
+    return (err[0] != '\0') ? RETURN_FAILURE : RETURN_SUCCESS;
+}
+
+/**
+ * main - Entry point for the milk-fpsexec-milk-calc standalone compute unit
+ * @argc: Command-line argument count
+ * @argv: Command-line argument vector
+ *
+ * The unit options -e -t -p -f -i -I set the unit definition (.unit.expr .unit.trigger
+ * .unit.params .unit.file .unit.init .unit.initfile); milk_unit_main() creates or updates the FPS
+ * and delegates to `milk_runnable_main()`.
+ *
+ * Return: 0 on success, 2 on a usage error, non-zero on other errors.
+ */
+int main(int argc, char **argv)
+{
+    static const milk_unit_opt opts[] = {
+        { "-e", "--expr", 0, 0, "write the statements in a file (-f)" },
+        { "-t", "--trigger", 1, 0, NULL },
+        { "-p", "--params", 2, 0, NULL },
+        { "-f", "--file", 3, 1, NULL },
+        { "-i", "--init", 4, 0, "write the statements in a file (-I)" },
+        { "-I", "--initfile", 5, 1, NULL },
+        { "-l", "--lib", 6, 2, NULL },
+    };
+    static const milk_unit_desc desc = {
+        .tag         = "milk.calc",
+        .unit        = &unit_calc,
+        .bindings    = bindings,
+        .nfixed      = CALC_NFIXED,
+        .nbind       = &nbind,
+        .opts        = opts,
+        .nopt        = (int) (sizeof(opts) / sizeof(opts[0])),
+        .params_opt  = 2,
+        .declare     = declare,
+        .find_params = find_params,
+        .check       = check_program,
+        .help_options =
+            "  -e, --expr EXPR       statements, ; between them (.unit.expr)\n"
+            "  -t, --trigger STREAM  a frame of STREAM runs them (.unit.trigger)\n"
+            "  -p, --params DECL     declare parameters (.unit.params):\n"
+            "                        \"name:type[=default][:help] ...\",\n"
+            "                        types int uint float bool str stream fits\n"
+            "  -f, --file FILE       statements from FILE instead of -e (.unit.file)\n"
+            "  -i, --init EXPR       statements run once before frame 0 (.unit.init)\n"
+            "  -I, --initfile FILE   init statements from FILE instead of -i (.unit.initfile)\n"
+            "  -l, --lib FILE        load user C (.c) or shared object (.so) extension "
+            "(.unit.libs)\n"
+            "      --list [PATTERN]  list built-in operators and functions & C extensions\n"
+            "  fpsinit and exec create the FPS from them; on an existing FPS, -e -t -f -i -I -l\n"
+            "  update .unit.* (a running unit recompiles at its next frame) and -p cannot\n"
+            "  change. Why the loop stopped is recorded in .unit.error.\n"
+            "  Example:\n"
+            "    milk-fpsexec-milk-calc -n dsub -t cam -p \"gain:float=1 off:float=0\" \\\n"
+            "        -e \"out = cam * gain + off\" exec 2.5 .off=-1\n",
+    };
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--tokens") == 0)
+        {
+            fprintf(stderr, "milk.calc: '%s' was removed: use --list\n", argv[i]);
+            return 2;
+        }
+        if (strcmp(argv[i], "--list") == 0)
+        {
+            int         json_mode = 0;
+            const char *pat       = NULL;
+            for (int j = 1; j < argc; j++)
+            {
+                if (j == i || strcmp(argv[j], "--list") == 0)
+                {
+                    continue;
+                }
+                if (strcmp(argv[j], "--json") == 0)
+                {
+                    json_mode = 1;
+                }
+                else if (j + 1 < argc &&
+                         (strcmp(argv[j], "-l") == 0 || strcmp(argv[j], "--lib") == 0))
+                {
+                    char err[512] = "";
+                    if (mcalc_ext_load_list(argv[++j], err, sizeof(err)) != 0)
+                    {
+                        fprintf(stderr, "milk.calc: %s\n", err);
+                        return 1;
+                    }
+                }
+                else if (pat == NULL && argv[j][0] != '-')
+                {
+                    pat = argv[j];
+                }
+            }
+            return mcalc_print_catalog(pat, json_mode);
+        }
+    }
+
+    return milk_unit_main(argc, argv, &desc);
+}

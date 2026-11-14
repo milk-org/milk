@@ -75,7 +75,7 @@ mem.mk2Dim "s>imA" 100 100
 mem.mk2Dim "s>imB" 100 100
 mem.imsetsempost imA -1
 mem.imsetsempost imB -1
-exitCLI
+exit
 EOF
 
 set +e
@@ -100,7 +100,7 @@ tmux send-keys -t loopAB \
     "mem.shmimpoke ..loopcntMax ${NBLOOP}" C-M
 
 tmux send-keys -t loopAB "mem.shmimpoke imB" C-M
-tmux send-keys -t loopAB "exitCLI" C-M
+tmux send-keys -t loopAB "exit" C-M
 
 TMPOUT=$(mktemp)
 TSTART=$(date +%s%N)
@@ -114,7 +114,7 @@ mem.shmimpoke ..triggersname imB
 mem.shmimpoke ..loopcntMax ${NBLOOP}
 mem.shmimpoke imA
 mem.imseminfo imA
-exitCLI
+exit
 EOF
 
 TEND=$(date +%s%N)
@@ -148,6 +148,6 @@ echo ""
 # cleanup
 
 tmux kill-session -t loopAB 2>/dev/null
-milk-shmim-rm imA > /dev/null 2>&1
-milk-shmim-rm imB > /dev/null 2>&1
+milk-stream-rm imA > /dev/null 2>&1 || rm -f "${MILK_SHM_DIR:-/milk/shm}/imA.im.shm"
+milk-stream-rm imB > /dev/null 2>&1 || rm -f "${MILK_SHM_DIR:-/milk/shm}/imB.im.shm"
 rm -f "${TMPOUT}"

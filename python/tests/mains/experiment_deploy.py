@@ -16,63 +16,6 @@ def exec(cmd: str):
     return subprocess.run(shlex.split(cmd))
 
 
-def fps_inject_env_into_tmux(fps: FPS) -> None:
-    """Inject MILK_SHM_DIR and MILK_PROC_DIR into all tmux windows of an FPS.
-
-    Sends export commands to the ctrl, conf, and run windows of the
-    tmux session named after the FPS, using the values currently set
-    in os.environ.
-    """
-    shm_dir = os.environ.get("MILK_SHM_DIR", "")
-    proc_dir = os.environ.get("MILK_PROC_DIR", "")
-    session = fps.name
-
-    for window in ("ctrl", "conf", "run"):
-        target = f"{session}:{window}"
-        if shm_dir:
-            subprocess.run(
-                shlex.split(
-                    f"tmux send-keys -t {target} export MILK_SHM_DIR={shm_dir} C-m"
-                )
-            )
-        if proc_dir:
-            subprocess.run(
-                shlex.split(
-                    f"tmux send-keys -t {target} export MILK_PROC_DIR={proc_dir} C-m"
-                )
-            )
-
-
-def fps_sanitize_start(fpss: list[FPS]) -> None:
-    import libtmux
-
-    TSRV = libtmux.server.Server()
-
-    tmux_needs_start = []
-    for kk, fps in enumerate(fpss):
-        try:
-            for win_name in ("ctrl", "conf", "run"):
-                p = TSRV.windows.get(
-                    session_name=fps.name, window_name=win_name
-                ).active_pane
-                p.send_keys("C-c", enter=False, suppress_history=False)
-                p.send_keys("C-c", enter=False, suppress_history=False)
-                p.send_keys("C-z", enter=False, suppress_history=False)
-                p.send_keys("kill %")
-            tmux_needs_start += [False]
-        except:
-            fps.tmux_stop()
-            tmux_needs_start += [True]
-
-    time.sleep(1)
-    for fps, tstart in zip(fpss, tmux_needs_start):
-        if tstart:
-            fps.tmux_start()
-    time.sleep(1)
-    for fps in fpss:
-        fps_inject_env_into_tmux(fps)
-
-
 def configure_procinfo(fps: FPS) -> None:
     fps["procinfo.enabled"] = True
     fps["procinfo.NBthread"] = 1
@@ -86,12 +29,12 @@ def configure_procinfo(fps: FPS) -> None:
 @pytest.fixture
 def fixt_streamdelay_pingpong():
 
-    exec("milk-fpsexec-mem-streamdelay -procinfo -tmux a:fpsinit")
-    exec("milk-fpsexec-mem-streamdelay -procinfo -tmux b:fpsinit")
+    # fpsinit captures this environment for the units (MILK_SHM_DIR, MILK_PROC_DIR, ...)
+    exec("milk-fpsexec-mem-streamdelay a:fpsinit")
+    exec("milk-fpsexec-mem-streamdelay b:fpsinit")
 
     fps_a = FPS("a")
     fps_b = FPS("b")
-    fps_sanitize_start([fps_a, fps_b])
 
     fps_a["in_name"] = "ping"
     fps_a["out_name"] = "pong"
@@ -190,10 +133,9 @@ def test_pingpong_histogram(fixt_streamdelay_pingpong):
 
 @pytest.fixture(scope="class")
 def fixt_mvm_no_run():
-    exec("milk-fpsexec-linalg-MVMextract -procinfo -tmux m:fpsinit")
+    exec("milk-fpsexec-linalg-MVMextract m:fpsinit")
 
     fps_m = FPS("m")
-    fps_sanitize_start([fps_m])
 
     fps_m["procinfo.enabled"] = True
     fps_m["procinfo.NBthread"] = 1

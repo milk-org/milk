@@ -23,4 +23,7 @@
 /* Global process-info list (defined in processinfo_globals.c) */
 extern PROCESSINFOLIST *pinfolist;
 
+/* This process's processinfo, set by processinfo_setup(), read by the fatal-signal handler */
+extern PROCESSINFO *volatile processinfo_self;
+
 #endif // PROCESSINFO_INTERNAL_H

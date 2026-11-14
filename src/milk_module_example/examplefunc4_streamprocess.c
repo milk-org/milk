@@ -16,16 +16,16 @@
 #include "examplefunc4_streamprocess.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// Local variables pointers
+// Local variables
 
 static char inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 static char outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
-static uint32_t *cntindex;
-static uint32_t *cntindexmax;
+static uint32_t cntindex    = 0;
+static uint32_t cntindexmax = 0;
 
-static int64_t *ex0mode;
-static int64_t *ex1mode;
+static int32_t ex0mode = 0;
+static int32_t ex1mode = 0;
 
 #define STREAMPROCESS_PARAMS(X)                                                        \
     X(".in_name", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
@@ -64,11 +64,11 @@ static MILK_COLD errno_t streamprocess_confcheck(void)
         }
 
         // increment counter at every configuration check
-        *cntindex = *cntindex + 1;
+        cntindex = cntindex + 1;
 
-        if (*cntindex >= *cntindexmax)
+        if (cntindex >= cntindexmax)
         {
-            *cntindex = 0;
+            cntindex = 0;
         }
     }
 

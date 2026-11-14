@@ -9,13 +9,75 @@
  */
 
 
+#include <errno.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/prctl.h>
+#include <sys/stat.h>
+#include <time.h>
+
 #include "processinfo_internal.h"
+#include "processinfo_WriteMessage.h"
 #include "processtools_trigger.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
 #ifndef CLOCK_MILK
 #    define CLOCK_MILK CLOCK_REALTIME
 #endif
+
+/**
+ * trigger_timeout_recheck - After a semaphore timeout: remap a re-created trigger stream, report a dead owner
+ * @processinfo: Process info whose trigger timed out
+ * @image:       The trigger stream's IMAGE (the runtime's slot, remapped in place)
+ *
+ * A stream re-created by its owner has a new inode: the old mapping never sees a frame again, so it is
+ * reopened in the same IMAGE and the semaphore slot re-picked. An owner that is gone is reported once
+ * through the processinfo message, instead of silent 2 s timeouts forever.
+ */
+static void trigger_timeout_recheck(PROCESSINFO *processinfo, IMAGE *image)
+{
+    static pid_t reported_owner = 0;
+    char         fname[1024];
+    struct stat  st;
+
+    if (image == NULL || image->md == NULL)
+    {
+        return;
+    }
+    if (ImageStreamIO_filename(fname, sizeof(fname), processinfo->triggerstreamname) ==
+            IMAGESTREAMIO_SUCCESS &&
+        stat(fname, &st) == 0 && st.st_ino != processinfo->triggerstreaminode)
+    {
+        IMAGE tmp;
+        memset(&tmp, 0, sizeof(tmp));
+        /* the same call the calculator's refresh uses: the slot stays a used, named table entry */
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(processinfo->triggerstreamname, &tmp) ==
+                IMAGESTREAMIO_SUCCESS &&
+            tmp.md != NULL)
+        {
+            ImageStreamIO_closeIm(image);
+            *image                          = tmp;
+            image->used                     = 1;
+            processinfo->triggerstreaminode = image->md[0].inode;
+            processinfo->triggerstreamcnt   = image->md[0].cnt0;
+            processinfo->triggersem         = ImageStreamIO_getsemwaitindex(image, -1);
+            reported_owner                  = 0;
+            processinfo_WriteMessage(processinfo, "trigger stream re-created: remapped");
+        }
+        return;
+    }
+    pid_t owner = image->md[0].ownerPID;
+    if (owner > 0 && owner != reported_owner && kill(owner, 0) == -1 && errno == ESRCH)
+    {
+        char msg[200];
+        snprintf(msg, sizeof(msg), "trigger %s: owner %d gone", processinfo->triggerstreamname,
+                 (int) owner);
+        processinfo_WriteMessage(processinfo, msg);
+        reported_owner = owner;
+    }
+}
 
 /** @brief Set up input wait stream
  *
@@ -246,11 +308,44 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
     if (processinfo->triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
     {
-        // return after fixed delay
-        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
+        /* Return at the next tick of a fixed period, on an absolute deadline: a relative nanosleep
+         * drifts by the loop's own run time and, under the default 50 us timer slack, cannot do
+         * periods below ~60 us. One trigger loop per process: the deadline is process state. */
+        static struct timespec deadline;
+        static int             armed     = 0;
+        static int             slack_set = 0;
+        const struct timespec  d         = processinfo->triggerdelay;
+        struct timespec        now;
 
-        // Note: nanosleep adds a few x10us of latency on most systems
-        nanosleep(&processinfo->triggerdelay, NULL);
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        if (!slack_set && d.tv_sec == 0 && d.tv_nsec < 1000000L)
+        {
+            (void) prctl(PR_SET_TIMERSLACK, 1000UL); /* 1 us: sub-millisecond periods are meant */
+            slack_set = 1;
+        }
+        if (!armed)
+        {
+            deadline = now;
+            armed    = 1;
+        }
+        deadline.tv_sec += d.tv_sec;
+        deadline.tv_nsec += d.tv_nsec;
+        if (deadline.tv_nsec >= 1000000000L)
+        {
+            deadline.tv_sec++;
+            deadline.tv_nsec -= 1000000000L;
+        }
+        /* fell behind by more than one period (a long iteration, a pause): resume from now, no burst */
+        int64_t late_ns = (int64_t) (now.tv_sec - deadline.tv_sec) * 1000000000LL +
+                          (now.tv_nsec - deadline.tv_nsec);
+        if (late_ns > (int64_t) d.tv_sec * 1000000000LL + d.tv_nsec)
+        {
+            deadline = now;
+        }
+        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL) == EINTR)
+        {
+        }
         processinfo->triggerstreamcnt++;
 
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
@@ -325,6 +420,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                     // timeout condition
                     processinfo->trigggertimeoutcnt++;
                     tmpstatus = PROCESSINFO_TRIGGERSTATUS_TIMEDOUT;
+                    trigger_timeout_recheck(processinfo, image);
                 }
             }
             else

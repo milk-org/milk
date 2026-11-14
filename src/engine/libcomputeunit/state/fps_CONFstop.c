@@ -9,13 +9,9 @@
 
 #include "computeunit.h"
 
-/** @brief FPS stop CONF process
- *
- */
+/** @brief Stop the FPS conf process (fps_unit_stop()), quietly; returns once it is gone */
 errno_t functionparameter_CONFstop(FPS *fps)
 {
-    // send conf stop signal
-    fps->md->signal &= ~FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
-
-    return RETURN_SUCCESS;
+    return (fps_unit_stop(fps->md->name, FPS_UNIT_CONF, FPS_UNIT_QUIET) == 0) ? RETURN_SUCCESS
+                                                                              : RETURN_FAILURE;
 }

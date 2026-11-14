@@ -1,0 +1,36 @@
+# A milk unit as a systemd service (example, see docs/operations/systemd.md):
+#
+#   systemctl --user start milk-unit@NAME
+#
+# NAME is a unit: an FPS made by an fpsexec binary (<prefix>-fpsexec-<id> -n NAME fpsinit) in
+# @MILK_UNIT_SHM_DIR@. For another MILK_SHM_DIR, replace both paths in a drop-in
+# (systemctl --user edit milk-unit@.service):
+#
+#   [Service]
+#   EnvironmentFile=
+#   EnvironmentFile=/other/shm/%i.fps.d/env
+#   StandardOutput=append:/other/shm/%i.fps.d/run.out
+#
+# Once systemd has run a unit, milk-fps-runstart, milk-fps-runstop and the TUIs go through
+# systemctl; milk-fps-run --release NAME gives the unit back to milk.
+
+[Unit]
+Description=milk unit %i
+
+[Service]
+Type=notify
+ExecStart=@CMAKE_INSTALL_PREFIX@/bin/milk-fps-run %i
+# the environment of the shell that ran fpsinit
+EnvironmentFile=@MILK_UNIT_SHM_DIR@/%i.fps.d/env
+# the unit's output, where milk-fps-log and the TUIs read it; systemd's own lines go to the journal
+StandardOutput=append:@MILK_UNIT_SHM_DIR@/%i.fps.d/run.out
+StandardError=inherit
+Restart=on-failure
+TimeoutStopSec=5
+# Restart a loop that stops iterating. The unit's loop must be a MILK_PROCINFO loop, and the time
+# above its trigger timeout (2 s by default) plus 1 s.
+#WatchdogSec=5
+# No PrivateTmp=, PrivateDevices= or ProtectSystem=strict: they hide the shm directory.
+
+[Install]
+WantedBy=default.target

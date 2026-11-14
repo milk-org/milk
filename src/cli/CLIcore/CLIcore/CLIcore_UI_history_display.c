@@ -2,17 +2,6 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#ifndef _GNU_SOURCE
-#    define _GNU_SOURCE
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <fnmatch.h>
-#include "CLIcore.h"
-
 /**
  * @file    CLIcore_UI_history_display.c
  * @brief   History log display and query commands.
@@ -23,6 +12,19 @@
  *
  * @see CLIcore_UI_history.c for core log management.
  */
+
+#ifndef _GNU_SOURCE
+#    define _GNU_SOURCE
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <fnmatch.h>
+#include "CLIcore.h"
+#include "CLIcore_UI_execute.h"
+#include "milk_server.h"
 
 /* Forward declaration — defined in
  * CLIcore_UI_history.c */
@@ -123,8 +125,9 @@ static int parse_time_arg(const char *s, time_t *out)
  * @brief Split data.CLIcmdline into argv tokens.
  *
  * The calc parser mangles flags like -n, --since
- * (treats '-' as arithmetic minus), so parse
- * data.CLIcmdline directly instead.
+ * (treats '-' as arithmetic minus), so split
+ * data.CLIcmdline as the shell does instead
+ * (milk_server_split_words()).
  *
  * @param[out] argc_out  Number of tokens.
  * @param[out] argv_out  Heap-allocated (argc+1)
@@ -133,69 +136,17 @@ static int parse_time_arg(const char *s, time_t *out)
  */
 static void cmdline_split(int *argc_out, char ***argv_out)
 {
-    char buf[STRINGMAXLEN_CLICMDLINE];
-    strncpy(buf, data.CLIcmdline, sizeof(buf) - 1);
-    buf[sizeof(buf) - 1] = '\0';
-
 #define HIST_ARGV_MAX 64
+    char  arena[STRINGMAXLEN_CLICMDLINE];
     char *tokens[HIST_ARGV_MAX];
-    int   ntok = 0;
-
-    const char *p = buf;
-    while (*p != '\0' && ntok < HIST_ARGV_MAX - 1)
-    {
-        while (*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        if (*p == '\0')
-        {
-            break;
-        }
-        char tmp[STRINGMAXLEN_CLICMDLINE];
-        int  j = 0;
-
-        if (*p == '"')
-        {
-            p++;
-            while (*p != '"' && *p != '\0' && j < (int) sizeof(tmp) - 1)
-            {
-                tmp[j++] = *p++;
-            }
-            if (*p == '"')
-            {
-                p++;
-            }
-        }
-        else if (*p == '\'')
-        {
-            p++;
-            while (*p != '\'' && *p != '\0' && j < (int) sizeof(tmp) - 1)
-            {
-                tmp[j++] = *p++;
-            }
-            if (*p == '\'')
-            {
-                p++;
-            }
-        }
-        else
-        {
-            while (*p != ' ' && *p != '\t' && *p != '\0' && j < (int) sizeof(tmp) - 1)
-            {
-                tmp[j++] = *p++;
-            }
-        }
-        tmp[j]       = '\0';
-        tokens[ntok] = strdup(tmp);
-        ntok++;
-    }
+    int   ntok =
+        milk_server_split_words(data.CLIcmdline, tokens, HIST_ARGV_MAX - 1, arena, sizeof(arena));
 
     *argc_out = ntok;
     *argv_out = (char **) malloc((size_t) (ntok + 1) * sizeof(char *));
     for (int i = 0; i < ntok; i++)
     {
-        (*argv_out)[i] = tokens[i];
+        (*argv_out)[i] = strdup(tokens[i]);
     }
     (*argv_out)[ntok] = NULL;
 }
@@ -362,8 +313,8 @@ void history_log_display(const HistDisplayOpts *opts)
         }
 
         /* Is this the current session? */
-        int self = (sid_len == (int) strlen(data.session_id) &&
-                    strncmp(sid_start, data.session_id, (size_t) sid_len) == 0);
+        const char *me = cli_history_session();
+        int self = (sid_len == (int) strlen(me) && strncmp(sid_start, me, (size_t) sid_len) == 0);
 
         /* Store */
         if (total >= cap)
@@ -648,7 +599,7 @@ errno_t cli_ghistory(void)
             printf("ghistory: unknown "
                    "option '%s'\n",
                    a);
-            printf("Usage: ghistory [N]\n"
+            printf("Usage: @history --global [N]\n"
                    "  -n N       last N\n"
                    "  -s SID     session\n"
                    "  -t TYPE    prompt/cmd/"
@@ -687,7 +638,7 @@ errno_t cli_lhistory(void)
 {
     HistDisplayOpts opts;
     memset(&opts, 0, sizeof(opts));
-    opts.filter_session = data.session_id;
+    opts.filter_session = cli_history_session();
     opts.max_entries    = 0;
 
     int    argc = 0;
@@ -780,7 +731,7 @@ errno_t cli_lhistory(void)
             printf("lhistory: unknown "
                    "option '%s'\n",
                    a);
-            printf("Usage: lhistory [N]\n"
+            printf("Usage: @history --local [N]\n"
                    "  -n N       last N\n"
                    "  -t TYPE    prompt/cmd/"
                    "shell\n"

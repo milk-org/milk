@@ -50,10 +50,19 @@ void ov_format_loop_path(const OV_MODEL *m, const OV_LOOP *lp, char *buf, size_t
             is_shared = (m->fps[n->index].nb_loops > 1);
         }
 
-        char seg[64];
-        snprintf(seg, sizeof(seg), "%s%s%s%s",
+        char runner[48] = ""; /* a process shows the FPS running it: [proc (fps)] */
+        for (int k = OV_ADJ_B(m, in, ni); n->type == OV_NODE_PROC && k < OV_ADJ_E(m, in, ni); k++)
+        {
+            const OV_EDGE *e = &m->edges[m->adj_in[k]];
+            if (e->type == OV_EDGE_FPS_RUNS_PROC)
+            {
+                snprintf(runner, sizeof(runner), " (%s)", m->nodes[e->src_node].name);
+            }
+        }
+        char seg[128];
+        snprintf(seg, sizeof(seg), "%s%s%s%s%s",
                  (i == 0) ? "" : " \xe2\x94\x80\xe2\x94\x80\xe2\x96\xb6 ", /* ──▶ */
-                 (n->type == OV_NODE_STREAM) ? "" : "[", n->name,
+                 (n->type == OV_NODE_STREAM) ? "" : "[", n->name, runner,
                  (n->type == OV_NODE_STREAM) ? (is_shared ? "*" : "") : (is_shared ? "*]" : "]"));
 
         if (strlen(buf) + strlen(seg) < sz - 8)
@@ -76,10 +85,8 @@ void ov_format_loop_path(const OV_MODEL *m, const OV_LOOP *lp, char *buf, size_t
  */
 void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    OV_RECT     r      = lay->r_graph;
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_LOOP,
-                       lay->focus == OV_FOCUS_GRAPH);
+    OV_RECT r = lay->r_graph;
+    ov_subtab_bar(lay, OV_FG_LOOP);
 
     int max_rows = r.height - 3;
     int row      = r.row + 1;
@@ -113,7 +120,7 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         return;
     }
 
-    int sel_idx = lay->sel_loop;
+    int sel_idx = lay->sub[OV_SUB_LOOPS].sel;
     if (sel_idx < 0)
     {
         sel_idx = 0;
@@ -124,16 +131,11 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     /* Split panel: top half list of loops, bottom half selected loop details */
-    int list_rows   = max_rows;
-    int detail_rows = 0;
-    if (max_rows >= 6)
-    {
-        list_rows   = (max_rows > 8) ? (max_rows / 2) : 3;
-        detail_rows = max_rows - list_rows;
-    }
+    int list_rows   = ov_loop_list_rows(lay);
+    int detail_rows = max_rows - list_rows;
 
     int rendered_list = 0;
-    int scroll        = lay->scroll_loop;
+    int scroll        = lay->sub[OV_SUB_LOOPS].scroll;
     if (scroll < 0)
     {
         scroll = 0;
@@ -164,12 +166,12 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_printf("L%02d ", lp->loop_id);
 
         /* Loop Name */
-        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (lp->has_custom_name ? OV_FG_TITLE : OV_FG_TEXT));
-        ov_buf_printf("%-20.20s ", lp->name);
+        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (ov_loop_is_custom(lp) ? OV_FG_TITLE : OV_FG_TEXT));
+        ov_buf_printf("%-20.20s ", ov_loop_name(lp));
 
         /* Node counts */
         ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("%2ds %2dp  ", lp->nb_streams, lp->nb_procs + lp->nb_fps);
+        ov_buf_printf("%2ds %2dp  ", lp->nb_streams, ov_loop_units(lp));
 
         /* Frequency (Hz) */
         ov_theme_fg(OV_FG_TEXT);
@@ -184,26 +186,10 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         }
 
         /* Status */
-        if (lp->is_error)
-        {
-            ov_theme_fg(OV_FG_ERROR);
-            ov_buf_printf("ERR   ");
-        }
-        else if (lp->is_paused)
-        {
-            ov_theme_fg(OV_FG_WARN);
-            ov_buf_printf("PAUS  ");
-        }
-        else if (lp->is_running)
-        {
-            ov_theme_fg(OV_FG_ACTIVE);
-            ov_buf_printf("RUN   ");
-        }
-        else
-        {
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("IDLE  ");
-        }
+        ov_rgb_t    stc;
+        const char *st = ov_loop_status(lp, &stc);
+        ov_theme_fg(stc);
+        ov_buf_printf("%-6s", st);
 
         /* Overlap summary */
         if (lp->overlap_mask != 0)
@@ -275,13 +261,13 @@ void ov_render_loops_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         detail_rows--;
 
         /* Rename input mode line */
-        if (lay->renaming_loop && detail_rows > 0)
+        if (lay->rename.active && detail_rows > 0)
         {
             ov_buf_pos(row, r.col + 1);
             ov_theme_bg(OV_BG_SELECTED);
             ov_theme_fg(OV_FG_WARN);
             ov_buf_printf(" Rename L%02d: [ %s_ ]  (Enter: save, Esc: cancel)", cl->loop_id,
-                          lay->rename_buf);
+                          lay->rename.buf);
             render_pad_to_col(r.col + r.width - 1);
             row++;
             detail_rows--;

@@ -31,5 +31,5 @@ modex.imsum2 ?
 modex.imsum2 imd1
 
 # exit milk CLI
-exitCLI
+exit
 "

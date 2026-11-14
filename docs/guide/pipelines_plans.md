@@ -10,7 +10,7 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
     Custom plans and tasks are registered from Python code, and registration affects the current
     Python process. Carrying custom plans in a confdir is planned.
 
-A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
+A **task** is one idempotent action on the live pipeline (SHM, FPS, processes). It acts on
 all CompUs, or on a subset given at construction. A **plan** is data: a name, ordered **steps**
 (a task name and an optional CompU subset), a failure policy and the states it accepts to start
 from. Plans and tasks are Python objects in `milk.operate.plans` and `milk.operate.tasks`, each
@@ -21,7 +21,7 @@ looked up by name in a registry (`PLANS`, `TASKS`).
 | Plan | Steps | `on_failure` | `accepts` |
 |---|---|---|---|
 | `deploy` | ClaimRundir → InitFPS → LoadData → ConfStart | `abort` | `cold_or_consistent` |
-| `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any` |
+| `teardown` | RunStop → DeapplyAllLinkages → ConfStop → DestroyFPS → ReleaseRundir | `best_effort` | `any` |
 
 Every plan in `PLANS` is a `milk-pipes` subcommand.
 
@@ -53,7 +53,6 @@ Every plan in `PLANS` is a `milk-pipes` subcommand.
 | `WaitRunEnd` | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything |
 | `DeapplyAllLinkages` | No systemlinkage symlink remains |
 | `ConfStop` | No conf process is running |
-| `KillTmux` | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true` |
 | `DestroyFPS` | No FPS of the subset exists |
 | `ReleaseRundir` | The rundir is gone |
 

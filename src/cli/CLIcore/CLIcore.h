@@ -27,6 +27,7 @@
 #else /* full CLI mode */
 
 
+#    include <stdio.h>
 #    include <stdint.h>
 #    include <stdarg.h>
 #    include <string.h>
@@ -66,73 +67,9 @@ extern char  BuildTime[200];
 
 extern int C_ERRNO; // C errno (from errno.h)
 
-#    ifdef USE_NCURSES
-errno_t functionparameter_CTRLscreen(uint32_t mode,
-                                     char    *fpsnamemask,
-                                     char    *fpsCTRLfifoname,
-                                     double   timeout_sec);
+errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask);
 
 errno_t processinfo_CTRLscreen();
-#    else
-static inline errno_t functionparameter_CTRLscreen(uint32_t mode,
-                                                   char    *fpsnamemask,
-                                                   char    *fpsCTRLfifoname,
-                                                   double   timeout_sec)
-{
-    (void) mode;
-    (void) fpsnamemask;
-    (void) fpsCTRLfifoname;
-    (void) timeout_sec;
-    return 0;
-}
-static inline errno_t processinfo_CTRLscreen()
-{
-    return 0;
-}
-static inline void TUI_printfw(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-}
-static inline void TUI_newline()
-{
-    printf("\n");
-}
-static inline void screenprint_setreverse()
-{
-}
-static inline void screenprint_unsetreverse()
-{
-}
-static inline void screenprint_setcolor(int pair)
-{
-    (void) pair;
-}
-static inline void screenprint_unsetcolor(int pair)
-{
-    (void) pair;
-}
-static inline void TUI_set_screenprintmode(int mode)
-{
-    (void) mode;
-}
-static inline errno_t TUI_init_terminal(short unsigned int *wrow, short unsigned int *wcol)
-{
-    (void) wrow;
-    (void) wcol;
-    return 0;
-}
-static inline int get_singlechar_nonblock()
-{
-    return -1;
-}
-static inline errno_t TUI_exit()
-{
-    return 0;
-}
-#    endif
 
 
 //
@@ -216,7 +153,6 @@ typedef struct
 #    define STRINGMAXLEN_CMD_INFO 1000
 #    define STRINGMAXLEN_CMD_SYNTAX 1000
 #    define STRINGMAXLEN_CMD_EXAMPLE 1000
-#    define STRINGMAXLEN_CMD_CCALL 1000
 #    define STRINGMAXLEN_CMD_SRCFILE 1000
 typedef struct
 {
@@ -232,19 +168,20 @@ typedef struct
     // command function pointer
     errno_t (*fp)();
 
-    // descriptor this command was registered from (NULL for legacy commands)
+    // descriptor this command was registered from
     const struct MILK_RUNNABLE_ *runnable;
 
     char info[STRINGMAXLEN_CMD_INFO];       // short description/help
     char syntax[STRINGMAXLEN_CMD_SYNTAX];   // command syntax
     char example[STRINGMAXLEN_CMD_EXAMPLE]; // command example
-    char Ccall[STRINGMAXLEN_CMD_CCALL];
 
     // command arguments and parameters
     int nbarg;   // Number of visible CLI arguments
     int nbparam; // Total number of parameters (visible + hidden)
 
     CLICMDARGDATA *argdata; // arguments and parameters to function
+
+    const char *outvars; // calculator variables it sets for the caller (CLICMDDATA.outvars)
 
     // defines static function capabilities and behavior
     //uint64_t flags;
@@ -295,16 +232,17 @@ extern uint8_t TYPESIZE[32];
 #    define CLI_ALIAS_NAMELEN 64
 #    define CLI_ALIAS_CMDLEN 512
 
-/* Tab completion modes for data.CLImatchMode */
+/* The contexts cli_ts_determine_completion_mode() finds for the word at the prompt */
 #    define CLICOMPLETIONMODE_COMMANDS 0
 #    define CLICOMPLETIONMODE_IMAGES 1
-#    define CLICOMPLETIONMODE_CMDARGS 2
 #    define CLICOMPLETIONMODE_FILES 3
-#    define CLICOMPLETIONMODE_FPSPARAMS 4
 #    define CLICOMPLETIONMODE_VARS_FPS 5
-#    define CLICOMPLETIONMODE_VARS_SEQ 6
 #    define CLICOMPLETIONMODE_VARS_STREAM 7
 #    define CLICOMPLETIONMODE_VARS_ENV 8
+#    define CLICOMPLETIONMODE_VARS_PROC 9
+
+void cli_menu_display_matches(char **matches, int num_matches, int max_length);
+int  cli_custom_getc(FILE *stream);
 
 typedef struct
 {
@@ -405,8 +343,15 @@ typedef struct
 
 } DATA;
 
+#    ifdef MILK_BASH_CLIENT /* libmilkbash, the bash client: no server state, no images of its own */
+extern DATA data;
+#        define MILK_LOCAL_IMAGES ((IMAGE *) NULL)
+#        define MILK_NB_LOCAL_IMAGES 0L
+#    else
 __attribute__((weak)) DATA data = { .core = { 0 } };
-//extern DATA data;
+#        define MILK_LOCAL_IMAGES (dcimg)
+#        define MILK_NB_LOCAL_IMAGES (dcnimg)
+#    endif
 
 #    include "CLIcore_utils.h"
 
@@ -414,13 +359,7 @@ errno_t set_signal_catch();
 
 void sig_handler(int signo);
 
-errno_t runCLItest(int argc, char *argv[], char *promptstring);
-
 errno_t runCLI(int argc, char *argv[], char *promptstring);
-
-errno_t CLI_execute_line();
-
-errno_t write_process_log();
 
 #endif /* !MILK_NO_CLI — full CLI mode */
 

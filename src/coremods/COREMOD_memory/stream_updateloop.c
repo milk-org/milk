@@ -394,8 +394,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
             imgout_tmp.mdt->size[1]  = size1;
             imgout_tmp.mdt->datatype = datatype;
             imgout_tmp.mdt->shared   = 1;
-            imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgout_tmp);
+            imgid_create_registered(&imgout_tmp);
             IDout = imgout_tmp.ID;
         }
     }
@@ -611,8 +610,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
             imgout_tmp.mdt->size[1]  = size1;
             imgout_tmp.mdt->datatype = datatype;
             imgout_tmp.mdt->shared   = 1;
-            imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgout_tmp);
+            imgid_create_registered(&imgout_tmp);
             IDout = imgout_tmp.ID;
         }
     }

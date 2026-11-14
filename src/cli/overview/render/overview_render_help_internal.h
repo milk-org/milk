@@ -22,7 +22,7 @@
  */
 static inline int help_is_expanded(const OV_LAYOUT *lay, int sec)
 {
-    return (lay->help_expand >> sec) & 1;
+    return (lay->help.expand >> sec) & 1;
 }
 
 int help_visible_rows(const OV_LAYOUT *lay, int *map);

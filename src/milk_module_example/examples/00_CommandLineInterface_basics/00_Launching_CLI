@@ -13,7 +13,7 @@ milk
 
 # exit milk CLI
 # \"exit\" and \"quit\" will also work
-exitCLI
+exit
 
 # clear screen
 clear
@@ -22,7 +22,7 @@ clear
 MILK_QUIET=1 milk
 
 # exit milk CLI
-exitCLI
+exit
 
 # clear screen
 clear
@@ -35,6 +35,6 @@ MILK_QUIET=1 MILKCLI_APPNAME=\"milk-example\" milk
 !date -u
 
 # exit milk CLI
-exitCLI
+exit
 
 "

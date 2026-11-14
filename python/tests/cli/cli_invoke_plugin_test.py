@@ -29,7 +29,7 @@ IN_NAME = "tcinpl"
 OUT_NAME = "tcoutpl"
 FPS_NAME = "tccfps"
 
-MLOAD = f"mload {PLUGIN}"
+MLOAD = f"@module load {PLUGIN}"
 
 
 @pytest.fixture

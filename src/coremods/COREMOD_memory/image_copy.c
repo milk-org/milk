@@ -20,6 +20,7 @@
 
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkdata/milkdata.h" /* milk_table_bump() */
 
 #include "create_image.h"
 #include "delete_image.h"
@@ -233,6 +234,11 @@ imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared)
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
         imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
+        if (RegisterIMGID(imgout, dcimg, dcnimg) ==
+            -1) // a new image must be in the table to be found
+        {
+            return RETURN_FAILURE;
+        }
     }
 
     imgout->md[0].write = 1;
@@ -279,6 +285,7 @@ imageID chname_image_ID_IMGID(IMGID *imgin, const char *new_name)
     if ((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
         snprintf(imgin->im->name, STRINGMAXLEN_IMAGE_NAME, "%s", new_name);
+        milk_table_bump();
         if (imgin->ID == -1)
         {
             return RETURN_FAILURE;
@@ -376,6 +383,11 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout)
         imgout->mdt->shared   = 1;
         imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
         imgid_mkimage(imgout);
+        if (RegisterIMGID(imgout, dcimg, dcnimg) ==
+            -1) // a new image must be in the table to be found
+        {
+            return RETURN_FAILURE;
+        }
     }
 
     imgout->md[0].write = 1;

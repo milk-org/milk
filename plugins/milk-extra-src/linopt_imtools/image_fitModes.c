@@ -13,7 +13,6 @@
 #include "mask_to_pixtable.h"
 
 #include "compute_SVDpseudoInverse.h"
-#include "linalgebra/linalgebra.h"
 
 // MILK_CMAKE_MANDATE_BLAS
 // MILK_CMAKE_MANDATE_LAPACKE
@@ -33,24 +32,25 @@ static int fmInit = 0;
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *inimname       = NULL;
-static char   *modesimname    = NULL;
-static char   *maskimname     = NULL;
-static double *SVDeps         = NULL;
-static char   *outcoeffimname = NULL;
-static int    *reuse          = NULL;
+static char    inimname[FUNCTION_PARAMETER_STRMAXLEN]       = "im1";
+static char    modesimname[FUNCTION_PARAMETER_STRMAXLEN]    = "imcmode";
+static char    maskimname[FUNCTION_PARAMETER_STRMAXLEN]     = "immask";
+static double  SVDeps                                       = 0.001;
+static char    outcoeffimname[FUNCTION_PARAMETER_STRMAXLEN] = "immask";
+static int64_t reuse                                        = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                         \
-    X(".inim", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")          \
-    X(".modes", &modesimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes image cube") \
-    X(".mask", &maskimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "mask image")         \
-    X(".SVDeps", &SVDeps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")              \
-    X(".outimcoeff", &outcoeffimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeff image")
+#define FPS_PARAMS(X)                                                                              \
+    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")                \
+    X(".modes", modesimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes image cube")       \
+    X(".mask", maskimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "mask image")               \
+    X(".SVDeps", &SVDeps, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")                   \
+    X(".outimcoeff", outcoeffimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeff image") \
+    X(".reuse", &reuse, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT, "reuse configuration flag")
 
 
 /* ================================================================
@@ -92,16 +92,8 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
         FUNC_CHECK_RETURN(linopt_imtools_image_to_vec(IDmodes_name, "_fm_pixind", "_fm_pixmul",
                                                       "_fm_respm", NULL));
 
-#ifdef HAVE_MAGMA
-        FUNC_CHECK_RETURN(LINALGEBRA_magma_compute_SVDpseudoInverse("_fm_respm", "_fm_recm", SVDeps,
-                                                                    10000, "_fm_vtmat", 0, 1, 64,
-                                                                    0, // GPU device
-                                                                    NULL));
-
-#else
         FUNC_CHECK_RETURN(linopt_compute_SVDpseudoInverse("_fm_respm", "_fm_recm", SVDeps, 10000,
                                                           "_fm_vtmat", NULL));
-#endif
     }
 
     FUNC_CHECK_RETURN(
@@ -118,8 +110,7 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
 
     IMGID imgcoeff       = imgid_make_from_name_2D(IDcoeff_name, m, 1);
     imgcoeff.mdt->shared = 0;
-    imgcoeff.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgcoeff);
+    imgid_create_registered(&imgcoeff);
 
     cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, 1.0, imgrecm.im->array.F, n, imgmvec.im->array.F,
                 1, 0.0, imgcoeff.im->array.F, 1);
@@ -163,8 +154,8 @@ static MILK_HOT errno_t image_fitModes_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_imtools_image_fitModes(inimname, modesimname, maskimname, *SVDeps, outcoeffimname,
-                                  *reuse, NULL);
+    linopt_imtools_image_fitModes(inimname, modesimname, maskimname, SVDeps, outcoeffimname, reuse,
+                                  NULL);
 
     MILK_PROCINFO_END(self)
 

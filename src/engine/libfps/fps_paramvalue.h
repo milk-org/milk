@@ -10,6 +10,8 @@
 #ifndef FPS_PARAMVALUE_H
 #define FPS_PARAMVALUE_H
 
+#include "fps_args.h"
+
 int64_t *functionparameter_GetParamPtr_generic(FPS *fps, const char *paramname, long *paramindex);
 
 // =====================================================================
@@ -160,5 +162,8 @@ uint64_t *functionparameter_GetParamPtr_fpflag(FPS *fps, const char *paramname);
 
 /** Set parameter at @pindex from string @strval */
 int functionparameter_SetParamValue_fromString(FPS *fps, int pindex, const char *strval);
+
+/* Set parameter @pindex to a value read by milk_argval_parse() (typed setters; a string is never cut) */
+int functionparameter_SetParamValue_arg(FPS *fps, int pindex, const CLICMDARGDATA *ad);
 
 #endif

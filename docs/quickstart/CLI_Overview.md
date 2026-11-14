@@ -9,9 +9,12 @@ tags:
 `milk` compiles into multiple executables:
 
 - **`milk-cli`**: The interactive command line interface (CLI). Running it starts a prompt from
-  which all module functions can be launched. Type `m?` to list loaded modules and their commands.
+  which all module commands can be launched (`mem.listim`, `iofits.loadfits`). Type `@help` for the
+  language keywords, `@module list` for the modules, and `<command> -h` for a command; see
+  [Scripting](../guide/scripting.md).
 - **`milk-fpsexec-*`**: Standalone executables for individual compute units. Each runs a single
-  FPS-enabled function in isolation, managed via `tmux` and `milk-fpsCTRL`.
+  FPS-enabled function in its own background process (a unit), managed with the `milk-fps-*` tools
+  and `milk-fpsCTRL`.
 
 The source code is organized in modules. A module includes C code and documentation. It may also
 include data files, scripts, and extended documentation.

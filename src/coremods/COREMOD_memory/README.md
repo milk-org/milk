@@ -49,7 +49,7 @@ Memory management for images
 | `stream_UDP.c`                 | TCP stream transfer                                      |
 | `stream_ave.c`                 | Average stream of images                                 |
 | `stream_copy.c`                | copy image stream                                        |
-| `stream_delay.c`               | delay input stream to output stream                      |
+| `stream_delay.c`               | Stream delay, fractional resampling, and temporal FIR/window filtering |
 | `stream_diff.c`                | Stream diff module                                       |
 | `stream_halfimdiff.c`          | difference between two halves of stream image            |
 | `stream_merge.c`               | Merge n independently triggered streams                  |
@@ -68,7 +68,7 @@ Memory management for images
 | `milk-fpsexec-mem-streamave`   | `stream_ave.c`        | Average stream of images |
 | `milk-fpsexec-mem-streampoke`  | `stream_poke.c`       |                          |
 | `milk-fpsexec-mem-streamcopy`  | `stream_copy.c`       |                          |
-| `milk-fpsexec-mem-streamdelay` | `stream_delay.c`      |                          |
+| `milk-fpsexec-mem-streamdelay` | `stream_delay.c`      | Delay and temporally filter/resample a stream in time or frame units |
 | `milk-fpsexec-imkwadd`         | `image_keyword_add.c` |                          |
 
 ## Dependencies

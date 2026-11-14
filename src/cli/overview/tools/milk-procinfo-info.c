@@ -25,10 +25,9 @@
 #include "overview_defs.h"
 #include "overview_data.h"
 #include "milk_help.h"
+#include "processtools_trigger.h"
 
 /* Required by overview_defs.h (extern) */
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
 
 /* One-line description */
 #define PI_ONELINE                         \
@@ -59,68 +58,20 @@ volatile sig_atomic_t ov_sigTERM = 0;
 #define C_RUN "\033[1;32m"
 #define C_STOP MH_DIM
 
-/* =========================================================
- * Loop status / CTRL val strings
- * ========================================================= */
-
 /**
- * loopstat_str - Format process loop status code into colored display string
- * @stat: Loop status code (e.g. 0=IDLE, 1=ACTIVE, 2=ERROR, 3=CRASHED)
- *
- * Return: Color-formatted string.
+ * loopstat_color - display colour of a processinfo loop state.
  */
-static const char *loopstat_str(int stat)
+static const char *loopstat_color(int stat)
 {
     switch (stat)
     {
-    case 0:
-        return C_STOP "IDLE" C_RST;
-    case 1:
-        return C_RUN "ACTIVE" C_RST;
-    case 2:
-        return C_WARN "ERROR" C_RST;
-    case 3:
-        return C_WARN "CRASHED" C_RST;
+    case PROCESSINFO_LOOPSTAT_ACTIVE:
+        return C_RUN;
+    case PROCESSINFO_LOOPSTAT_ERROR:
+    case PROCESSINFO_LOOPSTAT_CRASHED:
+        return C_WARN;
     default:
-        return C_DIM "UNKNOWN" C_RST;
-    }
-}
-
-/**
- * @brief Map control value to a display string.
- */
-static const char *ctrlval_str(int val)
-{
-    switch (val)
-    {
-    case 0:
-        return C_STOP "STOP" C_RST;
-    case 1:
-        return C_RUN "RUN" C_RST;
-    case 2:
-        return C_WARN "PAUSE" C_RST;
-    default:
-        return C_DIM "UNKNOWN" C_RST;
-    }
-}
-
-/**
- * @brief Map trigger mode to a display string.
- */
-static const char *trigmode_str(int mode)
-{
-    switch (mode)
-    {
-    case 0:
-        return "IMMEDIATE";
-    case 1:
-        return "SEMAPHORE";
-    case 2:
-        return "DELAY";
-    case 3:
-        return "TIMER";
-    default:
-        return "UNKNOWN";
+        return C_STOP;
     }
 }
 
@@ -148,8 +99,9 @@ static void print_proc_info(const OV_MODEL *m, int pi)
 
     /* ---- Status ---- */
     printf("\n" C_HDR " Status" C_RST "\n");
-    printf("   %-18s: %s\n", "Loop stat", loopstat_str(p->loopstat));
-    printf("   %-18s: %s\n", "CTRL val", ctrlval_str(p->CTRLval));
+    printf("   %-18s: %s%s" C_RST "\n", "Loop stat", loopstat_color(p->loopstat),
+           ov_loopstat_label(p->loopstat, 1));
+    printf("   %-18s: %s\n", "CTRL val", processinfo_ctrlval_name(p->CTRLval));
     printf("   %-18s: " C_VAL "%" PRId64 "" C_RST "\n", "Loop count", (int64_t) p->loopcnt);
     if (p->rt_priority > 0)
     {
@@ -171,7 +123,7 @@ static void print_proc_info(const OV_MODEL *m, int pi)
     {
         double iter_us = (double) p->dtmedian_iter_ns / 1e3;
         printf("   %-18s: " C_VAL "%.1f µs" C_RST "  (%.1f Hz)\n", "Iter (median)", iter_us,
-               p->loop_hz);
+               1.0e9 / (double) p->dtmedian_iter_ns);
     }
     else
     {
@@ -197,13 +149,14 @@ static void print_proc_info(const OV_MODEL *m, int pi)
 
     /* ---- Trigger ---- */
     printf("\n" C_HDR " Trigger" C_RST "\n");
-    printf("   %-18s: " C_VAL "%s (%d)" C_RST "\n", "Mode", trigmode_str(p->triggermode),
-           p->triggermode);
+    printf("   %-18s: " C_VAL "%s (%d)" C_RST "\n", "Mode",
+           processinfo_triggermode_name(p->triggermode, 1), p->triggermode);
     if (p->trigstreamname[0] != '\0')
     {
         printf("   %-18s: " C_STREAM "%s" C_RST "\n", "Stream", p->trigstreamname);
     }
-    if (p->triggermode == 1)
+    if (p->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE ||
+        p->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS)
     {
         printf("   %-18s: " C_VAL "%d" C_RST "\n", "Semaphore", p->triggersem);
     }
@@ -229,8 +182,7 @@ static void print_proc_info(const OV_MODEL *m, int pi)
             {
                 continue;
             }
-            if (m->edges[e].type != OV_EDGE_STREAM_TRIGGERS_PROC &&
-                m->edges[e].type != OV_EDGE_PROC_TRIGGER_STREAM)
+            if (m->edges[e].type != OV_EDGE_STREAM_TRIGGERS_PROC)
             {
                 continue;
             }

@@ -26,23 +26,33 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inM       = NULL;
-static char     *outU      = NULL;
-static char     *outS      = NULL;
-static char     *outV      = NULL;
-static uint32_t *Vdim0     = NULL;
-static float    *svdlim    = NULL;
-static uint32_t *maxNBmode = NULL;
-static int32_t  *GPUdevice = NULL;
-static uint64_t *compmode  = NULL;
+static char     inM[FUNCTION_PARAMETER_STRMAXLEN]  = "inM";
+static char     outU[FUNCTION_PARAMETER_STRMAXLEN] = "outU";
+static char     outS[FUNCTION_PARAMETER_STRMAXLEN] = "outS";
+static char     outV[FUNCTION_PARAMETER_STRMAXLEN] = "outV";
+static uint32_t Vdim0                              = 0;
+static float    svdlim                             = 0.01;
+static uint32_t maxNBmode                          = 10000;
+static int32_t  GPUdevice                          = -1;
+static uint64_t compmode                           = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".outS", &outS, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output ingular values")
+#define FPS_PARAMS(X)                                                                              \
+    X(".inM", inM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT_STREAM, "input matrix")              \
+    X(".outU", outU, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output U")                           \
+    X(".outS", outS, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output ingular values")              \
+    X(".outV", outV, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output V")                           \
+    X(".Vdim0", &Vdim0, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                                    \
+      "first dimension of V if 3D, 0 if 2D")                                                       \
+    X(".svdlim", &svdlim, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "SVD limit")                    \
+    X(".maxNBmode", &maxNBmode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "Maximum number of modes") \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")   \
+    X(".compmode", &compmode, FPTYPE_UINT64, 0, FPFLAG_DEFAULT_INPUT,                              \
+      "flag: optional computations and checks")
 
 
 /* ================================================================
@@ -588,7 +598,7 @@ static MILK_HOT errno_t compSVD_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        compute_SVD(imginM, &imgU, &imgS, &imgV, *Vdim0, *svdlim, *maxNBmode, *GPUdevice, *compmode,
+        compute_SVD(imginM, &imgU, &imgS, &imgV, Vdim0, svdlim, maxNBmode, GPUdevice, compmode,
                     "SVDunmodes", "SVDvnmodes");
     }
     MILK_PROCINFO_END(self)

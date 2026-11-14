@@ -71,8 +71,7 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
         imgout_tmp.mdt->datatype = _DATATYPE_FLOAT;
         imgout_tmp.mdt->shared   = 1;
         imgout_tmp.mdt->NBkw     = 1;
-        imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgout_tmp);
+        imgid_create_registered(&imgout_tmp);
         IDout = imgout_tmp.ID;
     }
     free(imsizearray);

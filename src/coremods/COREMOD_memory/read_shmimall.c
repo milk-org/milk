@@ -24,7 +24,7 @@
 #include "read_shmim.h"
 #include "read_shmimall.h"
 
-#include "streamCTRL_find_streams.h"
+#include "milkdata_streamlist.h"
 
 
 /* ================================================================
@@ -48,22 +48,21 @@ static char strfilter[FUNCTION_PARAMETER_STRMAXLEN] = "aol_";
 
 errno_t read_sharedmem_image_all(const char *strfilter)
 {
-    int         NBstreamMAX = 10000;
-    STREAMINFO *streaminfo;
-
-    streaminfo = (STREAMINFO *) calloc(NBstreamMAX, sizeof(STREAMINFO));
-
-    int NBstream = find_streams(streaminfo, 1, strfilter);
-
-    for (int sindex = 0; sindex < NBstream; sindex++)
+    int              cap = 10000;
+    MILK_STREAM_ENT *ent = (MILK_STREAM_ENT *) calloc(cap, sizeof(MILK_STREAM_ENT));
+    if (ent == NULL)
     {
-        if (!imgid_exists(streaminfo[sindex].sname))
+        FUNC_RETURN_FAILURE("calloc failed");
+    }
+    int n = milk_stream_list(NULL, strfilter, ent, cap);
+    for (int i = 0; i < n && i < cap; i++)
+    {
+        if (!ent[i].broken && !imgid_exists(ent[i].name))
         {
-            read_sharedmem_image(streaminfo[sindex].sname, dcimg, dcnimg);
+            read_sharedmem_image(ent[i].name, dcimg, dcnimg);
         }
     }
-
-    free(streaminfo);
+    free(ent);
 
     return RETURN_SUCCESS;
 }

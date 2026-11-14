@@ -26,9 +26,9 @@ Check which help-related files have changed recently:
 git log --oneline --name-only -n 30 -- \
   'src/cli/CLIcore/milk-cli-help*.c' \
   'src/cli/CLIcore/milk-help.c' \
-  'src/cli/CLIcore/CLIcore/CLIcore_help.c' \
-  'src/engine/libfps/milk-fps-help.c' \
-  'src/engine/libfps/milk-fpsexec-help.c' \
+  'src/cli/libmilkscript/core/CLIcore_help.c' \
+  'src/engine/libfps/tools/milk-fps-help.c' \
+  'src/engine/libfps/tools/milk-fpsexec-help.c' \
   'src/engine/libprocessinfo/milk-procinfo-help.c' \
   'docs/**/*.md' \
   'src/*/README.md'

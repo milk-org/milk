@@ -7,6 +7,8 @@
  * @brief Fps globals module
  */
 
+#include <termios.h>
+
 #include "fps_globals.h"
 
 long FPS_TIMESTAMP                                 = 0;
@@ -20,3 +22,7 @@ errno_t (*FPS_CONFfunc)()                             = NULL;
 errno_t (*FPS_RUNfunc)()                              = NULL;
 
 FPS *fpsarray = NULL;
+
+__attribute__((weak)) struct termios ansi__orig_termios;
+__attribute__((weak)) int            ansi__raw_active = 0;
+__attribute__((weak)) int            ansi__orig_flags = -1;

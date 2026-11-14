@@ -6,7 +6,7 @@
  * @file    fps_apply_process_settings.h
  * @brief   Apply FPS process settings to the current process
  *
- * Reads taskset, cset, and NBthread from an FPS and applies
+ * Reads taskset, cset, and RT priority from an FPS and applies
  * them programmatically. Called by fps_generic_run() before
  * invoking the compute function.
  */
@@ -19,11 +19,11 @@
 /**
  * @brief Apply process-level settings from FPS parameters.
  *
- * Reads .procinfo.NBthread, .procinfo.taskset,
- * .procinfo.cset, and .procinfo.RTprio from the FPS
- * and applies them to the current process:
- *   - OMP_NUM_THREADS via setenv()
- *   - CPU affinity, cgroup migration, RT priority via milk-makecsetandrt
+ * Reads .procinfo.taskset, .procinfo.cset and .procinfo.RTprio
+ * from the FPS and applies them to the current process
+ * (CPU affinity, cgroup migration, RT priority) through
+ * milk-makecsetandrt. .procinfo.NBthread reaches OpenMP through
+ * the environment a unit's starter builds.
  *
  * @param fps  Connected FPS to read settings from
  * @return RETURN_SUCCESS or RETURN_FAILURE

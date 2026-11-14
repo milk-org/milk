@@ -13,7 +13,7 @@ non-GCC compilers.
 
 - Use `restrict` (or `MILK_RESTRICT`) on all
   non-aliased pixel/array data pointer parameters
-  in `compute_function` signatures and compute-heavy helper functions. This allows GCC to
+  in `<stem>_compute()` helpers and compute-heavy functions. This allows GCC to
   vectorize loops over those pointers.
 - Use `MILK_ASSUME_ALIGNED(ptr)` to inform GCC
   that a restricted pointer is aligned to a 64-byte
@@ -109,7 +109,8 @@ non-GCC compilers.
   `memcpy` for other types.
 - Hoist invariant FPS parameter dereferences
   (`*ptr`) into local variables before the
-  inner loop to avoid repeated pointer chasing.
+  inner loop to avoid repeated pointer chasing
+  (once per iteration: `concurrency-practices.md`).
 
 ## Struct Copying & Data Movement
 
@@ -144,7 +145,9 @@ size)`. This allows GCC to emit optimal inline
 - **Never** hand-write matrix-vector or
   matrix-matrix multiply loops. Use
   `cblas_sgemv()` / `cblas_sgemm()` from
-  MKL or OpenBLAS (already linked via CMake).
+  MKL or OpenBLAS, requested per file with the
+  `MILK_CMAKE_REQUEST_BLAS` / `MANDATE` tags
+  ([dependency_system.md](../../docs/developer/dependency_system.md)).
 - Provide a plain-C fallback with `restrict`
   - `#pragma omp simd` for non-BLAS builds.
 - Remove `printf()` from CPU fallback
@@ -156,6 +159,21 @@ size)`. This allows GCC to emit optimal inline
 - Use `#pragma omp for simd` (not bare
   `#pragma omp for`) on element-wise pixel
   loops — combines threading + SIMD.
+- **Qualify `if(...)` with `parallel:` on combined
+  `parallel for simd` constructs.** In OpenMP 5.0+
+  (GCC 10+), an unqualified `if (cond)` on
+  `#pragma omp parallel for simd` applies to **both**
+  `parallel` and `simd`. When `cond` is false (e.g.
+  small images below the OpenMP thread threshold),
+  `if(simd: false)` explicitly disables SIMD
+  vectorization and forces scalar execution. Always
+  write `if (parallel: cond)`:
+  ```c
+  #pragma omp parallel for simd num_threads(nth) if (parallel: nth > 1)
+  ```
+  Or branch on `if (nth <= 1)` in C to run a plain
+  `#pragma omp simd` loop without `GOMP_parallel`
+  call overhead.
 - Place `MILK_IVDEP` before non-OMP loops you
   **know** have no loop-carried dependencies.
 - Add `restrict` to local pixel pointer aliases:

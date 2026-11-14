@@ -273,8 +273,8 @@ local hl = {
     },
 
     -- *** milk commands: bright gold, bold ***
-    -- assigncheck, procctl, waitfor_stream,
-    -- on_update, dpdigits, etc.
+    -- @calc, @waitfor, @set, include_once,
+    -- milksleep, etc.
     ["@function.macro.milkcli"] = {
         fg = "#ffcb6b", bold = true,
     },
@@ -289,7 +289,7 @@ local hl = {
         fg = "#82aaff", bold = true,
     },
 
-    -- FPS/sequencer vars (@fps.*, @seq.*): green
+    -- FPS vars (@fps.*): green
     ["@property.milkcli"] = {
         fg = "#c3e88d", bold = true,
     },

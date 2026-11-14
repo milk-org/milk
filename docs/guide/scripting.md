@@ -6,587 +6,548 @@ tags:
 
 # Scripting
 
-The `milk-cli` interpreter is designed to provide a seamless scripting experience by transparently
-integrating with your system's `bash` shell. Any command that is not a native `milk-cli` command is
-automatically evaluated by the underlying OS shell using `wordexp()`.
+A milk script is a bash script with three additions:
 
-This means **all standard Bash scripting features are fully supported** inside `milk-cli`,
-including:
+- module commands, written `module.command` (`mem.mk2Dim`, `iofits.loadfits`);
+- language keywords, written `@keyword` (`@calc`, `@get`, `@waitfor`);
+- the `@{…}` expansion, which reads an entity property or computes an expression inside a word.
 
-- Variables (`$var`), Arithmetic (`$(( ))`), array indexing, and bash-style parameter expansions
-- Flow Control (`if`, `for`, `while`, `case`), including C-style `for ((i=0; i<N; i++))` loops
-- Built-ins (`sleep`, `read`, `printf`, `trap`, `shift`)
-- I/O Redirection (`>`. `<`. `|`), Heredocs, and Background Jobs (`&`)
+Scripts run in `milk-cli` (interactively, with `-s`, `-c` or piped input), in `milk-script`, or in
+any bash shell that has loaded `milk.bash`. Everything else is bash, unchanged: variables, arrays,
+`$(( ))`, `[[ ]]`, functions, `if`/`for`/`while`/`case`, pipes, redirections, heredocs, `trap`,
+background jobs. A binary run by absolute path finds its own install:
+when `MILK_INSTALLDIR` is unset it is set from the executable's location, so modules, `milk.bash` and
+the `milk-fpsexec-*` units all come from that install. To work with several builds, source the
+`bin/milk.bash` of the one you want (it sets `MILK_INSTALLDIR`, `PATH` and `LD_LIBRARY_PATH`) rather
+than editing those variables by hand.
 
-This page documents the **native `milk-cli` extensions** and how to use them alongside standard bash
-in your scripts.
+See also: [Calculator & Compute Units](calculator.md) · [Sessions](sessions.md) ·
+[CLI Syntax](CLIcore.md) · [Stream Slicing](slicing.md) ·
+[C Extensions (`milk_calc_ext.h`)](calc_c_extensions.md)
 
-See also: [CLI Syntax](CLIcore.md) · [FPS](fps.md) · [Streams](streams.md)
+## The Language at a Glance
 
-## Script Files
+| You write                     | It is                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `word args`                   | bash                                                                      |
+| `module.command args`         | a module command: a bash function defined from the install catalog       |
+| `@keyword args`               | one of the 27 [keywords](#keywords)                                      |
+| `@{expr}` inside a word       | an entity path reads a property, anything else goes to the calculator    |
+| `\@{`                         | a literal `@{`                                                            |
+| `<anything> -h`, `--help`     | help                                                                      |
 
-### Running Scripts
+`@` has no other meaning. `user@host`, `curl -d @file`, `git checkout @{-1}` and `"HEAD@{1}"` are
+passed to bash as written: an `@{` right after a letter, digit or `_` is not expanded, nor is one
+that holds only an integer (git's `@{1}`, `@{-1}`). To expand right after a letter, quote the
+expansion: `img"@{n}"`. Inside calculator text, entities are written without `@`:
+`@calc "x = s.cam.xsize * 2"`.
 
-You can execute a milk script file in several ways:
+| Guide Page | What It Covers |
+| --- | --- |
+| **[Scripting (this page)](scripting.md)** | Language rules, module commands, `@args`, entities (`s.`, `l.`, `f.`, `p.`), waiting/events (`@waitfor`, `@grab`, `@on`, `@defer`), exit codes, cost summary, migration, and complete examples |
+| **[Calculator & Compute Units](calculator.md)** | `@calc` / `@test` / `@pipe` expressions, full operator & function tables (math, reductions, stencils, BLAS/LAPACK), `milk-fpsexec-milk-calc` / `milk-fpsexec-milk-script` units, and SIMD/OpenMP fusion rules |
+| **[Sessions](sessions.md)** | `@session` lifecycle (`new`, `use`, `leave`, `ls`, `end`, `save`/`restore`), `source milk.bash`, multi-shell concurrency, and `@snapshot`/`@diff`/`@restore`/`@log` |
+| **[Stream Slicing](slicing.md)** | Zero-copy image and stream views (`im[x0:x1, :]`, strided/binned slices) in calculator expressions and stream modifiers |
+| **[C Extensions (`milk_calc_ext.h` & `milk-cc`)](calc_c_extensions.md)** | Extending `@calc` and `milk.calc` with auto-compiled `.c` kernels (`-l file.c`) and compiling standalone `MILK_RUNNABLE` units (`milk-cc`) |
 
-- **Shebang**: Use `#!/usr/bin/env milk-script` as the first line. The standalone `milk-script`
-  binary runs the file non-interactively with no readline dependency.
-- **Command line**: Run `milk-cli -s script.milk` from a shell.
-- **Interactive**: Use the `source` (or `.`) command from within an active `milk-cli` session.
+## Running Scripts
 
-```bash
-#!/usr/bin/env milk-script
+| How                                 | What happens                                                    |
+| ----------------------------------- | --------------------------------------------------------------- |
+| `milk-cli -s script.milk [args]`    | runs the file and exits with its status                         |
+| `milk-cli -c 'commands'`            | runs the string and exits with its status                       |
+| `cmds \| milk-cli`                  | runs each input line; `$?` carries over from line to line       |
+| `#!/usr/bin/env milk-script`        | standalone runner, no readline (`milk-script -e` stops on errors) |
+| `@source [--once] file.milk [args]` | runs a file in the current shell, `$1`... set, `@{…}` expanded  |
+| `source milk.bash`                  | adds milk to an ordinary bash shell ([Sessions](sessions.md#using-milk-from-plain-bash)) |
 
-# setup.milk — initialize processing pipeline
-mem.mk2Dim wfs 128 128
-echo "Environment initialized."
-```
+A plain `source file.milk` runs the file as bash: its `@{…}` stay as written. `~/.milkrc` runs only
+when milk-cli starts an interactive prompt: not with `-c`, `-s` or piped input, and not in
+milk-script, a session's server or plain bash. `@history` shows the lines typed at milk-cli prompts,
+or piped into milk-cli, in the session the shell uses (`--global`: in all sessions), from any
+front-end; `@history save file` writes the prompt's history to a file that can be run again. The
+log they come from, `~/.milk_history_log`, is never trimmed: delete it to start afresh.
 
-```bash
-# Inside milk-cli interactive mode:
-source setup.milk
-```
+## Keywords
 
-### Include Guard
+| Group         | Keywords                                                                        |
+| ------------- | ------------------------------------------------------------------------------- |
+| values        | `@calc` `@test` `@assert` `@get` `@set` `@exists` `@ls`                         |
+| events        | `@waitfor` `@waitany` `@on` `@sleep`                                            |
+| data          | `@grab` `@replay` `@snapshot` `@diff` `@restore` `@pipe`                        |
+| program       | `@source` `@defer` `@args` `@module` `@config` `@session` `@unload`              |
+| introspection | `@help` `@log` `@history`                                                       |
 
-`include_once` sources a file only once per session, even if called multiple times. This is useful
-for loading helper function libraries without redundant evaluation:
+`@help` with no argument lists them; `@help <keyword>` and `<keyword> --help` describe one. The
+keywords that read or write shared memory and evaluate scalars are bash builtins (`type -t @get`),
+so a call costs no shell function; the others are functions. The builtins come from
+`libmilkbash.so`: when it cannot load (missing, or milk reinstalled under a running shell), milk.bash
+says why and loads nothing.
+`@help -k <regex>` searches commands, keywords and topics. The expression keywords (`@calc`,
+`@test`, `@assert`) take `--help` only, as `-h` is a valid expression. The prompt parts of `@history`
+(`search`, `save`, `--stats`, `--tui`) and the REPL settings of `@config` exist only at the milk-cli
+prompt. A one-letter option has one meaning in all the keywords that take it: `-v <var>` and
+`-a <arr>` bind the output, `-t <sec>` is a timeout, `-n <N>` a count, `-r` running, `-l` a long
+listing, `-h` help.
 
-```bash
-#!/usr/bin/env milk-script
-include_once helpers.milk
-include_once helpers.milk   # no-op
-```
+The keywords read their options the same way, from the list that `@help <keyword>` prints and TAB
+completes: `--opt value` or `--opt=value`, before or after the other arguments, and `--` ends
+them. An unknown option, or one without its value, is a usage error (status 2) with the usage
+line; a number (`-1.5`) and a word with a blank are never options. Where free text follows
+(`@set`, `@defer`, `@source`, `@on`), the options come first. `@calc`, `@test` and `@assert` take
+a word they do not know as calculator text.
 
-### Startup Profile
+## Module Commands
 
-If the `~/.milkrc` file exists, it is automatically sourced at interactive startup. Use this file to
-define persistent aliases, load standard variables, or register helper functions.
-
-### Saving State
-
-Export all current variables, aliases, and function definitions to a file so they can be reloaded
-later:
-
-```bash
-#!/usr/bin/env milk-script
-savescript state.milk
-```
-
-Similarly, write your interactive Readline command history to a replayable script text file:
-
-```bash
-#!/usr/bin/env milk-script
-savehistory replay.milk
-```
-
-## `milk-cli` Native Features
-
-The following commands and syntactic expansions are implemented natively by the `milk-cli` engine
-logic and take precedence over standard bash built-ins.
-
-### Stream Event Triggers (`on_update`)
-
-The `on_update` command blocks execution until a shared-memory stream posts its semaphore (i.e., a
-new frame arrives), then executes a provided command block.
-
-This is extremely useful for event-driven processing and synchronous scripts:
-
-```bash
-#!/usr/bin/env milk-script
-on_update wfs_cam { echo "New WFS frame received!" }
-```
-
-### Enhanced Conditional Tests (`[ ]`)
-
-The native interpreter supports a robust set of file and logic tests inside `[ ]` that run instantly
-without invoking `test` subprocesses:
-
-- **Filesystem**: `-f` (file), `-d` (directory), `-e` (exists), `-s` (non-empty), `-r` (readable),
-  `-w` (writable), `-x` (executable), `-L` (symlink).
-- **Strings**: `-n` (not empty), `-z` (empty), `==`, `!=`, `=~` (POSIX regex match).
-- **Numbers**: `-eq`, `-ne`, `-lt`, `-le`, `-gt`, `-ge`.
-- **Logic**: `-a` (AND), `-o` (OR), `!` (NOT).
-
-### Wait for Resources (`waitfor_*`)
-
-You can tell your script to pause and wait for shared memory streams or FPS parameter blocks to be
-initialized by other compute units before proceeding:
+Each command has one name, `<module>.<command>`. It is a bash function in every front-end, defined
+from the catalog written at install (`share/milk/catalog.bash`); `libexec/milk/bin` holds links for
+external tools (`xargs`, `timeout`). A session starts with the core modules (memory, FITS I/O,
+arithmetic, tools); any other installed module is loaded the first time one of its commands runs.
+Help, `@help -k` and completion know its commands before that. `@module list [--all]` shows the
+modules, and `@module load <name|file.so> [--as <short>]` loads a module ahead of time or one that
+is not installed; `MILKCLI_ADD_LIBS` names modules to load at start, and `milk-cli-all` starts with
+the standard ones loaded.
 
 ```bash
-#!/usr/bin/env milk-script
-waitfor_stream wfs_cam 30    # wait up to 30s for the stream
-waitfor_fps dmcomb 10        # wait up to 10s for the FPS
+mem.mk2Dim im 512 512              # make a 2-D image
+mem.mk2Dim -h                      # its help: arguments, defaults, presets
+@help mem                          # every command of a module
 ```
 
-This returns `0` on success and `1` on timeout. The default timeout if omitted is 10 seconds. This
-allows for robust orchestration in startup scripts:
+### Arguments
 
 ```bash
-#!/usr/bin/env milk-script
-waitfor_stream wfs_cam 60
-if [ $? -eq 0 ]; then
-    echo "Stream is ready!"
-fi
+mem.mk2Dim im 64 64                # values in order
+mem.mk2Dim .ysize=32 im 64         # .tag=value anywhere; the other values fill the rest in order
+mem.mk2Dim im . 32                 # '.' is the default value
+mem.mk2Dim --default .xsize=128    # session default (does not run); '.tag=.' clears it
+mem.mk2Dim --save=big im 2048 2048 # run, and keep the values as preset "big"
+mem.mk2Dim --load=big im2          # start from the preset
+mem.mk2Dim --no-run im 64 64       # print the resolved call, run nothing
 ```
 
-### Unified Event Multiplexing
+- Every call starts from the declared defaults overlaid with the session defaults: nothing carries
+  over from one call to the next, and two shells never share argument state.
+- A value is taken from, first to last: `.tag=value` or its position, the `--load` preset, the
+  session default, the declared default.
+- A missing, invalid or extra value, or a parameter given twice, is a usage error: the command does
+  not run and exits with status 2. `-0.5` is a value: `-h` is the only short option, and after `--`
+  every word is a value.
+- A number is read as the calculator reads it: `010` is ten, `0x1f`, `0o17` and `0b101` are hex,
+  octal and binary, and an integer takes `1e3` (not `1.5`); a value out of the type's range is
+  invalid. A bool is `on`/`off`, `true`/`false` or `1`/`0`. A number argument may also be a
+  calculator expression (`2*n0`, with calculator variables); it never reads bash variables: write
+  `$n`.
+- Unit command lines (`milk-fpsexec-*`, [Function Parameter Structures](fps.md)), `@args` and `@set`
+  read values and bind words by these rules too.
+- Presets are files under `${XDG_STATE_HOME:-~/.local/state}/milk/args/<command>/<NAME>`, one
+  `.tag=value` per line.
+- In an image argument, `"@L:name"` makes a local image and `"@S:name"` a shared stream.
 
-The `wait_any` command blocks until **any one** of multiple heterogeneous events fires, eliminating
-polling loops in orchestration scripts:
+### Your Own Commands
+
+`@args` declares the arguments of a function or script; they are bound and checked as a module
+command's are ([Arguments](#arguments)):
 
 ```bash
-wait_any [-t timeout] event1 [event2] [event3] ...
+# Average frames of a camera
+cam.average() {
+    @args 'cam:str:camera stream' 'n:int=100:frames to average' -- "$@"
+    @grab "s.${cam}" "${n}" "@L:avg_cube"
+    @calc "avg = imean(avg_cube, 2)"
+}
+cam.average cam0 .n=50       # values in order, or .name=value; '.' keeps a default
+cam.average -h               # the usage, from the declaration
 ```
 
-Each event is a single token with a prefix:
+- A declaration is `name:type[=default][:help]`, with type `int` `uint` `float` `bool` (bound as
+  1 or 0), `str`, `stream` or `fits`. Without a default a value is required.
+- The names become local variables of the function (globals at a script's top level). After `-h`,
+  or a missing, invalid or extra value, the function returns (status 0 or 2); a script ends.
+- `*.bash` files in `$MILK_INSTALLDIR/share/milk/commands.d` and
+  `${XDG_CONFIG_HOME:-~/.config}/milk/commands.d` are loaded with milk.bash (in plain bash, milk-cli
+  and milk-script). The `module.cmd` functions they define are commands like the others: completion,
+  `@unload`, and `@help` (the comment line right above a definition is its description).
 
-| Prefix                     | Fires when            | Example            |
-| -------------------------- | --------------------- | ------------------ |
-| `S:<stream>`               | Stream `cnt0` changes | `S:wfs_cam`        |
-| `F:<fps>.<param><op><val>` | FPS param matches     | `F:dmcomb.abort=1` |
-| `P:<proc>:<state>`         | Process reaches state | `P:wfsloop:STOP`   |
+## Entities
 
-FPS comparison operators: `=`, `!=`, `>=`, `<=`.
+An entity path is `<namespace>.<name>.<property>`:
 
-The return value `$?` is the 0-based index of the event that fired, `254` on timeout, or `255` on
-parse error.
+| Namespace        | Refers to                                   |
+| ---------------- | ------------------------------------------- |
+| `s.` `stream.`   | shared-memory stream (`$MILK_SHM_DIR`)      |
+| `l.` `local.`    | image local to the milk-cli process         |
+| `f.` `fps.`      | function parameter structure (FPS)          |
+| `p.` `proc.`     | processinfo loop                            |
+
+Images created by `mem.mk2Dim` and other commands are shared streams by default.
+
+### Reading
 
 ```bash
-#!/usr/bin/env milk-script
-# Wait for new frame OR operator abort
-wait_any -t 60 S:wfs_cam F:dmcomb.abort=1
-if [ $? -eq 0 ]; then
-    echo "New frame arrived"
-elif [ $? -eq 1 ]; then
-    echo "Operator requested abort"
-fi
+@get s.cam.xsize                   # print a property
+@get -v nx s.cam.xsize             # bind it to a bash variable (no subshell)
+@get nx=s.cam.xsize ny=s.cam.ysize # several values in one call
+@get -A st s.cam.stats             # pixel statistics: ${st[mean]} ${st[std]} ...
+@get -a names 's.*'                # matching entity names into an indexed array
+@get -A sizes 's.dm*.xsize'        # name -> value into an associative array
+@get --json s.cam                  # all properties as JSON (also f.<fps>, p.<proc>)
+@get --watch 1 s.cam.cnt0 p.loop.hz # every second until Ctrl-C (default 0.5 s)
+nx=@{s.cam.xsize}                  # inline, inside a word (not right after a letter)
+echo "frame @{s.cam.cnt0} of @{s.cam.xsize} x @{s.cam.ysize}"
+n=cam; echo "@{s.${n}.xsize}"      # bash variables inside the path
+echo "\@{s.cam.xsize}"             # escaped: printed as is
 ```
 
-### Engine Event Traps
+Common properties:
 
-The `trap` command supports non-blocking engine event handlers using the same prefix syntax as
-`wait_any`. Traps fire automatically between CLI commands, without blocking the main thread.
+- streams (`s.`, `l.`; `@help streams` and `@get s.<name>.list` list them): `xsize` `ysize`
+  `zsize` `naxis` `nelement` `dtype` `typename` `type` `cnt0` `cnt1` `sem` `pid` `owner_pid`
+  `shared` `NBkw` `location` `loc` `inode` `age` `fps` `summary`; the pixel statistics `min` `max`
+  `mean` `std` `var` `tot` `count` (non-zero pixels), the calculator's `imin` … `icount` of the
+  frame, and `stats` (all of them, plus `torn`, 1 when every read overlapped a write under the
+  [torn-frame rule](calculator.md#compute-units-without-c) and the values come from the last one;
+  cached per `(inode, cnt0, 16-pixel sample)` so reading several properties on the same frame scans
+  the pixels only once: a writer that changes pixels in place without advancing `cnt0` or the write
+  time can get a cached value when those 16 pixels did not change); `kw.<KEY>` (or `k.<KEY>`, a
+  FITS keyword) and `kw.*`; `kv`; `json`; `list`. `nelem`, `ownerPID`, `size0` … `size2`, `typeid`
+  and `storage` are accepted too;
+- FPS (`f.`): any parameter (`f.loop.gain`), plus `status` (or `run`) and `conf`, the state of the
+  unit's run and conf processes: `stopped` `starting` `running` `stopping` `exited` `failed`;
+  `session`; `run.out` and `conf.out`, the last 20 lines the unit wrote (`milk-fps-log` shows more);
+  `confpid` `runpid` `nbparam` `list` `description`; `ok` `errors` `msg`, the last parameter check
+  (confstep, confstart or runstart; `@set f.X.conf=step` runs one): `ok` is 1 if it passed (0 before
+  any check), `errors` counts the parameters that failed, `msg` gives one `<parameter>: <message>`
+  line each. An exact parameter name wins over these. `procinfo.triggermode` reads as a name and
+  takes a name or a number: `immediate` `cnt0` `cnt1` `semaphore` `delay` `semaphore-timeout` `cnt2`;
+- processes (`p.`): `status` `loopcnt` `loopfreq` (or `hz`) `dt` `dtmax` `dt_median_ns` `dt_max_ns`
+  `exectime` `exec_max` `jitter` (all from the process's timing ring: median and maximum iteration
+  interval in µs, and in ns for the `_ns` ones, median and maximum busy time in µs, largest deviation
+  of the interval from its median in µs) `trigmode` (a name, as above) `ctrl` `pid` `missedframes`
+  `timeouts` (trigger waits that timed out) `triggerstream` `unit` (the unit the process runs)
+  `statusmsg`. `@waitfor p.<name>` waits until the process stops; a clean exit, which removes its
+  processinfo file, counts.
+
+`@get --json <entity>` lists everything an entity provides.
+
+### Writing and Actions
 
 ```bash
-# Register traps
-trap 'echo "new frame"' STREAM:wfs_cam
-trap 'echo "gain changed"' FPS:dmcomb.loopgain>=0.5
-trap 'echo "loop stopped"' PROC:wfsloop:STOP
-
-# Optional flags (before the quoted command)
-trap -i 200 'echo "throttled"' STREAM:fast_cam   # min 200ms between fires
-trap -n 5 'echo "five times"' STREAM:slow_cam    # fire at most 5 times
-
-# Clear a trap
-trap '' STREAM:wfs_cam
-
-# List all active traps (POSIX + engine)
-trap -l
+@set f.loop.gain=0.25              # one value
+@set f.loop.gain = 0.25            # same, '=' may be spaced
+@set f.loop.gain=0.25 f.loop.mult=0.99   # several in one call
+@set 'f.dm*.xsize' = 128           # every match of a glob
+@set s.cam.kw.OBS=night "comment"  # FITS keyword, optional comment
+@set f.loop.conf=start             # FPS: conf=start|stop|step, run=start|stop, once done
+@set p.loop.ctrl=pause             # processinfo control: run pause step stop ...
+@set p.loop.pause                  # same, as an action
+@set --restore f.loop.gain=0       # the old value comes back when the calling function returns
+@set --tui loop                    # browse and edit FPS parameters (milk-cli prompt)
 ```
 
-**Auto-re-arm**: Engine traps automatically re-arm after firing. The baseline state (e.g., stream
-`cnt0`, FPS parameter value) is updated after each fire, so the same event won't trigger twice.
+`@get --watch [T] <spec>...` redraws the values in place at a terminal; when its output is not a
+terminal it prints one tab-separated line per refresh, for a log. Ctrl-C ends it, with status 0.
 
-**Throttle**: A minimum interval (default 100ms) prevents high-frequency streams from flooding the
-handler. Override with `-i ms` (set to 0 for no throttle). Use `-n N` to limit the total number of
-fires.
-
-**Supported events**: Same event types as `wait_any`, using the engine-trap forms `STREAM:name`,
-`FPS:fps.param<op>val`, and `PROC:name:STATE`.
-
-### System Snapshot (`milkquery`)
-
-The `milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams,
-and active processes in one call:
+A parameter sweep is a loop: `@set --restore` puts the parameter back when the function returns, and
+`@calc -v` binds what each step measures.
 
 ```bash
-milkquery                     # Full snapshot
-milkquery --fps [pattern]     # FPS instances only
-milkquery --streams [pattern] # Streams only
-milkquery --procs             # Active processes only
-```
-
-Output is a JSON object with top-level keys `"fps"`, `"streams"`, and `"processes"`, each containing
-an array of entries. When a filter flag is used, only the requested section(s) appear.
-
-Individual list commands also support `--json`:
-
-```bash
-fpslist --json [pattern]      # Same as milkquery --fps
-streamlist --json [pattern]   # Same as milkquery --streams
-proclist --json               # Same as milkquery --procs
-```
-
-### FPS Parameter Expansion
-
-You can effortlessly read FPS (Function Processing System) parameters directly into bash variables
-using the native `@fpsname.param` syntax:
-
-```bash
-#!/usr/bin/env milk-script
-echo "The current gain is: @myloop.loopgain"
-
-# Store in a variable
-g=@myloop.loopgain
-```
-
-To write FPS parameters programmatically, natively use the `fpsset` command:
-
-```bash
-#!/usr/bin/env milk-script
-# Note: Do not use the '@' prefix when writing
-fpsset myloop loopgain 0.5
-```
-
-### Advanced Variable Expansion and Arrays
-
-`milk-cli`'s native interpreter includes powerful bash-like variable expansions:
-
-- **Default values**: `${var:-default}` returns `default` if `var` is empty/unset.
-- **Assign default**: `${var:=default}` sets `var` to `default` if it was empty/unset.
-- **Error if empty**: `${var:?message}` prints an error if `var` is empty/unset.
-- **Substring**: `${var:offset:length}` returns a slice of the string. Negative offsets count from
-  the end.
-- **String length**: `${#var}` returns the number of characters in the variable.
-- **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element
-  of the respective array.
-- **Array splat**: `${myarray[@]}` expands to all elements in the array joined by a space.
-- **Array size**: `${#myarray[@]}` returns the number of elements in the array. For mathematical
-  expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
-
-- Basic operators: `+  -  *  /  %`
-- Bitwise operators: `&  |  ^  <<  >>  ~`
-- Comparisons: `==  !=  <  >  <=  >=`
-
-### Stream & FPS Metadata Expansion
-
-Similar to FPS parameters, you can access properties of shared memory streams via the `@s.`
-namespace expansion:
-
-```bash
-#!/usr/bin/env milk-script
-echo "Geometry: ${@s.mystream.xsize}x${@s.mystream.ysize}x${@s.mystream.zsize}"
-echo "Datatype Code: ${@s.mystream.type}"
-echo "Frame Counter: ${@s.mystream.cnt0}"
-echo "Number of axes: ${@s.mystream.naxis}"
-```
-
-For FPS compute units, you can check their allocation status:
-
-```bash
-#!/usr/bin/env milk-script
-echo "Status: ${myfps.status}"     # 1 if exists, 0 if unconnected
-```
-
-## Scripting Showcase
-
-Here are several examples demonstrating how `milk-cli` native features combine with standard bash
-utilities to form powerful automation scripts.
-
-??? example "Example 1: Parameter Defaults and String Manipulation"
-
-    Because `milk-cli` correctly delegates back to `bash`, you can safely use standard recursive
-    shell expansions (e.g. `##` suffix stripping) to quickly parse paths:
-
-    ```bash
-    #!/usr/bin/env milk-script
-    function process_image {
-        local img_path=${1:-/data/default.fits}
-        local filename=${img_path##*/}   # strip path prefix
-        local basename=${filename%.*}    # strip extension
-
-        echo "Processing ${basename}..."
-    }
-
-    process_image
-    process_image /tmp/test_image.fits
-    ```
-
-    **Output:**
-    ```text
-    Processing default...
-    Processing test_image...
-    ```
-
-??? example "Example 2: Transparent OS Fallback"
-
-    Combine Linux shell utilities directly with native `milk-cli` commands. In scripts, there is no
-    need to prefix standard bash commands with `!` like inside interactive mode.
-
-    ```bash
-    #!/usr/bin/env milk-script
-    prefix="output_"
-    ext=".fits"
-
-    # Run the native milk command to process the file
-    milk-FITS2shm image.fits wfs_cam
-
-    # Use standard shell binaries to print system info
-    count=$(ls -1 | grep -c "${ext}")
-    echo "Found $count FITS files."
-
-    tag=$(date +%Y%m%d_%H%M%S)
-    echo "Saving to: ${prefix}${tag}${ext}"
-    ```
-
-??? example "Example 3: Waiting for Streams and reading Metadata"
-
-    Block until multiple shared-memory streams become available during startup, then dynamically
-    read their geometry properties via native dot-expansion:
-
-    ```bash
-    #!/usr/bin/env milk-script
-    function wait_and_monitor {
-        local stream=$1
-        echo "Waiting for stream ${stream}..."
-
-        waitfor_stream $stream 60
-        if [ $? -ne 0 ]; then
-            echo "Error: Stream ${stream} timed out."
-            return 1
-        fi
-
-        # Read stream metadata via @ namespace
-        echo "Ready! Shape: ${@s.${stream}.xsize} x ${@s.${stream}.ysize}"
-    }
-
-    wait_and_monitor wfs_cam
-    wait_and_monitor dm_disp
-    ```
-
-??? example "Example 4: Batch FPS Parameter Manipulation"
-
-    Read and write FPS parameters from a script to automate configuration changes across multiple
-    compute units, leveraging standard bash `for` loop integer evaluation to calculate vector
-    indices:
-
-    ```bash
-    #!/usr/bin/env milk-script
-
-    # Retrieve current value and log it
-    gain=$(milk-fps-set dmcomb.loopgain)
-    echo "DM combiner gain was: $gain"
-
-    # Set the loop gain on the DM combiner FPS native memory
-    fpsset dmcomb loopgain 1.0
-
-    # Apply identical gain to all modal channels using a bash loop
-    nmodes=50
-    for m in $(seq 0 $(( nmodes - 1 ))); do
-        fpsset dmcomb modesgain[$m] 0.1
+sweep_gain() {
+    @set --restore f.loop.gain=0.1     # the gain comes back when sweep_gain returns
+    local g rms
+    for g in 0.1 0.2 0.5 1.0; do
+        @set f.loop.gain=$g
+        @waitfor s.wfs_resid 100 -t 5  # let 100 frames go by
+        @calc -v rms "istd(wfs_resid)"
+        printf '%s\t%s\n' "$g" "$rms"
     done
+}
+```
 
-    echo "Set $nmodes modal gains to 0.1"
-    ```
+### Existence and Listing
 
-??? example "Example 5: Stream Diagnostic Report"
+```bash
+@exists s.cam && echo yes          # exit status 0 if the entity exists
+@exists -r f.loop                  # 0 if the FPS or process also runs
+@ls                                # table of streams, FPS and processes
+@ls 's.cam*'                       # one namespace, with a glob
+@ls -a list 'f.*'                  # names into an array (also -1, -l)
+@ls --json                         # JSON snapshot
+```
 
-    Collect live metadata from multiple streams and natively format a compact diagnostic table using
-    string expansion and alignment flags.
+## Calculator
 
-    ```bash
-    #!/usr/bin/env milk-script
-    streams=(wfs_cam dm_disp wfs_ref)
+`@calc` evaluates image and scalar expressions (`-v` binds results to bash variables), `@test`
+tests one (status 0 if true), `@{expr}` puts a value inside a word, and `@pipe` chains stages in
+one request. The language, its functions and examples, and the cost of each form are in
+**[Calculator & Scripted Compute Units](calculator.md#calculator-calc-test-pipe)**.
 
-    echo "--------------------------------------------"
-    echo "  Stream           XSize  YSize  Frame"
-    echo "--------------------------------------------"
+## Waiting, Events and Cleanup
 
-    for s in ${streams[@]}; do
-        waitfor_stream $s 5
-        if [ $? -ne 0 ]; then
-            printf "  %-18s OFFLINE\n" $s
-            continue
-        fi
+```bash
+@waitfor s.cam                     # next frame
+@waitfor s.cam 10 -t 2             # 10 frames, timeout 2 s (status 124 on timeout)
+@waitfor s.cam --cnt 5000          # until cnt0 reaches 5000
+@waitfor f.loop.gain=0.5 -t 5     # until a property has a value
+@waitfor f.loop running -t 5       # until the unit's loop runs (stopped: until no process runs)
+@waitfor "imean(cam) > 100" -t 5   # until an expression is true, checked on each frame of cam
+@waitany s.cam s.wfs -t 1          # whichever updates first; its name is in $MILK_TRIGGER
+@grab s.cam 100 "@L:cube"          # 100 consecutive frames into a cube
+@grab --fits cube.fits --timestamps t.txt s.cam 100
+@grab --stdout -a pix s.cam        # the next frame's pixels into a bash array
+@replay --fps 100 --loop cube.fits sim   # play a cube or FITS file into stream sim
+@on s.cam 'echo "new frame on $MILK_TRIGGER"'      # run on every update (background)
+@on --once --max-hz 10 s.cam s.wfs -- process_frame
+@on --when 'imax(cam) > 60000' --hold 0.5 -- echo saturated   # when it turns true (and stays)
+@on --when 'imean(cam) > 100' --level -- log_frame                # every frame while it is true
+@on --every 10 -- '@get s.cam.cnt0 >> counts.txt'                 # a periodic job
+@on --list ; @on --stop s.cam ; @on --clear
+@sleep 0.05                        # sleep without starting a process
+unset t; while :; do @sleep --hz 100 t; process_frame; done   # a loop paced at 100 Hz
+@sleep --every 0.5 --late missed t # $missed: ticks a late call skipped
+```
 
-        # The @s.${s}.prop syntax queries SHM image
-        # metadata directly; $VAR substitution inside
-        # @ tokens is supported so stream names can
-        # be dynamic.
-        xs=@s.${s}.xsize
-        ys=@s.${s}.ysize
-        cnt=@s.${s}.cnt0
-        printf "  %-18s %-6s %-6s %s\n" $s $xs $ys $cnt
-    done
+`@sleep --every T VAR` (or `--hz F VAR`) sleeps to the deadline held in `VAR`, an integer count of
+nanoseconds on the monotonic clock, then moves it one period on; an unset `VAR` starts one period
+from now. The loop keeps its rate whatever its body costs, without drift. A call that comes after its
+deadline returns at once and skips the ticks it missed instead of running them back to back.
 
-    echo "--------------------------------------------"
-    ```
+`@waitfor` and `@waitany` sleep on the stream semaphores (keeping the stream mapping and semaphore
+slot pinned for the duration of the wait), so they use no CPU while waiting. An expression is
+evaluated again on each new frame of the streams it names, in the shell when it is scalar; FPS
+and process values in it are polled. `@waitfor --next "<expr>"` starts from the next
+frame. `@grab` copies frames outside the server command lock and records the total number of
+skipped frames (`cnt0` gaps $> 1$ between captured frames) in the output cube's `DROPPED` FITS
+keyword (`s.<cube>.kw.DROPPED` or `s.<cube>.k.DROPPED`). With `--`, `@on` runs the words after it
+as a command; use the quoted form when the command refers to `$MILK_TRIGGER`. `@on --when` fires
+when the expression turns true, also when it is already true at the start, then again once it has
+been false. A watcher ends with the shell, or subshell, that started it, also when that shell is
+killed; a watcher that must outlive its shell is a unit (`milk.script`).
 
-??? example "Example 6: AO Loop Startup Orchestration"
+`@defer` runs a command when the function or `@source`'d file that registered it returns, last
+registered first:
 
-    A complete startup script that initialises an AO loop step by step, verifies each stage using
-    `milk-cli` conditionals, and aborts cleanly on hardware failure:
+```bash
+measure() {
+    local tmp=/tmp/measure.$$
+    @defer 'rm -f "$tmp"'              # runs when measure returns, with its locals
+    @set --restore f.loop.gain=0       # set now; the old gain comes back when measure returns
+    @defer --restore 's.cam.kw.*'      # every keyword of s.cam comes back
+    @on --scoped s.cam -- process_frame    # the watcher stops when measure returns
+    @defer --exit 'echo session done'  # at exit instead
+    @waitfor s.cam 100 -t 5
+}
+@defer rm -f /tmp/session.log          # at the top level: when the shell or script exits
+```
 
-    ```bash
-    #!/usr/bin/env milk-script
+- A plain `source` is not a scope: entries registered in a file sourced from a function run when the
+  function returns. At the top level, and with `--exit`, entries run at exit, after the scoped ones.
+- Each entry runs once. A function's return status is kept.
+- After Ctrl-C or a `set -e` failure, the skipped entries run before the next prompt or milk-cli
+  command, or at exit. A subshell runs only the entries it registered itself.
+- One argument is a command string, as for `trap`; several words are kept quoted.
+- `@defer` uses the RETURN trap, and the EXIT trap. A user EXIT trap set before the first
+  `@defer` runs after the entries; a RETURN trap set by the script replaces `@defer`'s.
+- `@unload` runs the entries left and gives the EXIT trap back.
 
-    # ---------- helpers ----------
-    function die {
-        echo "FATAL: $1"
-        exit 1
-    }
+## Compute Units Without C
 
-    function wait_stream {
-        local s=$1 timeout=${2:-30}
-        waitfor_stream $s $timeout
-        [ $? -ne 0 ] && die "Stream '$s' not available after ${timeout}s"
-        echo "  [OK] $s"
-    }
+`milk-fpsexec-milk-calc` runs compiled calculator programs, and `milk-fpsexec-milk-script` a bash
+snippet, on each frame of a trigger stream or on a timer, without C code: see
+**[Calculator & Scripted Compute Units — Compute Units Without C](calculator.md#compute-units-without-c)**.
 
-    # ---------- 1. verify hardware streams ----------
-    echo "=== 1. Checking hardware streams ==="
-    wait_stream wfs_cam 60
-    wait_stream dm_volt
+## State, Assertions and Logs
 
-    # ---------- 2. load reference PSF ----------
-    echo "=== 2. Loading WFS reference ==="
-    milk-FITS2shm wfs_ref.fits wfs_ref
-    wait_stream wfs_ref
+```bash
+@snapshot -o base.json 'f.loop*' 's.cam*'     # FPS parameters and stream keywords to JSON
+@diff base.json                               # compare with the live state
+@restore --dry-run base.json                  # list the changes, then without it to apply
+@restore --undo                               # set back what this shell's last @set changed
+@assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
+@assert --running --fps-min 500 s.cam "camera stalled"
+@assert --max-age 0.1 --cnt-min 100 --dim 128x128 s.cam   # last frame at most 0.1 s old, ...
+@assert s.dark -m "no dark"                   # an entity alone: it exists (-e, --exists)
+@log -n 20                                    # recent milk commands, timing and output
+@session                                      # the session in use (see Sessions)
+@config prompt preset std                     # live telemetry in the prompt
+@config                                       # digits, precision, procinfo
+```
 
-    # ---------- 3. start modal decomposition FPS ----------
-    echo "=== 3. Starting modal decomposition ==="
-    milk-fpsexec-cacaoloop-WFS -n wfs01 -tmux
-    sleep 2
-    waitfor_stream wfs_modes 20
-    [ $? -ne 0 ] && die "Modal decomposition failed to produce wfs_modes"
+See [Sessions — Snapshots, Undo, Assertions, and Logs](sessions.md#snapshots-undo-assertions-and-logs)
+for `@restore --undo`, `@session save`, and `@log` details.
 
-    # ---------- 4. configure loop gains ----------
-    echo "=== 4. Configuring loop gains ==="
-    nmodes=100
-    for m in $(seq 0 $(( nmodes - 1 ))); do
-        fpsset dmcomb modesgain[$m] 0.05
-    done
-    fpsset dmcomb loopgain 1.0
-    fpsset dmcomb loopON 1
+## Errors and Exit Status
 
-    # ---------- 5. confirm loop is running ----------
-    echo "=== 5. Loop status ==="
-    sleep 1
-    fpsgain=$(milk-fps-set dmcomb.loopgain)
-    echo "  loopgain = $fpsgain"
-    echo "AO loop started successfully."
-    ```
+| Status | Meaning                                                         |
+| ------ | --------------------------------------------------------------- |
+| 0      | success                                                         |
+| 1      | the command failed                                              |
+| 2      | usage error: bad or missing argument, invalid value, syntax     |
+| 124    | timeout (`@waitfor`, `@waitany`, `@grab -t`)                    |
+| 127    | unknown command (the message names the replacement of an old spelling) |
+| 130    | interrupted (Ctrl-C)                                            |
+| 255    | the session cannot be reached (it was ended), or speaks another protocol version; `@get`, `@exists` and `@ls` read shared memory directly and do not need it |
 
-??? example "Example 7: Real-Time Process Triggering & Monitoring"
+- `milk-cli -s`, `milk-cli -c` and piped input exit with the status of the last command, and `$?`
+  carries over from one input line to the next.
+- A failed `@{…}` expands to an empty string after its message: `milk: @{s.cam.xsize}: inline
+  expansion failed` for an entity, the calculator's error for an expression. An assignment such as
+  `x=@{s.cam.xsize}` also returns its status. With `MILK_STRICT=1`
+  the failure ends the script with that status, as with `set -u`; at a prompt it is only reported.
+- Calculator errors are printed even in quiet mode (`milk: calc error: ... in '<expr>'`, with the
+  line in text of several lines). `@calc` exits 1 when the calculation fails (sizes that do not
+  match, ...) and 2 for a syntax error, an unknown name or a wrong number of arguments; `@test`
+  exits 2 for any error, since 1 means false.
+- Ctrl-C interrupts the running command line, including a milk command executing inside milk-cli.
+  Shell variables, functions and background jobs survive. A script that sets its own `trap ... INT`
+  handles Ctrl-C itself.
+- A `@calc` stops at its next statement or loop iteration (one long kernel finishes first). A crash
+  inside a milk command or a calculator statement ends that command only, with status 1; the session
+  and its images remain.
+- If the bash process dies (killed, or recursion deeper than `FUNCNEST`, 5000 by default), milk-cli
+  says so. A script stops there; at the prompt, the next command starts a new bash, without the
+  previous shell state.
 
-    Use FPS parameters to configure `procinfo` settings, binding a compute unit to trigger
-    automatically on a stream and monitoring its health from the script.
+## Cost Model
 
-    ```bash
-    #!/usr/bin/env milk-script
+Measured on a recent desktop machine (see `test_perf_latency_ceilings` in
+`python/tests/cli/perf_ceilings_test.py` and `python/tests/perf/calc_bash_bench.py`):
 
-    # 1. Start the compute unit process
-    milk-fpsexec-examplefunc2_FPS -tmux &
-    sleep 1
+| Form                                  | Time per call | Note                                     |
+| ------------------------------------- | ------------- | ---------------------------------------- |
+| `@calc -v y "1+2"` (scalar only)      | ~2 µs         | evaluated in the shell                   |
+| `@get -v x s.cam.xsize`               | ~3 µs         | read from shared memory, no request      |
+| `@set s.cam.kw.FOO=1`                 | ~5 µs         |                                          |
+| `cmds \| milk-cli -q` (per line)      | ~2–5 µs       | non-TTY stdin lines batched without readline |
+| `f() { @defer …; }; f`                | ~15 µs        | registered, then run when `f` returns    |
+| `x=@{s.cam.xsize}`, `y=@{1+2}`        | ~2–3 µs       | a statement of its own: bound with `-v`  |
+| `"frame @{s.cam.cnt0}"` (in a word)   | ~15 µs        | bash's `${\| …; }` substitution, no fork |
+| `@calc "cam = cam * 2"` (images)      | ~30 µs        | one request to the server (64-entry LRU statement cache) |
+| `mem.listim`, other milk commands     | ~40 µs        | one request to the server                |
+| `y=$(@calc 1+2)`                      | ~0.8 ms       | `$( )` forks a subshell: avoid in loops  |
 
-    # 2. Configure it to be triggered by a stream (Mode 3 = SEMAPHORE)
-    fpsset examplefunc2_FPS procinfo.triggermode 3
-    fpsset examplefunc2_FPS procinfo.triggersname wfs_cam
+Prefer `-v`, `-a`, `-A` and `NAME=@{…}` over `$(…)` and over `@{…}` inside longer words in loops,
+group work with `@pipe`, and use `@sleep` rather than `sleep` for short waits. On bash older than
+5.3, `@{…}` inside a word falls back to `$(…)` and costs a fork; `NAME=@{…}` does not. For image
+expression fusion, slice/broadcast views, and temporary pool reuse, see
+**[Calculator & Scripted Compute Units — Fusion & Cost Model](calculator.md#fusion-cost-model)**.
 
-    # 3. Enable the background loop
-    fpsset examplefunc2_FPS procinfo.enabled 1
+## Sessions
 
-    # 4. Monitor its execution natively
-    for i in {1..5}; do
-        # Dot-expansion accesses the live telemetry via procinfo
-        status=${examplefunc2_FPS.procinfo.status}
-        loopcnt=${examplefunc2_FPS.procinfo.loopcnt}
+Each shell (`milk-cli`, `milk-script`, or plain bash after `source milk.bash`) talks to a
+`milk-cli --server` session that holds local images (`l.`), calculator variables, and settings, or
+shares a named session across multiple shells (`@session new NAME`, `@session use NAME`). For
+named-session lifecycle, `source milk.bash`, multi-shell concurrency, and `@session save`/`restore`,
+see **[Sessions](sessions.md)**.
 
-        echo "Check $i: Status=$status, Iterations=$loopcnt"
-        sleep 2
-    done
-    ```
+## Migrating Old Scripts
 
-??? example "Example 8: Advanced Native Math and Image Calculus"
+Old spellings fail with a message that names their replacement: status 127 for a removed command
+word, 2 for a removed option or verb. Nothing rewrites a file: change it from the message, or from
+this list:
 
-    You can run mathematical expressions natively, manipulate image values directly with constants,
-    and calculate norms and conditions efficiently without needing external parsing like `bc` or
-    `awk`.
+- `@server` → `@session`, with `start` → `new` (or `use` for a session that runs), `list` → `ls`,
+  `local` → `leave`, `stop` → `end`, `attach` → `@log -f`; `@log --server` → `@log --session`;
+  `source milk.bash --server NAME` → `source milk.bash --session NAME` (`-s` is not milk's any more);
+- `@running` → `@exists -r`; `@session log` → `@log`;
+- one-letter options that had another meaning elsewhere: `@calc -l` → `--lib`, `@restore -n` →
+  `--dry-run`, `@log -a` → `--all`, `@assert -e` → `--exists`;
+- `@listim`, `@mem.listim`, `listim` → `mem.listim`; `@ci` → `milk.ci`;
+- `@ x = e` → `@calc "x = e"`, or `@calc -v x "e"` to read the value into `$x`;
+- `@s.cam.xsize` → `@get s.cam.xsize`, `@f.loop.gain=0.2` → `@set f.loop.gain=0.2`, inline
+  `@s.cam.cnt0` and `${@s.cam.xsize}` → `@{s.cam.cnt0}`, `@s.x` inside calculator text → `s.x`;
+- `@batch` → `@pipe`, `@streamcat` → `@grab --stdout`, `@streamwrite` → `@replay --stdin`,
+  `@usleep` → `@sleep`, `@procwait` → `@waitfor p.<name>.status=...`;
+- `@mload`, `@mloadas` → `@module load [--as]`; `@dpdigits` → `@config digits`; the history and
+  help words → `@history`, `@help`, `-h`;
+- `include_once` → `@source --once`, `source x.milk` → `@source x.milk`, `exitCLI` → `exit`;
+- `cmd .tag value` → `cmd --default .tag=value`;
+- in calculator text: `ln` → `log`, `fabs` → `abs`, `urand` → `rand`, `grand` → `randn`, `nrm2` →
+  `norm`, `trunc(x, lo, hi)` → `clamp(x, lo, hi)`, `_PI` → `pi` (the other `_`-constants: write the
+  value), `if ... end` and `for ... end` → braces;
+  `irms` is now the root mean square (`istd` is the standard deviation).
 
-    ```bash
-    #!/usr/bin/env milk-script
+### From milk-seq
 
-    # 1. Provide an initial constant to initialize variables
-    a = 2 + 3 * 4
-    echo "Variable 'a' evaluates natively to: $a"
+The sequencer (`milk-seq`, its `.seq` files, the `seq.*` commands, the `q.` properties and the
+fpsCTRL scheduler screen) was removed: a queued workflow is a milk script. The old commands and
+`@get q.<name>.<prop>` fail with a message that points here.
 
-    # 2. Utilize mathematical functions like abs, max, min natively
-    e = min(abs(-5), max(3, fmod(17, 5)))
-    echo "Compound math 'e' limits safely to: $e"
+| milk-seq                                     | milk script                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| `repeat N` … `endrepeat`                     | `for i in $(seq N); do …; done`                                  |
+| `if_fps_status X running` … `endif`          | `if @exists -r f.X; then …; fi`, tested when reached             |
+| `wait_fps X running`, `wait_fps X norun`     | `@waitfor f.X running -t <sec>`, `@waitfor f.X stopped -t <sec>` |
+| `runwait X`                                  | `@waitfor f.X stopped -t <sec>`                                  |
+| `confstart X`, `runstart X`, `runstop X`     | `@set f.X.conf=start`, `@set f.X.run=start`, `@set f.X.run=stop` |
+| `setval X.p v`, `getval X.p`, `fwrval X.p F` | `@set f.X.p=v`, `@get f.X.p`, `@get f.X.p >> F`                  |
+| `fpsrm X`                                    | `milk-fps-rm X`                                                  |
+| `on_error abort`, `skip`, `retry`            | `set -e`; `cmd \|\| true`; a loop around the command             |
+| `include F`, `set V x`                       | `@source F`, `V=x`                                               |
+| `wait_seq S idle`                            | `wait` for a background script                                   |
 
-    # 3. Quickly generate and fill a virtual flat dummy space.
-    mem.mk2Dim imtest 10 10
-    imtest = imtest * 0.0 + 5.0
+A workflow that `seq.start` ran in the background is a background script (`./flow.milk &`). Instead
+of `seq.submit` or `seq_send`, other shells send commands to a named session (`@session use
+<name>`), and scripts in different shells synchronize with `@waitfor` on an FPS parameter that one
+of them sets.
 
-    # 4. Use vector constraints natively over memory blocks
-    d_im_im = dot(imtest, imtest)
-    n_im = norm(imtest)
-    echo "Dot product: $d_im_im | Norm vector length: $n_im"
+## Examples
 
-    # 5. Native Ternary Mask mapping limits logic cleanly:
-    imtest_plus = imtest + 3
-    imtest_mask = (imtest_plus == 8)
-    im_where = where(imtest_mask, imtest, -imtest)
-    h = imean(im_where)
-    echo "Filtered conditionally merged mean of masked image: $h"
-    ```
+Monitor a stream and log its mean once per second:
 
-??? example "Example 9: Bi-Directional Environment Variable Sync"
+```bash
+#!/usr/bin/env milk-script
+mem.mk2Dim "@S:demo_cam" 64 64
+for i in 1 2 3; do
+    @calc "demo_cam = $i * 10"
+    @calc -v m "imean(demo_cam)"
+    printf 'frame %s mean=%s\n' "@{s.demo_cam.cnt0}" "$m"
+    @sleep 1
+done
+```
 
-    `milk-cli` natively exports all active workspace variables to the underlying POSIX environment
-    when dispatching shell commands (like `!cmd` or pipes), and can concurrently read standard Linux
-    environment variables without requiring manual exports.
+Capture a cube from a live stream and save statistics:
 
-    ```bash
-    #!/usr/bin/env milk-script
+```bash
+#!/usr/bin/env milk-script
+@defer echo "done"
+@waitfor s.wfs -t 5 || { echo "no frames"; exit 1; }
+@grab s.wfs 50 "@L:wfs_cube"
+@calc -v rms "istd(wfs_cube)"
+@set s.wfs.kw.RMS="$rms" "rms of the last 50 frames"
+echo "rms=$rms over @{l.wfs_cube.zsize} frames"
+```
 
-    # 1. Read standard OS variables natively (Inward Sync)
-    echo "Operating as user: $USER in home directory: $HOME"
+Tune an FPS gain until a stream settles:
 
-    # 2. Define a milk-cli local variable
-    PREFIX="WFS_DATA"
+```bash
+#!/usr/bin/env milk-script
+@exists -r f.loop || @set f.loop.run=start
+for g in 0.1 0.2 0.3 0.4; do
+    @set f.loop.gain="$g"
+    @waitfor s.dmdisp 20 -t 2
+    if @test "istd(dmdisp) < 0.05"; then
+        echo "gain $g is stable"
+        break
+    fi
+done
+```
 
-    # 3. Use it transparently inside a dispatched shell command (Outward Sync)
-    !echo "Saving to prefix: $PREFIX" > /tmp/${PREFIX}_log.txt
-    !cat /tmp/${PREFIX}_log.txt
-    ```
+Start a chain of units, each once the one before it has written a frame:
 
-??? example "Example 10: Advanced Hybrid Scripting (Bash + milk-cli Native)"
+```bash
+#!/usr/bin/env milk-script
+milk-fpsexec-imggen-mkrandom -procinfo -loopd 0.01 fpsinit random_in 512 512 .distrib=0
+milk-fpsexec-imggen-mkrandom -loopd 0.01 runstart || exit 1   # returns once the loop runs
+@waitfor s.random_in -t 15 || exit 1                          # its first frame
+milk-fpsexec-imgfilt-gaussfilt -procinfo -loops fpsinit random_in blurred_out 5.0 15
+milk-fpsexec-imgfilt-gaussfilt -loops runstart || exit 1
+@waitfor s.blurred_out -t 15 || exit 1
+```
 
-    Combine the robust argument parsing capabilities of `bash` with the zero-overhead execution of
-    the `milk-cli` interpreter. By parsing arguments in bash and then dropping into a `milk-cli`
-    heredoc, the script gains native access to FPS, streams, and image calculus without sacrificing
-    traditional command-line interfaces.
-
-    See `scripts/milk-script-advanced` for the full template.
-
-    ```bash
-    #!/usr/bin/env bash
-
-    # 1. BASH HEADER: Argument Parsing
-    MSdescr="Advanced Native milk-cli Script Template"
-    MSarg+=( "streamname:string:Name of the input stream to wait for" )
-
-    # Parse arguments (milk-argparse automatically exports $STREAMNAME)
-    source milk-argparse
-
-    # 2. NATIVE EXECUTION: Zero-Overhead milk-cli Block
-    milk-cli -s << 'EOF'
-
-    echo "Waiting natively for stream: $STREAMNAME..."
-    # Event-Driven Execution without polling loops
-    waitfor_stream $STREAMNAME 10
-
-    # Fast Native Image Math & FPS
-    mem.mk2Dim mask_img ${@s.in.xsize} ${@s.in.ysize}
-    mask_img = mask_img * 0.0 + 1.0
-
-    on_update $STREAMNAME {
-        echo "Frame arrived!"
-    }
-    EOF
-    ```
+`runstart` returns once the unit's loop runs, and `@waitfor s.<out>` waits for the unit's first
+frame, so the next unit starts on an input that has data: no `sleep` is needed. `milk-demopipeline`
+starts its nine units this way (`milk-demopipeline cleanup` stops them).
 
 ## Syntax Highlighting (Neovim)
 
@@ -616,22 +577,25 @@ Lua config snippet at `~/.config/nvim/plugin/milkcli-treesitter.lua`.
 
 ### What Gets Highlighted
 
-| Syntax Element  | Highlight Group     | Example                    |
-| --------------- | ------------------- | -------------------------- |
-| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi` |
-| Shell builtins  | `@function.builtin` | `echo`, `export`, `source` |
-| milk commands   | `@function.macro`   | `assigncheck`, `procctl`   |
-| FPS variables   | `@property`         | `@fps.loop.gain`           |
-| Stream metadata | `@type`             | `${s.wfs.cnt0}`            |
-| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`           |
-| Strings         | `@string`           | `"hello"`, `'literal'`     |
-| Numbers         | `@number`           | `42`, `3.14`               |
-| Comments        | `@comment`          | `# comment`                |
+| Syntax Element  | Highlight Group        | Example                                  |
+| --------------- | ---------------------- | ---------------------------------------- |
+| Flow control    | `@keyword`             | `if`, `for`, `while`, `fi`               |
+| Shell builtins  | `@function.builtin`    | `echo`, `export`, `source`               |
+| milk keywords   | `@function.macro`      | `@calc`, `@waitfor`, `@source`           |
+| Module commands | `@function.call`       | `mem.listim` (builtin color, see below)  |
+| Entity paths    | `@property`            | `s.cam.xsize`, `"@{f.${loop}.gain}"`     |
+| Expansion       | `@punctuation.special` | `@{imean(cam)}`                          |
+| Variables       | `@variable.builtin`    | `$VAR`, `${VAR}`                         |
+| Strings         | `@string`              | `"hello"`, `'literal'`                   |
+| Numbers         | `@number`              | `42`, `3.14`                             |
+| Comments        | `@comment`             | `# comment`                              |
 
-### Dynamic Module Commands
+Heredocs are not parsed by the grammar: their body is highlighted as ordinary commands.
 
-Module commands (`listim`, `saveFITS`, `imcrop`, etc.) are registered at runtime, not hardcoded in
-the grammar. To highlight them, run the generator script after installing new milk modules:
+### Module Commands
+
+Module commands are listed in the install catalog, not in the grammar. To highlight them, run the
+generator script after installing new milk modules:
 
 ```bash
 # Generate and install module highlight queries
@@ -664,4 +628,11 @@ the grammar. To highlight them, run the generator script after installing new mi
 
 ---
 
-← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)
+## Bringing Your Own Compiled C Code (`milk_calc_ext.h` & `milk-cc`)
+
+`@calc --lib file.c` and `milk-fpsexec-milk-calc -l` load C extensions, and `milk-cc unit.c` builds a
+standalone unit: see **[C Extensions (`milk_calc_ext.h` & `milk-cc`)](calc_c_extensions.md)**.
+
+---
+
+← [CLI Syntax](CLIcore.md) · [Calculator & Compute Units](calculator.md) · [Sessions](sessions.md) · [C Extensions (`milk_calc_ext.h`)](calc_c_extensions.md) · [Documentation Index](../index.md)

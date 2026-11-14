@@ -12,7 +12,7 @@ any `milk-*` or `cacao-*` shell script.
 List all scripts that will be installed:
 
 ```bash
-find src/ plugins/ -name 'milk-*' -o -name 'cacao-*' \
+find scripts/ src/ plugins/ -name 'milk-*' -o -name 'cacao-*' \
   | grep -v '\.c$' | grep -v '\.h$' | sort
 ```
 
@@ -22,30 +22,25 @@ installed.
 
 ## 2. Read Current Documentation
 
-```bash
-view_file docs/guide/scripts.md
-```
+Read `docs/guide/scripts.md`.
 
 ## 3. Compare and Update
 
-For each script:
-
-- Verify it appears in `docs/guide/scripts.md`.
-- Verify the description is accurate.
-- If the script is new, add it to the appropriate
-  section.
-- If the script was renamed or removed, update or
-  remove the entry.
+For each script, update `docs/guide/scripts.md` as the
+[`script-docs`](../rules/script-docs.md) rule requires (new, renamed and removed scripts,
+accurate descriptions).
 
 ## 4. Verify Script Help
 
-Ensure each script supports `--help` or `-h`:
+Ensure each script handles the help flags of the
+[`help-message-standard`](../rules/help-message-standard.md) rule (`-h`, `-h1`, `-h2`, `-hm`):
 
 ```bash
-<script> --help
+<script> -h
+<script> -h1
 ```
 
-If a script lacks `--help`, add a usage function
+If a script lacks them, add a usage function
 to the script.
 
 ## 5. Notify

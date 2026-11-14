@@ -18,12 +18,31 @@ uint32_t ov__current_bg   = OV_COLOR_NONE;
 uint32_t ov__default_bg   = OV_COLOR_NONE;
 uint32_t ov__current_ul   = OV_COLOR_NONE;
 uint8_t  ov__current_attr = 0;
+
+/**
+ * ov_cell_blank - turn a cell into a single-width space, keeping its colours.
+ */
+static void ov_cell_blank(OV_CELL *c)
+{
+    memset(c->ch, 0, sizeof(c->ch));
+    c->ch[0] = ' ';
+    c->width = 1;
+}
+
+static int s_drawn_rows, s_drawn_cols; /* largest area drawn so far: the part of the grids in use */
+
 /**
  * ov_buf_force_clear - Invalidate the front buffer to force full screen repaint
+ *
+ * Only the area drawn so far is cleared: untouched cells are zero already, and clearing the whole
+ * 256x512 grid made all 4 MiB resident.
  */
 void ov_buf_force_clear(void)
 {
-    memset(ov__front, 0, sizeof(ov__front));
+    for (int r = 0; r < s_drawn_rows; r++)
+    {
+        memset(ov__front[r], 0, (size_t) s_drawn_cols * sizeof(OV_CELL));
+    }
 }
 
 /**
@@ -50,6 +69,8 @@ void ov_buf_reset_size(int rows, int cols)
         cols = OV_MAX_COLS;
     }
 
+    s_drawn_rows = (rows > s_drawn_rows) ? rows : s_drawn_rows;
+    s_drawn_cols = (cols > s_drawn_cols) ? cols : s_drawn_cols;
     for (int r = 0; r < rows; r++)
     {
         for (int c = 0; c < cols; c++)
@@ -67,29 +88,27 @@ void ov_buf_reset_size(int rows, int cols)
 }
 
 /**
- * ov_buf_reset - Reset shadow screen buffer to max terminal dimensions
- */
-void ov_buf_reset(void)
-{
-    ov_buf_reset_size(OV_MAX_ROWS, OV_MAX_COLS);
-}
-
-/**
  * ov_buf_append - Append raw ANSI sequence bytes to the screen output buffer
  * @data: Byte buffer containing ANSI sequences or text
  * @len:  Number of bytes to append
  */
 void ov_buf_append(const char *data, int len)
 {
-    if (ov__screenbuf_len + len < OV_SCREENBUF_SIZE)
+    if (ov__screenbuf_len + len >= OV_SCREENBUF_SIZE)
     {
-        memcpy(ov__screenbuf + ov__screenbuf_len, data, (size_t) len);
-        ov__screenbuf_len += len;
+        ov_buf_flush_internal(); /* still inside ?2026, so the frame stays atomic */
     }
+    if (ov__screenbuf_len + len >= OV_SCREENBUF_SIZE)
+    {
+        ov_buf_force_clear(); /* cannot be sent: repaint everything next frame */
+        return;
+    }
+    memcpy(ov__screenbuf + ov__screenbuf_len, data, (size_t) len);
+    ov__screenbuf_len += len;
 }
 
 /**
- * ov_buf_flush_internal - Flush accumulated screen output buffer to stdout
+ * ov_buf_flush_internal - Flush accumulated screen output buffer to the terminal
  */
 void ov_buf_flush_internal(void)
 {
@@ -98,8 +117,8 @@ void ov_buf_flush_internal(void)
         int written = 0;
         while (written < ov__screenbuf_len)
         {
-            ssize_t ret = write(STDOUT_FILENO, ov__screenbuf + written,
-                                (size_t) (ov__screenbuf_len - written));
+            ssize_t ret =
+                write(ov__tty_fd, ov__screenbuf + written, (size_t) (ov__screenbuf_len - written));
             if (ret < 0)
             {
                 if (errno == EINTR)
@@ -109,15 +128,17 @@ void ov_buf_flush_internal(void)
                 if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
                     struct pollfd pfd;
-                    pfd.fd     = STDOUT_FILENO;
+                    pfd.fd     = ov__tty_fd;
                     pfd.events = POLLOUT;
                     poll(&pfd, 1, 100);
                     continue;
                 }
+                ov_buf_force_clear(); /* the front buffer no longer matches the terminal */
                 break;
             }
             if (ret == 0)
             {
+                ov_buf_force_clear();
                 break;
             }
             written += ret;
@@ -179,10 +200,33 @@ void ov_buf_append_cluster(const char *utf8_seq, int bytes, int width)
     if (ov__cursor_row >= 1 && ov__cursor_row <= OV_MAX_ROWS && ov__cursor_col >= 1 &&
         ov__cursor_col <= OV_MAX_COLS)
     {
-        OV_CELL *cell = &ov__shadow[ov__cursor_row - 1][ov__cursor_col - 1];
+        OV_CELL *row  = ov__shadow[ov__cursor_row - 1];
+        int      c    = ov__cursor_col - 1;
+        OV_CELL *cell = &row[c];
+
+        /* Keep the invariant: a width-2 cell is always followed by its width-0 continuation */
+        if (cell->width == 0 && c > 0)
+        {
+            ov_cell_blank(&row[c - 1]); /* overwriting the right half of a wide glyph */
+        }
+        if (cell->width == 2 && width == 1 && c + 1 < OV_MAX_COLS)
+        {
+            ov_cell_blank(&row[c + 1]); /* orphaned continuation */
+        }
+        if (width == 2 && c + 2 < OV_MAX_COLS && row[c + 1].width == 2)
+        {
+            ov_cell_blank(&row[c + 2]); /* our right half lands on another wide glyph */
+        }
         if (bytes >= (int) sizeof(cell->ch))
         {
             bytes = (int) sizeof(cell->ch) - 1;
+        }
+        unsigned char b0 = (unsigned char) utf8_seq[0];
+        if ((b0 < 0x20 || b0 >= 0x7F) && !ov_utf8_cluster_printable(utf8_seq, bytes))
+        {
+            utf8_seq = "?"; /* never emit control bytes or broken UTF-8 taken from shm strings */
+            bytes    = 1;
+            width    = 1;
         }
         memset(cell->ch, 0, sizeof(cell->ch));
         memcpy(cell->ch, utf8_seq, (size_t) bytes);

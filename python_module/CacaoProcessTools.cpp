@@ -116,15 +116,10 @@ PYBIND11_MODULE(CacaoProcessTools, m)
           R"pbdoc(Open the process control monitor
 )pbdoc");
 
-    m.def("streamCTRL", &streamCTRL_CTRLscreen,
-          R"pbdoc(Open the stream control monitor
-)pbdoc");
-
     m.def("fparamCTRL", &functionparameter_CTRLscreen,
           R"pbdoc(Open the function parameter monitor
 )pbdoc",
-          py::arg("mode"), py::arg("fpsnamemask"), py::arg("fpsCTRLfifoname"),
-          py::arg("timeout_sec") = 0.0);
+          py::arg("mode"), py::arg("fpsnamemask"));
 
     py::enum_<FPS_status>(m, "FPS_status")
         .value("CONF", FPS_status::CONF)
@@ -133,9 +128,6 @@ PYBIND11_MODULE(CacaoProcessTools, m)
         .value("CMDRUN", FPS_status::CMDRUN)
         .value("RUNLOOP", FPS_status::RUNLOOP)
         .value("CHECKOK", FPS_status::CHECKOK)
-        .value("TMUXCONF", FPS_status::TMUXCONF)
-        .value("TMUXRUN", FPS_status::TMUXRUN)
-        .value("TMUXCTRL", FPS_status::TMUXCTRL)
         .export_values();
 
     py::enum_<FPS_type>(m, "FPS_type")
@@ -290,9 +282,9 @@ Return:
             "CTRLval", [](pyProcessInfo &p) { return p->CTRLval; },
             [](pyProcessInfo &p, int CTRLval) { p->CTRLval = CTRLval; })
         .def_property(
-            "tmuxname", [](pyProcessInfo &p) { return std::string(p->tmuxname); },
+            "unitname", [](pyProcessInfo &p) { return std::string(p->unitname); },
             [](pyProcessInfo &p, std::string name)
-            { strncpy(p->tmuxname, name.c_str(), sizeof(p->tmuxname)); })
+            { strncpy(p->unitname, name.c_str(), sizeof(p->unitname)); })
         .def_property(
             "loopstat", [](pyProcessInfo &p) { return p->loopstat; },
             [](pyProcessInfo &p, int loopstat) { p->loopstat = loopstat; })
@@ -493,12 +485,9 @@ Return:
              R"pbdoc(Send update signal to FPS
 )pbdoc")
         .def("CONFstart", &pyFps::CONFstart,
-             R"pbdoc(FPS start CONF process
+             R"pbdoc(FPS start CONF process, in the background (milk-fps-confstart)
 
-Requires setup performed by milk-fpsinit, which performs the following setup
-- creates the FPS shared memory
-- create up tmux sessions
-- create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
+The FPS must have been created by the unit's fpsexec binary (fpsinit).
 
 Return:
     ret      [out]: error code
@@ -533,21 +522,16 @@ Return:
       )pbdoc")
 
         .def("RUNstart", &pyFps::RUNstart,
-             R"pbdoc(FPS start RUN process
+             R"pbdoc(FPS start RUN process, in the background; returns once its loop runs
 
-Requires setup performed by milk-fpsinit, which performs the following setup
-- creates the FPS shared memory
-- create up tmux sessions
-- create function fpsrunstart, fpsrunstop, fpsconfstart and fpsconfstop
+The FPS must have been created by the unit's fpsexec binary (fpsinit).
 
 Return:
     ret      [out]: error code
 )pbdoc")
 
         .def("RUNstop", &pyFps::RUNstop,
-             R"pbdoc(FPS stop RUN process
-
- Run pre-set function fpsrunstop in tmux ctrl window
+             R"pbdoc(FPS stop RUN process: a stop request, then signals (milk-fps-runstop)
 
 Return:
     ret      [out]: error code

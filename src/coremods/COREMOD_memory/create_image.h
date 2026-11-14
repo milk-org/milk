@@ -27,6 +27,13 @@ errno_t create_image_ID(const char *name,
                         imageID    *outID);
 errno_t create_image_ID_IMGID(IMGID *img);
 
+/**
+ * imgid_create_registered() - create @img as a zeroed image in the image table (like create_image_ID()) and
+ * point @img->im / @img->md at it. Use it instead of `img.im = calloc(...); imgid_mkimage(&img);`, which
+ * makes an image that no other command can find.
+ */
+errno_t imgid_create_registered(IMGID *img);
+
 errno_t create_1Dimage_ID(const char *ID_name, uint32_t xsize, imageID *outID);
 errno_t create_1Dimage_ID_IMGID(IMGID *img);
 

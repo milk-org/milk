@@ -399,8 +399,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
             imgcm.mdt->size[a] = arraysizetmp[a];
         }
         imgcm.mdt->datatype = _DATATYPE_FLOAT;
-        imgcm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgcm);
+        imgid_create_registered(&imgcm);
         ID_Cmatrix = imgcm.ID;
     }
 

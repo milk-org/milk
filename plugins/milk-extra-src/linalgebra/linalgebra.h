@@ -63,17 +63,6 @@ errno_t compute_SVD(IMGID    imgin,
 
 errno_t LINALGEBRA_printGPUMATMULTCONF(int index);
 
-errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
-                                                  const char *ID_Cmatrix_name,
-                                                  double      SVDeps,
-                                                  long        MaxNBmodes,
-                                                  const char *ID_VTmatrix_name,
-                                                  int         LOOPmode,
-                                                  int         testmode,
-                                                  int         precision,
-                                                  int         GPUdevice,
-                                                  imageID    *outID);
-
 errno_t PCAmatch(IMGID  imgmodesA,
                  IMGID  imgmodesB,
                  IMGID *imgoutcA,
@@ -81,16 +70,6 @@ errno_t PCAmatch(IMGID  imgmodesA,
                  IMGID *imgoutimA,
                  IMGID *imgoutimB,
                  int    GPUdev);
-
-long CLINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
-                                              const char *IDmatAinv_name,
-                                              const char *IDmatOut_name);
-
-int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(const char *ID_Rmatrix_name,
-                                                  const char *ID_Cmatrix_name,
-                                                  double      SVDeps,
-                                                  long        MaxNBmodes,
-                                                  const char *ID_VTmatrix_name);
 
 int LINALGEBRA_init();
 
@@ -120,7 +99,5 @@ int GPU_loop_MultMat_setup(int         index,
 errno_t ModalRemap(IMGID imgM0, IMGID imgU0, IMGID imgU1, IMGID *imgM1, int GPUdev);
 
 void matrixMulCPU(float *cMat, float *wfsVec, float *dmVec, int M, int N);
-void matrixMulCPU_BLAS(float *cMat, float *wfsVec, float *dmVec, int M, int N);
-void matrixMulCPU_plain_or_OPENMP(float *cMat, float *wfsVec, float *dmVec, int M, int N);
 
 #endif

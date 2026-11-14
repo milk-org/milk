@@ -78,13 +78,11 @@ double basic_measure_transl(const char *__restrict ID_name1,
 
     IMGID imgout       = imgid_make_from_name_2D("TranslMap", sx_out, sy_out);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     IMGID imgcnt       = imgid_make_from_name_2D("TranslMapcnt", sx_out, sy_out);
     imgcnt.mdt->shared = 0;
-    imgcnt.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgcnt);
+    imgid_create_registered(&imgcnt);
 
     for (long iio = 0; iio < sx_out; iio++)
     {
@@ -104,8 +102,8 @@ double basic_measure_transl(const char *__restrict ID_name1,
     contractfactor = 2;
     basic_contract(ID_name1, "_im1C", contractfactor, contractfactor);
     gauss_filter("_im1C", "_im1Cg", 5.0, 10);
-    execute_arith("_im1HF=_im1C-_im1Cg");
-    execute_arith("_im1HF2=_im1HF*_im1HF");
+    arith_image_sub("_im1C", "_im1Cg", "_im1HF");
+    arith_image_mult("_im1HF", "_im1HF", "_im1HF2");
     gauss_filter("_im1HF2", "_im1mask", 5.0, 10);
     delete_image_ID("_im1C", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("_im1HF", DELETE_IMAGE_ERRMODE_WARNING);

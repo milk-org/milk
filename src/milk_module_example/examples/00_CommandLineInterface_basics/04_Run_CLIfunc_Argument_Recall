@@ -30,5 +30,5 @@ modex.imsum1 imd2
 # Run function again, recall argument from last call
 modex.imsum1 .
 
-exitCLI
+exit
 "

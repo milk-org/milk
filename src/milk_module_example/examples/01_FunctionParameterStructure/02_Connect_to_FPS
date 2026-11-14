@@ -19,5 +19,5 @@ fpsload \"imsum2-03\"
 fpslist
 
 # Exit CLI
-exitCLI
+exit
 "

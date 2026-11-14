@@ -24,20 +24,20 @@
 
 #define MAXNB_CROPWINDOW 8
 
-static char     *multicrop_insname  = NULL;
-static char     *multicrop_outsname = NULL;
-static uint32_t *multicrop_outxsize = NULL;
-static uint32_t *multicrop_outysize = NULL;
+static char     multicrop_insname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char     multicrop_outsname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static uint32_t multicrop_outxsize                               = 0;
+static uint32_t multicrop_outysize                               = 0;
 
-static int64_t  *multicrop_wactive[MAXNB_CROPWINDOW];
-static int64_t  *multicrop_waddmode[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropxstart[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropxsize[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropystart[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropysize[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wbinfact[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropxpos[MAXNB_CROPWINDOW];
-static uint32_t *multicrop_wcropypos[MAXNB_CROPWINDOW];
+static int32_t  multicrop_wactive[MAXNB_CROPWINDOW];
+static int32_t  multicrop_waddmode[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wcropxstart[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wcropxsize[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wcropystart[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wcropysize[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wbinfact[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wcropxpos[MAXNB_CROPWINDOW];
+static uint32_t multicrop_wcropypos[MAXNB_CROPWINDOW];
 
 
 /* ================================================================
@@ -65,9 +65,9 @@ static uint32_t *multicrop_wcropypos[MAXNB_CROPWINDOW];
       "binning factor")
 
 #define FPS_PARAMS(X)                                                                            \
-    X(".insname", &multicrop_insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                \
+    X(".insname", multicrop_insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                 \
       "input stream name")                                                                       \
-    X(".outsname", &multicrop_outsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,              \
+    X(".outsname", multicrop_outsname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,               \
       "output stream name")                                                                      \
     X(".outxsize", &multicrop_outxsize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "output x size") \
     X(".outysize", &multicrop_outysize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "output y size") \
@@ -87,23 +87,23 @@ static uint32_t *multicrop_wcropypos[MAXNB_CROPWINDOW];
 
 static MILK_HOT errno_t fpsexec(IMAGE *imgin, IMAGE *imgout)
 {
-    uint32_t ox = *multicrop_outxsize;
-    uint32_t oy = *multicrop_outysize;
+    uint32_t ox = multicrop_outxsize;
+    uint32_t oy = multicrop_outysize;
     size_t   ts = ImageStreamIO_typesize(imgin->md[0].datatype);
 
     memset(imgout->array.raw, 0, ts * ox * oy);
 
     for (int w = 0; w < MAXNB_CROPWINDOW; w++)
     {
-        if (multicrop_wactive[w] && *multicrop_wactive[w] == 1)
+        if (multicrop_wactive[w] == 1)
         {
-            uint32_t xs = *multicrop_wcropxstart[w];
-            uint32_t ys = *multicrop_wcropystart[w];
-            uint32_t xw = *multicrop_wcropxsize[w];
-            uint32_t yw = *multicrop_wcropysize[w];
-            uint32_t xp = *multicrop_wcropxpos[w];
-            uint32_t yp = *multicrop_wcropypos[w];
-            uint32_t bf = *multicrop_wbinfact[w];
+            uint32_t xs = multicrop_wcropxstart[w];
+            uint32_t ys = multicrop_wcropystart[w];
+            uint32_t xw = multicrop_wcropxsize[w];
+            uint32_t yw = multicrop_wcropysize[w];
+            uint32_t xp = multicrop_wcropxpos[w];
+            uint32_t yp = multicrop_wcropypos[w];
+            uint32_t bf = multicrop_wbinfact[w];
             if (bf < 1)
             {
                 bf = 1;
@@ -130,7 +130,7 @@ static MILK_HOT errno_t fpsexec(IMAGE *imgin, IMAGE *imgout)
             {
                 uint64_t ioff = (uint64_t) (ys + j) * imgin->md[0].size[0] + xs;
                 uint64_t ooff = (uint64_t) (yp + j / bf) * ox + xp;
-                if (*multicrop_waddmode[w] == 0)
+                if (multicrop_waddmode[w] == 0)
                 {
                     memcpy(((char *) imgout->array.raw) + ooff * ts,
                            ((char *) imgin->array.raw) + ioff * ts, ts * (cxw / bf));
@@ -150,13 +150,13 @@ static MILK_HOT errno_t fpsexec(IMAGE *imgin, IMAGE *imgout)
 
 static errno_t multicrop2D_validate()
 {
-    if (multicrop_outxsize && *multicrop_outxsize < 1)
+    if (multicrop_outxsize < 1)
     {
-        *multicrop_outxsize = 1;
+        multicrop_outxsize = 1;
     }
-    if (multicrop_outysize && *multicrop_outysize < 1)
+    if (multicrop_outysize < 1)
     {
-        *multicrop_outysize = 1;
+        multicrop_outysize = 1;
     }
     return RETURN_SUCCESS;
 }
@@ -177,16 +177,17 @@ static MILK_HOT errno_t image_multicrop2D_compute(const MILK_RUNNABLE *self)
 {
     IMGID in = imgid_make_from_name(multicrop_insname);
     resolveIMGID(&in, ERRMODE_ABORT, dcimg, dcnimg);
-    IMGID out = stream_connect_create_2D(multicrop_outsname, *multicrop_outxsize,
-                                         *multicrop_outysize, in.md->datatype);
+    IMGID out = stream_connect_create_2D(multicrop_outsname, multicrop_outxsize, multicrop_outysize,
+                                         in.md->datatype);
 
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec(in.im, out.im);
+    rc = fpsexec(in.im, out.im);
     processinfo_update_output_stream(processinfo, out.im, in.im);
 
     MILK_PROCINFO_END(self)
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 

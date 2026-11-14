@@ -28,17 +28,20 @@ nvim examples/demo.milk
 
 ## What Gets Highlighted
 
-| Syntax          | Color Group         | Example                    |
-| --------------- | ------------------- | -------------------------- |
-| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi` |
-| Shell builtins  | `@function.builtin` | `echo`, `export`, `source` |
-| milk commands   | `@function.macro`   | `assigncheck`, `procctl`   |
-| FPS variables   | `@property`         | `@fps.loop.gain`           |
-| Stream metadata | `@type`             | `${s.wfs.cnt0}`            |
-| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`           |
-| Strings         | `@string`           | `"hello"`, `'literal'`     |
-| Numbers         | `@number`           | `42`, `3.14`               |
-| Comments        | `@comment`          | `# comment`                |
+| Syntax          | Color Group         | Example                         |
+| --------------- | ------------------- | ------------------------------- |
+| Flow control    | `@keyword`          | `if`, `for`, `while`, `fi`      |
+| Shell builtins  | `@function.builtin` | `echo`, `export`, `source`      |
+| milk commands   | `@function.macro`   | `@calc`, `@waitfor`, `milksleep` |
+| Module commands | `@function.call`    | `mem.listim` (`@function.builtin` with `modules.scm`) |
+| Entity paths    | `@property`         | `@s.cam.xsize`, `@f.${LOOP}.gain` |
+| Calculator      | `@punctuation.special` | `@{imean(cam)}`, `@ x = 2 * 21` |
+| Variables       | `@variable.builtin` | `$VAR`, `${VAR}`                |
+| Strings         | `@string`           | `"hello"`, `'literal'`          |
+| Numbers         | `@number`           | `42`, `3.14`                    |
+| Comments        | `@comment`          | `# comment`                     |
+
+Heredocs are not parsed (they need an external scanner).
 
 ## Scripts
 
@@ -73,11 +76,11 @@ Installs:
 
 ### `gen-module-highlights.sh`
 
-Registered module commands (e.g. `listim`, `saveFITS`,
-`imcrop`) are loaded dynamically at runtime and not
-hardcoded in the grammar. This script extracts all
-registered commands from a running `milk` and generates
-tree-sitter highlight predicates for them.
+Registered module commands (e.g. `mem.listim`,
+`iofits.saveFITS`) are loaded dynamically at runtime and
+not hardcoded in the grammar. This script lists them with
+`milk-cli -c '@cmd?'` and generates tree-sitter highlight
+predicates for them.
 
 ```bash
 # Generate queries/modules.scm
@@ -116,4 +119,4 @@ tree-sitter-milkcli/
 - **Node.js** (for `tree-sitter-cli`)
 - **Neovim** ≥ 0.9 (for tree-sitter support)
 - **nvim-treesitter** plugin
-- **milk** (for `gen-module-highlights.sh`)
+- **milk-cli** (for `gen-module-highlights.sh`)

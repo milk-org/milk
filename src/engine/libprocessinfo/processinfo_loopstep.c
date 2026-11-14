@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+#include "milk_safepoint.h"
 #include "processinfo.h"
 #include "processinfo_signals.h"
 
@@ -19,6 +20,7 @@ int processinfo_loopstep(PROCESSINFO *processinfo)
 {
     int loopstatus = 1;
 
+    milk_safe_point();             // between two iterations: what the last one wrote is whole
     if (processinfo->CTRLval == 1) // pause
     {
         int prev_stat         = processinfo->loopstat;
@@ -26,6 +28,7 @@ int processinfo_loopstep(PROCESSINFO *processinfo)
         while (processinfo->CTRLval == 1)
         {
             usleep(50);
+            milk_safe_point();
         }
         processinfo->loopstat = prev_stat;
     }
@@ -39,6 +42,11 @@ int processinfo_loopstep(PROCESSINFO *processinfo)
     }
 
     if (processinfo_signal_INT == 1) // CTRL-C
+    {
+        loopstatus = 0;
+    }
+
+    if (processinfo_signal_TERM == 1) // stop request (runstop, kill)
     {
         loopstatus = 0;
     }

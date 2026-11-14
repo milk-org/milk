@@ -9,12 +9,11 @@ actually do their job.
 import os
 
 
-def test_milk_shm_dir_fixture():
-    # Fixture from milk.py -- which is scope='session', autouse=True
-    MILK_SHM_DIR_SPOOF = "/tmp/milk_shm_dir_pytest"
-
-    assert os.path.isdir(MILK_SHM_DIR_SPOOF)
-    assert os.environ["MILK_SHM_DIR"] == MILK_SHM_DIR_SPOOF
+def test_milk_shm_dir_fixture(ctfixt_change_MILK_SHM_DIR):
+    # Fixture from milk.py -- which is scope='session', autouse=True: one directory per pytest
+    # process (a later test may have pointed MILK_SHM_DIR elsewhere, so ask the fixture)
+    assert os.path.isdir(ctfixt_change_MILK_SHM_DIR)
+    assert ctfixt_change_MILK_SHM_DIR.startswith("/tmp/milk_pytest")
 
 
 def test_cwd_to_temp_fixture():

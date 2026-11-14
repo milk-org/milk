@@ -46,41 +46,33 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
     int     max_rows = r.height - 2;
     int     row      = r.row + 1;
 
-    ov_focus_t focus = lay->freeze ? lay->freeze_focus : lay->focus;
-    int        ssel  = ov_get_selected_stream_idx(lay, m);
-    int        psel  = ov_get_selected_proc_idx(lay, m);
-    int        fsel  = ov_get_selected_fps_idx(lay, m);
-
+    /* the entry DETAILS shows: the focused list's, else the last selected one (also while the tab has focus) */
+    ov_focus_t  panel        = OV_FOCUS_STREAMS;
+    int         idx          = ov_detail_target(lay, m, &panel);
     pid_t       target_pid   = 0;
     const char *target_name  = "UNKNOWN";
     ov_rgb_t    target_color = OV_FG_DIM;
 
-    if (focus == OV_FOCUS_STREAMS && ssel >= 0 && ssel < m->nb_streams)
+    if (idx >= 0 && panel == OV_FOCUS_STREAMS)
     {
-        target_pid   = m->streams[ssel].ownerPID;
-        target_name  = m->streams[ssel].name;
+        target_pid   = m->streams[idx].ownerPID;
+        target_name  = m->streams[idx].name;
         target_color = OV_FG_STREAM;
     }
-    else if (focus == OV_FOCUS_PROCS && psel >= 0 && psel < m->nb_procs)
+    else if (idx >= 0 && panel == OV_FOCUS_PROCS)
     {
-        target_pid   = m->procs[psel].PID;
-        target_name  = m->procs[psel].name;
+        target_pid   = m->procs[idx].PID;
+        target_name  = m->procs[idx].name;
         target_color = OV_FG_PROC;
     }
-    else if (focus == OV_FOCUS_FPS && fsel >= 0 && fsel < m->nb_fps)
+    else if (idx >= 0 && panel == OV_FOCUS_FPS)
     {
-        target_pid = m->fps[fsel].runpid;
-        if (target_pid == 0)
-        {
-            target_pid = m->fps[fsel].confpid;
-        }
-        target_name  = m->fps[fsel].name;
+        target_pid   = (m->fps[idx].runpid != 0) ? m->fps[idx].runpid : m->fps[idx].confpid;
+        target_name  = m->fps[idx].name;
         target_color = OV_FG_FPS;
     }
 
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, target_color,
-                       lay->focus == OV_FOCUS_GRAPH);
+    ov_subtab_bar(lay, target_color);
 
     int ri       = 0;
     int line_idx = 0;
@@ -206,9 +198,10 @@ int ov_render_resources_panel(const OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (fscanf(fp, "%" SCNu64 " %" SCNu64, &vm_size, &vm_rss) == 2)
             {
-                /* Scale to MB (assuming 4 KB pages) */
-                vm_size = (vm_size * 4) / 1024;
-                vm_rss  = (vm_rss * 4) / 1024;
+                /* Pages to MB */
+                uint64_t page_kb = (uint64_t) sysconf(_SC_PAGESIZE) / 1024;
+                vm_size          = (vm_size * page_kb) / 1024;
+                vm_rss           = (vm_rss * page_kb) / 1024;
             }
             fclose(fp);
         }

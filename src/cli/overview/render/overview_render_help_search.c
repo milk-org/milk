@@ -179,14 +179,14 @@ static int help_score_entry(const help_entry_t *entry, const char *query)
 int help_visible_rows(const OV_LAYOUT *lay, int *map)
 {
     /* If search query is non-empty, populate map with ranked search matches */
-    if (lay->help_search[0] != '\0')
+    if (lay->help.search[0] != '\0')
     {
         help_search_match_t matches[128];
         int                 n_matches = 0;
 
         for (int i = 0; i < g_help_total; i++)
         {
-            int s = help_score_entry(&g_help_entries[i], lay->help_search);
+            int s = help_score_entry(&g_help_entries[i], lay->help.search);
             if (s > 0 && n_matches < 128)
             {
                 matches[n_matches].index = i;

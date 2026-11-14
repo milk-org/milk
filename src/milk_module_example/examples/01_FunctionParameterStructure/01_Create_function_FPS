@@ -31,5 +31,5 @@ modex.imsum2 _FPSINIT_ \"03\"
 # Exit CLI
 # The FPS created in above step will continue to exist
 # and can be recalled by future function calls
-exitCLI
+exit
 "

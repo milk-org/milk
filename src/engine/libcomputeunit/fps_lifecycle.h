@@ -99,21 +99,24 @@ int fps_generic_conf(const char *fps_name, int loop);
 /**
  * @brief Run the FPS computation (standalone).
  *
- * Connects to FPS, syncs parameters, sets up
- * processinfo if enabled, and calls compute_fn.
+ * Connects to FPS, syncs parameters, checks them
+ * (confcheck_fn, may be NULL), and calls compute_fn.
+ * On a shared FPS it runs as the unit's run role.
  *
- * @param fps_name    FPS name
- * @param app_info    Application identity
- * @param bindings    Parameter bindings
- * @param nb_b        Number of bindings
- * @param compute_fn  Module computation function
- * @return            0 on success
+ * @param fps_name      FPS name
+ * @param app_info      Application identity
+ * @param bindings      Parameter bindings
+ * @param nb_b          Number of bindings
+ * @param compute_fn    Module computation function
+ * @param confcheck_fn  Module parameter check, or NULL
+ * @return              0 on success, 1 on failure
  */
 int fps_generic_run(const char      *fps_name,
                     FPS_APP_INFO    *app_info,
                     FPS_CLI_BINDING *bindings,
                     int              nb_b,
-                    fps_compute_fn   compute_fn);
+                    fps_compute_fn   compute_fn,
+                    fps_confcheck_fn confcheck_fn);
 
 
 /**

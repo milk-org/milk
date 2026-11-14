@@ -14,13 +14,561 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ## framework-dev
 
+### 2026-11
+
+- **2026-11-13** — ncurses is no longer used or linked: the `USE_NCURSES` option is removed, and
+  `milkinfo` prints its header and stream-timing tables with `printf`. The TUIs already use ANSI.
+- **2026-11-13** — MAGMA support is removed: the `USE_MAGMA` option and linalgebra's MAGMA
+  GPU pseudo-inverse. `lintools.impsinvsvd` loses its `.GPU` parameter, which computed nothing
+  without MAGMA; it always computes on the CPU. linalgebra keeps its cuSOLVER pseudo-inverse.
+- **2026-11-13** — The clustering plugin is removed: `milkclustering`, its commands
+  `clustering.cubeclust` and `clustering.mindiffscan`, and their fpsexec binaries.
+- **2026-11-10** — `mem.streamdelay` (`milk-fpsexec-mem-streamdelay`) and the calculator's new
+  built-in `streamdelay(im[, weights], delay=..., unit=...)` operator share a reusable ring-buffer
+  engine (`milk_stream_delay_*` in `COREMOD_memory`) supporting 1-D/2-D/3-D streams, time (`unit=0`,
+  seconds via `CLOCK_ISIO` `writetime`) and frame (`unit=1`) units, discrete zero-copy `memcpy` or
+  fractional linear interpolation (`interp=1`), causal temporal window filters (`boxcar`, `linear`,
+  `exp`, `gauss`), and arbitrary 1-D FIR linear combinations via a tap-weights image/stream. See
+  [Calculator](guide/calculator.md) `#streams` `#fps` `#cli` `#performance`
+- **2026-11-11** — Every request of a shell to its session is sent by one function
+  (`milk_client_request()`; 12 places built and sent their request by hand). A session that
+  cannot be reached, or that answers `busy`, now gives status 255 for `@get` as for the other
+  keywords (it gave 1), and a request that cannot be sent says so. The messages on the socket are
+  unchanged. See [Scripting](guide/scripting.md), "Errors and Exit Status" `#cli` `#refactor`
+- **2026-11-12** — A `milk-fpsexec-milk-calc` unit is prepared at start: it loads its libraries,
+  runs the init statements and compiles its statements before `runstart` returns (they were
+  compiled inside the first frame: about 0.1 s with an empty kernel cache). FFTW's planning
+  results are kept in the kernel cache, so an `fft` shape is planned once on a machine, not at
+  each start (0.15 to 0.6 s at the first frame for 72² to 1024²). Unit options given for a running
+  unit (`-e "..." set`) are built by the command first, and refused if they do not build: the
+  loop no longer runs the compiler (a 40 ms stall; `@set f.<unit>.unit.expr=...` still does). See
+  [Calculator](guide/calculator.md), "Compute Units Without C" `#performance` `#cli`
+- **2026-11-11** — Keyword options are written once, in the keyword table: one parser reads them
+  for every keyword, and `@help <keyword>` and TAB completion show that same list (11 keywords
+  with options had no completion). An unknown option or an option without its value is now a
+  usage error with status 2 everywhere; before, `@grab`, `@get`, `@waitfor`, `@waitany`,
+  `@replay`, `@ls`, `@log`, `@snapshot`, `@module` and `@session` took it as a name or a pattern,
+  or ignored it. `--opt=value` works for every option that takes a value. `@replay --dt`, which
+  the help listed but nothing read, is gone from the help (`--fps`). Usage errors of `@grab`,
+  `@waitfor`, `@waitany` and `@replay` return 2, not 1. See
+  [Scripting](guide/scripting.md), "Keywords" `#cli`
+- **2026-11-11** — Sessions: a read from another shell while a command runs (`@get`, `@exists`,
+  `@test`, completion) is answered by the command at its next safe point (between two statements or
+  iterations of a calculator program), so it sees whole images, never one being rewritten. Such a
+  read takes 0.04 ms from the command (0.8 ms before, for a completion); `@test` still costs about
+  1 ms. Processing loops of module commands and the steps of a `@pipe` are safe points too. A
+  command with no safe point answers `busy` after 2 s (status 255). The copies of the session
+  that run an `--async` command or a later stage of a pipeline are taken at a safe point as well
+  (or after 50 ms without one), so they start from whole images.
+  See [Sessions](guide/sessions.md) `#cli` `#performance`
+- **2026-11-11** — Sessions: a read sent while a command runs (`@test`, `@get`, completion, from
+  another shell or a background job) could wait for ever when it needed a lock the command held at
+  that instant, for example an FFT during an FFT. The copy of the session that answers it now
+  starts with those locks free (`milk_fork_guard()` in libmilkcommon); a read with no answer after
+  30 s ends, and a second Ctrl-C gives the prompt back when the session does not answer the first.
+  See [Sessions](guide/sessions.md) `#cli`
+- **2026-11-11** — A session starts with the core modules only; the 15 standard modules are no
+  longer loaded at every start (a `milk-cli` start takes 29 ms, was 39, and 7 MB less), but at the
+  first use of one of their commands, as installed modules already were. `@help <module>`,
+  `@help <module.cmd>`, `@help -k` and command completion now know every installed module, loaded
+  or not. `milk-cli-all`, or `MILKCLI_ADD_LIBS`, loads modules at start.
+  See [Scripting](guide/scripting.md) `#cli` `#performance`
+- **2026-11-11** — The calculator's kernel cache is `~/.cache/milk/calc` by default
+  (`$XDG_CACHE_HOME/milk/calc`), no longer `/tmp/milk-calc-cache-<uid>`: kernels survive a reboot.
+  `/tmp` is used where the home directory cannot be; `MILK_CALC_CACHE` still names another place
+  (a local disk, on a machine whose home is on a network file system). A full cache deletes the
+  kernels loaded longest ago, no longer the first compiled. An old `/tmp/milk-calc-cache-<uid>`
+  can be removed.
+  See [Calculator](guide/calculator.md) `#performance` `#cli`
+- **2026-11-11** — Calculator: a function called with the wrong kind of argument answers with
+  its signature (`imean: expected imean(im[, mask])`), from one table of argument kinds.
+  See [Calculator](guide/calculator.md) `#cli`
+- **2026-11-11** — Keywords: `@running` is removed (`@exists -r`), and `@session log` (`@log`). A
+  one-letter option now has one meaning in every keyword: `@calc -l` is `--lib`, `@restore -n` is
+  `--dry-run`, `@log -a` is `--all`, `@assert -e` is `--exists`; the old spellings fail with a
+  message that names the new one. The short options that were not in the help and clashed are gone
+  (`@replay -r -l -d`, `@grab -f`, `@on -s -1`, `@waitfor -s`, `@config prompt -s`), and `@on`
+  refuses an option it does not know.
+  See [Scripting](guide/scripting.md) `#cli`
+- **2026-11-11** — `rand` and `randn` have new generators: the values for a given seed change.
+  Every distinct seed gives another image, from a 64-bit key: `rand(im, 1)` and
+  `rand(im, 4294967297)` were the same, as were two fractional seeds, and the 32 bits of state
+  made long runs repeat noise patterns. `rand` and `randn` of one seed are no longer correlated.
+  `randn` is a Box-Muller transform, normal out to 6.6 sigma (8.5 in double); it was a sum of
+  six uniforms, bounded at 4.24 sigma. They cost more on one thread: `rand` about 0.5 ns per
+  pixel (it was 0.25), `randn` about 2 ns (it was 0.7). The image-generation module commands
+  use the same code.
+  See [Calculator](guide/calculator.md) `#cli` `#performance`
+- **2026-11-10** — Calculator and command-line fixes.
+  - Calculator: a unit maps again, within half a second, an input stream that another process
+    deleted and created again (it kept reading the old file). `@S:name` after `if` and `elif` is
+    a stream; `L:name[...]` no longer attaches the shared stream `name`; a loop or comprehension
+    variable may be as long as any name; a string variable holds 1023 bytes (it was cut at 511)
+    and a longer literal is an error; an SVD or eigendecomposition that does not converge is an
+    error. A number in the environment of the session or the unit is no longer a name: use a
+    bash variable or a `-p` parameter.
+  - `im[mask] *= flat[mask]` was never accepted: the slicing guide now shows `im[mask] *= flat`.
+  - Command line: `milk-cli -F PATH` uses PATH (it removed the file there and used an
+    auto-named FIFO), makes a new FIFO for its user only, and refuses a path that is not a FIFO
+    of that user; a failed `@grab` shows its message in the calling shell; `@{s.dm*.xsize}` is
+    not matched against file names; `@args -h` typed at a prompt keeps the shell; a file named
+    `STOPCLI` no longer ends `milk-cli`; a command sent with another `MILK_SHM_DIR` leaves the
+    session's log in place. `#cli` `#streams`
+- **2026-11-10** — `@calc --list` prints the calculator's own function table, one line per
+  function with its signature, and the operators, statements and constants; it showed a second,
+  hand-written table in the words of the removed engine, without the string functions. `--json`
+  gives `category`, `name`, `signature` and `description`. `@calc --explain` drops those words
+  too ("scalar statement", not "scalar tape"), shows the thread count of each fused pass, and
+  ends with the number of statements and steps. Usage errors of `@set`, `@calc`, `@test`,
+  `@exists`, `@source`, `@on` and `@config prompt` exit 2, as the other keywords do; `@exists`
+  with two entities is one. `gemm`, `gemv`, `syrk` and `symv` took and ignored trailing flag
+  arguments, and `zeros` a fourth one: these are errors now (a transposed operand is `A.T`). The
+  guide lists the limits of the grammar and the arguments of `roll`, `vec` and `posv` it left
+  out. See [Calculator](guide/calculator.md) `#cli` `#docs`
+- **2026-11-10** — Two session fixes. The bash prompt shows a watched value (`@config prompt
+  watch`) and the session name as text: a `$(...)` in a stream keyword, an FPS value or the shell's
+  session record ran as a command at the next prompt. The record is read only if it is a regular
+  file of the user. Ctrl-C, or a shell that goes away, during a keyword the session runs itself
+  (`@pipe`, `@ls`, `@assert`, `@snapshot`…) stops that keyword with status 130: it ended a session
+  server that had no terminal. See [Scripting](guide/scripting.md) `#cli`
+- **2026-11-10** — Calculator fixes. `:` before a function call is a slice, range or `?:`
+  separator again (`im[k:min(a, b)]`, `for i = lo:floor(hi)`, `c ? a:sqrt(b)`); only a loaded C
+  extension takes a `:label`. `skip` works right before `}`. Filters, matrix and FFT functions and
+  C extensions store into an integer stream as element-wise statements do, truncated toward zero
+  and wrapped; they rounded and saturated. A `.c` extension edited after it was loaded is compiled
+  and loaded again, and an operator with more than 8 input or output ports is refused at load.
+  `S` and `L` name images only: as variables, `im[S:n]` read `S:n` as a stream.
+  See [Calculator](guide/calculator.md) and [C Extensions](guide/calc_c_extensions.md) `#cli`
+- **2026-11-10** — The calculator's torn-frame rule now covers every statement that reads a shared
+  stream, not only element-wise passes: a reduction (`imean(cam)`), a filter, a matrix or FFT
+  function and a C extension are run again after a torn read, and `_torn` counts them. A statement
+  that fails after it began to write its target clears the target's write flag, so readers no
+  longer see every later read of that stream as torn. See
+  [Compute Units Without C](guide/calculator.md#compute-units-without-c) `#streams` `#cli`
+- **2026-11-08** — `mem.trigmerge` (`milk-fpsexec-mem-trigmerge`) merges the triggers of up to 16
+  streams, any-of or all-of, into one small stream a unit triggers on. It records which inputs fired,
+  their counters, how many frames each moved and their write times; `-loopd` caps the rate. See
+  [Merging triggers](guide/procinfo.md#merging-triggers). The unused
+  `COREMOD_MEMORY_image_set_semwait_OR_IDarray()` it replaces is gone `#streams` `#fps`
+- **2026-11-08** — Thirty module commands that crashed at every call run again. They declared their
+  parameters as pointers, but a binding copies each value into its variable: the value landed in
+  the pointer itself (a 64-byte name over its neighbours), and the command crashed before its
+  kernel. They are `arith.immerge`, `arith.multicrop2D`, `iofits.imgs2cube`, the `modex.imsum2` and
+  `modex.streamprocess` examples and 25 milk-extra-src commands. Fourteen of these also read
+  parameters that the March port to FPS (525605b4) had dropped from their tables: the 49 are back
+  with their keywords, types, defaults and positions (`linalg.compSVD` takes
+  `inM outU outS outV svdlim` again, `linalg.sgemm` has `.transpA`, `.transpB` and `.GPUdevice`).
+  The 123 defaults that port had set to 0 or "" are restored (`lintools.mkFouriermodes`
+  `.deltaCPA` is 0.8 again; at 0 its loop never ended). The module template no longer tells authors
+  to declare `char *` parameters. A compute wrapper returns its kernel's status, so `mem.imkwadd`
+  with an unknown keyword type exits 1 `#fps` `#cli`
+- **2026-11-08** — Calculator fixes found while running an AO loop with milk alone. `x += A @ b` and
+  `x -= A @ b` add to `x` instead of replacing it. A calc unit keeps an `@set` made while a frame
+  runs instead of writing the frame's old value back over it (a test lost 19 of 20). A statement
+  that reads a stream an earlier statement of the same run wrote no longer waits out the torn-frame
+  retries: 6.3 µs per tick instead of 457. The calculator page documents the matrix layout
+  (column-major; a cube is an (nx·ny) × nz matrix) and when `@calc` writes a shared stream
+  (`S:name`) `#cli` `#performance` `#docs`
+- **2026-11-08** — Fewer silent failures. A session that had created many local images no longer
+  crashes at its next module command: the server read the image table through a start-up copy that
+  `realloc()` had left stale. `iofits.saveFITS` fails on a missing image, a FITSIO error or a failed
+  rename, and accepts CFITSIO's `!name`; a module command refuses a string argument longer than 63
+  characters instead of cutting it. `milk-FITS2shm` needs `@S:` on its output
+  (`milk-FITS2shm exec image.fits @S:stream`), since a local image goes with the process. The
+  real-time priority warning and the FAQ point to the permissions that work
+  ([Performance Tuning, 3.2](operations/performance.md#32-permissions)) `#cli` `#streams` `#docs`
+- **2026-11-08** — The milkfft transforms work on every image. They took `resolveIMGID()`'s image
+  ID for a status, so `fft.dofft`, `fft.do1Dfft`, `fft.do1Drfft` and the commands built on them
+  (`imgfilt.fconv`, `fft.fcorrel`, `fft.transl`) did nothing unless their input was the first image
+  in the table. `fft.dofft` honours its direction (1: inverse); the 2-D real transform fills the
+  inverse spectrum and transforms a cube frame by frame; `fft.do1Drfft` takes any real type. A
+  compute unit plans each new `fft` or `ifft` shape with `FFTW_MEASURE` (on one core, a 2048²
+  complex transform: 82 ms estimated, 17 ms measured, planned in 1 s); `@calc` keeps instant
+  `FFTW_ESTIMATE` plans. `@calc --tokens` is removed (use `--list`). The `cmdkey:fpsname:action`
+  syntax, which never worked, is gone from the parser and from `milk-fps-help` `#performance`
+  `#cli`
+- **2026-11-08** — Shorter path for each request to a session. A shell keeps one connection to its
+  session and sends every request on it (a subshell opens its own); it sits near the open-file
+  limit, out of the way of the descriptors scripts open. The session captures the output of commands
+  whose stdout is not a terminal with one thread for its life, not one per command. A server `@calc`
+  takes 20 µs instead of 23, a milk command with its output in a file or a pipe 36–40 µs instead of
+  52–56. A `milk-cli --server` session ended by `milkshutdown` or `@session end` releases its socket
+  before it answers, so the shell's next command starts a new session `#performance` `#cli`
+- **2026-11-08** — One copy of each piece. Bash and the milk-cli prompt complete with one completer:
+  keyword options and words come from the keyword table, `@calc`, `@test`, `@assert`, calc mode and
+  `@{...}` complete function names (with their `(`), variables and images, also inside quotes, and
+  every argument after the first is completed as itself. Syntax highlighting is tree-sitter only:
+  `@config synhl on|off`. A calculator variable holds what was assigned last, a number or a string,
+  in one store: `t = 5; t = "xyz"` gives `xyz`, `s = "5"; s + 1` gives `"51"`; a unit's string
+  parameter takes a string assignment, and a number parameter refuses one. Extension call arguments
+  bind as module-command arguments do, at run time and for the unit's FPS alike (a positional
+  parameter of an operator, a positional value after a named one); too many is an error; `-l`
+  without statements exposes the library's parameters only. `@set` reads its words with one parser
+  in the shell and the session. Shell text is quoted by one lexer and calculator text by the
+  calculator's, everywhere. milk.bash stops with a message when its builtins cannot load (the
+  milk-call fallback is gone). Removed from `milk_calc_ext.h`: the port flags nothing read
+  (`MILK_PORT_TRIGGER`, `MILK_PORT_LATEST`, `MILK_POST_EVERY`, `MILK_POST_ON_CHANGE`),
+  `MILK_OUT_SCALAR_PTR`, `milk_op_set_out_shape1d`, `milk_op_set_out_datatype` and the duplicate
+  `struct <name>`; extension ABI version 2 `#cli` `#api` `#refactor` `#docs`
+- **2026-11-07** — Faster calculator kernels, with the same results. `tan`, `%`, `fmod` and `wrap_pi`
+  vectorize (`%`, `fmod` and `wrap_pi` stay exact while $|x/y| < 2^{52}$, and give NaN beyond);
+  casts and stores to 8- and 16-bit integers and `x & c` use 32-bit vector code; an image one pixel
+  wide keeps the vectorized loop; merged statements that read their own target no longer copy it;
+  `ema` and the reductions read images with typed vector loads; the kernel cache key hashes the
+  shared prelude once. At 256², one thread: `wrap_pi` 1084 → 70 µs, `tan` 348 → 24, `%` 509 → 171,
+  `ema` 221 → 27, `I16 & 0xF0` 40 → 5, `u16()` 33 → 11, a one-column operand 21 → 6. Tier-1a
+  extension kernels run as a step of their own; the docs had said they were fused `#performance`
+  `#docs`
+- **2026-11-07** — One set of calculator language rules. A condition is a number (a string is an
+  error, NaN is false) in `@test`, `@assert`, `@waitfor` and `if` alike; a name is an image first,
+  then a bash variable, then a calculator variable; inside brackets `end` is always the axis end;
+  `wrap_pi` wraps into $(-\pi, \pi]$ for scalars and images; an integer literal beyond 64 bits is a
+  double; a name longer than 79 characters is an error, not cut; `@calc` exits 1 when the
+  calculation fails and 2 for syntax, name and argument errors, and errors in text of several lines
+  name the line; a `def` typed at `@calc` is checked when defined. `irms` is now the root mean square and
+  `trunc(x)` truncates. Removed, each failing with a message that names the replacement: `ln`,
+  `fabs`, `urand`, `grand`, `nrm2`, `trunc(x, lo, hi)`, the `_PI`-style constants, `if`/`for` ...
+  `end` blocks, `listengines` and `--engines` `#cli` `#docs`
+- **2026-11-05** — Calculator logarithm and power functions align with C (`<math.h>`) and Python:
+  `log(x)` is now the natural logarithm (with `ln(x)` kept as an alias) and `log10(x)` is the
+  base-10 logarithm; `pow(a, b)` replaces the `^` operator (with integer exactness preserved for
+  non-negative integer arguments and a clear error message if a lone `^` is written; `^^` remains
+  bitwise XOR) `#cli` `#docs`
+
 ### 2026-10
 
+- **2026-10-26** — Sessions and calculator, after an audit of their docs. An image as the condition
+  of `@test`, `@assert`, `@waitfor` or `if` is an error with a hint (`imin(...)`, `imax(...)`), no
+  longer always true. An image that cannot be assigned (`u, v = a, b` onto a stream of another size,
+  or onto a variable) is an error, not "Cannot change name" and status 0. Parameters bound at a call
+  site stay out of a unit's FPS, as documented. `@session save` keeps string variables, `@config
+  sessionlog` logs again, `@session new` names the MILK_SHM_DIR of a session that runs from another
+  one, and session names hold at most 63 characters. `milk-cli -h` lists the options milk-cli takes.
+  The guides and the help now describe calc mode, result types, the `@assert` options, every
+  function, the limits, and what child scripts and sessions share `#cli` `#docs`
+- **2026-10-26** — An `@{…}` that holds only an integer is git's and is passed to bash as written, so
+  `git checkout @{-1}` works in a milk script. `@get p.<proc>` and `@ls` read processinfo from
+  MILK_PROC_DIR, where processes write it: they read MILK_SHM_DIR when MILK_PROC_DIR was `/dev/shm`,
+  under `/milk/shm` or unset. A failed `@set` prints its error once, not twice `#cli`
+- **2026-10-26** — The calculator keeps up to four temporary images (256 MiB) when a statement ends
+  and gives them to the next statements of the same shape and type, so a statement run again in a
+  loop or a unit's frames allocates nothing: `zC = zA * conj(zB)` on 512×512 complex images takes
+  205 µs instead of 310 µs, and on 2100×2100 images 6.1 ms instead of 20.5 ms (it faulted in a fresh
+  35 MB temporary each time). `mem.listim` lists the kept images as `_tmpcalcpool<k>` `#performance`
+- **2026-10-26** — milk-cli, milk-script and compute units keep the memory they free for reuse: blocks
+  up to 32 MiB come from the heap, which is not trimmed while less than 256 MiB of it is free. A
+  buffer freed and allocated again in a loop is no longer faulted in each time: a complex calculator
+  statement ran up to 2.2× slower depending on what had been allocated before. Malloc settings in
+  `GLIBC_TUNABLES` take precedence (Performance Tuning §4.3) `#performance`
+- **2026-10-26** — Unit properties: `f.X.ok`, `f.X.errors` and `f.X.msg` give the last parameter
+  check; trigger modes are read and set by name (`@set f.X.procinfo.triggermode=delay`,
+  `p.X.trigmode`); `p.X.dt` and `p.X.dtmax` give the loop interval in µs. `@get --json p.X`, `@ls -l`
+  and `@ls --json` show the real loop rate (they showed 0), and `@waitfor p.X` returns once the
+  process has exited cleanly instead of waiting out its timeout `#cli` `#fps`
+- **2026-10-26** — `milk-demopipeline` is a milk script: each unit starts once the one before it has
+  written a frame (`@waitfor`), with no fixed sleep, so its nine units start in under a second
+  instead of 16 s. It is installed with the CLI, and the scripting guide shows the pattern `#cli`
+  `#fps`
+- **2026-10-26** — An ON/OFF parameter that a unit declares ON is ON in the FPS that `fpsinit`
+  creates; it was OFF. `streamave` (`.comp.ave`) now writes its average, and `MVMextractModes`
+  normalizes its modes by default (`.option.MODENORM`, off in practice since 2026-05-30) `#fps`
+- **2026-10-26** — `@get --watch [T] <spec>...` shows values every T s until Ctrl-C: in place at a
+  terminal, one line per refresh in a log. The scripting guide shows a parameter sweep as a loop
+  with `@set --restore` and `@calc -v` `#cli`
+- **2026-10-26** — Shared sessions run one command at a time: a command that another shell sends
+  while a long one runs waits for it, and no longer runs in a copy whose changes were lost;
+  `milkcall --nowait` fails at once with `busy: <command> for N s`. History is per session: each
+  line typed at a milk-cli prompt is appended to `~/.milk_history` (no exit-time rewrite drops
+  other sessions' lines), the log records its session, and `@history` shows the current session's
+  lines from any front-end (`--global`: all). milk-script's session is labelled as such `#cli`
+- **2026-10-26** — `milk-cli --session NAME` runs the commands of its REPL in session NAME, started
+  if it does not run; the prompt reads `milk:NAME`, `@session leave` returns to milk-cli's own
+  session, and `@history` and the REPL settings of `@config` stay milk-cli's. `@session save FILE`
+  writes a session's settings, variables, command defaults and local images (FITS, in `FILE.d/`) as
+  a milk script, and `@session restore FILE` runs it; the units the session started are listed, not
+  started `#cli`
+- **2026-10-26** — Session owners and lifetimes: the shell that runs `@session new` owns the session,
+  and `@session ls` lists it ORPHANED once that shell has exited. `@session new NAME --idle T` ends a
+  session once it has had no command for T and no shell uses it. `@on` watchers end with the shell
+  that started them, even a killed one, and no longer keep its own session alive. The file in which a
+  shell records the session it uses is named after its PID and start time, so a later shell with the
+  same PID no longer inherits that choice `#cli`
+- **2026-10-26** — Sessions: `@session` replaces `@server` (see
+  [Sessions](guide/sessions.md)). `@session new NAME` starts a named session and fails if
+  it runs; `@session use NAME` joins one and fails if it does not; `leave`, `who`, `ls` (with the
+  units each session started), `end [--units]` and `prune` complete it. Only `new` starts a named
+  session: a shell whose session was ended gets a hint instead of a new, empty one. milk.bash takes
+  `--session NAME` (`-s` and `--server` are gone), `@log` takes `--session`, and `@session end` from
+  another shell ends a milk-cli session. `@server` and its verbs fail with the `@session` form `#cli`
+- **2026-10-26** — milk-cli servers start like units: `@server start` (and a shell's private server)
+  reports why a server failed to start, with the end of its output, which now goes to a file next to
+  its log (`@server status` names it); a crash message stays there. `@server stop` sends the
+  shutdown command, then signals a server that ignores it. A server run by systemd (`Type=notify`)
+  says when it is ready. `@server start --tmux` is removed, with a hint `#cli`
+- **2026-10-26** — Units as systemd services (optional): `share/milk/systemd/milk-unit@.service` runs
+  any unit through `milk-fps-run NAME`; `systemctl start` returns once the loop runs, the status
+  line shows the loop rate, and `WatchdogSec=` restarts a loop that stops iterating. Once systemd
+  runs a unit, `milk-fps-runstart`/`runstop`, `@set` and the TUIs go through `systemctl` until
+  `milk-fps-run --release NAME`. The output stays in `run.out`; the environment file is in
+  `EnvironmentFile=` format; `.procinfo.cset` is skipped under systemd (`AllowedCPUs=`). See
+  [systemd Services](operations/systemd.md) `#fps` `#cli`
+- **2026-10-25** — Units without tmux: an fpsexec binary and its FPS form a unit, whose conf and run
+  processes start in the background, detached from whoever starts them:
+  - `runstart` and `confstart` return once the loop runs (status 0), with the worker's messages
+    when it fails (1), or 124 when it is not ready in time (`--timeout S`); `run` (or `--fg`) keeps
+    the loop in the terminal. Stops ask the loop to exit and wake it, then signal it.
+  - Output in `NAME.fps.d/run.out` and `conf.out`, rotated (`milk-fps-log [-f] NAME`); `run.info`
+    records how each run started and ended; the environment is the one of the shell that ran
+    `fpsinit` (`milk-fps-info --env NAME`). Processinfo is on by default (`--no-procinfo`).
+  - One state for every front-end: `stopped` `starting` `running` `stopping` `exited` `failed`
+    (`milk-fps-list`, `@get f.NAME.status`, `@waitfor f.NAME running`, fpsCTRL, milk-CTRL).
+  - fpsCTRL and milk-CTRL start and stop units without freezing and show their output (`Ctrl+a`,
+    the OUTPUT sub-tab); `@set f.NAME.run=start|stop`, `f.NAME.run.out`.
+  - SIGTERM ends a loop; a crash records `CRASHED` in processinfo and ends the process.
+  - Removed, with a hint: `-tmux`, the tmux API, milk-cli's `_CONFSTART_` … `_TMUXSTOP_`
+    arguments, fpsCTRL `-f`/`-s`, `T` and `Ctrl+t`, `milk-fpsinit`, `milk-fpsmkcmd`,
+    `milk-fpslist-addentry`, `tmuxsessionname`, `tmuxkillall`; `p.X.tmux` is `p.X.unit`. An FPS
+    made by milk-cli is a parameter set, not a unit.
+  - `milk-streamFITSlog` runs its logger as a unit (`milk-fpsexec-mem-streamFITSlog`). See
+    [FPS](guide/fps.md) and [Unit Lifecycle](arch/unit_lifecycle.md) `#fps` `#cli` `#refactor`
+- **2026-10-25** — The FPS sequencer is removed: `milk-seq`, `milk-seq-help`, the `milksequencer`
+  module (`seq.*`, `USE_SEQ`), the `q.`/`fpsseq.` entity namespace and fpsCTRL's scheduler screen.
+  Queued workflows are milk scripts; the old commands and `q.` lookups fail with a hint. See
+  [From milk-seq](guide/scripting.md#from-milk-seq) `#cli` `#fps` `#refactor`
+- **2026-10-25** — User-compiled C extensions for `milk.calc` / `@calc` (`milk_calc_ext.h`) and
+  single-command `MILK_RUNNABLE` compilation (`milk-cc`):
+  - **Tier 1a (`MILK_CALC_REG_BLK`, `MILK_CALC_REG_BLK2`)**: 1D SIMD block kernels fused directly
+    into the L1 cache tile loop (`FUSE_BLK = 1024`) with typed parameter structs (`MILK_CALC_PARAMS`).
+  - **Tier 1b (`MILK_CALC_REG_STENCIL`)**: 2D $(2R+1)\times(2R+1)$ row-strip stencil kernels
+    ($R \in \{1, 2, 3\}$) receiving pre-clamped row pointers of length $N + 2R$.
+  - **Tier 1c (`MILK_CALC_REG_IMG`)**: Single-function whole-image kernels (`IMAGE *out`,
+    `const IMAGE *in`, `const struct par *P`) that compose inside fused expressions.
+  - **Tier 2 (`MILK_CALC_OP_DECLARE`, `MILK_CALC_REG_OP`)**: Stateful multi-input / multi-output
+    operators (`init` / `exec` / `free`) with named image and scalar ports, custom output dimensions
+    (`milk_op_set_out_shape`), CONF-time re-initialization on shape or non-`WRITERUN` parameter
+    changes, and automatic FPS exposure of scalar output ports (`FPFLAG_DEFAULT_OUTPUT`).
+  - **Auto-compiler & FPS binding (`-l <file.c|file.so>`)**: Both `@calc` and
+    `milk-fpsexec-milk-calc` accept `-l` / `--lib` (stored in `.unit.libs`), auto-compiling `.c`
+    sources into `${TMPDIR:-/tmp}/milk-calc-cache-<uid>/ext_<hash>.so`. Unbound C parameters are
+    exposed in FPS under `.<func>.<param>` (or `.<label>.<param>` for `func:label(...)`), while
+    call-site bound arguments (`th = 3 * rms`) stay internal to the `.calc` program.
+  - **Tier 3 (`milk-cc`)**: Single-command compiler driver that builds standalone `MILK_RUNNABLE`
+    `.c` files into `<prefix>-fpsexec-<id>` executables (or Tier 1/2 `.c` files into `.so`
+    plugins) without CMake boilerplate. See
+    [Bringing Your Own Compiled C Code](guide/calc_c_extensions.md)
+    `#cli` `#fps` `#api` `#performance`
+
+- **2026-10-23** — Synchronised input reads and a round of small fixes:
+  - Every stream a kept statement reads is covered by a torn-frame guard: a pass is re-run when an
+    input's counter moved under it or a writer started a frame during it (at most three passes),
+    and a writer caught mid-frame is given 100 µs to finish; `_torn` counts both in a unit.
+  - `imin`, `imax` and the axis forms skip NaN pixels (NaN only when every pixel is NaN) on every
+    path; before, a NaN first pixel gave NaN for small images and the finite extreme for large.
+  - A kept scalar statement types its variable as the interactive calculator does (`n = icount(a) + 1`
+    stays `int`; comparisons are `int`; `/` and functions give `float`), and checks the identity of
+    the variables it reads by name, not only by slot.
+  - `@grab`, `@waitany` and a second `@waitfor` on the same stream take semaphore slots of their own
+    instead of sharing the pinned waiter's; a `@waitfor` that finds all 64 stream mappings pinned
+    reports it instead of "absent"; `s.<im>.stats` adds a `torn` flag and the attempts back off 20 µs.
+  - Piped `milk-cli` input logs every line to the history (one flush per batch), and an open
+    construct holds a batch back only in bash mode (`@calc` lines are not bash).
+  - `randn` images no longer depend on the block size they were generated with; rows wider than
+    2^31 pixels no longer overflow the coordinate kernels.
+  - `milk-cli` and `milk-script` set `MILK_INSTALLDIR` from their own path when it is unset, so the
+    modules they load, the `milk.bash` their bash co-process sources and the units they launch come
+    from the install the binary belongs to, whatever `PATH` holds (the tests' `milk-cli` helpers use the
+    install under test too)
+    `#cli` `#fps` `#performance`
+
+- **2026-10-23** — The unit program language: conditionals, frame metadata, history, outputs:
+  - `if <scalar>: <statement>` (the condition kept as a scalar program), `skip` (end the tick),
+    `post(name)` (post an output this tick without writing it).
+  - `_cnt0`, `_ts`, `_missed`: the trigger frame's counter, write time and skipped frames, next to
+    `_n`, `_t`, `_dt`.
+  - `hist(s, N)` declares the ring stream `s_hist` of the last N frames of `s`, filled after each
+    tick; `prev(s[, k])` reads frame n-k of it (`diff = cam - prev(cam)`, `bg = imean(cam_hist, 2)`).
+  - `zeros(nx[, ny[, nz]])` creates an output with an explicit shape (cast for the type)
+    `#cli` `#fps`
+
+- **2026-10-23** — Fused views: slices, broadcasting and axis reductions in one pass:
+  - A slice operand (`a[0:63,:]`, `cube[:,:,k]`, `a[::2,-*]`) is read through a view of its image,
+    no copy; an operand with extent 1 on an axis is broadcast (`a - row - col`, `cube - dark`); a
+    sliced left-hand side (`out[0:63,:] = …`, `hist[:,:,_n % 8] = cam`) is written through a view;
+    the axis forms of `itot imean imin imax istd ivar norm asum` are computed before the pixel loop
+    and read as operands (`out = cam - imean(cam, 1)`). All of these are kept in `milk.calc`
+    units; bounds with variables are resolved at each run.
+  - Measured on a self-triggered unit at 128²: a sliced destination 12.8 → 2.3 µs per tick, a
+    row-mean subtraction 75.6 → 7.4 µs. Results match the per-operator path bit for bit.
+  - Unchanged: binned slices, `imedian`/`perc`, complex images and one-pixel slices (scalars) take
+    the per-operator path; the parity test forces it with a bin-1 slice (`im[::1b]`)
+    `#cli` `#performance`
+
+- **2026-10-23** — Compute-unit performance round:
+  - `.procinfo.NBthread` defaults to 0: the OpenMP team policy sizes threads from the image and
+    the cores the unit may run on (a positive value caps it); OpenBLAS's pool is sized the same way
+    at every BLAS call (`matmul`, `ger`, `syrk`, `symv`), so it no longer spawns one thread per
+    logical CPU.
+  - `-loopd` delay triggers tick on an absolute `clock_nanosleep` deadline with 1 µs timer slack:
+    periods of a few tens of µs instead of a 60 µs floor.
+  - Per-tick costs: FPS bindings are copied only when their `value_cnt` moved, a stream parameter
+    is looked up only when it changes, the output post caches `getpid()`, and the kept-program
+    checks that scan the image table run on the coarse-clock cadence, not every tick.
+  - `p.<unit>.loopfreq`, `dt_median_ns`, `exectime` are computed from the timing ring by the reader
+    (they read 0 before), plus `dt_max_ns`, `exec_max` and `jitter`.
+  - `python/tests/perf/unit_tick_bench.py` measures self-triggered units; `test_unit_tick_ceilings`
+    asserts the loop floor, a 128² kept statement and a 1024² statement under the policy
+    `#cli` `#fps` `#performance`
+
+- **2026-10-23** — Review fixes for compute units, the calculator and the client:
+  - **Threads and affinity:** `milk_omp_team_size()` no longer changes the calling thread's CPU
+    affinity (a unit launched under `taskset` keeps its mask), `OMP_NUM_THREADS` lowers the team
+    but never widens it past the physical cores, forked `--async`/`@replay` children never build an
+    OpenMP team, and `.procinfo.taskset` defaults to empty instead of `1-127`.
+  - **Units:** no more `sched_setscheduler` attempt at RT priority 0 on every start (`RTprio`
+    defaults to -1); an `@set` landing while a tick computes is no longer overwritten by the loop's
+    write-back; a trigger stream re-created by its owner is remapped at the next timeout and a dead
+    owner is reported (`p.<unit>.timeouts`, `p.<unit>.hz`); an output written by several statements
+    is posted once per frame.
+  - **Calculator:** `im /= image` reports a zero divisor again (the fused path had started to write
+    `inf`); a rejected scalar divisor no longer posts an unchanged frame; a cached statement that
+    fails is reported once.
+  - **Client and server:** `@grab` re-checks its cube every frame whatever the input; `@waitfor`
+    pins and unpins under the server command lock; a waiter's semaphore slot is released as soon as
+    the wait ends, so idle shells do not exhaust a stream's slots; the shm-cache and stats mutexes
+    survive `fork()`; milk-cli caps its stdin drain at 1 MiB so a fast producer's lines still run.
+  - **Build and tests:** `-mno-recip` on the whole `COREMOD_arith` and `libmilkscript` targets (the
+    shared inline kernels agree between entry paths); `perf_ceilings_test.py` picks an allowed CPU,
+    uses a relative float32 parity tolerance, and `MILK_PERF_TESTS=0` skips the timing tests;
+    regression tests guard each fix `#cli` `#fps` `#performance`
+
+- **2026-10-23** — Calculator, linear algebra, and `COREMOD_arith` kernel consolidation:
+  - **Shared arithmetic & reduction kernels (`COREMOD_arith`):** unified complex arithmetic
+    (`im_complex.c`), coordinate and counter-based hash PRNG generators (`image_generate.{c,h}`),
+    general-datatype/masked/axis reductions (`image_stats.{c,h}`), and matrix/BLAS kernels
+    (`image_linalg.{c,h}`) across the calculator, `image_gen`, `image_basic`, and `linalgebra`,
+    retiring ~4,900 lines of duplicate legacy loops. `mkrandomim` now uses the parallel counter
+    hash PRNG (Gaussian sum-of-6-uniforms approximation bounded near $\pm 4.2\sigma$).
+  - **Fused calculator & math library:** element-wise fused programs run in native `float32` when
+    all inputs/outputs are `FLOAT` (doubling SIMD width) and `double` otherwise; reductions
+    (`itot`, `imean`, `istd`/`irms`, `ivar`, `imin`, `imax`, `icount`, `asum`, `norm`, `dot`)
+    fuse map+reduce in L1 blocks via Chan's recurrence without temporary images; `where()`,
+    image `?:`, `&&`, `||`, coordinates (`ix`, `iy`, `ir`, `itheta`), and counter RNG (`urand`,
+    `randn`) fuse in one pass; 25 scalar/image math functions (`cbrt`, `hypot`, `exp2`, `expm1`,
+    `log2`, `log10`, `log1p`, `sinh`, `cosh`, `tanh`, `erf`, `erfc`, `clamp`, explicit casts
+    `f32`..`i64`).
+  - **Linear algebra & solvers:** BLAS level 1–3 (`dot`, `asum`, `nrm2`, `axpy`, `scal`, `gemv`,
+    `symv`, `ger`, `matmul`/`gemm`, `syrk`, `trsv`, `trsm`) with algebraic `C = a*matmul(A,B)+b*C`
+    lowering to a single `gemm` call, plus `gesv`, `posv`, `gels`, `solve`, `inv`, and SVD `pinv`
+    with LAPACKE fast paths; `USE_OPENBLAS` and `USE_LAPACKE` now default to `ON` when detected via
+    `pkg-config`.
+  - **Compute units, IPC & front-end:** `milk-fpsexec-milk-calc` (`milk.calc`) and
+    `milk-fpsexec-milk-script` (`milk.script`) standalone units with `.unit.*` parameters,
+    `name=value` CLI arguments, and kept compilation for `/=`, scalar reductions, and scalar
+    variable expressions; 32-entry LRU compiled statement cache for `@calc`; size-aware physical-core
+    OpenMP team policy (`milk_omp_team_size`, `MILK_CALC_THREADS`); pinned stream mappings and
+    reused semaphore slots in `@waitfor`; SIMD-accelerated `s.<im>.*` pixel stats with torn-frame
+    guard and per-`(ino, cnt0)` caching; lock-free `@grab` frame copying with `.kw.DROPPED` (and
+    `.k.<KEY>` keyword shorthand); batched non-TTY piped stdin in `milk-cli` (58.8 → ~2 µs/line)
+    `#cli` `#performance` `#api` `#refactor`
+
 - **2026-10-21** — The `cacao` modules (`AOloopControl*`, `computeCalib`, `pyramidWFStools`) migrated to `MILK_RUNNABLE`: each module has one registry and one header, the `cacao-fpsexec-*` executables are generated from `EXPORT_FPSEXEC`, and the `modalstatsTUI` sources are parked in `AOloopControl/tui/` `#api` `#build` `#refactor`
+
+- **2026-10-20** — `milk-streamCTRL` is now `milk-CTRL` opened on its streams view (an installed
+  link; `-h` maps the old keys), and the old streamCTRL TUI is removed. F3 gains an inspector with
+  INFO, SEMS (readers and writers of each semaphore), TRACE (writer chain with timing), KEYS and
+  HOLDERS (processes mapping the file, from `/proc`, no `fuser`) pages. Streams: up to 10000, mapped
+  progressively; files that are not usable streams and dangling links are listed with the reason;
+  symbolic links show their target; creator PID, holder count and owner sorts; Hz averaged over 1 s;
+  COUNT flashes when it moves; per-stage scan timing. Libraries: libprocessinfo shares the state,
+  control and trigger-mode names, computes timing medians for any reader (EXEC and DUTY no longer
+  need milk-procCTRL-scan) and settles dead registry slots; libmilkdata lists streams, which fixes
+  `readshmimall` and `shmimpurge` finding none in milk-cli; `processinfo_exec_end` measures across
+  second boundaries ([guide](guide/milk-CTRL.md)) `#cli` `#streams` `#api` `#docs`
+
+- **2026-10-20** — `milk-CTRL` efficiency, links and presentation round: the scan takes about
+  1.6 ms instead of 5.7 ms on 2000 streams / 200 FPS and stops while paused; tmux is asked only
+  while an FPS panel shows; perf counters close when RESOURCES is hidden; dead PIDs are not probed again; resident memory
+  with an empty directory is down from 17 to 5 MB.
+  One typed graph per scan feeds every view; CONNECTIONS rows show rate, reader state, compute
+  time, missed triggers and the FPS, and mark where a pipeline stalls; stream DETAILS shows per-hop
+  latency; F7 lists a loop's FPS. At 80 columns the bars keep what matters, list columns are
+  dropped by priority and scroll back with the column cursor, numbers are SI-scaled, empty lists
+  say why, the status line shows the keys of the current context, and states read the same
+  everywhere (`ERR`, `STAL`) ([guide](guide/milk-CTRL.md)) `#cli` `#performance` `#docs`
+
+- **2026-10-20** — `milk-CTRL` restructured so a column, view, sub-tab, key or option is one table
+  entry; process rows line up with their header again, F6 shows the sub-tab it selects, F7 clicks
+  select loops, ENTER edits a DETAILS parameter, F1 opens help, and the help, `-h` and status hints
+  come from one key table. New options: `--view NAME`, a positional regex `PATTERN`, `--interval SEC`,
+  `--log FILE` and `--debug`, `--shm-dir` ([guide](guide/milk-CTRL.md)) `#cli` `#refactor` `#docs`
+
+- **2026-10-19** — `milk-CTRL` safety and correctness round: viewing never writes shared memory;
+  actions hit the highlighted entry (identity, not row number) and check it is still the same
+  stream/FPS/process before acting; `y/N` before SIGKILL, erase, cleanup and batch actions; FPS
+  batch marks (`b`, `a`); no shell for inspect, tmux or snapshots; terminal restored on every
+  exit; colour depth honoured (256/16/monochrome); stall detection, loop health and the
+  CONNECTIONS tree fixed. Legacy TUIs: streamCTRL, procCTRL and fpsCTRL restore the terminal
+  and drop shell calls; the fpsCTRL FIFO is retired (`-f`/`-s` are ignored; use `milk-fps-set`)
+  `#cli` `#streams` `#fps`
+
+- **2026-10-18** — `milk-termview`: menus, status bar, slow-link output, flow control over ssh,
+  stream following, Pause `#cli` `#streams` `#performance` ([guide](guide/termview.md))
+
+- **2026-10-16** — Fixes: extra commands of multi-command files (`mem.cp`, `mem.mv`, `extractim`,
+  `imsetcnt1`, ...) read their arguments again, and images created by commands (`loadfits`,
+  `breakcube`, `imexpand`, ...) are in the image table again; both broke in the 2026-03 IMGID
+  migration `#cli` `#api`
+
+- **2026-10-16** — Calculator kernels: element-wise image expressions run in one pass with no
+  intermediate images (6-operator chain on 1024×1024: 10.9 → 0.2 ms; `a += 1`: 1.6 → 0.2 ms);
+  in-place and slice updates are typed and OpenMP-parallel, slice copies go row by row; complex
+  images work with `cplx real imag abs arg conj` and `+ - * /`. Fixes: `q = im` now creates `q`,
+  mismatched image sizes are an error instead of aborting milk-cli, install paths over 100
+  characters load modules `#cli` `#performance`
+
+- **2026-10-16** — Calculator: `&&`, `||` and a scalar `?:` skip the operand they don't need; `!` is
+  logical not; `+` concatenates strings; new `istd` (`irms` kept as an alias), `ivar`, `icount`,
+  `iargmax`, `iargmin`, and axis reductions such as `imean(cube, 2)`; integer images read and write
+  pixels as integers; string variables evaluate to their value; `>` on images is now strict (it
+  was `>=`). Operator and function tables in [Scripting](guide/scripting.md#calculator) `#cli`
+
+- **2026-10-16** — Scripting rework (`feat/bash-engine`): bash-aware translator, one
+  command rule everywhere (`module.command` or `@name`), in-process `source`, loud errors and
+  real exit status, Ctrl-C that keeps the shell, threaded `@waitfor`/`@grab`, and per-call cost
+  down to a few µs (`@calc` 92→4 µs, `@get` ~6 µs). See the migration table below and
+  [Scripting](guide/scripting.md) `#cli` `#performance` `#docs`
+
+  | Old form                                     | Now                                                       |
+  | -------------------------------------------- | --------------------------------------------------------- |
+  | `listim`, `mk2Dim im 8 8`                    | `mem.listim`, `@mk2Dim im 8 8` (bare names need `@`)      |
+  | `?`, `m?`, `cmd? x`, `synhl off`             | `@?`, `@m?`, `@cmd? x`, `@config synhl off`                      |
+  | `a = 2 + 3`, `im = im * 2`                   | `@ a = 2 + 3`, `@calc "im = im * 2"`                      |
+  | `s.cam.xsize` as a command                   | `@get s.cam.xsize`                                        |
+  | `${s.cam.xsize}`, `${@s.cam.xsize}`          | `@s.cam.xsize` (also inside `"..."`)                      |
+  | `waitfor_stream cam 10`, `waitfor_fps ...`   | `@waitfor s.cam 10`, `@waitfor f.loop.status=RUN`        |
+  | `wait_any ...`                               | `@waitany s.a s.b -t 1`                                   |
+  | `on_update cam { ... }`, `trap 'c' STREAM:x` | `@on s.cam 'cmd'`                                         |
+  | `watch 1000 mem.listim`                      | `while :; do mem.listim; milksleep 1; done`               |
+  | `vars`, `savescript`, `!cmd`, `!!`           | `declare -p`; removed; run `cmd` directly                 |
+  | `loc.` namespace                             | `l.` or `local.`                                          |
+  | `strlen(foo)` with an unknown `foo`          | an error now; quote strings: `strlen("foo")`              |
+
 - **2026-10-15** — The macro-based "V2 8-section" compute unit framework is removed
   (`FPS_MAIN_STANDALONE_V2`, `INSERT_STD_PROCINFO_COMPUTEFUNC_*`, `CLIADDCMD_*`,
   `add_milk_standalone` / `add_cacao_standalone*`, `MILK_MODULE`/`init_module_CLI`): every compute
   unit is a `MILK_RUNNABLE`, built by `milk_add_runnable_module()` `#api` `#build` `#refactor`
+- **2026-10-15** — Enhanced `milk.bash` & `milk-cli`: zero-subshell `-v`/`-a`/`-A` variable & array
+  bindings, `/dev/shm` entity globbing & `--json` export, globbed/multi-assignment `@set`,
+  `@snapshot`/`@diff`/`@restore` state management, `@assert` expression & stream/loop health
+  assertions, `@config prompt` zero-subshell live telemetry prompt, `CLICMDARGDEF` type-aware tab
+  completion & `@hc --sig`, throttled/multi-target `@on` watchers, single-RPC `@pipe` & `@pipe`
+  execution, and `@grab --fits/--timestamps` + `@replay` stream playback `#cli` `#streams` `#fps`
+  `#performance`
+- **2026-10-14** — First-class GNU Bash integration (`source milk.bash`, `libmilkbash.so` loadable
+  builtins, in-process `milk-cli` bash co-process, `@`-sigil command namespace, `@server`
+  multi-server lifecycle/tmux management, `@log` `/dev/shm` command & output ring buffer,
+  `@calc` / `@test` / `@waitfor` / `@grab` / `@defer`, and `@T<type>:` stream datatype
+  modifiers) `#cli` `#streams` `#fps`
 - **2026-10-14** — `milk_module_example` migrated to `MILK_RUNNABLE`: the template units `imsum1`,
   `imsum2`, `streamupdate`, `streamprocess` and `fpscli` are listed in one module registry, and the
   template executables are generated from `EXPORT_FPSEXEC` `#api` `#build` `#docs`
@@ -32,6 +580,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
   `#build` `#api` `#refactor` `#fps`
 - **2026-10-09** — `MILK_RUNNABLE` descriptors: several CLI commands / fpsexecs per file, sources compiled
   once, generated `main()` stubs via `EXPORT_FPSEXEC` (test module `runnabletest`) `#api` `#build`
+- **2026-10-07** — Unified module `CMakeLists.txt` template, `milk_link_module()` for static-LTO standalones, and
+  `INSERT_STD_CLIREGISTERFUNC_NAMED` for CLI registration `#build` `#api`
 - **2026-10-06** — Reorganized `docs/` into topic subfolders
   (`quickstart/`, `guide/`, `developer/`, `arch/`, `operations/`,
   `maintenance/`) matching the site navigation `#docs`

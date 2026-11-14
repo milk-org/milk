@@ -55,31 +55,13 @@ class ComputeUnit:
             else None
         )
 
-    def _subprocess_start(
-        self, command: str, *args: str, wrap_in_shell: bool = False
-    ) -> subprocess.Popen:
+    def _subprocess_start(self, command: str, *args: str) -> subprocess.Popen:
         target = f"{self.fpsname}:{command}"
         argv = [self.exec_name, *args, target]
-        if wrap_in_shell:
-            # 2 things:
-            # - Wrap in a bash call so that bash performs a wait on the underlying process that we actually desire
-            #   so that this process doesn't become Zombie for long, and conf.isrunning / run.isrunning remain accurate.
-            # - Add a tail call "; true" to bash -c so that we force out of bash's last-command
-            #   optimization which very exactly defeats the above purpose.
-            return subprocess.Popen(
-                ["bash", "-c"] + [" ".join(argv) + "; true"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        else:
-            return subprocess.Popen(
-                argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+        return subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    def _subprocess_complete(
-        self, command: str, *args: str, wrap_in_shell: bool = False
-    ) -> subprocess.Popen:
-        proc = self._subprocess_start(command, *args, wrap_in_shell=wrap_in_shell)
+    def _subprocess_complete(self, command: str, *args: str) -> subprocess.Popen:
+        proc = self._subprocess_start(command, *args)
         retcode = proc.wait()
         if retcode != 0:
             stderr = proc.stderr.read() if proc.stderr else b""
@@ -114,18 +96,14 @@ class ComputeUnit:
     def fpslist(self) -> None:
         fpslist(self.exec_name)
 
-    def confstart(self, tmux: bool = False) -> None:
+    def confstart(self) -> None:
         """
         This ends up calling:
         int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(void))
-        with loop = 1
+        with loop = 1, in the background. Returns once the conf loop runs.
         """
         self._trylink_fps(raise_on_miss=True)
-        # timeout ? guaranteed completion ? return pid ?
-        if tmux:
-            self._subprocess_complete("confstart", "-tmux")
-        else:
-            self._subprocess_start("confstart", wrap_in_shell=True)
+        self._subprocess_complete("confstart")
 
     def confstep(self) -> None:
         """
@@ -140,9 +118,8 @@ class ComputeUnit:
         self._trylink_fps(raise_on_miss=True)
         self._subprocess_complete("confstop")
 
-    def runstart(
-        self, tmux: bool = False, loopd: float | None = None, loops: bool = False
-    ) -> None:
+    def runstart(self, loopd: float | None = None, loops: bool = False) -> None:
+        """Start the run loop in the background; returns once it is active."""
         self._trylink_fps(raise_on_miss=True)
         assert loopd is None or not loops
         if loops:
@@ -151,11 +128,7 @@ class ComputeUnit:
             args = ("-loopd", f"{loopd:.6f}")
         else:
             args = ()
-
-        if tmux:
-            self._subprocess_complete("runstart", "-tmux", *args)
-        else:
-            self._subprocess_start("runstart", *args, wrap_in_shell=True)
+        self._subprocess_complete("runstart", *args)
 
     def runstop(self) -> None:
         self._trylink_fps(raise_on_miss=True)

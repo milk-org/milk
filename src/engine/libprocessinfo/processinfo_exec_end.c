@@ -36,7 +36,7 @@ int processinfo_exec_end(PROCESSINFO *processinfo)
             dtexec = processinfo->texecend[processinfo->timerindex].tv_nsec -
                      processinfo->texecstart[processinfo->timerindex].tv_nsec;
             dtexec += 1000000000 * (processinfo->texecend[processinfo->timerindex].tv_sec -
-                                    processinfo->texecend[processinfo->timerindex].tv_sec);
+                                    processinfo->texecstart[processinfo->timerindex].tv_sec);
 
             if (dtexec > processinfo->dtexec_limit_value)
             {

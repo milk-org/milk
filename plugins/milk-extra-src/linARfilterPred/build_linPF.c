@@ -25,23 +25,35 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inname                            = NULL;
-static uint32_t *PForder                           = NULL;
-static float    *PFlatency                         = NULL;
-static double   *SVDeps                            = NULL;
-static double   *reglambda                         = NULL;
-static char     *outPFname                         = NULL;
-static float    *loopgain                          = NULL;
-static uint64_t *out3Dwrite                        = NULL;
-static int32_t  *GPUdevice __attribute__((unused)) = NULL;
+static char     inname[FUNCTION_PARAMETER_STRMAXLEN]    = "indata";
+static uint32_t PForder                                 = 10;
+static float    PFlatency                               = 2.7;
+static double   SVDeps                                  = 0.001;
+static double   reglambda                               = 0.001;
+static char     outPFname[FUNCTION_PARAMETER_STRMAXLEN] = "outPF";
+static float    loopgain                                = 0.2;
+static int32_t  out3Dwrite                              = 0;
+static int32_t  GPUdevice __attribute__((unused))       = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X) \
-    X(".outPFname", &outPFname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output filter")
+#define FPS_PARAMS(X)                                                                              \
+    X(".inname", inname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input telemetry")            \
+    X(".PForder", &PForder, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "predictive filter order")     \
+    X(".PFlatency", &PFlatency, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,         \
+      "time latency [frame]")                                                                      \
+    X(".SVDeps", &SVDeps, FPTYPE_FLOAT64, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "SVD cutoff") \
+    X(".reglambda", &reglambda, FPTYPE_FLOAT64, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,         \
+      "regularization coefficient")                                                                \
+    X(".outPFname", outPFname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output filter")            \
+    X(".loopgain", &loopgain, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,           \
+      "loop gain")                                                                                 \
+    X(".out3Dfilt", &out3Dwrite, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN,          \
+      "write output 3D filter")                                                                    \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device")
 
 
 /* ================================================================
@@ -272,10 +284,10 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
     ///
     long NBmvec =
-        nbspl - *PForder - (int) (*PFlatency) -
-        2; // could put "-1", but "-2" allows user to change PFlag_run by up to 1 frame without reading out of array
+        nbspl - PForder -
+        (int) (PFlatency) -2; // could put "-1", but "-2" allows user to change PFlag_run by up to 1 frame without reading out of array
     long mvecsize =
-        NBpixin * *PForder; // size of each sample vector for AR filter, excluding regularization
+        NBpixin * PForder; // size of each sample vector for AR filter, excluding regularization
 
     /// Regularization can be added to penalize strong coefficients in the predictive filter.
     /// It is optionally implemented by adding extra columns at the end of the data matrix.\n
@@ -301,11 +313,11 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     /// - m index is measurement
     /// - dt*NBpixin+pix index is pixel
 
-    printf("mvecsize = %ld  (%u x %ld)\n", mvecsize, *PForder, NBpixin);
+    printf("mvecsize = %ld  (%u x %ld)\n", mvecsize, PForder, NBpixin);
     printf("NBpixin = %ld\n", NBpixin);
     printf("NBpixout = %ld\n", NBpixout);
     printf("NBmvec1 = %ld\n", NBmvec1);
-    printf("PForder = %u\n", *PForder);
+    printf("PForder = %u\n", PForder);
 
     printf("xysize = %ld\n", xysize);
     printf("IDin = %ld\n\n", imgin.ID);
@@ -338,7 +350,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
             abort();
         }
 
-        imsizearray[0] = NBpixin * (*PForder);
+        imsizearray[0] = NBpixin * (PForder);
         imsizearray[1] = NBpixout;
         char IDoutPF_name_raw[STRINGMAXLEN_IMGNAME];
         WRITE_IMAGENAME(IDoutPF_name_raw, "%s_raw", outPFname);
@@ -351,8 +363,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
             imgpf.mdt->datatype = _DATATYPE_FLOAT;
             imgpf.mdt->shared   = 1;
             imgpf.mdt->NBkw     = 1;
-            imgpf.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgpf);
+            imgid_create_registered(&imgpf);
             IDoutPF2D = imgpf.ID;
         }
         {
@@ -363,8 +374,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
             imgpfraw.mdt->datatype = _DATATYPE_FLOAT;
             imgpfraw.mdt->shared   = 1;
             imgpfraw.mdt->NBkw     = 1;
-            imgpfraw.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgpfraw);
+            imgid_create_registered(&imgpfraw);
             IDoutPF2Draw = imgpfraw.ID;
         }
         free(imsizearray);
@@ -383,10 +393,10 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     clock_gettime(CLOCK_MILK, &t0);
 
     printf("=========== LOOP ITERATION %6ld =======\n", processinfo->loopcnt);
-    printf("  PFlag     = %20f      ", *PFlatency);
-    printf("  SVDeps    = %20f\n", *SVDeps);
-    printf("  RegLambda = %20f      ", *reglambda);
-    printf("  LOOPgain  = %20f\n", *loopgain);
+    printf("  PFlag     = %20f      ", PFlatency);
+    printf("  SVDeps    = %20f\n", SVDeps);
+    printf("  RegLambda = %20f      ", reglambda);
+    printf("  LOOPgain  = %20f\n", loopgain);
     printf("\n");
 
     /// *STEP: Copy IDin to IDincp*
@@ -403,7 +413,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     printf("  NBmvec   = %ld\n", NBmvec);
     printf("  NBmvec1  = %ld\n", NBmvec1);
     printf("  NBpixin  = %ld\n", NBpixin);
-    printf("  PForder  = %u\n", *PForder);
+    printf("  PForder  = %u\n", PForder);
     printf("===========================================================\n");
 
     /// *STEP: if DC_MODE==1, compute average value from each variable*
@@ -432,10 +442,10 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     ///
     for (long m = 0; m < NBmvec1; m++)
     {
-        long k0 = m + *PForder - 1; // dt=0 index
+        long k0 = m + PForder - 1; // dt=0 index
         for (long pix = 0; pix < NBpixin; pix++)
         {
-            for (long dt = 0; dt < *PForder; dt++)
+            for (long dt = 0; dt < PForder; dt++)
             {
                 dcimg[IDmatA].array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
                     dcimg[IDincp].array.F[(k0 - dt) * xysize + pixarray_xy[pix]] - ave_inarray[pix];
@@ -451,7 +461,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
         for (long m = 0; m < mvecsize; m++)
         {
             //m1 = NBmvec + m;
-            dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] = *reglambda;
+            dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] = reglambda;
         }
     }
 
@@ -462,13 +472,13 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     ///
 
     // Assemble future measured data matrix
-    float alpha = *PFlatency - ((long) (*PFlatency));
+    float alpha = PFlatency - ((long) (PFlatency));
     for (long PFpix = 0; PFpix < NBpixout; PFpix++)
     {
         for (long m = 0; m < NBmvec; m++)
         {
-            long k0 = m + *PForder - 1;
-            k0 += (long) *PFlatency;
+            long k0 = m + PForder - 1;
+            k0 += (long) PFlatency;
 
             dcimg[IDfm].array.F[PFpix * NBmvec + m] =
                 (1.0 - alpha) * dcimg[IDincp].array.F[(k0) *xysize + outpixarray_xy[PFpix]] +
@@ -537,7 +547,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
         //
         uint64_t SVDflag = COMPSVD_COMP_PSINV; // | COMPSVD_COMP_CHECKPSINV; // COMPSVD_SKIP_BIGMAT;
 
-        compute_SVD(imgin, &imgU, &imgeval, &imgevec, 0, (*SVDeps), 10000000, GPUdev, SVDflag,
+        compute_SVD(imgin, &imgU, &imgeval, &imgevec, 0, (SVDeps), 10000000, GPUdev, SVDflag,
                     "SVDunmodes", "SVDvnmodes");
 
 
@@ -573,10 +583,10 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     {
         printf("------------------- CPU computing PF matrix\n");
 
-        create_2Dimage_ID("psinvPFmat", NBpixin * *PForder, NBpixout, &IDoutPF2Dn);
+        create_2Dimage_ID("psinvPFmat", NBpixin * PForder, NBpixout, &IDoutPF2Dn);
 
         // extract value to allow for optimization
-        uint32_t PForderval = *PForder;
+        uint32_t PForderval = PForder;
 
         // transpost of matC for speed
         float *matCtrans = (float *) malloc(sizeof(float) * dcimg[IDmatC].md->nelement);
@@ -627,7 +637,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     //printf("IDoutPF2Draw = %ld\n", IDoutPF2Draw);
     dcimg[IDoutPF2Draw].md[0].write = 1;
     memcpy(dcimg[IDoutPF2Draw].array.F, dcimg[IDoutPF2Dn].array.F,
-           sizeof(float) * NBpixout * NBpixin * *PForder);
+           sizeof(float) * NBpixout * NBpixin * PForder);
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
     dcimg[IDoutPF2Draw].md[0].cnt0++;
     dcimg[IDoutPF2Draw].md[0].write = 0;
@@ -646,23 +656,23 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     }
     else
     {
-        loopgainval = *loopgain;
+        loopgainval = loopgain;
     }
-    printf("Mixing PF matrix with gain = %f / %f ....", loopgainval, *loopgain);
+    printf("Mixing PF matrix with gain = %f / %f ....", loopgainval, loopgain);
     fflush(stdout);
     for (long PFpix = 0; PFpix < NBpixout; PFpix++)
     {
         for (long pix = 0; pix < NBpixin; pix++)
         {
-            for (long dt = 0; dt < *PForder; dt++)
+            for (long dt = 0; dt < PForder; dt++)
             {
                 float val0 =
                     dcimg[IDoutPF2D]
-                        .array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix]; // Previous
+                        .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix]; // Previous
                 float val = dcimg[IDoutPF2Dn]
-                                .array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix]; // New
-                dcimg[IDoutPF2D].array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix] =
-                    (1.0 - *loopgain) * val0 + *loopgain * val;
+                                .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix]; // New
+                dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix] =
+                    (1.0 - loopgain) * val0 + loopgain * val;
             }
         }
     }
@@ -676,21 +686,21 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     dcimg[IDoutPF2D].md[0].cnt0++;
     dcimg[IDoutPF2D].md[0].write = 0;
 
-    if (*out3Dwrite == 1)
+    if (out3Dwrite == 1)
     {
         printf("Prepare 3D output \n");
 
         imageID IDoutPF3D;
-        create_3Dimage_ID("outPF3D", NBpixin, NBpixout, *PForder, &IDoutPF3D);
+        create_3Dimage_ID("outPF3D", NBpixin, NBpixout, PForder, &IDoutPF3D);
 
         for (long pix = 0; pix < NBpixin; pix++)
         {
             for (long PFpix = 0; PFpix < NBpixout; PFpix++)
             {
-                for (long dt = 0; dt < *PForder; dt++)
+                for (long dt = 0; dt < PForder; dt++)
                 {
                     float val =
-                        dcimg[IDoutPF2D].array.F[PFpix * (*PForder * NBpixin) + dt * NBpixin + pix];
+                        dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix];
                     dcimg[IDoutPF3D].array.F[NBpixout * NBpixin * dt + NBpixin * PFpix + pix] = val;
                 }
             }

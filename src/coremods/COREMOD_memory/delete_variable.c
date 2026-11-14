@@ -17,6 +17,7 @@
 #    include "libmilkdata/milkdata.h"
 #endif
 #include "variable_ID.h"
+#include "libmilkdata/milkdata.h" /* milk_table_bump() */
 
 /* deletes a variable ID */
 errno_t delete_variable_ID(const char *varname)
@@ -27,6 +28,7 @@ errno_t delete_variable_ID(const char *varname)
     if (ID != -1)
     {
         dcvar[ID].used = 0;
+        milk_table_bump();
         /*      free(dcvar[ID].name);*/
     }
     else

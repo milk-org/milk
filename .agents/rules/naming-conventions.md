@@ -1,3 +1,7 @@
+---
+description: Naming conventions for files, modules, scripts, functions, variables and macros.
+---
+
 # Naming Conventions
 
 ## 1. Files and Directories
@@ -7,8 +11,7 @@
 | Category        | Pattern                  | Examples                   |
 | --------------- | ------------------------ | -------------------------- |
 | Module init     | `<module_name>.c/h`      | `COREMOD_arith.c`, `fft.c` |
-| Compute unit    | `<action>_<object>.c/h`  | `image_crop2D.c`           |
-| V2 fpsexec      | `<funcname>.c`           | `MVM_CPU.c`, `findspots.c` |
+| Compute unit    | `<action>_<object>.c/h`  | `image_crop.c`, `MVM_CPU.c` |
 | Framework       | `<subsys>_<topic>.c/h`   | `fps_cli_sync.c`           |
 | Standalone tool | `milk-<subsys>-<verb>.c` | `milk-fps-set.c`           |
 
@@ -18,7 +21,7 @@
 - Name after the primary function or object the file implements.
 - Module prefixes (`AOloopControl_DM_`) are acceptable for cacao
   modules to preserve namespace grouping.
-- Keep names concise: `image_crop2D.c` over
+- Keep names concise: `image_crop.c` over
   `image_crop_two_dimensional.c`.
 
 ### 1.2 Directories (Modules)
@@ -40,7 +43,7 @@ Use the following patterns for script names.
 | Type          | Pattern                | Examples                 |
 | ------------- | ---------------------- | ------------------------ |
 | OS executable | `milk-<subsys>-<verb>` | `milk-fps-set`           |
-| milk fpsexec  | `milk-fpsexec-<name>`  | `milk-fpsexec-MVM`       |
+| milk fpsexec  | `milk-fpsexec-<name>`  | `milk-fpsexec-linalg-SVDmkU` |
 | cacao fpsexec | `cacao-fpsexec-<name>` | `cacao-fpsexec-dmcomb`   |
 | CLI script    | `<descriptive>.milk`   | `makecircleofdisks.milk` |
 
@@ -165,8 +168,8 @@ for vectorization (see §3.8).
   float *d_in     = NULL;  /* GPU input buffer  */
   float *d_wfsVec = NULL;  /* GPU WFS vector    */
   ```
-  This convention is already established in `linalgebra`,
-  `ImageStreamIO`, and `cudacomp` modules.
+  This convention is already established in `linalgebra`
+  and `ImageStreamIO`.
 - Raw pointers (`void *`): `raw`, `buf`, `ptr`
 - IMGID variables (`IMGID`): `img`, `imgptr`, `img_input`
 - Stream metadata (`IMAGE_METADATA *`): `md`

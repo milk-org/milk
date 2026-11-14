@@ -58,7 +58,7 @@ outimres="${inputMSargARRAY[4]}"
 milk-all << EOF
 loadfits "$immA" modesA
 loadfits "$immB" modesB
-set3Daxes modesB 0 0 0
+modesB = reshape(modesB, s.modesB.xsize, s.modesB.ysize, s.modesB.zsize)
 linalg.compSVD .GPUdevice ${GPUindex}
 linalg.compSVD modesB svdU svdS svdV ${svdlim}
 listim
@@ -71,5 +71,5 @@ linalg.sgemm svdU mcoeff imrec
 saveFITS imrec "$outimrec"
 imres=modesA-imrec
 saveFITS imres "$outimres"
-exitCLI
+exit
 EOF

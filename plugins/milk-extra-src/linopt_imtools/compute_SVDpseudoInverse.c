@@ -24,7 +24,6 @@
 
 #include "COREMOD_iofits/savefits.h"
 #include "timeutils.h"
-#include "linalgebra/linalgebra.h"
 
 
 /* ================================================================
@@ -36,12 +35,11 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *inimname       = NULL;
-static char   *outimname      = NULL;
-static double *SVD_epsilon    = NULL;
-static long   *max_NBmodes    = NULL;
-static char   *outimVTmatname = NULL;
-static long   *useGPU         = NULL;
+static char    inimname[FUNCTION_PARAMETER_STRMAXLEN]       = "im";
+static char    outimname[FUNCTION_PARAMETER_STRMAXLEN]      = "outim";
+static double  SVD_epsilon                                  = 0.001;
+static int64_t max_NBmodes                                  = 10000;
+static char    outimVTmatname[FUNCTION_PARAMETER_STRMAXLEN] = "outVTmat";
 
 
 /* ================================================================
@@ -49,11 +47,11 @@ static long   *useGPU         = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                        \
-    X(".inim", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")         \
-    X(".outim", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")          \
+    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")          \
+    X(".outim", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")           \
     X(".svdeps", &SVD_epsilon, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")        \
     X(".maxNBmode", &max_NBmodes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Maximum NB modes") \
-    X(".outimVT", &outimVTmatname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output VT matrix")
+    X(".outimVT", outimVTmatname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output VT matrix")
 
 
 /* ================================================================
@@ -175,8 +173,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     {
         IMGID imgAtA       = imgid_make_from_name_2D("AtA", m, m);
         imgAtA.mdt->shared = 0;
-        imgAtA.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgAtA);
+        imgid_create_registered(&imgAtA);
 
         for (long ii = 0; ii < m; ii++)
         {
@@ -272,8 +269,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     IMGID imgVT         = imgid_make_from_name_2D(ID_VTmatrix_name, m, m);
     imgVT.mdt->datatype = datatype;
     imgVT.mdt->shared   = 0;
-    imgVT.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgVT);
+    imgid_create_registered(&imgVT);
 
     if (datatype == _DATATYPE_FLOAT)
     {
@@ -332,8 +328,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     {
         IMGID imgM2       = imgid_make_from_name_2D("M2", m, m);
         imgM2.mdt->shared = 0;
-        imgM2.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgM2);
+        imgid_create_registered(&imgM2);
 
         for (long ii = 0; ii < m; ii++)
         {
@@ -365,8 +360,7 @@ errno_t linopt_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
     imgC.mdt->datatype = datatype;
     imgC.mdt->shared   = 0;
-    imgC.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgC);
+    imgid_create_registered(&imgC);
 
     if (timing == 1)
     {
@@ -460,21 +454,8 @@ static MILK_HOT errno_t compute_SVDpseudoInverse_compute(const MILK_RUNNABLE *se
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    if (*useGPU == 0)
-    {
-        printf("==== CPU =====\n");
-        linopt_compute_SVDpseudoInverse(inimname, outimname, *SVD_epsilon, *max_NBmodes,
-                                        outimVTmatname, NULL);
-    }
-    else
-    {
-        printf("==== GPU =====\n");
-#ifdef HAVE_MAGMA
-        LINALGEBRA_magma_compute_SVDpseudoInverse(inimname, outimname, *SVD_epsilon, *max_NBmodes,
-                                                  outimVTmatname, 0, 1, 64, 0, /* GPU device */
-                                                  NULL);
-#endif
-    }
+    linopt_compute_SVDpseudoInverse(inimname, outimname, SVD_epsilon, max_NBmodes, outimVTmatname,
+                                    NULL);
 
     MILK_PROCINFO_END(self)
 

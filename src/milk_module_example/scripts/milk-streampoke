@@ -78,5 +78,5 @@ modex.streamupdate ..triggermode 4
 modex.streamupdate ..triggerdelay ${pokedelay}
 modex.streamupdate ${streamname}
 listim
-exitCLI
+exit
 EOF

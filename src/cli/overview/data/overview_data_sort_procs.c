@@ -262,18 +262,24 @@ static int sort_proc_by_duty(const void *a, const void *b)
 /** Number of sortable proc columns. */
 #define OV_PROC_SORT_NCOL 10
 
+/** tie_proc - name order (processes: then PID), the tie-break of every key. */
+static int tie_proc(const void *a, const void *b)
+{
+    const OV_PROC *pa = (const OV_PROC *) a, *pb = (const OV_PROC *) b;
+    int            r = strcmp(pa->name, pb->name);
+    return (r != 0) ? r
+                    : (pa->PID > pb->PID) - (pa->PID < pb->PID); /* same-name processes by PID */
+}
+
 /**
- * ov_sort_procs - Sort processes array in model according to selected key and direction
+ * ov_sort_procs - fill @order with the model indices in sort order (the model is not moved)
  * @model: Pointer to data model
  * @key:   Column sort key index
  * @dir:   Sort direction (0 for asc, 1 for desc)
+ * @order: Output, model->nb_procs entries
  */
-void ov_sort_procs(OV_MODEL *model, int key, int dir)
+void ov_sort_procs(const OV_MODEL *model, int key, int dir, int *order)
 {
-    if (model->nb_procs < 2)
-    {
-        return;
-    }
     ov_sort_dir_mul = dir ? -1 : 1;
     int (*cmp)(const void *, const void *);
     switch (key)
@@ -312,5 +318,5 @@ void ov_sort_procs(OV_MODEL *model, int key, int dir)
         cmp = sort_proc_by_name;
         break;
     }
-    qsort(model->procs, (size_t) model->nb_procs, sizeof(OV_PROC), cmp);
+    ov_sort_index(model->procs, sizeof(OV_PROC), model->nb_procs, cmp, tie_proc, order);
 }

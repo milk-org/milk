@@ -17,6 +17,7 @@
 #include "milk_runnable.h"
 #include "imrotate.h"
 #include "computeunit.h"
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -47,26 +48,7 @@ static float imrotate_angle                                   = 0.0f;
 
 static void imrotate_step(IMAGE *imgin, IMAGE *imgout, float angle)
 {
-    uint32_t nx = imgin->md[0].size[0];
-    uint32_t ny = imgin->md[0].size[1];
-    float    c  = cosf(angle);
-    float    s  = sinf(angle);
-    for (uint32_t jj = 0; jj < ny; jj++)
-    {
-        for (uint32_t ii = 0; ii < nx; ii++)
-        {
-            long iis = (long) (nx / 2 + (ii - (int) nx / 2) * c + (jj - (int) ny / 2) * s);
-            long jjs = (long) (ny / 2 - (ii - (int) nx / 2) * s + (jj - (int) ny / 2) * c);
-            if ((iis >= 0) && (jjs >= 0) && (iis < (long) nx) && (jjs < (long) ny))
-            {
-                imgout->array.F[jj * nx + ii] = imgin->array.F[jjs * nx + iis];
-            }
-            else
-            {
-                imgout->array.F[jj * nx + ii] = 0.0;
-            }
-        }
-    }
+    (void) arith_image_rotate2d_im(imgin, imgout, (double) angle);
 }
 
 

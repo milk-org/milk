@@ -1,0 +1,571 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file mc_history.c
+ * @brief Self-referential stream bootstrap and the `hist()`/`prev()` ring rewriter.
+ *
+ * Purpose:     let a unit read its own output (`acc = 0.9 * acc + 0.1 * cam`) and the past frames
+ *              of a stream (`cam - prev(cam)`), with no init statement or bookkeeping of its own.
+ * Does:        mc_expr_mentions_self() tells whether an expression reads a given name, and finds
+ *              another image to take the shape from (not inside a reduction); mc_self_init_create()
+ *              creates the name, zero, as an image of the right-hand side's shape and type, or as a
+ *              scalar variable. mc_hist_rewrite() rewrites a parsed program: each `hist(s, N)`
+ *              statement declares a ring of N frames and becomes empty; each `prev(s[, k])` becomes
+ *              the slice of the ring `<s>_hist` that holds frame n-k (depth 2 when s has no
+ *              hist()); the rings are created as shared streams with one more axis, or checked; one
+ *              update statement per ring is appended, flagged is_hist_stmt. Rings work only in a
+ *              unit, on 1-D and 2-D streams, at most MC_HIST_MAX per program.
+ * Used by:     front/mc_resolve.c (self-init targets, in a unit), plan/mc_views.c (whether an
+ *              expression reads a slot, for fusion and elision), run/mc_prog.c (mc_hist_rewrite(),
+ *              after parsing). Declared in front/mc_ast.h.
+ * Uses:        COREMOD_memory (create_image.h, create_variable.h, image_ID.h), ImageStreamIO;
+ *              front/mc_lex.c and front/mc_parse.c (the ring slices are written as text, then
+ *              parsed).
+ * See also:    docs/guide/calculator.md, "Compute Units Without C".
+ */
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "libmilkcommon/milkDebugTools.h"
+#include "libmilkdata/milkdata.h"
+#include "COREMOD_memory/create_image.h"
+#include "COREMOD_memory/create_variable.h"
+#include "COREMOD_memory/image_ID.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "front/mc_ast.h"
+#include "plan/mc_plan.h"
+#include "mcalc.h"
+
+/* Maximum number of distinct streams with a `hist()` / `prev()` ring in a single program. */
+#define MC_HIST_MAX 16
+
+/**
+ * struct mc_hist_decl_t - Descriptor for a stream with an associated `<name>_hist` ring buffer
+ * @name:    Stream identifier
+ * @N:       Ring depth in frames (`>= 2`)
+ * @naxis:   Dimensionality of the source stream (`1` or `2`; `0` before `hist_ring()` validation)
+ * @src_off: Byte span of the statement that declared (or first used) the ring
+ * @src_end:
+ */
+typedef struct
+{
+    char name[STRINGMAXLEN_IMAGE_NAME];
+    int  N;
+    int  naxis;
+    int  src_off;
+    int  src_end;
+} mc_hist_decl_t;
+
+/* ============================================================================================== */
+/* Self-Referential Recurrence Bootstrap                                                          */
+/* ============================================================================================== */
+
+/**
+ * mc_expr_mentions_self - Check whether RHS expression @e references LHS target @bare
+ * @e:      RHS expression AST node to inspect recursively
+ * @bare:   Bare identifier name of the LHS assignment target
+ * @out_im: Optional output pointer receiving the first non-self `IMAGE *` referenced in @e
+ *
+ * Used by the resolver (`mc_resolve.c`) when an assignment target does not yet exist: if @e
+ * mentions @bare alongside another existing image `*out_im`, the target can be auto-created with
+ * the dimensions and datatype of `*out_im` to bootstrap recurrence relations like
+ * `y = 0.95 * y + 0.05 * x`. Arguments inside scalar reductions (`imean(x)`, etc.) do not
+ * contribute a shape to `@out_im`.
+ *
+ * Return: 1 if @e references @bare, 0 otherwise
+ */
+int mc_expr_mentions_self(const mc_expr_t *e, const char *bare, const void **out_im)
+{
+    if (e == NULL)
+    {
+        return 0;
+    }
+    int hit = 0;
+    switch (e->kind)
+    {
+    case MC_EXPR_IDENT:
+    case MC_EXPR_SLICE:
+    {
+        char nbuf[256];
+        char bbuf[MC_IDENT_MAX];
+        snprintf(nbuf, sizeof(nbuf), "%s",
+                 (e->kind == MC_EXPR_IDENT) ? e->u.ident.name : e->u.slice.name);
+        mc_parse_ident_streamname(nbuf, bbuf, NULL);
+        if (strcmp(bbuf, bare) == 0)
+        {
+            hit = 1;
+        }
+        else if (out_im != NULL && *out_im == NULL)
+        {
+            imageID id = mc_resolve_or_autoconnect_image(nbuf);
+            if (id != -1)
+            {
+                *out_im = &milk_data.image[id];
+            }
+        }
+        for (int ax = 0; e->kind == MC_EXPR_SLICE && ax < e->u.slice.naxis; ax++)
+        {
+            hit |= mc_expr_mentions_self(e->u.slice.axes[ax].start, bare, NULL);
+            hit |= mc_expr_mentions_self(e->u.slice.axes[ax].stop, bare, NULL);
+            hit |= mc_expr_mentions_self(e->u.slice.axes[ax].step, bare, NULL);
+        }
+        return hit;
+    }
+    case MC_EXPR_UNARY:
+        return mc_expr_mentions_self(e->u.unary.operand, bare, out_im);
+    case MC_EXPR_BINARY:
+        hit |= mc_expr_mentions_self(e->u.binary.left, bare, out_im);
+        hit |= mc_expr_mentions_self(e->u.binary.right, bare, out_im);
+        return hit;
+    case MC_EXPR_TERNARY:
+        hit |= mc_expr_mentions_self(e->u.ternary.cond, bare, out_im);
+        hit |= mc_expr_mentions_self(e->u.ternary.t_expr, bare, out_im);
+        hit |= mc_expr_mentions_self(e->u.ternary.f_expr, bare, out_im);
+        return hit;
+    case MC_EXPR_CHAIN:
+        for (int i = 0; i <= e->u.chain.nops; i++)
+        {
+            hit |= mc_expr_mentions_self(e->u.chain.operands[i], bare, out_im);
+        }
+        return hit;
+    case MC_EXPR_CALL:
+    {
+        const mc_func_t *fn     = mc_func_find(e->u.call.name);
+        int              is_red = (fn != NULL &&
+                                   (fn->kind == MC_FN_REDUCE_D || fn->kind == MC_FN_REDUCE_L ||
+                                    fn->kind == MC_FN_ISTATS || fn->kind == MC_FN_ICENTROID ||
+                                    fn->kind == MC_FN_EAGER_RED || fn->kind == MC_FN_DOT) &&
+                                   e->u.call.nargs < 2);
+        for (int i = 0; i < e->u.call.nargs; i++)
+        {
+            hit |= mc_expr_mentions_self(e->u.call.args[i], bare, is_red ? NULL : out_im);
+        }
+        return hit;
+    }
+    case MC_EXPR_ASSIGN:
+        hit |= mc_expr_mentions_self(e->u.assign.target, bare, NULL);
+        hit |= mc_expr_mentions_self(e->u.assign.rhs, bare, out_im);
+        return hit;
+    case MC_EXPR_VEC_LIT:
+        for (int i = 0; i < e->u.vec_lit.nelem; i++)
+        {
+            hit |= mc_expr_mentions_self(e->u.vec_lit.elems[i], bare, NULL);
+        }
+        return hit;
+    case MC_EXPR_COMP:
+        hit |= mc_expr_mentions_self(e->u.comp.body, bare, NULL);
+        for (int i = 0; i < e->u.comp.ngens; i++)
+        {
+            hit |= mc_expr_mentions_self(e->u.comp.gens[i].start, bare, NULL);
+            hit |= mc_expr_mentions_self(e->u.comp.gens[i].stop, bare, NULL);
+            hit |= mc_expr_mentions_self(e->u.comp.gens[i].step, bare, NULL);
+        }
+        return hit;
+    default:
+        return 0;
+    }
+}
+
+/**
+ * mc_self_init_create - Pre-create a zero-initialized image or variable for a recurrence target
+ * @tb:       Bare identifier name of the recurrence target
+ * @is_local: 1 to create an `@L:` process-local image, 0 for an `@S:` shared-memory stream
+ * @rhs:      Resolved RHS expression providing the inferred result kind, shape, and datatype
+ *
+ * Return: void
+ */
+void mc_self_init_create(const char *tb, int is_local, const mc_expr_t *rhs)
+{
+    if (tb == NULL || tb[0] == '\0' || rhs == NULL)
+    {
+        return;
+    }
+    if (rhs->res_kind == MC_RES_IMAGE && rhs->res_naxis > 0 && rhs->res_size[0] > 0)
+    {
+        uint32_t sz[3] = {
+            rhs->res_size[0],
+            (rhs->res_naxis >= 2 && rhs->res_size[1] > 0) ? rhs->res_size[1] : 1,
+            (rhs->res_naxis >= 3 && rhs->res_size[2] > 0) ? rhs->res_size[2] : 1,
+        };
+        uint8_t dt  = rhs->res_dt ? rhs->res_dt : _DATATYPE_FLOAT;
+        imageID nid = -1;
+        create_image_ID(tb, rhs->res_naxis, sz, dt, is_local ? 0 : 1, 10, 0, &nid);
+    }
+    else if (rhs->res_kind == MC_RES_SCALAR_L)
+    {
+        create_variable_long_ID(tb, 0);
+    }
+    else if (rhs->res_kind == MC_RES_SCALAR_D)
+    {
+        create_variable_ID(tb, 0.0);
+    }
+}
+
+/* ============================================================================================== */
+/* `hist()` / `prev()` Ring Buffer Management and Source Rewriter                                 */
+/* ============================================================================================== */
+
+/**
+ * hist_ring - Validate source stream `d->name` and create or verify `<name>_hist`
+ * @d:     History declaration entry (populated with `d->naxis` on success)
+ * @err:   Error message buffer
+ * @errsz: Capacity of @err in bytes
+ *
+ * Source streams must be 1D or 2D (`naxis` 1 or 2) and ring depth `d->N` must be at least 2.
+ * Creates `<name>_hist` in shared memory with shape `(nx, N)` for 1D streams or `(nx, ny, N)` for
+ * 2D streams, or verifies that an existing `<name>_hist` matches those dimensions.
+ *
+ * Return: 0 on success, -1 on error
+ */
+static int hist_ring(mc_hist_decl_t *d, char *err, size_t errsz)
+{
+    char    ring[STRINGMAXLEN_IMAGE_NAME];
+    imageID id = mc_resolve_or_autoconnect_image(d->name);
+    snprintf(ring, sizeof(ring), "%.*s_hist", (int) sizeof(ring) - 6, d->name);
+    if (id == -1)
+    {
+        snprintf(err, errsz, "hist: stream '%s' not found", d->name);
+        return -1;
+    }
+    const IMAGE *im = &milk_data.image[id];
+    d->naxis        = im->md[0].naxis;
+    if (d->naxis < 1 || d->naxis > 2 || d->N < 2)
+    {
+        snprintf(err, errsz, "hist: '%s' must be 1-D or 2-D and the depth at least 2", d->name);
+        return -1;
+    }
+    uint32_t sz[3] = {
+        im->md[0].size[0],
+        (d->naxis == 2) ? im->md[0].size[1] : (uint32_t) d->N,
+        (d->naxis == 2) ? (uint32_t) d->N : 1,
+    };
+    imageID rid = mc_resolve_or_autoconnect_image(ring);
+    if (rid == -1)
+    {
+        create_image_ID(ring, d->naxis + 1, sz, im->md[0].datatype, 1, 10, 0, &rid);
+        if (rid == -1)
+        {
+            snprintf(err, errsz, "hist: cannot create stream '%s'", ring);
+            return -1;
+        }
+        int tsz = ImageStreamIO_typesize(im->md[0].datatype);
+        if (tsz > 0 && milk_data.image[rid].array.raw != NULL)
+        {
+            memset(milk_data.image[rid].array.raw, 0,
+                   (size_t) milk_data.image[rid].md[0].nelement * (size_t) tsz);
+        }
+        return 0;
+    }
+    const IMAGE *r = &milk_data.image[rid];
+    if (r->md[0].naxis != d->naxis + 1 || r->md[0].datatype != im->md[0].datatype ||
+        r->md[0].size[0] != sz[0] || r->md[0].size[1] != sz[1] ||
+        (d->naxis == 2 && r->md[0].size[2] != sz[2]))
+    {
+        snprintf(err, errsz, "hist: stream '%s' exists with another shape", ring);
+        return -1;
+    }
+    return 0;
+}
+/**
+ * struct hist_ctx_t - State of the `hist()` / `prev()` rewrite of one program
+ * @decl:    Rings found so far
+ * @nd:      Number of entries in @decl
+ * @in_unit: 1 when compiling a unit (whose `_n` indexes the rings)
+ * @off:     Byte span of the statement being rewritten
+ * @end:
+ * @err:     Error message buffer
+ * @errsz:   Capacity of @err in bytes
+ */
+typedef struct
+{
+    mc_hist_decl_t decl[MC_HIST_MAX];
+    int            nd;
+    int            in_unit;
+    int            off;
+    int            end;
+    char          *err;
+    size_t         errsz;
+} hist_ctx_t;
+
+/* Index of the ring of stream @name, added with depth @N if new; -1 when there are too many */
+static int hist_ring_of(hist_ctx_t *h, const char *name, int N)
+{
+    const char *bare =
+        (name[0] == '@' && (name[1] == 'S' || name[1] == 'L') && name[2] == ':') ? name + 3 : name;
+    for (int k = 0; k < h->nd; k++)
+    {
+        if (strcmp(h->decl[k].name, bare) == 0)
+        {
+            return k;
+        }
+    }
+    if (h->nd == MC_HIST_MAX)
+    {
+        snprintf(h->err, h->errsz, "more than %d streams with a history", MC_HIST_MAX);
+        return -1;
+    }
+    mc_hist_decl_t *d = &h->decl[h->nd];
+    memset(d, 0, sizeof(*d));
+    snprintf(d->name, sizeof(d->name), "%s", bare);
+    d->N       = N;
+    d->src_off = h->off;
+    d->src_end = h->end;
+    return h->nd++;
+}
+
+/* The expression of the one-statement text @text, or NULL */
+static mc_expr_t *parse_snippet(const char *text)
+{
+    static _Thread_local mc_tok_list_t s_tl;
+    mc_stmt_t *s = (mc_lex(text, &s_tl) == 0) ? mc_parse_stmt(&s_tl, NULL, 0) : NULL;
+    mc_expr_t *e = (s != NULL && s->kind == MC_STMT_EXPR) ? s->u.expr : NULL;
+    if (e != NULL)
+    {
+        s->u.expr = NULL;
+    }
+    mc_stmt_free(s);
+    return e;
+}
+
+/* 1 if @e calls @fn with a stream name first */
+static int is_ring_call(const mc_expr_t *e, const char *fn)
+{
+    return e != NULL && e->kind == MC_EXPR_CALL && strcmp(e->u.call.name, fn) == 0 &&
+           e->u.call.nargs >= 1 && e->u.call.args[0]->kind == MC_EXPR_IDENT;
+}
+
+/* Pass 1: each statement `hist(s, N)`, at any depth, declares a ring and becomes empty */
+static int hist_find_decls(hist_ctx_t *h, mc_stmt_t *s)
+{
+    for (; s != NULL; s = s->next)
+    {
+        mc_expr_t *e = (s->kind == MC_STMT_EXPR) ? s->u.expr : NULL;
+        if (e != NULL && e->kind == MC_EXPR_CALL && strcmp(e->u.call.name, "hist") == 0)
+        {
+            if (!h->in_unit)
+            {
+                snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
+                return -1;
+            }
+            if (!is_ring_call(e, "hist") || e->u.call.nargs != 2 ||
+                e->u.call.args[1]->kind != MC_EXPR_LONG || e->u.call.args[1]->u.lval < 2)
+            {
+                snprintf(h->err, h->errsz,
+                         "hist: expected hist(stream, N) with integer depth N >= 2");
+                return -1;
+            }
+            h->off = s->src_off;
+            h->end = s->src_end;
+            int k  = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
+            if (k < 0)
+            {
+                return -1;
+            }
+            h->decl[k].N       = (int) e->u.call.args[1]->u.lval;
+            h->decl[k].src_off = s->src_off;
+            h->decl[k].src_end = s->src_end;
+            mc_expr_free(e);
+            s->u.expr = NULL;
+            s->kind   = MC_STMT_EMPTY;
+        }
+        for (int b = 0; s->kind == MC_STMT_IF && b < s->u.if_stmt.nbranches; b++)
+        {
+            if (hist_find_decls(h, s->u.if_stmt.branches[b].body) != 0)
+            {
+                return -1;
+            }
+        }
+        if (s->kind == MC_STMT_FOR && hist_find_decls(h, s->u.for_stmt.body) != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* Pass 2: each `prev(s[, k])` in @*pe becomes the slice of its ring for k frames ago */
+static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
+{
+    mc_expr_t *e = *pe;
+    if (is_ring_call(e, "prev") && e->u.call.nargs <= 2)
+    {
+        if (!h->in_unit)
+        {
+            snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
+            return -1;
+        }
+        int is_lit = (e->u.call.nargs == 1 || e->u.call.args[1]->kind == MC_EXPR_LONG);
+        if (!is_lit && hist_expand(h, &e->u.call.args[1]) != 0)
+        {
+            return -1;
+        }
+        long lag = (e->u.call.nargs == 2 && is_lit) ? e->u.call.args[1]->u.lval : 1;
+        int  k   = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
+        if (k < 0)
+        {
+            return -1;
+        }
+        mc_hist_decl_t *d = &h->decl[k];
+        if (is_lit && (lag < 1 || lag >= d->N))
+        {
+            snprintf(h->err, h->errsz, "prev(%s, %ld): the ring holds %d frames", d->name, lag,
+                     d->N);
+            return -1;
+        }
+        if (d->naxis == 0 && hist_ring(d, h->err, h->errsz) != 0)
+        {
+            return -1;
+        }
+        char text[STRINGMAXLEN_IMAGE_NAME + 64];
+        if (is_lit)
+        {
+            snprintf(text, sizeof(text), "%s_hist[%s(_n + %d) %% %d]", d->name,
+                     (d->naxis == 2) ? ":,:," : ":,", d->N - (int) lag, d->N);
+        }
+        else
+        {
+            snprintf(text, sizeof(text), "%s_hist[%s(((_n - (0)) %% %d) + %d) %% %d]", d->name,
+                     (d->naxis == 2) ? ":,:," : ":,", d->N, d->N, d->N);
+        }
+        mc_expr_t *sl = parse_snippet(text);
+        if (sl == NULL)
+        {
+            snprintf(h->err, h->errsz, "prev: '%s' is no stream name", d->name);
+            return -1;
+        }
+        if (!is_lit)
+        {
+            mc_expr_t *sub =
+                sl->u.slice.axes[d->naxis].start->u.binary.left->u.binary.left->u.binary.left;
+            mc_expr_free(sub->u.binary.right);
+            sub->u.binary.right = e->u.call.args[1];
+            e->u.call.args[1]   = NULL;
+        }
+        sl->line = e->line;
+        sl->col  = e->col;
+        mc_expr_free(e);
+        *pe = sl;
+        return 0;
+    }
+    mc_expr_t **slots[MC_MAX_ARGS];
+    for (int i = 0, n = mc_expr_child_slots(e, slots); i < n; i++)
+    {
+        if (hist_expand(h, slots[i]) != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* Pass 2 over every expression of statement list @s */
+static int hist_expand_stmts(hist_ctx_t *h, mc_stmt_t *s)
+{
+    for (; s != NULL; s = s->next)
+    {
+        h->off = s->src_off;
+        h->end = s->src_end;
+        int rc = 0;
+        switch (s->kind)
+        {
+        case MC_STMT_EXPR:
+            rc = hist_expand(h, &s->u.expr);
+            break;
+        case MC_STMT_MULTI_ASSIGN:
+            for (int i = 0; rc == 0 && i < s->u.multi.nrhs; i++)
+            {
+                rc = hist_expand(h, &s->u.multi.rhs[i]);
+            }
+            break;
+        case MC_STMT_IF:
+            for (int b = 0; rc == 0 && b < s->u.if_stmt.nbranches; b++)
+            {
+                rc = (hist_expand(h, &s->u.if_stmt.branches[b].cond) != 0 ||
+                      hist_expand_stmts(h, s->u.if_stmt.branches[b].body) != 0)
+                         ? -1
+                         : 0;
+            }
+            break;
+        case MC_STMT_FOR:
+            rc = (hist_expand(h, &s->u.for_stmt.start) != 0 ||
+                  hist_expand(h, &s->u.for_stmt.stop) != 0 ||
+                  hist_expand(h, &s->u.for_stmt.step) != 0 ||
+                  hist_expand_stmts(h, s->u.for_stmt.body) != 0)
+                     ? -1
+                     : 0;
+            break;
+        case MC_STMT_DEF:
+            rc = hist_expand(h, &s->def.body);
+            break;
+        default:
+            break;
+        }
+        if (rc != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * mc_hist_rewrite - Turn the `hist(s, N)` declarations and `prev(s[, k])` calls of a program into rings
+ * @head:      Statement list of the program; one ring update per ring is appended to it
+ * @in_unit:   1 when compiling a unit, whose `_n` indexes the rings
+ * @out_nhist: Receives the number of appended ring updates
+ * @err:       Error message buffer
+ * @errsz:     Capacity of @err in bytes
+ *
+ * Each `hist(s, N)` statement declares an N-frame ring `<s>_hist` and becomes empty (the statement
+ * numbering is kept). Each `prev(s[, k])` becomes the slice `<s>_hist[:, (_n + N - k) % N]`
+ * (`[:,:, ...]` for a 2-D stream), N being 2 for a stream without `hist`. The rings are created or
+ * checked here, and an update `<s>_hist[:, _n % N] = <s>` per ring is appended, flagged
+ * `is_hist_stmt`, with the span of the statement that declared (or first used) the ring.
+ *
+ * Return: 0 on success, -1 on error (`hist` or `prev` outside a unit, too many rings, bad lag)
+ */
+int mc_hist_rewrite(mc_stmt_t **head, int in_unit, int *out_nhist, char *err, size_t errsz)
+{
+    hist_ctx_t h = { .in_unit = in_unit, .err = err, .errsz = errsz };
+    *out_nhist   = 0;
+    if (hist_find_decls(&h, *head) != 0 || hist_expand_stmts(&h, *head) != 0)
+    {
+        return -1;
+    }
+    mc_stmt_t **tail = head;
+    while (*tail != NULL)
+    {
+        tail = &(*tail)->next;
+    }
+    for (int k = 0; k < h.nd; k++)
+    {
+        mc_hist_decl_t *d = &h.decl[k];
+        char            text[2 * STRINGMAXLEN_IMAGE_NAME + 64];
+        if (d->naxis == 0 && hist_ring(d, err, errsz) != 0)
+        {
+            return -1;
+        }
+        snprintf(text, sizeof(text), "%s_hist[%s_n %% %d] = %s", d->name,
+                 (d->naxis == 2) ? ":,:," : ":,", d->N, d->name);
+        mc_stmt_t *s = calloc(1, sizeof(*s));
+        if (s == NULL || (s->u.expr = parse_snippet(text)) == NULL)
+        {
+            free(s);
+            snprintf(err, errsz, "hist: '%s' is no stream name", d->name);
+            return -1;
+        }
+        s->kind         = MC_STMT_EXPR;
+        s->is_hist_stmt = 1;
+        s->src_off      = d->src_off;
+        s->src_end      = d->src_end;
+        *tail           = s;
+        tail            = &s->next;
+    }
+    *out_nhist = h.nd;
+    return 0;
+}

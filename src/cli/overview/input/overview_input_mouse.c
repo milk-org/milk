@@ -50,54 +50,36 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             last_click_c  = mc;
         }
 
-        /* Check for status bar exit and theme button clicks */
-        if (mr == lay->term_rows)
+        /* Status bar exit and theme buttons, where the last frame drew them */
+        if (lay->r_exit_btn.width > 0 && INSIDE(lay->r_exit_btn, mr, mc))
         {
-            int col_exit = lay->term_cols - 18;
-            if (mc >= col_exit && mc < col_exit + 10)
-            {
-                return 2; /* exit request */
-            }
-
-            char th_buf[32];
-            snprintf(th_buf, sizeof(th_buf), " [%s] ", ov_active_theme->id);
-            int n_th   = (int) strlen(th_buf);
-            int col_th = col_exit - n_th;
-            if (mc >= col_th && mc < col_exit)
-            {
-                int count = ov_theme_count();
-                int next  = (ov_theme_get_active_index() + 1) % count;
-                ov_theme_set(next);
-                lay->theme_popup_sel    = next;
-                lay->theme_popup_active = 1;
-                clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup_ts);
-                const ov_theme_t *th = ov_theme_get_active();
-                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "🎨 Theme: %s (%s)", th->name,
-                               th->desc);
-                return 1;
-            }
+            return 2; /* exit request */
+        }
+        if (lay->r_theme_btn.width > 0 && INSIDE(lay->r_theme_btn, mr, mc))
+        {
+            int count = ov_theme_count();
+            int next  = (ov_theme_get_active_index() + 1) % count;
+            ov_theme_set(next);
+            lay->theme_popup.sel    = next;
+            lay->theme_popup.active = 1;
+            clock_gettime(CLOCK_MONOTONIC, &lay->theme_popup.ts);
+            const ov_theme_t *th = ov_theme_get_active();
+            ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Theme: %s (%s)", th->name, th->desc);
+            return 1;
         }
 
         /* Check for header tab clicks */
         if (mr == lay->r_header.row && mc >= 1)
         {
-            /* Check for CTRL mode toggle click */
-            int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
-            int shmdir_w    = (int) strlen(ov_get_shmdir()) + 8;
-            int badge_start = lay->r_header.col + 18 + commit_w + shmdir_w;
-            int badge_w     = lay->ctrl_mode ? 13 : 15;
-            if (mc >= badge_start && mc < badge_start + badge_w)
+            /* Badges where the header drew them */
+            if (lay->r_ctrl_badge.width > 0 && INSIDE(lay->r_ctrl_badge, mr, mc))
             {
                 lay->ctrl_mode = !lay->ctrl_mode;
                 ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "Control mode %s",
                                lay->ctrl_mode ? "ON" : "OFF");
                 return 1;
             }
-
-            /* Check for HOVER badge click */
-            int hover_badge_start = badge_start + badge_w + 1;
-            int hover_badge_w     = lay->mouse_hover ? 15 : 16;
-            if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+            if (lay->r_hover_badge.width > 0 && INSIDE(lay->r_hover_badge, mr, mc))
             {
                 lay->mouse_hover = !lay->mouse_hover;
                 ov_set_mouse_hover(lay->mouse_hover);
@@ -128,15 +110,15 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                     {
                         if (fpanel == OV_FOCUS_STREAMS)
                         {
-                            lay->filter_stream_active = 0;
+                            lay->panel[OV_FOCUS_STREAMS].filter_on = 0;
                         }
                         else if (fpanel == OV_FOCUS_PROCS)
                         {
-                            lay->filter_proc_active = 0;
+                            lay->panel[OV_FOCUS_PROCS].filter_on = 0;
                         }
                         else if (fpanel == OV_FOCUS_FPS)
                         {
-                            lay->filter_fps_active = 0;
+                            lay->panel[OV_FOCUS_FPS].filter_on = 0;
                         }
                         else
                         {
@@ -144,22 +126,23 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         }
                         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
                                        "%s filter paused (press 'f' to resume)", panel_full);
-                        lay->filter_active = (lay->filter_stream_active ||
-                                              lay->filter_proc_active || lay->filter_fps_active);
+                        lay->filter_active = (lay->panel[OV_FOCUS_STREAMS].filter_on ||
+                                              lay->panel[OV_FOCUS_PROCS].filter_on ||
+                                              lay->panel[OV_FOCUS_FPS].filter_on);
                     }
                     else if (fpat[0] != '\0')
                     {
                         if (fpanel == OV_FOCUS_STREAMS)
                         {
-                            lay->filter_stream_active = 1;
+                            lay->panel[OV_FOCUS_STREAMS].filter_on = 1;
                         }
                         else if (fpanel == OV_FOCUS_PROCS)
                         {
-                            lay->filter_proc_active = 1;
+                            lay->panel[OV_FOCUS_PROCS].filter_on = 1;
                         }
                         else if (fpanel == OV_FOCUS_FPS)
                         {
-                            lay->filter_fps_active = 1;
+                            lay->panel[OV_FOCUS_FPS].filter_on = 1;
                         }
                         else
                         {
@@ -167,8 +150,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         }
                         ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO, "%s filter resumed: /%s/",
                                        panel_full, fpat);
-                        lay->filter_active = (lay->filter_stream_active ||
-                                              lay->filter_proc_active || lay->filter_fps_active);
+                        lay->filter_active = (lay->panel[OV_FOCUS_STREAMS].filter_on ||
+                                              lay->panel[OV_FOCUS_PROCS].filter_on ||
+                                              lay->panel[OV_FOCUS_FPS].filter_on);
                     }
                     else
                     {
@@ -189,25 +173,12 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         /* Check for tab selection & help button clicks (row 2) */
         if (mr == lay->r_tabs.row && mc >= 1)
         {
-            int tab_widths[OV_VIEW_COUNT];
-            int tabs_total_width = 0;
-            for (int v = 0; v < OV_VIEW_COUNT; v++)
+            int t = ov_tabbar_hit(mc);
+            if (t == OV_TABBAR_HELP)
             {
-                tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-                tabs_total_width += tab_widths[v];
-            }
-
-            int help_width = 11;
-            int help_col   = (lay->term_cols >= tabs_total_width + help_width)
-                                 ? (lay->term_cols - help_width + 1)
-                                 : (tabs_total_width + 1);
-
-            /* Check help button click */
-            if (mc >= help_col && mc < help_col + help_width)
-            {
-                if (lay->show_help)
+                if (lay->help.show)
                 {
-                    lay->show_help = 0;
+                    lay->help.show = 0;
                     ov_buf_force_clear();
                 }
                 else
@@ -216,22 +187,15 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                 }
                 return 1;
             }
-
-            /* Check tab selection clicks */
-            int tx = 1;
-            for (int v = 0; v < OV_VIEW_COUNT; v++)
+            if (t >= 0)
             {
-                if (mc >= tx && mc < tx + tab_widths[v])
+                ov_set_view(lay, (ov_view_t) t);
+                if (lay->help.show)
                 {
-                    lay->view = (ov_view_t) v;
-                    if (lay->show_help)
-                    {
-                        lay->show_help = 0;
-                        ov_buf_force_clear();
-                    }
-                    return 1;
+                    lay->help.show = 0;
+                    ov_buf_force_clear();
                 }
-                tx += tab_widths[v];
+                return 1;
             }
         }
 
@@ -250,20 +214,21 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             }
         }
 
-        /* Quick Action Buttons (Hover) */
-        if (lay->mouse_hover && lay->hover_idx >= 0)
+        /* Quick Action Buttons (Hover): drawn and live only in CONTROL mode */
+        if (lay->ctrl_mode && lay->mouse_hover && lay->hover_idx >= 0)
         {
             if (lay->hover_view == OV_FOCUS_STREAMS && lay->hover_idx < m->nb_streams)
             {
                 if (mr >= lay->r_streams.row + 3 && mr < lay->r_streams.row + lay->r_streams.height)
                 {
-                    int idx = lay->scroll_stream + (mr - lay->r_streams.row - 3);
-                    if (idx == lay->hover_idx)
+                    int row = lay->panel[OV_FOCUS_STREAMS].scroll + (mr - lay->r_streams.row - 3);
+                    int idx = ov_row_to_idx(lay, m, OV_FOCUS_STREAMS, row); /* drawn row -> entry */
+                    if (row == lay->hover_idx && idx >= 0)
                     {
                         if (mc >= lay->r_streams.col + lay->r_streams.width - 10 &&
                             mc < lay->r_streams.col + lay->r_streams.width)
                         {
-                            ov_ctrl_stream_delete(&m->streams[idx], &lay->cmdlog);
+                            ov_confirm_open(lay, m, OV_ACT_STREAM_DELETE, 0, OV_FOCUS_STREAMS, idx);
                             return 1;
                         }
                     }
@@ -273,13 +238,21 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_procs.row + 3 && mr < lay->r_procs.row + lay->r_procs.height)
                 {
-                    int idx = lay->scroll_proc + (mr - lay->r_procs.row - 3);
-                    if (idx == lay->hover_idx)
+                    int row = lay->panel[OV_FOCUS_PROCS].scroll + (mr - lay->r_procs.row - 3);
+                    int idx = ov_row_to_idx(lay, m, OV_FOCUS_PROCS, row);
+                    if (row == lay->hover_idx && idx >= 0)
                     {
                         if (mc >= lay->r_procs.col + lay->r_procs.width - 8 &&
                             mc < lay->r_procs.col + lay->r_procs.width)
                         {
-                            ov_ctrl_proc_kill(&m->procs[idx], &lay->cmdlog);
+                            if (m->procs[idx].active)
+                            {
+                                ov_ctrl_proc_kill(&m->procs[idx], &lay->cmdlog);
+                            }
+                            else
+                            {
+                                ov_confirm_open(lay, m, OV_ACT_PROC_REMOVE, 0, OV_FOCUS_PROCS, idx);
+                            }
                             return 1;
                         }
                     }
@@ -289,8 +262,9 @@ int ov_input__handle_mouse(int key, OV_LAYOUT *lay, const OV_MODEL *m)
             {
                 if (mr >= lay->r_fps.row + 3 && mr < lay->r_fps.row + lay->r_fps.height)
                 {
-                    int idx = lay->scroll_fps + (mr - lay->r_fps.row - 3);
-                    if (idx == lay->hover_idx)
+                    int row = lay->panel[OV_FOCUS_FPS].scroll + (mr - lay->r_fps.row - 3);
+                    int idx = ov_row_to_idx(lay, m, OV_FOCUS_FPS, row);
+                    if (row == lay->hover_idx && idx >= 0)
                     {
                         int right = lay->r_fps.col + lay->r_fps.width;
                         if (mc >= right - 8 && mc < right)

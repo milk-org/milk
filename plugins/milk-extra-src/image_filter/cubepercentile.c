@@ -58,8 +58,7 @@ imageID filter_CubePercentile(const char *__restrict IDcin_name,
 
     IMGID imgout       = imgid_make_from_name_2D(IDout_name, xsize, ysize);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (long ii = 0; ii < xsize * ysize; ii++)
     {
@@ -107,8 +106,7 @@ imageID filter_CubePercentileLimit(const char *__restrict IDcin_name,
 
     IMGID imgout       = imgid_make_from_name_2D(IDout_name, xsize, ysize);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (long ii = 0; ii < xsize * ysize; ii++)
     {

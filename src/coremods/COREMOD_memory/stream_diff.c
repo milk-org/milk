@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "stream_sem.h"
@@ -91,6 +92,7 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     float *MILK_RESTRICT ptrm =
         (imgmask.ID != -1) ? MILK_ASSUME_ALIGNED(imgmask.im->array.F) : NULL;
     float *MILK_RESTRICT ptro = MILK_ASSUME_ALIGNED(imgout.im->array.F);
+    int                  nth  = milk_omp_team_size(xysize, 262144);
 
     unsigned long long cnt = 0;
 
@@ -112,14 +114,20 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
         imgout.md->write = 1;
         if (ptrm == NULL)
         {
-            MILK_IVDEP for (uint64_t ii = 0; ii < xysize; ii++)
+#ifdef _OPENMP
+#    pragma omp parallel for simd num_threads(nth) if (parallel : nth > 1)
+#endif
+            for (uint64_t ii = 0; ii < xysize; ii++)
             {
                 ptro[ii] = ptr0[ii] - ptr1[ii];
             }
         }
         else
         {
-            MILK_IVDEP for (uint64_t ii = 0; ii < xysize; ii++)
+#ifdef _OPENMP
+#    pragma omp parallel for simd num_threads(nth) if (parallel : nth > 1)
+#endif
+            for (uint64_t ii = 0; ii < xysize; ii++)
             {
                 ptro[ii] = (ptr0[ii] - ptr1[ii]) * ptrm[ii];
             }

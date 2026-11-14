@@ -17,6 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -1277,6 +1278,76 @@ errno_t fpsCTRL_FPSdisplay(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fp
     return RETURN_SUCCESS;
 }
 
+#define FPSCTRL_LOG_MAX 40
+
+/**
+ * fpsctrl_log_tail - print the last @nmax '#' lines of <datadir>/*.fps in sort order, read in C
+ * (was `grep -h '#' | sort | tail` through a shell every frame).
+ */
+static void fpsctrl_log_tail(const char *datadir, int nmax)
+{
+    static char lines[FPSCTRL_LOG_MAX][1024];
+    int         n = 0;
+    DIR        *d = opendir(datadir);
+    if (d == NULL)
+    {
+        TUI_printfw("No log entries found.");
+        TUI_newline();
+        return;
+    }
+    if (nmax > FPSCTRL_LOG_MAX)
+    {
+        nmax = FPSCTRL_LOG_MAX;
+    }
+    struct dirent *de;
+    while ((de = readdir(d)) != NULL)
+    {
+        size_t len = strlen(de->d_name);
+        if (de->d_name[0] == '.' || len < 5 || strcmp(de->d_name + len - 4, ".fps") != 0)
+        {
+            continue;
+        }
+        char path[2048];
+        snprintf(path, sizeof(path), "%s/%s", datadir, de->d_name);
+        FILE *fp = fopen(path, "r");
+        if (fp == NULL)
+        {
+            continue;
+        }
+        char line[1024];
+        while (fgets(line, sizeof(line), fp) != NULL)
+        {
+            if (strchr(line, '#') == NULL || (n == nmax && strcmp(line, lines[0]) <= 0))
+            {
+                continue;
+            }
+            /* keep the nmax largest, ascending: drop the smallest when full, insertion-sort in */
+            int i = (n == nmax) ? 0 : n++;
+            if (i == 0 && n == nmax)
+            {
+                for (; i + 1 < n && strcmp(lines[i + 1], line) < 0; i++)
+                {
+                    memcpy(lines[i], lines[i + 1], sizeof(lines[i]));
+                }
+            }
+            else
+            {
+                for (; i > 0 && strcmp(lines[i - 1], line) > 0; i--)
+                {
+                    memcpy(lines[i], lines[i - 1], sizeof(lines[i]));
+                }
+            }
+            memcpy(lines[i], line, sizeof(line));
+        }
+        fclose(fp);
+    }
+    closedir(d);
+    for (int i = 0; i < n; i++)
+    {
+        TUI_printfw("%s", lines[i]);
+    }
+}
+
 /**
  * @brief Append FPS events to the fpsCTRL log file.
  *
@@ -1300,27 +1371,7 @@ errno_t fpsCTRL_FPSlog(KEYWORD_TREE_NODE *keywnode, FPSCTRL_PROCESS_VARS *fpsCTR
         TUI_newline();
         TUI_newline();
 
-        char cmd[1024];
-        // Find all .fps files, grep for comment lines, sort them, and take the last 40.
-        snprintf(cmd, sizeof(cmd), "grep -h '#' %s/*.fps 2>/dev/null | sort | tail -n 40", datadir);
-
-        FILE *fp = popen(cmd, "r");
-        if (fp != NULL)
-        {
-            char line[1024];
-            while (fgets(line, sizeof(line), fp) != NULL)
-            {
-                // Format: value # timestamp cnt0 [pid tid] comment
-                // We want to show the timestamp and the comment part.
-                TUI_printfw("%s", line);
-            }
-            pclose(fp);
-        }
-        else
-        {
-            TUI_printfw("No log entries found.");
-            TUI_newline();
-        }
+        fpsctrl_log_tail(datadir, 40);
     }
     else
     {

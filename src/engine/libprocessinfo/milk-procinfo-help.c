@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
     printf("\n");
 
     printf(C_HDR "FPS Integration\n" C_RST);
-    printf("When an FPS is procinfo-enabled (via the `-procinfo` flag\n");
-    printf("upon initialization), a new group (`.procinfo`) appears.\n");
+    printf("An fpsexec unit gets processinfo by default (`--no-procinfo`\n");
+    printf("at fpsinit turns it off), with a `.procinfo` parameter group.\n");
     printf("\n");
     printf("Important Procinfo Parameters:\n");
     printf("  " C_BOLD "procinfo.enabled" C_RST

@@ -16,6 +16,18 @@
 #    include "libmilkdata/milkdata.h"
 #endif
 
+/* One past the highest slot ever marked used (only grows): slots at or above it are all unused, so
+ * a lookup stops there instead of scanning the whole table */
+static variableID var_hwm = 0;
+
+void variable_ID_note_used(variableID ID)
+{
+    if (ID >= var_hwm)
+    {
+        var_hwm = ID + 1;
+    }
+}
+
 /* ID number corresponding to a name */
 variableID variable_ID(const char *name)
 {
@@ -24,8 +36,9 @@ variableID variable_ID(const char *name)
         return -1;
     }
 
-    size_t namelen = strlen(name);
-    for (variableID i = 0; i < dcnvar; i++)
+    size_t     namelen = strlen(name);
+    variableID nscan   = (var_hwm < dcnvar) ? var_hwm : dcnvar;
+    for (variableID i = 0; i < nscan; i++)
     {
         if (dcvar[i].used == 1)
         {

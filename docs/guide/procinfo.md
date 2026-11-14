@@ -130,10 +130,10 @@ by the developer:
 | ------------------- | ----------- | ---------------------------------------- |
 | `name`              | `char[80]`  | Short process name (no spaces, no dots)  |
 | `description`       | `char[200]` | Human-readable description string        |
-| `tmuxname`          | `char[100]` | Name of the tmux session hosting process |
+| `unitname`          | `char[100]` | Unit the process runs (`MILK_UNIT_NAME`) |
 | `MeasureTiming`     | `int`       | Enable loop timing measurement           |
 | `RT_priority`       | `int`       | RT priority 0–99 (higher = more urgent)  |
-| `loopcntMax`        | `int64_t`   | Max loop iterations (−1 = infinite)      |
+| `loopcntMax`        | `long`      | Max loop iterations (−1 = infinite)      |
 | `CPUmask`           | `cpu_set_t` | CPU affinity mask for core pinning       |
 | `triggermode`       | `int`       | Trigger type (semaphore, cnt, delay)     |
 | `triggerstreamname` | `char[80]`  | Name of input trigger stream             |
@@ -169,11 +169,13 @@ static errno_t my_compute(const MILK_RUNNABLE *self)
 After writing to an output stream, call:
 
 ```c
-processinfo_update_output_stream(processinfo, img.im);
+processinfo_update_output_stream(processinfo, img.im, NULL);
 ```
 
-This posts semaphores, increments `cnt0`/`cnt1`, clears the `write` flag, and updates timing
-metadata. Always set `img.im->md->write = 1` before modifying pixels.
+Pass the triggering input `IMAGE *` as the third argument (or `NULL` if there is no upstream
+trigger stream) to propagate stream process trace ancestry. This posts semaphores, increments
+`cnt0`/`cnt1`, clears the `write` flag, and updates timing metadata. Always set
+`img.im->md->write = 1` before modifying pixels.
 
 ### Input Stream Triggers
 
@@ -181,10 +183,43 @@ To wait on an input stream:
 
 ```c
 processinfo_waitoninputstream_init(
-    processinfo, imgin.im, TRIGGERMODE_SEMAPHORE, -1);
+    processinfo, imgin.im, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
 // ... inside loop:
 processinfo_waitoninputstream(processinfo);
 ```
+
+### Merging triggers
+
+A unit has one trigger stream. To trigger on several, run `trigmerge`: it waits on up to 16
+input streams and writes a small output stream each time its condition is met, and the unit
+triggers on that output.
+
+```bash
+milk-fpsexec-mem-trigmerge -n dmtrig fpsinit dmch0 dmch1 dmtrig   # .in0 .in1 .out
+@set f.dmtrig.in2=dmch2                                            # .in2 … .in15
+milk-fpsexec-mem-trigmerge -n dmtrig -loops runstart               # -loopd SEC caps the rate
+```
+
+- `.logic` is `any` (fire when any input posts) or `all` (fire once every input has a new
+  frame since the last fire). Inputs, `.logic` and `.timeout` can change while it runs.
+- `.timeout` (seconds, 0 = never) fires anyway when no merge happened for that long.
+- With `-loopd SEC` it fires at most once per period: inputs that arrive in between are merged
+  into the next fire. Without it, it fires as soon as the condition is met.
+- Clients that fall behind skip frames, as with any trigger: `trigmerge` does not wait for them.
+
+The output is an int64 stream of 52 elements (N = 16 inputs, bit or index k = `.in<k>`):
+
+| Elements      | Content                                                         |
+| ------------- | --------------------------------------------------------------- |
+| 0             | inputs that fired since the last fire (bitmask)                 |
+| 1             | configured inputs (bitmask)                                     |
+| 2             | inputs missing or, on a timeout, not received (bitmask)         |
+| 3             | why it fired: 0 = condition met, 1 = timeout                    |
+| 4 … 19        | each input's `cnt0` when it fired                               |
+| 20 … 35       | how many frames each input moved since the last fire            |
+| 36 … 51       | each input's write time, in ns                                  |
+
+The output's own `cnt0` and write time record the fire itself.
 
 ---
 

@@ -131,8 +131,9 @@ errno_t list_variable_ID_file(const char *fname)
 
 static char p_regex[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
-#define FPS_PARAMS_listvar(X) \
-    X(".regex", p_regex, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "regex filter (empty = all)")
+#define FPS_PARAMS_listvar(X)                                                          \
+    X(".regex", p_regex, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_OPTIONAL, \
+      "regex filter (empty = all)")
 
 MILK_PARAMS_DEFINE(listvar, FPS_PARAMS_listvar);
 

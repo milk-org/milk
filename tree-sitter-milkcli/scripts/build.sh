@@ -44,6 +44,23 @@ if [[ ! -f src/parser.c ]]; then
     exit 1
 fi
 
+# ---- Restore the SPDX headers that generate drops ----
+add_spdx() {
+    local file="$1" license="$2"
+    if ! head -n 1 "$file" | grep -q SPDX; then
+        { printf '// SPDX-FileCopyrightText: 2026 Max Brunsfeld\n//\n'
+          printf '// SPDX-License-Identifier: %s\n\n' "$license"
+          cat "$file"; } > "$file.tmp"
+        mv "$file.tmp" "$file"
+    fi
+}
+add_spdx src/parser.c LGPL-3.0-or-later
+for h in src/tree_sitter/*.h; do
+    add_spdx "$h" MIT
+done
+# end-of-file-fixer wants the final newline generate omits
+[[ -n "$(tail -c 1 src/node-types.json)" ]] && echo >> src/node-types.json
+
 LINES=$(wc -l < src/parser.c)
 echo "Parser generated: src/parser.c ($LINES lines)"
 

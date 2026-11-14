@@ -208,9 +208,29 @@ typedef struct
  * @brief Global core data instance
  *
  * In standalone programs, this is the primary global.
- * In CLI programs, data.core aliases this via macro.
+ * In CLI programs, data.core is a start-up copy of it that does not follow
+ * reallocations of the image and variable tables: use the dc* macros.
  */
 extern MILK_DATA milk_data;
+
+/**
+ * milk_table_gen - Generation of the image and variable tables: bumped on every create, delete,
+ * rename or remap, so a reader that cached a slot (a kept calculator program) re-validates only
+ * when it moved.
+ */
+extern uint64_t milk_table_gen;
+
+/** milk_table_bump() - note a change of the image or variable tables. */
+static inline void milk_table_bump(void)
+{
+    __atomic_fetch_add(&milk_table_gen, 1, __ATOMIC_RELAXED);
+}
+
+/** milk_table_generation() - the current generation of the image and variable tables (never 0). */
+static inline uint64_t milk_table_generation(void)
+{
+    return __atomic_load_n(&milk_table_gen, __ATOMIC_RELAXED);
+}
 
 
 /* ========================================

@@ -1,0 +1,166 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file milk_ipc_common.h
+ * @brief Shared socket, environment, binary lookup, and daemon-spawning helpers.
+ *
+ * Purpose:     the client, the session commands and the log reader find a shell's session, set
+ *              its variables and start or stop a server in one way.
+ * Does:        reads and sets the caller's variables (through the hooks in a builtin, else the
+ *              environment and $MILK_CALL_EVAL_FD), refusing the names that steer the shell;
+ *              runs shell code in the caller; resolves the session a shell uses ($MILKCLI_SOCK,
+ *              the shell's override file that `@session use` writes, else the shell's own);
+ *              finds milk-cli; connects, refusing a socket another user holds; pings and shuts
+ *              down a server; starts `milk-cli -q --server` detached and waits until it is
+ *              ready; reads one `@set` item.
+ * Used by:     the client (milk_client_conn.c, milk_client_ops.c, milk_client_stream.c,
+ *              milk_client_args.c), milk_sessions.c, milk_srvlog.c; the server: milk_server.c
+ *              (milk_ipc_peer_is_self()), milk_server_dispatch.c (milk_set_item()),
+ *              milk_server_admin.c.
+ * Uses:        milk_client.h (the hooks), milk_proto.h, milk_detach.h (starting a server),
+ *              milk_syscalls.h (a process's start time), milk_entity_ns.h, milk_srvlog.h (the
+ *              server's output file).
+ * See also:    milk_ipc_common.c; docs/guide/sessions.md, "Managing Sessions (`@session`)".
+ * Constraints: compiled into libmilkbash.so, the thin client every shell loads.
+ */
+
+#ifndef MILK_IPC_COMMON_H
+#define MILK_IPC_COMMON_H
+
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
+#include "milk_client.h"
+
+/**
+ * @brief Read a variable from the calling shell (via hooks) or `getenv()`.
+ *
+ * @param hooks Optional shell callback hooks (may be NULL)
+ * @param name  Variable name
+ * @return Value string, or NULL if unset
+ */
+const char *milk_ipc_get_var(const milk_client_hooks_t *hooks, const char *name);
+
+/**
+ * @brief Set a variable in the calling shell, process environment, and eval FD.
+ *
+ * @param hooks             Optional shell callback hooks (may be NULL)
+ * @param name              Variable name
+ * @param val               Value string
+ * @param export_in_eval_fd If non-zero, prefix `export ` on `MILK_CALL_EVAL_FD`
+ */
+void milk_ipc_set_var(const milk_client_hooks_t *hooks,
+                      const char                *name,
+                      const char                *val,
+                      int                        export_in_eval_fd);
+
+char *milk_ipc_bind_script(const char *name, int assoc, char *text);
+
+/** milk_ipc_is_identifier() - 1 if @name matches [A-Za-z_][A-Za-z0-9_]* (a shell variable name). */
+int milk_ipc_is_identifier(const char *name);
+
+void milk_ipc_eval(const milk_client_hooks_t *hooks, char *script);
+
+/**
+ * @brief Synchronize `MILK_SHM_DIR` from shell hooks into `setenv()`.
+ *
+ * @param hooks Optional shell callback hooks (may be NULL)
+ */
+void milk_ipc_sync_shm_env(const milk_client_hooks_t *hooks);
+
+/**
+ * @brief Resolve the active `MILKCLI_SOCK` address for the current shell.
+ *
+ * @param hooks            Optional shell callback hooks (may be NULL)
+ * @param out              Output socket path buffer
+ * @param outsz            Size of @out in bytes
+ * @param persist_if_unset If non-zero and `MILKCLI_SOCK` was unset, store the
+ *                         computed default back into the shell environment
+ */
+void milk_ipc_resolve_sockpath(const milk_client_hooks_t *hooks,
+                               char                      *out,
+                               size_t                     outsz,
+                               int                        persist_if_unset);
+
+/**
+ * @brief Locate the `milk-cli` executable path using `MILKCLI_BIN` or `MILK_INSTALLDIR`.
+ *
+ * @param hooks Optional shell callback hooks (may be NULL)
+ * @param out   Output path buffer
+ * @param outsz Size of @out in bytes
+ */
+void milk_ipc_resolve_cli_bin(const milk_client_hooks_t *hooks, char *out, size_t outsz);
+
+/**
+ * @brief Check whether a string consists solely of ASCII decimal digits.
+ *
+ * @param s Input string
+ * @return 1 if non-empty and all digits, 0 otherwise
+ */
+int milk_ipc_is_numeric_str(const char *s);
+
+/**
+ * @brief Return 1 if the process at the other end of UNIX socket @fd runs under our uid.
+ */
+int milk_ipc_peer_is_self(int fd);
+
+/**
+ * @brief Attempt a single non-retrying UNIX domain socket `connect()`.
+ *
+ * @param sockpath Abstract (`@name`) or filesystem UNIX socket path
+ * @return Connected socket fd (>= 0), or -1 on failure
+ */
+int milk_ipc_connect_once(const char *sockpath);
+
+/**
+ * @brief Send `MILK_MSG_PING` to @sockpath and verify `MILK_MSG_DONE` within 2 s.
+ *
+ * @param sockpath Target UNIX socket path
+ * @return 1 if server responded to ping, 0 otherwise
+ */
+int milk_ipc_ping_socket(const char *sockpath);
+
+/**
+ * @brief Send `MILK_MSG_SHUTDOWN` to @sockpath and wait at most 2 s for acknowledgment.
+ *
+ * @param sockpath Target UNIX socket path
+ * @return 1 if shutdown frame was delivered, 0 if server was unreachable
+ */
+int milk_ipc_shutdown_socket(const char *sockpath);
+
+/* How milk_ipc_spawn_daemon() ties a server to its owner, and what the server records */
+typedef struct
+{
+    int      owner_rfd;   /* read end of the owner pipe, passed as fd 4 (-1: none) */
+    pid_t    owner_pid;   /* without a pipe, it exits when this process exits (0: none) */
+    pid_t    creator_pid; /* a named session's owner: recorded, not tied (0: none) */
+    unsigned idle_s;      /* it ends after this long without a command (0: never) */
+    int      is_named;    /* MILK_SRV_NAMED=1 in its environment */
+} milk_spawn_opts_t;
+
+/**
+ * @brief Start a background `milk-cli -q --server` on @sockpath detached (milk_detach.h), its output
+ * in the file next to its log, and wait up to 5 s for `READY=1`; a failure is printed with the
+ * server's reason, or the end of its output. Return: 0 once it is ready, -1
+ */
+int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_spawn_opts_t *opts);
+
+/** milk_ipc_shell_pid() - the shell a command comes from: the one `_MILK_LOCAL_SOCK` names, else
+ * this process (a builtin) or its parent (milk-call). */
+pid_t milk_ipc_shell_pid(const milk_client_hooks_t *hooks);
+
+/* One `@set` item and its comment */
+typedef struct
+{
+    const char *spec;    /* `name` or `name=value` */
+    const char *val;     /* the value of `name [=] value`, or NULL */
+    const char *comment; /* or NULL */
+} milk_set_item_t;
+
+/** milk_set_item() - read the `@set` item at @argv[*@i] into @it and move *@i past it. */
+void milk_set_item(int argc, char *const *argv, int *i, milk_set_item_t *it);
+
+#endif /* MILK_IPC_COMMON_H */

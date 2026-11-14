@@ -212,12 +212,10 @@ int main(int argc, char *argv[])
         default:
             printf("\n\033[1;31mERROR\033[0m: Invalid option.\n\n");
             print_help(argv[0], 1);
-            return 1;
+            return 2;
         }
     }
 
     // Run the tool
-    processinfo_CTRLscreen();
-
-    return 0;
+    return (processinfo_CTRLscreen() == 0) ? 0 : 1; /* RETURN_SUCCESS */
 }

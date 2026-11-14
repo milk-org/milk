@@ -7,9 +7,8 @@
  * @brief CLI stream monitor (standalone, no CLIcore)
  *
  * Continuously scans and displays shared memory
- * streams. Standalone replacement for the ncurses
- * milk-streamCTRL TUI when CLI mode is not
- * available.
+ * streams, line by line: a companion of milk-CTRL's
+ * streams view (milk-streamCTRL) for logs and pipes.
  *
  * Only depends on ImageStreamIO and milkdata.
  */
@@ -240,8 +239,8 @@ static void print_help(const char *progname, int mh_color)
 
     milk_help_section("Description", mh_color);
     printf("  Standalone CLI stream monitor. Continuously scans and displays shared memory\n"
-           "  streams. Standalone replacement for the ncurses milk-streamCTRL TUI when\n"
-           "  CLI mode is not available.\n\n");
+           "  streams, line by line: a companion of milk-CTRL's streams view\n"
+           "  (milk-streamCTRL) for logs and pipes.\n\n");
 
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-n, --interval SEC", mh_color ? MH_RST : "",
@@ -257,7 +256,7 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s%-25s%s %s\n\n", mh_color ? MH_OPT : "", "-hm, --help-mono", mh_color ? MH_RST : "",
            "Full help, no ANSI color");
 
-    const char *see_also[] = { "milk-streamCTRL:launch the stream control dashboard TUI",
+    const char *see_also[] = { "milk-streamCTRL:milk-CTRL on its streams view (dashboard TUI)",
                                "milk-stream-info:inspect stream metadata and data",
                                "milk-stream-list:list active shared memory streams" };
     milk_help_see_also(see_also, 3, mh_color);
@@ -270,7 +269,7 @@ int main(int argc, char *argv[])
     int action = milk_help_init(
         argc, argv, "command-line interface for monitoring shared memory streams",
         "Standalone CLI stream monitor. Continuously scans and displays shared memory\n"
-        "streams. Standalone replacement for the ncurses milk-streamCTRL TUI.");
+        "streams. Line-oriented companion of milk-CTRL's streams view (milk-streamCTRL).");
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;

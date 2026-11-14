@@ -12,11 +12,6 @@
 
 #include <libfps/IMGID.h>
 
-#include "milk_runnable.h"
-
-extern const MILK_RUNNABLE runnable_COREMOD_arith_image_arith__im_f_f__im;
-
-
 int arith_image_trunc(const char *ID_name, double f1, double f2, const char *ID_out);
 
 int arith_image_trunc_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout);

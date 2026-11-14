@@ -1,0 +1,323 @@
+// SPDX-FileCopyrightText: 2026 Olivier Guyon et al
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+/**
+ * @file mc_ext_registry.c
+ * @brief In-memory registry and ABI/parameter layout validator for `milk_calc_ext` extensions.
+ *
+ * Purpose:     one table where every C extension, built-in or loaded, is checked once and then
+ *              found by name, so the resolver and the run-time steps never meet a bad entry.
+ * Does:        milk_calc_ext_register_table() refuses a table whose abi_version is not
+ *              MILK_CALC_EXT_ABI_VERSION. milk_calc_ext_register() strips the quotes a macro may
+ *              leave around the name, and refuses the name of a built-in function
+ *              (mc_func_find()), a stencil radius outside 1..3, and a parameter table with more
+ *              than MILK_CALC_MAX_PARAMS fields, a struct over MILK_CALC_PARAM_BYTES, or a field
+ *              that is not numeric or whose size or offset does not fit its FPTYPE_*, and an
+ *              operator with more than MILK_CALC_MAX_PORTS input or output ports. It copies
+ *              the name; an entry registered again under the same name replaces the old one in
+ *              place. milk_calc_ext_find(), milk_calc_ext_get() and milk_calc_ext_count() look
+ *              entries up. At most 64 entries (CALC_EXT_MAX_ENTRIES).
+ * Used by:     ext/mc_ext_loader.c (loaded libraries) and the MILK_CALC_MODULE_EXPORT constructor
+ *              (ext/mc_ext_builtin.c) to register; front/mc_lex.c (which names take a
+ *              `:label`), front/mc_resolve.c, ext/mc_ext_exec.c,
+ *              ext/mc_ext_loader.c, linalg/mc_linalg_blas.c and mc_func.c (`@calc --list`) to
+ *              look up. Declared in milk_calc_ext.h.
+ * Uses:        milk_calc_ext.h, mc_func.h (built-in names are reserved).
+ * See also:    ext/mc_ext_loader.c;
+ *              docs/guide/calc_c_extensions.md, "FPS Parameter Binding Rules" (the limits);
+ *              docs/guide/calculator.md, "Operators" (reserved names).
+ * Constraints: also compiled into libmilkbash.so, the thin client every shell loads, for
+ *              `@calc --list` without a session (mc_func.c); no extension is registered there.
+ */
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "mc_func.h"
+#include "milk_calc_ext.h"
+
+/* Maximum number of registered extension kernels and operators per process. */
+#define CALC_EXT_MAX_ENTRIES 64
+
+static milk_calc_ext_entry_t ext_entries_storage[CALC_EXT_MAX_ENTRIES];
+static char                  ext_names_storage[CALC_EXT_MAX_ENTRIES][64];
+static int                   ext_nentries = 0;
+
+/* ============================================================================================== */
+/* Parameter Struct Layout Validation                                                             */
+/* ============================================================================================== */
+
+/**
+ * param_fptype_size - Return the expected C field byte size for an FPS numeric parameter type
+ * @fptype: `FPTYPE_*` token from `fps_types.h`
+ *
+ * Return: Expected field size in bytes (`4`, `8`, or `sizeof(int)`), or `0` if unsupported
+ */
+static size_t param_fptype_size(uint32_t fptype)
+{
+    switch (fptype)
+    {
+    case FPTYPE_FLOAT64:
+    case FPTYPE_INT64:
+    case FPTYPE_UINT64:
+        return 8;
+    case FPTYPE_FLOAT32:
+    case FPTYPE_INT32:
+    case FPTYPE_UINT32:
+        return 4;
+    case FPTYPE_ONOFF:
+        return sizeof(int);
+    default:
+        return 0;
+    }
+}
+
+/**
+ * check_param_set - Validate an extension's `milk_calc_param_set_t` specification table
+ * @cname: Normalized extension name for error reporting
+ * @e:     Extension entry being registered
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Verifies that `ps->nparams <= MILK_CALC_MAX_PARAMS`, `ps->struct_size <= MILK_CALC_PARAM_BYTES`,
+ * and every parameter field has a supported numeric `FPTYPE_*` whose byte size and offset fit
+ * within `ps->struct_size`.
+ *
+ * Return: 0 if valid (or if the extension has no parameters), -1 on layout mismatch
+ */
+static int check_param_set(const char                  *cname,
+                           const milk_calc_ext_entry_t *e,
+                           char                        *err,
+                           size_t                       errsz)
+{
+    const milk_calc_param_set_t *ps = (e->get_params != NULL) ? e->get_params() : NULL;
+    if (ps == NULL || ps->nparams == 0)
+    {
+        return 0;
+    }
+    if (ps->nparams < 0 || ps->nparams > MILK_CALC_MAX_PARAMS || ps->specs == NULL)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "'%s': %d parameters, milk.calc packs at most %d", cname,
+                     ps->nparams, MILK_CALC_MAX_PARAMS);
+        }
+        return -1;
+    }
+    if (ps->struct_size > MILK_CALC_PARAM_BYTES)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "'%s': parameter struct of %zu bytes, milk.calc packs at most %d",
+                     cname, ps->struct_size, MILK_CALC_PARAM_BYTES);
+        }
+        return -1;
+    }
+    for (int i = 0; i < ps->nparams; i++)
+    {
+        const milk_calc_param_spec_t *sp   = &ps->specs[i];
+        const char                   *pn   = (sp->name != NULL) ? sp->name : "?";
+        size_t                        need = param_fptype_size(sp->fptype);
+        if (need == 0)
+        {
+            if (err != NULL && errsz > 0)
+            {
+                snprintf(err, errsz,
+                         "'%s': parameter '%s' has a type milk.calc cannot pack (numeric only)",
+                         cname, pn);
+            }
+            return -1;
+        }
+        if (sp->size != need || sp->offset > ps->struct_size || sp->offset + need > ps->struct_size)
+        {
+            if (err != NULL && errsz > 0)
+            {
+                snprintf(err, errsz,
+                         "'%s': parameter '%s' (%zu bytes at offset %zu) does not fit its type",
+                         cname, pn, sp->size, sp->offset);
+            }
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* ============================================================================================== */
+/* Public Extension Registry API                                                                  */
+/* ============================================================================================== */
+
+/**
+ * milk_calc_ext_register - Validate and register a single `milk_calc_ext_entry_t` descriptor
+ * @e:     Extension descriptor to register
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Copies `e->name` into internal static storage (`ext_names_storage`) so the registered entry
+ * remains valid even if the caller's descriptor was temporary. If an entry with the same name is
+ * already registered, updates it in place.
+ *
+ * Return: 0 on success, -1 on validation error or registry full
+ */
+int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t errsz)
+{
+    if (e == NULL || e->name == NULL || e->name[0] == '\0')
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "invalid extension entry (empty name)");
+        }
+        return -1;
+    }
+    char        cname[64];
+    const char *np   = e->name;
+    size_t      nlen = strlen(np);
+    if (nlen >= 2 && np[0] == '"' && np[nlen - 1] == '"')
+    {
+        np++;
+        nlen -= 2;
+    }
+    if (nlen == 0 || nlen >= sizeof(cname))
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "invalid extension name '%s'", e->name);
+        }
+        return -1;
+    }
+    memcpy(cname, np, nlen);
+    cname[nlen] = '\0';
+    if (mc_func_find(cname) != NULL)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "extension '%s' has the name of a built-in function", cname);
+        }
+        return -1;
+    }
+
+    if (e->kind == MILK_EXT_STENCIL && (e->radius < 1 || e->radius > 3))
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "stencil '%s': radius %d out of range 1..3", cname, e->radius);
+        }
+        return -1;
+    }
+    if (check_param_set(cname, e, err, errsz) != 0)
+    {
+        return -1;
+    }
+    const milk_calc_op_ports_t *pts = (e->get_ports != NULL) ? e->get_ports() : NULL;
+    if (pts != NULL && (pts->nin < 0 || pts->nin > MILK_CALC_MAX_PORTS || pts->nout < 0 ||
+                        pts->nout > MILK_CALC_MAX_PORTS))
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "'%s': %d input and %d output ports, at most %d of each", cname,
+                     pts->nin, pts->nout, MILK_CALC_MAX_PORTS);
+        }
+        return -1;
+    }
+    for (int i = 0; i < ext_nentries; i++)
+    {
+        if (strcmp(ext_entries_storage[i].name, cname) == 0)
+        {
+            snprintf(ext_names_storage[i], sizeof(ext_names_storage[i]), "%s", cname);
+            ext_entries_storage[i]      = *e;
+            ext_entries_storage[i].name = ext_names_storage[i];
+            return 0;
+        }
+    }
+    if (ext_nentries >= CALC_EXT_MAX_ENTRIES)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "too many registered calc extensions (max %d)",
+                     CALC_EXT_MAX_ENTRIES);
+        }
+        return -1;
+    }
+    snprintf(ext_names_storage[ext_nentries], sizeof(ext_names_storage[ext_nentries]), "%s", cname);
+    ext_entries_storage[ext_nentries]      = *e;
+    ext_entries_storage[ext_nentries].name = ext_names_storage[ext_nentries];
+    ext_nentries++;
+    return 0;
+}
+
+/**
+ * milk_calc_ext_register_table - Verify ABI version and register all entries in @tbl
+ * @tbl:   Exported extension table (`__milk_calc_ext_table`)
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Return: 0 if all entries in @tbl were registered, -1 on ABI mismatch or entry error
+ */
+int milk_calc_ext_register_table(const milk_calc_ext_table_t *tbl, char *err, size_t errsz)
+{
+    if (tbl == NULL)
+    {
+        return -1;
+    }
+    if (tbl->abi_version != MILK_CALC_EXT_ABI_VERSION)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "extension ABI version %u != expected %u", tbl->abi_version,
+                     (unsigned) MILK_CALC_EXT_ABI_VERSION);
+        }
+        return -1;
+    }
+    for (int i = 0; i < tbl->nentries; i++)
+    {
+        if (milk_calc_ext_register(tbl->entries[i], err, errsz) != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * milk_calc_ext_find - Find a registered extension's index by name
+ * @name: Extension function name (without `:label` suffix)
+ *
+ * Return: Index in `[0, milk_calc_ext_count())` if found, or -1 if not registered
+ */
+int milk_calc_ext_find(const char *name)
+{
+    if (name == NULL || name[0] == '\0')
+    {
+        return -1;
+    }
+    for (int i = 0; i < ext_nentries; i++)
+    {
+        if (strcmp(ext_entries_storage[i].name, name) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * milk_calc_ext_get - Retrieve a registered extension descriptor by index
+ * @idx: Index returned by `milk_calc_ext_find()` or in `[0, milk_calc_ext_count())`
+ *
+ * Return: Pointer to `milk_calc_ext_entry_t`, or NULL if @idx is out of range
+ */
+const milk_calc_ext_entry_t *milk_calc_ext_get(int idx)
+{
+    return (idx >= 0 && idx < ext_nentries) ? &ext_entries_storage[idx] : NULL;
+}
+
+/**
+ * milk_calc_ext_count - Return the number of currently registered extensions
+ *
+ * Return: Count of registered extensions (`0 .. CALC_EXT_MAX_ENTRIES`)
+ */
+int milk_calc_ext_count(void)
+{
+    return ext_nentries;
+}

@@ -94,6 +94,8 @@ PROCESSINFO *processinfo_setup(
 
     DEBUG_TRACEPOINT(" ");
 
+    processinfo_self = processinfo;
+
     DEBUG_TRACE_FEXIT();
 
     return processinfo;
@@ -126,7 +128,7 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
     processinfo->loopcnt  = 0;
     processinfo->loopstat = 1;
 
-    if (processinfo->RT_priority > -1)
+    if (processinfo->RT_priority > 0) /* 0 and -1: no real-time scheduling */
     {
         struct sched_param schedpar;
         schedpar.sched_priority = processinfo->RT_priority;
@@ -137,11 +139,12 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
                     "WARNING: RT priority %d requested"
                     " but sched_setscheduler failed:"
                     " %s\n"
-                    "  Run 'sudo milk-setup-caps' to"
-                    " grant CAP_SYS_NICE.\n",
+                    "  Allow it with an rtprio limit, LimitRTPRIO= in a systemd unit,"
+                    " or a root-owned milk-makecsetandrt\n"
+                    "  (docs/operations/performance.md, 3.2 Permissions).\n",
                     processinfo->RT_priority, strerror(errno));
             processinfo_WriteMessage(processinfo, "RT prio failed - "
-                                                  "run milk-setup-caps");
+                                                  "no rtprio permission");
         }
     }
 

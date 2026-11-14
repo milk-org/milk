@@ -84,7 +84,6 @@ def test_registries_are_populated():
         "RunStop",
         "DeapplyAllLinkages",
         "ConfStop",
-        "KillTmux",
         "DestroyFPS",
         "ReleaseRundir",
     } <= set(TASKS.names())
@@ -103,7 +102,6 @@ def test_generic_plans_shape():
         "RunStop",
         "DeapplyAllLinkages",
         "ConfStop",
-        "KillTmux",
         "DestroyFPS",
         "ReleaseRundir",
     ]
@@ -321,16 +319,6 @@ def test_conf_plans_key_restricts(pp, probes):
 def test_unknown_plan_refused(pp):
     with pytest.raises(ConfigError, match="nosuchplan"):
         run_plan(pp, "nosuchplan")
-
-
-def test_teardown_kill_tmux_key():
-    from milk.config.model import PipelineConfig
-
-    base = {"long_name": "x", "name": "x", "loop_number": 1}
-    assert PipelineConfig.model_validate(base).teardown_kill_tmux is False
-    assert PipelineConfig.model_validate(
-        {**base, "teardown_kill_tmux": True}
-    ).teardown_kill_tmux
 
 
 # ---- linkages ----

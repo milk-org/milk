@@ -9,231 +9,103 @@
 
 #include "overview_input_internal.h"
 
-/**
- * ov_input__handle_navigation - dispatch cursor keys, paging, and scroll navigation.
- * @key: Pressed key code (arrows, Home/End, PgUp/PgDn, etc.).
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- *
- * Return: 1 if navigation key was consumed, 0 otherwise.
- */
-int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+/** ov_input__detail_scroll_to - make line @top the first one of the DETAILS / RESOURCES text shown. */
+void ov_input__detail_scroll_to(OV_LAYOUT *lay, int top)
+{
+    int last           = lay->detail_total_lines - (lay->r_graph.height - 3);
+    last               = (last > 0) ? last : 0;
+    lay->scroll_detail = (top < 0) ? 0 : (top > last) ? last : top;
+}
+
+/** detail_scroll - scroll DETAILS / RESOURCES text by line, page, or to an end. Return: 1 for those keys. */
+static int detail_scroll(int key, OV_LAYOUT *lay)
+{
+    int page = lay->r_graph.height - 3;
+    int top  = lay->scroll_detail;
+    switch (key)
+    {
+    case OV_KEY_UP:
+        top--;
+        break;
+    case OV_KEY_DOWN:
+        top++;
+        break;
+    case OV_KEY_PGUP:
+        top -= page;
+        break;
+    case OV_KEY_PGDN:
+        top += page;
+        break;
+    case OV_KEY_HOME:
+        top = 0;
+        break;
+    case OV_KEY_END:
+        top = lay->detail_total_lines;
+        break;
+    default:
+        return 0;
+    }
+    ov_input__detail_scroll_to(lay, top);
+    return 1;
+}
+
+/** list_nav - arrows, pages, Home / End in the focused list, loop list, CONNECTIONS, or DETAILS text. */
+static int list_nav(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
     int *sel                            = NULL;
     int *scroll __attribute__((unused)) = NULL;
     int  count                          = 0;
     int  page_h                         = 10;
 
-    /* F5 view (OV_VIEW_FPS) param-tree intercept */
-    if (lay->view == OV_VIEW_FPS)
-    {
-        int rc = ov_input_nav_fps(key, lay, m);
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
-
     switch (lay->focus)
     {
     case OV_FOCUS_STREAMS:
-        sel    = &lay->sel_stream;
-        scroll = &lay->scroll_stream;
+        sel    = &lay->panel[OV_FOCUS_STREAMS].sel;
+        scroll = &lay->panel[OV_FOCUS_STREAMS].scroll;
         {
             int fidx[OV_MAX_STREAMS];
-            count = ov_filter_streams(lay, m, NULL, fidx, OV_MAX_STREAMS);
+            count = ov_rows(lay, m, OV_FOCUS_STREAMS, fidx, OV_MAX_STREAMS);
         }
         page_h = lay->r_streams.height - 3;
         break;
 
     case OV_FOCUS_PROCS:
-        sel    = &lay->sel_proc;
-        scroll = &lay->scroll_proc;
+        sel    = &lay->panel[OV_FOCUS_PROCS].sel;
+        scroll = &lay->panel[OV_FOCUS_PROCS].scroll;
         {
             int fidx[OV_MAX_PROCS];
-            count = ov_filter_procs(lay, m, NULL, fidx, OV_MAX_PROCS);
+            count = ov_rows(lay, m, OV_FOCUS_PROCS, fidx, OV_MAX_PROCS);
         }
         page_h = lay->r_procs.height - 3;
         break;
 
     case OV_FOCUS_FPS:
-        sel    = &lay->sel_fps;
-        scroll = &lay->scroll_fps;
+        sel    = &lay->panel[OV_FOCUS_FPS].sel;
+        scroll = &lay->panel[OV_FOCUS_FPS].scroll;
         {
             int fidx[OV_MAX_FPS];
-            count = ov_filter_fps(lay, m, NULL, fidx, OV_MAX_FPS);
+            count = ov_rows(lay, m, OV_FOCUS_FPS, fidx, OV_MAX_FPS);
         }
         page_h = lay->r_fps.height - 3;
         break;
 
     case OV_FOCUS_GRAPH:
-        if (lay->graph_tab_mode == 0)
+        /* F7 always draws the loop list, whatever the DASH sub-tab */
+        if (lay->view == OV_VIEW_LOOPS || lay->subtab == OV_SUB_LOOPS)
         {
-            sel    = &lay->sel_graph;
-            scroll = &lay->scroll_graph;
-            {
-                int start_node = ov_input_get_graph_start_node(lay, m);
-                if (start_node >= 0)
-                {
-                    SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                    count = sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-                }
-                else
-                {
-                    count = 0;
-                }
-            }
-            page_h = lay->r_graph.height - 3;
+            sel   = &lay->sub[OV_SUB_LOOPS].sel;
+            count = m->nb_loops;
         }
-        else if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+        else if (lay->subtab == OV_SUB_CONN)
         {
-            sel    = &lay->sel_loop;
-            scroll = &lay->scroll_loop;
-            count  = m->nb_loops;
-            page_h = (lay->r_graph.height - 3 >= 6)
-                         ? ((lay->r_graph.height - 3 > 8) ? ((lay->r_graph.height - 3) / 2) : 3)
-                         : (lay->r_graph.height - 3);
-            break;
-        }
-        else if (lay->graph_tab_mode == 2)
-        {
-            /* DETAILS tab: param nav if FPS selected */
-            int fps_sel = lay->freeze ? lay->freeze_sel_fps : lay->sel_fps;
-            int has_fps_params =
-                (fps_sel >= 0 && fps_sel < m->nb_fps && m->fps[fps_sel].nb_disp_params > 0);
-            int nparams = has_fps_params ? m->fps[fps_sel].nb_disp_params : 0;
-
-            if (has_fps_params && lay->param_sel >= 0)
-            {
-                /* Navigate parameter cursor */
-                if (key == OV_KEY_UP)
-                {
-                    if (lay->param_sel > 0)
-                    {
-                        lay->param_sel--;
-                    }
-                }
-                else if (key == OV_KEY_DOWN)
-                {
-                    if (lay->param_sel < nparams - 1)
-                    {
-                        lay->param_sel++;
-                    }
-                }
-                else if (key == OV_KEY_PGUP)
-                {
-                    lay->param_sel -= page_h;
-                    if (lay->param_sel < 0)
-                    {
-                        lay->param_sel = 0;
-                    }
-                }
-                else if (key == OV_KEY_PGDN)
-                {
-                    lay->param_sel += page_h;
-                    if (lay->param_sel >= nparams)
-                    {
-                        lay->param_sel = nparams - 1;
-                    }
-                }
-                else if (key == OV_KEY_HOME)
-                {
-                    lay->param_sel = 0;
-                }
-                else if (key == OV_KEY_END)
-                {
-                    lay->param_sel = nparams - 1;
-                    if (lay->param_sel < 0)
-                    {
-                        lay->param_sel = 0;
-                    }
-                }
-                else if (key == OV_KEY_ESC)
-                {
-                    lay->param_sel = -1;
-                }
-                else if (key == OV_KEY_ENTER || key == '\r' || key == '\n')
-                {
-                    if (!lay->ctrl_mode)
-                    {
-                        ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_WARN,
-                                       "Edit requires "
-                                       "CONTROL mode (press c to toggle CTRL mode ON/OFF)");
-                    }
-                    else
-                    {
-                        ov_fps_inline_edit(lay, m->fps[fps_sel].name, lay->param_sel);
-                    }
-                }
-                return 1;
-            }
-
-            /* Init param_sel on first nav key */
-            if (has_fps_params && lay->param_sel < 0 && (key == OV_KEY_DOWN || key == OV_KEY_UP))
-            {
-                lay->param_sel = 0;
-                return 1;
-            }
-
-            /* Fallback: detail scroll */
-            sel    = NULL;
-            scroll = NULL;
-            count  = lay->detail_total_lines;
-            page_h = lay->r_graph.height - 3;
-
-            if (key == OV_KEY_UP)
-            {
-                if (lay->scroll_detail > 0)
-                {
-                    lay->scroll_detail--;
-                }
-            }
-            else if (key == OV_KEY_DOWN)
-            {
-                if (lay->scroll_detail < lay->detail_total_lines - page_h)
-                {
-                    lay->scroll_detail++;
-                }
-            }
-            else if (key == OV_KEY_PGUP)
-            {
-                lay->scroll_detail -= page_h;
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-            }
-            else if (key == OV_KEY_PGDN)
-            {
-                lay->scroll_detail += page_h;
-                if (lay->scroll_detail > lay->detail_total_lines - page_h)
-                {
-                    lay->scroll_detail = lay->detail_total_lines - page_h;
-                }
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-            }
-            else if (key == OV_KEY_HOME)
-            {
-                lay->scroll_detail = 0;
-            }
-            else if (key == OV_KEY_END)
-            {
-                lay->scroll_detail = lay->detail_total_lines - page_h;
-                if (lay->scroll_detail < 0)
-                {
-                    lay->scroll_detail = 0;
-                }
-            }
-            return 1;
+            sel = &lay->sub[OV_SUB_CONN].sel;
+            ov_graph_rows(lay, m, &count);
         }
         else
         {
-            sel    = NULL;
-            scroll = NULL;
+            return detail_scroll(key, lay); /* DETAILS text (parameters: sub-tab keys), RESOURCES */
         }
+        page_h = ov_subtab_page(lay);
         break;
 
     default:
@@ -309,83 +181,14 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
         {
             if (navigated)
             {
-                if (lay->focus == OV_FOCUS_STREAMS)
+                if (lay->focus < OV_FOCUS_GRAPH)
                 {
-                    lay->sel_name_stream[0] = '\0';
+                    ov_sel_row(lay, m, lay->focus,
+                               *sel); /* the cursor is the identity of this row */
                 }
-                else if (lay->focus == OV_FOCUS_PROCS)
+                if (lay->focus == OV_FOCUS_FPS && lay->view == OV_VIEW_FPS)
                 {
-                    lay->sel_name_proc[0] = '\0';
-                }
-                else if (lay->focus == OV_FOCUS_FPS)
-                {
-                    lay->sel_name_fps[0] = '\0';
-                    if (lay->view == OV_VIEW_FPS)
-                    {
-                        lay->fps_param_focus = 0;
-                    }
-                }
-
-                if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 0 && *sel != old_sel)
-                {
-                    int start_node = ov_input_get_graph_start_node(lay, m);
-                    if (start_node >= 0)
-                    {
-                        SG_RENDER_NODE rnodes[OV_MAX_NODES];
-                        int            n_rnodes =
-                            sg_compute_render_nodes(m, start_node, lay->lineage_mode, rnodes);
-                        if (*sel < n_rnodes)
-                        {
-                            const SG_RENDER_NODE *rn   = &rnodes[*sel];
-                            const OV_NODE        *node = &m->nodes[rn->node_idx];
-
-                            if (node->type == OV_NODE_STREAM)
-                            {
-                                lay->sel_stream         = node->index;
-                                lay->sel_name_stream[0] = '\0';
-                                if (lay->sel_stream < lay->scroll_stream)
-                                {
-                                    lay->scroll_stream = lay->sel_stream;
-                                }
-                                if (lay->r_streams.height > 3 &&
-                                    lay->sel_stream >=
-                                        lay->scroll_stream + lay->r_streams.height - 3)
-                                {
-                                    lay->scroll_stream =
-                                        lay->sel_stream - (lay->r_streams.height - 3) + 1;
-                                }
-                            }
-                            else if (node->type == OV_NODE_PROC)
-                            {
-                                lay->sel_proc         = node->index;
-                                lay->sel_name_proc[0] = '\0';
-                                if (lay->sel_proc < lay->scroll_proc)
-                                {
-                                    lay->scroll_proc = lay->sel_proc;
-                                }
-                                if (lay->r_procs.height > 3 &&
-                                    lay->sel_proc >= lay->scroll_proc + lay->r_procs.height - 3)
-                                {
-                                    lay->scroll_proc =
-                                        lay->sel_proc - (lay->r_procs.height - 3) + 1;
-                                }
-                            }
-                            else if (node->type == OV_NODE_FPS)
-                            {
-                                lay->sel_fps         = node->index;
-                                lay->sel_name_fps[0] = '\0';
-                                if (lay->sel_fps < lay->scroll_fps)
-                                {
-                                    lay->scroll_fps = lay->sel_fps;
-                                }
-                                if (lay->r_fps.height > 3 &&
-                                    lay->sel_fps >= lay->scroll_fps + lay->r_fps.height - 3)
-                                {
-                                    lay->scroll_fps = lay->sel_fps - (lay->r_fps.height - 3) + 1;
-                                }
-                            }
-                        }
-                    }
+                    lay->fps_param_focus = 0;
                 }
             }
             return 1;
@@ -393,4 +196,20 @@ int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
     }
 
     return 0;
+}
+
+static const OV_KEYBIND nav_keys[] = {
+    { { OV_KEY_SHIFT_UP, OV_KEY_SHIFT_DOWN }, 0, 0, ov_input__handle_ancestry_nav },
+    { { OV_KEY_ANY }, OV_CTX_F5, 0, ov_input_nav_fps },  /* F5 parameter tree first */
+    { { OV_KEY_ANY }, OV_CTX_F3, 0, ov_input_nav_insp }, /* F3 stream inspector first */
+    { { OV_KEY_UP, OV_KEY_DOWN, OV_KEY_PGUP, OV_KEY_PGDN, OV_KEY_HOME, OV_KEY_END },
+      0,
+      0,
+      list_nav },
+};
+
+/** ov_input__handle_navigation - lineage jumps, the F5 tree, and cursor movement. Return: 1 consumed. */
+int ov_input__handle_navigation(int key, OV_LAYOUT *lay, const OV_MODEL *m)
+{
+    return ov_key_dispatch(nav_keys, OV_KEYBIND_N(nav_keys), key, lay, m);
 }

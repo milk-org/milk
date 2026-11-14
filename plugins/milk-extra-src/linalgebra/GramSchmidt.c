@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
@@ -20,19 +21,22 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inmodes   = NULL;
-static char    *outmodes  = NULL;
-static char    *auxmat    = NULL;
-static int32_t *GPUdevice = NULL;
+static char    inmodes[FUNCTION_PARAMETER_STRMAXLEN]  = "inm";
+static char    outmodes[FUNCTION_PARAMETER_STRMAXLEN] = "outm";
+static char    auxmat[FUNCTION_PARAMETER_STRMAXLEN]   = "auxmat";
+static int32_t GPUdevice                              = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                  \
-    X(".inmodes", &inmodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes") \
-    X(".outmodes", &outmodes, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")
+#define FPS_PARAMS(X)                                                                 \
+    X(".inmodes", inmodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input modes") \
+    X(".outmodes", outmodes, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output modes")  \
+    X(".auxmat", auxmat, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT,                      \
+      "optional aux matrix, co-transformed")                                          \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -89,48 +93,54 @@ errno_t GramSchmidt(IMGID imginm, IMGID *imgoutm, IMGID imgaux, int GPUdev __att
 
     printf("xysize = %u, zsize = %u\n", xysize, zsize);
 
+    int nth = milk_omp_team_size((uint64_t) xysize, 262144);
+
     printf("\n");
     for (uint32_t kk = 0; kk < zsize; kk++)
     {
         printf("\rGS mode %6u / %6u     ", kk, zsize);
 
+        float *restrict vk = &imgoutm->im->array.F[(uint64_t) kk * xysize];
+
         // initialization
-        memcpy(&imgoutm->im->array.F[kk * xysize], &imginm.im->array.F[kk * xysize],
-               sizeof(float) * xysize);
+        __builtin_memcpy(vk, &imginm.im->array.F[(uint64_t) kk * xysize], sizeof(float) * xysize);
 
         for (uint32_t kk0 = 0; kk0 < kk; kk0++)
         {
-            // cross-product
-            double xpval = 0.0;
+            const float *restrict v0ptr = &imgoutm->im->array.F[(uint64_t) kk0 * xysize];
 
-            // square sum v0
+            // cross-product and square sum v0
+            double xpval   = 0.0;
             double sqrsum0 = 0.0;
 
+#pragma omp parallel for simd reduction(+ : xpval, sqrsum0) num_threads(nth) if (parallel : nth > 1)
             for (uint32_t ii = 0; ii < xysize; ii++)
             {
-                float v0 = imgoutm->im->array.F[kk0 * xysize + ii];
-                float v1 = imgoutm->im->array.F[kk * xysize + ii];
+                float v0 = v0ptr[ii];
+                float v1 = vk[ii];
 
-                xpval += v0 * v1;
-                sqrsum0 += v0 * v0;
+                xpval += (double) v0 * (double) v1;
+                sqrsum0 += (double) v0 * (double) v0;
             }
 
-            float vcoeff = xpval / sqrsum0;
+            float vcoeff = (float) (xpval / sqrsum0);
 
             //printf("  %5u  %5u   %f\n", kk, kk0, vcoeff);
 
+#pragma omp parallel for simd num_threads(nth) if (parallel : nth > 1)
             for (uint32_t ii = 0; ii < xysize; ii++)
             {
-                imgoutm->im->array.F[kk * xysize + ii] -=
-                    vcoeff * imgoutm->im->array.F[kk0 * xysize + ii];
+                vk[ii] -= vcoeff * v0ptr[ii];
             }
 
             if (imgaux.ID != -1)
             {
+                float *restrict auxk        = &imgaux.im->array.F[(uint64_t) kk * xysizeaux];
+                const float *restrict auxk0 = &imgaux.im->array.F[(uint64_t) kk0 * xysizeaux];
+#pragma omp simd
                 for (uint32_t ii = 0; ii < xysizeaux; ii++)
                 {
-                    imgaux.im->array.F[kk * xysizeaux + ii] -=
-                        vcoeff * imgaux.im->array.F[kk0 * xysizeaux + ii];
+                    auxk[ii] -= vcoeff * auxk0[ii];
                 }
             }
         }
@@ -168,7 +178,7 @@ static MILK_HOT errno_t GramSchmidt_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        GramSchmidt(imginm, &imgoutm, imgaux, *GPUdevice);
+        GramSchmidt(imginm, &imgoutm, imgaux, GPUdevice);
     }
     MILK_PROCINFO_END(self)
 

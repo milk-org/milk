@@ -23,4 +23,6 @@
  */
 int ov_fps_inline_edit(OV_LAYOUT *lay, const char *fps_name, int disp_idx);
 
+const char *ov_fps_param_rc_msg(int rc);
+
 #endif /* OVERVIEW_FPS_EDIT_H */

@@ -16,8 +16,6 @@
 #include <string.h>
 
 /* Required by overview_defs.h (extern) */
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
 
 /**
  * print_help - Print command-line help message for milk-stream-info

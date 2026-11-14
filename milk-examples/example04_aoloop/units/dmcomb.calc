@@ -1,0 +1,2 @@
+# DM combiner (trigger dmtrig, which trigmerge writes when any DM channel is written)
+dm = clamp(dmch0 + dmch1 + dmch2 + dmch3, -maxstroke, maxstroke)

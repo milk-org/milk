@@ -236,8 +236,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
                 imgout.mdt->datatype = _DATATYPE_FLOAT;
                 imgout.mdt->shared   = 1;
                 imgout.mdt->NBkw     = 10;
-                imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-                imgid_mkimage(&imgout);
+                imgid_create_registered(&imgout);
                 gpumatmultconf[index].IDout = imgout.ID;
             }
         }
