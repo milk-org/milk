@@ -46,6 +46,7 @@ static char     insname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     inmasksname[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static char     immodes[FUNCTION_PARAMETER_STRMAXLEN]     = "";
 static char     outcoeff[FUNCTION_PARAMETER_STRMAXLEN]    = "";
+static char     outref[FUNCTION_PARAMETER_STRMAXLEN]      = "";
 static uint32_t axis_mode                                 = 1;
 static int64_t  opt_modenorm                              = 1;
 
@@ -62,6 +63,8 @@ static int64_t  opt_modenorm                              = 1;
       "spatial mask stream name")                                                               \
     X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
     X(".outcoeff", outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients") \
+    X(".outref", outref, FPTYPE_STREAMNAME, 0, FPFLAG_DEFAULT_INPUT,                            \
+      "optional output reference offset stream")                                                \
     X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
       "axis mode: 0=extract, 1=expand")                                                         \
     X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
@@ -160,8 +163,12 @@ ComputeMode _compute_mode_determine(PROCESSINFO *processinfo)
         }
     }
 #ifdef HAVE_BLAS
-    if (GPUindex == 99)
+    if (GPUindex != 98)
     {
+        if (GPUindex != 99)
+        {
+            printf("CUDA unavailable for GPUindex %d -> falling back to BLAS\n", GPUindex);
+        }
         printf("-------------\nBACKEND: BLAS [%s]\n-------------\n", BLAS_LIB);
         return ComputeMode::BLAS;
     }
@@ -269,11 +276,11 @@ static MILK_HOT errno_t MVMextract_compute(const MILK_RUNNABLE *self)
     // CONNECT TO INPUT STREAM
     IMGID imgid_in = imgid_make_from_name(insname);
     resolveIMGID(&imgid_in, ERRMODE_WARN, dcimg, dcnimg);
-    printf("Input stream size : %u %u\n", imgid_in.md->size[0], imgid_in.md->size[1]);
-    if (imgid_in.ID == -1)
+    if (imgid_in.ID == -1 || imgid_in.md == NULL)
     {
         return RETURN_FAILURE;
     }
+    printf("Input stream size : %u %u\n", imgid_in.md->size[0], imgid_in.md->size[1]);
     uint64_t nb_modes; // later
 
     // CONNECT TO MASK STREAM
@@ -348,6 +355,32 @@ static MILK_HOT errno_t MVMextract_compute(const MILK_RUNNABLE *self)
     IMGID imgid_out = stream_connect_create_2Df32(
         outcoeff, axis_mode == 0 ? nb_modes : modes_size[0], axis_mode == 0 ? 1 : modes_size[1]);
     memset(imgid_out.im->array.F, 0, imgid_out.md->imdatamemsize);
+
+    uint64_t out_nelem        = (axis_mode == 0) ? nb_modes : n_pixels_spatial_side;
+    int      use_outref       = 0;
+    uint64_t outref_cnt0_prev = UINT64_MAX;
+    float   *outref_float_buf = NULL;
+    IMGID    imgid_outref     = imgid_make_from_name(outref);
+    if (outref[0] != '\0' && resolveIMGID(&imgid_outref, ERRMODE_WARN, dcimg, dcnimg) != -1)
+    {
+        if (imgid_outref.md->nelement == out_nelem)
+        {
+            use_outref = 1;
+            if (imgid_outref.md->datatype != _DATATYPE_FLOAT)
+            {
+                outref_float_buf = (float *) malloc(sizeof(float) * out_nelem);
+                cast_to_float(outref_float_buf, imgid_outref.im, out_nelem);
+                outref_cnt0_prev = imgid_outref.md->cnt0;
+            }
+            printf("Output reference stream '%s' enabled (%lu elements)\n", outref,
+                   (unsigned long) out_nelem);
+        }
+        else
+        {
+            printf("WARNING: outref '%s' nelement (%lu) != output (%lu) -> ignored\n", outref,
+                   (unsigned long) imgid_outref.md->nelement, (unsigned long) out_nelem);
+        }
+    } // if outref specified
 
     float *imgin_float_casted_ptr = NULL;
     if (imgid_in.md->datatype == _DATATYPE_FLOAT)
@@ -452,14 +485,38 @@ static MILK_HOT errno_t MVMextract_compute(const MILK_RUNNABLE *self)
         }
         // We don't really know at which point the backend workflow will begin writes, so we flag early.
         imgid_out.md->write = 1;
+        if (use_outref && use_mask && axis_mode == 1)
+        {
+            memset(imgid_out.im->array.F, 0, imgid_out.md->imdatamemsize);
+        }
 
         backend->matrixMul(); // Here we MVM
+        if (use_outref)
+        {
+            const float *ref_ptr = imgid_outref.im->array.F;
+            if (imgid_outref.md->datatype != _DATATYPE_FLOAT)
+            {
+                if (imgid_outref.md->cnt0 != outref_cnt0_prev)
+                {
+                    cast_to_float(outref_float_buf, imgid_outref.im, out_nelem);
+                    outref_cnt0_prev = imgid_outref.md->cnt0;
+                }
+                ref_ptr = outref_float_buf;
+            }
+            float *__restrict out_ptr       = imgid_out.im->array.F;
+            const float *__restrict bias_in = ref_ptr;
+            for (uint64_t ii = 0; ii < out_nelem; ii++)
+            {
+                out_ptr[ii] += bias_in[ii];
+            }
+        } // if (use_outref)
         // We're done
         processinfo_update_output_stream(processinfo, imgid_out.im, imgid_in.im);
     }
     MILK_PROCINFO_END(self)
 
 cleanup:
+    free(outref_float_buf);
     free(normcoeff);
     free(masked_modes_copy);
 

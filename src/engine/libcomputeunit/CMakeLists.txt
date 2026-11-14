@@ -77,3 +77,8 @@ install(TARGETS milk-fps-log DESTINATION bin)
 add_executable(milk-fps-rm tools/milk-fps-rm.c)
 target_link_libraries(milk-fps-rm PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-rm DESTINATION bin)
+
+# Wait for detached FPS unit run/conf processes to finish
+add_executable(milk-fps-wait tools/milk-fps-wait.c)
+target_link_libraries(milk-fps-wait PUBLIC ${LIBNAME} pthread m)
+install(TARGETS milk-fps-wait DESTINATION bin)

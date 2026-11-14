@@ -129,4 +129,13 @@ target_include_directories(
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>)
 target_link_libraries(milk-stream-link PRIVATE ImageStreamIO)
 install(TARGETS milk-stream-link DESTINATION bin)
+
+add_executable(milk-stream-wait bin/milk-stream-wait.c)
+target_include_directories(
+  milk-stream-wait
+  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO>
+          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>)
+target_link_libraries(milk-stream-wait PRIVATE ImageStreamIO pthread rt)
+install(TARGETS milk-stream-wait DESTINATION bin)
 # ==================

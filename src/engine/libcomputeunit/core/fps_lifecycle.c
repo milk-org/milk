@@ -381,23 +381,31 @@ int fps_generic_conf_cb(const char *fps_name, int loop, errno_t (*confcheck_fn)(
 
     // FPS_LOCALSTATUS_CONFLOOP is == to loop, by means of function_parameter_FPCONFsetup
     // let's do one iter in all cases
+    int first_iter = 1;
     do
     {
         int updated = function_parameter_FPCONFloopstep(&fps);
-        fps_unit_notify_ready(); /* the first step is done */
         fps_unit_tick(-1);
+        if (updated || first_iter)
+        {
+            if (confcheck_fn != NULL)
+            {
+                dcfpsptr = &fps;
+                confcheck_fn();
+            }
+            functionparameter_CheckParametersAll(&fps);
+        }
+        if (first_iter)
+        {
+            fps_unit_notify_ready(); /* initial validation and parameter check completed */
+            first_iter = 0;
+        }
         if (!updated)
         {
             continue;
         }
-
-        if (confcheck_fn != NULL)
-        {
-            dcfpsptr = &fps;
-            confcheck_fn();
-        }
-        functionparameter_CheckParametersAll(&fps);
-        usleep(10000);
+        struct timespec slp = { 0, 10000000L };
+        nanosleep(&slp, NULL);
 
     } while (loop && (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP));
 

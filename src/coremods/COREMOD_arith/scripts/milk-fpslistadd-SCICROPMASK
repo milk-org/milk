@@ -42,7 +42,7 @@ else
 				echolog "Process ${fpsname} already registered - skipping"
 			else
 				echolog "Adding process ${fpsname}"
-				echo "${fpsname}    cropmask         ${fpsarg0}"  >> fpslist.txt
+				echo "${fpsname}    milk-fpsexec-arith-cropmask         ${fpsarg0}"  >> fpslist.txt
 
 				addfpscmdheader
 

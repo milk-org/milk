@@ -91,15 +91,7 @@ int functionparameter_UserInputSetParamValue(FPS *fpsentry, int pindex)
             }
             else
             {
-                if (strncmp(fpsentry->parray[pindex].keywordfull, ".procinfo.", 10) == 0)
-                {
-                    fpsentry->md->processinfo_change_cnt++;
-                }
-
-                // notify GUI
-                fpsentry->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-                // Save to disk
+                // Save to disk (SIGNAL_UPDATE and processinfo_change_cnt are updated by setter)
                 if (fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
                 {
                     functionparameter_WriteParameterToDisk(fpsentry, pindex, "setval",

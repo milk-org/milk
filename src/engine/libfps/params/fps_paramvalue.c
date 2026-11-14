@@ -761,7 +761,16 @@ int functionparameter_SetParamValue_arg(FPS *fps, int pindex, const CLICMDARGDAT
                  : EXIT_FAILURE;
         break;
     }
-    return (rc == EXIT_SUCCESS) ? 0 : -1;
+    if (rc == EXIT_SUCCESS)
+    {
+        fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+        if (strstr(kw, ".procinfo.") != NULL || strncmp(kw, ".procinfo.", 10) == 0)
+        {
+            fps->md->processinfo_change_cnt++;
+        }
+        return 0;
+    }
+    return -1;
 }
 
 /**

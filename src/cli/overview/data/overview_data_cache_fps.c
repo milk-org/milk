@@ -268,19 +268,10 @@ int ov_fcache_set_param_value(const char *fps_name,
 
     FPS_PARAM *fp = &fps.parray[pindex];
     rc = (functionparameter_SetParamValue_fromString(&fps, pindex, valstr) == 0) ? 0 : -1;
-    if (rc == 0)
+    if (rc == 0 && (fp->fpflag & FPFLAG_SAVEONCHANGE))
     {
-        fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-        if (strncmp(fp->keywordfull, ".procinfo.", 10) == 0)
-        {
-            fps.md->processinfo_change_cnt++;
-        }
-        if (fp->fpflag & FPFLAG_SAVEONCHANGE)
-        {
-            functionparameter_WriteParameterToDisk(&fps, pindex, "setval",
-                                                   "milk-CTRL_SetParamValue");
-            functionparameter_SaveFPS2disk(&fps);
-        }
+        functionparameter_WriteParameterToDisk(&fps, pindex, "setval", "milk-CTRL_SetParamValue");
+        functionparameter_SaveFPS2disk(&fps);
     }
     fps_disconnect(&fps);
     return rc;

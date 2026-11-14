@@ -209,16 +209,7 @@ static int fpsCTRL_inline_edit_param(FPS *fps, int fps_idx, int p_idx)
         }
         else
         {
-            /* processinfo change tracking */
-            if (strncmp(fps[fps_idx].parray[p_idx].keywordfull, ".procinfo.", 10) == 0)
-            {
-                fps[fps_idx].md->processinfo_change_cnt++;
-            }
-
-            /* Notify GUI */
-            fps[fps_idx].md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
-            /* Save to disk if needed */
+            /* Save to disk if needed (SIGNAL_UPDATE and processinfo_change_cnt updated by setter) */
             if (fps[fps_idx].parray[p_idx].fpflag & FPFLAG_SAVEONCHANGE)
             {
                 functionparameter_WriteParameterToDisk(&fps[fps_idx], p_idx, "setval",
