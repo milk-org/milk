@@ -13,12 +13,6 @@ extern const MILK_RUNNABLE runnable_COREMOD_memory_listim;
 
 errno_t memory_monitor(const char *termttyname);
 
-errno_t init_list_image_ID_ncurses(const char *termttyname);
-
-void close_list_image_ID_ncurses();
-
-errno_t list_image_ID_ncurses();
-
 errno_t list_image_ID_ofp(FILE *fo);
 
 errno_t list_image_ID_ofp_simple(FILE *fo);

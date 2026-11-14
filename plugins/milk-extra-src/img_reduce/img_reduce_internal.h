@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <malloc.h>
 #include <math.h>
-#include <ncurses.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdint.h>

@@ -238,9 +238,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
                                          IMAGE       *output_image,
                                          IMAGE       *input_image);
 
-#ifdef USE_NCURSES
 errno_t processinfo_CTRLscreen();
-#endif
 
 #define PROCINFOLOOP_START                                 \
     processinfo_loopstart(processinfo);                    \

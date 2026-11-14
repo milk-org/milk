@@ -617,19 +617,6 @@ static inline void TUI_clearscreen(short unsigned int *wrow, short unsigned int 
     sc_cursor_col = 0;
 }
 
-/* ncurses stubs */
-/** @brief No-op ncurses compatibility stub. */
-static inline int TUI_ncurses_refresh(void)
-{
-    return 0;
-}
-
-/** @brief No-op ncurses compatibility stub. */
-static inline int TUI_ncurses_erase(void)
-{
-    return 0;
-}
-
 /** @brief Clear frame buffer and move cursor to home. */
 static inline int TUI_stdio_clear(void)
 {

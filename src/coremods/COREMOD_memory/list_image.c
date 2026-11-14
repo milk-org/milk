@@ -8,7 +8,6 @@
  *
  * Provides image listing in multiple output formats:
  *  - list_image_ID()         — print to stdout
- *  - list_image_ID_ncurses() — ncurses display
  *  - list_image_ID_ofp()     — formatted to FILE*
  *  - list_image_ID_ofp_json()— JSON output
  *  - list_image_ID_ofp_porcelain() — machine-

@@ -39,7 +39,7 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
   control.
 - `CLIcore/CLIcore_UI_bookmark.c` — Directory bookmark management.
 - `CLIcore/CLIcore_UI_prompt.c` — Prompt string formatting (`PS1`).
-- `CLIcore/CLIcore_help_tui.c` — Interactive Ncurses/ANSI help browser.
+- `CLIcore/CLIcore_help_tui.c` — Interactive ANSI help browser.
 - `treesitter/cli_treesitter.h` — Public API for syntax highlighting, completion
   context, diagnostics, and formatting.
 - `treesitter/cli_treesitter_internal.h` — Shared internal state across
@@ -67,4 +67,4 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
 
 - `milkscript`, `milkcomputeunit`, `milkfps`, `milkprocessinfo`, `milkdata`, `milkcommon`, and the
   `COREMOD_*` libraries (`src/cli/CLIcore/CMakeLists.txt` has the list)
-- System: `readline`, `ncurses`, `tree-sitter` (optional)
+- System: `readline`, `tree-sitter` (optional)

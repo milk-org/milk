@@ -9,9 +9,6 @@ project(CLIcore C)
 
 find_package(PkgConfig REQUIRED)
 
-if(USE_NCURSES)
-  pkg_check_modules(NCURSES REQUIRED ncurses)
-endif()
 if(USE_READLINE)
   pkg_check_modules(READLINE REQUIRED readline)
 endif()
@@ -66,7 +63,6 @@ if(TREESITTER_FOUND)
   list(APPEND CORE_FILES ${CMAKE_SOURCE_DIR}/tree-sitter-milkcli/src/parser.c)
 endif()
 
-link_directories(${NCURSES_LIBRARY_DIRS})
 
 # main
 
@@ -107,9 +103,6 @@ if(USE_READLINE)
   target_compile_definitions(CLIcore PUBLIC USE_READLINE)
 endif()
 
-if(USE_NCURSES)
-  target_compile_definitions(CLIcore PUBLIC USE_NCURSES)
-endif()
 
 if(TREESITTER_FOUND)
   target_compile_definitions(CLIcore PUBLIC USE_TREESITTER)
@@ -128,7 +121,6 @@ target_link_libraries(
          dl
          rt
          ${CMAKE_THREAD_LIBS_INIT}
-         $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>
          milkcommon
          milkCOREMODarith
          $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>
@@ -146,16 +138,10 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
-         $<INSTALL_INTERFACE:include/${SRCNAME}>
-         $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
+         $<INSTALL_INTERFACE:include/${SRCNAME}>)
 target_compile_options(CLIcore PUBLIC)
 
-target_link_directories(CLIcore PUBLIC
-                        $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARY_DIRS}>)
-
-target_link_libraries(
-  CLIcore PUBLIC ${CMAKE_THREAD_LIBS_INIT}
-                 $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>)
+target_link_libraries(CLIcore PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 if(${python_module})
   add_subdirectory(python_module)

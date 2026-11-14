@@ -41,7 +41,6 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <math.h>
-#include <ncurses.h>
 #include <poll.h>
 #include <stdbool.h>
 #include <sys/stat.h>

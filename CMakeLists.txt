@@ -12,10 +12,7 @@ project(milk LANGUAGES C)
 # USE_CLI (default ON): Build the interactive CLI (milk-cli), including CLIcore,
 # readline, bison/flex parser, and TUI. When OFF, only core libraries and
 # standalone fpsexec executables are built. This removes the need for readline,
-# ncurses, bison, and flex.
-#
-# USE_NCURSES (default ON, requires USE_CLI): Enable ncurses support (CLI help
-# TUI, milkinfo).
+# bison and flex.
 #
 # USE_READLINE (default ON, requires USE_CLI): Enable readline for interactive
 # CLI input.
@@ -58,7 +55,6 @@ option(USE_CFITSIO "Build FITS I/O (needs cfitsio)" ON)
 option(USE_PLUGINS "Build plugin modules (plugins/*)" ON)
 option(USE_CALC "Build the calculator and its JIT (milkcalc)" ON)
 option(USE_CLI "Build interactive CLI (milk-cli)" ON)
-option(USE_NCURSES "Enable ncurses support" ON)
 option(USE_READLINE "Enable readline support" ON)
 option(USE_TREESITTER "Enable tree-sitter syntax highlighting (CLI)" ON)
 

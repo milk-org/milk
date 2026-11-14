@@ -27,7 +27,6 @@
 graph TD
     CFITSIO["cfitsio"]:::ext
     READLINE["readline"]:::ext
-    NCURSES["ncurses"]:::ext
     TREESITTER["tree-sitter"]:::ext
 
     subgraph engine ["Engine Tier — Linux"]
@@ -134,7 +133,6 @@ graph TD
     CLICORE --> PROCINFO
     CLICORE --> COMMON
     CLICORE -.->|USE_READLINE| READLINE
-    CLICORE -.->|USE_NCURSES| NCURSES
     CLICORE -.->|USE_TREESITTER| TREESITTER
     CLICORE -.->|USE_CFITSIO| CFITSIO
 
@@ -181,7 +179,6 @@ graph TD
     OPENBLAS["OpenBLAS / MKL"]:::ext
     LAPACKE["LAPACKE"]:::ext
     FFTW["FFTW"]:::ext
-    NCURSES["ncurses"]:::ext
 
     subgraph milkplugins ["milk-extra plugins"]
         FFT["milkfft"]:::plugin
@@ -230,7 +227,6 @@ graph TD
     IMGFMT --> RUNNABLE
     IMGFMT -.-> IMGFILT
     INFO --> RUNNABLE
-    INFO -.-> NCURSES
     ZERNIKE --> RUNNABLE
     ZERNIKE --> IMGGEN
     LINARPRED --> RUNNABLE
@@ -489,7 +485,7 @@ cfitsio (headers only, optional)
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | milkscript | milkcalc, milkprop, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo | milkCOREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP, OpenBLAS, MKL, lapacke |
 | milkbash   | milkprop, milkfps, milkcomputeunit, milkprocessinfo, milkdata _(compiles scalar calc subset in-tree)_                          |                                                                                        |
-| CLIcore    | milkscript, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo, milkcommon | milkCOREMODiofits (USE_CFITSIO), cfitsio, readline, ncurses, tree-sitter, OpenMP   |
+| CLIcore    | milkscript, milkCOREMODarith, milkCOREMODmemory, milkCOREMODtools, milkfps, milkcomputeunit, milkdata, milkprocessinfo, milkcommon | milkCOREMODiofits (USE_CFITSIO), cfitsio, readline, tree-sitter, OpenMP            |
 
 </details>
 
@@ -510,7 +506,7 @@ All plugins link the runnable base set (`milkfps`, `milkcomputeunit`, `milkproce
 | milkimagebasic      | milkimagefilter                  | cfitsio                             |
 | milkimagefilter     | milkfft                          | cfitsio                             |
 | milkimageformat     | _(runnable base)_                | milkimagefilter, cfitsio            |
-| milkinfo            | _(runnable base)_                | ncurses (USE_NCURSES)               |
+| milkinfo            | _(runnable base)_                |                                     |
 | milkZernikePolyn    | milkimagegen                     | cfitsio                             |
 | milklinARfilterPred | milklinalgebra, OpenBLAS         | CUDA, MKL, lapacke, cfitsio         |
 | milkkdtree          | _(runnable base)_                |                                     |

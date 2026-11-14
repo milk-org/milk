@@ -13,7 +13,7 @@ The default build is the **Full build**, but without extra dependencies.
 
 | Build layer          | Code pulled in                                                                                                    | Dependencies                                                                     |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Full build**       | CLI (`milk-cli`, `milk-script`, `milk-call`, `milk.bash`, `milk-CTRL`)                                            | readline, tree-sitter (bundled), ncurses                                         |
+| **Full build**       | CLI (`milk-cli`, `milk-script`, `milk-call`, `milk.bash`, `milk-CTRL`)                                            | readline, tree-sitter (bundled)                                                  |
 | **Calculator & JIT** | `milkprop`, `milkcalc` (C-codegen JIT, `milk_calc_ext.h`), `milk-fpsexec-milk-calc`                               | C compiler (`gcc`), optional OpenMP / OpenBLAS / LAPACKE / FFTW                  |
 | **Plugins**          | `milk-extra` and `cacao` plugins + standalone `fpsexec` compute units                                             | Per-plugin deps (see [CMake system](../developer/dependency_system.md))          |
 | **Core + FITS**      | `COREMOD_iofits`                                                                                                  | cfitsio                                                                          |
@@ -34,7 +34,6 @@ Some optional dependencies are detected by MILK and enable additional features:
 | Option           | Default | Description                                                |
 | ---------------- | ------- | ---------------------------------------------------------- |
 | `USE_READLINE`   | ON      | Enable readline for interactive CLI input                  |
-| `USE_NCURSES`    | ON      | Enable ncurses support (CLI help TUI, `milkinfo`)          |
 | `USE_TREESITTER` | ON      | Enable tree-sitter syntax highlighting in CLI              |
 | `USE_CFITSIO`    | ON      | Enable FITS file I/O (`COREMOD_iofits`)                    |
 | `USE_PLUGINS`    | ON      | Build plugin modules (`plugins/*`) and their `fpsexec`s    |

@@ -23,12 +23,12 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
 
     === "Ubuntu / Debian"
         ```bash
-        sudo apt-get install gcc cmake pkg-config libcfitsio-dev libreadline-dev libncurses-dev libfftw3-dev libopenblas-dev liblapacke-dev
+        sudo apt-get install gcc cmake pkg-config libcfitsio-dev libreadline-dev libfftw3-dev libopenblas-dev liblapacke-dev
         ```
 
     === "CentOS / RHEL / Fedora"
         ```bash
-        sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel ncurses-devel fftw3-devel openblas-devel lapacke-devel
+        sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel fftw3-devel openblas-devel lapacke-devel
         ```
 
     The C compiler milk was built with (or the one named in `MILK_CALC_CC`) is also invoked at
@@ -42,7 +42,6 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     | --------------- | ---------------- | ------- | ------------------------------------------------ |
     | **cfitsio**     | `USE_CFITSIO`    | ON      | FITS file I/O (`COREMOD_iofits`)                 |
     | **readline**    | `USE_READLINE`   | ON      | Interactive CLI line editing                     |
-    | **ncurses**     | `USE_NCURSES`    | ON      | TUI dashboards (`milk-CTRL`, `milk-fpsCTRL`)     |
     | **tree-sitter** | `USE_TREESITTER` | ON      | Bundled CLI syntax highlighting and formatter    |
     | **fftw3**       | —                | auto    | Calculator `fft`/`ifft` (threaded in units with the FFTW threads libraries) and the `fft` plugin |
     | **openMP**      | —                | auto    | Parallel loop execution                          |

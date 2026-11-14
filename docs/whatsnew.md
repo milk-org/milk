@@ -16,6 +16,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-13** — ncurses is no longer used or linked: the `USE_NCURSES` option is removed, and
+  `milkinfo` prints its header and stream-timing tables with `printf`. The TUIs already use ANSI.
 - **2026-11-13** — MAGMA support is removed: the `USE_MAGMA` option and linalgebra's MAGMA
   GPU pseudo-inverse. `lintools.impsinvsvd` loses its `.GPU` parameter, which computed nothing
   without MAGMA; it always computes on the CPU. linalgebra keeps its cuSOLVER pseudo-inverse.

@@ -20,7 +20,6 @@ steps:
         liblapack-dev \
         libgsl-dev \
         libfftw3-dev \
-        libncurses-dev \
         git
 
   - name: Initialize submodules

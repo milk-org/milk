@@ -13,12 +13,12 @@ The core libraries in Milk follow a strict hierarchical dependency chain. It is 
 
 2.  **libprocessinfo** (`milkprocessinfo`)
     - **Description:** Provides tools for process monitoring, control, and synchronization. It defines the `PROCESSINFO` structure and manages process lists in shared memory.
-    - **Dependencies:** `ImageStreamIO` (It uses image streams for trigger mechanisms), `rt` (Real-time), `ncurses` (TUI), `pthread`.
+    - **Dependencies:** `ImageStreamIO` (It uses image streams for trigger mechanisms), `rt` (Real-time), `pthread`.
     - **Used by:** `libfps`.
 
 3.  **libfps** (`milkfps`)
     - **Description:** The Function Parameter Structure library. It provides a framework for managing function parameters, configuration, and runtime control via a standardized interface (CLI and TUI).
-    - **Dependencies:** `libprocessinfo` (For process integration), `ImageStreamIO` (For stream parameters), `ncurses`.
+    - **Dependencies:** `libprocessinfo` (For process integration), `ImageStreamIO` (For stream parameters).
 
 ## Example Progression
 
