@@ -76,6 +76,20 @@ graph TD
     SC -. "output" .-> UDIR
 ```
 
+### Shared-memory structure versions
+
+`PROCESSINFO`, `PROCESSINFOLIST` and the FPS metadata struct start with a `version[32]` string,
+written on creation and checked on connect. The expected values are `PROCESSINFO_VERSION` and
+`FUNCTION_PARAMETER_STRUCT_VERSION` in the top-level `CMakeLists.txt` (exported as
+`MILK_PROCESSINFO_VERSION` / `MILK_FUNCTION_PARAMETER_STRUCT_VERSION` in `milk_config.h`).
+
+- Bump the matching version whenever the struct layout changes.
+- `processinfo_shm_link()` (read-write) and `processinfo_shm_link_ro()` (read-only) reject a file
+  whose size is not exactly `sizeof(PROCESSINFO)` / `sizeof(PROCESSINFOLIST)` or whose version
+  differs; `fps_connect()` rejects a version mismatch. Callers unmap `sizeof()` of the struct.
+- Files left by an older milk build are therefore ignored: remove stale `*.shm` files from the
+  shared-memory directory after upgrading.
+
 ## 2. Process Management
 
 `milk` runs each compute unit as its own detached process:

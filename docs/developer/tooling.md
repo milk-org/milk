@@ -24,14 +24,16 @@ Each section explains prerequisites, setup, and usage.
 The milk v2 documentation is built from markdown files using [mkdocs](https://www.mkdocs.org).
 
 !!! note "Contributing"
-    See [Documenting Code](DocumentingCode.md) for Markdown and Kernel-Doc conventions.
+    See [Writing Docs](writing_docs.md) for Markdown, and [Coding Standards](coding_standards.md)
+    for Kernel-Doc.
 
 ??? tip "Markdown preview in the IDE/editor"
     The documentation is all markdown files, so any markdown visualization item (e.g. vscode's markdown preview) would work to view content.
     However, some plugins & customizations are non-standard and will not render. For this to work, you'll need to look at the actual documentation website.
 
 ??? info "Deployment of the documentation"
-    A Github action generates the website into the `gh-pages` branch upon pushes to the `framework-dev` branch.
+    A Github action generates the website into the `gh-pages` branch upon pushes to the branches listed in `.github/workflows/docs.yml`
+    (one version per branch, selectable from the version dropdown; see [PM operations](../maintenance/pm_operations.md#documentation-branch)).
 
     A Github deployment deploys it to https://milk-org.github.io/milk/ automatically.
 
@@ -504,7 +506,7 @@ To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 !!! warning "This is global superseding"
     This approach is designed to supersede the system-wide installation with a development build.
-    This is not the same as running multiple, isolated versions. See [multiple versions here](multiversion.md)
+    This is not the same as running multiple, isolated versions. See [multiple versions here](./multiversion.md)
 
 ### 6.2 Global install without sudo
 
@@ -552,8 +554,9 @@ gdb --args milk-fpsexec-mymodule exec <args...>
 (gdb) run
 # ... crash ...
 (gdb) bt full                    # backtrace with local variables
-(gdb) frame 2
-(gdb) print img.im->md->size[0]
+(gdb) frame 2                    # select a frame from the backtrace
+(gdb) print img.im->md->size[0]  # print info on one variable
+(gdb) info locals                # show local variables in the frame
 (gdb) info threads
 (gdb) thread apply all bt
 ```

@@ -126,6 +126,7 @@ extern int            s_fcache_nb;
 
 
 int  ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize);
+int  ov_pinfo_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize);
 void ov_shm_unmap(ov_shm_map_t *m);
 int  ov_shm_same_file(const ov_shm_map_t *m, const struct stat *st);
 

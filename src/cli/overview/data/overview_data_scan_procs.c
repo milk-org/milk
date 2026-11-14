@@ -27,7 +27,7 @@ static const PROCESSINFOLIST *plist_map_ro(const char *procdir)
     if (!ov_shm_same_file(&s_plist_map, &st))
     {
         ov_shm_unmap(&s_plist_map);
-        ov_shm_map(&s_plist_map, path, 0, sizeof(PROCESSINFOLIST));
+        ov_pinfo_map(&s_plist_map, path, 0, sizeof(PROCESSINFOLIST));
     }
     return (const PROCESSINFOLIST *) s_plist_map.addr;
 }
@@ -66,7 +66,7 @@ static int pcache_get(long pindex, pid_t pid, const char *fpath, int recheck)
         s_pcache[ci].pindex    = pindex;
         s_pcache[ci].seen_dead = seen_dead;
         s_pcache[ci].is_new    = (s_scan_dt_sec > 0.0) ? OV_NEW_SCANS : 0; /* none at startup */
-        if (ov_shm_map(&s_pcache[ci].map, fpath, 0, sizeof(PROCESSINFO)) == 0)
+        if (ov_pinfo_map(&s_pcache[ci].map, fpath, 0, sizeof(PROCESSINFO)) == 0)
         {
             s_pcache[ci].pinfo = (const PROCESSINFO *) s_pcache[ci].map.addr;
         }

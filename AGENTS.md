@@ -194,7 +194,7 @@ trigger conditions and required actions (human-readable overview:
   memory safety, CMake, documentation, `runnable-conventions`...). Rules are loaded automatically.
 - **`.agents/skills/`** — specialized instruction sets with helper content, consulted when a task needs
   domain depth (API quick reference, ImageStreamIO internals, stream modifiers, CMake patterns,
-  build-failure triage, CLI debugging, optimization, TUI creation, PR preparation...).
+  build-failure triage, CLI debugging, optimization, TUI creation, PR preparation, docs writing...).
 - **`.agents/workflows/`** — on-demand task templates invoked as slash commands, one per file
   (`/add-runnable`, `/add-module`, `/compile-test`, `/fix-bug`, `/review-pr`, `/setup-dev-environment`,
   `/update-docs-site`...).

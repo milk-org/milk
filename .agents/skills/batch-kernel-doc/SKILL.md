@@ -46,8 +46,8 @@ Order by impact:
 
 ### Kernel-Doc format
 
-Follow [Documenting Code
-§3.1](../../../docs/developer/DocumentingCode.md#31-standard-function-documentation):
+Follow [Programmer's Guide
+§7](../../../docs/arch/programmers_guide.md#7-c-source-file-conventions):
 `name() - summary`, one `@arg:` line per parameter, a description, then `Return:`.
 
 ### Content guidelines

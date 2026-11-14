@@ -22,6 +22,7 @@
 #include "processinfo.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_labels.h"
+#include "processinfo_shm_link.h"
 #include "milkDebugTools.h"
 #include "milk_help.h"
 
@@ -198,23 +199,19 @@ int main(int argc, char *argv[])
         char fullpath[STRINGMAXLEN_FULLFILENAME];
         snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, fname);
 
-        int loopstat = -1; /* unknown */
-        int fd       = open(fullpath, O_RDONLY);
-        if (fd != -1)
+        int          loopstat = -1; /* unknown */
+        int          fd       = -1;
+        PROCESSINFO *pinfo    = processinfo_shm_link_ro(fullpath, &fd);
+        if (pinfo != MAP_FAILED)
         {
-            PROCESSINFO *pinfo =
-                (PROCESSINFO *) mmap(NULL, sizeof(PROCESSINFO), PROT_READ, MAP_SHARED, fd, 0);
-            if (pinfo != MAP_FAILED)
+            loopstat = pinfo->loopstat;
+            /* Prefer the name stored inside the struct */
+            if (pinfo->name[0] != '\0')
             {
-                loopstat = pinfo->loopstat;
-                /* Prefer the name stored inside the struct */
-                if (pinfo->name[0] != '\0')
-                {
-                    strncpy(pname, pinfo->name, sizeof(pname) - 1);
-                    pname[sizeof(pname) - 1] = '\0';
-                }
-                munmap(pinfo, sizeof(PROCESSINFO));
+                strncpy(pname, pinfo->name, sizeof(pname) - 1);
+                pname[sizeof(pname) - 1] = '\0';
             }
+            munmap(pinfo, sizeof(PROCESSINFO));
             close(fd);
         }
 

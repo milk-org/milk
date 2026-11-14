@@ -14,7 +14,7 @@ tensors, typically images or data cubes) directly in a tmpfs directory (`$MILK_S
 `/milk/shm`).
 
 See also: [FPS](fps.md) · [Process Info](procinfo.md) · [CLI Reference](CLIcore.md) ·
-[Scripts Reference](scripts.md)
+[Scripts Reference](scripts.md) · [pyMilk](pyMilk.md)
 
 ## 1. Core Concepts
 

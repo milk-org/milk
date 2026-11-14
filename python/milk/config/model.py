@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+"""
+Define what a pipeline config ought to be?
+
+Use toml
+
+Really it needs what comes from cacaovars.bash
+"""
+
+from pathlib import Path
+from typing import Annotated, Any, Literal
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+import pydantic
+
+# TODO we should be able to import pyMilk validator without hauling ImageStreamIOWrap here.
+from pyMilk.interfacing.shm import check_SHM_name
+
+import logging
+
+_log = logging.getLogger(__name__)
+
+
+class ProcessInfoData(BaseModel):
+
+    model_config = {"extra": "forbid"}
+
+    # fmt: off
+    RTprio            : int | None   = None  # >= 0, < 90
+    cset              : str | None   = None
+    taskset           : str | None   = None
+    NBthread          : int | None   = None
+    enabled           : bool | None  = None
+    loopcntMax        : int | None   = None  # >= -1
+    triggermode       : int | None   = None
+    triggersname      : str | None   = None
+    MeasureTiming     : bool | None  = None
+    semindexrequested : int | None   = None
+    triggerdelay      : float | None = None
+    triggertimeout    : float | None = None
+    # fmt: on
+
+
+class DataLoadEntryModel(BaseModel):
+    """A single dataloads entry: file to load and target stream name."""
+
+    model_config = {"extra": "forbid"}
+
+    source: str
+    target: str
+
+
+class ComputeUnitSpec(BaseModel):
+    """One ``[compute_units.<cu>]`` table: its executable and its FPS parameters."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    exec: str
+    fps: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("fps")
+    @classmethod
+    def _check_procinfo(cls, v: dict[str, Any]) -> dict[str, Any]:
+        if "procinfo" in v:
+            try:
+                ProcessInfoData.model_validate(v["procinfo"])
+            except pydantic.ValidationError as err:
+                raise ValueError(f"procinfo: {err}") from err
+        return v
+
+    @property
+    def procinfo(self) -> ProcessInfoData | None:
+        if "procinfo" not in self.fps:
+            return None
+        return ProcessInfoData.model_validate(self.fps["procinfo"])
+
+
+class _HookDecl(BaseModel):
+    """One ``[[hooks]]`` entry; its product is a plain name under ``data/``."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    id: str
+    product: str
+
+    @field_validator("product")
+    @classmethod
+    def _check_product(cls, v: str) -> str:
+        if v in ("", ".", "..") or "/" in v or v.endswith(".tag"):
+            raise ValueError(
+                f"hook product {v!r} must be a plain name not ending in .tag"
+            )
+        return v
+
+
+class FetchHookDecl(_HookDecl):
+    type: Literal["fetch"]
+    source: str
+
+
+class CommandHookDecl(_HookDecl):
+    type: Literal["command"]
+    command: list[str]
+
+
+HookDecl = Annotated[FetchHookDecl | CommandHookDecl, Field(discriminator="type")]
+
+
+class PipelineConfig(BaseModel):
+    """Validated conf.toml. Top-level keys outside these fields are refused,
+    except ``_``-prefixed ones (kept in model_extra)."""
+
+    model_config = {"extra": "allow", "frozen": True}
+
+    long_name: str
+    name: str
+    loop_number: int
+    kind: str = "generic"
+    compute_units: dict[str, ComputeUnitSpec] = Field(default_factory=dict)
+    dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
+    # mode name -> {local stream owned by this pipeline: remote stream it points to}
+    systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
+    hooks: list[HookDecl] = Field(default_factory=list)
+    plans: list[str] | None = None  # restricts run_plan to these names
+    teardown_kill_tmux: bool = False
+
+    @model_validator(mode="after")
+    def _check_extra_keys(self) -> PipelineConfig:
+        unknown = sorted(k for k in self.model_extra or {} if not k.startswith("_"))
+        if unknown:
+            raise ValueError(
+                f"unknown top-level keys {unknown} (only _-prefixed extras are allowed)"
+            )
+
+        return self
+
+    @field_validator("hooks")
+    @classmethod
+    def _check_hooks_unique(cls, v: list[HookDecl]) -> list[HookDecl]:
+        for key in ("id", "product"):
+            values = [getattr(hook, key) for hook in v]
+            if len(set(values)) != len(values):
+                raise ValueError(f"hooks: duplicate {key} in {values}")
+        return v
+
+    @field_validator("systemlinkage")
+    @classmethod
+    def _check_systemlinkage(cls, v: dict[str, dict[str, str]]):
+        out: dict[str, dict[str, str]] = {}
+        for mode, links in v.items():
+            if mode == "all":
+                raise ValueError(
+                    "systemlinkage: 'all' is reserved (milk-pipes unlink all)"
+                )
+            out[mode] = {}
+            for local, remote in links.items():
+                # TODO this where to focus if we eventually use various MILK_SHM_DIR
+                local, remote = check_SHM_name(local), check_SHM_name(remote)
+                if not local or not remote or local == remote:
+                    raise ValueError(
+                        f"systemlinkage.{mode}: invalid link {local!r} -> {remote!r}"
+                    )
+                out[mode][local] = remote
+        return out
+
+    def fps_name(self, cu: str) -> str:
+        """FPS name of compute unit ``cu``, ``<name>_<cu>`` (design-v7 D-19).
+
+        The only place this expression is written.
+        """
+        return f"{self.name}_{cu}"

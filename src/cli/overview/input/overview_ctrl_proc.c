@@ -32,7 +32,7 @@ static const PROCESSINFOLIST *plist_map(ov_shm_map_t *m)
 {
     char path[PATH_MAX];
     snprintf(path, sizeof(path), "%s/processinfo.list.shm", ov_get_procdir());
-    if (ov_shm_map(m, path, 0, sizeof(PROCESSINFOLIST)) != 0)
+    if (ov_pinfo_map(m, path, 0, sizeof(PROCESSINFOLIST)) != 0)
     {
         return NULL;
     }
@@ -73,10 +73,11 @@ static PROCESSINFO *proc_map_rw(const OV_PROC *p, ov_shm_map_t *m, const char *w
                        (int) p->PID, what);
         return NULL;
     }
-    if (ov_shm_map(m, path, 1, sizeof(PROCESSINFO)) != 0)
+    if (ov_pinfo_map(m, path, 1, sizeof(PROCESSINFO)) != 0)
     {
         ov_cmdlog_push(log, OV_CMDLOG_FAIL, "Process \"%s\" (PID %d): %s failed: %s", p->name,
-                       (int) p->PID, what, strerror(errno));
+                       (int) p->PID, what,
+                       errno ? strerror(errno) : "proc file of another size or version");
         return NULL;
     }
     return (PROCESSINFO *) m->addr;

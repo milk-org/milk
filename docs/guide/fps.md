@@ -13,7 +13,7 @@ parameters, states, and commands for compute units. FPS instances provide a high
 standardized interface directly in shared memory.
 
 See also: [Streams](streams.md) · [Process Info](procinfo.md) ·
-[Programmer's Guide](../arch/programmers_guide.md)
+[Programmer's Guide](../arch/programmers_guide.md) · [pyMilk](pyMilk.md)
 
 ## 1. Architecture and Location
 

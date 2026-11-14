@@ -1,20 +1,15 @@
 long_name = "aolinearsimulator"
 name = "simulator"
 loop_number = 0
-tasks = [ "init_folders", "fetch_assets", "fps_init", "conf_start" ] # TODO auto-parse this and run it.
 
 # This loop is a test loop for the typical AO linear simulator
 # DM stream => delay -> MVM -> camera simulator ==> WFS
 
-[sessions]
-delay = 'milk-fpsexec-mem-streamdelay'
-mvm = 'milk-fpsexec-linalg-MVMextract'
-wfscamsim = 'cacao-fpsexec-cacaoiot-wfscamsim'
+[compute_units.delay]
+exec = 'milk-fpsexec-mem-streamdelay'
 
+[compute_units.mvm]
+exec = 'milk-fpsexec-linalg-MVMextract'
 
-
-[delay]
-
-[mvm]
-
-[wfscamsim]
+[compute_units.wfscamsim]
+exec = 'cacao-fpsexec-cacaoiot-wfscamsim'

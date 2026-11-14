@@ -144,6 +144,24 @@ const MILK_RUNNABLE runnable_COREMOD_memory_imcp2shm = {
 };
 
 /**
+ * @brief Publish a just-written image: full ImageStreamIO update if shared
+ *        (writetime, atime, circular buffer), else cnt0/write/sempost only.
+ */
+static void image_copy_publish(IMGID *img)
+{
+    if (img->md[0].shared == 1)
+    {
+        ImageStreamIO_UpdateIm(img->im);
+    }
+    else
+    {
+        img->md[0].cnt0++;
+        img->md[0].write = 0;
+        COREMOD_MEMORY_image_set_sempost_byID(img->ID, -1);
+    }
+}
+
+/**
  * @brief Copy image data to a new or existing image
  *
  * Resolves input image; if output exists, checks
@@ -228,10 +246,7 @@ imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared)
     __builtin_memcpy(imgout->im->array.raw, imgin->im->array.raw,
                      ImageStreamIO_typesize(datatype) * nelement);
 
-    imgout->md[0].cnt0++;
-    imgout->md[0].write = 0;
-
-    COREMOD_MEMORY_image_set_sempost_byID(imgout->ID, -1);
+    image_copy_publish(imgout);
 
     return imgout->ID;
 }
@@ -380,10 +395,7 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout)
     __builtin_memcpy(imgout->im->array.raw, imgin->im->array.raw,
                      ImageStreamIO_typesize(datatype) * imgin->md[0].nelement);
 
-    imgout->md[0].cnt0++;
-    imgout->md[0].write = 0;
-
-    COREMOD_MEMORY_image_set_sempost_byID(imgout->ID, -1);
+    image_copy_publish(imgout);
 
     return RETURN_SUCCESS;
 }

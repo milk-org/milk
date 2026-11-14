@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <limits.h>
 #include <pthread.h>
 #include <inttypes.h>
@@ -6,6 +7,7 @@
 
 #include "overview_data_internal.h"
 #include "overview_data_index.h"
+#include "processinfo_shm_link.h"
 
 #undef STRINGMAXLEN_DIRNAME
 #undef STRINGMAXLEN_FULLFILENAME
@@ -289,6 +291,41 @@ int ov_shm_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize)
     if (a == MAP_FAILED)
     {
         return -3;
+    }
+    m->addr = a;
+    m->len  = (size_t) st.st_size;
+    m->dev  = st.st_dev;
+    m->ino  = st.st_ino;
+    return 0;
+}
+
+/**
+ * ov_pinfo_map - ov_shm_map() for a processinfo file (a process's, or the registry): mapped by the
+ * processinfo link API, which also checks the structure version. The fd is closed once mapped.
+ * Return: 0, or -1 (*m zeroed; errno 0 when the file is there but of another size or version).
+ */
+int ov_pinfo_map(ov_shm_map_t *m, const char *path, int rw, size_t minsize)
+{
+    struct stat st;
+    int         fd = -1;
+    errno          = 0;
+    PROCESSINFO *a = rw ? processinfo_shm_link(path, &fd) : processinfo_shm_link_ro(path, &fd);
+    memset(m, 0, sizeof(*m));
+    if (a == MAP_FAILED)
+    {
+        return -1;
+    }
+    int rc = fstat(fd, &st);
+    close(fd);
+    if (rc != 0)
+    {
+        return -1; /* mapped length unknown: keep the map rather than unmap a wrong range */
+    }
+    if ((size_t) st.st_size < minsize)
+    {
+        munmap(a, (size_t) st.st_size);
+        errno = 0;
+        return -1;
     }
     m->addr = a;
     m->len  = (size_t) st.st_size;

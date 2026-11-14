@@ -4,7 +4,7 @@
 !!! note
     This file: `docs/developer/WorkingWithGit.md`
 
-See also: [Documenting Code](DocumentingCode.md) · [Adding Plugins](plugins.md) ·
+See also: [Writing Docs](writing_docs.md) · [Adding Plugins](plugins.md) ·
 [Compile Instructions](../quickstart/compile.md)
 
 ---
@@ -105,8 +105,8 @@ changes.
 
 ## 5. Source Code Documentation (doxygen)
 
-For generating HTML source code documentation via Doxygen, refer to the up-to-date guide in
-[DocumentingCode.md](DocumentingCode.md).
+Doxygen generation is currently removed; see
+[Writing Docs: C API reference](writing_docs.md#9-c-api-reference).
 
 ---
 

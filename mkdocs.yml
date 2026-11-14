@@ -97,14 +97,25 @@ nav:
     - FIFO Command Input: guide/fifo.md
     - Readline Keys: guide/helpreadline.md
     - Scripts: guide/scripts.md
-    - Python API: guide/python.md
+    - pyMilk: guide/pyMilk.md
+    - Pipelines:
+      - Introduction: guide/pipelines.md
+      - Operate:
+        - Tour: guide/pipelines_tour.md
+        - "Operating: milk-pipes": guide/pipelines_operate.md
+      - Integrate:
+        - Configuration Files: guide/pipelines_conf.md
+        - "Drift, Resync & milk-pipeinit": guide/pipelines_provision.md
+        - Plans & Tasks: guide/pipelines_plans.md
+      - Internals: guide/pipelines_internals.md
+      - Glossary: guide/pipelines_glossary.md
     - Valkey Integration: guide/valkey.md
   - Developer Guide:
     - Tutorial: developer/tutorial.md
     - Coding Standards: developer/coding_standards.md
     - Adding Plugins: developer/plugins.md
     - Managing Dependencies: developer/dependency_system.md
-    - Documenting Code: developer/DocumentingCode.md
+    - Writing Docs: developer/writing_docs.md
     - Tooling: developer/tooling.md
     - Multiple Versions: developer/multiversion.md
     - Working with Git: developer/WorkingWithGit.md
@@ -161,6 +172,8 @@ markdown_extensions:
       toc_depth: 3
 
 extra:
+  version:
+    provider: mike
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/milk-org/milk

@@ -308,23 +308,24 @@ typedef struct
 
 typedef struct
 {
-    char            name[STRINGMAXLEN_FPS_NAME];
-    char            description[FPS_DESCR_STRMAXLEN];
-    char            helptext[FPS_HELPTEXT_STRMAXLEN];
-    char            execfullpath[512];
-    char            keywordarray[FPS_KEYWORDARRAY_STRMAXLEN];
-    char            workdir[FPS_CWD_STRLENMAX];
-    char            datadir[FPS_DIR_STRLENMAX];
-    char            confdir[FPS_DIR_STRLENMAX];
-    char            sourcefname[FPS_SRCDIR_STRLENMAX];
-    int             sourceline;
-    char            pname[FPS_PNAME_STRMAXLEN];
-    char            callprogname[FPS_CALLPROGNAME_STRMAXLEN];
-    char            callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
-    char            session[STRINGMAXLEN_FPS_SESSION]; /* the starter's milk-cli session (D37) */
-    char            nameindexW[16][10];
-    int             NBnameindex;
-    pid_t           confpid;
+    char  version[32]; /// structure version, must equal MILK_FUNCTION_PARAMETER_STRUCT_VERSION
+    char  name[STRINGMAXLEN_FPS_NAME];
+    char  description[FPS_DESCR_STRMAXLEN];
+    char  helptext[FPS_HELPTEXT_STRMAXLEN];
+    char  execfullpath[512];
+    char  keywordarray[FPS_KEYWORDARRAY_STRMAXLEN];
+    char  workdir[FPS_CWD_STRLENMAX];
+    char  datadir[FPS_DIR_STRLENMAX];
+    char  confdir[FPS_DIR_STRLENMAX];
+    char  sourcefname[FPS_SRCDIR_STRLENMAX];
+    int   sourceline;
+    char  pname[FPS_PNAME_STRMAXLEN];
+    char  callprogname[FPS_CALLPROGNAME_STRMAXLEN];
+    char  callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
+    char  session[STRINGMAXLEN_FPS_SESSION]; /* the starter's milk-cli session (D37) */
+    char  nameindexW[16][10];
+    int   NBnameindex;
+    pid_t confpid;
     struct timespec confpidstarttime;
     pid_t           runpid;
     struct timespec runpidstarttime;

@@ -66,13 +66,13 @@ Who might you be?
 
     [⮕ Build tiers](quickstart/build_tiers.md)
 
-- :material-console:{ .lg .middle } **CLI Overview**
+- :material-pipe:{ .lg .middle } **Pipelines**
 
     ***
 
-    Interactive shell, standalone executables, and scripting basics.
+    Deploy and operate sets of compute units from one configuration.
 
-    [⮕ CLI overview](quickstart/CLI_Overview.md)
+    [⮕ Pipelines](guide/pipelines.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
@@ -220,10 +220,10 @@ Who might you be?
   [Readline Keys](guide/helpreadline.md)
 - [milk-CTRL](guide/milk-CTRL.md) · [fpsCTRL Reference](guide/fpsCTRL_reference.md) ·
   [Stream Viewer (`milk-termview`)](guide/termview.md)
-- [Scripts Reference](guide/scripts.md) · [Python API](guide/python.md) · [Valkey Integration](guide/valkey.md)
+- [Scripts Reference](guide/scripts.md) · [pyMilk](guide/pyMilk.md) · [Valkey Integration](guide/valkey.md)
 - [Programmer's Guide](arch/programmers_guide.md) · [Dependency Graph](arch/dependency_graph.md) ·
   [Unit Lifecycle](arch/unit_lifecycle.md) · [systemd Services](operations/systemd.md)
-- [Dependency System](developer/dependency_system.md) · [Documenting Code](developer/DocumentingCode.md) ·
+- [Dependency System](developer/dependency_system.md) · [Writing Docs](developer/writing_docs.md) ·
   [Developer Tooling](developer/tooling.md) · [Working with Git](developer/WorkingWithGit.md) ·
   [Code Assist Tools](developer/code_assist.md) · [Multiple Versions](developer/multiversion.md)
 - [Project Management Operations](maintenance/pm_operations.md) · [Notes for the Future](notes_for_future.md)

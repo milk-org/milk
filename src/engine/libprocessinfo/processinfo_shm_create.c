@@ -14,6 +14,7 @@
 #include "processinfo_internal.h"
 #include "processinfo_shm_list_create.h"
 #include "processinfo_procdirname.h"
+#include "milk_config.h"
 
 
 #define FILEMODE 0666
@@ -114,6 +115,9 @@ PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval)
     clock_gettime(CLOCK_MILK, &pinfo->createtime);
     pinfolist->createtime[pindex] =
         1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
+
+    strncpy(pinfo->version, MILK_PROCESSINFO_VERSION, sizeof(pinfo->version) - 1);
+    pinfo->version[sizeof(pinfo->version) - 1] = '\0';
 
     strncpy(pinfo->name, pname, STRINGMAXLEN_PROCESSINFO_NAME - 1);
     pinfo->name[STRINGMAXLEN_PROCESSINFO_NAME - 1] = '\0';

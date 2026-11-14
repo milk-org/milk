@@ -102,6 +102,10 @@ set(VERSION_MINOR 03)
 set(VERSION_PATCH 00)
 set(MILK_VERSION_OPTION "")
 set(PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+
+# Shared-memory structure versions, checked on connect (see milk_config.h)
+set(PROCESSINFO_VERSION "2.00")
+set(FUNCTION_PARAMETER_STRUCT_VERSION "2.00")
 set(PROJECT_DESCRIPTION "Modular Image processing tooLKit")
 
 set(SOURCEDIR "${PROJECT_SOURCE_DIR}")

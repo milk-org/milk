@@ -27,6 +27,7 @@
 #include <sys/types.h>
 
 #include "processinfo.h"
+#include "processinfo_shm_link.h"
 #include "processtools_trigger.h"
 #include "processinfo_labels.h"
 #include "processinfo_timing.h"
@@ -216,7 +217,6 @@ int processinfo_loopstep(PROCESSINFO *processinfo);
 int processinfo_compute_status(PROCESSINFO *processinfo);
 
 PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
-PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
 int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
 int          processinfo_cleanExit(PROCESSINFO *processinfo);
 int          processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
