@@ -24,21 +24,23 @@
 #include "processinfo.h"
 #include "processinfo_list.h"
 #include "processinfo_procdirname.h"
+#include "processinfo_shm_link.h"
 
-/* Map @path (at least @size bytes) read-write or read-only; NULL if absent or too small. Nothing is created. */
+/* Map @path, a regular file of exactly @size bytes, read-write or read-only through the link API,
+ * which also checks the structure version; NULL otherwise. The size is checked before the open, so
+ * a FIFO is never opened. Nothing is created. */
 static void *map_file(const char *path, size_t size, int rw)
 {
-    int         fd = open(path, (rw ? O_RDWR : O_RDONLY) | O_CLOEXEC | O_NONBLOCK);
     struct stat st;
-    void       *p = NULL;
-    if (fd < 0)
+    int         fd = -1;
+    if (stat(path, &st) != 0 || !S_ISREG(st.st_mode) || (size_t) st.st_size != size)
     {
         return NULL;
     }
-    if (fstat(fd, &st) == 0 && S_ISREG(st.st_mode) && (size_t) st.st_size >= size)
+    PROCESSINFO *p = rw ? processinfo_shm_link(path, &fd) : processinfo_shm_link_ro(path, &fd);
+    if (p == MAP_FAILED)
     {
-        p = mmap(NULL, size, rw ? PROT_READ | PROT_WRITE : PROT_READ, MAP_SHARED, fd, 0);
-        p = (p == MAP_FAILED) ? NULL : p;
+        return NULL;
     }
     close(fd);
     return p;

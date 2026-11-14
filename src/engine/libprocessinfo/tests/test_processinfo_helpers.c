@@ -10,6 +10,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "milk_config.h"
 #include "processinfo.h"
 #include "processinfo_labels.h"
 #include "processinfo_timing.h"
@@ -135,6 +136,7 @@ static void proc_file(const char *dir, const char *name, pid_t pid, int loopstat
     char path[512];
     snprintf(path, sizeof(path), "%s/proc.%s.%06d.shm", dir, name, (int) pid);
     memset(&pi, 0, sizeof(pi));
+    strncpy(pi.version, MILK_PROCESSINFO_VERSION, sizeof(pi.version) - 1);
     pi.loopstat = loopstat;
     FILE *f     = fopen(path, "w");
     fwrite(&pi, sizeof(pi), 1, f);
@@ -156,6 +158,7 @@ static void test_reap(void)
     int              fd = open(path, O_RDWR);
     PROCESSINFOLIST *pl = mmap(NULL, sizeof(*pl), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
+    strncpy(pl->version, MILK_PROCESSINFO_VERSION, sizeof(pl->version) - 1);
     struct timespec now;
     clock_gettime(CLOCK_REALTIME, &now);
     const char *names[5] = { "live", "stopped", "crashed", "nofile", "reused" };
