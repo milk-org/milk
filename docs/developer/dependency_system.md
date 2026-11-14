@@ -18,15 +18,13 @@ MILK and enable additional features:
 | `USE_LAPACKE`  | ON      | `LAPACKE`             | LAPACKE linear algebra routines                   |
 | `USE_MKL`      | OFF     | `BLAS`, `LAPACKE`     | Intel MKL (provides both `BLAS` and `LAPACKE`)    |
 | `USE_CUDA`     | OFF     | `CUDA`                | CUDA GPU computations                             |
-| `USE_MAGMA`    | OFF     | `MAGMA`               | MAGMA linear algebra on GPU routines              |
 
-The five valid `<X>` extension tokens recognized by `// MILK_CMAKE_REQUEST_<X>` and
+The four valid `<X>` extension tokens recognized by `// MILK_CMAKE_REQUEST_<X>` and
 `// MILK_CMAKE_MANDATE_<X>` are:
 
 - `BLAS` (provided by OpenBLAS or MKL, defines `HAVE_BLAS`)
 - `LAPACKE` (provided by LAPACKE, OpenBLAS, or MKL, defines `HAVE_LAPACKE`)
 - `CUDA` (defines `HAVE_CUDA`)
-- `MAGMA` (defines `HAVE_MAGMA`)
 - `CFITSIO` (defines `USE_CFITSIO`)
 
 ## 1. User build requests and CMake symbols

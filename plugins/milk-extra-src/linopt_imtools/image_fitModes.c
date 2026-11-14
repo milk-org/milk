@@ -13,7 +13,6 @@
 #include "mask_to_pixtable.h"
 
 #include "compute_SVDpseudoInverse.h"
-#include "linalgebra/linalgebra.h"
 
 // MILK_CMAKE_MANDATE_BLAS
 // MILK_CMAKE_MANDATE_LAPACKE
@@ -93,16 +92,8 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
         FUNC_CHECK_RETURN(linopt_imtools_image_to_vec(IDmodes_name, "_fm_pixind", "_fm_pixmul",
                                                       "_fm_respm", NULL));
 
-#ifdef HAVE_MAGMA
-        FUNC_CHECK_RETURN(LINALGEBRA_magma_compute_SVDpseudoInverse("_fm_respm", "_fm_recm", SVDeps,
-                                                                    10000, "_fm_vtmat", 0, 1, 64,
-                                                                    0, // GPU device
-                                                                    NULL));
-
-#else
         FUNC_CHECK_RETURN(linopt_compute_SVDpseudoInverse("_fm_respm", "_fm_recm", SVDeps, 10000,
                                                           "_fm_vtmat", NULL));
-#endif
     }
 
     FUNC_CHECK_RETURN(

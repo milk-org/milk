@@ -12,7 +12,6 @@
 # MILK_CMAKE_REQUEST_BLAS
 # MILK_CMAKE_REQUEST_LAPACKE
 # MILK_CMAKE_REQUEST_CUDA
-# MILK_CMAKE_REQUEST_MAGMA
 # MILK_CMAKE_REQUEST_CFITSIO
 #
 # If any source in the target carries the directive, the corresponding
@@ -24,7 +23,6 @@
 # MILK_CMAKE_MANDATE_BLAS
 # MILK_CMAKE_MANDATE_LAPACKE
 # MILK_CMAKE_MANDATE_CUDA
-# MILK_CMAKE_MANDATE_MAGMA
 # MILK_CMAKE_MANDATE_CFITSIO
 #
 # The source file declares a hard requirement on an extension.
@@ -53,7 +51,6 @@ function(milk_apply_extensions target)
   set(_want_blas FALSE)
   set(_want_lapacke FALSE)
   set(_want_cuda FALSE)
-  set(_want_magma FALSE)
   set(_want_cfitsio FALSE)
 
   set(_valid_src_count 0)
@@ -79,9 +76,6 @@ function(milk_apply_extensions target)
       endif()
       if(_line MATCHES "MILK_CMAKE_REQUEST_CUDA")
         set(_want_cuda TRUE)
-      endif()
-      if(_line MATCHES "MILK_CMAKE_REQUEST_MAGMA")
-        set(_want_magma TRUE)
       endif()
       if(_line MATCHES "MILK_CMAKE_REQUEST_CFITSIO")
         set(_want_cfitsio TRUE)
@@ -110,13 +104,6 @@ function(milk_apply_extensions target)
       if(_line MATCHES "MILK_CMAKE_MANDATE_CUDA")
         if(HAVE_CUDA)
           set(_want_cuda TRUE)
-        else()
-          set(_src_excluded TRUE)
-        endif()
-      endif()
-      if(_line MATCHES "MILK_CMAKE_MANDATE_MAGMA")
-        if(HAVE_MAGMA)
-          set(_want_magma TRUE)
         else()
           set(_src_excluded TRUE)
         endif()
@@ -163,9 +150,6 @@ function(milk_apply_extensions target)
   endif()
   if(_want_cuda AND COMMAND apply_cuda_to_target)
     apply_cuda_to_target(${target})
-  endif()
-  if(_want_magma AND COMMAND apply_magma_to_target)
-    apply_magma_to_target(${target})
   endif()
   if(_want_cfitsio AND COMMAND apply_cfitsio_to_target)
     apply_cfitsio_to_target(${target})

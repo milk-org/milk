@@ -43,7 +43,6 @@ Some optional dependencies are detected by MILK and enable additional features:
 | `USE_LAPACKE`    | ON      | LAPACKE linear algebra routines (if found)                 |
 | `USE_MKL`        | OFF     | Intel MKL compute library                                  |
 | `USE_CUDA`       | OFF     | CUDA GPU computations                                      |
-| `USE_MAGMA`      | OFF     | MAGMA linear algebra on GPU routines                       |
 | `USE_LTO`        | ON      | Enable Link-Time Optimization (`-flto=auto`)               |
 | `USE_STATIC_LTO` | OFF     | Link standalone `fpsexec`s against static archives         |
 
@@ -73,7 +72,7 @@ dependencies as a developer.
 | **Calc & JIT**     | `cmake .. -DUSE_CLI=OFF -DUSE_PLUGINS=OFF`                                 | + `milkprop`, `milkcalc` (JIT) & `milk-fpsexec-milk-calc`                    |
 | **Standalone**     | `cmake .. -DUSE_CLI=OFF`                                                   | + both Plugins and Calc & JIT (all standalone `fpsexec`s, no CLI)            |
 | **Full**           | `cmake ..`                                                                 | + `milk-cli`, `milk-script`, `milk.bash`, `milk-CTRL`, `milk-termview`       |
-| **Full + options** | `cmake .. -DUSE_<X_OPTIONAL_DEP>=ON`                                       | + GPU acceleration (CUDA, MAGMA) or Intel MKL                                |
+| **Full + options** | `cmake .. -DUSE_<X_OPTIONAL_DEP>=ON`                                       | + GPU acceleration (CUDA) or Intel MKL                                       |
 
 All tiers are built with:
 

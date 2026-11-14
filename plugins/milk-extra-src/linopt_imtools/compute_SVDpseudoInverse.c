@@ -24,7 +24,6 @@
 
 #include "COREMOD_iofits/savefits.h"
 #include "timeutils.h"
-#include "linalgebra/linalgebra.h"
 
 
 /* ================================================================
@@ -41,20 +40,18 @@ static char    outimname[FUNCTION_PARAMETER_STRMAXLEN]      = "outim";
 static double  SVD_epsilon                                  = 0.001;
 static int64_t max_NBmodes                                  = 10000;
 static char    outimVTmatname[FUNCTION_PARAMETER_STRMAXLEN] = "outVTmat";
-static int64_t useGPU                                       = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                         \
-    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")           \
-    X(".outim", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")            \
-    X(".svdeps", &SVD_epsilon, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")         \
-    X(".maxNBmode", &max_NBmodes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Maximum NB modes")  \
-    X(".outimVT", outimVTmatname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output VT matrix") \
-    X(".GPU", &useGPU, FPTYPE_INT64, 0, FPFLAG_DEFAULT_INPUT, "use GPU")
+#define FPS_PARAMS(X)                                                                        \
+    X(".inim", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image")          \
+    X(".outim", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")           \
+    X(".svdeps", &SVD_epsilon, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "SVD cutoff")        \
+    X(".maxNBmode", &max_NBmodes, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "Maximum NB modes") \
+    X(".outimVT", outimVTmatname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output VT matrix")
 
 
 /* ================================================================
@@ -457,21 +454,8 @@ static MILK_HOT errno_t compute_SVDpseudoInverse_compute(const MILK_RUNNABLE *se
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    if (useGPU == 0)
-    {
-        printf("==== CPU =====\n");
-        linopt_compute_SVDpseudoInverse(inimname, outimname, SVD_epsilon, max_NBmodes,
-                                        outimVTmatname, NULL);
-    }
-    else
-    {
-        printf("==== GPU =====\n");
-#ifdef HAVE_MAGMA
-        LINALGEBRA_magma_compute_SVDpseudoInverse(inimname, outimname, SVD_epsilon, max_NBmodes,
-                                                  outimVTmatname, 0, 1, 64, 0, /* GPU device */
-                                                  NULL);
-#endif
-    }
+    linopt_compute_SVDpseudoInverse(inimname, outimname, SVD_epsilon, max_NBmodes, outimVTmatname,
+                                    NULL);
 
     MILK_PROCINFO_END(self)
 

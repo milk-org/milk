@@ -22,4 +22,3 @@ See also: [Programmer's Guide §6](../docs/arch/programmers_guide.md#6-cmakelist
 | `have_blas_lapacke.cmake`   | Detects OpenBLAS / Intel MKL / LAPACKE and sets `HAVE_BLAS`, `HAVE_OPENBLAS`, `HAVE_MKL`, `HAVE_LAPACKE`          |
 | `have_cfitsio.cmake`        | Detects `cfitsio` via `pkg-config` and sets `HAVE_CFITSIO`                                                        |
 | `have_cuda.cmake`           | Detects CUDA compiler and toolkit (`CUDAToolkit`) and sets `HAVE_CUDA`                                            |
-| `have_magma.cmake`          | Detects MAGMA GPU linear algebra library (`HAVE_MAGMA`) and provides `apply_magma_to_target()`                    |

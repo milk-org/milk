@@ -16,6 +16,9 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-13** — MAGMA support is removed: the `USE_MAGMA` option and linalgebra's MAGMA
+  GPU pseudo-inverse. `lintools.impsinvsvd` loses its `.GPU` parameter, which computed nothing
+  without MAGMA; it always computes on the CPU. linalgebra keeps its cuSOLVER pseudo-inverse.
 - **2026-11-13** — The clustering plugin is removed: `milkclustering`, its commands
   `clustering.cubeclust` and `clustering.mindiffscan`, and their fpsexec binaries.
 - **2026-11-10** — `mem.streamdelay` (`milk-fpsexec-mem-streamdelay`) and the calculator's new

@@ -55,7 +55,6 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     | **LAPACKE**         | `USE_LAPACKE`  | ON      | Linear algebra routines (auto-disabled if not found)        |
     | **MKL** (`mkl-sdl`) | `USE_MKL`      | OFF     | Intel linear algebra; takes priority over OpenBLAS when ON  |
     | **CUDA**            | `USE_CUDA`     | OFF     | NVIDIA GPU computation                                      |
-    | **MAGMA**           | `USE_MAGMA`    | OFF     | GPU linear algebra library over CUDA                        |
 
     **LAPACKE** is often provided by either MKL or OpenBLAS.
     If using neither, standalone LAPACKE can be installed (`apt install liblapacke-dev` or `yum install lapacke-devel`).
@@ -70,14 +69,6 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     For GPU-accelerated linear algebra:
 
     - Install **NVIDIA driver** and **CUDA toolkit**
-    - Install **MAGMA**
-
-    If cmake reports "No package 'magma' found", add the MAGMA pkg-config path to your shell
-    profile:
-
-    ```bash title="~/.bashrc"
-    export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
-    ```
 
 **Clone:**
 

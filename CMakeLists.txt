@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.17)
 project(milk LANGUAGES C)
 
 # Examples : cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON cmake ..
-# -DUSE_CUDA=ON -DUSE_MAGMA=ON cmake .. -DCMAKE_BUILD_TYPE=Debug
+# -DUSE_CUDA=ON cmake .. -DCMAKE_BUILD_TYPE=Debug
 
 # =======================================
 # BUILD PROFILE OPTIONS
@@ -201,7 +201,6 @@ set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
 # options
 option(USE_CUDA "Use CUDA" OFF)
-option(USE_MAGMA "Use MAGMA" OFF)
 
 # BLAS + LAPACKE Options (default ON when detected via pkg-config)
 pkg_check_modules(_OPENBLAS_PROBE QUIET openblas)
@@ -221,11 +220,6 @@ option(USE_LAPACKE "Use LAPACKE" ${_DEFAULT_USE_LAPACKE})
 if(USE_CUDA)
   # --> Either HAVE_CUDA or USE_CUDA=OFF
   include(cmake/have_cuda.cmake)
-endif()
-
-if(USE_CUDA AND USE_MAGMA)
-  # --> Either HAVE_MAGMA or USE_MAGMA=OFF
-  include(cmake/have_magma.cmake)
 endif()
 
 if(USE_CFITSIO)
@@ -463,7 +457,6 @@ message("PROJECT_BINARY_DIR       = ${PROJECT_BINARY_DIR}")
 message("CMAKE_INSTALL_PREFIX     = ${CMAKE_INSTALL_PREFIX}")
 
 message("USE_CUDA                 = ${USE_CUDA}")
-message("USE_MAGMA                = ${USE_MAGMA}")
 
 # TODO I can't find a trace of where EXTRAMODULES is used?
 message("EXTRAMODULES             = ${EXTRAMODULES}")

@@ -68,8 +68,6 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     int     Save = 0;
     long    xysize;
     long    IDmatC;
-    //int use_magma = 1;                         // use MAGMA library if available
-    //int magmacomp = 0;
 
     //imageID IDfiltC;
     // float *valfarray;
@@ -410,7 +408,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
     /// - mvecsize is the size of each vector, equal to NBpixin times PForder
     ///
     /// Data matrix is stored as image of size NBmvec x mvecsize, to be fed to routine compute_SVDpseudoInverse
-    // in linopt_imtools (CPU mode) or in linalgebra (GPU mode)\n
+    // in linopt_imtools\n
     ///
     NBmvec =
         nbspl - PForder -
@@ -603,22 +601,12 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char                 *IDin_name
         }
         save_fits("PFfmdat", "PFfmdat.fits");
 
-        /// If using MAGMA, call function LINALGEBRA_magma_compute_SVDpseudoInverse()\n
-        /// Otherwise, call function linopt_compute_SVDpseudoInverse()\n
+        /// Compute the pseudo-inverse with linopt_compute_SVDpseudoInverse()\n
 
         NB_SVD_Modes = 10000;
 
-#ifdef HAVE_MAGMA
-        printf("Using magma ...\n");
-        LINALGEBRA_magma_compute_SVDpseudoInverse("PFmatD", "PFmatC", SVDeps_run, NB_SVD_Modes,
-                                                  "PF_VTmat", LOOPmode, testmode, 64,
-                                                  0, // GPU device
-                                                  NULL);
-#else
-        printf("Not using magma ...\n");
         linopt_compute_SVDpseudoInverse("PFmatD", "PFmatC", SVDeps_run, NB_SVD_Modes, "PF_VTmat",
                                         NULL);
-#endif
 
         /// Result (pseudoinverse) is stored in image PFmatC\n
         printf("Done assembling pseudoinverse\n");

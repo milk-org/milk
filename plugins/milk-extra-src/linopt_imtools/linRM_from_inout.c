@@ -8,7 +8,6 @@
  */
 
 // MILK_CMAKE_MANDATE_BLAS // Actually a carry-over for linkage to linopt_compute_SVDpseudoInverse
-// MILK_CMAKE_REQUEST_MAGMA
 
 #include <math.h>
 
@@ -20,7 +19,6 @@
 #endif
 
 #include "compute_SVDpseudoInverse.h"
-#include "linalgebra/linalgebra.h"
 
 
 /* ================================================================
@@ -96,12 +94,6 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
     imageID ID_rm;
     int     autoMask_MODE = 0; // if 1, automatically measure input mask based on IDinput_name image
     imageID IDpinv;
-    //int use_magma = 0;
-
-    //int ngpu;
-
-    //ngpu = 0;
-    setenv("CUDA_VISIBLE_DEVICES", "3,4", 1);
 
     IDin  = image_ID(IDinput_name, dcimg, dcnimg);
     IDout = image_ID(IDoutput_name, dcimg, dcnimg);
@@ -190,14 +182,7 @@ errno_t linopt_compute_linRM_from_inout(const char *IDinput_name,
 #endif
 
     // compute pokeM pseudo-inverse
-#ifdef HAVE_MAGMA
-    LINALGEBRA_magma_compute_SVDpseudoInverse("pokeM", "pokeMinv", SVDeps, insize, "VTmat", 0, 0,
-                                              64,
-                                              0, // GPU device
-                                              NULL);
-#else
     linopt_compute_SVDpseudoInverse("pokeM", "pokeMinv", SVDeps, insize, "VTmat", NULL);
-#endif
 
     list_image_ID();
 #ifdef HAVE_CFITSIO

@@ -57,7 +57,7 @@ Error message
 
 **Fixes**:
 
-- Optional external libraries (BLAS, LAPACKE, CUDA, MAGMA, cfitsio): add the
+- Optional external libraries (BLAS, LAPACKE, CUDA, cfitsio): add the
   `// MILK_CMAKE_REQUEST_<X>` or `// MILK_CMAKE_MANDATE_<X>` tag in the source
   ([dependency_system.md](../../../docs/developer/dependency_system.md)), not link rules.
 - The framework libraries are linked by `milk_add_runnable_module()`; link a module-specific

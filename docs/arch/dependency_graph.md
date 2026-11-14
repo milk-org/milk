@@ -503,8 +503,8 @@ All plugins link the runnable base set (`milkfps`, `milkcomputeunit`, `milkproce
 | Target              | Additional Links                 | Optional                            |
 | ------------------- | -------------------------------- | ----------------------------------- |
 | milkfft             | fftw3, fftw3f                    |                                     |
-| milklinalgebra      | OpenBLAS                         | CUDA, MAGMA, MKL, lapacke           |
-| milklinoptimtools   | OpenBLAS, lapacke                | MAGMA, MKL                          |
+| milklinalgebra      | OpenBLAS                         | CUDA, MKL, lapacke                  |
+| milklinoptimtools   | OpenBLAS, lapacke                | MKL                                 |
 | milkimagegen        | milkstatistic                    |                                     |
 | milkstatistic       | _(runnable base)_                |                                     |
 | milkimagebasic      | milkimagefilter                  | cfitsio                             |
@@ -512,9 +512,9 @@ All plugins link the runnable base set (`milkfps`, `milkcomputeunit`, `milkproce
 | milkimageformat     | _(runnable base)_                | milkimagefilter, cfitsio            |
 | milkinfo            | _(runnable base)_                | ncurses (USE_NCURSES)               |
 | milkZernikePolyn    | milkimagegen                     | cfitsio                             |
-| milklinARfilterPred | milklinalgebra, OpenBLAS         | CUDA, MAGMA, MKL, lapacke, cfitsio  |
+| milklinARfilterPred | milklinalgebra, OpenBLAS         | CUDA, MKL, lapacke, cfitsio         |
 | milkkdtree          | _(runnable base)_                |                                     |
-| milkimgreduce       | _(runnable base)_                | CUDA, MAGMA                         |
+| milkimgreduce       | _(runnable base)_                | CUDA                                |
 | milkpsf             | _(runnable base)_                | cfitsio                             |
 
 </details>
@@ -533,7 +533,7 @@ All cacao modules link the runnable base set. Additional links per module:
 | cacaoAOloopControlPredictiveControl | milklinoptimtools, cacaoAOloopControl                                            |                                     |
 | cacaoAOloopControlcompTools         | cacaoAOloopControl                                                               |                                     |
 | cacaoAOloopControlperfTest          | milkstatistic, cacaoAOloopControl                                                |                                     |
-| cacaocomputeCalib                   | milkinfo, milklinoptimtools, milkstatistic, milkZernikePolyn, cacaoAOloopControl | CUDA, MAGMA, OpenBLAS, MKL, lapacke |
+| cacaocomputeCalib                   | milkinfo, milklinoptimtools, milkstatistic, milkZernikePolyn, cacaoAOloopControl | CUDA, OpenBLAS, MKL, lapacke        |
 | cacaopyramidWFStools                | milkinfo, cacaoAOloopControl                                                     |                                     |
 
 </details>
