@@ -16,6 +16,8 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-13** — The clustering plugin is removed: `milkclustering`, its commands
+  `clustering.cubeclust` and `clustering.mindiffscan`, and their fpsexec binaries.
 - **2026-11-10** — `mem.streamdelay` (`milk-fpsexec-mem-streamdelay`) and the calculator's new
   built-in `streamdelay(im[, weights], delay=..., unit=...)` operator share a reusable ring-buffer
   engine (`milk_stream_delay_*` in `COREMOD_memory`) supporting 1-D/2-D/3-D streams, time (`unit=0`,

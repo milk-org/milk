@@ -198,7 +198,6 @@ graph TD
         KDTREE["milkkdtree"]:::plugin
         IMREDUCE["milkimgreduce"]:::plugin
         PSF["milkpsf"]:::plugin
-        CLUSTER["milkclustering"]:::plugin
     end
 
     subgraph cacaomods ["cacao modules"]
@@ -240,7 +239,6 @@ graph TD
     KDTREE --> RUNNABLE
     IMREDUCE --> RUNNABLE
     PSF --> RUNNABLE
-    CLUSTER --> RUNNABLE
 
     AOLOOP --> RUNNABLE
     AOLOOP --> LINOPT
@@ -518,7 +516,6 @@ All plugins link the runnable base set (`milkfps`, `milkcomputeunit`, `milkproce
 | milkkdtree          | _(runnable base)_                |                                     |
 | milkimgreduce       | _(runnable base)_                | CUDA, MAGMA                         |
 | milkpsf             | _(runnable base)_                | cfitsio                             |
-| milkclustering      | _(runnable base)_                |                                     |
 
 </details>
 

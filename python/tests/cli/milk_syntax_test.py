@@ -79,8 +79,8 @@ def test_keywords_namespaces_and_module_registration(tmp_path):
     assert "seq" not in tokens and "procinfo" not in tokens
 
     res2 = milk_cli_script(
-        '@module load milkclustering --as s >/dev/null 2>&1; echo "rc=$?"\n'
-        '@module load milkclustering --as clu >/dev/null; echo "ok=$?"\n'
+        '@module load milkpsf --as s >/dev/null 2>&1; echo "rc=$?"\n'
+        '@module load milkpsf --as clu >/dev/null; echo "ok=$?"\n'
         'milk.ci >/dev/null; echo "ci=$?"\n'
         '@ci >/dev/null 2>&1; echo "old=$?"',
         tmp_path,

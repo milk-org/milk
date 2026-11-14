@@ -167,8 +167,7 @@ milk/
 │   │   ├── linARfilterPred/          Linear AR predictive filter
 │   │   ├── kdtree/                   k-d tree spatial indexing
 │   │   ├── img_reduce/               Image frame reduction
-│   │   ├── psf/                      PSF analysis
-│   │   └── clustering/               Clustering algorithms
+│   │   └── psf/                      PSF analysis
 │   │
 │   └── cacao-src/ → ~/src/cacao       ← AO loop control (symlink)
 │       ├── AOloopControl/            Central AO loop engine

@@ -43,7 +43,6 @@ FPSEXECS = _find_fpsexecs()
         "milkCOREMODarith",
         "milkCOREMODiofits",
         "milkCOREMODtools",
-        "milkclustering",
         "milkcompilertest",
         "milkfft",
         "milkfpstest",
