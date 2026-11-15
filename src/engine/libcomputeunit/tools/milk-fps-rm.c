@@ -29,7 +29,7 @@ static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, FR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [%soptions%s] [%sfpsname%s | -r %sregex%s]\n\n", mh_color ? MH_CMD : "",
+    printf("  %s%s%s [%soptions%s] [%sfpsname%s ... | -r %sregex%s]\n\n", mh_color ? MH_CMD : "",
            progname, mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "", mh_color ? MH_ARG : "",
            mh_color ? MH_RST : "");
@@ -41,7 +41,11 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-r, --regex", mh_color ? MH_RST : "",
            "Treat argument as an extended regular expression");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-x, --exact", mh_color ? MH_RST : "",
-           "The argument is an exact FPS name (default)");
+           "Arguments are exact FPS names (default)");
+    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "--ignore-missing", mh_color ? MH_RST : "",
+           "Succeed without error when named FPS does not exist");
+    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-q, --quiet", mh_color ? MH_RST : "",
+           "Suppress informational stdout messages");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-v, --verbose", mh_color ? MH_RST : "",
            "Verbose output");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
@@ -75,7 +79,7 @@ static void print_help(const char *progname, int mh_color)
  * Removes the FPS file, its unit directory, and the processinfo files of its dead processes.
  * Returns 0 on success.
  */
-static int remove_fps(const char *name, int verbose, int force)
+static int remove_fps(const char *name, int verbose, int quiet, int force)
 {
     FPS_UNIT_STATUS st[2];
     int             running = 0;
@@ -146,7 +150,10 @@ static int remove_fps(const char *name, int verbose, int force)
     functionparameter_FPSremove(&fps);
     fps_disconnect(&fps);
     fps_unit_unlock(lockfd);
-    printf("FPS '%s' removed.\n", name);
+    if (!quiet)
+    {
+        printf("FPS '%s' removed.\n", name);
+    }
 
     return 0;
 }
@@ -165,20 +172,30 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int verbose    = 0;
-    int force      = 0;
-    int regex_mode = 0;
+    enum
+    {
+        OPT_IGNORE_MISSING = 1001
+    };
+
+    int verbose        = 0;
+    int quiet          = 0;
+    int force          = 0;
+    int regex_mode     = 0;
+    int ignore_missing = 0;
     int opt;
 
     static struct option long_options[] = { { "force", no_argument, 0, 'f' },
                                             { "regex", no_argument, 0, 'r' },
                                             { "exact", no_argument, 0, 'x' },
+                                            { "ignore-missing", no_argument, 0,
+                                              OPT_IGNORE_MISSING },
+                                            { "quiet", no_argument, 0, 'q' },
                                             { "verbose", no_argument, 0, 'v' },
                                             { "help", no_argument, 0, 'h' },
                                             { "help-oneline", no_argument, 0, '1' },
                                             { 0, 0, 0, 0 } };
 
-    while ((opt = getopt_long(argc, argv, "frxvh1", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "frxqvh1", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -191,6 +208,12 @@ int main(int argc, char *argv[])
         case 'x':
             regex_mode = 0;
             break;
+        case OPT_IGNORE_MISSING:
+            ignore_missing = 1;
+            break;
+        case 'q':
+            quiet = 1;
+            break;
         case 'v':
             verbose = 1;
             break;
@@ -202,6 +225,42 @@ int main(int argc, char *argv[])
             print_help(argv[0], 1);
             return 1;
         }
+    }
+
+    /* Fast path: exact FPS name(s) without scanning the entire SHM directory */
+    if (!regex_mode && optind < argc)
+    {
+        char shmdir[200];
+        function_parameter_struct_shmdirname(shmdir);
+
+        int errors = 0;
+        for (int arg_idx = optind; arg_idx < argc; arg_idx++)
+        {
+            const char *name = argv[arg_idx];
+            if (name[0] == '\0' || strchr(name, '/') != NULL)
+            {
+                PRINT_ERROR("Error: invalid FPS name '%s'.", name);
+                errors++;
+                continue;
+            }
+
+            char shmpath[512];
+            snprintf(shmpath, sizeof(shmpath), "%s/%s.fps.shm", shmdir, name);
+            if (access(shmpath, F_OK) != 0)
+            {
+                if (ignore_missing)
+                {
+                    continue;
+                }
+                PRINT_ERROR("Error: cannot connect to FPS '%s'. It may not exist.", name);
+                errors++;
+                continue;
+            }
+
+            errors += remove_fps(name, verbose, quiet, force);
+        } // for arg_idx
+
+        return (errors > 0) ? 1 : 0;
     }
 
     const char *pattern = NULL;
@@ -225,7 +284,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (1) /* Always scan directory unless we specifically only want to target exactly one existing pattern but let's scan anyway */
+    if (1) /* Scan directory for regex or interactive selection */
     {
         char shmdir[200];
         function_parameter_struct_shmdirname(shmdir);
@@ -237,11 +296,11 @@ int main(int argc, char *argv[])
         int    ret = glob(pat, 0, NULL, &gl);
         if (ret != 0 || gl.gl_pathc == 0)
         {
-            if (pattern != NULL)
+            if (pattern != NULL && !ignore_missing)
             {
                 PRINT_ERROR("Error: cannot connect to FPS '%s'. It may not exist.", pattern);
             }
-            else
+            else if (pattern == NULL && !quiet)
             {
                 printf("No FPS instances found.\n");
             }
@@ -253,7 +312,7 @@ int main(int argc, char *argv[])
             {
                 regfree(&regex);
             }
-            return (pattern != NULL) ? 1 : 0;
+            return (pattern != NULL && !ignore_missing) ? 1 : 0;
         }
         int    count         = (int) gl.gl_pathc;
         int    matched_count = 0;
@@ -293,11 +352,11 @@ int main(int argc, char *argv[])
 
         if (matched_count == 0)
         {
-            if (pattern)
+            if (pattern && !ignore_missing)
             {
                 PRINT_ERROR("Error: cannot connect to FPS '%s'. It may not exist.", pattern);
             }
-            else
+            else if (!pattern && !quiet)
             {
                 printf("No FPS instances found.\n");
             }
@@ -306,14 +365,14 @@ int main(int argc, char *argv[])
             {
                 regfree(&regex);
             }
-            return 1;
+            return (pattern != NULL && ignore_missing) ? 0 : 1;
         }
 
         if (pattern != NULL && matched_count == 1)
         {
             /* Exactly one match for a CLI arg:
              * remove without interactive prompt */
-            int rc = remove_fps(names[0], verbose, force);
+            int rc = remove_fps(names[0], verbose, quiet, force);
             for (int ii = 0; ii < matched_count; ii++)
             {
                 free(names[ii]);
@@ -409,7 +468,7 @@ int main(int argc, char *argv[])
         {
             if (selected[ii])
             {
-                errors += remove_fps(names[ii], verbose, force);
+                errors += remove_fps(names[ii], verbose, quiet, force);
             }
         }
 

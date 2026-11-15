@@ -63,7 +63,6 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 
     fitsfile *fptr = NULL; /* pointer to the FITS file; defined in fitsio.h */
     int       anynul;      /* nulval NULL: no null checking (NaN pixels stay NaN) */
-    long      bitpixl = 0;
 
     uint32_t naxes[3];
 
@@ -92,7 +91,12 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
             if (fileOK == 0)
             {
                 int status = 0;
-                fits_open_file(&fptr, file_name, READONLY, &status);
+                fits_open_image(&fptr, file_name, READONLY, &status);
+                if (status == END_OF_FILE)
+                {
+                    status = 0;
+                    fits_open_file(&fptr, file_name, READONLY, &status);
+                }
 
                 if (status != 0)
                 {
@@ -180,32 +184,21 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         FITSIO_CHECK_ERROR(status, errmode, "fits_get_hdrspace error on %s", file_name);
     }
 
+    int bitpix = 0;
     {
-        int status = 0;
-        fits_read_key(fptr, TLONG, "NAXIS", &naxis, NULL, &status);
-        FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS", file_name);
+        int  status     = 0;
+        int  naxis_i    = 0;
+        long naxes_l[3] = { 0, 0, 0 };
+
+        fits_get_img_param(fptr, 3, &bitpix, &naxis_i, naxes_l, &status);
+        FITSIO_CHECK_ERROR(status, errmode, "fits_get_img_param error on %s", file_name);
+        naxis = naxis_i;
+        for (int ax_idx = 0; ax_idx < naxis_i && ax_idx < 3; ax_idx++)
+        {
+            naxes[ax_idx] = (uint32_t) naxes_l[ax_idx];
+        }
         DEBUG_TRACEPOINT("naxis = %ld", naxis);
     }
-
-    for (long i = 0; i < naxis; i++)
-    {
-        char keyword[STRINGMAXLEN_FITSKEYWORDNAME];
-        WRITE_FITSKEYWNAME(keyword, "NAXIS%ld", i + 1);
-
-        {
-            int status = 0;
-            fits_read_key(fptr, TLONG, keyword, &naxes[i], NULL, &status);
-            FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS%ld", file_name, i);
-        }
-    }
-
-    {
-        int status = 0;
-        fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, NULL, &status);
-        FITSIO_CHECK_ERROR(status, errmode, "File %s has no BITPIX", file_name);
-    }
-
-    int bitpix = (int) bitpixl;
     {
         int status = 0;
         fits_read_key(fptr, TDOUBLE, "BSCALE", &bscale, NULL, &status);
@@ -411,10 +404,18 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         barray = NULL;
     }
 
-    // keywords to ignore
-    char *keywordignore[] = { "BITPIX", "NAXIS",  "SIMPLE", "EXTEND", "COMMENT", "DATE", "NAXIS1",
-                              "NAXIS2", "NAXIS3", "NAXIS4", "BSCALE", "BZERO",   0 };
-    //printf("%d FITS keywords detected\n", nbFITSkeys);
+    // keywords to ignore (including CFITSIO tile-compressed BINTABLE structural keywords)
+    const char *keywordignore[] = { "BITPIX",   "NAXIS",   "SIMPLE",  "EXTEND",   "COMMENT",
+                                    "HISTORY",  "DATE",    "NAXIS1",  "NAXIS2",   "NAXIS3",
+                                    "NAXIS4",   "BSCALE",  "BZERO",   "XTENSION", "PCOUNT",
+                                    "GCOUNT",   "TFIELDS", "THEAP",   "ZIMAGE",   "ZCMPTYPE",
+                                    "ZBITPIX",  "ZSIMPLE", "ZEXTEND", "ZQUANTIZ", "ZDITHER0",
+                                    "ZBLANK",   "ZSCALE",  "ZZERO",   "ZHECKSUM", "ZDATASUM",
+                                    "CHECKSUM", "DATASUM", NULL };
+    long        kwslot          = 0;
+    long        nbkw = (imgout->im != NULL && imgout->im->kw != NULL && imgout->im->md != NULL)
+                           ? (long) imgout->im->md[0].NBkw
+                           : 0;
     for (int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
     {
         char keyname[9];
@@ -425,54 +426,67 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
             fits_read_keyn(fptr, kwnum + 1, keyname, kwvaluestr, kwcomment, &status);
         }
 
-        //printf("FITS KEYW %3d  %8s %20s / %s\n", kwnum, keyname, kwvaluestr, kwcomment);
-
         int kwignore = 0;
-        int ki       = 0;
-        while (keywordignore[ki])
+        if (strncmp(keyname, "TTYPE", 5) == 0 || strncmp(keyname, "TFORM", 5) == 0 ||
+            strncmp(keyname, "ZTILE", 5) == 0 || strncmp(keyname, "ZNAXIS", 6) == 0 ||
+            strncmp(keyname, "ZNAME", 5) == 0 || strncmp(keyname, "ZVAL", 4) == 0)
+        {
+            kwignore = 1;
+        }
+        for (int ki = 0; !kwignore && keywordignore[ki] != NULL; ki++)
         {
             if (strcmp(keywordignore[ki], keyname) == 0)
             {
-                //printf("%3d IGNORING %s\n", kwnum, keyname);
                 kwignore = 1;
-                break;
             }
-            ki++;
         }
 
-        if ((kwignore == 0) && (strlen(kwvaluestr) > 0))
+        if ((kwignore == 0) && (strlen(kwvaluestr) > 0) && (kwslot < nbkw))
         {
-            int kwtypeOK = 0;
+            while (kwslot < nbkw && imgout->im->kw[kwslot].type != 'N')
+            {
+                kwslot++;
+            }
+            if (kwslot >= nbkw)
+            {
+                break;
+            }
 
-            // is this a long ?
-            char *tailstr;
+            IMAGE_KEYWORD *dstkw = &imgout->im->kw[kwslot];
+            snprintf(dstkw->name, KEYWORD_MAX_STRING, "%s", keyname);
+            snprintf(dstkw->comment, KEYWORD_MAX_COMMENT, "%s", kwcomment);
+
+            char *tailstr   = NULL;
             long  kwlongval = strtol(kwvaluestr, &tailstr, 10);
-            if (strlen(tailstr) == 0)
+            if (tailstr != kwvaluestr && *tailstr == '\0')
             {
-                kwtypeOK = 1;
-                image_keyword_addL(*imgout, keyname, kwlongval, kwcomment);
+                dstkw->type       = 'L';
+                dstkw->value.numl = kwlongval;
             }
-
-            if (kwtypeOK == 0)
+            else
             {
-                // is this a float ?
-                double kwdoubleval = strtold(kwvaluestr, &tailstr);
-                if (strlen(tailstr) == 0)
+                double kwdoubleval = strtod(kwvaluestr, &tailstr);
+                if (tailstr != kwvaluestr && *tailstr == '\0')
                 {
-                    kwtypeOK = 1;
-                    image_keyword_addD(*imgout, keyname, kwdoubleval, kwcomment);
+                    dstkw->type       = 'D';
+                    dstkw->value.numf = kwdoubleval;
                 }
-
-                if (kwtypeOK == 0)
+                else
                 {
-                    // default to string
-                    // remove leading and trailing '
-                    kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
-                    char *kwvaluestr1;
-                    kwvaluestr1 = kwvaluestr + 1;
-                    image_keyword_addS(*imgout, keyname, kwvaluestr1, kwcomment);
+                    size_t vlen = strlen(kwvaluestr);
+                    if (vlen >= 2 && kwvaluestr[0] == '\'' && kwvaluestr[vlen - 1] == '\'')
+                    {
+                        kwvaluestr[vlen - 1] = '\0';
+                        snprintf(dstkw->value.valstr, KEYWORD_MAX_STRING, "%s", kwvaluestr + 1);
+                    }
+                    else
+                    {
+                        snprintf(dstkw->value.valstr, KEYWORD_MAX_STRING, "%s", kwvaluestr);
+                    }
+                    dstkw->type = 'S';
                 }
             }
+            kwslot++;
         }
     }
 

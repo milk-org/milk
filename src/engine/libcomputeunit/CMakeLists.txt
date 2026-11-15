@@ -82,3 +82,8 @@ install(TARGETS milk-fps-rm DESTINATION bin)
 add_executable(milk-fps-wait tools/milk-fps-wait.c)
 target_link_libraries(milk-fps-wait PUBLIC ${LIBNAME} pthread m)
 install(TARGETS milk-fps-wait DESTINATION bin)
+
+# Initialize one or more FPS compute units in parallel
+add_executable(milk-fps-init tools/milk-fps-init.c)
+target_link_libraries(milk-fps-init PUBLIC ${LIBNAME} pthread m)
+install(TARGETS milk-fps-init DESTINATION bin)

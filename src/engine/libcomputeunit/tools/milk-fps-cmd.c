@@ -12,10 +12,12 @@
  */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "computeunit.h"
 #include "fps_globals.h"
@@ -142,8 +144,10 @@ static void print_help(const char *progname, int mh_color)
     }
     else
     {
-        printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "-t, --timeout S", 25),
+        printf("  " MH_PAD_FMT " %s\n", MH_PAD(MH_OPT, "-t, --timeout S", 25),
                "Start: readiness timeout (MILK_UNIT_START_TIMEOUT, default 10)");
+        printf("  " MH_PAD_FMT " %s\n\n", MH_PAD(MH_OPT, "-q, --quiet", 25),
+               "Suppress informational stdout messages");
     }
 
     milk_help_section("Examples", mh_color);
@@ -166,7 +170,7 @@ static void print_help(const char *progname, int mh_color)
     milk_help_see_also(see_also, 6, mh_color);
 } // print_help
 
-static int run_single_confstep(const char *fpsname)
+static int run_single_confstep(const char *fpsname, int quiet)
 {
     FPS fps  = { 0 };
     fps.SMfd = -1;
@@ -186,7 +190,7 @@ static int run_single_confstep(const char *fpsname)
     }
     snprintf(target, sizeof(target), "%s:confstep", fpsname);
     const char *cargv[] = { exe, target, NULL };
-    int         rc      = milkspawn_run(cargv, STDOUT_FILENO, STDERR_FILENO);
+    int         rc      = milkspawn_run(cargv, quiet ? -1 : STDOUT_FILENO, STDERR_FILENO);
     if (rc < 0)
     {
         fprintf(stderr, "Error: cannot run %s: %s\n", exe, strerror(errno));
@@ -200,7 +204,8 @@ static int run_multi_units(const char        *progname,
                            const char *const *names,
                            int                nnames,
                            int                has_timeout,
-                           double             timeout)
+                           double             timeout,
+                           int                quiet)
 {
     if (has_timeout)
     {
@@ -218,10 +223,11 @@ static int run_multi_units(const char        *progname,
 
     int hard_fail = 0;
     int timed_out = 0;
+    int out_fd    = quiet ? -1 : STDOUT_FILENO;
 
     for (int ii = 0; ii < nnames; ii++)
     {
-        pids[ii] = fps_unit_spawn(names[ii], op, NULL, STDOUT_FILENO, STDERR_FILENO);
+        pids[ii] = fps_unit_spawn(names[ii], op, NULL, out_fd, STDERR_FILENO);
         if (pids[ii] < 0)
         {
             fprintf(stderr, "%s: cannot spawn '%s' for '%s': %s\n", progname, op, names[ii],
@@ -289,6 +295,7 @@ int main(int argc, char *argv[])
 
     double       timeout     = 0.0;
     int          has_timeout = 0;
+    int          quiet       = 0;
     const char  *role        = NULL;
     int          release     = 0;
     int          opts_done   = 0;
@@ -341,6 +348,11 @@ int main(int argc, char *argv[])
             has_timeout = 1;
             continue;
         }
+        if (!opts_done && (strcmp(arg, "-q") == 0 || strcmp(arg, "--quiet") == 0) && !run)
+        {
+            quiet = 1;
+            continue;
+        }
         if (!opts_done && strcmp(arg, "--release") == 0 && run)
         {
             release = 1;
@@ -378,6 +390,20 @@ int main(int argc, char *argv[])
         return 2;
     }
 
+    if (quiet && !run)
+    {
+        fflush(stdout);
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0)
+        {
+            (void) dup2(devnull, STDOUT_FILENO);
+            if (devnull != STDOUT_FILENO)
+            {
+                close(devnull);
+            }
+        }
+    }
+
     int rc = 1;
     if (run)
     {
@@ -396,7 +422,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            rc = run_multi_units(progname, op, names, nnames, has_timeout, timeout);
+            rc = run_multi_units(progname, op, names, nnames, has_timeout, timeout, quiet);
         }
     }
     else if (strcmp(progname, "milk-fps-confstart") == 0)
@@ -417,7 +443,7 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(progname, "milk-fps-confstep") == 0)
     {
-        rc = run_single_confstep(names[0]);
+        rc = run_single_confstep(names[0], quiet);
     }
     else
     {

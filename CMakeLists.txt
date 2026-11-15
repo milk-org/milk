@@ -743,6 +743,8 @@ if(USE_CLI)
     DESTINATION bin)
 
   install(FILES scripts/milk.bash DESTINATION share/milk)
+  install(FILES scripts/commands.d/fpspipe.bash
+          DESTINATION share/milk/commands.d)
 
 endif(USE_CLI)
 

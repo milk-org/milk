@@ -17,6 +17,8 @@
 
 #include <math.h>
 #include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "milkdata.h"
 
@@ -127,7 +129,8 @@ errno_t milk_data_init(void)
     }
 
     gettimeofday(&t1, NULL);
-    srand(t1.tv_usec * t1.tv_sec);
+    srand((unsigned int) (t1.tv_usec * t1.tv_sec));
+    milk_rng_init(((uint64_t) t1.tv_sec << 32) ^ (uint64_t) t1.tv_usec ^ (uint64_t) getpid());
 
     return RETURN_SUCCESS;
 }
@@ -161,17 +164,21 @@ typedef struct
  */
 void milk_rng_init(uint64_t seed)
 {
-    MILK_RNG *rng = (MILK_RNG *) calloc(1, sizeof(MILK_RNG));
+    MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
     if (rng == NULL)
     {
-        PRINT_ERROR("MILK_RNG alloc failed");
-        exit(1);
+        rng = (MILK_RNG *) calloc(1, sizeof(MILK_RNG));
+        if (rng == NULL)
+        {
+            PRINT_ERROR("MILK_RNG alloc failed");
+            exit(1);
+        }
+        milk_data.rndgen = rng;
     }
     /* Avoid zero state (xorshift fixpoint) */
-    rng->state       = (seed == 0) ? 1 : seed;
-    rng->has_spare   = 0;
-    rng->spare       = 0.0;
-    milk_data.rndgen = rng;
+    rng->state     = (seed == 0) ? 1 : seed;
+    rng->has_spare = 0;
+    rng->spare     = 0.0;
 }
 
 
@@ -204,12 +211,26 @@ static inline uint64_t xorshift64star(MILK_RNG *rng)
 }
 
 
+static inline MILK_RNG *milk_rng_get(void)
+{
+    MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
+    if (rng == NULL)
+    {
+        struct timespec ts = { 0, 0 };
+        clock_gettime(CLOCK_REALTIME, &ts);
+        milk_rng_init(((uint64_t) ts.tv_sec << 32) ^ (uint64_t) ts.tv_nsec ^ (uint64_t) getpid());
+        rng = (MILK_RNG *) milk_data.rndgen;
+    }
+    return rng;
+}
+
+
 /**
  * @brief Generates a uniformly distributed double-precision random number.
  */
 double milk_rng_uniform(void)
 {
-    MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
+    MILK_RNG *rng = milk_rng_get();
     /* 53-bit mantissa -> [0, 1) */
     return (xorshift64star(rng) >> 11) * (1.0 / 9007199254740992.0);
 }
@@ -222,7 +243,7 @@ double milk_rng_uniform(void)
  */
 double milk_rng_gaussian(double sigma)
 {
-    MILK_RNG *rng = (MILK_RNG *) milk_data.rndgen;
+    MILK_RNG *rng = milk_rng_get();
 
     if (rng->has_spare)
     {
