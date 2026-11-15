@@ -31,6 +31,7 @@
 #include "CLIcore_script.h"
 #include "milk_bash.h"
 #include "milk_bash_internal.h"
+#include "milk_path.h"
 #include "milk_server.h"
 #include "milk_shell_lex.h"
 
@@ -529,5 +530,42 @@ int milk_bash_exec_file(const char *filename, int *out_exit_req)
     int rc = milk_bash_exec(buf, out_exit_req);
     milk_bash_set_label("milk");
     free(buf);
+    return rc;
+}
+
+/**
+ * milk_bash_set_args - Set $0, $1..$N (and set -x) in the bash co-process before a script runs
+ * @arg0:   $0
+ * @argc:   Number of words in @argv
+ * @argv:   $1..$N
+ * @xtrace: Also run `set -x`
+ *
+ * Return: 0 on success, else non-zero
+ */
+int milk_bash_set_args(const char *arg0, int argc, char *const *argv, int xtrace)
+{
+    size_t cap = 4 * strlen(arg0) + 32; /* a quoted word: at most 4 bytes per byte, + 2 */
+    for (int i = 0; i < argc; i++)
+    {
+        cap += 4 * strlen(argv[i]) + 3;
+    }
+    char *s = (char *) malloc(cap);
+    if (s == NULL)
+    {
+        return 1;
+    }
+    size_t n = (size_t) snprintf(s, cap, "BASH_ARGV0="); /* this prefix: no bash-epoch bump */
+    milkpath_shell_quote(s + n, cap - n, arg0);
+    n += strlen(s + n);
+    n += (size_t) snprintf(s + n, cap - n, "; set --");
+    for (int i = 0; i < argc; i++)
+    {
+        s[n++] = ' ';
+        milkpath_shell_quote(s + n, cap - n, argv[i]);
+        n += strlen(s + n);
+    }
+    snprintf(s + n, cap - n, "%s", xtrace ? "; set -x" : "");
+    int rc = milk_bash_exec(s, NULL);
+    free(s);
     return rc;
 }

@@ -12,9 +12,8 @@ Does:        zeros() shapes; one program with `if <scalar>: <statement>`, `skip`
              parameter set during a slow tick keeps its value; torn reads under a fast producer
              are run again and counted (`_torn`), in a pass, a reduction and a whole-image step
              alike; an input stream that another process creates again is mapped again. A unit
-             started with `run` on a stream whose
-             semaphore was posted before it started processes that frame first (tick 0), so the
-             frames posted by the test start at tick 1.
+             started with `run` flushes pre-existing trigger semaphore posts and waits for the
+             first frame posted after startup (tick 0).
 Covers:      milk-fpsexec-milk-calc (src/calc/units/milk_unit_calc.c), the program runner
              (src/calc/run/mc_prog.c), the rings (plan/mc_history.c), the parser and resolver
              (front/mc_parse.c, front/mc_resolve.c), ema (run/mc_prestage.c), torn-read retries
@@ -178,7 +177,7 @@ def test_ema_and_frame0_auto_zero_accumulators(tmp_path):
         + 'milk-fpsexec-milk-calc -n em1 -t cam -p "k_out:int=0 s_out:float=0" -f prog.calc fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n em1 run >run.log 2>&1 & pid=$!\n"
         "sleep 0.6\n"
-        'for v in 3 7 15; do @calc "cam = $v"; sleep 0.15; done; sleep 0.3\n'
+        'for v in 1 3 7 15; do @calc "cam = $v"; sleep 0.15; done; sleep 0.3\n'
         '@calc -v a,m "acc[0,0]; sm[0,0]"; echo "res=$a,$m,$(@get f.em1.k_out),$(@get f.em1.s_out)"\n'
         'echo "error=[$(@get f.em1.unit.error)]"; stop $pid',
         tmp_path,
@@ -324,3 +323,173 @@ def test_torn_counter_outside_elementwise_passes(tmp_path, stmt):
     assert value(res.stdout, "alone") == "0", out
     assert int(value(res.stdout, "with") or 0) > 0, out
     assert value(res.stdout, "error") == "[]", out
+
+
+def test_ring_of_a_stream_the_program_writes(tmp_path):
+    """hist()/prev() of an image the program writes: .unit.init makes it before the program is
+    built (calculator.md, `hist`)."""
+    (tmp_path / "o.calc").write_text(
+        "o = cam * 2\nd = o - prev(o)\nhist(o, 3)\nm = imean(o_hist, 2)\n"
+    )
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n o1 -t cam -f o.calc -i "o = cam * 0" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n o1 run >run.log 2>&1 & pid=$!\n"
+        'sleep 0.5; for v in 1 2 3 4; do @calc "cam = $v"; sleep 0.15; done; sleep 0.2\n'
+        '@calc -v d,m "d[0,0]; m[0,0]"; echo "a=$d,$m"\n'
+        'echo "error=[$(@get f.o1.unit.error)]"; stop $pid',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "error") == "[]", out
+    # cam 1 2 3 4: o = 8, prev(o) = 6; inside the tick the ring holds 6 4 2
+    assert value(res.stdout, "a") == "2,4", out
+
+
+def test_bound_param_precedence_and_compound_assign(tmp_path):
+    """Bound -p parameters take precedence over identically named streams and init cleanly on +=."""
+    res = milk_bash(
+        HELPERS + 'mem.mk2Dim "@S:x" 4 4 >/dev/null; @calc "x = 10"\n'
+        'milk-fpsexec-milk-calc -n bp -t cam -p "x:int=3 k:int=5" -e "k += x; y = cam + x" '
+        "fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n bp runstart >/dev/null; rcs=$?\n"
+        'sleep 0.2; @calc "cam = 2"; sleep 0.3\n'
+        '@calc -v xv,yv "x[0,0]; y[0,0]"\n'
+        'echo "rcs=$rcs"; echo "x=$xv"; echo "y=$yv"; echo "k=$(@get f.bp.k)"\n'
+        'echo "err=[$(@get f.bp.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n bp runstop >/dev/null",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rcs") == "0", out
+    assert value(res.stdout, "err") == "[]", out
+    assert value(res.stdout, "x") == "10", out
+    assert value(res.stdout, "y") == "5", out
+    assert value(res.stdout, "k") == "8", out
+
+
+def test_failed_frame_discards_earlier_staged_outputs(tmp_path):
+    """When a later statement in a frame fails, earlier targets in that frame are not posted."""
+    res = milk_bash(
+        HELPERS + 'mem.mk2Dim "@S:out1" 4 4 >/dev/null; @calc "out1 = 0"\n'
+        "c0=$(@get s.out1.cnt0)\n"
+        'milk-fpsexec-milk-calc -n u1 -t cam -e "out1 = cam + 99; bad = no_such_stream" '
+        "fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n u1 runstart >/dev/null; rcs=$?\n"
+        'sleep 0.2; @calc "cam = 2"; sleep 0.4\n'
+        '@calc -v ov "out1[0,0]"\n'
+        'torn=$(@get s.out1.stats | grep "^torn" | cut -f2)\n'
+        'echo "rcs=$rcs"; echo "c0=$c0"; echo "c1=$(@get s.out1.cnt0)"\n'
+        'echo "torn=$torn"; echo "ov=$ov"\n'
+        'echo "err=[$(@get f.u1.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n u1 runstop >/dev/null 2>&1 || true",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rcs") == "0", out
+    assert value(res.stdout, "c1") == value(res.stdout, "c0"), out
+    assert value(res.stdout, "torn") == "0", out
+    assert value(res.stdout, "ov") == "0", out
+    assert value(res.stdout, "err") != "[]", out
+
+
+def test_script_unit_return_in_snippet(tmp_path):
+    """milk.script wraps snippet in a function so `return 0` continues and `return 3` stops."""
+    res = milk_bash(
+        HELPERS + 'milk-fpsexec-milk-script -n sc0 -t cam -p "seen:int=0" '
+        "-c 'milk-fps-set sc0.seen $((seen + 1)); return 0' fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-script -n sc0 runstart >/dev/null; s0=$?\n"
+        'sleep 0.2; @calc "cam = 2"; sleep 0.2; @calc "cam = 3"; sleep 0.3\n'
+        'echo "s0=$s0"; echo "seen0=$(@get f.sc0.seen)"; echo "err0=[$(@get f.sc0.unit.error)]"\n'
+        "milk-fpsexec-milk-script -n sc0 runstop >/dev/null\n"
+        'milk-fpsexec-milk-script -n sc3 -t cam -c "return 3" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-script -n sc3 runstart >/dev/null\n"
+        'sleep 0.2; @calc "cam = 3"; sleep 0.4; echo "err3=[$(@get f.sc3.unit.error)]"\n'
+        "milk-fpsexec-milk-script -n sc3 runstop >/dev/null 2>&1 || true",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "s0") == "0", out
+    assert int(value(res.stdout, "seen0") or 0) >= 2, out
+    assert value(res.stdout, "err0") == "[]", out
+    assert value(res.stdout, "err3") != "[]", out
+
+
+def test_bad_init_fails_runstart_with_prefix(tmp_path):
+    """Bad -i syntax or unreadable -I file fails runstart immediately with an `init:` error."""
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n bi1 -t cam -i "a = (" -e "out = cam" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n bi1 runstart >/dev/null 2>&1\n"
+        'rc1=$?; echo "rc1=$rc1"; echo "err1=[$(@get f.bi1.unit.error)]"\n'
+        'milk-fpsexec-milk-calc -n bi2 -t cam -I /no/such/init.calc -e "out = cam" '
+        "fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n bi2 runstart >/dev/null 2>&1\n"
+        'rc2=$?; echo "rc2=$rc2"; echo "err2=[$(@get f.bi2.unit.error)]"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc1") != "0", out
+    assert "init:" in (value(res.stdout, "err1") or ""), out
+    assert value(res.stdout, "rc2") != "0", out
+    assert "init:" in (value(res.stdout, "err2") or ""), out
+
+
+def test_const_lag_and_non_const_lag_errors(tmp_path):
+    """prev() folds literal float lags like 2.0 cleanly and rejects non-const or fractional lags."""
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n lgok -t cam -e "hist(cam, 3); d = cam - prev(cam, 2.0)" '
+        "fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n lgok runstart >/dev/null; rcg=$?\n"
+        'sleep 0.2; for v in 1 3 7; do @calc "cam = $v"; sleep 0.2; done\n'
+        '@calc -v dv "d[0,0]"; echo "rcg=$rcg"; echo "dv=$dv"; echo "errg=[$(@get f.lgok.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n lgok runstop >/dev/null\n"
+        'milk-fpsexec-milk-calc -n lgnc -t cam -e "hist(cam, 3); d = prev(cam, _n)" '
+        "fpsinit >/dev/null\n"
+        'milk-fpsexec-milk-calc -n lgnc runstart >/dev/null 2>&1; sleep 0.2; @calc "cam = 8"; sleep 0.3\n'
+        'echo "st_n=$(@get f.lgnc.status)"; echo "errn=[$(@get f.lgnc.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n lgnc runstop >/dev/null 2>&1 || true\n"
+        'milk-fpsexec-milk-calc -n lgfr -t cam -e "hist(cam, 3); d = prev(cam, 1.5)" '
+        "fpsinit >/dev/null\n"
+        'milk-fpsexec-milk-calc -n lgfr runstart >/dev/null 2>&1; sleep 0.2; @calc "cam = 9"; sleep 0.3\n'
+        'echo "st_f=$(@get f.lgfr.status)"; echo "errf=[$(@get f.lgfr.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n lgfr runstop >/dev/null 2>&1 || true",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rcg") == "0", out
+    assert value(res.stdout, "errg") == "[]", out
+    assert value(res.stdout, "dv") == "6", out
+    assert value(res.stdout, "st_n") != "running", out
+    assert value(res.stdout, "errn") != "[]", out
+    assert value(res.stdout, "st_f") != "running", out
+    assert value(res.stdout, "errf") != "[]", out
+
+
+def test_uint64_large_roundtrip_and_int_range_checks(tmp_path):
+    """uint64 > LONG_MAX stays positive, and NaN or negative uint64 stops with an error."""
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n u64 -t cam -p "u:uint=10000000000000000000" '
+        '-e "u = u + 0" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n u64 runstart >/dev/null; rcu=$?\n"
+        'sleep 0.2; @calc "cam = 2"; sleep 0.3\n'
+        'echo "rcu=$rcu"; echo "u=$(@get f.u64.u)"; echo "erru=[$(@get f.u64.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n u64 runstop >/dev/null\n"
+        'milk-fpsexec-milk-calc -n uneg -t cam -p "u:uint=1" -e "u = -1" fpsinit >/dev/null\n'
+        'milk-fpsexec-milk-calc -n uneg runstart >/dev/null 2>&1; sleep 0.2; @calc "cam = 2"; sleep 0.3\n'
+        'echo "errneg=[$(@get f.uneg.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n uneg runstop >/dev/null 2>&1 || true\n"
+        'milk-fpsexec-milk-calc -n inan -t cam -p "k:int=1" -e "k = 0.0 / 0.0" fpsinit >/dev/null\n'
+        'milk-fpsexec-milk-calc -n inan runstart >/dev/null 2>&1; sleep 0.2; @calc "cam = 2"; sleep 0.3\n'
+        'echo "errnan=[$(@get f.inan.unit.error)]"\n'
+        "milk-fpsexec-milk-calc -n inan runstop >/dev/null 2>&1 || true",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rcu") == "0", out
+    assert value(res.stdout, "erru") == "[]", out
+    assert int(value(res.stdout, "u") or 0) > (1 << 62), out
+    assert value(res.stdout, "errneg") != "[]", out
+    assert value(res.stdout, "errnan") != "[]", out

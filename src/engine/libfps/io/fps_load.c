@@ -30,6 +30,12 @@ long function_parameter_structure_load(char *fpsname)
 
     DEBUG_TRACEPOINT("loading FPS %s", fpsname);
 
+    if (fpsarray == NULL)
+    {
+        fprintf(stderr, "ERROR: FPS array is not initialized\n");
+        return -1;
+    }
+
     fpsID = fps_ID(fpsname);
 
     if (fpsID == -1)

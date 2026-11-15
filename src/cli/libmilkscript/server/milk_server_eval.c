@@ -833,6 +833,10 @@ static int exec_single_batch_step(const char *raw_step, char *last_img, size_t l
     {
         for (int k = 1; k < s_argc; k++)
         {
+            if (strchr(s_argv[k], '/') != NULL)
+            {
+                continue;
+            }
             IMGID tmpid = imgid_make_from_name(s_argv[k]);
             if (!tmpid.stream_parse_error && tmpid.name[0] != '\0' &&
                 image_ID(tmpid.name, dcimg, dcnimg) != -1)
@@ -1038,7 +1042,7 @@ int milk_server_exec_calc_or_test(int            client_fd,
     }
 
     const char *expr = (const char *) payload;
-    snprintf(log_cmd, log_cmd_sz, "%s %s", is_test ? "@test" : "@=", expr);
+    snprintf(log_cmd, log_cmd_sz, "%s %s", is_test ? "@test" : "@calc", expr);
     uint32_t off = (uint32_t) (strlen(expr) + 1);
     if (off + sizeof(uint32_t) <= len)
     {

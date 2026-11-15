@@ -660,6 +660,11 @@ int mc_exec_prestage(mcalc_prog_t   *prog,
         double nd    = -1.0;
         int    nbins = 0;
 
+        if (is_rp && s1.naxis > 2) /* its bin table covers one frame */
+        {
+            mc_release_red_src(&s1);
+            return mc_err(err, errsz, "rprof: expected a 1-D or 2-D image");
+        }
         if (is_rp)
         {
             if (nargs == 3 && (mc_eval_scalar_d(rhs->u.call.args[1], &cx, err, errsz) != 0 ||

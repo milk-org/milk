@@ -34,6 +34,7 @@
 #endif
 
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <poll.h>
 #include <semaphore.h>
@@ -144,6 +145,29 @@ static void wait_unlock(void *ctx)
 }
 
 /**
+ * grab_err - Report an error of a GRAB or WAITFOR request to its caller
+ * @client_fd: The caller's connection
+ * @fmt:       printf format of the message, without a newline
+ *
+ * The request runs in a thread and brought no descriptors: fd 2 is the server's output file, or
+ * the stderr of another shell's command that runs meanwhile. The text goes to the caller, whose
+ * stderr shows it (MILK_FLAG_ERRTEXT).
+ */
+__attribute__((format(printf, 2, 3))) static void grab_err(int client_fd, const char *fmt, ...)
+{
+    char    msg[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+    if (client_fd < 0 || milk_proto_send(client_fd, MILK_MSG_VALUE, MILK_FLAG_ERRTEXT, msg,
+                                         (uint32_t) strlen(msg) + 1) != 0)
+    {
+        fprintf(stderr, "%s\n", msg);
+    }
+}
+
+/**
  * @brief Wait for a general boolean expression condition (`<`, `>`, `==`, `!=`, `&&`, `||`).
  */
 static int waitfor_expr_cond(const char            *target,
@@ -213,12 +237,69 @@ int milk_server_waitfor(int client_fd, const char *target, const char *arg2, dou
         return 1;
     }
 
-    const char *sp      = (arg2 != NULL) ? strstr(arg2, ";sem=") : NULL;
-    const char *cp      = (arg2 != NULL) ? strstr(arg2, ";cnt=") : NULL;
-    uint64_t    abs_cnt = (cp != NULL) ? (uint64_t) strtoull(cp + 5, NULL, 10) : 0;
-    int rc = milk_waitfor_stream(wt.stream, (arg2 != NULL) ? strtol(arg2, NULL, 10) : 1,
-                                 (sp != NULL) ? (int) strtol(sp + 5, NULL, 10) : -1,
-                                 (cp != NULL) ? &abs_cnt : NULL, 1, t_start, timeout_sec, &ops);
+    const char           *sp      = (arg2 != NULL) ? strstr(arg2, ";sem=") : NULL;
+    const char           *cp      = (arg2 != NULL) ? strstr(arg2, ";cnt=") : NULL;
+    long                  nframes = (arg2 != NULL) ? strtol(arg2, NULL, 10) : 1;
+    uint64_t              abs_cnt = (cp != NULL) ? (uint64_t) strtoull(cp + 5, NULL, 10) : 0;
+    FPS_STREAMNAME_PARSED sp_w    = fps_streamname_parse(wt.stream);
+    const char           *sn      = wt.stream;
+    if (strncmp(sn, "l.", 2) == 0 || strncmp(sn, "L:", 2) == 0)
+    {
+        sn += 2;
+    }
+    else if (strncmp(sn, "@L:", 3) == 0)
+    {
+        sn += 3;
+    }
+    else if (!sp_w.error && sp_w.name != NULL && sp_w.name[0] != '\0')
+    {
+        sn = sp_w.name;
+    }
+
+    milk_server_cmd_lock();
+    imageID lid = image_ID(sn, dcimg, dcnimg);
+    if (wt.local && (lid < 0 || dcimg[lid].md->shared))
+    {
+        milk_server_cmd_unlock();
+        grab_err(client_fd, "ERROR: @waitfor: no local image '%s'", sn);
+        return 1;
+    }
+    if (lid >= 0 && (wt.local || !dcimg[lid].md->shared))
+    {
+        uint64_t target_cnt =
+            (cp != NULL) ? abs_cnt : (dcimg[lid].md->cnt0 + (uint64_t) (nframes < 1 ? 1 : nframes));
+        milk_server_cmd_unlock();
+        for (int iter = 0;; milk_wait_backoff(&iter))
+        {
+            if (check_client_cancelled(client_fd))
+            {
+                return MILK_WAIT_CANCEL;
+            }
+            milk_server_cmd_lock();
+            imageID cur = image_ID(sn, dcimg, dcnimg);
+            if (cur < 0 || dcimg[cur].md == NULL || dcimg[cur].md->shared)
+            {
+                milk_server_cmd_unlock();
+                grab_err(client_fd, "ERROR: @waitfor: local image '%s' deleted", sn);
+                return 1;
+            }
+            int reached = (dcimg[cur].md->cnt0 >= target_cnt);
+            milk_server_cmd_unlock();
+            if (reached)
+            {
+                return 0;
+            }
+            if (timeout_sec > 0.0 && milk_wait_now() - t_start >= timeout_sec)
+            {
+                return MILK_WAIT_TIMEOUT;
+            }
+        }
+    }
+    milk_server_cmd_unlock();
+
+    int rc =
+        milk_waitfor_stream(wt.stream, nframes, (sp != NULL) ? (int) strtol(sp + 5, NULL, 10) : -1,
+                            (cp != NULL) ? &abs_cnt : NULL, 1, t_start, timeout_sec, &ops);
     return (rc == MILK_WAIT_FULL) ? 1
                                   : rc; /* reported by the wait; a failed command for the client */
 }
@@ -364,29 +445,6 @@ static void set_image_kw_long(IMAGE *im, const char *kname, int64_t val, const c
         snprintf(im->kw[slot].comment, KEYWORD_MAX_COMMENT, "%s", comment);
     }
     im->kw[slot].cnt++;
-}
-
-/**
- * grab_err - Report an error of a GRAB request to its caller
- * @client_fd: The caller's connection
- * @fmt:       printf format of the message, without a newline
- *
- * The request runs in a thread and brought no descriptors: fd 2 is the server's output file, or
- * the stderr of another shell's command that runs meanwhile. The text goes to the caller, whose
- * stderr shows it (MILK_FLAG_ERRTEXT).
- */
-__attribute__((format(printf, 2, 3))) static void grab_err(int client_fd, const char *fmt, ...)
-{
-    char    msg[512];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(msg, sizeof(msg), fmt, ap);
-    va_end(ap);
-    if (client_fd < 0 || milk_proto_send(client_fd, MILK_MSG_VALUE, MILK_FLAG_ERRTEXT, msg,
-                                         (uint32_t) strlen(msg) + 1) != 0)
-    {
-        fprintf(stderr, "%s\n", msg);
-    }
 }
 
 /**
@@ -549,10 +607,28 @@ int milk_server_grab(int         client_fd,
     uint64_t last_cnt = __atomic_load_n(&in.md->cnt0, __ATOMIC_ACQUIRE);
     uint64_t dropped  = 0;
     int      rc       = 0;
+    char     in_shmpath[512];
+    int      chk_in_ino = (!in_local && ImageStreamIO_filename(in_shmpath, sizeof(in_shmpath),
+                                                               in.name) == IMAGESTREAMIO_SUCCESS);
+    double   t_ino_chk  = t_start;
 
-    cube.md->write = 1;
+    /* another command may delete the cube at any time: a shm frame is copied unlocked into a
+     * private buffer, which goes into the cube under the lock */
+    IMAGE frame     = cube;
+    frame.array.raw = in_local ? cube.array.raw : malloc(npix2d * out_elsz);
+    int wrote_hdr   = 0;
+    if (frame.array.raw == NULL)
+    {
+        grab_err(client_fd, "ERROR: @grab: cannot allocate a frame buffer");
+        rc = 1;
+    }
+    else
+    {
+        cube.md->write = 1;
+        wrote_hdr      = 1;
+    }
     milk_server_cmd_unlock();
-    for (long f = 0; f < nframes; f++)
+    for (long f = 0; rc == 0 && f < nframes; f++)
     {
         if (wait_frames)
         {
@@ -567,6 +643,19 @@ int milk_server_grab(int         client_fd,
                 {
                     rc = 124;
                     break;
+                }
+                if (chk_in_ino && (milk_wait_now() - t_ino_chk) >= 0.5)
+                {
+                    t_ino_chk = milk_wait_now();
+                    struct stat st;
+                    if (stat(in_shmpath, &st) != 0 || st.st_ino != in.md->inode)
+                    {
+                        grab_err(
+                            client_fd,
+                            "ERROR: @grab: input stream re-created or deleted during the grab");
+                        rc = 1;
+                        break;
+                    }
                 }
                 if (semindex >= 0 && semindex < in.md->sem)
                 {
@@ -592,37 +681,35 @@ int milk_server_grab(int         client_fd,
             }
         }
 
-        /* the cube is a local image another command may delete; a local input too. The copy of a shm
-         * input runs unlocked (private mapping), the cube check and a local input's copy do not */
-        milk_server_cmd_lock();
-        if (grab_image_alive(&cube) < 0 || (in_local && grab_image_alive(&in) < 0))
+        /* a local input may be deleted too, and is copied straight into the cube under the lock */
+        if (in_local)
         {
-            milk_server_cmd_unlock();
-            grab_err(client_fd, "ERROR: @grab: image deleted during the grab");
-            rc = 1;
-            break;
-        }
-        if (!in_local)
-        {
-            milk_server_cmd_unlock(); /* copy a shm frame without holding up other commands */
+            milk_server_cmd_lock();
+            if (grab_image_alive(&cube) < 0 || grab_image_alive(&in) < 0)
+            {
+                milk_server_cmd_unlock();
+                grab_err(client_fd, "ERROR: @grab: image deleted during the grab");
+                rc = 1;
+                break;
+            }
         }
 
         /* recopy a frame the writer touched while we copied it (torn frame, milkdata_torn_frame.h) */
         uint64_t frame_cnt = 0;
+        uint64_t base      = in_local ? (uint64_t) f * npix2d : 0;
         for (int tries = 0; tries < MILK_FRAME_TRIES; tries++)
         {
             milk_frame_mark_t mark = milk_frame_mark(&in);
             if (in_dt == out_dt)
             {
-                __builtin_memcpy(((uint8_t *) cube.array.raw) + (size_t) f * npix2d * out_elsz,
-                                 in.array.raw, npix2d * in_elsz);
+                __builtin_memcpy(((uint8_t *) frame.array.raw) + base * out_elsz, in.array.raw,
+                                 npix2d * in_elsz);
             }
             else
             {
-                uint64_t base = (uint64_t) f * npix2d;
                 for (uint64_t p = 0; p < npix2d; p++)
                 {
-                    write_typed_elem(&cube, out_dt, base + p, read_typed_elem(&in, in_dt, p));
+                    write_typed_elem(&frame, out_dt, base + p, read_typed_elem(&in, in_dt, p));
                 }
             }
             frame_cnt = mark.cnt0;
@@ -636,23 +723,20 @@ int milk_server_grab(int         client_fd,
             }
         }
 
-        if (in_local)
+        if (!in_local)
         {
-            milk_server_cmd_unlock();
-        }
-        else
-        {
-            /* the cube may have gone while we copied: re-check before the next frame touches it */
             milk_server_cmd_lock();
-            int cube_ok = grab_image_alive(&cube) >= 0;
-            milk_server_cmd_unlock();
-            if (!cube_ok)
+            if (grab_image_alive(&cube) < 0)
             {
+                milk_server_cmd_unlock();
                 grab_err(client_fd, "ERROR: @grab: image deleted during the grab");
                 rc = 1;
                 break;
             }
+            __builtin_memcpy(((uint8_t *) cube.array.raw) + (size_t) f * npix2d * out_elsz,
+                             frame.array.raw, npix2d * out_elsz);
         }
+        milk_server_cmd_unlock();
 
         if (ts_fp != NULL)
         {
@@ -674,8 +758,12 @@ int milk_server_grab(int         client_fd,
             }
             last_cnt = frame_cnt;
         }
-    } // for (long f = 0; f < nframes; f++)
+    } // for (long f = 0; rc == 0 && f < nframes; f++)
 
+    if (!in_local)
+    {
+        free(frame.array.raw);
+    }
     if (ts_fp != NULL)
     {
         fclose(ts_fp);
@@ -683,7 +771,7 @@ int milk_server_grab(int         client_fd,
 
     milk_server_cmd_lock();
     imageID cid = grab_image_alive(&cube);
-    if (cid >= 0)
+    if (cid >= 0 && wrote_hdr)
     {
         set_image_kw_long(&dcimg[cid], "DROPPED", (int64_t) dropped,
                           "Missed stream frames during grab");
@@ -709,7 +797,7 @@ int milk_server_grab(int         client_fd,
         delete_image_ID(cube.name, DELETE_IMAGE_ERRMODE_IGNORE);
     }
 
-    if (semindex >= 0 && semindex < in.md->sem && (!in_local || grab_image_alive(&in) >= 0))
+    if (semindex >= 0 && (!in_local || grab_image_alive(&in) >= 0) && semindex < in.md->sem)
     {
         milk_shm_sem_release(&in, semindex);
     }
@@ -832,16 +920,41 @@ int milk_server_streamcat(int argc, char **argv)
         fprintf(stderr, "ERROR: @grab --stdout: stream '%s' not found\n", sname);
         return 1;
     }
-    uint64_t nel = im->md->nelement;
-    uint8_t  dt  = im->md->datatype;
+    uint64_t nel  = im->md->nelement;
+    uint8_t  dt   = im->md->datatype;
+    size_t   elsz = ImageStreamIO_typesize(dt);
+
+    /* print a copy of the frame read under the torn-frame rule (milkdata_torn_frame.h): printing
+     * from the stream itself is slow enough for the writer to rewrite it meanwhile */
+    IMAGE view     = *im;
+    view.array.raw = (elsz > 0 && im->array.raw != NULL) ? malloc(elsz * nel) : NULL;
+    if (view.array.raw == NULL)
+    {
+        fprintf(stderr, "ERROR: @grab --stdout: cannot read stream '%s'\n", sname);
+        if (need_close)
+        {
+            ImageStreamIO_closeIm(&tmp_im);
+        }
+        return 1;
+    }
+    for (int tries = 0; tries < MILK_FRAME_TRIES; tries++)
+    {
+        milk_frame_mark_t mark = milk_frame_mark(im);
+        memcpy(view.array.raw, im->array.raw, elsz * nel);
+        if (milk_frame_clean(im, mark))
+        {
+            break;
+        }
+        if (tries < MILK_FRAME_TRIES - 1)
+        {
+            milk_frame_wait();
+        }
+    }
+    im = &view;
 
     if (raw_mode)
     {
-        size_t elsz = ImageStreamIO_typesize(dt);
-        if (elsz > 0 && im->array.raw != NULL)
-        {
-            fwrite(im->array.raw, elsz, (size_t) nel, stdout);
-        }
+        fwrite(im->array.raw, elsz, (size_t) nel, stdout);
     }
     else
     {
@@ -890,6 +1003,7 @@ int milk_server_streamcat(int argc, char **argv)
         }
     }
     fflush(stdout);
+    free(view.array.raw);
     if (need_close)
     {
         ImageStreamIO_closeIm(&tmp_im);
@@ -916,11 +1030,18 @@ static int stdin_has_data(void)
     pfd.fd      = STDIN_FILENO;
     pfd.events  = POLLIN;
     pfd.revents = 0;
-    if (poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLIN))
+    for (;;)
     {
-        return 1;
+        int pr = poll(&pfd, 1, -1);
+        if (pr > 0)
+        {
+            return (pfd.revents & POLLIN) ? 1 : 0;
+        }
+        if (pr == 0 || errno != EINTR || dcsigINT)
+        {
+            return 0;
+        }
     }
-    return 0;
 }
 
 /**
@@ -988,8 +1109,20 @@ int milk_server_streamwrite(int argc, char **argv)
         fprintf(stderr, "ERROR: @replay --stdin: --raw reads stdin; add '-'\n");
         return 1;
     }
+    if (dcsigINT)
+    {
+        return 130;
+    }
+    if (npos > 3 && !raw_mode && !has_dtype)
+    {
+        use_stdin = 0;
+    }
     int has_stdin = use_stdin && stdin_has_data();
-    if (use_stdin && !has_stdin)
+    if (dcsigINT)
+    {
+        return 130;
+    }
+    if (use_stdin && !has_stdin && (npos == 0 || raw_mode || has_dtype))
     {
         fprintf(stderr, "ERROR: @replay --stdin: '-' given but stdin has no data\n");
         return 1;
@@ -1159,12 +1292,19 @@ int milk_server_streamwrite(int argc, char **argv)
         }
     }
 
-    processinfo_update_output_stream(NULL, im, NULL);
+    if (dcsigINT) /* Ctrl-C while reading: no frame */
+    {
+        im->md->write = 0;
+    }
+    else
+    {
+        processinfo_update_output_stream(NULL, im, NULL);
+    }
     if (need_close)
     {
         ImageStreamIO_closeIm(&tmp_im);
     }
-    return 0;
+    return dcsigINT ? 130 : 0;
 }
 
 /**
@@ -1190,7 +1330,7 @@ int milk_server_replay(int argc, char **argv)
     const char *o_cnt        = milk_kw_opt(&ka, "-n");
     double      fps_hz       = (o_fps != NULL) ? strtod(o_fps, NULL) : 0.0;
     long        max_frames   = (o_cnt != NULL) ? strtol(o_cnt, NULL, 10) : 0;
-    int         loop_forever = (milk_kw_opt(&ka, "--loop") != NULL);
+    int         loop_forever = (milk_kw_opt(&ka, "--loop") != NULL && max_frames <= 0);
     const char *src_raw      = (argc > 0) ? argv[0] : NULL;
     const char *dst_raw      = (argc > 1) ? argv[1] : NULL;
     if (src_raw == NULL || dst_raw == NULL)

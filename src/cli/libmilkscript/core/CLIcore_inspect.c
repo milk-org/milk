@@ -479,6 +479,13 @@ errno_t cli_cmd_fpsdump(void)
         char vstr[512];
         functionparameter_GetParamValueString(&fps.parray[pi], vstr, (int) sizeof(vstr));
 
+        const char *kw = fps.parray[pi].keywordfull;
+        size_t      nl = strlen(fps.md->name);
+        if (strncmp(kw, fps.md->name, nl) == 0 && kw[nl] == '.')
+        {
+            kw += nl + 1;
+        }
+
         if (tabmode)
         {
             const char *tname = "UNKNOWN";
@@ -526,13 +533,13 @@ errno_t cli_cmd_fpsdump(void)
             default:
                 break;
             }
-            printf("%s\t%s\t%s\n", fps.parray[pi].keyword[0], tname, vstr);
+            printf("%s\t%s\t%s\n", kw, tname, vstr);
         }
         else if (jsonmode)
         {
-            char kesc[128];
+            char kesc[512];
             char sesc[1024];
-            json_escape_str(kesc, sizeof(kesc), fps.parray[pi].keyword[0]);
+            json_escape_str(kesc, sizeof(kesc), kw);
             if (!first_json_item)
             {
                 printf(",\n");
@@ -580,7 +587,7 @@ errno_t cli_cmd_fpsdump(void)
         }
         else
         {
-            printf("%s=%s\n", fps.parray[pi].keyword[0], vstr);
+            printf("%s=%s\n", kw, vstr);
         }
     }
 

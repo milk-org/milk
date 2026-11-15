@@ -120,4 +120,10 @@ int mc_exec_multi_linalg_or_ext(mcalc_prog_t    *prog,
 /** mc_unwrap_transpose() - the operand inside an outer `transpose(X)` (*@out_trans = 1), else @e. */
 const mc_expr_t *mc_unwrap_transpose(const mc_expr_t *e, int *out_trans);
 
+/** mc_linalg_lock() - serialize threaded BLAS/LAPACK calls with fork() via milk_fork_guard. */
+void mc_linalg_lock(void);
+
+/** mc_linalg_unlock() - release the BLAS/LAPACK fork guard lock. */
+void mc_linalg_unlock(void);
+
 #endif /* MILK_MC_LINALG_H */

@@ -135,7 +135,7 @@ typedef struct
       offsetof(milk_par_s_, field),                         \
       sizeof(((milk_par_s_ *) 0)->field) },
 #define MILK_CALC_PSPEC6_(kw, field, type, defval, flags, desc) \
-    { #field,                                                   \
+    { (kw), /* ".kw" names the keyword and the FPS parameter */ \
       (uint32_t) (type),                                        \
       (uint64_t) (flags),                                       \
       (double) (defval),                                        \
@@ -174,12 +174,11 @@ static inline const milk_calc_param_set_t *__milk_calc_par_fn_0(void)
     return NULL;
 }
 
-static inline const milk_calc_param_set_t *__milk_calc_par_fn_milk_calc_nopar(void)
+/* MILK_CALC_NOPARAMS: MILK_CALC_REG_* paste it unexpanded, so it names this function */
+static inline const milk_calc_param_set_t *__milk_calc_par_fn_MILK_CALC_NOPARAMS(void)
 {
     return NULL;
 }
-
-#define MILK_CALC_NOPARAMS milk_calc_nopar
 
 /**
  * enum milk_calc_port_kind_t - Operator input/output port kind

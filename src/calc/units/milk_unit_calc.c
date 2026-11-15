@@ -16,8 +16,9 @@
  *              message say why). .unit.init (or .unit.initfile) runs once before frame 0, and
  *              again, with the frame counters reset, when set; .unit.libs loads C extensions.
  *              The libraries are loaded, the init statements run and the program built at start,
- *              before the unit's starter returns (unit_prepare()); what fails then, such as a
- *              stream that does not exist yet, is done again at the first frame. Unit options
+ *              before the unit's starter returns (unit_prepare()); statements that do not
+ *              parse fail the start, and what else fails then, such as a stream that does not
+ *              exist yet, is done again at the first frame. Unit options
  *              given for a running unit are built by the command itself first (check_program()):
  *              the unit then loads the kernels from the cache, and a program that does not
  *              build is refused.
@@ -221,7 +222,7 @@ static void on_ext_param(const char *label, const milk_calc_param_spec_t *spec, 
         return;
     }
     char pname[128];
-    snprintf(pname, sizeof(pname), "%s.%s", label, spec->name);
+    snprintf(pname, sizeof(pname), "%s.%s", label, spec->name + (spec->name[0] == '.'));
     if (is_bound(pname))
     {
         return;
@@ -441,12 +442,49 @@ static int unit_vars(void)
 /** check_program() - milk_unit_main()'s check: build the program that the unit options and the
  * FPS of a running unit give, without running it. The kernels are then in the cache, where the
  * unit finds them at its next frame. 0, or -1 after saying why it does not build. */
+/** prefix_init_err() - prepend "init: " to @err in place, truncating cleanly to @errsz. */
+static void prefix_init_err(char *err, size_t errsz)
+{
+    if (errsz <= 7)
+    {
+        return;
+    }
+    size_t len = strlen(err);
+    size_t max = errsz - 7;
+    if (len > max)
+    {
+        len = max;
+    }
+    memmove(err + 6, err, len);
+    memcpy(err, "init: ", 6);
+    err[6 + len] = '\0';
+}
+
+/** text_bad() - 1 (@err) when @s/@f is non-empty and cannot be read or parsed, else 0. */
+static int text_bad(const char *s, const char *f, char *err, size_t errsz)
+{
+    if (s[0] == '\0' && f[0] == '\0')
+    {
+        return 0;
+    }
+    char *text = source_text(s, f, err, errsz);
+    int   bad  = (text == NULL || mcalc_prog_parse(text, err, errsz) != 0);
+    free(text);
+    return bad;
+}
+
 static int check_program(void)
 {
     char        err[512] = "";
     char       *text     = NULL;
     mcalc_prog *prog     = NULL;
 
+    if (text_bad(init_expr, initfile, err, sizeof(err)))
+    {
+        prefix_init_err(err, sizeof(err));
+        fprintf(stderr, "milk.calc: not applied: %s\n", err);
+        return -1;
+    }
     if (expr[0] == '\0' && file[0] == '\0')
     {
         return 0;
@@ -525,6 +563,7 @@ static int run_unit_init_if_needed(calc_loop_ctx *ctx, char *err, size_t errsz)
                                                   err, errsz) != 0)
         {
             free(itext);
+            prefix_init_err(err, errsz);
             ctx->init_done = 0; /* at start: run again at the first frame */
             return -1;
         }
@@ -597,7 +636,7 @@ static int unit_prepare(PROCESSINFO *processinfo, calc_loop_ctx *ctx, char *err,
             ctx->prog = prog;
             mcalc_prog_set_processinfo(ctx->prog, processinfo);
         }
-        else
+        else if (processinfo == NULL || !processinfo_exit_requested(processinfo))
         {
             char msg[600];
             snprintf(msg, sizeof(msg), "not applied, still running the previous statements: %s",
@@ -607,6 +646,10 @@ static int unit_prepare(PROCESSINFO *processinfo, calc_loop_ctx *ctx, char *err,
             {
                 processinfo_WriteMessage(processinfo, msg);
             }
+            err[0] = '\0';
+        }
+        else
+        {
             err[0] = '\0';
         }
         ctx->built[0] = pe_cnt;
@@ -678,7 +721,20 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
 {
     char          err[512] = "";
     calc_loop_ctx ctx      = { 0 };
-    const char   *tname    = dcfpsptr->cmdset.triggerstreamname;
+    const char   *tname;
+
+    /* Pull live @set edits before reading cmdset/procinfo so .unit.trigger overrides apply. */
+    fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 1);
+    if (trigger[0] != '\0' && strcmp(trigger, dcfpsptr->cmdset.triggerstreamname) != 0)
+    {
+        strncpy(dcfpsptr->cmdset.triggerstreamname, trigger, STRINGMAXLEN_IMAGE_NAME - 1);
+        dcfpsptr->cmdset.triggerstreamname[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
+        functionparameter_SetParamValue_STRING(dcfpsptr, ".procinfo.triggersname", trigger);
+        dcfpsptr->cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+        functionparameter_SetParamValue_INT64(dcfpsptr, ".procinfo.triggermode",
+                                              PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+    }
+    tname = dcfpsptr->cmdset.triggerstreamname;
 
     ctx.pe   = functionparameter_GetParamIndex(dcfpsptr, ".unit.expr");
     ctx.pf   = functionparameter_GetParamIndex(dcfpsptr, ".unit.file");
@@ -697,10 +753,21 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
     processinfo_CatchSignals(); /* Ctrl-C and runstop end the loop through its cleanup */
 
     /* At start, before the unit's starter is told that the loop is active. What fails here (a
-     * stream that does not exist yet) is done again at the first frame, and reported there. */
-    fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 1);
+     * stream that does not exist yet) is done again at the first frame, and reported there;
+     * statements that do not parse never will, and the starter is refused. */
     if (unit_prepare(NULL, &ctx, err, sizeof(err)) != 0)
     {
+        if (text_bad(expr, file, err, sizeof(err)))
+        {
+            report(NULL, err);
+            return RETURN_FAILURE;
+        }
+        if (text_bad(init_expr, initfile, err, sizeof(err)))
+        {
+            prefix_init_err(err, sizeof(err));
+            report(NULL, err);
+            return RETURN_FAILURE;
+        }
         err[0] = '\0';
     }
 
@@ -711,7 +778,10 @@ static MILK_HOT errno_t compute(const MILK_RUNNABLE *self)
         if (unit_prepare(processinfo, &ctx, err, sizeof(err)) != 0 ||
             run_unit_frame_step(processinfo, &ctx, err, sizeof(err)) != 0)
         {
-            report(processinfo, err);
+            if (!processinfo_exit_requested(processinfo))
+            {
+                report(processinfo, err);
+            }
             processloopOK = 0;
         }
     }
@@ -767,9 +837,9 @@ int main(int argc, char **argv)
             "  -l, --lib FILE        load user C (.c) or shared object (.so) extension "
             "(.unit.libs)\n"
             "      --list [PATTERN]  list built-in operators and functions & C extensions\n"
-            "  fpsinit and exec create the FPS from them; on an existing FPS, -e -t -f -i -I -l\n"
-            "  update .unit.* (a running unit recompiles at its next frame) and -p cannot\n"
-            "  change. Why the loop stopped is recorded in .unit.error.\n"
+            "  fpsinit and exec create the FPS from them; on an existing FPS, -e -f -i -I -l\n"
+            "  update .unit.* (a running unit recompiles at its next frame), -t updates when\n"
+            "  stopped (stop unit first), and -p cannot change. Loop exit is in .unit.error.\n"
             "  Example:\n"
             "    milk-fpsexec-milk-calc -n dsub -t cam -p \"gain:float=1 off:float=0\" \\\n"
             "        -e \"out = cam * gain + off\" exec 2.5 .off=-1\n",
@@ -806,9 +876,13 @@ int main(int argc, char **argv)
                         return 1;
                     }
                 }
-                else if (pat == NULL && argv[j][0] != '-')
+            }
+            for (int k = i + 1; k < argc; k++) /* --list [PATTERN]: not the NAME of -n NAME */
+            {
+                if (strcmp(argv[k], "--json") != 0)
                 {
-                    pat = argv[j];
+                    pat = (argv[k][0] != '-') ? argv[k] : NULL;
+                    break;
                 }
             }
             return mcalc_print_catalog(pat, json_mode);

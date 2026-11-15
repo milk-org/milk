@@ -72,6 +72,7 @@ static MILK_HOT errno_t delete_image_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     IMGID img = imgid_make_from_name(imname);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     FUNC_CHECK_RETURN(delete_image_IMGID(&img, (int) errmode_ptr));
 
     MILK_PROCINFO_END(self)

@@ -104,7 +104,7 @@ int milk_args_begin(int cmdi, int *argc, char **argv)
     c->cmdi = cmdi;
     err[0]  = '\0';
 
-    if (cmd->nbparam > 0 && cmd->argdata != NULL && argc != NULL)
+    if (argc != NULL)
     {
         int n       = 1;
         int posonly = -1;
@@ -158,10 +158,13 @@ int milk_args_begin(int cmdi, int *argc, char **argv)
         {
             *argc      = n;
             c->posonly = (posonly >= 0) ? posonly : n;
-            c->src     = calloc((size_t) cmd->nbparam, 1);
-            if (c->src == NULL)
+            if (cmd->nbparam > 0 && cmd->argdata != NULL)
             {
-                snprintf(err, sizeof(err), "out of memory");
+                c->src = calloc((size_t) cmd->nbparam, 1);
+                if (c->src == NULL)
+                {
+                    snprintf(err, sizeof(err), "out of memory");
+                }
             }
         }
     }
@@ -725,7 +728,11 @@ static imageID resolve_arg_image(const char *name, int allow_autoconnect)
         return -1;
     }
     const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
-    imageID     id   = image_ID(bare, dcimg, dcnimg);
+    if (strchr(bare, '/') != NULL)
+    {
+        return -1;
+    }
+    imageID id = image_ID(bare, dcimg, dcnimg);
     if (id != -1)
     {
         refresh_shared_image_arg(&dcimg[id]);

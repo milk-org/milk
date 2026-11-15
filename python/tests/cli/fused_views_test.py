@@ -380,3 +380,24 @@ def test_datasets_and_generated_expressions(tmp_path):
         script_lines.append(f'@calc "{c["stmt"]}" >/dev/null\n')
     res = milk_bash("".join(script_lines), tmp_path)
     assert res.returncode == 0, res.stdout + res.stderr
+
+
+def test_constructor_operands_broadcast_like_images(tmp_path):
+    """`[..]` and `linspace(..)` inside an expression broadcast as an image holding them does, also
+    after an earlier statement left the scratch image of its own constructor (another shape).
+    """
+    out, _ = _errs(
+        '@calc "c = zeros(8,6) + 8"\n'
+        '@calc "f2 = [1,2,3,4,5,6,7,8] + a"; echo "rc2=$?"\n'
+        '@calc "c = c + [1,2,3,4,5,6,7,8]"; echo "rcc=$?"\n'
+        '@calc "f1 = a + [1,2,3,4,5,6,7,8]; f3 = a + linspace(1,8,8); lv = linspace(1,8,8); r = a + lv"\n'
+        '@calc -v e,tc "abs(itot(f1) - itot(r)) + abs(itot(f2) - itot(r)) + abs(itot(f3) - itot(r)); itot(c)"\n'
+        'echo "e=$e"; echo "tc=$tc"; echo "sh=$(@get l.f1.xsize)x$(@get l.f1.ysize)"\n'
+        '@calc "g = cube - imean(a, 1)"; echo "shg=$(@get l.g.xsize)x$(@get l.g.ysize)x$(@get l.g.zsize)"',
+        tmp_path,
+        ["rc2", "rcc", "e", "tc", "sh", "shg"],
+    )
+    assert out["rc2"] == "0" and out["rcc"] == "0"
+    assert out["sh"] == "8x6" and out["shg"] == "8x6x4"
+    assert float(out["e"]) == 0.0
+    assert float(out["tc"]) == 8 * 48 + 6 * 36

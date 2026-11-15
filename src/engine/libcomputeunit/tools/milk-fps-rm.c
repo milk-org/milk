@@ -16,10 +16,11 @@
 #define FR_DESC_LONG                                                      \
     "Remove one or more FPS instances from /dev/shm.\n"                   \
     "Without a name argument, scans for all FPS instances and presents\n" \
-    "an interactive selection menu. With a name or regex, removes\n"      \
-    "matching instances directly. Use -f to stop running processes\n"     \
-    "before removal (otherwise running FPSes are left untouched). The\n"  \
-    "unit directory and the processinfo files of the FPS go with it."
+    "an interactive selection menu. With a name, removes the matching\n"  \
+    "instance directly (use -r/--regex to match a regular expression).\n" \
+    "Use -f to stop running processes before removal (otherwise\n"        \
+    "running FPSes are left untouched). The unit directory and the\n"     \
+    "processinfo files of the FPS go with it."
 
 /**
  * @brief Print help message for milk-fps-rm.
@@ -28,8 +29,8 @@ static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, FR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [%soptions%s] [%sfpsname%s | %sregex%s]\n\n", mh_color ? MH_CMD : "", progname,
-           mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
+    printf("  %s%s%s [%soptions%s] [%sfpsname%s | -r %sregex%s]\n\n", mh_color ? MH_CMD : "",
+           progname, mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "", mh_color ? MH_ARG : "",
            mh_color ? MH_RST : "");
     milk_help_section("Description", mh_color);
@@ -37,8 +38,10 @@ static void print_help(const char *progname, int mh_color)
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-f, --force", mh_color ? MH_RST : "",
            "Stop running processes before removal");
+    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-r, --regex", mh_color ? MH_RST : "",
+           "Treat argument as an extended regular expression");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-x, --exact", mh_color ? MH_RST : "",
-           "The argument is an FPS name, not a regex");
+           "The argument is an exact FPS name (default)");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-v, --verbose", mh_color ? MH_RST : "",
            "Verbose output");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
@@ -162,26 +165,31 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int verbose = 0;
-    int force   = 0;
-    int exact   = 0;
+    int verbose    = 0;
+    int force      = 0;
+    int regex_mode = 0;
     int opt;
 
-    static struct option long_options[] = {
-        { "force", no_argument, 0, 'f' },        { "exact", no_argument, 0, 'x' },
-        { "verbose", no_argument, 0, 'v' },      { "help", no_argument, 0, 'h' },
-        { "help-oneline", no_argument, 0, '1' }, { 0, 0, 0, 0 }
-    };
+    static struct option long_options[] = { { "force", no_argument, 0, 'f' },
+                                            { "regex", no_argument, 0, 'r' },
+                                            { "exact", no_argument, 0, 'x' },
+                                            { "verbose", no_argument, 0, 'v' },
+                                            { "help", no_argument, 0, 'h' },
+                                            { "help-oneline", no_argument, 0, '1' },
+                                            { 0, 0, 0, 0 } };
 
-    while ((opt = getopt_long(argc, argv, "fxvh1", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "frxvh1", long_options, NULL)) != -1)
     {
         switch (opt)
         {
         case 'f':
             force = 1;
             break;
+        case 'r':
+            regex_mode = 1;
+            break;
         case 'x':
-            exact = 1;
+            regex_mode = 0;
             break;
         case 'v':
             verbose = 1;
@@ -203,14 +211,17 @@ int main(int argc, char *argv[])
     if (optind < argc)
     {
         pattern = argv[optind];
-        int ret = exact ? -1 : regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
-        if (ret == 0)
+        if (regex_mode)
         {
+            int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
+            if (ret != 0)
+            {
+                char regerr[128];
+                regerror(ret, &regex, regerr, sizeof(regerr));
+                PRINT_ERROR("Invalid regex '%s': %s", pattern, regerr);
+                return 1;
+            }
             use_regex = 1;
-        }
-        else if (verbose && !exact)
-        {
-            printf("Supplied argument could not be compiled as regex. Assuming exact literal.\n");
         }
     }
 
@@ -226,12 +237,23 @@ int main(int argc, char *argv[])
         int    ret = glob(pat, 0, NULL, &gl);
         if (ret != 0 || gl.gl_pathc == 0)
         {
-            printf("No FPS instances found.\n");
+            if (pattern != NULL)
+            {
+                PRINT_ERROR("Error: cannot connect to FPS '%s'. It may not exist.", pattern);
+            }
+            else
+            {
+                printf("No FPS instances found.\n");
+            }
             if (ret == 0)
             {
                 globfree(&gl);
             }
-            return 0;
+            if (use_regex)
+            {
+                regfree(&regex);
+            }
+            return (pattern != NULL) ? 1 : 0;
         }
         int    count         = (int) gl.gl_pathc;
         int    matched_count = 0;
@@ -349,7 +371,7 @@ int main(int argc, char *argv[])
             {
                 regfree(&regex);
             }
-            return 0;
+            return (pattern != NULL || !is_tty) ? 1 : 0;
         }
 
         /* Strip trailing \r \n */
@@ -378,7 +400,7 @@ int main(int argc, char *argv[])
             {
                 regfree(&regex);
             }
-            return 0;
+            return (pattern != NULL || !is_tty) ? 1 : 0;
         }
 
         int errors = 0;

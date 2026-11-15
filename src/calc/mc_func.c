@@ -108,6 +108,7 @@ double mc_fmodd(double x, double y)
     r = (r != 0.0 && signbit(r) != signbit(x)) ? fma(-(q - s), y, x) : r;
     r = (fabs(r) >= fabs(y)) ? fma(-(q + s), y, x) : r;
     r = (r == 0.0) ? copysign(0.0, x) : r;
+    r = (fabs(y) == INFINITY) ? x : r; /* fmod(x, inf) is x; 0 * inf made it NaN */
     return (fabs(x / y) < 0x1p52 && fabs(r) < fabs(y)) ? r : NAN;
 }
 
@@ -176,18 +177,10 @@ double mc_clamp(double a, double lo, double hi)
     return (a > hi) ? hi : (a < lo) ? lo : a;
 }
 
-/* X-macro generating scalar C callbacks for explicit datatype cast functions */
-#define MC_CAST_TYPES(X)                                                       \
-    X(f32, _DATATYPE_FLOAT, (double) (float) a)                                \
-    X(f64, _DATATYPE_DOUBLE, a)                                                \
-    X(u8, _DATATYPE_UINT8, (double) (uint8_t) (int64_t) a)                     \
-    X(i8, _DATATYPE_INT8, (double) (int8_t) (int64_t) a)                       \
-    X(u16, _DATATYPE_UINT16, (double) (uint16_t) (int64_t) a)                  \
-    X(i16, _DATATYPE_INT16, (double) (int16_t) (int64_t) a)                    \
-    X(u32, _DATATYPE_UINT32, (double) (uint32_t) (int64_t) a)                  \
-    X(i32, _DATATYPE_INT32, (double) (int32_t) (int64_t) a)                    \
-    X(u64, _DATATYPE_UINT64, (double) (uint64_t) (a >= 0.0 ? a : (int64_t) a)) \
-    X(i64, _DATATYPE_INT64, (double) (int64_t) a)
+/* X-macro generating the scalar callbacks of the float casts (integer casts: mc_scalar_cast()) */
+#define MC_CAST_TYPES(X)                        \
+    X(f32, _DATATYPE_FLOAT, (double) (float) a) \
+    X(f64, _DATATYPE_DOUBLE, a)
 
 /** DEF_MC_CAST_FN() - Instantiate a static scalar cast callback `mc_cast_<NAME>()`. */
 #define DEF_MC_CAST_FN(NAME, DT, EXPR)     \
@@ -271,21 +264,21 @@ static const mc_func_t g_mc_funcs[] = {
       "mc_cast_f32", "f32(x)", "Explicit cast to float32" },
     { ID(f64), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_DOUBLE, 1, mc_cast_f64, NULL, NULL,
       "mc_cast_f64", "mc_cast_f64", "f64(x)", "Explicit cast to float64" },
-    { ID(u8), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT8, 1, mc_cast_u8, NULL, NULL, "mc_cast_u8",
+    { ID(u8), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT8, 1, NULL, NULL, NULL, "mc_cast_u8",
       "mc_cast_u8", "u8(x)", "Explicit cast to uint8" },
-    { ID(i8), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT8, 1, mc_cast_i8, NULL, NULL, "mc_cast_i8",
+    { ID(i8), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT8, 1, NULL, NULL, NULL, "mc_cast_i8",
       "mc_cast_i8", "i8(x)", "Explicit cast to int8" },
-    { ID(u16), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT16, 1, mc_cast_u16, NULL, NULL,
-      "mc_cast_u16", "mc_cast_u16", "u16(x)", "Explicit cast to uint16" },
-    { ID(i16), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT16, 1, mc_cast_i16, NULL, NULL, "mc_cast_i16",
+    { ID(u16), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT16, 1, NULL, NULL, NULL, "mc_cast_u16",
+      "mc_cast_u16", "u16(x)", "Explicit cast to uint16" },
+    { ID(i16), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT16, 1, NULL, NULL, NULL, "mc_cast_i16",
       "mc_cast_i16", "i16(x)", "Explicit cast to int16" },
-    { ID(u32), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT32, 1, mc_cast_u32, NULL, NULL,
-      "mc_cast_u32", "mc_cast_u32", "u32(x)", "Explicit cast to uint32" },
-    { ID(i32), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT32, 1, mc_cast_i32, NULL, NULL, "mc_cast_i32",
+    { ID(u32), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT32, 1, NULL, NULL, NULL, "mc_cast_u32",
+      "mc_cast_u32", "u32(x)", "Explicit cast to uint32" },
+    { ID(i32), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT32, 1, NULL, NULL, NULL, "mc_cast_i32",
       "mc_cast_i32", "i32(x)", "Explicit cast to int32" },
-    { ID(u64), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT64, 1, mc_cast_u64, NULL, NULL,
-      "mc_cast_u64", "mc_cast_u64", "u64(x)", "Explicit cast to uint64" },
-    { ID(i64), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT64, 1, mc_cast_i64, NULL, NULL, "mc_cast_i64",
+    { ID(u64), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_UINT64, 1, NULL, NULL, NULL, "mc_cast_u64",
+      "mc_cast_u64", "u64(x)", "Explicit cast to uint64" },
+    { ID(i64), 1, 1, 1, 1, MC_FN_SCALAR, _DATATYPE_INT64, 1, NULL, NULL, NULL, "mc_cast_i64",
       "mc_cast_i64", "i64(x)", "Explicit cast to int64" },
 
     /* 3. Binary & ternary elementwise math functions */
@@ -366,7 +359,7 @@ static const mc_func_t g_mc_funcs[] = {
     { ID(asum), 1, 2, 1, 1, MC_FN_REDUCE_D, 0, 0, NULL, NULL, NULL, NULL, NULL, "asum(im[, mask])",
       "L1 absolute sum sum(|x|)", "I[x]" },
     { ID(icount), 1, 2, 1, 1, MC_FN_REDUCE_L, 0, 0, NULL, NULL, NULL, NULL, NULL, "icount(im)",
-      "Count of finite non-zero pixels", "I" },
+      "Count of non-zero, non-NaN pixels", "I" },
     { ID(iargmax), 1, 1, 1, 3, MC_FN_REDUCE_L, 0, 0, NULL, NULL, NULL, NULL, NULL, "iargmax(im)",
       "Index (or 2D/3D coordinates) of maximum pixel", "I" },
     { ID(iargmin), 1, 1, 1, 3, MC_FN_REDUCE_L, 0, 0, NULL, NULL, NULL, NULL, NULL, "iargmin(im)",
@@ -412,7 +405,7 @@ static const mc_func_t g_mc_funcs[] = {
 
     /* 8. BLAS, LAPACK, FFT, tensor construction & concatenation */
     { ID(matmul), 2, 2, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL, "matmul(A, B)",
-      "Matrix / vector product (or batched 3D)" },
+      "Matrix / vector product (a cube is an (nx*ny) x nz matrix)" },
     { ID(gemm), 5, 5, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL, "gemm(a, A, B, b, C)",
       "CBLAS GEMM a*op(A)*op(B) + b*C" },
     { ID(gemv), 5, 5, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL, "gemv(a, A, x, b, y)",
@@ -462,7 +455,7 @@ static const mc_func_t g_mc_funcs[] = {
     { ID(diag), 1, 2, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL, "diag(v[, k])",
       "Extract diagonal or build diagonal matrix" },
     { ID(transpose), 1, 1, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL, "transpose(A)",
-      "2D matrix transpose (or batched 3D)" },
+      "1D/2D matrix transpose" },
     { ID(reshape), 2, 4, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL,
       "reshape(A, n0[, n1, n2])", "Reshape dimensions preserving element count" },
     { ID(vec), 1, -1, 1, 1, MC_FN_LINALG, 0, 0, NULL, NULL, NULL, NULL, NULL, "vec(A | x0, ...)",
@@ -805,7 +798,8 @@ static void format_ext_info(const milk_calc_ext_entry_t *e,
             {
                 break;
             }
-            snprintf(desc + cur, desc_sz - cur, "%s%s", (p > 0) ? "," : " ", ps->specs[p].name);
+            const char *pn = ps->specs[p].name;
+            snprintf(desc + cur, desc_sz - cur, "%s%s", (p > 0) ? "," : " ", pn + (pn[0] == '.'));
         }
         cur = strlen(desc);
         if (cur + 2 < desc_sz)

@@ -27,7 +27,7 @@
  *   -E, --echo       Echo each input line verbatim (colored)
  *   -d N             Set debug level to N
  *   -n NAME          Set process name to NAME
- *   -q, --quiet      Suppress startup banner
+ *   -q, --quiet      Accepted for old shebang lines (no banner is ever printed)
  *
  * ARGUMENTS
  *   SCRIPT_FILE      Path to the script to execute.
@@ -58,80 +58,16 @@
 #include "milkdata.h"
 
 /**
- * milkscript_pre_quiet - early quiet detection constructor
+ * milkscript_pre_quiet - no startup banner
  *
- * Reads /proc/self/cmdline to detect -q/--quiet before any
- * shared-library constructor (COREMOD RegisterModule) runs.
- * Sets milk_data.quiet directly — the same global that dcquiet
- * expands to — so the '.' progress dots and banner messages
- * are suppressed from the very first RegisterModule call.
- *
- * Constructors in the main executable run before those in
- * shared libraries.  Priority 101 ensures this runs after the
- * C runtime (0-100) and before any library constructor.
+ * A script's stdout is its data: milk-script never prints the MILK_SHM_DIR line, the '.' progress
+ * dots or the LOADED lines (milk.bash does the same in libmilkbash). Constructors in the main
+ * executable run before those in shared libraries; priority 101 runs this after the C runtime
+ * (0-100) and before any library constructor.
  */
-__attribute__((constructor(101)))
-/**
- * @brief Set up quiet mode for script execution.
- *
- * Suppresses banner and verbose output.
- */
-static void
-milkscript_pre_quiet(void)
+__attribute__((constructor(101))) static void milkscript_pre_quiet(void)
 {
-    FILE *fp = fopen("/proc/self/cmdline", "r");
-    if (!fp)
-    {
-        return;
-    }
-
-    /* /proc/self/cmdline is NUL-delimited; read up to 4 kB */
-    char   buf[4096];
-    size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
-    fclose(fp);
-    if (n == 0)
-    {
-        return;
-    }
-    buf[n] = '\0';
-
-    /* Walk each NUL-terminated token (skip argv[0]) */
-    size_t i = 0;
-    while (i < n && buf[i] != '\0')
-    {
-        i++;
-    }
-    i++; /* skip argv[0] NUL */
-
-    while (i < n)
-    {
-        const char *tok = buf + i;
-        if (tok[0] == '-' && tok[1] == '\0')
-        {
-            break; /* bare '-' = stdin, stop */
-        }
-        if (tok[0] != '-')
-        {
-            break; /* non-option = script file, stop */
-        }
-
-        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
-        {
-            /* Set both the struct field and the env var so
-             * both runtime paths (dcquiet check and
-             * getenv check) see the quiet flag. */
-            milk_data.quiet = 1;
-            setenv("MILK_QUIET", "1", 0);
-            break;
-        }
-
-        /* advance to next NUL-terminated token */
-        while (i < n && buf[i] != '\0')
-        {
-            i++;
-        }
-        i++;
-    }
+    milk_data.quiet = 1;
 }
 
 
@@ -149,77 +85,11 @@ static void milkscript_main_usage(const char *prog)
     printf("  -x, --xtrace    Print each command before executing (set -x)\n");
     printf("  -E, --echo      Echo each input line verbatim\n");
     printf("  -d N            Set debug level to N\n");
-    printf("  -n NAME         Set process name\n");
-    printf("  -q, --quiet     Suppress startup banner\n\n");
+    printf("  -n NAME         Set process name\n\n");
     printf("Script arguments are available as $1, $2, ... inside the script.\n");
     printf("\nShebang usage:\n");
     printf("  #!/usr/bin/env milk-script\n");
     printf("  #!/usr/bin/env -S milk-script -e\n");
-}
-
-/** struct sbuf - growable string for building the bash prologue. */
-struct sbuf
-{
-    char  *s;
-    size_t len;
-    size_t cap;
-};
-
-/** sbuf_add() - append @n bytes of @src; returns -1 on allocation failure. */
-static int sbuf_add(struct sbuf *b, const char *src, size_t n)
-{
-    if (b->len + n + 1 > b->cap)
-    {
-        size_t ncap = (b->len + n + 1) * 2;
-        char  *ns   = (char *) realloc(b->s, ncap);
-        if (ns == NULL)
-        {
-            return -1;
-        }
-        b->s   = ns;
-        b->cap = ncap;
-    }
-    memcpy(b->s + b->len, src, n);
-    b->len += n;
-    b->s[b->len] = '\0';
-    return 0;
-}
-
-/** sbuf_add_quoted() - append @arg as one single-quoted bash word. */
-static int sbuf_add_quoted(struct sbuf *b, const char *arg)
-{
-    int rc = sbuf_add(b, "'", 1);
-    for (const char *c = arg; *c && rc == 0; c++)
-    {
-        rc = (*c == '\'') ? sbuf_add(b, "'\\''", 4) : sbuf_add(b, c, 1);
-    }
-    return rc | sbuf_add(b, "'", 1);
-}
-
-/**
- * script_prologue() - set $0, $1..$N (and set -x) in the bash co-process before the script runs.
- */
-static int script_prologue(int argc, char **argv, int xtrace)
-{
-    struct sbuf b  = { NULL, 0, 0 };
-    int         rc = sbuf_add(&b, "BASH_ARGV0=", 11);
-    rc |= sbuf_add_quoted(&b, argc > 0 ? argv[0] : "milk-script");
-    rc |= sbuf_add(&b, "; set --", 8);
-    for (int i = 1; i < argc; i++)
-    {
-        rc |= sbuf_add(&b, " ", 1);
-        rc |= sbuf_add_quoted(&b, argv[i]);
-    }
-    if (xtrace)
-    {
-        rc |= sbuf_add(&b, "; set -x", 8);
-    }
-    if (rc == 0)
-    {
-        rc = milk_bash_exec(b.s, NULL);
-    }
-    free(b.s);
-    return rc;
 }
 
 /**
@@ -227,7 +97,7 @@ static int script_prologue(int argc, char **argv, int xtrace)
  * @argc: Number of command-line arguments
  * @argv: Command-line argument vector
  *
- * Parses interpreter options (`-e`, `-x`, `-E`, `-q`, `-d`, `-n`), initializes
+ * Parses interpreter options (`-e`, `-x`, `-E`, `-d`, `-n`; `-q` is accepted), initializes
  * `libmilkscript`, forwards positional arguments into the bash co-process, and executes
  * the target script file or standard input.
  *
@@ -249,7 +119,6 @@ int main(int argc, char **argv)
     int         opt_errexit = 0;
     int         opt_xtrace  = 0;
     int         opt_echo    = 0;
-    int         opt_quiet   = 0;
     int         opt_debug   = 0;
     const char *opt_name    = NULL;
 
@@ -282,8 +151,7 @@ int main(int argc, char **argv)
                 opt_echo = 1;
                 break;
 
-            case 'q':
-                opt_quiet = 1;
+            case 'q': /* no banner is ever printed: kept for old shebang lines */
                 break;
 
             case 'd':
@@ -299,13 +167,6 @@ int main(int argc, char **argv)
                 return 1;
             }
         } // while options
-    }
-
-    /* Apply quiet flag before milkscript_init so the banner,
-     * SHM dir messages, and module-load lines are suppressed */
-    if (opt_quiet)
-    {
-        dcquiet = 1;
     }
 
     /* Remaining args: optind → script file (optional), then $1.. */
@@ -337,7 +198,9 @@ int main(int argc, char **argv)
     }
 
     /* Expose script arguments as $0 $1 ... $# */
-    if (script_prologue(script_argc, script_argv, opt_xtrace) != 0)
+    int sa = (script_argc > 0); /* the script file (or "-") is $0 */
+    if (milk_bash_set_args(sa ? script_argv[0] : "milk-script", script_argc - sa, script_argv + sa,
+                           opt_xtrace) != 0)
     {
         PRINT_ERROR("milk-script: cannot set script arguments");
         return 1;

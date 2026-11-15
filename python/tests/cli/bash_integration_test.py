@@ -201,6 +201,44 @@ def test_grab_error_reaches_the_caller(tmp_path):
     assert value(res.stdout, "out") == "[]", out
 
 
+def test_failed_image_commands_return_1(tmp_path):
+    """A module command that cannot make or copy its image fails (status 1): an empty name, a
+    name that is a path, a missing source; an empty copy target used to free the image it was
+    making and then read it (a crash). Nothing is created outside MILK_SHM_DIR."""
+    res = milk_bash(
+        "mem.mk2Dim a 4 4 >/dev/null\n"
+        'mem.mk2Dim t 0 4 2>/dev/null; echo "zero=$?"\n'
+        "mem.mk2Dim '' 4 4 2>/dev/null; echo \"empty=$?\"\n"
+        'mem.mk2Dim ../escape 4 4 2>/dev/null; echo "path=$?"\n'
+        'mem.cp nosuch b 2>/dev/null; echo "cpsrc=$?"\n'
+        "mem.cp a '' 2>/dev/null; echo \"cpdst=$?\"\n"
+        'mem.cp a b; echo "cp=$?"; @calc -v m "itot(b) + 1"; echo "m=$m"\n'
+        'ls "$MILK_SHM_DIR/.." | grep -c escape | sed "s/^/escaped=/"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    for k in ("zero", "empty", "path", "cpsrc", "cpdst"):
+        assert value(res.stdout, k) == "1", f"{k}: {out}"
+    assert value(res.stdout, "cp") == "0" and value(res.stdout, "m") == "1", out
+    assert value(res.stdout, "escaped") == "0", out
+
+
+def test_mem_rm_deletes_the_image(tmp_path):
+    """mem.rm deletes a local or a shared image; with errmode 2 a missing one fails (status 1).
+    It used to skip the name lookup, so it deleted nothing and errmode 2 said "does not exist".
+    """
+    res = milk_bash(
+        'mem.mk2Dim "@L:a" 4 4 >/dev/null; mem.mk2Dim b 4 4 >/dev/null\n'
+        'mem.rm a 2; echo "rma=$?"; mem.rm b 2; echo "rmb=$?"\n'
+        'echo "left=$(mem.listim | grep -cw "[ab]")"\n'
+        'mem.rm a 2 2>/dev/null; echo "again=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rma") == "0" and value(res.stdout, "rmb") == "0", out
+    assert value(res.stdout, "left") == "0" and value(res.stdout, "again") == "1", out
+
+
 def test_stream_modifiers_all_types():
     res = _run_bash("""
         # Location modifiers: @S: (shared) and @L: (local)
@@ -693,3 +731,113 @@ def test_advanced_multi_subsystem_ao_pipeline(tmp_path: Path):
     res = _run_milk_cli(script, tmp_path, mode="script")
     assert res.returncode == 0, res.stdout + res.stderr
     assert "AO_OK=1:1:SCExAO:1.65:1:1:32" in res.stdout
+
+
+def test_help_k_topics_and_user_commands(tmp_path):
+    """@help -k searches the topics too; a matching user command is not reported as no match."""
+    cmds = tmp_path / "cfg" / "milk" / "commands.d"
+    cmds.mkdir(parents=True)
+    (cmds / "my.bash").write_text("# say hello to the world\nmy.hello() { :; }\n")
+    res = milk_bash(
+        '@help -k hello; echo "rc1=$?"\n'
+        '@help -k readline; echo "rc2=$?"\n'
+        '@help -k zzzqqq; echo "rc3=$?"',
+        tmp_path,
+        extra_env={"XDG_CONFIG_HOME": str(tmp_path / "cfg")},
+    )
+    out = res.stdout + res.stderr
+    assert "my.hello" in res.stdout and "@help readline" in res.stdout, out
+    assert [value(res.stdout, k) for k in ("rc1", "rc2", "rc3")] == ["0", "0", "0"], out
+    assert "no keyword" not in res.stdout, out
+    assert res.stderr.count("matches '") == 1 and "'zzzqqq'" in res.stderr, out
+
+
+def test_replay_loop_stops_after_count(tmp_path):
+    r = milk_bash(
+        """
+        mem.mk3Dim cube 4 4 3 >/dev/null 2>&1
+        @replay --loop -n 7 cube sim; echo "rc=$?"
+        @get s.sim.cnt0
+        """,
+        tmp_path=tmp_path,
+        timeout=20,
+    )
+    assert r.stdout.split()[-2:] == ["rc=0", "7"]
+
+
+def test_source_once_skips_a_file_sourced_plainly(tmp_path):
+    (tmp_path / "lib.milk").write_text("echo ran\n")
+    res = milk_bash(
+        "@source lib.milk; @source --once ./lib.milk; @source --once lib.milk; @source lib.milk",
+        tmp_path,
+    )
+    assert res.returncode == 0
+    assert res.stdout.split() == ["ran", "ran"]
+
+
+def test_waitfor_local_image_frames(tmp_path):
+    """@waitfor on a local image (l.<name>, L:<name>, bare) finishes when cnt0 advances."""
+    res = milk_bash(
+        '@calc "loc = zeros(8,8)"\n'
+        '( @waitfor l.loc 2 -t 5; echo "n=$?" ) &\n'
+        '( @waitfor L:loc --cnt 3 -t 5; echo "cnt=$?" ) &\n'
+        '( @waitfor loc -t 5; echo "bare=$?" ) &\n'
+        "while [ -n \"$(jobs -r)\" ]; do @calc 'loc = loc + 1'; @sleep 0.02; done\n"
+        '@waitfor l.nosuch -t 5 2>w.err; echo "absent=$? $(cat w.err)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    for key in ("n", "cnt", "bare"):
+        assert value(res.stdout, key) == "0", out
+    assert (
+        value(res.stdout, "absent") == "1 ERROR: @waitfor: no local image 'nosuch'"
+    ), out
+
+
+@pytest.mark.timeout(60)
+def test_waitfor_grab_and_on_across_stream_recreation(tmp_path):
+    """@waitfor, @grab and @on started before delete+recreate see frames on the new stream."""
+    res = milk_bash(
+        '@calc "S:h2rc = zeros(8,8)"\n'
+        '( @waitfor s.h2rc 2 -t 6; echo "wf_old=$?" ) &\n'
+        '( @grab -t 6 s.h2rc 2 l.g 2>g.err; echo "gr_old=$?" ) &\n'
+        "@on s.h2rc -- sh -c 'echo fired >> on.log'\n"
+        "sleep 0.3\n"
+        'mem.rmshmim h2rc >/dev/null; @calc "S:h2rc = zeros(8,8)"\n'
+        'for i in 1 2 3 4 5; do @calc "S:h2rc = zeros(8,8) + $i"; sleep 0.15; done\n'
+        "wait %1 %2\n"
+        "@on --clear; mem.rmshmim h2rc >/dev/null\n"
+        'echo "on_hits=$(wc -l < on.log 2>/dev/null || echo 0)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "wf_old") == "0", out
+    assert value(res.stdout, "gr_old") == "1", out
+    assert "re-created or deleted" in (tmp_path / "g.err").read_text(), out
+    assert int(value(res.stdout, "on_hits")) >= 1, out
+
+
+@pytest.mark.timeout(60)
+def test_replay_stdin_stops_after_one_frame(tmp_path):
+    """yes | @replay --stdin reads one frame without waiting for EOF; open pipe works."""
+    res = milk_bash(
+        '{ while :; do echo "1 2 3 4"; sleep 0.05; done | @replay --stdin h2r39 4; '
+        'echo "s1=$?"; } 2>/dev/null\n'
+        '{ yes "5 6 7 8"; } | @replay --stdin h2r40 4\n'
+        'printf "st=%s\\ncnt=%s\\ntot=%s\\nt1=%s\\n" "$?" "$(@get s.h2r40.cnt0)" '
+        "\"$(@calc 'itot(h2r40)')\" \"$(@calc 'itot(h2r39)')\"\n"
+        "coproc SLP { exec sleep 5; }\n"
+        '@replay --stdin h2r40 2 3 4 5 <&"${SLP[0]}"\n'
+        'printf "pos=%s\\ntot2=%s\\n" "$?" "$(@calc \'itot(h2r40)\')"\n'
+        'kill "$SLP_PID" 2>/dev/null || true; wait "$SLP_PID" 2>/dev/null || true\n'
+        "mem.rmshmim h2r39 >/dev/null; mem.rmshmim h2r40 >/dev/null",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "s1") == "0", out
+    assert value(res.stdout, "st") == "0", out
+    assert value(res.stdout, "cnt") == "1", out
+    assert value(res.stdout, "tot") == "26", out
+    assert value(res.stdout, "t1") == "10", out
+    assert value(res.stdout, "pos") == "0", out
+    assert value(res.stdout, "tot2") == "14", out

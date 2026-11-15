@@ -31,8 +31,7 @@ MILK_PARAMS_DEFINE(cubestats, FPS_PARAMS);
 static MILK_HOT errno_t cubestats_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    info_cubestats(p_cube, p_mask, p_out);
-    return RETURN_SUCCESS;
+    return (info_cubestats(p_cube, p_mask, p_out) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_info_cubestats = {
@@ -72,13 +71,23 @@ imageID info_cubestats(const char *ID_name, const char *IDmask_name, const char 
     long   k1, k2, kc;
 
     ID = image_ID(ID_name, dcimg, dcnimg);
+    if (ID == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name);
+        return -1;
+    }
     if (dcimg[ID].md[0].naxis != 3)
     {
         printf("ERROR: info_cubestats requires 3D image\n");
-        exit(0);
+        return -1;
     }
 
     IDm = image_ID(IDmask_name, dcimg, dcnimg);
+    if (IDm == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", IDmask_name);
+        return -1;
+    }
 
     xysize = dcimg[ID].md[0].size[0] * dcimg[ID].md[0].size[1];
 
@@ -89,6 +98,11 @@ imageID info_cubestats(const char *ID_name, const char *IDmask_name, const char 
     }
 
     fp = fopen(outfname, "w");
+    if (fp == NULL)
+    {
+        PRINT_ERROR("cannot open file \"%s\"", outfname);
+        return -1;
+    }
     for (unsigned long kk = 0; kk < dcimg[ID].md[0].size[2]; kk++)
     {
         init = 0;
@@ -125,6 +139,11 @@ imageID info_cubestats(const char *ID_name, const char *IDmask_name, const char 
     if (COMPUTE_CORR == 1)
     {
         fp = fopen("corr.txt", "w");
+        if (fp == NULL)
+        {
+            PRINT_ERROR("cannot open file \"corr.txt\"");
+            return -1;
+        }
         for (kc = 1; kc < kcmax; kc++)
         {
             vcorr = 0.0;

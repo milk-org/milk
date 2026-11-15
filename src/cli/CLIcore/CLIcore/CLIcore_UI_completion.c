@@ -347,9 +347,8 @@ void rl_cb_linehandler(char *linein)
 
     data.CLIexecuteCMDready = 1;
 
-    char multiline_buf[16384];
-    strncpy(multiline_buf, linein, sizeof(multiline_buf) - 1);
-    multiline_buf[sizeof(multiline_buf) - 1] = '\0';
+    /* Grows with each continuation line; volatile: read again after siglongjmp */
+    char *volatile multiline_buf = linein;
 
     int had_continuation = 0;
 
@@ -408,8 +407,8 @@ void rl_cb_linehandler(char *linein)
                 }
 
                 /* Adjust indentation for closing tokens typed by user */
-                char line_to_add[4096];
-                line_to_add[0] = '\0';
+                const char *line_to_add = cont;
+                size_t      nsp         = 0;
 
                 const char *cstart = cont;
                 while (*cstart == ' ' || *cstart == '\t')
@@ -422,48 +421,44 @@ void rl_cb_linehandler(char *linein)
                      strncmp(cstart, "esac", 4) == 0 || strncmp(cstart, "}", 1) == 0 ||
                      strncmp(cstart, "else", 4) == 0 || strncmp(cstart, "elif", 4) == 0))
                 {
-                    int closer_depth = (depth > 0) ? (depth - 1) : 0;
-                    int nsp          = closer_depth * data.auto_indent;
-                    for (int s = 0; s < nsp && s < 64; s++)
-                    {
-                        line_to_add[s]     = ' ';
-                        line_to_add[s + 1] = '\0';
-                    }
-                    strncat(line_to_add, cstart, sizeof(line_to_add) - strlen(line_to_add) - 1);
-                }
-                else
-                {
-                    strncpy(line_to_add, cont, sizeof(line_to_add) - 1);
-                    line_to_add[sizeof(line_to_add) - 1] = '\0';
+                    line_to_add = cstart;
+                    nsp         = (size_t) (depth - 1) * (size_t) data.auto_indent;
                 }
 
                 size_t curlen  = strlen(multiline_buf);
                 size_t contlen = strlen(line_to_add);
-                if (curlen + 2 + contlen < sizeof(multiline_buf))
+                char  *grown   = realloc(multiline_buf, curlen + 2 + nsp + contlen);
+                if (grown == NULL)
                 {
-                    if (!is_bslash)
-                    {
-                        /* Check if preceding non-space was pipe or logical op */
-                        size_t trimmed = curlen;
-                        while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
-                                               multiline_buf[trimmed - 1] == '\t'))
-                        {
-                            trimmed--;
-                        }
-                        int join_space = 0;
-                        if (trimmed > 0)
-                        {
-                            char lastc = multiline_buf[trimmed - 1];
-                            if (lastc == '|' || lastc == '&')
-                            {
-                                join_space = 1;
-                            }
-                        }
-                        multiline_buf[curlen++] = join_space ? ' ' : '\n';
-                        multiline_buf[curlen]   = '\0';
-                    }
-                    strncat(multiline_buf, line_to_add, sizeof(multiline_buf) - curlen - 1);
+                    fprintf(stderr, "milk-cli: out of memory, entry discarded\n");
+                    free(cont);
+                    multiline_buf[0] = '\0';
+                    break;
                 }
+                multiline_buf = grown;
+                if (!is_bslash)
+                {
+                    /* Check if preceding non-space was pipe or logical op */
+                    size_t trimmed = curlen;
+                    while (trimmed > 0 && (multiline_buf[trimmed - 1] == ' ' ||
+                                           multiline_buf[trimmed - 1] == '\t'))
+                    {
+                        trimmed--;
+                    }
+                    int join_space = 0;
+                    if (trimmed > 0)
+                    {
+                        char lastc = multiline_buf[trimmed - 1];
+                        if (lastc == '|' || lastc == '&')
+                        {
+                            join_space = 1;
+                        }
+                    }
+                    multiline_buf[curlen++] = join_space ? ' ' : '\n';
+                    multiline_buf[curlen]   = '\0';
+                }
+                memset(multiline_buf + curlen, ' ', nsp);
+                memcpy(multiline_buf + curlen + nsp, line_to_add, contlen + 1);
                 free(cont);
             }
         }
@@ -478,22 +473,27 @@ void rl_cb_linehandler(char *linein)
             rl_callback_handler_install(cli_get_active_prompt(),
                                         (rl_vcpfunc_t *) &rl_cb_linehandler);
         }
-        free(linein);
+        free(multiline_buf);
         return;
     }
 
     /* Record flattened single-line representation in history
      * to avoid embedded newlines corrupting readline cursor display */
-    char history_entry[16384];
-    cli_multiline_to_single_line(multiline_buf, history_entry, sizeof(history_entry));
-    if (history_entry[0] != '\0')
+    size_t hmax          = 2 * strlen(multiline_buf) + 1; /* newline becomes "; " at most */
+    char  *history_entry = malloc(hmax);
+    if (history_entry != NULL)
     {
-        add_history(history_entry);
-        cli_history_log_prompt(history_entry);
-        if (cli_is_interactive_mode()) // appended as it runs: the file is never rewritten (D39)
+        cli_multiline_to_single_line(multiline_buf, history_entry, hmax);
+        if (history_entry[0] != '\0')
         {
-            append_history(1, CLI_history_file());
+            add_history(history_entry);
+            cli_history_log_prompt(history_entry);
+            if (cli_is_interactive_mode()) // appended as it runs: the file is never rewritten (D39)
+            {
+                append_history(1, CLI_history_file());
+            }
         }
+        free(history_entry);
     }
 
     if (data.echo_input)
@@ -513,7 +513,7 @@ void rl_cb_linehandler(char *linein)
         rl_set_prompt(cli_get_active_prompt());
     }
 
-    free(linein);
+    free(multiline_buf);
 }
 
 static char cli_active_prompt[FPS_DIR_STRLENMAX] = "";

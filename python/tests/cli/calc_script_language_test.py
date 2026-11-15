@@ -89,10 +89,14 @@ def test_bitwise_operators_scalars_and_images(tmp_path):
         '@calc "m1 = u16(ix(m1) + 4); m2 = u16(iy(m2) + 4)"\n'
         '@calc "mand = m1 & 3; mor = m1 | 8; mxor = m1 ^^ m2; msh = (m1 & 3) << 2"\n'
         '@calc -v v0,v1,v2,v3 "mand[3,2]; mor[3,2]; mxor[3,2]; msh[3,2]"\n'
+        '@calc "s64 = m1 << 64; s65 = m1 >> 65; sneg = m1 << -1"\n'
+        '@calc "sbig = f64(m1) << 1e3"\n'
+        '@calc -v w0,w1,w2,w3 "s64[3,2]; s65[3,2]; sneg[3,2]; sbig[3,2]"\n'
         'echo "sc=$b1,$b2,$b3,$b4,$b5,$b6"\n'
         'echo "big=$big"\n'
         'echo "badsh=$badsh"\n'
-        'echo "im=$v0,$v1,$v2,$v3"',
+        'echo "im=$v0,$v1,$v2,$v3"\n'
+        'echo "imsh=$w0,$w1,$w2,$w3"',
         tmp_path,
     )
     out = res.stdout + res.stderr
@@ -103,6 +107,8 @@ def test_bitwise_operators_scalars_and_images(tmp_path):
     # At [3,2] on 8x8 centred at (4,4): ix = -1 -> m1 = 3; iy = -2 -> m2 = 2
     # mand = 3 & 3 = 3; mor = 3 | 8 = 11; mxor = 3 ^ 2 = 1; msh = (3 & 3) << 2 = 12
     assert value(res.stdout, "im") == "3,11,1,12", out
+    # a count outside 0..63 gives 0 on images too, in a float32 and a double pass
+    assert value(res.stdout, "imsh") == "0,0,0,0", out
 
 
 def test_brace_if_elif_else_and_for_loops(tmp_path):
@@ -595,6 +601,50 @@ def test_error_status_position_and_def_checks(tmp_path):
     assert value(res.stdout, "good") == "2", out
 
 
+def test_sizes_and_image_arguments_fail_cleanly(tmp_path):
+    """A size the image cannot have, a slice shorter than its bin, a number where an image is
+    needed and a runaway loop nest are errors with their cause; the session and its images stay.
+    """
+    script = (
+        "ulimit -v 8000000\n"  # before the session starts: it cannot allocate 34 GB
+        '@calc "c = zeros(16, 16, 4) + 1; v = linspace(0, 1, 64)"\n'
+        + "".join(
+            f'@calc "{e}" 2>>err.txt; echo "r{i}=$?"\n'
+            for i, e in enumerate(
+                (
+                    "w = c[end:end:2b, *, *]",
+                    "t = zeros(4294967297)",
+                    "t = diag(v, 1e18)",
+                    "t = [x for x = 0:99999999]",
+                    "t = zeros(65537, 65537, 2)",
+                    "y = imax(v).T",
+                    "t = v @ 1",
+                    "t = rprof(c)",
+                    "for i = 0:1000 { for j = 0:1000 { y = 1 } }",
+                )
+            )
+        )
+        + '@calc -v m "itot(c)"; echo "alive=$m"'
+    )
+    res = milk_bash(script, tmp_path)
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, f"r{i}") for i in range(9)] == ["1"] * 8 + ["2"], out
+    err = (tmp_path / "err.txt").read_text()
+    for msg in (
+        "range [15:15] is shorter than its bin of 2",
+        "zeros: dimensions must be in [1, 4294967295]",
+        "diag: diagonal offset out of range",
+        "comprehension range has more than 16777216 values",
+        'image "t" needs 34.4 GB, more than this process can allocate',
+        "expected an image, not a number",
+        "rprof: expected a 1-D or 2-D image",  # its bins cover one frame: a cube read past them
+        "for loops exceeded 100000 iterations",
+    ):
+        assert msg in err, err
+    assert "evaluation error" not in err, err
+    assert value(res.stdout, "alive") == "1024", out
+
+
 def test_a_variable_holds_what_was_assigned_last(tmp_path):
     res = milk_bash(
         '@calc \'t = 5; t = "xyz"; s = "abc"; s = 5; q = "5"\'\n'
@@ -869,3 +919,167 @@ def test_shell_and_session_give_the_same_numbers(tmp_path):
     assert len(shell) == len(exprs) and shell == session, out
     assert value(res.stdout, "c") == "8", out
     assert value(res.stdout, "n") == f"0,{len(exprs)}", out  # no request, then one each
+
+
+def test_chain_limit_same_in_shell(tmp_path):
+    res = milk_bash(
+        '@calc -v r "1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9"; echo "ok8=$? r=$r"\n'
+        'r=; @calc -v r "1 < 2 < 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10" 2>err.txt; echo "st9=$? r=$r"\n',
+        tmp_path,
+    )
+    assert "ok8=0 r=1" in res.stdout, res.stdout + res.stderr
+    assert "st9=2 r=" in res.stdout, res.stdout + res.stderr
+    assert "Chained comparison too long" in (tmp_path / "err.txt").read_text()
+
+
+def test_complex_pixel_parts_are_numbers(tmp_path):
+    """real/imag/arg/abs of one complex pixel are numbers (calculator.md); -v of an image is an error."""
+    res = milk_bash(
+        '@calc "zz = cplx(zeros(5,5) + 3, zeros(5,5) + 4)"\n'
+        '@calc -v r,i,a,m "real(zz[3,4]); imag(zz[3,4]); arg(zz[3,4]); abs(zz[3,4])"; echo "parts=$r $i $a $m rc=$?"\n'
+        '@test "abs(zz[3,4]) > 1"; echo "test=$?"\n'
+        '@calc "q = abs(zz[3,4])"; @calc -v q "q"; echo "q=$q"\n'
+        '@calc -v x "zz[3,4]" 2>err.txt; echo "img=$? [$x]"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "parts") == "3 4 0.927295218001612 5 rc=0", out
+    assert value(res.stdout, "test") == "0", out
+    assert value(res.stdout, "q") == "5", out
+    assert value(res.stdout, "img") == "1 []", out  # only with the mc_eval.c (-v) hunk
+
+
+def test_reductions_that_cannot_share_a_traversal(tmp_path):
+    """irms, norm and asum next to another reduction of the same image in one pass."""
+    res = milk_bash(
+        "mem.mk2Dim a 16 16 >/dev/null\n"
+        '@calc "a = ix(a) * 1.5 - iy(a) * 0.7 + 3.2"\n'
+        '@calc "o = a - imean(a) - istd(a) - imin(a) - imax(a) - itot(a) - irms(a)"\n'
+        '@calc "p = a - irms(a) - norm(a) - asum(a) - imean(a)"\n'
+        '@calc -v m,s,lo,hi,t,r,n,as "imean(a); istd(a); imin(a); imax(a); itot(a); irms(a); norm(a); asum(a)"\n'
+        '@calc -v d1,d2 "imax(abs(o - (a - m - s - lo - hi - t - r))); imax(abs(p - (a - r - n - as - m)))"\n'
+        'echo "d=$d1,$d2"',
+        tmp_path,
+    )
+    assert value(res.stdout, "d") == "0,0", res.stdout + res.stderr
+
+
+def test_deep_expression_guard_and_moderate_depth(tmp_path):
+    """500-term sums and 300-deep nested calls work on an 8 MB stack; deeper nesting fails cleanly."""
+    res = milk_bash(
+        r"""
+(
+ulimit -s 8192 >/dev/null 2>&1 || true
+eval "$(
+python3 - <<'PY'
+print('export s500="' + '+'.join(['1'] * 500) + '"')
+print('export abs300="' + ('abs(' * 300) + '-5' + (')' * 300) + '"')
+print('export i500="' + '+'.join(['im'] * 500) + '"')
+print('export s900="' + '+'.join(['1'] * 900) + '"')
+print('export u900="' + ('-' * 900) + '1"')
+print('export i900="' + '+'.join(['im'] * 900) + '"')
+PY
+)"
+env -u MILKCLI_SOCK -u _MILK_SERVER_NAME bash --norc -c '
+source "$MILK_INSTALLDIR/bin/milk.bash"
+@calc -v y "$s500"; echo "s500_rc=$? y=$y"
+@calc -v a "$abs300"; echo "abs300_rc=$? a=$a"
+@calc "im = zeros(4,4) + 1; o = $i500"; @calc -v v "o[0,0]"; echo "i500_rc=$? v=$v"
+@calc -v y "$s900" 2>e_s900.txt; echo "s900_rc=$?"
+@calc -v y "$u900" 2>e_u900.txt; echo "u900_rc=$?"
+@calc "o2 = $i900" 2>e_i900.txt; echo "i900_rc=$?"
+@calc -v ok "2 + 2"; echo "alive=$? ok=$ok"
+'
+)
+""",
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert "s500_rc=0 y=500" in res.stdout, out
+    assert "abs300_rc=0 a=5" in res.stdout, out
+    assert "i500_rc=0 v=500" in res.stdout, out
+    assert "s900_rc=2" in res.stdout, out
+    assert "u900_rc=2" in res.stdout, out
+    assert "i900_rc=2" in res.stdout, out
+    assert "alive=0 ok=4" in res.stdout, out
+    for fname in ("e_s900.txt", "e_u900.txt", "e_i900.txt"):
+        assert "nested too deeply" in (tmp_path / fname).read_text(), fname
+
+
+def test_ternary_on_complex_images(tmp_path):
+    """c ? z : w preserves complex float/double branches and rejects complex conditions."""
+    res = milk_bash(
+        '@calc "c = zeros(4,4); c[0,0] = 1"\n'
+        '@calc "z = cplx(zeros(4,4) + 3, zeros(4,4) + 4); w = cplx(zeros(4,4) + 5, zeros(4,4) - 6)"\n'
+        '@calc "r = c ? z : w; r2 = c ? z : 0"\n'
+        '@calc -v r0,i0,r1,i1 "real(r[0,0]); imag(r[0,0]); real(r[1,0]); imag(r[1,0])"\n'
+        '@calc -v x0,y0,x1,y1 "real(r2[0,0]); imag(r2[0,0]); real(r2[1,0]); imag(r2[1,0])"\n'
+        '@calc "zd = cplx(f64(zeros(4,4)) + 1.0 + 1e-12, f64(zeros(4,4)) - 2.0 + 1e-12)"\n'
+        '@calc "rd = c ? zd : w"\n'
+        '@test "(real(rd[0,0]) - 1.0) > 5e-13 && (imag(rd[0,0]) + 2.0) > 5e-13"\n'
+        'echo "dt=$?"\n'
+        '@calc -v dr1,di1 "real(rd[1,0]); imag(rd[1,0])"\n'
+        '@calc "bad = z ? w : 0" 2>err.txt; echo "bad_rc=$?"\n'
+        'printf "r=%s,%s,%s,%s\\nr2=%s,%s,%s,%s\\nrd1=%s,%s\\n" '
+        '"$r0" "$i0" "$r1" "$i1" "$x0" "$y0" "$x1" "$y1" "$dr1" "$di1"\n',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "r") == "3,4,5,-6", out
+    assert value(res.stdout, "r2") == "3,4,0,0", out
+    assert value(res.stdout, "dt") == "0", out
+    assert value(res.stdout, "rd1") == "5,-6", out
+    assert value(res.stdout, "bad_rc") == "2", out
+    assert "complex" in (tmp_path / "err.txt").read_text().lower(), out
+
+
+def test_corrupted_so_cache_rebuilt(tmp_path):
+    """Corrupted kernel .so or ext_*.so entries (0-byte, garbage, empty dir) trigger rebuild."""
+    c_file = tmp_path / "ext_jit4.c"
+    c_file.write_text(r"""
+#include "milk_calc_ext.h"
+
+static void add_k_f(float *restrict out, const float *restrict in, const void *P, int len)
+{
+    (void) P;
+    for (int i = 0; i < len; i++)
+    {
+        out[i] = in[i] + 9.0f;
+    }
+}
+
+MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK("jit4_add9", add_k_f, MILK_CALC_NOPARAMS, 0));
+""")
+    res = milk_bash(
+        r"""
+export MILK_CALC_CACHE=$PWD/kc
+mkdir kc
+run_fresh() {
+    env -u MILKCLI_SOCK -u _MILK_SERVER_NAME bash --norc -c '
+        source "$MILK_INSTALLDIR/bin/milk.bash"
+        @calc "a = zeros(4,4) + 1; o = a + 7" &&
+        @calc -v v1 "o[0,0]" &&
+        @calc "p1 = a * 2 + 1; p2 = p1 * 3 + 2" &&
+        @calc -v v2 "p2[0,0]" &&
+        @calc --lib ext_jit4.c "e = jit4_add9(a)" &&
+        @calc -v v3 "e[0,0]" &&
+        echo "v=$v1,$v2,$v3"
+    '
+}
+r0=$(run_fresh); echo "warm=$? $r0"
+for f in kc/*.so; do : > "$f"; done
+r1=$(run_fresh); echo "zero=$? $r1"
+for f in kc/*.so; do printf 'not-an-elf\n' > "$f"; done
+r2=$(run_fresh); echo "garbage=$? $r2"
+for f in kc/*.so; do rm -f "$f" && mkdir "$f"; done
+r3=$(run_fresh); echo "dir=$? $r3"
+""",
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert "warm=0 v=8,11,10" in res.stdout, out
+    assert "zero=0 v=8,11,10" in res.stdout, out
+    assert "garbage=0 v=8,11,10" in res.stdout, out
+    assert "dir=0 v=8,11,10" in res.stdout, out

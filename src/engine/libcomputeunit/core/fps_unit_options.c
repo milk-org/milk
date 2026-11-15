@@ -18,7 +18,9 @@
 #include <string.h>
 
 #include "fps_args.h"
+#include "fps_lifecycle.h"
 #include "milk_runnable.h"
+#include "processtools_trigger.h"
 #include "fps_unit_options.h"
 
 static int milk_unit_fps_exists(const char *name);
@@ -235,15 +237,16 @@ static void opts_to_bindings(const milk_unit_desc *d, const milk_unit_args *a)
  * @d: Unit descriptor
  * @a: Parsed arguments
  *
- * The declaration (-p) cannot change on an existing FPS: its parameters are created with the FPS.
- * A running unit compiles a new program at its next frame.
+ * Only fpsinit changes the declaration (-p): it adds the parameters it declares, and the other
+ * commands refuse another one. A running unit compiles a new program at its next frame.
  *
- * Return: 0, or 2 if -p differs from the declaration of the FPS.
+ * Return: 0, or 2 if -p differs from the declaration of the FPS (not with fpsinit).
  */
 static int opts_to_fps(const milk_unit_desc *d, const milk_unit_args *a)
 {
-    FPS fps;
-    int rc = 0;
+    FPS         fps;
+    int         rc       = 0;
+    const char *trig_val = NULL;
 
     if (fps_connect(a->name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
@@ -251,12 +254,13 @@ static int opts_to_fps(const milk_unit_desc *d, const milk_unit_args *a)
     }
     for (int k = 0; k < d->nopt && rc == 0; k++)
     {
-        const char *kw = d->bindings[d->opts[k].slot].fpskeyword;
+        FPS_CLI_BINDING *b  = &d->bindings[d->opts[k].slot];
+        const char      *kw = b->fpskeyword;
         if (a->opt[k] == NULL)
         {
             continue;
         }
-        if (k == d->params_opt)
+        if (k == d->params_opt && strcmp(a->cmd, "fpsinit") != 0)
         {
             long pi = functionparameter_GetParamIndex(&fps, kw);
             if (pi >= 0 && strncmp(fps.parray[pi].val.string[0], a->opt[k],
@@ -270,9 +274,48 @@ static int opts_to_fps(const milk_unit_desc *d, const milk_unit_args *a)
             continue;
         }
         functionparameter_SetParamValue_STRING(&fps, kw, a->opt[k]);
+        if (b->fpflag & FPFLAG_TRIGGER_STREAM)
+        {
+            snprintf((char *) b->ptr, FUNCTION_PARAMETER_STRMAXLEN, "%s", a->opt[k]);
+            trig_val = a->opt[k];
+        }
+    }
+    if (rc == 0 && trig_val != NULL)
+    {
+        if (trig_val[0] != '\0')
+        {
+            fps_autopopulate_trigger_stream(&fps, d->bindings, *d->nbind);
+        }
+        else if (functionparameter_GetParamIndex(&fps, ".procinfo.triggersname") >= 0)
+        {
+            functionparameter_SetParamValue_STRING(&fps, ".procinfo.triggersname", "");
+            functionparameter_SetParamValue_INT64(&fps, ".procinfo.triggermode",
+                                                  (a->use_loop == 2)
+                                                      ? PROCESSINFO_TRIGGERMODE_DELAY
+                                                      : PROCESSINFO_TRIGGERMODE_IMMEDIATE);
+        }
     }
     fps_disconnect(&fps);
     return rc;
+}
+
+static int trigger_opt_given(const milk_unit_desc *d, const milk_unit_args *a)
+{
+    for (int k = 0; k < d->nopt; k++)
+    {
+        if (a->opt[k] != NULL && (d->bindings[d->opts[k].slot].fpflag & FPFLAG_TRIGGER_STREAM))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int unit_is_running(const char *name)
+{
+    FPS_UNIT_STATUS st;
+
+    return fps_unit_status(name, FPS_UNIT_RUN, &st) == 0 && fps_unit_state_alive(st.state);
 }
 
 /**
@@ -338,9 +381,11 @@ static int check_running(const milk_unit_desc *d, const milk_unit_args *a)
  * @d:    Unit descriptor
  *
  * fpsinit, and exec when the FPS does not exist yet, create the FPS from the unit options:
- * -p declares the parameters that the values after the command word then set. On an existing FPS
- * the declared parameters are read back from it, and the other unit options are written into it,
- * for a running unit once their program builds (check_running()).
+ * -p declares the parameters that the values after the command word then set. fpsinit keeps an
+ * existing FPS and its values, and writes the unit options into it. With the other commands, on an
+ * existing FPS, in its work directory as for any fpsexec, the declared parameters are read back
+ * from it (not for runstop), and the other unit options are written into it, for a running unit
+ * once their program builds (check_running()).
  * -h lists the parameters that -p declares, else those of the existing FPS.
  *
  * Return: Exit status: 0 on success, 2 on a usage error, else that of fpsexec main.
@@ -369,6 +414,10 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
     fps_cli_set_unit_help(NULL, d->help_options, d->nfixed);
     exists = milk_unit_fps_exists(a.name);
     init   = (strcmp(a.cmd, "fpsinit") == 0);
+    if (exists && !init && fps_chdir_workdir(a.name) != 0)
+    {
+        return 1; /* the relative paths the FPS holds (.unit.libs) resolve where its unit runs */
+    }
     create = !a.help && (init || (strcmp(a.cmd, "exec") == 0 && !exists));
     values = init || strcmp(a.cmd, "exec") == 0 || strcmp(a.cmd, "set") == 0 ||
              strcmp(a.cmd, "runstart") == 0 || strcmp(a.cmd, "run") == 0;
@@ -387,9 +436,9 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
             load_fps_values(d, &a);
         }
     }
-    else if (exists && d->find_params(a.name) != 0)
+    else if (exists && strcmp(a.cmd, "runstop") != 0 && d->find_params(a.name) != 0)
     {
-        return 1;
+        return 1; /* runstop reads no parameter: a library that no longer loads cannot keep it */
     }
 
     if (!a.help && values && fps_cli_check_values(d->bindings, *d->nbind) != 0)
@@ -404,6 +453,7 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
         }
         if (init)
         {
+            opts_to_fps(d, &a); /* an existing FPS keeps its values: write the unit options */
             values_to_new_fps(d, &a);
             return 0; /* fpsinit is done here: the parameters come from this command line */
         }
@@ -413,6 +463,14 @@ int milk_unit_main(int argc, char **argv, const milk_unit_desc *d)
         if (!values)
         {
             fprintf(stderr, "%s: unit options have no effect with %s\n", d->tag, a.cmd);
+        }
+        else if (trigger_opt_given(d, &a) && unit_is_running(a.name))
+        {
+            fprintf(stderr,
+                    "%s %s: cannot change trigger stream while unit is running; "
+                    "stop it first\n",
+                    d->tag, a.name);
+            return 2;
         }
         else if (check_running(d, &a) != 0)
         {

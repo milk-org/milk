@@ -27,7 +27,7 @@ flowchart LR
 | **1a: 1D SIMD Block Kernel** | A 1D per-pixel C function (`MILK_CALC_REG_BLK` / `MILK_CALC_REG_BLK2`) + parameter table | Calls it on blocks of the image in parallel, as a step of its own before the fused pass; auto-exposes parameters in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **1b: 2D Stencil Kernel** | A $(2R+1)\times(2R+1)$ row-strip C function (`MILK_CALC_REG_STENCIL`, $R \in \{1,2,3\}$) | Pre-clamps image borders and feeds $2R+1$ row pointers of length $N + 2R$ per tile | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **1c: Whole-Image Kernel** | A 1-input / 1-output whole-image C function (`MILK_CALC_REG_IMG`) | Runs as an in-expression pre-stage with zero intermediate copy on bare `float32` streams | `#include "milk_calc_ext.h"` (`-l file.c`) |
-| **2: Stateful Multi-Port Operator** | `init` / `exec` / `free` C callbacks with named `IN`/`OUT` image & scalar ports (`MILK_CALC_OP_DECLARE`) | Allocates/resizes output streams (`milk_op_set_out_shape`), re-runs `init` on shape/CONF changes, exposes scalar outputs in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
+| **2: Stateful Multi-Port Operator** | `init` / `exec` / `free` C callbacks with named `IN`/`OUT` image & scalar ports (`MILK_CALC_OP_DECLARE`) | Allocates output images at the shape `init` sets (`milk_op_set_out_shape`), re-runs `init` on shape/CONF changes, exposes scalar outputs in FPS | `#include "milk_calc_ext.h"` (`-l file.c`) |
 | **3: Standalone `MILK_RUNNABLE`** | A complete `MILK_RUNNABLE` `.c` file with custom loop/trigger logic | `milk-cc` generates the `main()` stub and links `<prefix>-fpsexec-<id>` without CMake boilerplate | `#include "milk_runnable.h"` (`milk-cc unit.c`) |
 
 ---
@@ -200,10 +200,10 @@ No manual compiler invocation is needed — pass `-l wfskernels.c` directly:
 # One-shot in @calc:
 @calc --lib wfskernels.c "clean = despike3x3(col_demean(nlcorr(wfscam - dark))) * flat"
 
-# Persistent compute unit:
-milk-fpsexec-milk-calc -n wfsprep -t wfscam -l wfskernels.c \
+# Persistent compute unit (the FPS stores the -l path: 63 characters at most):
+milk-fpsexec-milk-calc -n wfsclean -t wfscam -l wfskernels.c \
     -e "clean = despike3x3(col_demean(nlcorr(wfscam - dark))) * flat" fpsinit
-milk-fpsexec-milk-calc -n wfsprep runstart
+milk-fpsexec-milk-calc -n wfsclean runstart
 ```
 
 On first load, `milk` compiles `wfskernels.c` and reuses the cached `.so` until the file changes
@@ -225,7 +225,7 @@ and applies three rules:
 1. **Unbound parameters are automatically exposed in FPS**:
    - Calling `nlcorr(raw)` exposes `.nlcorr.c2` and `.nlcorr.knee` in the unit's FPS with their C
      defaults, types, flags, and descriptions.
-   - Live updates via `@set f.wfsprep.nlcorr.knee = 48000` take effect on the next frame without
+   - Live updates via `@set f.wfsclean.nlcorr.knee = 48000` take effect on the next frame without
      rebuilding the fused program.
 2. **Instance labels (`func:label(...)`) disambiguate multiple calls**:
    - Calling `despike3x3:coarse(raw)` and `despike3x3:fine(a)` exposes two independent FPS
@@ -252,7 +252,10 @@ and applies three rules:
 - Persistent state (`void *state`) allocated once in `init()`, reused on every frame in `exec()`,
   and released in `free()`.
 - Automatic re-initialization when an input stream's shape changes or when a configuration-only
-  parameter (declared without `FPFLAG_WRITERUN`) is modified.
+  parameter (declared without `FPFLAG_WRITERUN`) is modified. A shared stream keeps its shape, as
+  in any assignment: a new output shape from `init` makes a local output (`@calc`) again, but stops
+  a unit, whose outputs are streams, with `Dimension mismatch`. Stop the unit, remove its output
+  streams (`mem.rmshmim wfs_sx`, `mem.rmshmim wfs_sy`) and start it again.
 
 ### Example: `shslopes.c`
 
@@ -360,7 +363,8 @@ MILK_CALC_EXT_EXPORT(
 
 ```bash
 milk-fpsexec-milk-calc -n u_sh -t wfs_in -l shslopes.c \
-    -e "wfs_sx, wfs_sy, total_flux = shslopes(wfs_in)" exec
+    -e "wfs_sx, wfs_sy, total_flux = shslopes(wfs_in)" fpsinit
+milk-fpsexec-milk-calc -n u_sh runstart     # exec would run it in this shell until Ctrl-C
 
 # Update runtime parameter and inspect scalar output port in FPS:
 @set f.u_sh.shslopes.thresh = 1.0
@@ -460,11 +464,14 @@ milk-cc custom_scale.c
 `milk-cc` also compiles Tier 1 / Tier 2 `.c` files (those using `MILK_CALC_EXT_EXPORT`) into
 shared libraries (`<stem>.so`) when you prefer pre-compiling `.so` plugins ahead of time. Both modes
 use the calculator's compiler and flags
-([`MILK_CALC_CC`, `MILK_CC_FLAGS`](calculator.md#fusion-cost-model)); `-v` prints the command:
+([`MILK_CALC_CC`, `MILK_CC_FLAGS`](calculator.md#fusion-cost-model)) with
+`-Wall -Wextra -Wno-unused-parameter`, and a unit adds `-fopenmp -DMILK_NO_CLI`; `-v` prints the
+command:
 
 ```bash
 milk-cc wfskernels.c -o wfskernels.so
-milk-fpsexec-milk-calc -n wfsprep -l ./wfskernels.so -f wfsprep.calc exec
+milk-fpsexec-milk-calc -n wfsclean -t wfscam -l ./wfskernels.so \
+    -e "clean = despike3x3(col_demean(nlcorr(wfscam - dark))) * flat" fpsinit
 
 # Inspect the built-in functions, operators, and any loaded C extension kernels/params:
 @calc --lib wfskernels.c --list
@@ -477,18 +484,19 @@ milk-fpsexec-milk-calc -l ./wfskernels.so --list
 
 | Macro / Function | Purpose |
 | :--- | :--- |
-| `MILK_CALC_PARAMS(name, PARAM_MACRO)` | Define `struct <name>_par` plus FPS metadata from `X(".kw", field, fptype, defval, flags, desc)` |
+| `MILK_CALC_PARAMS(name, PARAM_MACRO)` | Define `struct <name>_par` (members named by `field`) plus FPS metadata from `X(".kw", field, fptype, defval, flags, desc)`; `kw` is the call keyword and the FPS parameter name |
 | `MILK_CALC_NOPARAMS` | Sentinel for stateless kernels with no parameters |
 | `MILK_CALC_REG_BLK(name, fn, par, cost)` | Register a 1-input 1D SIMD block kernel: `void fn(float *restrict out, const float *restrict in, const struct par_par *P, int len)` |
 | `MILK_CALC_REG_BLK2(name, fn, par, cost)` | Register a 2-input 1D SIMD block kernel: `void fn(float *restrict out, const float *restrict in0, const float *restrict in1, const struct par_par *P, int len)` |
 | `MILK_CALC_REG_STENCIL(name, fn, par, R, cost)` | Register a 2D $(2R+1)\times(2R+1)$ stencil ($R \in \{1,2,3\}$): `void fn(float *restrict out, const float *const *rows, const struct par_par *P, int len)` |
 | `MILK_CALC_REG_IMG(name, fn, par)` | Register a 1-input / 1-output whole-image kernel: `int fn(IMAGE *out, const IMAGE *in, const struct par_par *P)` |
-| `MILK_CALC_OP_DECLARE(name, PARAMS, PORTS)` | Declare a Tier 2 operator's parameter struct and `IN`/`OUT` port table |
+| `MILK_CALC_OP_DECLARE(name, PARAMS, PORTS)` | Declare a Tier 2 operator's parameter struct and `IN`/`OUT` port table, `X(IN or OUT, port, kind, flags, desc)` with kind `MILK_PORT_IMAGE` or `MILK_PORT_SCALAR`, flags `0` or `MILK_PORT_OPT` (an optional input) |
 | `MILK_CALC_REG_OP(name, decl, init, exec, free)` | Register a Tier 2 stateful operator |
 | `MILK_IN(ctx, port)` / `MILK_IN_SCALAR(ctx, port)` | Read an input `const IMAGE *` or `double` port inside `init` / `exec` |
 | `MILK_OUT(ctx, port)` / `MILK_OUT_SCALAR(ctx, port)` | Access an output `IMAGE *` or assignable `double` lvalue inside `exec` |
 | `milk_op_set_out_shape(ctx, port, nx, ny)` | Set 2D output port dimensions inside `init` (`milk_op_set_out_shape3d` for 3D) |
 | `MILK_CALC_EXT_EXPORT(...)` | Export one or more `MILK_CALC_REG_*` entries from the translation unit |
+| `MILK_CALC_MODULE_EXPORT(modid, ...)` | The same from a milk module, registered when its library loads (`src/calc/ext/mc_ext_builtin.c`) |
 
 ---
 

@@ -50,7 +50,7 @@ void milk_client_collect_identifiers(milk_packed_vars_t        *pv,
                                      const milk_client_hooks_t *hooks,
                                      const char                *s);
 
-/** milk_client_pack_digits() - pack the shell's MILK_DPDIGITS: the session prints with its digits. */
+/** milk_client_pack_digits() - pack the shell's MILK_DPDIGITS and MILK_CALC_LIBS. */
 void milk_client_pack_digits(milk_packed_vars_t *pv, const milk_client_hooks_t *hooks);
 
 /** milk_client_pack_vars() - append @pv to @p: the count, then each name and value. */

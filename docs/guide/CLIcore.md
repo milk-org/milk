@@ -47,14 +47,13 @@ When launching `milk-cli`, the following arguments are available:
 | `-f`, `--fifoflag`          | Enable fifo input; auto-generate fifo path          |
 | `-F`, `--fifoname=PATH`     | Enable fifo input; use custom fifo path             |
 | `-c`, `--command=CMD`       | Execute single command and exit                     |
-| `-s`, `--startup=FILE`      | Run a script file and exit (with `-f`/`-F`: feed it through the fifo) |
+| `-s`, `--startup=FILE`      | Run a script file and exit (with `-f`/`-F`: feed it through the fifo, then run until `exit`) |
 | `-A`, `--autocomplete`      | Enable autocomplete preview                         |
 | `--no-autocomplete`         | Disable autocomplete                                |
 | `--no-history-suggest`      | Disable ghost history suggestions                   |
 | `--no-arg-hints`            | Disable argument hint bar                           |
 | `--no-fuzzy`                | Disable fuzzy matching in completions               |
-| `--idle`                    | Idle mode: only run process when X is idle          |
-| `--catalog`                 | Dump module/command catalog in TSV format and exit  |
+| `--catalog`                 | Write the install's command catalog (`share/milk/catalog.d`, `catalog.bash`) and exit |
 | `--format FILE`             | Format a `.milk` script to stdout and exit          |
 | `--format-in-place FILE`    | Format a `.milk` script in place and exit           |
 | `--outline FILE`            | Print structural outline of a `.milk` script        |
@@ -188,14 +187,15 @@ milk-cli > @config synhl on             # enable (default)
 
 ### Auto-Correction
 
-When a command dispatched to the server is not found, the CLI suggests the closest match using
-Levenshtein distance:
+At the prompt an unknown word is bash's `command not found` (status 127). A command sent to the
+session by name, `milk-call <cmd>` or `milkcall <cmd>`, that no installed module has gets the
+closest names (Levenshtein distance):
 
 ```text
-milk-cli > @mem.lisim
+$ milk-call mem.lisim
 milk: unknown command '@mem.lisim'
-Did you mean?
-  mem.listim (COREMOD_memory) -- list images in memory
+Command 'mem.lisim' not found. Did you mean:
+  - mem.listim
 ```
 
 ---
@@ -274,7 +274,7 @@ commands and keywords are functions and builtins. Chaining (`;`, `&&`, `||`), pi
 
 ```text
 milk-cli > mem.listim | grep wfs
-milk-cli > iofits.loadfits ${HOME}/data/im.fits im1 && iofits.saveFITS im1 $OUTDIR/result.fits
+milk-cli > iofits.loadfits ${HOME}/data/im.fits im1 . && iofits.saveFITS im1 $OUTDIR/result.fits
 milk-cli > while :; do clear; mem.listim; @sleep 1; done      # Ctrl-C stops it
 ```
 
@@ -300,23 +300,22 @@ CFITSIO is used for FITS file I/O. Requires `USE_CFITSIO=ON`. See
 [Build Tiers](../quickstart/build_tiers.md).
 
 ```text
-milk-cli > iofits.loadfits im1.fits imf1       # load as "imf1"
-milk-cli > iofits.loadfits im1.fits            # auto-name from filename
-milk-cli > iofits.loadfits im1.fits.gz im1     # load compressed FITS
-milk-cli > iofits.saveFITS im1 imf1.fits       # save to FITS file
-milk-cli > iofits.saveFITS im1 "!im1.fits"     # overwrite existing file
+milk-cli > iofits.loadfits im1.fits imf1 .     # load as "imf1" ('.': the default error mode)
+milk-cli > iofits.loadfits im1.fits.gz im1 .   # load compressed FITS
+milk-cli > iofits.saveFITS im1 imf1.fits       # save to FITS file (overwrites an existing one)
 ```
 
 ### Using `imlist.txt`
 
 Start `milk-cli` with `--listimf` to maintain `imlist.txt` — an ASCII table of all images
-currently in memory. Standard Unix tools can filter this list and generate commands.
+currently in memory, one per line: name, datatype code, number of axes, shared (1) or local (0),
+then the size of each axis. Standard Unix tools can filter this list and generate commands.
 
 The `--listimf` flag works independently of FIFO mode. You can feed the generated commands back into
 the CLI via a FIFO (start with `milk-cli --listimf -F /tmp/myctl.fifo`):
 
 ```text
-milk-cli > awk '{if ($4>200) print $2}' imlist.txt \
+milk-cli > awk '{if ($5>200) print $1}' imlist.txt \
         | xargs -I {} echo "iofits.saveFITS {} {}_tmp.fits" > /tmp/myctl.fifo
 ```
 

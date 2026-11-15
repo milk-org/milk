@@ -19,7 +19,8 @@
  *              scalar, constructor and pass steps (after `skip`, only the ring updates), posts
  *              each shared output once at the end (mc_post_defer(), mc_post_flush()), and writes
  *              the assigned values back to the bound pointers. mc_exec_sub_prog() compiles,
- *              caches and runs the body of an `if` branch or a `for` loop.
+ *              caches and runs the body of an `if` branch or a `for` loop. mcalc_prog_parse()
+ *              only lexes and parses (a unit does not start on statements that do not parse).
  * Used by:     units/milk_unit_calc.c (the milk.calc unit), mc_eval.c (`@calc` statements that
  *              make or read images), plan/mc_explain.c (`--explain`), run/mc_scalar_eval.c
  *              (`if`/`for` bodies), run/mc_reduce.c (sub-programs); mc_var_bound() also by the
@@ -32,6 +33,7 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,9 +142,20 @@ void mc_prog_load_vars(mcalc_prog_t *p)
             v->value.l = (long) *(int32_t *) x;
             break;
         case FPTYPE_UINT64:
-            v->type    = 1;
-            v->value.l = (long) *(uint64_t *) x;
-            break;
+        {
+            uint64_t u = *(uint64_t *) x;
+            if (u <= (uint64_t) LONG_MAX)
+            {
+                v->type    = 1;
+                v->value.l = (long) u;
+            }
+            else
+            {
+                v->type    = 0;
+                v->value.f = (double) u;
+            }
+        }
+        break;
         case FPTYPE_UINT32:
             v->type    = 1;
             v->value.l = (long) *(uint32_t *) x;
@@ -216,16 +229,94 @@ int mc_prog_store_vars(mcalc_prog_t *p, char *err, size_t errsz)
         switch (p->vars[i].type)
         {
         case FPTYPE_INT64:
-            *(int64_t *) x = (v->type == 1) ? v->value.l : llround(d);
+            if (v->type == 1)
+            {
+                *(int64_t *) x = v->value.l;
+            }
+            else if (!isfinite(d) || d < -0x1p63 || d >= 0x1p63)
+            {
+                snprintf(err, errsz, "%s: value %g is out of int64 range", p->vars[i].name, d);
+                return -1;
+            }
+            else
+            {
+                *(int64_t *) x = llround(d);
+            }
             break;
         case FPTYPE_INT32:
-            *(int32_t *) x = (int32_t) ((v->type == 1) ? v->value.l : llround(d));
+            if (v->type == 1)
+            {
+                if (v->value.l < INT32_MIN || v->value.l > INT32_MAX)
+                {
+                    snprintf(err, errsz, "%s: value %ld is out of int32 range", p->vars[i].name,
+                             v->value.l);
+                    return -1;
+                }
+                *(int32_t *) x = (int32_t) v->value.l;
+            }
+            else if (!isfinite(d) || d < -0x1p32 || d > 0x1p32)
+            {
+                snprintf(err, errsz, "%s: value %g is out of int32 range", p->vars[i].name, d);
+                return -1;
+            }
+            else
+            {
+                long long r = llround(d);
+                if (r < INT32_MIN || r > INT32_MAX)
+                {
+                    snprintf(err, errsz, "%s: value %g is out of int32 range", p->vars[i].name, d);
+                    return -1;
+                }
+                *(int32_t *) x = (int32_t) r;
+            }
             break;
         case FPTYPE_UINT64:
-            *(uint64_t *) x = (d < 0) ? 0 : (uint64_t) ((v->type == 1) ? v->value.l : llround(d));
+            if (v->type == 1)
+            {
+                if (v->value.l < 0)
+                {
+                    snprintf(err, errsz, "%s: value %ld is out of uint64 range", p->vars[i].name,
+                             v->value.l);
+                    return -1;
+                }
+                *(uint64_t *) x = (uint64_t) v->value.l;
+            }
+            else if (!isfinite(d) || d < 0.0 || d >= 0x1p64)
+            {
+                snprintf(err, errsz, "%s: value %g is out of uint64 range", p->vars[i].name, d);
+                return -1;
+            }
+            else
+            {
+                *(uint64_t *) x = (d < 0x1p63) ? (uint64_t) llround(d) : (uint64_t) round(d);
+            }
             break;
         case FPTYPE_UINT32:
-            *(uint32_t *) x = (d < 0) ? 0 : (uint32_t) ((v->type == 1) ? v->value.l : llround(d));
+            if (v->type == 1)
+            {
+                if (v->value.l < 0 || v->value.l > (long) UINT32_MAX)
+                {
+                    snprintf(err, errsz, "%s: value %ld is out of uint32 range", p->vars[i].name,
+                             v->value.l);
+                    return -1;
+                }
+                *(uint32_t *) x = (uint32_t) v->value.l;
+            }
+            else if (!isfinite(d) || d < 0.0 || d > 0x1p32)
+            {
+                snprintf(err, errsz, "%s: value %g is out of uint32 range", p->vars[i].name, d);
+                return -1;
+            }
+            else
+            {
+                long long r = llround(d);
+                if (r < 0 || r > (long long) UINT32_MAX)
+                {
+                    snprintf(err, errsz, "%s: value %g is out of uint32 range", p->vars[i].name, d);
+                    return -1;
+                }
+                *(uint32_t *) x = (uint32_t) r;
+            }
             break;
         case FPTYPE_ONOFF:
             *(int32_t *) x = (d != 0.0);
@@ -467,6 +558,31 @@ static int bind_prog_vars(mcalc_prog_t        *p,
     return 0;
 }
 
+/** prog_parse() - lex and parse @text: its statements, or NULL, with @err set unless it has none. */
+static mc_stmt_t *prog_parse(const char *text, char *err, size_t errsz)
+{
+    mc_tok_list_t tl   = { 0 };
+    mc_stmt_t    *head = NULL;
+
+    if (mc_lex(text, &tl) != 0)
+    {
+        snprintf(err, errsz, "%s", (tl.errmsg[0] != '\0') ? tl.errmsg : "syntax error");
+    }
+    else
+    {
+        head = mc_parse_prog(&tl, err, errsz);
+    }
+    mc_tok_list_free(&tl);
+    return head;
+}
+
+int mcalc_prog_parse(const char *text, char *err, size_t errsz)
+{
+    err[0] = '\0';
+    mc_stmt_free(prog_parse(text, err, errsz));
+    return (err[0] != '\0') ? -1 : 0;
+}
+
 /**
  * mcalc_prog_new - Compile a multi-statement calculator program into an executable plan
  * @text:  Source text containing one or more statements separated by `;` or newlines
@@ -519,22 +635,8 @@ mcalc_prog *mcalc_prog_new(const char          *text,
         return NULL;
     }
 
-    int            nhist = 0;
-    mc_tok_list_t *tl    = calloc(1, sizeof(*tl));
-    if (tl == NULL || mc_lex(text, tl) != 0)
-    {
-        if (tl != NULL && err != NULL && errsz > 0)
-        {
-            snprintf(err, errsz, "%s", tl->errmsg[0] != '\0' ? tl->errmsg : "syntax error");
-        }
-        mc_tok_list_free(tl);
-        free(tl);
-        mcalc_prog_free(p);
-        return NULL;
-    }
-    p->ast_head = mc_parse_prog(tl, err, errsz);
-    mc_tok_list_free(tl);
-    free(tl);
+    int nhist   = 0;
+    p->ast_head = prog_parse(text, err, errsz);
     if ((p->ast_head == NULL && err != NULL && err[0] != '\0') ||
         mc_hist_rewrite(&p->ast_head, vars != NULL, &nhist, err, errsz) != 0)
     {
@@ -1071,10 +1173,14 @@ int mcalc_prog_run(mcalc_prog *p, char *err, size_t errsz)
     }
     g_prog_skip    = saved_skip;
     g_prog_trigger = saved_trigger;
-    mc_post_flush(p->processinfo);
     if (rc == 0)
     {
+        mc_post_flush(p->processinfo);
         rc = mc_prog_store_vars(p, err, errsz);
+    }
+    else
+    {
+        mc_post_discard();
     }
     return rc;
 }

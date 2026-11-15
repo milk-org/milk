@@ -16,6 +16,36 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-14** — Fixes from a review of the CLI, calculator and JIT (fuzzing, ASan, doc checks),
+  with changes a script may notice. Silent wrong results fixed: `C += outer(x, y)` overwrote `C`,
+  a lowered `A.T @ A` update made a non-symmetric `C` symmetric, `trsv`/`trsm` read `uplo` of the
+  matrix before a folded `.T` (`uplo` now names the triangle of `A` as written), an inline vector
+  operand (`b + [1, 2]`) set the shape of the pass, `min`/`max`/`clamp` of images took NaN by
+  argument order, `icount`/`iargmax`/`iargmin`/`iamax`/`ipositivesum` mishandled NaN pixels,
+  64-bit integer `/` and `%` rounded past $2^{53}$, fused complex `fft`/`ifft` expressions aliased
+  scratch buffers, `hist`/`streamdelay` froze shapes across resizes and `prev()` rejected runtime
+  offsets, image shifts by 64 or more wrapped the count, `iofits.loadfits` could replace NaN
+  pixels, a unit's NaN output never reached its FPS, `milk.fpsdump` prefixed keys with the FPS
+  name, and release executables ran with FTZ/DAZ (subnormals were 0 in the session only). Now
+  errors with a message, where a crash, a hang or a silent result was: `'/'` in stream names, a
+  binned slice shorter than its bin, `rprof` of a cube, sizes past 32 bits, a local image larger
+  than memory (it ended the session), a library refused at its second entry (its first entry
+  crashed later), a nest of `for` loops past 100,000 iterations in all, keyword counts, times or
+  empty option values that are not numbers (`@waitfor -t -1` or `-t ""`, `@grab s.cam 1e12`),
+  `@set s.X.kw.KEY=val` past 15-char keys/strings or numeric range, `@calc -v x "<image>"`,
+  `runstart` of statements that do not parse, missing-image, `milk.fpsload` and semaphore-index
+  failures across `mem`/`iofits`/`tools` and plugins (status 1), a failed `@get` (it says why).
+  Other changes: `milk-fps-rm` matches exact names unless `-r`/`--regex` is given, zero-parameter
+  commands accept `--no-run`/`--default`/`--save`/`--load`, `x = <expr>` replaces a local image
+  whatever its type, a mask broadcasts, integer casts wrap as an image stores them, `fpsinit` on
+  an existing FPS writes the unit options, unit commands run in the FPS's work directory without
+  leaking session descriptors and `runstop` loads no library, `milk-cli -s file args` passes the
+  arguments, `milk-cli -q` and `milk-script` print only the commands' output, a `milk-cli` reading
+  a FIFO outlives the end of a piped standard input, and a C extension cannot replace a name
+  another file or milk registered. `#cli` `#fps` `#streams`
+- **2026-11-13** — `milk-cli --idle` is removed: it ran `scripts/runidle` (stop milk-cli while the X
+  session is in use, via `xprintidle`), which was never installed, so it only printed
+  `runidle: not found`. `#cli`
 - **2026-11-13** — ncurses is no longer used or linked: the `USE_NCURSES` option is removed, and
   `milkinfo` prints its header and stream-timing tables with `printf`. The TUIs already use ANSI.
 - **2026-11-13** — MAGMA support is removed: the `USE_MAGMA` option and linalgebra's MAGMA

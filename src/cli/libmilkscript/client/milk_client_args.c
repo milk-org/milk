@@ -171,6 +171,15 @@ int milk_client_args(int                        argc,
             goto out;
         }
         specs[n++] = sp;
+        for (int k = 0; k < n - 1; k++)
+        {
+            if (strcmp(a[k].name, a[n - 1].name) == 0)
+            {
+                fprintf(stderr, "@args: '%s' is declared twice\n", a[k].name);
+                rc = 2;
+                goto out;
+            }
+        }
     }
     if (i == argc)
     {

@@ -77,6 +77,12 @@ static void print_help(const char *progname, int mh_color)
  */
 static int remove_single_stream(const char *shmdir, const char *sname, int verbose)
 {
+    if (sname[0] == '\0' || strchr(sname, '/') != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid stream name '%s'\n", sname);
+        return 1;
+    }
+
     char fullpath[512];
 
     snprintf(fullpath, sizeof(fullpath), "%s/%s.im.shm", shmdir, sname);

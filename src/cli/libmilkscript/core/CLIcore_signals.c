@@ -256,13 +256,14 @@ static volatile sig_atomic_t cli_fault_isolation_active = 0;
 static pthread_t             cli_fault_isolation_thread; /* the thread cli_repl_env belongs to */
 static volatile sig_atomic_t cli_interactive_mode = 0;
 static volatile sig_atomic_t cli_sigint_forward   = 0;
+static volatile sig_atomic_t cli_prompt_sigint    = 0;
 
 /**
  * cli_set_interactive_mode - Enable or disable interactive REPL signal behavior
  * @mode: Non-zero when running an interactive REPL prompt, 0 in batch/script mode
  *
  * Controls how `sig_handler` treats `SIGINT` when fault isolation is disarmed:
- * in interactive mode `SIGINT` prints a newline without exiting the process.
+ * in interactive mode `SIGINT` does not exit: the input loop drops the typed line.
  *
  * Return: void
  */
@@ -356,6 +357,21 @@ int cli_get_sigint_forward(void)
 }
 
 /**
+ * cli_take_prompt_sigint - Consume a pending interactive prompt Ctrl-C flag
+ *
+ * Returns 1 once after a Ctrl-C arrives while idle at the interactive prompt
+ * so the input loop can drop the typed line outside signal context.
+ *
+ * Return: 1 if prompt SIGINT was pending, 0 otherwise
+ */
+int cli_take_prompt_sigint(void)
+{
+    int got           = cli_prompt_sigint;
+    cli_prompt_sigint = 0;
+    return got;
+}
+
+/**
  * @brief Signal handler with interactive fault isolation
  */
 void sig_handler(int signo)
@@ -376,14 +392,14 @@ void sig_handler(int signo)
             fprintf(stderr, "\n^C\n");
             siglongjmp(cli_repl_env, 2);
         }
-        set_terminal_echo_on(signo);
         if (cli_interactive_mode)
         {
-            dcsigINT = 0;
-            fprintf(stderr, "\n");
+            dcsigINT          = 0;
+            cli_prompt_sigint = 1;
         }
         else
         {
+            set_terminal_echo_on(signo);
             dcsigINT = 1;
             printf("PID %d sig_handler received SIGINT\n", CLIPID);
             exit(EXIT_FAILURE);

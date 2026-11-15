@@ -207,6 +207,10 @@ static imageID eval_expr_to_tmp_im(const mc_expr_t *expr,
                             : (last->kind == MC_STEP_PASS && last->pass.nouts > 0)
                                 ? last->pass.outs[last->pass.nouts - 1].slot_idx
                                 : -1;
+    if (rc == 0 && sidx < 0) /* the argument is a number or a string */
+    {
+        return mc_err(err, errsz, "expected an image, not a number");
+    }
     return (sidx >= 0) ? mc_tmp_steal_slot(&p->slots[sidx]) : -1;
 }
 
@@ -465,11 +469,14 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     {
         return mc_exec_linalg_or_ext(prog, cs, -1, in_unit, err, errsz);
     }
+    /* a scratch slot (`_tmpcalc*`) is this program's: found by its im_id, never by name */
     mc_slot_t       *slot     = &prog->slots[cs->slot_idx];
     const mc_expr_t *rhs      = cs->rhs_expr;
     imageID          avoid_id = (slot->im_id >= 0 && milk_data.image[slot->im_id].used &&
                                  strcmp(milk_data.image[slot->im_id].name, slot->bare) == 0)
                                     ? slot->im_id
+                                : strncmp(slot->bare, "_tmpcalc", 8) == 0
+                                    ? -1
                                     : mc_resolve_or_autoconnect_image(slot->name);
     if (avoid_id >= 0)
     {
@@ -534,9 +541,10 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
         }
         for (int i = 0; !is_ls && i < nargs; i++)
         {
-            if (llround(v[i]) <= 0)
+            if (!(v[i] >= 0.5 && v[i] < 4294967295.5)) /* an axis is 32 bits */
             {
-                return mc_err(err, errsz, "%s: dimensions must be positive", rhs->u.call.fn->name);
+                return mc_err(err, errsz, "%s: dimensions must be in [1, 4294967295]",
+                              rhs->u.call.fn->name);
             }
             sz[i] = (uint32_t) llround(v[i]);
         }
@@ -577,7 +585,9 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
     }
 
     if (rhs->kind != MC_EXPR_CALL || rhs->u.call.ext_id >= 0 ||
-        (fn != MC_FID_vec && fn != MC_FID_reshape && fn != MC_FID_transpose && fn != MC_FID_outer &&
+        (fn != MC_FID_vec && fn != MC_FID_reshape && fn != MC_FID_transpose &&
+         (fn != MC_FID_outer || cs->assign_op == MC_TOK_ADD_ASSIGN ||
+          cs->assign_op == MC_TOK_SUB_ASSIGN) && /* `C += outer(x, y)`: an in-place GER */
          fn != MC_FID_diag))
     {
         return mc_exec_linalg_or_ext(prog, cs, avoid_id, in_unit, err, errsz);
@@ -699,6 +709,11 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                      : -1;
             goto done_src;
         }
+        if (!(fabs(kd) < 4294967296.0)) /* an axis is 32 bits */
+        {
+            rc = mc_err(err, errsz, "diag: diagonal offset out of range");
+            goto done_src;
+        }
         long     k    = llround(kd);
         long     absk = (k < 0) ? -k : k;
         uint8_t  sdt  = src->md[0].datatype;
@@ -710,7 +725,7 @@ static int exec_ctor_once(mcalc_prog_t   *prog,
                       (src->md[0].naxis == 2 && src->md[0].size[1] == 1 && src->md[0].size[0] > 1));
         uint64_t M = src->md[0].size[0];
         uint64_t N = is_1d ? (M + (uint64_t) absk) : src->md[0].size[1];
-        if (!is_1d && (r0 >= M || c0 >= N))
+        if ((!is_1d && (r0 >= M || c0 >= N)) || N > UINT32_MAX)
         {
             rc = mc_err(err, errsz, "diag: diagonal offset out of range");
             goto done_src;
@@ -935,7 +950,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
                 const mc_expr_t *sj = pass->ops[j].is_scalar ? pass->ops[j].scalar_expr : NULL;
                 if (!sc_done[j] && sj != NULL && sj->kind == MC_EXPR_CALL &&
                     sj->u.call.fn != NULL && sj->u.call.fn->kind == MC_FN_REDUCE_D &&
-                    sj->u.call.nargs == 1 && expr_equiv(se->u.call.args[0], sj->u.call.args[0]))
+                    sj->u.call.nargs == 1 && expr_equiv(se->u.call.args[0], sj->u.call.args[0]) &&
+                    arith_reduce_op_promote(
+                        (arith_reduce_op) mc_map_reduce_op(se->u.call.fn->id),
+                        (arith_reduce_op) mc_map_reduce_op(sj->u.call.fn->id)) >= 0)
                 {
                     if (mc_exec_reduce_pair(se, sj, &ops[i].scalar, &ops[j].scalar, err, errsz) !=
                         0)
@@ -953,9 +971,11 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         {
             ops[i].scalar =
                 (d->slice_expr != NULL && se == NULL) ? (double) arith_next_rng_seed() : 0.0;
-            if (se != NULL && mc_eval_scalar_d(se, &ops[i].scalar, err, errsz) != 0)
+            int quiet = mc_scalar_quiet_div(d->is_guarded);
+            rc        = (se != NULL) ? mc_eval_scalar_d(se, &ops[i].scalar, err, errsz) : 0;
+            mc_scalar_quiet_div(quiet);
+            if (rc != 0)
             {
-                rc = -1;
                 goto cleanup;
             }
         }
@@ -999,9 +1019,9 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
             goto cleanup;
         }
         double span = (db - da) / dst;
-        if (span < 0.0 || span > 16777215.0)
+        if (span > 16777215.0)
         {
-            rc = mc_err(err, errsz, "comprehension range is empty");
+            rc = mc_err(err, errsz, "comprehension range has more than 16777216 values");
             goto cleanup;
         }
         vsz[g] = (uint32_t) (floor(span + 1e-9) + 1.0);
@@ -1035,9 +1055,10 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
     int has_expr_im = 0;
     for (int phase = 0; phase < 2 && (phase == 0 || has_expr_im); phase++)
     {
-        int unsqueeze = (has_lhs_anchor || vsz[0] > 1 || vsz[1] > 1 || vsz[2] > 1);
         for (int i = 0; i < pass->nops; i++)
         {
+            /* the shape merged so far, not at the start of the phase: `b + [1,2,4,8]` keeps b's */
+            int unsqueeze         = (has_lhs_anchor || vsz[0] > 1 || vsz[1] > 1 || vsz[2] > 1);
             const mc_op_desc_t *d = &pass->ops[i];
             has_expr_im |= d->is_expr_im;
             if (d->is_scalar || d->is_out || (d->is_expr_im != phase))
@@ -1127,7 +1148,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         uint32_t              ds[3] = { md->size[0], (md->naxis > 1) ? md->size[1] : 1,
                                         (md->naxis > 2) ? md->size[2] : 1 };
         if (vnaxis == 0 ||
-            (can_bcast_dst && (md->shared == 1 || md->datatype == pass->outs[j].out_dt) &&
+            (can_bcast_dst && md->shared == 1 && /* a local `x = e` takes e's shape */
              (vsz[0] == 1 || vsz[0] == ds[0]) && (vsz[1] == 1 || vsz[1] == ds[1]) &&
              (vsz[2] == 1 || vsz[2] == ds[2])))
         {
@@ -1183,20 +1204,7 @@ int mc_exec_pass(mcalc_prog_t *prog, mc_pass_t *pass, int in_unit, char *err, si
         mc_slot_t *slot = &prog->slots[out->slot_idx];
         if (out->lhs_slice != NULL || out->assign_op != MC_TOK_ASSIGN)
         {
-            for (int k = 0;
-                 out->lhs_slice != NULL && out->lhs_slice->u.slice.is_mask_index && k < pass->nops;
-                 k++)
-            {
-                if (!pass->ops[k].is_scalar && !pass->ops[k].is_out && !pass->ops[k].is_table_arg &&
-                    (views[k].naxis != views[out->op_idx].naxis ||
-                     views[k].vnx != views[out->op_idx].vnx ||
-                     views[k].vny != views[out->op_idx].vny ||
-                     views[k].vnz != views[out->op_idx].vnz))
-                {
-                    rc = mc_err(err, errsz, "Mask size does not match target image");
-                    goto cleanup;
-                }
-            }
+            /* a mask and the right-hand side broadcast to the target (Step 4 checked them) */
             milk_data.image[slot->im_id].md[0].write = 1;
         }
         else if (vnaxis == 0 ||

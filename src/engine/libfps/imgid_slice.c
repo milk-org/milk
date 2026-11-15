@@ -381,18 +381,21 @@ int imgid_slice_output_size(IMGID_SLICE    *s,
 
         if (s->bin[aa])
         {
-            /* Binning: output = range / step */
+            /* Binning: output = range / step; a range shorter than one bin has no pixel */
+            if (range < absstep)
+            {
+                snprintf(s->errmsg, sizeof(s->errmsg),
+                         "axis %d range [%d:%d] is shorter than its bin of %d", aa, s->start[aa],
+                         s->end[aa], absstep);
+                s->error = 1;
+                return 1;
+            }
             out_size[aa] = (uint32_t) (range / absstep);
         }
         else
         {
             /* Stride: output = ceil(range/step) */
             out_size[aa] = (uint32_t) ((range + absstep - 1) / absstep);
-        }
-
-        if (out_size[aa] == 0)
-        {
-            out_size[aa] = 1;
         }
     }
 

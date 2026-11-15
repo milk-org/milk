@@ -71,6 +71,9 @@ int wordlist_to_argv(WORD_LIST *list, char ***out_argv);
 /** Mark file descriptors close-on-exec (`milkcloexec` builtin). */
 int milkcloexec_builtin(WORD_LIST *list);
 
+/** Set the loop depth that `break` and `continue` see (`milkloopdepth` builtin). */
+int milkloopdepth_builtin(WORD_LIST *list);
+
 /** Translate a `.milk` script or interactive line (`milktranslate` builtin). */
 int milktranslate_builtin(WORD_LIST *list);
 

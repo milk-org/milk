@@ -17,6 +17,8 @@ See also:    docs/guide/calculator.md, "Operators" and "Functions"; calc_executi
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from milk.cliwrap import HAVE_CLI
@@ -122,3 +124,24 @@ def test_cumsum_along_each_axis(tmp_path, nthreads: int):
         and "axis" in (tmp_path / "bad.err").read_text()
     ), out
     assert "1 pre-stage" in res.stdout, out
+
+
+def test_integer_casts_and_negation_agree_in_shell_and_session(tmp_path):
+    """-INT64_MIN overflows to a double; an integer cast truncates and wraps (NaN gives 0), a u64
+    of 2^63 or more is a double; the shell's evaluator and the session's give the same text.
+    """
+    cases = {
+        "-(-9223372036854775807-1)": "9.22337203685478e+18",
+        "u64(-1)": "1.84467440737096e+19",
+        "i64(1e19)": "-8446744073709551616",
+        "u32(-1)": "4294967295",
+        "i32(3000000000)": "-1294967296",
+        "i64(nan)": "0",
+        "i64(9007199254740993)": "9007199254740993",
+    }
+    script = "".join(
+        f"echo \"r|$(@calc '{e}')|$(@calc '_z = 0; {e}')\"\n" for e in cases
+    )
+    res = milk_bash(script, tmp_path)
+    rows = re.findall(r"^r\|(.*)\|(.*)$", res.stdout, re.M)
+    assert rows == [(v, v) for v in cases.values()], res.stdout + res.stderr

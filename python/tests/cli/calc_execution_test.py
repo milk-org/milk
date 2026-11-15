@@ -394,3 +394,129 @@ def test_kept_scalar_statement_value_is_stable(tmp_path):
         tmp_path,
     )
     assert value(res.stdout, "vals") == "64,64,31.5,1", res.stdout + res.stderr
+
+
+def test_local_is_not_a_shared_stream_of_its_name(tmp_path):
+    """`local lsh` in a unit is its own 8x8 image, not the shared stream lsh (4x4); a process that
+    has the stream lsq open refuses `local lsq` and `@L:lsq` and leaves lsq as it was.
+    """
+    res = milk_bash(
+        UNIT_HELPERS
+        + 'mem.mk2Dim "@S:lsh" 4 4 >/dev/null; mem.mk2Dim "@S:lsq" 8 8 >/dev/null; @calc "lsq = 3"\n'
+        'echo "local lsh = cam - 1; out9 = lsh * 1" >prog.calc\n'
+        "milk-fpsexec-milk-calc -n ush -t cam -f prog.calc fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n ush run >run.log 2>&1 & pid=$!\n"
+        'sleep 0.6; @calc "cam = 5"; sleep 0.3\n'
+        '@calc -v o,x "imean(out9); s.out9.xsize"; echo "unit=$o,$x"\n'
+        'echo "error=[$(@get f.ush.unit.error)]"; stop $pid\n'
+        '@calc "local lsq = cam - 1" 2>/dev/null; echo "rc1=$?"\n'
+        '@calc "@L:lsq = cam - 1" 2>/dev/null; echo "rc2=$?"\n'
+        '@calc -v m "imax(lsq)"; echo "lsq=$m"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
+    assert value(res.stdout, "error") == "[]", out
+    assert value(res.stdout, "unit") == "4,8", out
+    assert [value(res.stdout, k) for k in ("rc1", "rc2", "lsq")] == ["1", "1", "3"], out
+
+
+def test_scalar_zero_divisor_in_untaken_branch(tmp_path):
+    """A scalar part of a select runs before the pass: its zero divisor is not an error there either
+    (`n0 ? 1 / n0 : cam` used to stop), in a reduction's pass too; other errors still stop.
+    """
+    res = milk_bash(
+        CAM + '@calc "n0 = 0"\n'
+        '@calc "o1 = n0 ? 2 * (1 / n0) : cam; o2 = where(n0 > 0, 1 % n0, cam); o3 = (cam > 0) || (1 / n0 > 1)"\n'
+        '@calc "o4 = cam; o4[cam * 0] = 1 / n0"; echo "rc=$?"\n'
+        '@calc -v m "imean(o1) + imean(o2) + imean(o3) + imean(o4) + imean(n0 ? 1 / n0 : cam)"; echo "m=$m"\n'
+        '@calc "o5 = n0 ? 1 / n0 : nosuch" 2>/dev/null; echo "rc5=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "0" and value(res.stdout, "m") == "9", out
+    assert value(res.stdout, "rc5") != "0", out
+
+
+def test_accumulations_nan_rules_and_replacement(tmp_path):
+    """Review of 2026-11-13: `C += outer(x, y)` accumulates (it overwrote C), a lowered A.T @ A
+    update keeps a non-symmetric C, min/max/clamp of images treat NaN as numbers do, fmod(x, inf)
+    is x, a mask broadcasts like the right-hand side, `x = e` replaces a local image, icentroid
+    skips NaN pixels, and a u64 pixel past 2^63 is a positive number."""
+    res = milk_bash(
+        '@calc "x = [1, 2]; y = [3, 5, 7]; C = zeros(2, 3) + 100"\n'
+        '@calc "C += outer(x, y)"; @calc -a v "C"; echo "ger=${v[*]}"\n'
+        '@calc "C -= outer(x, y)"; @calc -a v "C"; echo "ger2=${v[*]}"\n'
+        '@calc "B = reshape([1, 2, 3, 4], 2, 2); D = [10 * i + j for i = 1:2, j = 1:2]"\n'
+        '@calc "D = B.T @ B + D"; @calc -a v "D"; echo "syrk=${v[*]}"\n'
+        '@calc "a = zeros(2) + 1; n = zeros(2) + nan"\n'
+        '@calc -a v "min(a, n)"; w="${v[*]}"; @calc -a v "min(n, a)"; echo "min=$w|${v[*]}"\n'
+        '@calc -a v "clamp(n, 0, 2)"; w="${v[*]}"; @calc -a v "clamp(a, n, 2)"; echo "clamp=$w|${v[*]}"\n'
+        '@calc -v f "fmod(5, inf)"; @calc "fi = fmod(zeros(2) + 5, inf)"; @calc -v g "fi[0]"; echo "fmod=$f,$g"\n'
+        '@calc "X = [x + 10*y for x = 0:4, y = 0:2]; v5 = [1, 2, 3, 4, 5]"\n'
+        '@calc "X[X > 5] = v5"; echo "mask=$? $(@calc -v t "itot(X)"; echo $t)"\n'
+        '@calc "r4 = zeros(4, 1) + 1; x5 = zeros(4, 2); x5 = r4 * 2"; echo "repl=$(@get l.x5.ysize)"\n'
+        '@calc "c = zeros(8, 8); c[2, 3] = 4; c[6, 6] = nan"\n'
+        '@calc "cx, cy = icentroid(c, 0)"; @calc -v cx,cy "cx; cy"; echo "cen=$cx,$cy"\n'
+        '@calc "u = u64(zeros(2)); u[0] = 9223372036854775808"; @calc -v p "u[0] > 0"; echo "u64=$p"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "ger") == "103 106 105 110 107 114", out
+    assert value(res.stdout, "ger2") == "100 100 100 100 100 100", out
+    assert value(res.stdout, "syrk") == "16 32 23 47", out
+    assert value(res.stdout, "min") == "1 1|1 1", out
+    assert value(res.stdout, "clamp") == "nan nan|1 1", out
+    assert value(res.stdout, "fmod") == "5,5", out
+    assert value(res.stdout, "mask").startswith("0 "), out
+    assert value(res.stdout, "repl") == "1", out
+    assert value(res.stdout, "cen") == "2,3", out
+    assert value(res.stdout, "u64") == "1", out
+
+
+def test_a_nan_unit_output_reaches_its_fps(tmp_path):
+    """A parameter a unit sets to NaN is written to its FPS (-Ofast took NaN as equal to the old
+    value, and the FPS kept it)."""
+    res = milk_bash(
+        'milk-fpsexec-milk-calc -n unan -p "v:float=1" -e "v = nan" exec >/dev/null 2>&1\n'
+        'echo "v=$(@get f.unan.v)"',
+        tmp_path,
+    )
+    assert value(res.stdout, "v").lower() == "nan", res.stdout + res.stderr
+
+
+def test_batch_kernel_never_read_back_through_a_key_name(tmp_path):
+    """A shell compiling one statement alone while another compiles it in a batch: each cached
+    key still loads its own kernel (the batch library is linked to its keys from its own name).
+    """
+    res = milk_bash(
+        r"""
+export MILK_CALC_CACHE=$PWD/kc MILK_CALC_CC=$PWD/cc.sh
+mkdir kc
+# The compiler; under RACE_WAIT a one-kernel compile ends only once its <key>.so exists
+cat > cc.sh <<'EOF'
+#!/bin/bash
+cc "$@" || exit
+[[ -z $RACE_WAIT || $* == *batch* ]] && exit 0
+out=${@: -1}; while [[ ! -e ${out%.tmp.*} ]] && ((SECONDS < 20)); do :; done
+EOF
+chmod +x cc.sh
+# 60 images of 60 shapes, one statement each with its own +/* pattern
+E() { local s=$2 i; for ((i = 0; i < 7; i++)); do (($1 >> i & 1)) && s="($s + $2)" || s="($s * $2)"; done; echo "$s"; }
+export init="b = zeros(8,8) + 0.75;"; prog=
+for ((k = 1; k <= 60; k++)); do init+=" a$k = zeros(2,$((k + 1))) + 0.5;"; prog+=" p$k = $(E $k a$k);"; done
+other() { env -u MILKCLI_SOCK -u _MILK_SERVER_NAME "${@:2}" bash --norc -c "source \"\$MILK_INSTALLDIR/bin/milk.bash\"; @calc \"\$init\"; while [[ ! -e go ]]; do :; done; $1"; }
+# one shell compiles the 61 statements in one batch, the other the last one alone
+other "@calc --explain '$prog pz = sin(b) * 3 - b' >/dev/null" &
+other "@calc 'q = sin(b) * 3 - b'" RACE_WAIT=1 &
+sleep 1; touch go; wait
+# this shell loads each kernel from the disk cache
+@calc "$init"; bad=0
+for ((k = 1; k <= 60; k++)); do
+    @calc -v v,e "p$k = $(E $k a$k); p$k[0,0]; $(E $k 0.5)" && [[ $v == "$e" ]] || bad=$((bad + 1))
+done
+echo "bad=$bad"
+""",
+        tmp_path,
+        timeout=60,
+    )
+    assert value(res.stdout, "bad") == "0", res.stdout + res.stderr

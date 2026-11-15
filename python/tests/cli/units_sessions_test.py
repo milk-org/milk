@@ -192,7 +192,8 @@ def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
         '-t cam -p "k0:int=0 fn:int=-1 ft:float=-1 fdt:float=-1" -I init.calc fpsinit >/dev/null\n'
         "milk-fpsexec-milk-calc -n u4 run >run.log 2>&1 & pid=$!\n"
         "until_file acc; sleep 0.3\n"
-        'echo "f0=$(@get s.acc.mean),$(@get f.u4.k0),$(@get f.u4.fn)"\n'
+        'echo "pre=$(@get s.acc.mean),$(@get f.u4.k0),$(@get f.u4.fn)"\n'
+        'frame 2; echo "f0=$(@get s.acc.mean),$(@get f.u4.k0),$(@get f.u4.fn)"\n'
         'frame 3; echo "f1=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
         '@set f.u4.unit.expr="acc = acc + cam * 2; fn = _n"; frame 5\n'
         'echo "f2=$(@get s.acc.mean),$(@get f.u4.fn)"\n'
@@ -202,6 +203,7 @@ def test_E8_calc_init_and_initfile_and_frame_vars(tmp_path):
         'milk-fpsexec-milk-calc -n ubad -e "_n = 5" exec >/dev/null 2>&1; echo "ro=$(@get f.ubad.unit.error)"',
         tmp_path,
     )
+    assert value(res.stdout, "pre") == "0,10,-1", res.stdout + res.stderr
     got = [value(res.stdout, k) for k in ("f0", "f1", "f2", "f3", "ro")]
     assert got == [
         "2,10,0",
@@ -1633,3 +1635,47 @@ def test_proc_reads_look_where_units_write(tmp_path):
     out = res.stdout + res.stderr + (tmp_path / "run.log").read_text()
     assert value(res.stdout, "status") == "ACTIVE", out
     assert value(res.stdout, "ls") == "1", out
+
+
+def test_E8_calc_fpsinit_again_writes_the_unit_options(tmp_path):
+    """fpsinit on an existing FPS writes the unit options it is given (-f, and -p declares), as set
+    does, and keeps the FPS."""
+    res = milk_bash(
+        HELPERS + 'C="milk-fpsexec-milk-calc -n ri"\n'
+        '$C -p "g:float=1" -e "ra = cam * g" fpsinit >/dev/null\n'
+        'echo "rb = cam * 3" > rb.calc\n'
+        '$C -e "" -f rb.calc fpsinit >/dev/null; echo "init2=$?"\n'
+        'echo "unit=$(@get f.ri.unit.expr)|$(basename "$(@get f.ri.unit.file)")"\n'
+        '$C -p "h:float=4" fpsinit >/dev/null\n'
+        'echo "params=$(@get f.ri.unit.params)"; echo "h=$(@get f.ri.h)"\n'
+        '$C -p "h:float=4" set >/dev/null; echo "set=$?"\n'
+        '$C exec >/dev/null 2>&1; echo "rb=$(@get s.rb.mean)"',
+        tmp_path,
+    )
+    got = [value(res.stdout, k) for k in ("init2", "unit", "params", "h", "set", "rb")]
+    assert got == ["0", "|rb.calc", "h:float=4", "4", "0", "6"], res.stdout + res.stderr
+
+
+def test_E4_another_shells_read_is_told_busy(tmp_path, sessions):
+    """A read of another shell during a command of one long step is told busy after 2 s, on
+    stderr, with status 255 (sessions.md, Concurrent Commands Across Shells)."""
+    n = sessions()
+    res = milk_bash(
+        rf"""
+mem.mk2Dim "@S:e4r" 2 2 >/dev/null; mem.imsetsemflush e4r 0 >/dev/null
+@session new {n} -d >/dev/null
+other() {{ setsid env -u MILKCLI_SOCK -u _MILK_SERVER_NAME bash --norc -c "source \"\$MILK_INSTALLDIR/bin/milk.bash\"; @session use {n} >/dev/null; $1"; }}
+other 'mem.imsetsemwait e4r 0 >/dev/null; echo "a=$?"' > a.out 2>&1 &
+sleep 0.5
+other '@exists l.e4r 2>r.err; echo "r=$?"; @get l.e4r.xsize 2>>r.err; echo "g=$?"' > r.out 2>&1
+mem.imsetsempost e4r 0 >/dev/null
+wait; cat a.out r.out
+""",
+        tmp_path,
+        timeout=60,
+    )
+    err = (tmp_path / "r.err").read_text() if (tmp_path / "r.err").exists() else ""
+    out = res.stdout + res.stderr + err
+    assert value(res.stdout, "a") == "0", out
+    assert value(res.stdout, "r") == "255" and value(res.stdout, "g") == "255", out
+    assert err.count("milk: busy: mem.imsetsemwait e4r 0 for") == 2, out

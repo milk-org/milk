@@ -8,18 +8,16 @@ killed and all fds are closed, whatever happens in the test body.
 
 from __future__ import annotations
 
-import contextlib
 import os
 import signal
 import subprocess
-import threading
 import time
 from pathlib import Path
 
 import pytest
 
 from milk.cliwrap import HAVE_CLI, HAVE_TREESITTER
-from tests.cli.conftest import assert_no_crash, milk_proc, run_milk
+from tests.cli.conftest import assert_no_crash, milk_bash, milk_proc, run_milk
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -98,32 +96,24 @@ def test_command_succeeds(cmd, expected):
 
 
 # --- Section 5: FIFO input --------------------------------------------------
-def test_fifo_large_input(tmp_path):
-    fifo = tmp_path / "test_fifo"
-    os.mkfifo(fifo)
-
-    def feed() -> None:
-        with contextlib.suppress(OSError):  # reader may be gone
-            time.sleep(0.2)
-            with open(fifo, "w") as f:
-                f.write("echo fifo_ok;" + "a" * 4096 + "\n")
-            time.sleep(0.2)
-            with open(fifo, "w") as f:
-                f.write("exit\n")
-
-    feeder = threading.Thread(target=feed, daemon=True)
-    with milk_proc(["-f", "-F", str(fifo)]) as m:
-        feeder.start()
-        try:
-            m.proc.communicate(timeout=5)
-        except subprocess.TimeoutExpired:
-            pytest.fail("milk-cli hung on FIFO input")
-        finally:
-            # A feeder blocked in open() needs a reader to get released.
-            with contextlib.suppress(FileNotFoundError):  # milk may unlink it
-                os.close(os.open(fifo, os.O_RDONLY | os.O_NONBLOCK))
-            feeder.join(timeout=2)
-    assert_no_crash(m.proc.returncode)
+def test_fifo_runs_split_and_long_lines_whole(tmp_path):
+    """A line written in two pieces, and a line longer than 999 bytes, each run whole."""
+    long = "x" * 4096
+    res = milk_bash(
+        "milk-cli -q -F ff < /dev/null > out.txt 2>&1 &\n"
+        "P=$!\n"
+        "for _ in $(seq 100); do [ -p ff ] && break; sleep 0.05; done\n"
+        "{ printf 'echo hel'; sleep 0.3; printf 'lo\\n'; } > ff\n"
+        f"echo 'echo LONG {long} END; echo AFTER' > ff\n"
+        "echo exit > ff\n"
+        'wait "$P"; echo "rc=$?"; cat out.txt\n',
+        tmp_path,
+        timeout=20,
+    )
+    lines = res.stdout.splitlines()
+    for want in ("rc=0", "hello", f"LONG {long} END", "AFTER"):
+        assert want in lines, res.stdout[-2000:] + res.stderr
+    assert "not found" not in res.stdout, res.stdout[-2000:]
 
 
 def test_fifo_named_path_runs_commands(tmp_path):
@@ -306,3 +296,162 @@ def test_pty_continuation_prompt_ctrl_c():
         m.write(b"echo recovered\n")
         m.read_until(b"recovered", 5)
         m.write(b"exit\n")
+
+
+def test_fifo_default_name_follows_n_and_open_answers(tmp_path):
+    """-f names its FIFO after -n (also when milk-cli runs by full path); open answers under -q."""
+    rc, out = run_milk(
+        ["-q", "-n", "myctl", "-f"], stdin_text="milk.fifo status\nexit\n"
+    )
+    assert rc == 0 and "/.myctl.fifo." in out, out
+    given = tmp_path / "given.fifo"
+    os.mkfifo(given, 0o600)
+    rc, out = run_milk(
+        ["-q"], stdin_text=f"milk.fifo open {given}\nmilk.fifo close\nexit\n"
+    )
+    assert rc == 0 and f"opened: {given}" in out, out
+    assert given.is_fifo()
+
+
+def test_fifo_close_keeps_a_fifo_it_was_given(tmp_path):
+    r = milk_bash(
+        'mkfifo -m 600 g.fifo; milk.fifo open "$PWD/g.fifo"; milk.fifo close; '
+        "[ -p g.fifo ] && echo kept",
+        tmp_path,
+    )
+    assert "kept" in r.stdout, r.stdout + r.stderr
+
+
+def test_fifo_outlives_stdin(tmp_path):
+    """A backgrounded `milk-cli -F` (stdin /dev/null) reads its FIFO until `exit`, then removes it."""
+    res = milk_bash(
+        'F="$PWD/ctl.fifo"\n'
+        'milk-cli -F "$F" > out.txt 2>&1 &\n'
+        "P=$!\n"
+        'for _ in $(seq 100); do [ -p "$F" ] && break; sleep 0.05; done\n'
+        'echo "echo fifo_after_eof" > "$F"\n'
+        'echo "exit 3" > "$F"\n'
+        'wait "$P"; echo "rc=$?"\n'
+        'grep -x fifo_after_eof out.txt; [ -e "$F" ] || echo removed\n',
+        tmp_path,
+        timeout=20,
+    )
+    assert res.stdout.split() == ["rc=3", "fifo_after_eof", "removed"], (
+        res.stdout + res.stderr
+    )
+
+
+def test_pty_prompt_ctrl_c_drops_partial_line():
+    """Ctrl-C at an idle interactive prompt drops the partial line instead of executing it (`front-0`)."""
+    with milk_proc([], pty_mode=True) as m:
+        m.read_until(PROMPT, 5)
+        m.write(b"echo SHOULD_NOT_RUN")
+        time.sleep(0.15)
+        m.write(b"\x03")
+        m.read_until(PROMPT, 5)
+        m.drain()
+        m.write(b"echo AFTER_CTRLC\n")
+        out = m.read_until(b"AFTER_CTRLC", 5)
+        assert b"SHOULD_NOT_RUN" not in out.split(b"^C")[-1], out
+        m.write(b"exit\n")
+
+
+@pytest.mark.timeout(60)
+def test_pty_multiline_continuation_over_16k():
+    """Interactive multi-line continuation buffer grows past 16 KiB (`front-6`)."""
+    with milk_proc(["-q"], pty_mode=True) as m:
+        m.read_until(PROMPT, 5)
+        m.write(b"@config synhl off\n")
+        m.read_until(PROMPT, 5)
+        m.write(b"{\n")
+        m.read_until(b"> ", 5)
+        chunk = "a" * 1000
+        m.write(f"s='{chunk}'\n".encode())
+        for _ in range(17):
+            m.read_until(b"> ", 5)
+            m.write(f"s+='{chunk}'\n".encode())
+        m.read_until(b"> ", 5)
+        m.write(b'echo "BIGLEN=${#s}"\n}\n')
+        out = m.read_until(b"BIGLEN=18000", 10)
+        assert b"BIGLEN=18000" in out, out
+        m.write(b"exit\n")
+
+
+@pytest.mark.timeout(40)
+def test_pty_tab_completion_escapes_shell_metachars(tmp_path):
+    """TAB completion escapes shell metacharacters in stream names in milk-cli and bash (`front-8`)."""
+    with milk_proc(["-q"], pty_mode=True) as m:
+        m.read_until(PROMPT, 5)
+        m.write(
+            f'cd "{tmp_path}" && mem.mk2Dim "@S:zq\\$(touch INJECTED)" 2 2 >/dev/null && '
+            'mem.mk2Dim "@S:b;id" 2 2 >/dev/null\n'.encode()
+        )
+        m.read_until(PROMPT, 5)
+        m.write(b"@get s.zq")
+        time.sleep(0.2)
+        m.write(b"\t")
+        m.read_until(b"INJECTED", 5)
+        m.write(b"xsize\n")
+        m.read_until(PROMPT, 5)
+        m.write(b"@get s.b")
+        time.sleep(0.2)
+        m.write(b"\t")
+        m.read_until(b"id", 5)
+        m.write(b"xsize\n")
+        m.read_until(PROMPT, 5)
+        m.write(b"exit\n")
+    assert not (
+        tmp_path / "INJECTED"
+    ).exists(), "TAB completion in milk-cli executed $(...)"
+
+    import pty
+    import select
+
+    env, shm_dir = __import__(
+        "tests.cli.conftest", fromlist=["_isolated_shm_env"]
+    )._isolated_shm_env()
+    try:
+        pid, fd = pty.fork()
+        if pid == 0:
+            os.environ.update(env)
+            os.chdir(str(tmp_path))
+            os.execvp("bash", ["bash", "--norc", "-i"])
+        try:
+
+            def drain_for(sec):
+                end = time.time() + sec
+                buf = b""
+                while time.time() < end:
+                    if select.select([fd], [], [], 0.1)[0]:
+                        try:
+                            d = os.read(fd, 65536)
+                            if not d:
+                                break
+                            buf += d
+                        except OSError:
+                            break
+                return buf
+
+            drain_for(1.0)
+            os.write(fd, b'source "$MILK_INSTALLDIR/bin/milk.bash"\r')
+            drain_for(3.0)
+            os.write(fd, b'mem.mk2Dim "@S:zq\\$(touch INJECTED)" 2 2 >/dev/null\r')
+            drain_for(1.5)
+            os.write(fd, b"@get s.zq")
+            drain_for(0.3)
+            os.write(fd, b"\t")
+            drain_for(0.6)
+            os.write(fd, b"xsize\r")
+            drain_for(1.5)
+            os.write(fd, b"exit\r")
+            drain_for(1.0)
+        finally:
+            os.close(fd)
+            os.waitpid(pid, 0)
+    finally:
+        import shutil
+
+        shutil.rmtree(shm_dir, ignore_errors=True)
+    assert not (
+        tmp_path / "INJECTED"
+    ).exists(), "TAB completion in milk.bash executed $(...)"

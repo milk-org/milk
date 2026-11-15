@@ -109,7 +109,7 @@ src/cli/libmilkscript/
 - `milk_bash_exec.c` — High-level command/file execution and interactive `@calc` REPL mode.
 - `milk_bash_builtins.c` / `milk_bash_hooks.c` — Loadable GNU Bash builtins (`libmilkbash.so`) with
   zero-subshell scalar (`-v`), indexed array (`-a`), and associative array (`-A`) variable binding,
-  plus `milktranslate`, `milkargs`, `milksleep`, `milkcloexec`, and `@<kw>` builtins.
+  plus `milktranslate`, `milkargs`, `milksleep`, `milkcloexec`, `milkloopdepth`, and `@<kw>` builtins.
 - `milk_bash_defer.h` / `milk_bash_defer.c` — Scope-bound `@defer` cleanup stack for bash functions
   and scripts.
 

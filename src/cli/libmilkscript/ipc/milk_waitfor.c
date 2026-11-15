@@ -25,6 +25,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/inotify.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -306,7 +307,7 @@ int milk_waitfor_open(IMAGE *img, const char *sname)
 {
     char shm[1024];
 
-    if (sname[0] == '\0' ||
+    if (sname[0] == '\0' || strchr(sname, '/') != NULL ||
         (ImageStreamIO_filename(shm, sizeof(shm), sname) == IMAGESTREAMIO_SUCCESS &&
          access(shm, F_OK) != 0))
     {
@@ -346,6 +347,14 @@ static IMAGE *wait_created_pin(const char            *sname,
     IMAGE *im    = NULL;
 
     *created = 0;
+    if (sname == NULL || sname[0] == '\0' || strchr(sname, '/') != NULL)
+    {
+        if (out_rc != NULL)
+        {
+            *out_rc = MILK_WAIT_ABSENT;
+        }
+        return NULL;
+    }
     for (;;)
     {
         ops_lock(ops);
@@ -435,10 +444,10 @@ int milk_waitfor_stream(const char            *sname,
     }
 
     /* a stream created during the wait: its frames count from its creation, not from when it opened */
-    uint64_t target_cnt =
-        (abs_cnt != NULL) ? *abs_cnt
-                          : (created ? 0 : im->md->cnt0) + (uint64_t) (nframes < 1 ? 1 : nframes);
-    int use_sem = (semindex >= 0 && semindex < im->md->sem);
+    uint64_t need       = (uint64_t) (nframes < 1 ? 1 : nframes);
+    uint64_t base_cnt   = created ? 0 : im->md->cnt0;
+    uint64_t target_cnt = (abs_cnt != NULL) ? *abs_cnt : base_cnt + need;
+    int      use_sem    = (semindex >= 0 && semindex < im->md->sem);
     if (use_sem)
     {
         while (sem_trywait(im->semptr[semindex]) == 0)
@@ -446,9 +455,44 @@ int milk_waitfor_stream(const char            *sname,
         }
     }
 
-    int rc = 0;
+    char spath[1024];
+    int  has_path = (ImageStreamIO_filename(spath, sizeof(spath), sname) == IMAGESTREAMIO_SUCCESS);
+    double t_ino  = milk_wait_now();
+    int    rc     = 0;
     while (im->md->cnt0 < target_cnt && (rc = wait_stop(ops, t_start, timeout_sec)) == 0)
     {
+        if (has_path && milk_wait_now() - t_ino >= 0.5)
+        {
+            t_ino = milk_wait_now();
+            struct stat st;
+            if (stat(spath, &st) != 0 || st.st_ino != im->md->inode)
+            {
+                uint64_t got = (im->md->cnt0 > base_cnt) ? (im->md->cnt0 - base_cnt) : 0;
+                need         = (need > got) ? (need - got) : 1;
+                ops_lock(ops);
+                milk_shm_cache_unpin_stream(im, req_sem, semindex);
+                ops_unlock(ops);
+                semindex = -1;
+                int rec  = 0;
+                im = wait_created_pin(sname, req_sem, &semindex, t_start, timeout_sec, ops, &rec,
+                                      &rc);
+                if (im == NULL)
+                {
+                    return (rc != 0) ? rc : MILK_WAIT_ABSENT;
+                }
+                base_cnt   = 0;
+                target_cnt = (abs_cnt != NULL) ? *abs_cnt : need;
+                use_sem    = (semindex >= 0 && semindex < im->md->sem);
+                if (use_sem)
+                {
+                    while (sem_trywait(im->semptr[semindex]) == 0)
+                    {
+                    }
+                }
+                t_ino = milk_wait_now();
+                continue;
+            }
+        }
         if (!use_sem)
         {
             struct timespec slp = { 0, 1000000L };

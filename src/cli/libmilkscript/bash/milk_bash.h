@@ -78,6 +78,10 @@ int milk_bash_exec(const char *cmdline, int *out_exit_req);
  */
 int milk_bash_exec_file(const char *filename, int *out_exit_req);
 
+/** Set $0 to @arg0 and $1..$N to the @argc words of @argv in the bash co-process (and `set -x`
+ * if @xtrace), before a script file runs. Returns 0, else non-zero. */
+int milk_bash_set_args(const char *arg0, int argc, char *const *argv, int xtrace);
+
 /** The in-process server's requests to poll (-1 before start), for the REPL's idle select():
  * new connections and kept ones (milk_server_ready_fd()). */
 int milk_bash_ready_fd(void);

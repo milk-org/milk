@@ -64,16 +64,22 @@ static MILK_HOT errno_t image_make2D_compute(const MILK_RUNNABLE *self)
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = imgid_make_from_name_2D(outimname, imxsize, imysize);
+    IMGID   img = imgid_make_from_name_2D(outimname, imxsize, imysize);
+    errno_t rc  = RETURN_SUCCESS;
 
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    make_2Dimage_IMGID(&img);
-
-    processinfo_update_output_stream(processinfo, img.im, NULL);
+    if (make_2Dimage_IMGID(&img) == -1)
+    {
+        rc = RETURN_FAILURE;
+    }
+    else
+    {
+        processinfo_update_output_stream(processinfo, img.im, NULL);
+    }
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 

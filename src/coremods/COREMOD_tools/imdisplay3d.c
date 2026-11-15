@@ -34,8 +34,7 @@ MILK_PARAMS_DEFINE(imdisplay3d, FPS_PARAMS);
 static MILK_HOT errno_t imdisplay3d_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_TOOLS_imgdisplay3D(p_imname, p_step);
-    return RETURN_SUCCESS;
+    return COREMOD_TOOLS_imgdisplay3D(p_imname, p_step);
 }
 
 const MILK_RUNNABLE runnable_COREMOD_tools_imdisplay3d = {

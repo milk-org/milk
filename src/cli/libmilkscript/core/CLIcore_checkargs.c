@@ -566,6 +566,24 @@ errno_t CLI_checkarg_array(CLICMDARGDEF fpscliarg[], int nbarg)
     argcheck_process_flag = 1;
     if (n <= 0 || data.cmd[cmdi].argdata == NULL)
     {
+        milk_call_t  dflt0 = { .cmdi = cmdi, .posonly = data.cmdNBarg };
+        milk_call_t *call0 = milk_args_call(cmdi);
+        if (call0 == NULL)
+        {
+            call0 = &dflt0;
+        }
+        if (call0->set_default || call0->save[0] != '\0' || call0->load[0] != '\0')
+        {
+            errno_t rc = usage_error(call0, "takes no parameters");
+            DEBUG_TRACE_FEXIT();
+            return rc;
+        }
+        if (call0->no_run)
+        {
+            milk_args_print_call(cmdi, 0, stdout);
+            DEBUG_TRACE_FEXIT();
+            return RETURN_CLICHECKARGARRAY_HELP;
+        }
         DEBUG_TRACE_FEXIT();
         return RETURN_CLICHECKARGARRAY_SUCCESS; /* no declared parameters: it reads its tokens */
     }

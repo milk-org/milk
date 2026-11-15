@@ -158,9 +158,6 @@ TESTLIST_EXPECT_OK: list[list[str]] = [
     # --- Section 37: trap ---
     ['trap "echo trap_set" EXIT'],
     ["trap -l"],
-    # --- Section 38: savehistory ---
-    ["@history save /tmp/_clitest_hist.txt"],
-    ["rm -f /tmp/_clitest_hist.txt"],
     # --- Section 39: History commands ---
     ["@history --local"],
     ["@history --global"],
@@ -277,8 +274,6 @@ TESTLIST_EXPECT_ERROR: list[list[str]] = [
     ["@calc \"_bad = _slicetest[0:9 + 0.0\""],
     # --- Section 36: sleep usage ---
     ["sleep"],
-    # --- Section 38: savehistory usage ---
-    ["@history save"],
     # --- Section 40: @set error paths ---
     ["@set"],
     ["@set nodotparam 42"],

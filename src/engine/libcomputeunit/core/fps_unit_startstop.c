@@ -1057,11 +1057,6 @@ static int fpsunit_request_run(const char *name, const FPS_UNIT_INFO *info)
         {
             t = 2000;
         }
-        if (pi->triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
-        {
-            long d = (long) pi->triggerdelay.tv_sec * 1000L + pi->triggerdelay.tv_nsec / 1000000L;
-            t      = (d > t) ? d : t;
-        }
         wait_ms += t;
     }
     processinfo_shm_close(pi, fd);

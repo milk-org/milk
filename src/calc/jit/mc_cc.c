@@ -664,6 +664,34 @@ static void first_error_line(const char *path, char *out, size_t outsz)
 }
 
 /**
+ * remove_bad_so - Unlink or rmdir a corrupted cached `.so` entry (file, symlink, or empty dir)
+ */
+static void remove_bad_so(const char *path)
+{
+    if (unlink(path) != 0 && errno == EISDIR)
+    {
+        (void) rmdir(path);
+    }
+}
+
+/**
+ * rename_over_so - Atomically move @src over @dst, replacing an empty directory if present
+ */
+static int rename_over_so(const char *src, const char *dst)
+{
+    if (rename(src, dst) == 0)
+    {
+        return 0;
+    }
+    if (errno == EISDIR)
+    {
+        (void) rmdir(dst);
+        return rename(src, dst);
+    }
+    return -1;
+}
+
+/**
  * mc_cc_build - Compile C source file @c_path into shared object @so_path
  * @c_path:  C source file
  * @so_path: Output `.so`, built as `<so_path>.tmp.<pid>.<seq>` and renamed into place
@@ -744,7 +772,7 @@ int mc_cc_build(const char        *c_path,
         return -1;
     }
     (void) unlink(err_tmp);
-    if (rename(so_tmp, so_path) != 0)
+    if (rename_over_so(so_tmp, so_path) != 0)
     {
         snprintf(err, errsz, "cannot rename '%s': %s", so_tmp, strerror(errno));
         (void) unlink(so_tmp);
@@ -760,9 +788,8 @@ int mc_cc_build(const char        *c_path,
  * @err:     Error message buffer
  * @errsz:   Size of @err in bytes
  *
- * Probes `mc_k` first (single-pass compilation) and falls back to `mc_k_<key>`
- * (when the `.so` was produced by a multi-pass batch compilation and hard-linked
- * into the disk cache).
+ * Probes `mc_k_<key>` first when `@key` is supplied (batch-compiled `.so` files),
+ * then falls back to `mc_k` (single-pass compilation).
  *
  * Return: Resolved `mc_kernel_fn` pointer, or NULL on error
  */
@@ -774,13 +801,16 @@ static mc_kernel_fn load_so_kernel(const char *so_path, const char *key, char *e
         snprintf(err, errsz, "dlopen('%s') failed: %s", so_path, dlerror());
         return NULL;
     }
-    mc_kernel_fn fn  = NULL;
-    *(void **) (&fn) = dlsym(dl, "mc_k");
-    if (fn == NULL && key != NULL)
+    mc_kernel_fn fn = NULL;
+    if (key != NULL)
     {
         char sym[64];
         snprintf(sym, sizeof(sym), "mc_k_%s", key);
         *(void **) (&fn) = dlsym(dl, sym);
+    }
+    if (fn == NULL)
+    {
+        *(void **) (&fn) = dlsym(dl, "mc_k");
     }
     if (fn == NULL)
     {
@@ -846,8 +876,18 @@ static mc_kernel_fn mc_cc_compile(const char *c_src,
     char c_path[512];
     snprintf(so_path, sizeof(so_path), "%s/%s.so", cache_dir, key);
 
-    if (access(so_path, R_OK) != 0)
+    mc_kernel_fn fn = NULL;
+    if (access(so_path, R_OK) == 0)
     {
+        fn = load_so_kernel(so_path, key, err, errsz);
+    }
+    if (fn == NULL)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            err[0] = '\0';
+        }
+        remove_bad_so(so_path);
         if (write_source_atomically(cache_dir, key, seq, c_src, strlen(c_src), c_path,
                                     sizeof(c_path), err, errsz) != 0 ||
             mc_cc_build(c_path, so_path, k_jit_args, err, errsz) != 0)
@@ -855,12 +895,11 @@ static mc_kernel_fn mc_cc_compile(const char *c_src,
             return NULL;
         }
         maybe_prune_cache(cache_dir);
-    }
-
-    mc_kernel_fn fn = load_so_kernel(so_path, key, err, errsz);
-    if (fn == NULL)
-    {
-        return NULL;
+        fn = load_so_kernel(so_path, key, err, errsz);
+        if (fn == NULL)
+        {
+            return NULL;
+        }
     }
 
     pthread_mutex_lock(&g_cc_lock);
@@ -1042,16 +1081,20 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
         if (access(jobs[i].so_path, R_OK) == 0)
         {
             mc_kernel_fn fn = load_so_kernel(jobs[i].so_path, jobs[i].key, err, errsz);
-            if (fn == NULL)
+            if (fn != NULL)
             {
-                goto cleanup;
+                pthread_mutex_lock(&g_cc_lock);
+                mem_cache_insert(jobs[i].h1, jobs[i].h2, fn, jobs[i].so_path);
+                pthread_mutex_unlock(&g_cc_lock);
+                jobs[i].pa->fn = fn;
+                snprintf(jobs[i].pa->so_path, sizeof(jobs[i].pa->so_path), "%s", jobs[i].so_path);
+                continue;
             }
-            pthread_mutex_lock(&g_cc_lock);
-            mem_cache_insert(jobs[i].h1, jobs[i].h2, fn, jobs[i].so_path);
-            pthread_mutex_unlock(&g_cc_lock);
-            jobs[i].pa->fn = fn;
-            snprintf(jobs[i].pa->so_path, sizeof(jobs[i].pa->so_path), "%s", jobs[i].so_path);
-            continue;
+            if (err != NULL && errsz > 0)
+            {
+                err[0] = '\0';
+            }
+            remove_bad_so(jobs[i].so_path);
         }
         jobs[nmiss++].miss_i = i;
     }
@@ -1086,7 +1129,6 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     int    need_coord   = 0;
     int    need_spatial = 0;
     int    sp_used[10]  = { 0 };
-    int    last_miss_i  = jobs[nmiss - 1].miss_i;
     size_t batch_cap = sizeof(MC_PRELUDE_CORE_SRC) + sizeof(MC_PRELUDE_COMPLEX_SRC) +
                        sizeof(MC_PRELUDE_COORD_SHIFT_SRC) + sizeof(MC_PRELUDE_SPATIAL_MACRO_SRC) +
                        sizeof(MC_PRELUDE_SPATIAL_ALL_SRC) + 256;
@@ -1143,7 +1185,9 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
 
     int  pid = (int) getpid();
     char batch_c[544];
+    char batch_so[544];
     snprintf(batch_c, sizeof(batch_c), "%s/batch.c.tmp.%d.%lu", cache_dir, pid, seq);
+    snprintf(batch_so, sizeof(batch_so), "%s/batch.so.tmp.%d.%lu", cache_dir, pid, seq);
 
     FILE *bfp = fopen(batch_c, "w");
     int   wok = (bfp != NULL && fwrite(batch_src, 1, blen, bfp) == blen);
@@ -1156,32 +1200,36 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
     free(batch_src);
     batch_src = NULL;
 
-    int cc_rc = mc_cc_build(batch_c, jobs[last_miss_i].so_path, k_jit_args, err, errsz);
+    /* Built under a name of its own and never read back through a <key>.so name: another
+     * process compiling one of these keys alone renames its library onto that name */
+    int cc_rc = mc_cc_build(batch_c, batch_so, k_jit_args, err, errsz);
     (void) unlink(batch_c);
     if (cc_rc != 0)
     {
         goto cleanup;
     }
 
-    /* The other keys name the same library: hard-link it under a temp name, then rename */
-    for (int u = 0; u < nmiss - 1; u++)
+    /* Every key names this library: hard-link it under a temp name, then rename */
+    for (int u = 0; u < nmiss; u++)
     {
         int  i = jobs[u].miss_i;
         char so_tmp[600];
         snprintf(so_tmp, sizeof(so_tmp), "%s.tmp.%d.%lu", jobs[i].so_path, pid, seq);
-        if (link(jobs[last_miss_i].so_path, so_tmp) != 0 || rename(so_tmp, jobs[i].so_path) != 0)
+        if (link(batch_so, so_tmp) != 0 || rename_over_so(so_tmp, jobs[i].so_path) != 0)
         {
             snprintf(err, errsz, "cannot link '%s': %s", jobs[i].so_path, strerror(errno));
             (void) unlink(so_tmp);
+            (void) unlink(batch_so);
             goto cleanup;
         }
     }
     maybe_prune_cache(cache_dir);
 
-    void *dl = dlopen(jobs[last_miss_i].so_path, RTLD_LAZY | RTLD_LOCAL);
+    void *dl = dlopen(batch_so, RTLD_LAZY | RTLD_LOCAL);
+    (void) unlink(batch_so);
     if (dl == NULL)
     {
-        snprintf(err, errsz, "dlopen('%s') failed: %s", jobs[last_miss_i].so_path, dlerror());
+        snprintf(err, errsz, "dlopen('%s') failed: %s", batch_so, dlerror());
         goto cleanup;
     }
 
@@ -1195,7 +1243,7 @@ int mc_cc_compile_prog(mcalc_prog_t *p, char *err, size_t errsz)
         if (fn == NULL)
         {
             dlclose(dl);
-            snprintf(err, errsz, "dlsym('%s') failed in '%s'", sym, jobs[last_miss_i].so_path);
+            snprintf(err, errsz, "dlsym('%s') failed in '%s'", sym, batch_so);
             goto cleanup;
         }
         pthread_mutex_lock(&g_cc_lock);

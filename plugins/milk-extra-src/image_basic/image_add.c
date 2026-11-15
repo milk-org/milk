@@ -47,8 +47,8 @@ MILK_PARAMS_DEFINE(addim, FPS_PARAMS_1);
 static MILK_HOT errno_t addim_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    basic_add(p1_in1, p1_in2, p1_out, (long) p1_ox, (long) p1_oy);
-    return RETURN_SUCCESS;
+    return (basic_add(p1_in1, p1_in2, p1_out, (long) p1_ox, (long) p1_oy) < 0) ? RETURN_FAILURE
+                                                                               : RETURN_SUCCESS;
 }
 
 /* ---- Command 2: addim3D ---- */
@@ -74,8 +74,9 @@ MILK_PARAMS_DEFINE(addim3D, FPS_PARAMS_2);
 static MILK_HOT errno_t addim3D_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    basic_add3D(p2_in1, p2_in2, p2_out, (long) p2_ox, (long) p2_oy, (long) p2_oz);
-    return RETURN_SUCCESS;
+    return (basic_add3D(p2_in1, p2_in2, p2_out, (long) p2_ox, (long) p2_oy, (long) p2_oz) < 0)
+               ? RETURN_FAILURE
+               : RETURN_SUCCESS;
 }
 
 imageID basic_add(const char *__restrict ID_name1,
@@ -92,8 +93,18 @@ imageID basic_add(const char *__restrict ID_name1,
     uint8_t datatype1, datatype2, datatype;
     int     datatypeOK;
 
-    ID1       = image_ID(ID_name1, dcimg, dcnimg);
-    ID2       = image_ID(ID_name2, dcimg, dcnimg);
+    ID1 = image_ID(ID_name1, dcimg, dcnimg);
+    if (ID1 == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name1);
+        return -1;
+    }
+    ID2 = image_ID(ID_name2, dcimg, dcnimg);
+    if (ID2 == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name2);
+        return -1;
+    }
     naxes1[0] = dcimg[ID1].md[0].size[0];
     naxes1[1] = dcimg[ID1].md[0].size[1];
     naxes2[0] = dcimg[ID2].md[0].size[0];
@@ -118,7 +129,7 @@ imageID basic_add(const char *__restrict ID_name1,
     if (datatypeOK == 0)
     {
         printf("ERROR in basic_add: data type combination not supported\n");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     /*  if(dcquiet==0)*/
@@ -233,8 +244,18 @@ imageID basic_add3D(const char *__restrict ID_name1,
     uint8_t  datatype1, datatype2, datatype;
     int      datatypeOK;
 
-    ID1       = image_ID(ID_name1, dcimg, dcnimg);
-    ID2       = image_ID(ID_name2, dcimg, dcnimg);
+    ID1 = image_ID(ID_name1, dcimg, dcnimg);
+    if (ID1 == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name1);
+        return -1;
+    }
+    ID2 = image_ID(ID_name2, dcimg, dcnimg);
+    if (ID2 == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name2);
+        return -1;
+    }
     naxes1[0] = dcimg[ID1].md[0].size[0];
     naxes1[1] = dcimg[ID1].md[0].size[1];
     naxes1[2] = dcimg[ID1].md[0].size[2];
@@ -262,7 +283,7 @@ imageID basic_add3D(const char *__restrict ID_name1,
     if (datatypeOK == 0)
     {
         printf("ERROR in basic_add: data type combination not supported\n");
-        exit(0);
+        return -1;
     }
 
     /*  if(dcquiet==0)*/

@@ -43,6 +43,7 @@
 #include <string.h>
 #include <sys/eventfd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "milk_keywords.h"
@@ -91,7 +92,8 @@ typedef struct
     int             wake_fd;
     pthread_t       main_tid;
     volatile int    active;
-    pid_t           pgid; /* the CALL's process group: its requests (a pipeline) run alongside */
+    pid_t           pid;  /* the CALL's client: the stages of its pipeline run alongside */
+    pid_t           pgid; /* and its process group, whose reads a copy answers if need be */
     const char     *cmd;  /* the CALL's command line, which other shells' requests wait for */
     struct timespec t0;
 } call_watcher_ctx_t;
@@ -104,17 +106,25 @@ static int             g_waiting[MILK_SERVER_WAITING_MAX];
 static int             g_nwaiting = 0;
 static pthread_mutex_t g_qmu      = PTHREAD_MUTEX_INITIALIZER;
 
-/* The process group of the peer of socket @fd, or -1 */
-static pid_t peer_pgid(int fd)
+/* The process group of the peer of socket @fd, or -1; its pid in *@pid */
+static pid_t peer_pgid(int fd, pid_t *pid)
 {
     struct ucred cred;
     socklen_t    len = sizeof(cred);
 
-    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) != 0 || cred.pid <= 0)
-    {
-        return -1;
-    }
-    return getpgid(cred.pid);
+    *pid = (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0) ? cred.pid : -1;
+    return (*pid > 0) ? getpgid(*pid) : -1;
+}
+
+/* Process @w writes into the pipe that process @r reads: two stages of one pipeline */
+static int pipes_to(pid_t w, pid_t r)
+{
+    char        p[2][40];
+    struct stat s[2];
+    snprintf(p[0], sizeof(p[0]), "/proc/%d/fd/1", (int) w);
+    snprintf(p[1], sizeof(p[1]), "/proc/%d/fd/0", (int) r);
+    return w > 0 && r > 0 && stat(p[0], &s[0]) == 0 && stat(p[1], &s[1]) == 0 &&
+           S_ISFIFO(s[0].st_mode) && s[0].st_dev == s[1].st_dev && s[0].st_ino == s[1].st_ino;
 }
 
 /* Seconds the CALL has run */
@@ -125,8 +135,8 @@ static double call_seconds(const call_watcher_ctx_t *ctx)
     return (double) (now.tv_sec - ctx->t0.tv_sec) + 1e-9 * (double) (now.tv_nsec - ctx->t0.tv_nsec);
 }
 
-/* --nowait (or a full queue): the request fails at once, saying what the session runs; the
- * connection stays open if @keep */
+/* --nowait, a full queue, or another shell's read no safe point came for: the request fails,
+ * saying what the session runs; the connection stays open if @keep */
 static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep, int32_t rc)
 {
     milk_frame_hdr_t hdr;
@@ -135,9 +145,16 @@ static void reply_busy(const call_watcher_ctx_t *ctx, int cfd, int keep, int32_t
 
     if (milk_proto_recv(cfd, &hdr, &pl, fds) == 0)
     {
+        char msg[320];
+        snprintf(msg, sizeof(msg), "milk: busy: %.250s for %.0f s", ctx->cmd, call_seconds(ctx));
         if (fds[2] >= 0)
         {
-            dprintf(fds[2], "milk: busy: %s for %.0f s\n", ctx->cmd, call_seconds(ctx));
+            dprintf(fds[2], "%s\n", msg);
+        }
+        else if (hdr.type != MILK_MSG_COMPLETE) /* @get, @exists: their stderr is not passed */
+        {
+            milk_proto_send(cfd, MILK_MSG_VALUE, MILK_FLAG_ERRTEXT, msg,
+                            (uint32_t) strlen(msg) + 1);
         }
         milk_server_send_done(cfd, keep, &rc, sizeof(rc));
     }
@@ -380,13 +397,15 @@ static int watcher_take_client(const call_watcher_ctx_t *ctx, int cfd)
     {
         return MILK_CONN_TAKEN;
     }
-    // what another shell sends that changes the session waits for this CALL. Reads, async
-    // commands and the CALL's own process group (a pipeline) do not: the CALL serves them at its
+    // what changes the session waits for this CALL: another shell's, a background job's. Reads,
+    // async commands and the stages of the CALL's pipeline do not: the CALL serves them at its
     // next safe point, where its state is whole (queued_kind_t)
     int   reads = (ph.type == MILK_MSG_GET || ph.type == MILK_MSG_EXISTS ||
                    ph.type == MILK_MSG_TEST || ph.type == MILK_MSG_COMPLETE);
-    pid_t pg    = peer_pgid(cfd);
-    if (!reads && !(ph.flags & MILK_FLAG_ASYNC) && (pg <= 0 || pg != ctx->pgid))
+    pid_t pid;
+    pid_t pg = peer_pgid(cfd, &pid);
+    if (!reads && !(ph.flags & MILK_FLAG_ASYNC) && !pipes_to(pid, ctx->pid) &&
+        !pipes_to(ctx->pid, pid))
     {
         if (!(ph.type == MILK_MSG_CALL && (ph.flags & MILK_FLAG_NOWAIT)) &&
             wait_for_call(ctx, cfd) == 0)
@@ -595,7 +614,7 @@ static int watcher_begin(int client_fd, int listen_fd, const char *cmd)
         g_wctx.client_fd = client_fd;
         g_wctx.listen_fd = listen_fd;
         g_wctx.main_tid  = pthread_self();
-        g_wctx.pgid      = peer_pgid(client_fd);
+        g_wctx.pgid      = peer_pgid(client_fd, &g_wctx.pid);
         g_wctx.cmd       = cmd;
         clock_gettime(CLOCK_MONOTONIC, &g_wctx.t0);
         g_wctx.active = 1;
@@ -799,6 +818,20 @@ static int try_dispatch_interceptor(const char *cmdname, int argc, char **argv, 
     if ((strcmp(cmdname, "listim") == 0 || strcmp(cmdname, "mem.listim") == 0) && argc >= 2 &&
         strcmp(argv[1], "-h") != 0 && strcmp(argv[1], "--help") != 0 && strcmp(argv[1], "-?") != 0)
     {
+        for (int i = 1; i < argc; i++)
+        {
+            const char *tok = argv[i];
+            if (strcmp(tok, "--") == 0)
+            {
+                break;
+            }
+            if (strcmp(tok, "--no-run") == 0 || strcmp(tok, "--default") == 0 ||
+                strcmp(tok, "--save") == 0 || strcmp(tok, "--load") == 0 ||
+                strncmp(tok, "--save=", 7) == 0 || strncmp(tok, "--load=", 7) == 0)
+            {
+                return 0;
+            }
+        }
         if (argc == 2 && argv[1][0] != '-' &&
             (strchr(argv[1], '*') != NULL || strchr(argv[1], '?') != NULL))
         {
@@ -918,7 +951,7 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
                 }
                 if (tmpid.name[0] != '\0')
                 {
-                    char shmpath[512];
+                    char shmpath[1024];
                     snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, tmpid.name);
                     if (image_ID(tmpid.name, dcimg, dcnimg) != -1 ||
                         (tmpid.stream_loc != 'L' && access(shmpath, R_OK) == 0 &&
@@ -937,9 +970,10 @@ static int populate_cmdargtokens(int cmdidx, int argc, char **argv)
         else
         {
             milk_cmd_classify_arg(arg, is_slice);
-            if (!is_slice && data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_STRING)
+            if (!is_slice && strchr(arg, '/') == NULL &&
+                data.cmdargtoken[data.cmdNBarg].type == CMDARGTOKEN_TYPE_STRING)
             {
-                char shmpath[512];
+                char shmpath[1024];
                 snprintf(shmpath, sizeof(shmpath), "%s/%s.im.shm", dcshmdir, arg);
                 if (access(shmpath, R_OK) == 0 && read_sharedmem_image(arg, dcimg, dcnimg) != -1)
                 {

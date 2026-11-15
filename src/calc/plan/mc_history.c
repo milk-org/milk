@@ -27,6 +27,8 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -388,6 +390,82 @@ static int hist_find_decls(hist_ctx_t *h, mc_stmt_t *s)
     return 0;
 }
 
+static int fold_const_lag(const mc_expr_t *e, long *out_lag, double *out_dbl, int *out_nonint)
+{
+    int neg = 0;
+
+    *out_nonint = 0;
+    while (e != NULL && e->kind == MC_EXPR_UNARY &&
+           (e->u.unary.op == MC_TOK_MINUS || e->u.unary.op == MC_TOK_PLUS))
+    {
+        if (e->u.unary.op == MC_TOK_MINUS)
+        {
+            neg = !neg;
+        }
+        e = e->u.unary.operand;
+    }
+    if (e == NULL)
+    {
+        return 0;
+    }
+    if (e->kind == MC_EXPR_LONG)
+    {
+        if (neg && e->u.lval == LONG_MIN)
+        {
+            *out_nonint = 1;
+            *out_dbl    = -(double) LONG_MIN;
+            return 1;
+        }
+        *out_lag = neg ? -e->u.lval : e->u.lval;
+        return 1;
+    }
+    if (e->kind == MC_EXPR_DOUBLE)
+    {
+        double v = neg ? -e->u.dval : e->u.dval;
+        if (!isfinite(v) || v != floor(v) || v < (double) LONG_MIN || v > (double) LONG_MAX)
+        {
+            *out_nonint = 1;
+            *out_dbl    = v;
+            return 1;
+        }
+        *out_lag = (long) v;
+        return 1;
+    }
+    return 0;
+}
+
+/* Clone @lag into every literal 0 placeholder in @*pe without descending into the clone. */
+static int replace_zero_slot(mc_expr_t **pe, const mc_expr_t *lag)
+{
+    mc_expr_t *e = *pe;
+    if (e == NULL)
+    {
+        return 0;
+    }
+    if (e->kind == MC_EXPR_LONG && e->u.lval == 0)
+    {
+        mc_expr_t *copy = mc_expr_clone(lag);
+        if (copy == NULL)
+        {
+            return -1;
+        }
+        copy->line = e->line;
+        copy->col  = e->col;
+        mc_expr_free(e);
+        *pe = copy;
+        return 0;
+    }
+    mc_expr_t **slots[MC_MAX_ARGS];
+    for (int i = 0, n = mc_expr_child_slots(e, slots); i < n; i++)
+    {
+        if (replace_zero_slot(slots[i], lag) != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 /* Pass 2: each `prev(s[, k])` in @*pe becomes the slice of its ring for k frames ago */
 static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
 {
@@ -399,18 +477,30 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
             snprintf(h->err, h->errsz, "hist() and prev() work only in a milk.calc unit");
             return -1;
         }
-        int is_lit = (e->u.call.nargs == 1 || e->u.call.args[1]->kind == MC_EXPR_LONG);
+        long   lag        = 1;
+        double dbl_lag    = 0.0;
+        int    nonint_lit = 0;
+        int    is_lit     = (e->u.call.nargs == 1);
+        if (e->u.call.nargs == 2)
+        {
+            is_lit = fold_const_lag(e->u.call.args[1], &lag, &dbl_lag, &nonint_lit);
+        }
         if (!is_lit && hist_expand(h, &e->u.call.args[1]) != 0)
         {
             return -1;
         }
-        long lag = (e->u.call.nargs == 2 && is_lit) ? e->u.call.args[1]->u.lval : 1;
-        int  k   = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
+        int k = hist_ring_of(h, e->u.call.args[0]->u.ident.name, 2);
         if (k < 0)
         {
             return -1;
         }
         mc_hist_decl_t *d = &h->decl[k];
+        if (is_lit && nonint_lit)
+        {
+            snprintf(h->err, h->errsz, "prev(%s, %g): lag must be an integer between 1 and %d",
+                     d->name, dbl_lag, d->N - 1);
+            return -1;
+        }
         if (is_lit && (lag < 1 || lag >= d->N))
         {
             snprintf(h->err, h->errsz, "prev(%s, %ld): the ring holds %d frames", d->name, lag,
@@ -421,7 +511,7 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
         {
             return -1;
         }
-        char text[STRINGMAXLEN_IMAGE_NAME + 64];
+        char text[STRINGMAXLEN_IMAGE_NAME + 128];
         if (is_lit)
         {
             snprintf(text, sizeof(text), "%s_hist[%s(_n + %d) %% %d]", d->name,
@@ -429,8 +519,10 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
         }
         else
         {
-            snprintf(text, sizeof(text), "%s_hist[%s(((_n - (0)) %% %d) + %d) %% %d]", d->name,
-                     (d->naxis == 2) ? ":,:," : ":,", d->N, d->N, d->N);
+            snprintf(text, sizeof(text),
+                     "%s_hist[%s((0) >= 1 && (0) < %d && (0) == floor(0)) ? "
+                     "((_n + %d - (0)) %% %d) : %d]",
+                     d->name, (d->naxis == 2) ? ":,:," : ":,", d->N, d->N, d->N, d->N);
         }
         mc_expr_t *sl = parse_snippet(text);
         if (sl == NULL)
@@ -438,13 +530,11 @@ static int hist_expand(hist_ctx_t *h, mc_expr_t **pe)
             snprintf(h->err, h->errsz, "prev: '%s' is no stream name", d->name);
             return -1;
         }
-        if (!is_lit)
+        if (!is_lit && replace_zero_slot(&sl->u.slice.axes[d->naxis].start, e->u.call.args[1]) != 0)
         {
-            mc_expr_t *sub =
-                sl->u.slice.axes[d->naxis].start->u.binary.left->u.binary.left->u.binary.left;
-            mc_expr_free(sub->u.binary.right);
-            sub->u.binary.right = e->u.call.args[1];
-            e->u.call.args[1]   = NULL;
+            mc_expr_free(sl);
+            snprintf(h->err, h->errsz, "prev: out of memory");
+            return -1;
         }
         sl->line = e->line;
         sl->col  = e->col;

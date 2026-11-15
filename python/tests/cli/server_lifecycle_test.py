@@ -196,8 +196,9 @@ def test_server_tells_notify_socket(tmp_path, names):
 
 def test_ctrl_c_stops_a_running_calc_while_the_session_answers(tmp_path):
     res = milk_bash(
-        'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 3"; t0=$EPOCHREALTIME\n'
-        '( @calc "for i = 1:100000 { for j = 1:100000 { x = i + j } }" 2>loop.err\n'
+        'mem.mk2Dim im 8 8 >/dev/null; @calc "im = 3; big = rand(zeros(256, 256), 1)"\n'
+        "t0=$EPOCHREALTIME\n"  # tens of seconds: a nest of loops stops at 100000 iterations
+        '( @calc "for i = 1:100000 { f = fft(big) }" 2>loop.err\n'
         '  echo "loop_rc=$?" ) & pid=$!\n'
         "sleep 1; t1=$EPOCHREALTIME\n"
         '@test "imean(im) > 2"; echo "test_rc=$?"\n'
@@ -220,8 +221,8 @@ def test_ctrl_c_or_a_lost_shell_in_a_session_keyword_keeps_the_session(tmp_path)
     """A keyword the session runs itself (@pipe here) has no command frame of its own: Ctrl-C and
     the hang-up of its shell stop it; the session and its local image remain."""
     res = milk_bash(
-        'mem.mk2Dim "@L:loc" 4 4 >/dev/null; @calc "loc = 5"\n'
-        'loop="x = 0; for i = 1:100000 { for j = 1:100000 { x = i + j } }"\n'
+        'mem.mk2Dim "@L:loc" 4 4 >/dev/null; @calc "loc = 5; big = rand(zeros(256, 256), 1)"\n'
+        'loop="for i = 1:100000 { f = fft(big) }"\n'
         '( @pipe "$loop" 2>loop.err; echo "loop_rc=$?" ) & pid=$!\n'
         "sleep 1; kill -INT $pid; wait $pid\n"
         '@calc -v m "imean(loc)"; echo "after_int=$m"\n'
@@ -449,3 +450,93 @@ def test_copies_of_the_session_start_from_whole_images(tmp_path):
     assert value(res.stdout, "main") == "0", out
     assert value(res.stdout, "reads") == "100", out
     assert value(res.stdout, "copies") == "20", out
+
+
+def test_writes_of_a_background_job_wait_and_are_kept(tmp_path):
+    """A background job is in the script's process group but is no stage of a pipeline: what it
+    writes while the script runs a long command waits for that command and is kept, and so is what
+    the script writes while a background job runs one. A stage of the command's pipeline still
+    runs alongside, in a copy, before the command ends."""
+    res = milk_bash(
+        '@calc "big = zeros(512, 512)"\n'
+        'loop() { @calc "for k = 0:40000 { big = big + 1 }"; }\n'
+        'loop & sleep 0.2; @calc "w = 1"; echo "w_rc=$?"; wait\n'
+        '( sleep 0.2; @calc "v = 7" ) & loop; wait\n'
+        '@calc -v w w; @calc -v v v; echo "wv=$w,$v"\n'
+        '{ loop; echo loop >> order; } | { sleep 0.2; @calc "p = 1"; echo stage >> order; }\n'
+        'echo "order=$(paste -sd, order)"',
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "w_rc") == "0", out
+    assert value(res.stdout, "wv") == "1,7", out
+    assert value(res.stdout, "order") == "stage,loop", out
+
+
+def test_grab_cube_removed_during_the_grab(tmp_path):
+    """concurrent delete/replace of a @grab destination ends the grab cleanly, without UAF."""
+    res = milk_bash(
+        '@calc "keep = 7; S:gsrc = zeros(1024,1024); src = zeros(1024,1024,2)"\n'
+        "@replay --loop l.src gsrc & rp=$!; sleep 0.2\n"
+        "for i in 1 2 3 4 5 6; do\n"
+        "  @grab -t 5 s.gsrc 100 s.gout 2>>g.err & gp=$!; sleep 0.05\n"
+        '  mem.rmshmim gout >/dev/null; wait $gp; echo "s$i=$?"\n'
+        "  @grab -t 5 s.gsrc 100 l.cube 2>>g.err & gp=$!; sleep 0.05\n"
+        '  @calc "cube = zeros(4,4)"; wait $gp; echo "l$i=$?"\n'
+        "done\n"
+        'kill $rp; wait $rp; echo "keep=$(@calc keep)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "keep") == "7", out
+    for i in range(1, 7):
+        assert value(res.stdout, f"s{i}") in ("0", "1"), out
+        assert value(res.stdout, f"l{i}") in ("0", "1"), out
+    errs = (tmp_path / "g.err").read_text().splitlines()
+    assert all("image deleted during the grab" in e for e in errs), errs
+
+
+@pytest.mark.timeout(90)
+def test_concurrent_blas_and_own_group_copy(tmp_path):
+    """An own-group read or --async command during a multi-threaded inv() does not deadlock."""
+    res = milk_bash(
+        '@calc "m = randn(zeros(1200,1200)); k = 7"\n'
+        '( @calc "u = inv(m)"; echo "inv_st=$?" ) &\n'
+        "sleep 0.15\n"
+        '( @test "k == 7"; echo "read_st=$?" ) &\n'
+        '( milkcall --async pipe "q = 1" >/dev/null 2>&1; echo "async_st=$?" ) &\n'
+        'wait; @calc -v k k; echo "k=$k"',
+        tmp_path,
+        timeout=60,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "inv_st") == "0", out
+    assert value(res.stdout, "read_st") == "0", out
+    assert value(res.stdout, "async_st") == "0", out
+    assert value(res.stdout, "k") == "7", out
+
+
+@pytest.mark.timeout(60)
+def test_concurrent_session_starts_do_not_fail(tmp_path):
+    """Concurrent first commands in one shell and concurrent --session starts share one server."""
+    sname = f"h2race_{os.getpid()}"
+    res = milk_bash(
+        'for i in 1 2 3 4 5 6; do ( @calc "x$i = $i" 2>err.$i; echo "j$i=$?" ) & done\n'
+        "wait\n"
+        '@calc -v s "x1+x2+x3+x4+x5+x6"; echo "sum=$s"\n'
+        "for w in 1 2 3 4; do\n"
+        f'  bash --norc -c \'source "$MILK_INSTALLDIR/bin/milk.bash" --session {sname} 2>/dev/null; '
+        '@calc "w$1 = $1"; echo "sh$1=$? $(@session status | sed -n "s/ *Name *: //p")"\' '
+        "sh $w &\n"
+        "done; wait\n"
+        f"@session end {sname} >/dev/null 2>&1 || true",
+        tmp_path,
+        timeout=50,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "sum") == "21", out
+    for i in range(1, 7):
+        assert value(res.stdout, f"j{i}") == "0", out
+    for w in range(1, 5):
+        assert value(res.stdout, f"sh{w}").startswith(f"0 {sname}"), out

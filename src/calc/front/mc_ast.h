@@ -46,6 +46,7 @@
 #define MC_MAX_LHS 8
 #define MC_MAX_CHAIN 8
 #define MC_MAX_SLICE_AX 3
+#define MC_EXPR_MAX_DEPTH 768 /* max AST / evaluation depth (fits 8 MB stack and JIT) */
 
 typedef enum
 {
@@ -506,6 +507,9 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
 /** mc_scalar_set_slice_end() - set active slice axis 'end' bound (-1 when inactive). */
 void mc_scalar_set_slice_end(long end_val);
 
+/** mc_scalar_quiet_div() - 1: a zero divisor gives inf or NaN, no error; returns the old value. */
+int mc_scalar_quiet_div(int on);
+
 
 /** mc_def_check() - check the names and calls of def statement @s's body (0 ok, -1: @err why). */
 int mc_def_check(mc_stmt_t *s, char *err, size_t errsz);
@@ -527,6 +531,9 @@ const char *mc_scalar_binop(mc_tok_type_t op, const mc_val_t *l, const mc_val_t 
 
 /** mc_scalar_pow() - evaluate pow(@a, @b) with exact int64 when b >= 0 fits in int64. */
 void mc_scalar_pow(const mc_val_t *a, const mc_val_t *b, mc_val_t *out);
+
+/** mc_scalar_cast() - cast @a to integer datatype @dt as an image of that type stores it. */
+void mc_scalar_cast(uint8_t dt, const mc_val_t *a, mc_val_t *out);
 
 /** mc_val_to_str() - format scalar value @v into string buffer @buf. */
 void mc_val_to_str(const mc_val_t *v, char *buf, size_t bufsz, int use_float_digits);

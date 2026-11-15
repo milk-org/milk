@@ -103,6 +103,8 @@ static char *const milkcomplete_doc[]  = { "Query milk tab-completion candidates
 static char *const milkshutdown_doc[]  = { "Shut down the session milk-cli --server.", NULL };
 static char *const milksession_doc[]   = { "Manage milk sessions (@session).", NULL };
 static char *const milkcloexec_doc[]   = { "Mark file descriptors close-on-exec.", NULL };
+static char *const milkloopdepth_doc[] = { "Set the loop depth that break and continue see.",
+                                           NULL };
 static char *const milktranslate_doc[] = { "Translate a milk script to source, or a typed line.",
                                            NULL };
 
@@ -188,6 +190,9 @@ struct builtin milkcloexec_struct = { "milkcloexec",
                                       milkcloexec_doc,
                                       "milkcloexec FD... | --watcher PARENT",
                                       0 };
+
+struct builtin milkloopdepth_struct = { "milkloopdepth",   milkloopdepth_builtin, BUILTIN_ENABLED,
+                                        milkloopdepth_doc, "milkloopdepth N",     0 };
 
 struct builtin milktranslate_struct = { "milktranslate",
                                         milktranslate_builtin,

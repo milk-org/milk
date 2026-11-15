@@ -87,14 +87,15 @@ says why and loads nothing.
 `@test`, `@assert`) take `--help` only, as `-h` is a valid expression. The prompt parts of `@history`
 (`search`, `save`, `--stats`, `--tui`) and the REPL settings of `@config` exist only at the milk-cli
 prompt. A one-letter option has one meaning in all the keywords that take it: `-v <var>` and
-`-a <arr>` bind the output, `-t <sec>` is a timeout, `-n <N>` a count, `-r` running, `-l` a long
-listing, `-h` help.
+`-a <arr>` bind the output, `-t <sec>` is a timeout (0, the default, waits without limit),
+`-n <N>` a count, `-r` running, `-l` a long listing, `-h` help.
 
 The keywords read their options the same way, from the list that `@help <keyword>` prints and TAB
 completes: `--opt value` or `--opt=value`, before or after the other arguments, and `--` ends
-them. An unknown option, or one without its value, is a usage error (status 2) with the usage
-line; a number (`-1.5`) and a word with a blank are never options. Where free text follows
-(`@set`, `@defer`, `@source`, `@on`), the options come first. `@calc`, `@test` and `@assert` take
+them. An unknown option, one without its value, or a count or time that is not a number
+≥ 0 (`-n abc`, `-t -1`), is a usage error (status 2) with the usage line; a number (`-1.5`)
+and a word with a blank are never options. Where free text follows (`@set`, `@defer`, `@source`,
+`@on`), the options come first. `@calc`, `@test` and `@assert` take
 a word they do not know as calculator text.
 
 ## Module Commands
@@ -129,7 +130,9 @@ mem.mk2Dim --no-run im 64 64       # print the resolved call, run nothing
 - Every call starts from the declared defaults overlaid with the session defaults: nothing carries
   over from one call to the next, and two shells never share argument state.
 - A value is taken from, first to last: `.tag=value` or its position, the `--load` preset, the
-  session default, the declared default.
+  session default. The declared default (the value `-h` shows) is taken with `.`: a command-line
+  argument that none of these gives is missing (`mem.mk2Dim im` is a usage error,
+  `mem.mk2Dim im . .` makes a 256x256 image).
 - A missing, invalid or extra value, or a parameter given twice, is a usage error: the command does
   not run and exits with status 2. `-0.5` is a value: `-h` is the only short option, and after `--`
   every word is a value.
@@ -204,8 +207,8 @@ Common properties:
 - streams (`s.`, `l.`; `@help streams` and `@get s.<name>.list` list them): `xsize` `ysize`
   `zsize` `naxis` `nelement` `dtype` `typename` `type` `cnt0` `cnt1` `sem` `pid` `owner_pid`
   `shared` `NBkw` `location` `loc` `inode` `age` `fps` `summary`; the pixel statistics `min` `max`
-  `mean` `std` `var` `tot` `count` (non-zero pixels), the calculator's `imin` … `icount` of the
-  frame, and `stats` (all of them, plus `torn`, 1 when every read overlapped a write under the
+  `mean` `std` `var` `tot` `count` (non-zero pixels), as `imin(cam)` … `icount(cam)` compute them,
+  and `stats` (all of them, plus a `torn` line, 1 when every read overlapped a write under the
   [torn-frame rule](calculator.md#compute-units-without-c) and the values come from the last one;
   cached per `(inode, cnt0, 16-pixel sample)` so reading several properties on the same frame scans
   the pixels only once: a writer that changes pixels in place without advancing `cnt0` or the write
@@ -228,7 +231,9 @@ Common properties:
   `statusmsg`. `@waitfor p.<name>` waits until the process stops; a clean exit, which removes its
   processinfo file, counts.
 
-`@get --json <entity>` lists everything an entity provides.
+`@get --json <entity>` lists everything an entity provides. A failed read says why on stderr:
+`milk: s.cam.xsize: no such stream` (`local image`, `FPS`, `process`), `no such property`, or
+`no match` for a glob.
 
 ### Writing and Actions
 
@@ -237,7 +242,7 @@ Common properties:
 @set f.loop.gain = 0.25            # same, '=' may be spaced
 @set f.loop.gain=0.25 f.loop.mult=0.99   # several in one call
 @set 'f.dm*.xsize' = 128           # every match of a glob
-@set s.cam.kw.OBS=night "comment"  # FITS keyword, optional comment
+@set s.cam.kw.OBS=night "comment"  # FITS keyword (<=15-char name/str), comment
 @set f.loop.conf=start             # FPS: conf=start|stop|step, run=start|stop, once done
 @set p.loop.ctrl=pause             # processinfo control: run pause step stop ...
 @set p.loop.pause                  # same, as an action
@@ -269,7 +274,7 @@ sweep_gain() {
 ```bash
 @exists s.cam && echo yes          # exit status 0 if the entity exists
 @exists -r f.loop                  # 0 if the FPS or process also runs
-@ls                                # table of streams, FPS and processes
+@ls                                # streams, FPS and processes, one per line (-l: a table)
 @ls 's.cam*'                       # one namespace, with a glob
 @ls -a list 'f.*'                  # names into an array (also -1, -l)
 @ls --json                         # JSON snapshot
@@ -366,10 +371,10 @@ snippet, on each frame of a trigger stream or on a timer, without C code: see
 @assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
 @assert --running --fps-min 500 s.cam "camera stalled"
 @assert --max-age 0.1 --cnt-min 100 --dim 128x128 s.cam   # last frame at most 0.1 s old, ...
-@assert s.dark -m "no dark"                   # an entity alone: it exists (-e, --exists)
+@assert s.dark -m "no dark"                   # an entity alone: it exists (--exists)
 @log -n 20                                    # recent milk commands, timing and output
 @session                                      # the session in use (see Sessions)
-@config prompt preset std                     # live telemetry in the prompt
+@config prompt preset std                     # live telemetry in the bash prompt
 @config                                       # digits, precision, procinfo
 ```
 
@@ -390,10 +395,12 @@ for `@restore --undo`, `@session save`, and `@log` details.
 
 - `milk-cli -s`, `milk-cli -c` and piped input exit with the status of the last command, and `$?`
   carries over from one input line to the next.
-- A failed `@{…}` expands to an empty string after its message: `milk: @{s.cam.xsize}: inline
-  expansion failed` for an entity, the calculator's error for an expression. An assignment such as
+- A failed `@{…}` expands to an empty string after its message: `@get`'s for an entity (`milk:
+  s.cam.xsize: no such stream`), the calculator's error for an expression. An assignment such as
   `x=@{s.cam.xsize}` also returns its status. With `MILK_STRICT=1`
-  the failure ends the script with that status, as with `set -u`; at a prompt it is only reported.
+  the failure ends the script with that status, as with `set -u`; at a prompt it is only reported
+  (note: on bash older than 5.3 or with `MILK_BASH_NO_FUNSUB=1`, `@{…}` inside a larger word falls back to
+  `$(…)`, so failure there exits only that subshell rather than the outer script).
 - Calculator errors are printed even in quiet mode (`milk: calc error: ... in '<expr>'`, with the
   line in text of several lines). `@calc` exits 1 when the calculation fails (sizes that do not
   match, ...) and 2 for a syntax error, an unknown name or a wrong number of arguments; `@test`
@@ -428,7 +435,8 @@ Measured on a recent desktop machine (see `test_perf_latency_ceilings` in
 
 Prefer `-v`, `-a`, `-A` and `NAME=@{…}` over `$(…)` and over `@{…}` inside longer words in loops,
 group work with `@pipe`, and use `@sleep` rather than `sleep` for short waits. On bash older than
-5.3, `@{…}` inside a word falls back to `$(…)` and costs a fork; `NAME=@{…}` does not. For image
+5.3 (or with `MILK_BASH_NO_FUNSUB=1`), `@{…}` inside a word falls back to `$(…)`: it costs a fork
+and runs in a subshell (so `MILK_STRICT=1` exits only that subshell); `NAME=@{…}` does not. For image
 expression fusion, slice/broadcast views, and temporary pool reuse, see
 **[Calculator & Scripted Compute Units — Fusion & Cost Model](calculator.md#fusion-cost-model)**.
 
@@ -454,14 +462,16 @@ this list:
   `--dry-run`, `@log -a` → `--all`, `@assert -e` → `--exists`;
 - `@listim`, `@mem.listim`, `listim` → `mem.listim`; `@ci` → `milk.ci`;
 - `@ x = e` → `@calc "x = e"`, or `@calc -v x "e"` to read the value into `$x`;
-- `@s.cam.xsize` → `@get s.cam.xsize`, `@f.loop.gain=0.2` → `@set f.loop.gain=0.2`, inline
-  `@s.cam.cnt0` and `${@s.cam.xsize}` → `@{s.cam.cnt0}`, `@s.x` inside calculator text → `s.x`;
+- `@s.cam.xsize` → `@get s.cam.xsize`, `@f.loop.gain=0.2` → `@set f.loop.gain=0.2`; inline
+  `@s.cam.cnt0` and `${@s.cam.xsize}` → `@{s.cam.cnt0}` (the old forms are plain text, or a bash
+  error, now: nothing names their replacement); `@s.x` inside calculator text is still read as
+  `s.x`;
 - `@batch` → `@pipe`, `@streamcat` → `@grab --stdout`, `@streamwrite` → `@replay --stdin`,
   `@usleep` → `@sleep`, `@procwait` → `@waitfor p.<name>.status=...`;
 - `@mload`, `@mloadas` → `@module load [--as]`; `@dpdigits` → `@config digits`; the history and
   help words → `@history`, `@help`, `-h`;
 - `include_once` → `@source --once`, `source x.milk` → `@source x.milk`, `exitCLI` → `exit`;
-- `cmd .tag value` → `cmd --default .tag=value`;
+- `cmd .tag value` → `cmd .tag=value` (`cmd --default .tag=value` to keep it for the next calls);
 - in calculator text: `ln` → `log`, `fabs` → `abs`, `urand` → `rand`, `grand` → `randn`, `nrm2` →
   `norm`, `trunc(x, lo, hi)` → `clamp(x, lo, hi)`, `_PI` → `pi` (the other `_`-constants: write the
   value), `if ... end` and `for ... end` → braces;

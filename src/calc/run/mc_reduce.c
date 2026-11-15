@@ -347,9 +347,12 @@ int mc_prepare_red_src(const mc_expr_t *e,
                 out->ops[i].scalar = (d->slice_expr != NULL && d->scalar_expr == NULL)
                                          ? (double) arith_next_rng_seed()
                                          : 0.0;
-                if ((d->scalar_expr != NULL &&
-                     mc_eval_scalar_d(d->scalar_expr, &out->ops[i].scalar, err, errsz) != 0) ||
-                    (d->check_div_kind != 0 && out->ops[i].scalar == 0.0))
+                int quiet          = mc_scalar_quiet_div(d->is_guarded);
+                int ev = (d->scalar_expr != NULL)
+                             ? mc_eval_scalar_d(d->scalar_expr, &out->ops[i].scalar, err, errsz)
+                             : 0;
+                mc_scalar_quiet_div(quiet);
+                if (ev != 0 || (d->check_div_kind != 0 && out->ops[i].scalar == 0.0))
                 {
                     if (d->check_div_kind != 0 && out->ops[i].scalar == 0.0)
                     {
@@ -1236,7 +1239,7 @@ static void cent_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
                 for (int i = 0; i < N; i++)
                 {
                     float v  = s[i] - thf;
-                    float ip = (v > 0.0f) ? v : 0.0f;
+                    float ip = (v > 0.0f && !arith_isnan_f(v)) ? v : 0.0f; /* NaN: skipped */
                     ri += ip;
                     rxi += (x0 + (float) i) * ip;
                 }
@@ -1254,7 +1257,7 @@ static void cent_job_cb(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
                 for (int i = 0; i < N; i++)
                 {
                     double v  = (is_flt ? (double) pf[J + i] : s[i]) - th;
-                    double ip = (v > 0.0) ? v : 0.0;
+                    double ip = (v > 0.0 && !arith_isnan_d(v)) ? v : 0.0; /* NaN: skipped */
                     ri += ip;
                     rxi += (x0 + (double) i) * ip;
                 }

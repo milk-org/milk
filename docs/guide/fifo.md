@@ -43,7 +43,7 @@ The `milk-cli` session shows ingestion feedback:
 | ------------------------- | ----------------------------------------------------------- |
 | `milk.fifo create [path]` | Create and open a new FIFO. Auto-generates path if omitted. |
 | `milk.fifo open <path>`   | Connect to an existing FIFO at the given path.              |
-| `milk.fifo close`         | Close and remove the current FIFO.                          |
+| `milk.fifo close`         | Close the current FIFO; remove it if `milk-cli` created it. |
 | `milk.fifo on`            | Re-enable FIFO input (after `milk.fifo off`).               |
 | `milk.fifo off`           | Temporarily disable FIFO input without destroying the pipe. |
 | `milk.fifo status`        | Print current FIFO state, path, and file descriptor.        |
@@ -51,10 +51,11 @@ The `milk-cli` session shows ingestion feedback:
 
 When `milk.fifo create` is called without a path (or `-f` is passed at startup), the default path is
 `$MILK_SHM_DIR/.<processname>.fifo.<07d-PID>` (for example, `/milk/shm/.myctl.fifo.0012345` when
-started with `milk-cli -n myctl -f`).
+started with `milk-cli -n myctl -f`). Without `-n`, the process name is `<epoch-seconds>p<PID>`.
 
-A fifo that `milk-cli` creates can be read and written by its user only. An existing path must be a
-fifo of that user that not everyone can write; it is removed when `milk-cli` exits.
+A fifo that `milk-cli` creates can be read and written by its user only, and is removed when it is
+closed or `milk-cli` exits. An existing path must be a fifo of that user that not everyone can
+write; `milk-cli` leaves it in place.
 
 ## Startup Flags
 
@@ -67,6 +68,9 @@ FIFOs can also be enabled at startup:
 
 These are equivalent to running `milk.fifo create` or `milk.fifo create <path>` immediately after
 startup.
+
+While its fifo is read, `milk-cli` outlives the end of a piped or redirected standard input (a
+script's background job reads `/dev/null`): it ends on `exit`, from either input, or on a signal.
 
 ## Examples
 
@@ -88,7 +92,7 @@ Process a list of images and save specific ones based on metadata:
 
 ```text
 milk-cli > milk.fifo create /tmp/myctl.fifo
-milk-cli > awk '{if ($4>200) print "iofits.saveFITS " $2 " " $2 "_save.fits"}' imlist.txt > /tmp/myctl.fifo
+milk-cli > awk '{if ($5>200) print "iofits.saveFITS " $1 " " $1 "_save.fits"}' imlist.txt > /tmp/myctl.fifo
 ```
 
 Each generated command appears with ingestion feedback:
@@ -130,7 +134,7 @@ Combine `find`, `xargs`, and a FIFO to batch-process files:
 
 ```text
 milk-cli > milk.fifo create /tmp/myctl.fifo
-milk-cli > find /data/frames -name "*.fits" | xargs -I {} echo "iofits.loadfits {} frame" > /tmp/myctl.fifo
+milk-cli > find /data/frames -name "*.fits" | xargs -I {} echo "iofits.loadfits {} frame ." > /tmp/myctl.fifo
 ```
 
 ### Scripted FIFO Workflow

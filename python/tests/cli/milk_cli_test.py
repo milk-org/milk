@@ -32,6 +32,7 @@ import time
 
 from milk.cliwrap import (
     HAVE_CLI,
+    HAVE_TREESITTER,
     MILK_CLI_EXEC,
 )
 from tests.cli.conftest import (
@@ -254,3 +255,165 @@ def test_binaries_locate_their_own_install(tmp_path):
         [str(inst / "bin" / "milk-script"), "-q", str(f)], env, 20, cwd=str(tmp_path)
     )
     assert value(res.stdout, "dir") == "/nonexistent", res.stdout + res.stderr
+
+
+def test_milk_cli_rejects_removed_idle_option(tmp_path):
+    """`milk-cli --idle` (stop the shell while X is in use via the never-installed runidle) is removed."""
+    res = milk_bash(
+        'milk-cli -q --idle -c "echo IDLE_RAN" 2>&1; echo "rc=$?"\n'
+        '@help cmdopts 2>&1 | grep -c -- "--idle " || true',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "runidle" not in out, out
+    # getopt reads `--idle` as an abbreviation of --idle-timeout, which then needs a number
+    assert "--idle-timeout needs a number of seconds" in out, out
+    assert "IDLE_RAN" not in out and "rc=0" not in out, out
+    assert out.rstrip().endswith("0"), out
+
+
+def test_quiet_cli_prints_only_what_the_commands_print(tmp_path):
+    """`milk-cli -q` with -c, -s or piped input adds no blank line of its own."""
+    res = milk_bash(
+        "printf 'echo hi\\n' > s.milk\n"
+        'a=$(milk-cli -q -c "echo hi" | wc -c); b=$(milk-cli -q -s s.milk | wc -c)\n'
+        'c=$(echo "echo hi" | milk-cli -q | wc -c); echo "n=$a $b $c"',
+        tmp_path,
+    )
+    assert value(res.stdout, "n") == "3 3 3", res.stdout + res.stderr
+
+
+def test_cmd_string_runs_whole(tmp_path):
+    """`milk-cli -c` runs the whole string, however long, and exits with its status."""
+    res = milk_bash(
+        "s=$(printf %05000d 0)\n"
+        'milk-cli -q -c "x=$s; echo len=\\${#x}; exit 3"; echo "rc=$?"',
+        tmp_path,
+    )
+    assert value(res.stdout, "len") == "5000", res.stdout + res.stderr
+    assert value(res.stdout, "rc") == "3", res.stdout + res.stderr
+
+
+def test_script_arguments_reach_the_script(tmp_path):
+    """`milk-cli -s file args` and `milk-script file args` set $0 to the file and $1.. to args."""
+    f = tmp_path / "a.milk"
+    f.write_text('echo "zero=$(basename "$0")"; echo "args=$1|$2|$#"\n')
+    env, shm_dir = _isolated_shm_env()
+    try:
+        res = _run(
+            [MILK_CLI_EXEC, "-q", "-s", str(f), "x y", "-e"], env, 20, cwd=str(tmp_path)
+        )
+    finally:
+        shutil.rmtree(shm_dir, ignore_errors=True)
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "args") == "x y|-e|2", out
+    assert value(res.stdout, "zero") == "a.milk", out
+    res = milk_script(f.read_text(), tmp_path, args=["p", "q"])
+    assert value(res.stdout, "args") == "p|q|2", res.stdout + res.stderr
+
+
+def test_history_stats_typed_and_piped_save(tmp_path):
+    """@history --stats lists the module commands run, not the commands behind keywords; piped
+    milk-cli has no prompt history: @history save refuses (2) and writes nothing."""
+    res = milk_bash(
+        "printf 'mem.listim >/dev/null\\n@config synhl off >/dev/null\\n@history >/dev/null\\n"
+        '@help @history >/dev/null\\n@history --stats\\n@history save hs.milk; echo "save=$?"\\n\''
+        " | milk-cli -q 2>err.txt",
+        tmp_path,
+    )
+    rows = re.findall(r"^\s+(\S+)\s+(\d+)$", res.stdout, re.M)
+    assert rows == [("mem.listim", "1")], res.stdout
+    assert "save=2" in res.stdout, res.stdout
+    assert "@history save: at the milk-cli prompt" in (tmp_path / "err.txt").read_text()
+    assert not (tmp_path / "hs.milk").exists()
+
+
+def test_milk_script_stdout_is_the_script_output(tmp_path):
+    """A script's stdout is its data: no MILK_SHM_DIR line, '.' dots or LOADED lines."""
+    f = tmp_path / "s.milk"
+    f.write_text('#!/usr/bin/env milk-script\necho "data=$1"\n')
+    f.chmod(0o755)
+    res = milk_bash(f'env -u MILK_QUIET "{f}" 7', tmp_path)
+    assert res.stdout == "data=7\n", res.stdout + res.stderr
+    assert res.returncode == 0, res.stdout + res.stderr
+
+
+def test_top_level_break_and_continue_do_not_abort_coprocess(tmp_path):
+    """Top-level `break`/`continue` in milk-cli/milk-script stay bounded and keep vars (`front-1`)."""
+    res = milk_bash(
+        "milk-cli -q -c 'declare -A m=([k]=v); continue; echo \"after_cont=${m[k]}\"'\n"
+        "milk-cli -q -c 'declare -A m=([k]=w); break; echo \"after_brk=${m[k]}\"'\n"
+        'printf "x=kept\\ncontinue\\necho piped=\\$x\\n" | milk-cli -q',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert "after_cont=v" in out, out
+    assert "after_brk=w" in out, out
+    assert "piped=kept" in out, out
+
+
+@pytest.mark.skipif(not HAVE_TREESITTER, reason="milk-cli built without tree-sitter")
+def test_format_preserves_heredoc_and_multiline_quotes(tmp_path):
+    """`milk-cli --format` keeps heredoc bodies, terminators and quoted multiline strings (`front-3`)."""
+    src = tmp_path / "fmt.milk"
+    script = (
+        "if true; then\n"
+        "cat <<'EOF'\n"
+        "  keep indent\n"
+        "if\n"
+        "EOF\n"
+        'msg="line1   \n'
+        '   line2"\n'
+        "fi\n"
+    )
+    src.write_text(script)
+    res = milk_bash(f'milk-cli --format "{src}"', tmp_path)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert (
+        "\ncat <<'EOF'\n" in res.stdout or "\n    cat <<'EOF'\n" in res.stdout
+    ), res.stdout
+    assert "\n  keep indent\nif\nEOF\n" in res.stdout, res.stdout
+    assert (
+        'msg="line1   \n   line2"\n' in res.stdout
+        or '    msg="line1   \n   line2"\n' in res.stdout
+    ), res.stdout
+
+
+def test_exit_invalid_and_edge_arguments(tmp_path):
+    """`exit` with invalid/empty/octal/multi args matches bash exit semantics (`front-9`)."""
+    res = milk_bash(
+        "for c in 'exit \"\"' 'exit abc' 'exit 3x' 'exit 0x10' 'exit 1e2'; do\n"
+        '  milk-cli -q -c "$c" >/dev/null 2>&1; echo "bad=$?"\n'
+        "done\n"
+        'milk-cli -q -c "exit 010"; echo "oct=$?"\n'
+        'milk-cli -q -c "exit \\" 5 \\""; echo "spc=$?"\n'
+        'milk-cli -q -c "exit -- 7"; echo "dd=$?"\n'
+        'milk-cli -q -c "exit 1 2" >/dev/null 2>tma.err; echo "tma=$?"\n'
+        'grep -q "too many arguments" tma.err && echo "tma_msg=ok"\n'
+        'out_cont=$(milk-cli -q -c "exit abc; echo still=\\$?" 2>bad.err)\n'
+        'echo "$out_cont"; echo "nmsg=$(grep -c "numeric argument required" bad.err)"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert out.count("bad=2") == 5, out
+    assert "oct=10" in out, out
+    assert "spc=5" in out, out
+    assert "dd=7" in out, out
+    assert "tma=1" in out and "tma_msg=ok" in out, out
+    assert "still=2" in out and "nmsg=1" in out, out
+
+
+def test_startup_file_long_path_fifo_and_direct(tmp_path):
+    """`-s` accepts startup script paths exceeding 256 bytes in direct and `-f` FIFO modes (`front-11`)."""
+    deep = tmp_path / ("d_" + "a" * 90) / ("d_" + "b" * 90) / ("d_" + "c" * 90)
+    deep.mkdir(parents=True)
+    scr = deep / "long_startup.milk"
+    assert len(str(scr)) > 260
+    scr.write_text('echo "LONG_""S_OK"\nexit 0\n')
+    res = milk_bash(
+        f'milk-cli -q -s "{scr}"\n' f'timeout 10 milk-cli -q -f -n longp -s "{scr}"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert res.returncode == 0, out
+    assert out.count("LONG_S_OK") == 2, out

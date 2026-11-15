@@ -431,14 +431,71 @@ int milkdetach_output_rotate_if(const char *path, long long max_bytes)
     {
         return 0; // stdout is not that file
     }
-    fflush(stdout);
-    int fd = milkdetach_open_output(path, 1);
-    if (fd < 0)
+    char old[4096];
+    if (snprintf(old, sizeof(old), "%s.1", path) >= (int) sizeof(old))
     {
         return -1;
     }
-    dup2(fd, STDOUT_FILENO);
-    dup2(fd, STDERR_FILENO);
-    close(fd);
+    fflush(stdout);
+    fflush(stderr);
+    /* Copy and truncate in place so inherited O_APPEND fds (coprocesses, children) stay on path */
+    int src = open(path, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+    if (src < 0)
+    {
+        return -1;
+    }
+    int dst = open(old, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC, 0644);
+    if (dst < 0)
+    {
+        close(src);
+        return -1;
+    }
+    char buf[8192];
+    int  err = 0;
+    for (;;)
+    {
+        ssize_t n = read(src, buf, sizeof(buf));
+        if (n < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            err = -1;
+            break;
+        }
+        if (n == 0)
+        {
+            break;
+        }
+        ssize_t off = 0;
+        while (off < n)
+        {
+            ssize_t w = write(dst, buf + off, (size_t) (n - off));
+            if (w < 0)
+            {
+                if (errno == EINTR)
+                {
+                    continue;
+                }
+                err = -1;
+                break;
+            }
+            off += w;
+        }
+        if (err != 0)
+        {
+            break;
+        }
+    }
+    close(src);
+    if (close(dst) != 0)
+    {
+        err = -1;
+    }
+    if (err != 0 || ftruncate(STDOUT_FILENO, 0) != 0)
+    {
+        return -1;
+    }
     return 1;
 }

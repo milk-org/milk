@@ -484,7 +484,7 @@ imageID mc_out_prepare(mc_slot_t     *slot,
             same_shape = (im->md[0].size[a] == size[a]);
         }
 
-        if (!slot->is_local && im->md[0].shared == 1)
+        if (slot->loc != 2 && !slot->is_local && im->md[0].shared == 1)
         {
             if (im->md[0].nelement != new_nel || im->md[0].datatype != dt)
             {
@@ -511,7 +511,10 @@ imageID mc_out_prepare(mc_slot_t     *slot,
         {
             if (err != NULL && errsz > 0)
             {
-                snprintf(err, errsz, "Dimension mismatch in image assignment");
+                snprintf(err, errsz,
+                         "'%s' is a shared stream this process has open: a local image cannot "
+                         "take its name",
+                         bare);
             }
             return -1;
         }
@@ -695,6 +698,29 @@ void mc_post_flush(void *processinfo)
     g_post_n = 0;
 }
 
+void mc_post_discard(void)
+{
+    if (g_post_defer > 1)
+    {
+        g_post_defer--;
+        return;
+    }
+    g_post_defer = 0;
+    for (int i = 0; i < g_post_n; i++)
+    {
+        imageID id = g_post_ids[i];
+        if (milk_data.image != NULL && id >= 0 && id < milk_data.NB_MAX_IMAGE)
+        {
+            IMAGE *im = &milk_data.image[id];
+            if (im->used == 1 && im->md != NULL && im->md[0].shared)
+            {
+                im->md[0].write = 0;
+            }
+        }
+    }
+    g_post_n = 0;
+}
+
 /**
  * mc_post_pending - Test whether @id is queued for a deferred post
  * @id: `imageID` to look up
@@ -813,10 +839,11 @@ char *mc_format_pixel_line(imageID id)
         return NULL;
     }
     out[0] = '\0';
-#define PIX_INT(MBR)                                                                              \
-    for (uint64_t i = 0; i < n; i++)                                                              \
-    {                                                                                             \
-        pos += (size_t) sprintf(out + pos, "%s%lld", i ? " " : "", (long long) im->array.MBR[i]); \
+#define PIX_INT(MBR)                                                                       \
+    for (uint64_t i = 0; i < n; i++)                                                       \
+    {                                                                                      \
+        pos += (size_t) sprintf(out + pos, (dt == _DATATYPE_UINT64) ? "%s%llu" : "%s%lld", \
+                                i ? " " : "", (long long) im->array.MBR[i]);               \
     }
 #define PIX_REAL(MBR)                                                                  \
     for (uint64_t i = 0; i < n; i++)                                                   \

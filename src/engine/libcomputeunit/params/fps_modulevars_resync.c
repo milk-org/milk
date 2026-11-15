@@ -8,6 +8,8 @@
  *          variables via FPS_CLI_BINDING
  */
 
+#include <string.h>
+
 #include "fps_modulevars_resync.h"
 #include "fps_GetParamIndex.h"
 
@@ -82,7 +84,8 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     if (b->type == FPTYPE_FLOAT64)
     {
         double newval = *((double *) b->ptr);
-        if (fps->parray[pindex].val.f64[0] != newval)
+        /* bits, not `!=`: -Ofast takes a NaN as equal to anything, and NaN != NaN otherwise */
+        if (memcmp(&fps->parray[pindex].val.f64[0], &newval, sizeof(newval)) != 0)
         {
             fps->parray[pindex].val.f64[0] = newval;
             changed                        = 1;
@@ -91,7 +94,7 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     else if (b->type == FPTYPE_FLOAT32)
     {
         float newval = *((float *) b->ptr);
-        if (fps->parray[pindex].val.f32[0] != newval)
+        if (memcmp(&fps->parray[pindex].val.f32[0], &newval, sizeof(newval)) != 0)
         {
             fps->parray[pindex].val.f32[0] = newval;
             changed                        = 1;

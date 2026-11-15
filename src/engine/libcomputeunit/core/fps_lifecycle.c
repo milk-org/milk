@@ -37,7 +37,7 @@
  * @param bindings  Parameter bindings array
  * @param nb_b      Number of bindings
  */
-static void fps_autopopulate_trigger_stream(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
+void fps_autopopulate_trigger_stream(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
 {
     /* Find the first TRIGGER_STREAM binding */
     const char *trigger_name = NULL;

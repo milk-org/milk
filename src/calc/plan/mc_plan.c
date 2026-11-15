@@ -248,7 +248,8 @@ static int find_or_add_slot(mcalc_prog_t  *prog,
     snprintf(s->bare, sizeof(s->bare), "%s", key);
     s->loc      = (loc == 'S') ? 1 : (loc == 'L') ? 2 : 0;
     s->is_local = is_local;
-    if (im_id < 0 && key[0] != '\0' && strcmp(key, "_tmpcalc0") != 0)
+    /* a scratch slot (`_tmpcalcps<N>`, `_tmpcalcm_*`) is this program's: never another's image */
+    if (im_id < 0 && key[0] != '\0' && strncmp(key, "_tmpcalc", 8) != 0)
     {
         im_id = mc_resolve_or_autoconnect_image(s->name);
     }
@@ -291,6 +292,7 @@ static int add_pass_op(mc_pass_t *pass, const mc_op_desc_t *desc)
             desc->comp_gen_idx == o->comp_gen_idx)
         {
             pass->ops[i].is_non_pointwise |= desc->is_non_pointwise;
+            pass->ops[i].is_guarded &= desc->is_guarded;
             if (desc->check_div_kind && pass->ops[i].check_div_kind == 0)
             {
                 pass->ops[i].check_div_kind = desc->check_div_kind;
@@ -311,7 +313,8 @@ static int add_pass_op(mc_pass_t *pass, const mc_op_desc_t *desc)
  * add_scalar_op - Register a hoisted scalar sub-expression on an elementwise pass
  * @pass:   Target elementwise pass
  * @se:     Scalar AST sub-expression evaluated once prior to kernel launch
- * @div_c:  Non-zero check kind (1 = division, 2 = modulo, 3 = lut dx, 0 = none)
+ * @div_c:  Non-zero check kind (1 = division, 2 = modulo, 3 = lut dx, 0 = none), or -1 when
+ *          guarded (see plan_walk_ctx_t)
  * @non_pt: 1 if this scalar is an integer shift offset for `shift`/`roll`
  * @cg:     Comprehension generator bound index (`g * 3 + {0,1,2}`), or -1
  *
@@ -324,7 +327,8 @@ static int add_scalar_op(mc_pass_t *pass, const mc_expr_t *se, int div_c, int no
     d.is_scalar        = 1;
     d.is_non_pointwise = (uint8_t) non_pt;
     d.scalar_expr      = se;
-    d.check_div_kind   = div_c;
+    d.check_div_kind   = (div_c > 0) ? div_c : 0;
+    d.is_guarded       = (div_c < 0);
     d.comp_gen_idx     = cg;
     return (add_pass_op(pass, &d) < 0) ? -1 : 0;
 }
@@ -395,7 +399,7 @@ static int walk_pass_expr(plan_walk_ctx_t *w,
     /* Hoist pure scalar subtrees as pre-evaluated scalar pass parameters */
     if (e->res_kind != MC_RES_IMAGE)
     {
-        return add_scalar_op(w->pass, e, w->in_guarded ? 0 : div_check, non_pt, -1);
+        return add_scalar_op(w->pass, e, w->in_guarded ? -1 : div_check, non_pt, -1);
     }
 
     /* Hoist embedded constructor/prestage calls into a preceding MC_STEP_CTOR step */
@@ -701,6 +705,10 @@ static int add_pass_out(mcalc_prog_t    *prog,
     od.has_slice    = (lhs_sl != NULL && !lhs_sl->u.slice.is_mask_index);
     od.slice_expr   = lhs_sl;
     int op_idx      = add_pass_op(pass, &od);
+    if (pass->nops > 64)
+    {
+        return mc_err(err, errsz, "pass operand limit exceeded (64 images and scalar terms)");
+    }
     if (pass->nouts >= pass->cap_outs)
     {
         pass->cap_outs = (pass->cap_outs == 0) ? 4 : pass->cap_outs * 2;
@@ -887,8 +895,7 @@ static void finalize_pass_meta(mcalc_prog_t *prog, mc_pass_t *pass)
     }
     else if (s0 && od0 && sz[0] > 0 && pass->outs[0].lhs_slice == NULL && s0->existed_at_plan &&
              od0->op_naxis > 0 && od0->op_size[0] > 0 && !pass->is_complex && !pass->no_dst_bcast &&
-             (milk_data.image[s0->im_id].md[0].shared == 1 ||
-              s0->orig_dt == pass->outs[0].out_dt) &&
+             milk_data.image[s0->im_id].md[0].shared == 1 && /* as mc_exec_pass() Step 5 */
              (od0->op_naxis != nax || memcmp(sz, od0->op_size, sizeof(sz)) != 0) &&
              (sz[0] == 1 || sz[0] == od0->op_size[0]) && (sz[1] == 1 || sz[1] == od0->op_size[1]) &&
              (sz[2] == 1 || sz[2] == od0->op_size[2]))

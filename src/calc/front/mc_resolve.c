@@ -44,6 +44,7 @@
 #include "COREMOD_memory/variable_ID.h"
 #include "linalg/mc_linalg.h"
 #include "front/mc_ast.h"
+#include "plan/mc_plan.h"
 #include "mcalc_host.h"
 #include "milk_calc_ext.h"
 #include "milk_entity_ns.h"
@@ -86,6 +87,7 @@ typedef struct
     int          ncreated;
     int          ncomp_vars;
     int          def_depth;
+    int          expr_depth;
     const char  *self_init_bare;
     const IMAGE *self_init_im;
     char         created_vars[MC_MAX_CREATED_VARS][256];
@@ -302,9 +304,27 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
         }
     }
 
-    /* Check existing/auto-connected images or images created earlier in this program */
-    imageID imid = mc_resolve_or_autoconnect_image(e->u.ident.name);
-    int     cdt  = (imid == -1) ? created_var_op(ctx, bare, 0) : 0;
+    /* A unit's bound parameter (other than stream-name bindings) wins over shared streams of
+     * the same name unless prefixed with S:/L:. */
+    if (e->u.ident.loc == 0)
+    {
+        long bvid = variable_ID(bare);
+        if (bvid != -1 && mc_var_bound(bvid) && milk_data.variable[bvid].type != 3)
+        {
+            int vt             = milk_data.variable[bvid].type;
+            e->u.ident.id_kind = MC_ID_VAR;
+            e->u.ident.var_id  = bvid;
+            e->needs_image     = 0;
+            e->res_kind = (vt == 1) ? MC_RES_SCALAR_L : (vt == 2) ? MC_RES_STRING : MC_RES_SCALAR_D;
+            return 0;
+        }
+    }
+
+    /* Check existing/auto-connected images or images created earlier in this program; one the
+     * program creates (`local x = ...`) is not attached from shared memory */
+    int     cdt  = created_var_op(ctx, bare, 0);
+    imageID imid = (cdt > 0 && cdt != 255) ? image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE)
+                                           : mc_resolve_or_autoconnect_image(e->u.ident.name);
     if (imid != -1 || (cdt > 0 && cdt != 255))
     {
         e->u.ident.id_kind = MC_ID_IMAGE;
@@ -401,8 +421,11 @@ static int resolve_ident(mc_resolve_ctx_t *ctx, mc_expr_t *e)
 static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
 {
     mc_parse_ident_streamname(e->u.slice.name, e->u.slice.bare, NULL);
-    imageID imid = mc_resolve_or_autoconnect_image(e->u.slice.name); /* L:x never attaches S:x */
-    int     cdt  = (imid == -1) ? created_var_op(ctx, e->u.slice.bare, 0) : 0;
+    /* As in resolve_ident(); L:x never attaches S:x */
+    int     cdt  = created_var_op(ctx, e->u.slice.bare, 0);
+    imageID imid = (cdt > 0 && cdt != 255)
+                       ? image_ID(e->u.slice.bare, milk_data.image, milk_data.NB_MAX_IMAGE)
+                       : mc_resolve_or_autoconnect_image(e->u.slice.name);
     if (imid == -1 && (cdt <= 0 || cdt == 255))
     {
         return res_err(ctx, is_lhs ? "Target image not found for slice assignment"
@@ -425,7 +448,7 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
     set_expr_im(e, im, dt);
 
     int saved_slice_ax_sz = ctx->slice_ax_size;
-    int single            = has_sh && (e->u.slice.naxis == im_naxis) && !is_complex_dt(dt);
+    int single            = has_sh && (e->u.slice.naxis == im_naxis);
     int bad_bnd           = 0;
     int nrange = (has_sh && im_naxis > e->u.slice.naxis) ? (im_naxis - e->u.slice.naxis) : 0;
 
@@ -470,8 +493,8 @@ static int resolve_slice(mc_resolve_ctx_t *ctx, mc_expr_t *e, int is_lhs)
                           : res_err(ctx, "Invalid slice bound expression");
     }
 
-    e->u.slice.is_single_pixel = single;
-    if (single && !is_lhs)
+    e->u.slice.is_single_pixel = single && !(is_lhs && is_complex_dt(dt));
+    if (single && !is_lhs && !is_complex_dt(dt)) /* a complex pixel: see resolve_call() */
     {
         e->res_kind    = is_int_dt(dt) ? MC_RES_SCALAR_L : MC_RES_SCALAR_D;
         e->needs_image = 0;
@@ -994,6 +1017,17 @@ static int resolve_call(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
                              fn->name);
     }
 
+    /* A part of one complex pixel is a number: abs(z[3,4]) (read by eval_call()) */
+    const mc_expr_t *a0 = (nargs == 1) ? e->u.call.args[0] : NULL;
+    if (a0 != NULL && a0->kind == MC_EXPR_SLICE && a0->u.slice.is_single_pixel && a0->needs_image &&
+        (fn->id == MC_FID_real || fn->id == MC_FID_imag || fn->id == MC_FID_arg ||
+         fn->id == MC_FID_abs))
+    {
+        e->res_kind    = MC_RES_SCALAR_D;
+        e->needs_image = 0;
+        return 0;
+    }
+
     int any_im   = 0;
     int any_cplx = 0;
     int any_dbl  = 0;
@@ -1163,15 +1197,18 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     mc_tok_type_t op     = e->u.assign.op;
 
     /* In unit programs, pre-create frame-0 zero state for self-referencing recurrences */
-    if (ctx->in_unit && op == MC_TOK_ASSIGN && target->kind == MC_EXPR_IDENT)
+    if (ctx->in_unit && target->kind == MC_EXPR_IDENT && strchr(target->u.ident.name, '.') == NULL)
     {
         mc_parse_ident_streamname(target->u.ident.name, target->u.ident.bare, &target->u.ident.loc);
         const char  *tb       = target->u.ident.bare;
         const IMAGE *other_im = NULL;
-        if (variable_ID(tb) == -1 && mc_resolve_or_autoconnect_image(target->u.ident.name) == -1 &&
+        if (!(target->u.ident.loc == 0 && mc_is_reserved_const(tb)) && variable_ID(tb) == -1 &&
+            mc_resolve_or_autoconnect_image(target->u.ident.name) == -1 &&
             created_var_op(ctx, tb, 0) == 0 && mc_host_str_get(tb) == NULL &&
-            mc_expr_mentions_self(rhs, tb, (const void **) &other_im))
+            (op != MC_TOK_ASSIGN || mc_expr_mentions_self(rhs, tb, NULL)))
         {
+            /* Only now look for a shape: the search attaches the streams it meets */
+            (void) mc_expr_mentions_self(rhs, tb, (const void **) &other_im);
             ctx->self_init_bare = tb;
             ctx->self_init_im   = other_im;
             int prc             = resolve_expr(ctx, rhs, 1);
@@ -1217,10 +1254,25 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
     const char *dot1    = strchr(target->u.ident.name, '.');
     int         is_prop = (dot1 != NULL && strchr(dot1 + 1, '.') != NULL &&
                            milk_entity_ns_kind(target->u.ident.name, NULL) != MILK_NS_NONE);
-    /* As for reading a name (resolve_ident): an image first, then a variable */
-    imageID imid = is_prop ? -1 : mc_resolve_or_autoconnect_image(target->u.ident.name);
-    int     cdt  = (imid == -1 && !is_prop) ? created_var_op(ctx, bare, 0) : 0;
-    long    vid  = (is_prop || imid != -1 || (cdt > 0 && cdt != 255)) ? -1 : variable_ID(bare);
+    /* A unit's bound parameter (other than stream-name bindings) wins over shared streams of
+     * the same name unless prefixed with S:/L:. Otherwise image first, then variable. */
+    imageID imid = -1;
+    int     cdt  = 0;
+    long    vid  = -1;
+    if (!is_prop)
+    {
+        long bvid = (target->u.ident.loc == 0) ? variable_ID(bare) : -1;
+        if (bvid != -1 && mc_var_bound(bvid) && milk_data.variable[bvid].type != 3)
+        {
+            vid = bvid;
+        }
+        else
+        {
+            imid = mc_resolve_or_autoconnect_image(target->u.ident.name);
+            cdt  = (imid == -1) ? created_var_op(ctx, bare, 0) : 0;
+            vid  = (imid != -1 || (cdt > 0 && cdt != 255)) ? -1 : variable_ID(bare);
+        }
+    }
     if (!is_prop && imid == -1 && (cdt == 0 || cdt == 255) && rhs->res_kind != MC_RES_IMAGE &&
         mc_is_stream_prefix(bare))
     {
@@ -1273,7 +1325,7 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
         ((mc_host_str_get(bare) == NULL && cdt == 0) || rhs->res_kind == MC_RES_IMAGE))
     {
         return (rhs->res_kind == MC_RES_IMAGE)
-                   ? res_err(ctx, "'%s' is a variable (calculator or bash), not an image", bare)
+                   ? res_err(ctx, "'%s' not found for compound assignment", bare)
                    : res_err(ctx, "Variable not found for compound assign");
     }
 
@@ -1317,12 +1369,8 @@ static int resolve_assign(mc_resolve_ctx_t *ctx, mc_expr_t *e)
  *
  * Return: 0 on success, -1 on error
  */
-static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
+static int resolve_expr_inner(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
 {
-    if (e == NULL)
-    {
-        return -1;
-    }
     switch (e->kind)
     {
     case MC_EXPR_LONG:
@@ -1462,13 +1510,25 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
         {
             return -1;
         }
+        if (e->u.ternary.cond->res_kind == MC_RES_IMAGE && is_complex_dt(e->u.ternary.cond->res_dt))
+        {
+            return res_err(ctx, "Operator not supported for complex images; use real(), imag() or "
+                                "abs() first");
+        }
         e->needs_image = (e->u.ternary.cond->needs_image || e->u.ternary.t_expr->needs_image ||
                           e->u.ternary.f_expr->needs_image);
         e->res_kind    = e->needs_image ? MC_RES_IMAGE : e->u.ternary.t_expr->res_kind;
-        e->res_dt      = (e->u.ternary.t_expr->res_dt == _DATATYPE_DOUBLE ||
-                          e->u.ternary.f_expr->res_dt == _DATATYPE_DOUBLE)
-                             ? _DATATYPE_DOUBLE
-                             : _DATATYPE_FLOAT;
+        {
+            const mc_expr_t *te   = e->u.ternary.t_expr;
+            const mc_expr_t *fe   = e->u.ternary.f_expr;
+            int              cplx = (te->res_kind == MC_RES_IMAGE && is_complex_dt(te->res_dt)) ||
+                                    (fe->res_kind == MC_RES_IMAGE && is_complex_dt(fe->res_dt));
+            int dbl = (te->res_dt == _DATATYPE_DOUBLE || te->res_dt == _DATATYPE_COMPLEX_DOUBLE) ||
+                      (fe->res_dt == _DATATYPE_DOUBLE || fe->res_dt == _DATATYPE_COMPLEX_DOUBLE);
+            e->res_dt = cplx  ? (dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT)
+                        : dbl ? _DATATYPE_DOUBLE
+                              : _DATATYPE_FLOAT;
+        }
         if (e->needs_image)
         {
             const mc_expr_t *s_im = (e->u.ternary.t_expr->res_naxis > 0)   ? e->u.ternary.t_expr
@@ -1578,6 +1638,30 @@ static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
     }
     }
     return -1;
+}
+
+/**
+ * resolve_expr - Depth-guarded wrapper around `resolve_expr_inner`
+ * @ctx:  Active resolver context
+ * @e:    Expression AST node to resolve
+ * @nlhs: Number of LHS targets receiving @e's result
+ *
+ * Return: 0 on success, -1 on error
+ */
+static int resolve_expr(mc_resolve_ctx_t *ctx, mc_expr_t *e, int nlhs)
+{
+    if (e == NULL)
+    {
+        return -1;
+    }
+    if (++ctx->expr_depth > MC_EXPR_MAX_DEPTH)
+    {
+        ctx->expr_depth--;
+        return res_err(ctx, "expression nested too deeply (max %d)", MC_EXPR_MAX_DEPTH);
+    }
+    int rc = resolve_expr_inner(ctx, e, nlhs);
+    ctx->expr_depth--;
+    return rc;
 }
 
 /**

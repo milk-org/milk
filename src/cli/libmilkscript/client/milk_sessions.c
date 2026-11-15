@@ -414,16 +414,12 @@ int milk_srvlog_session_join(const char *name, const char *bin, char *sock, size
         return 2;
     }
     milk_srvlog_make_sock(name, sock, socksz);
-    if (milk_ipc_ping_socket(sock))
-    {
-        return 0;
-    }
     if (bin == NULL)
     {
         milk_ipc_resolve_cli_bin(NULL, b, sizeof(b));
         bin = b;
     }
-    return (milk_ipc_spawn_daemon(bin, sock, &opts) == 0) ? 0 : 1;
+    return (milk_ipc_spawn_daemon(bin, sock, &opts) >= 0) ? 0 : 1;
 }
 
 /* save FILE: the session's server writes FILE, a milk script, and FILE.d/ (milk_server_session_save()) */
@@ -945,17 +941,17 @@ static int cmd_new(int                        argc,
         return 2;
     }
     milk_srvlog_make_sock(name, sock, sizeof(sock));
-    if (milk_ipc_ping_socket(sock))
+    milk_ipc_resolve_cli_bin(hooks, bin, sizeof(bin));
+    int rc = milk_ipc_spawn_daemon(bin, sock, &opts);
+    if (rc == 1)
     {
         char other[512];
         session_other_dir(sock, other, sizeof(other));
         fprintf(stderr, "@session new: session %s exists (@session use %s)%s%s%s\n", name, name,
                 (other[0] != '\0') ? "; it runs with MILK_SHM_DIR=" : "", other,
                 (other[0] != '\0') ? ", where @session ls lists it" : "");
-        return 1;
     }
-    milk_ipc_resolve_cli_bin(hooks, bin, sizeof(bin));
-    if (milk_ipc_spawn_daemon(bin, sock, &opts) != 0)
+    if (rc != 0)
     {
         return 1;
     }
@@ -1053,14 +1049,20 @@ static int cmd_who(const char *arg, const milk_client_hooks_t *hooks)
     int has    = session_read(sock, &si);
     int inproc = has && (si.flags & MILK_SRVFLAG_INPROC);
     int n      = session_shells(sock, pids, (int) (sizeof(pids) / sizeof(pids[0])), NULL);
+    int own    = milk_ipc_is_numeric_str(name) && pid_alive((pid_t) atol(name));
 
+    if (!has && !own && n == 0 && !session_listens(sock))
+    {
+        fprintf(stderr, "@session who: no session %s\n", name);
+        return 1;
+    }
     printf("%-8s %-12s %s\n", "PID", "TTY", "CWD");
     if (inproc && pid_alive(si.srv_pid))
     {
         print_shell(si.srv_pid,
                     (si.flags & MILK_SRVFLAG_SCRIPT) ? "  (milk-script)" : "  (milk-cli)");
     }
-    else if (milk_ipc_is_numeric_str(name) && pid_alive((pid_t) atol(name)))
+    else if (own)
     {
         print_shell((pid_t) atol(name), "  (its own)");
     }

@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "mc_func.h"
+#include "mcalc.h"
 #include "milk_calc_ext.h"
 
 /* Maximum number of registered extension kernels and operators per process. */
@@ -43,7 +44,14 @@
 
 static milk_calc_ext_entry_t ext_entries_storage[CALC_EXT_MAX_ENTRIES];
 static char                  ext_names_storage[CALC_EXT_MAX_ENTRIES][64];
-static int                   ext_nentries = 0;
+static char ext_source[CALC_EXT_MAX_ENTRIES][256]; /* the file that registered it; "" milk itself */
+static int  ext_nentries = 0;
+static char g_source[256]; /* the file being loaded (mc_ext_registry_source()); "" milk itself */
+
+void mc_ext_registry_source(const char *path)
+{
+    snprintf(g_source, sizeof(g_source), "%s", (path != NULL) ? path : "");
+}
 
 /* ============================================================================================== */
 /* Parameter Struct Layout Validation                                                             */
@@ -149,18 +157,18 @@ static int check_param_set(const char                  *cname,
 /* ============================================================================================== */
 
 /**
- * milk_calc_ext_register - Validate and register a single `milk_calc_ext_entry_t` descriptor
- * @e:     Extension descriptor to register
+ * ext_check - Validate entry @e and put its bare name into @cname (64 bytes)
+ * @e:     Extension descriptor
+ * @cname: Receives the name without the quotes a macro may leave
  * @err:   Error message buffer (may be NULL)
  * @errsz: Capacity of @err in bytes
  *
- * Copies `e->name` into internal static storage (`ext_names_storage`) so the registered entry
- * remains valid even if the caller's descriptor was temporary. If an entry with the same name is
- * already registered, updates it in place.
+ * An entry of another file, or of milk itself, cannot be replaced: only the file that registered
+ * a name (an edited `.c` loaded again) registers it again.
  *
- * Return: 0 on success, -1 on validation error or registry full
+ * Return: index of the entry it replaces, CALC_EXT_MAX_ENTRIES for a new one, -1 if refused
  */
-int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t errsz)
+static int ext_check(const milk_calc_ext_entry_t *e, char *cname, char *err, size_t errsz)
 {
     if (e == NULL || e->name == NULL || e->name[0] == '\0')
     {
@@ -170,7 +178,6 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
         }
         return -1;
     }
-    char        cname[64];
     const char *np   = e->name;
     size_t      nlen = strlen(np);
     if (nlen >= 2 && np[0] == '"' && np[nlen - 1] == '"')
@@ -178,7 +185,7 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
         np++;
         nlen -= 2;
     }
-    if (nlen == 0 || nlen >= sizeof(cname))
+    if (nlen == 0 || nlen >= 64)
     {
         if (err != NULL && errsz > 0)
         {
@@ -224,13 +231,55 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
     {
         if (strcmp(ext_entries_storage[i].name, cname) == 0)
         {
-            snprintf(ext_names_storage[i], sizeof(ext_names_storage[i]), "%s", cname);
-            ext_entries_storage[i]      = *e;
-            ext_entries_storage[i].name = ext_names_storage[i];
-            return 0;
+            if (strcmp(ext_source[i], g_source) != 0)
+            {
+                if (err != NULL && errsz > 0)
+                {
+                    snprintf(err, errsz, "extension '%s' is already defined by %s", cname,
+                             ext_source[i][0] ? ext_source[i] : "milk");
+                }
+                return -1;
+            }
+            return i;
         }
     }
-    if (ext_nentries >= CALC_EXT_MAX_ENTRIES)
+    return CALC_EXT_MAX_ENTRIES;
+}
+
+/** ext_store - Store checked entry @e (bare name @cname) at index @i, or as a new one */
+static void ext_store(const milk_calc_ext_entry_t *e, const char *cname, int i)
+{
+    if (i >= ext_nentries)
+    {
+        i = ext_nentries++;
+    }
+    snprintf(ext_names_storage[i], sizeof(ext_names_storage[i]), "%s", cname);
+    snprintf(ext_source[i], sizeof(ext_source[i]), "%s", g_source);
+    ext_entries_storage[i]      = *e;
+    ext_entries_storage[i].name = ext_names_storage[i];
+}
+
+/**
+ * milk_calc_ext_register - Validate and register a single `milk_calc_ext_entry_t` descriptor
+ * @e:     Extension descriptor to register
+ * @err:   Error message buffer (may be NULL)
+ * @errsz: Capacity of @err in bytes
+ *
+ * Copies `e->name` into internal static storage (`ext_names_storage`) so the registered entry
+ * remains valid even if the caller's descriptor was temporary. An entry registered again by the
+ * file that registered it is updated in place.
+ *
+ * Return: 0 on success, -1 on validation error or registry full
+ */
+int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t errsz)
+{
+    char cname[64];
+    int  i = ext_check(e, cname, err, errsz);
+    if (i < 0)
+    {
+        return -1;
+    }
+    if (i >= ext_nentries && ext_nentries >= CALC_EXT_MAX_ENTRIES)
     {
         if (err != NULL && errsz > 0)
         {
@@ -239,10 +288,7 @@ int milk_calc_ext_register(const milk_calc_ext_entry_t *e, char *err, size_t err
         }
         return -1;
     }
-    snprintf(ext_names_storage[ext_nentries], sizeof(ext_names_storage[ext_nentries]), "%s", cname);
-    ext_entries_storage[ext_nentries]      = *e;
-    ext_entries_storage[ext_nentries].name = ext_names_storage[ext_nentries];
-    ext_nentries++;
+    ext_store(e, cname, i);
     return 0;
 }
 
@@ -269,12 +315,51 @@ int milk_calc_ext_register_table(const milk_calc_ext_table_t *tbl, char *err, si
         }
         return -1;
     }
+    if (tbl->nentries < 0 || tbl->nentries > CALC_EXT_MAX_ENTRIES)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "extension table of %d entries", tbl->nentries);
+        }
+        return -1;
+    }
+    /* check every entry before storing any: a library refused at its second entry must not leave
+     * its first one registered, pointing into code that is unloaded next */
+    char cname[CALC_EXT_MAX_ENTRIES][64];
+    int  at[CALC_EXT_MAX_ENTRIES];
+    int  nnew = 0;
     for (int i = 0; i < tbl->nentries; i++)
     {
-        if (milk_calc_ext_register(tbl->entries[i], err, errsz) != 0)
+        at[i] = ext_check(tbl->entries[i], cname[i], err, errsz);
+        if (at[i] < 0)
         {
             return -1;
         }
+        for (int j = 0; j < i; j++)
+        {
+            if (strcmp(cname[j], cname[i]) == 0)
+            {
+                if (err != NULL && errsz > 0)
+                {
+                    snprintf(err, errsz, "extension '%s' is defined twice", cname[i]);
+                }
+                return -1;
+            }
+        }
+        nnew += (at[i] >= ext_nentries);
+    }
+    if (ext_nentries + nnew > CALC_EXT_MAX_ENTRIES)
+    {
+        if (err != NULL && errsz > 0)
+        {
+            snprintf(err, errsz, "too many registered calc extensions (max %d)",
+                     CALC_EXT_MAX_ENTRIES);
+        }
+        return -1;
+    }
+    for (int i = 0; i < tbl->nentries; i++)
+    {
+        ext_store(tbl->entries[i], cname[i], at[i]);
     }
     return 0;
 }

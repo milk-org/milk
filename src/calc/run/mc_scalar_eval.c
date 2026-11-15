@@ -60,11 +60,15 @@
 
 #define MC_FOR_MAX_ITER 100000
 
+static int  g_for_depth; /* for statements running, the outermost first */
+static long g_for_iters; /* iterations of the outermost one and of the loops nested in it */
+
 /* ========================================================================= */
 /* Runtime Context State and Pixel/Variable Access Helpers                   */
 /* ========================================================================= */
 
 static long g_slice_end_val = -1;
+static int  g_quiet_div; /* 1 for a pass operand in a select: x / 0 gives inf or NaN, as a pass */
 
 /**
  * mc_scalar_set_slice_end - Set the active axis `end` index for slice bound evaluation
@@ -73,6 +77,13 @@ static long g_slice_end_val = -1;
 void mc_scalar_set_slice_end(long end_val)
 {
     g_slice_end_val = end_val;
+}
+
+int mc_scalar_quiet_div(int on)
+{
+    int prev    = g_quiet_div;
+    g_quiet_div = on;
+    return prev;
 }
 
 /** to_double() - Convert scalar value @v (`MC_VAL_LONG` or `MC_VAL_DOUBLE`) to `double`. */
@@ -96,6 +107,10 @@ static void read_im_pix_val(const IMAGE *im, uint64_t ii, mc_val_t *out)
     out->dval = (double) im->array.MBR[ii];
     MILK_FOR_EACH_DATATYPE(dt, READ_V_BODY, READ_V_BODY(D))
 #undef READ_V_BODY
+    if (dt == _DATATYPE_UINT64 && im->array.UI64[ii] > (uint64_t) INT64_MAX)
+    {
+        out->type = MC_VAL_DOUBLE; /* as u64() of a number: past int64, a double */
+    }
 }
 
 /** read_im_pix_d() - Read pixel @ii from image @im promoted to `double`. */
@@ -281,6 +296,8 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
                   gone ? gone : "");
 }
 
+static int eval_expr_depth(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz, int depth);
+
 /**
  * resolve_single_pix_idx - Evaluate per-axis coordinates of a single-pixel slice `im[i, j, k]`
  * @s_expr: Slice expression node (`MC_EXPR_SLICE` with `is_single_pixel == 1`)
@@ -288,17 +305,19 @@ static int eval_ident(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz
  * @out_ii: Output 0-based flat pixel index within `@out_im`
  * @err:    Error message buffer
  * @errsz:  Size of @err buffer in bytes
+ * @depth:  Current expression recursion depth
  *
  * Supports negative wrap-around indices (`-1` -> `size[ax] - 1`) and binds
  * `g_slice_end_val` on each axis so `end` evaluates to the last valid index.
  *
  * Return: 0 on success, -1 if the image is missing or an index is out of bounds
  */
-static int resolve_single_pix_idx(const mc_expr_t *s_expr,
-                                  IMAGE          **out_im,
-                                  uint64_t        *out_ii,
-                                  char            *err,
-                                  size_t           errsz)
+static __attribute__((noinline)) int resolve_single_pix_idx(const mc_expr_t *s_expr,
+                                                            IMAGE          **out_im,
+                                                            uint64_t        *out_ii,
+                                                            char            *err,
+                                                            size_t           errsz,
+                                                            int              depth)
 {
     long imid = s_expr->u.slice.im_id;
     if (imid < 0 || imid >= milk_data.NB_MAX_IMAGE || !milk_data.image[imid].used)
@@ -319,16 +338,18 @@ static int resolve_single_pix_idx(const mc_expr_t *s_expr,
         mc_val_t v;
         long     saved_end = g_slice_end_val;
         g_slice_end_val    = (long) ssz[ax] - 1;
-        int rc             = mc_scalar_eval_expr(s_expr->u.slice.axes[ax].start, &v, err, errsz);
-        g_slice_end_val    = saved_end;
-        int32_t raw        = (v.type == MC_VAL_LONG) ? (int32_t) v.lval : (int32_t) llround(v.dval);
-        int32_t sz         = (int32_t) ssz[ax];
-        int32_t pos        = (raw < 0) ? (sz + raw) : raw;
-        if (rc != 0 || pos < 0 || pos >= sz)
+        int rc = eval_expr_depth(s_expr->u.slice.axes[ax].start, &v, err, errsz, depth + 1);
+        g_slice_end_val = saved_end;
+        if (rc != 0)
         {
-            return (rc != 0) ? -1
-                             : mc_err(err, errsz, "axis %d start %d out of bounds for size %d", ax,
-                                      raw, sz);
+            return -1;
+        }
+        int32_t raw = (v.type == MC_VAL_LONG) ? (int32_t) v.lval : (int32_t) llround(v.dval);
+        int32_t sz  = (int32_t) ssz[ax];
+        int32_t pos = (raw < 0) ? (sz + raw) : raw;
+        if (pos < 0 || pos >= sz)
+        {
+            return mc_err(err, errsz, "axis %d start %d out of bounds for size %d", ax, raw, sz);
         }
         idx[ax] = pos;
     }
@@ -339,21 +360,129 @@ static int resolve_single_pix_idx(const mc_expr_t *s_expr,
 }
 
 /**
+ * eval_call_builtin - Dispatch a scalar built-in function after its arguments are evaluated
+ */
+static int eval_call_builtin(const mc_expr_t *e,
+                             const mc_func_t *fn,
+                             int              nargs,
+                             const mc_val_t  *args,
+                             mc_val_t        *out,
+                             char            *err,
+                             size_t           errsz)
+{
+    switch (fn->kind)
+    {
+    case MC_FN_SCALAR:
+        for (int i = 0; i < nargs; i++)
+        {
+            if (args[i].type == MC_VAL_STRING)
+            {
+                return mc_err(err, errsz, "String cannot be converted to number");
+            }
+        }
+        if (fn->id == MC_FID_pow)
+        {
+            mc_scalar_pow(&args[0], &args[1], out);
+            return 0;
+        }
+        if (is_int_dt(fn->cast_dt))
+        {
+            mc_scalar_cast(fn->cast_dt, &args[0], out);
+            return 0;
+        }
+        out->type = MC_VAL_DOUBLE;
+        out->dval = (nargs == 1 && fn->fn1 != NULL) ? fn->fn1(to_double(&args[0]))
+                    : (nargs == 2 && fn->fn2 != NULL)
+                        ? fn->fn2(to_double(&args[0]), to_double(&args[1]))
+                        : fn->fn3(to_double(&args[0]), to_double(&args[1]), to_double(&args[2]));
+        return 0;
+
+    case MC_FN_WHERE:
+        if (args[0].type == MC_VAL_STRING)
+        {
+            return mc_err(err, errsz, "String cannot be converted to number");
+        }
+        *out = (mc_truth(&args[0]) > 0) ? args[1] : args[2];
+        return 0;
+
+    case MC_FN_PRNG:
+    {
+        int    kind = (fn->id == MC_FID_randn) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
+        double seed = (nargs == 1) ? to_double(&args[0]) : (double) arith_next_rng_seed();
+        out->type   = MC_VAL_DOUBLE;
+        out->dval   = arith_rng_draw(kind, seed);
+        return 0;
+    }
+
+    case MC_FN_STR:
+    {
+        const char *serr = mc_scalar_str_fn(fn, args, out);
+        return (serr != NULL) ? mc_err(err, errsz, "%s", serr) : 0;
+    }
+
+    case MC_FN_CPLX:
+        if (args[0].type == MC_VAL_STRING)
+        {
+            return mc_err(err, errsz, "String cannot be converted to number");
+        }
+        if (fn->id == MC_FID_real || fn->id == MC_FID_conj)
+        {
+            *out = args[0];
+        }
+        else
+        {
+            out->type = MC_VAL_DOUBLE;
+            out->dval = (fn->id == MC_FID_imag) ? 0.0 : atan2(0.0, to_double(&args[0]));
+        }
+        return 0;
+
+    case MC_FN_PROG:
+    {
+        /* Stateful scalar exponential moving average: ema(x, alpha) */
+        double     x        = to_double(&args[0]);
+        double     a        = to_double(&args[1]);
+        long       nvid     = variable_ID("_n");
+        long       nval     = (nvid >= 0 && milk_data.variable[nvid].type == 1)
+                                  ? milk_data.variable[nvid].value.l
+                                  : (nvid >= 0 ? (long) milk_data.variable[nvid].value.f : 0);
+        int        at_n0    = (mc_prog_in_unit() && nvid >= 0 && nval == 0);
+        mc_expr_t *me       = (mc_expr_t *) e;
+        me->u.call.ema_val  = (!me->u.call.ema_init || (at_n0 && me->u.call.ema_init != 2))
+                                  ? x
+                                  : ((1.0 - a) * me->u.call.ema_val + a * x);
+        me->u.call.ema_init = at_n0 ? 2 : 1;
+        out->type           = MC_VAL_DOUBLE;
+        out->dval           = me->u.call.ema_val;
+        return 0;
+    }
+
+    default:
+        return mc_err(err, errsz, "'%s' needs an image argument", fn->name);
+    }
+}
+
+/**
  * eval_call - Evaluate a scalar-returning function call or reduction expression
  * @e:     Call expression node (`MC_EXPR_CALL`)
  * @out:   Output scalar or string value
  * @err:   Error message buffer
  * @errsz: Size of @err buffer in bytes
+ * @depth: Current expression recursion depth
  *
  * Handles 1-D lookup table interpolation `lut(x, tbl[, x0, dx])`,
  * scalar reductions (`mc_exec_reduce_scalar`), `post(stream)`, scalar math
  * (`MC_FN_SCALAR`), `where(c, a, b)`, scalar PRNG draws (`rand()`, `randn()`),
  * string functions (`MC_FN_STR`), scalar complex helpers (`real`, `imag`,
- * `arg`, `conj`), and stateful scalar `ema(x, alpha)`.
+ * `arg`, `conj`), and stateful scalar `ema(x, alpha)`. Marked `noinline` so
+ * argument arrays stay out of the recursive expression evaluator's stack frames.
  *
  * Return: 0 on success, -1 on error
  */
-static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
+static __attribute__((noinline)) int eval_call(const mc_expr_t *e,
+                                               mc_val_t        *out,
+                                               char            *err,
+                                               size_t           errsz,
+                                               int              depth)
 {
     const mc_func_t *fn = e->u.call.fn;
     if (fn == NULL)
@@ -371,14 +500,14 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
         mc_val_t dxval;
         double   x0 = 0.0;
         double   dx = 1.0;
-        if (mc_scalar_eval_expr(e->u.call.args[0], &xval, err, errsz) != 0)
+        if (eval_expr_depth(e->u.call.args[0], &xval, err, errsz, depth + 1) != 0)
         {
             return -1;
         }
         if (nargs == 4)
         {
-            if (mc_scalar_eval_expr(e->u.call.args[2], &x0val, err, errsz) != 0 ||
-                mc_scalar_eval_expr(e->u.call.args[3], &dxval, err, errsz) != 0)
+            if (eval_expr_depth(e->u.call.args[2], &x0val, err, errsz, depth + 1) != 0 ||
+                eval_expr_depth(e->u.call.args[3], &dxval, err, errsz, depth + 1) != 0)
             {
                 return -1;
             }
@@ -431,98 +560,64 @@ static int eval_call(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
             return mc_err(err, errsz, "post: unknown image '%s'", e->u.call.args[0]->u.ident.name);
         }
         mc_out_post_now(id);
-        *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = 0 };
+        out->type = MC_VAL_LONG;
+        out->lval = 0;
         return 0;
     }
 
-    mc_val_t args[MC_MAX_ARGS];
-    for (int i = 0; i < nargs; i++)
+    /* real, imag, arg or abs of one complex pixel (resolve_call() made it a number) */
+    const mc_expr_t *a0 = (nargs == 1) ? e->u.call.args[0] : NULL;
+    if (a0 != NULL && a0->kind == MC_EXPR_SLICE && a0->needs_image &&
+        (fn->kind == MC_FN_CPLX || fn->id == MC_FID_abs))
     {
-        if (mc_scalar_eval_expr(e->u.call.args[i], &args[i], err, errsz) != 0)
+        IMAGE   *im = NULL;
+        uint64_t ii = 0;
+        if (resolve_single_pix_idx(a0, &im, &ii, err, errsz, depth) != 0)
         {
             return -1;
         }
+        uint8_t dt = im->md[0].datatype;
+        double  re = (dt == _DATATYPE_COMPLEX_FLOAT)    ? im->array.CF[ii].re
+                     : (dt == _DATATYPE_COMPLEX_DOUBLE) ? im->array.CD[ii].re
+                                                        : read_im_pix_d(im, ii);
+        double  iv = (dt == _DATATYPE_COMPLEX_FLOAT)    ? im->array.CF[ii].im
+                     : (dt == _DATATYPE_COMPLEX_DOUBLE) ? im->array.CD[ii].im
+                                                        : 0.0;
+        out->type  = MC_VAL_DOUBLE;
+        out->dval  = (fn->id == MC_FID_real)   ? re
+                     : (fn->id == MC_FID_imag) ? iv
+                     : (fn->id == MC_FID_abs)  ? hypot(re, iv)
+                                               : atan2(iv, re);
+        return 0;
     }
 
-    switch (fn->kind)
+    mc_val_t  args_small[2];
+    mc_val_t *args = args_small;
+    if (nargs > 2)
     {
-    case MC_FN_SCALAR:
-        for (int i = 0; i < nargs; i++)
+        args = calloc((size_t) nargs, sizeof(mc_val_t));
+        if (args == NULL)
         {
-            if (args[i].type == MC_VAL_STRING)
-            {
-                return mc_err(err, errsz, "String cannot be converted to number");
-            }
+            return mc_err(err, errsz, "out of memory");
         }
-        if (fn->id == MC_FID_pow)
-        {
-            mc_scalar_pow(&args[0], &args[1], out);
-            return 0;
-        }
-        out->type = MC_VAL_DOUBLE;
-        out->dval = (nargs == 1 && fn->fn1 != NULL) ? fn->fn1(to_double(&args[0]))
-                    : (nargs == 2 && fn->fn2 != NULL)
-                        ? fn->fn2(to_double(&args[0]), to_double(&args[1]))
-                        : fn->fn3(to_double(&args[0]), to_double(&args[1]), to_double(&args[2]));
-        return 0;
-
-    case MC_FN_WHERE:
-        if (args[0].type == MC_VAL_STRING)
-        {
-            return mc_err(err, errsz, "String cannot be converted to number");
-        }
-        *out = (mc_truth(&args[0]) > 0) ? args[1] : args[2];
-        return 0;
-
-    case MC_FN_PRNG:
+    }
+    int rc = 0;
+    for (int i = 0; i < nargs; i++)
     {
-        int    kind = (fn->id == MC_FID_randn) ? ARITH_COORD_RANDN : ARITH_COORD_RAND;
-        double seed = (nargs == 1) ? to_double(&args[0]) : (double) arith_next_rng_seed();
-        *out        = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = arith_rng_draw(kind, seed) };
-        return 0;
-    }
-
-    case MC_FN_STR:
-    {
-        const char *serr = mc_scalar_str_fn(fn, args, out);
-        return (serr != NULL) ? mc_err(err, errsz, "%s", serr) : 0;
-    }
-
-    case MC_FN_CPLX:
-        if (args[0].type == MC_VAL_STRING)
+        if (eval_expr_depth(e->u.call.args[i], &args[i], err, errsz, depth + 1) != 0)
         {
-            return mc_err(err, errsz, "String cannot be converted to number");
+            rc = -1;
+            goto cleanup;
         }
-        *out =
-            (fn->id == MC_FID_real || fn->id == MC_FID_conj)
-                ? args[0]
-                : (mc_val_t) { .type = MC_VAL_DOUBLE,
-                               .dval = (fn->id == MC_FID_imag) ? 0.0
-                                                               : atan2(0.0, to_double(&args[0])) };
-        return 0;
+    }
+    rc = eval_call_builtin(e, fn, nargs, args, out, err, errsz);
 
-    case MC_FN_PROG:
+cleanup:
+    if (args != args_small)
     {
-        /* Stateful scalar exponential moving average: ema(x, alpha) */
-        double     x        = to_double(&args[0]);
-        double     a        = to_double(&args[1]);
-        long       nvid     = variable_ID("_n");
-        long       nval     = (nvid >= 0 && milk_data.variable[nvid].type == 1)
-                                  ? milk_data.variable[nvid].value.l
-                                  : (nvid >= 0 ? (long) milk_data.variable[nvid].value.f : 0);
-        int        at_n0    = (mc_prog_in_unit() && nvid >= 0 && nval == 0);
-        mc_expr_t *me       = (mc_expr_t *) e;
-        me->u.call.ema_val  = (!me->u.call.ema_init || (at_n0 && me->u.call.ema_init != 2))
-                                  ? x
-                                  : ((1.0 - a) * me->u.call.ema_val + a * x);
-        me->u.call.ema_init = at_n0 ? 2 : 1;
-        *out                = (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = me->u.call.ema_val };
-        return 0;
+        free(args);
     }
-
-    default:
-        return mc_err(err, errsz, "'%s' needs an image argument", fn->name);
-    }
+    return rc;
 }
 
 /**
@@ -563,10 +658,15 @@ static int apply_compound_op(mc_tok_type_t   op,
  * @out:   Output assigned value
  * @err:   Error message buffer
  * @errsz: Size of @err buffer in bytes
+ * @depth: Current expression recursion depth
  *
  * Return: 0 on success, -1 on error
  */
-static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
+static __attribute__((noinline)) int eval_assign(const mc_expr_t *e,
+                                                 mc_val_t        *out,
+                                                 char            *err,
+                                                 size_t           errsz,
+                                                 int              depth)
 {
     const mc_expr_t *target = e->u.assign.target;
     mc_tok_type_t    op     = e->u.assign.op;
@@ -578,7 +678,7 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
     if (op == MC_TOK_ASSIGN && target->kind == MC_EXPR_IDENT &&
         target->u.ident.id_kind != MC_ID_PROP)
     {
-        if (mc_scalar_eval_expr(e->u.assign.rhs, out, err, errsz) != 0)
+        if (eval_expr_depth(e->u.assign.rhs, out, err, errsz, depth + 1) != 0)
         {
             return -1;
         }
@@ -587,7 +687,7 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
     }
 
     mc_val_t rv;
-    if (mc_scalar_eval_expr(e->u.assign.rhs, &rv, err, errsz) != 0)
+    if (eval_expr_depth(e->u.assign.rhs, &rv, err, errsz, depth + 1) != 0)
     {
         return -1;
     }
@@ -604,7 +704,7 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
         }
         IMAGE   *im = NULL;
         uint64_t ii = 0;
-        if (resolve_single_pix_idx(target, &im, &ii, err, errsz) != 0)
+        if (resolve_single_pix_idx(target, &im, &ii, err, errsz, depth) != 0)
         {
             return -1;
         }
@@ -681,24 +781,93 @@ static int eval_assign(const mc_expr_t *e, mc_val_t *out, char *err, size_t errs
 /* ========================================================================= */
 
 /**
- * mc_scalar_eval_expr - Evaluate a resolved scalar expression tree into @out
- * @e:     Resolved expression node (`e->needs_image` must be 0)
- * @out:   Output scalar or string value
- * @err:   Output buffer for runtime error message (may be NULL)
- * @errsz: Size of @err buffer in bytes
- *
- * Implements short-circuit evaluation for logical `&&`/`||`, chained
- * relational comparisons (`a <= x <= b`), and ternary `c ? t : f` expressions,
- * as well as string concatenation (`+`) and string equality (`==`, `!=`).
- *
- * Return: 0 on success, -1 on runtime error
+ * eval_string_binop - Evaluate `+`, `==`, and `!=` when at least one operand is a string
  */
-int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
+static __attribute__((noinline)) int eval_string_binop(mc_tok_type_t   op,
+                                                       const mc_val_t *l,
+                                                       const mc_val_t *r,
+                                                       mc_val_t       *out,
+                                                       char           *err,
+                                                       size_t          errsz)
+{
+    char s1[MC_TOK_STR_MAX];
+    char s2[MC_TOK_STR_MAX];
+    mc_val_to_str(l, s1, sizeof(s1), 1);
+    mc_val_to_str(r, s2, sizeof(s2), 1);
+    if (op == MC_TOK_PLUS)
+    {
+        if (strlen(s1) + strlen(s2) >= sizeof(out->sval))
+        {
+            return mc_err(err, errsz, "String concatenation overflow");
+        }
+        snprintf(out->sval, sizeof(out->sval), "%s%s", s1, s2);
+        out->type = MC_VAL_STRING;
+        return 0;
+    }
+    if ((op == MC_TOK_EQ || op == MC_TOK_NE) && l->type == MC_VAL_STRING &&
+        r->type == MC_VAL_STRING)
+    {
+        int eq    = (strcmp(s1, s2) == 0);
+        out->type = MC_VAL_LONG;
+        out->lval = (op == MC_TOK_EQ) ? eq : !eq;
+        return 0;
+    }
+    return mc_err(err, errsz, "Cannot apply operator to string");
+}
+
+/**
+ * eval_chain - Evaluate a chained relational comparison `a < b < c ...`
+ */
+static __attribute__((noinline)) int eval_chain(const mc_expr_t *e,
+                                                mc_val_t        *out,
+                                                char            *err,
+                                                size_t           errsz,
+                                                int              depth)
+{
+    mc_val_t prev;
+    if (eval_expr_depth(e->u.chain.operands[0], &prev, err, errsz, depth + 1) != 0)
+    {
+        return -1;
+    }
+    for (int i = 0; i < e->u.chain.nops; i++)
+    {
+        mc_val_t cur;
+        mc_val_t cmp;
+        if (eval_expr_depth(e->u.chain.operands[i + 1], &cur, err, errsz, depth + 1) != 0)
+        {
+            return -1;
+        }
+        const char *berr = mc_scalar_binop(e->u.chain.ops[i], &prev, &cur, &cmp);
+        if (berr != NULL)
+        {
+            return mc_err(err, errsz, "%s", berr);
+        }
+        if (cmp.lval == 0)
+        {
+            out->type = MC_VAL_LONG;
+            out->lval = 0;
+            return 0;
+        }
+        prev = cur;
+    }
+    out->type = MC_VAL_LONG;
+    out->lval = 1;
+    return 0;
+}
+
+/**
+ * eval_expr_depth - Depth-bounded recursive worker for `mc_scalar_eval_expr`
+ */
+static int eval_expr_depth(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz, int depth)
 {
     if (e == NULL || e->needs_image)
     {
         return mc_err(err, errsz,
                       (e == NULL) ? "syntax error" : "a number is needed here, not an image");
+    }
+    if (depth > MC_EXPR_MAX_DEPTH)
+    {
+        return mc_err(err, errsz, "expression nested too deeply (max %d)", MC_EXPR_MAX_DEPTH);
     }
 
     switch (e->kind)
@@ -725,7 +894,8 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
     {
         IMAGE   *im = NULL;
         uint64_t ii = 0;
-        if (!e->u.slice.is_single_pixel || resolve_single_pix_idx(e, &im, &ii, err, errsz) != 0)
+        if (!e->u.slice.is_single_pixel ||
+            resolve_single_pix_idx(e, &im, &ii, err, errsz, depth) != 0)
         {
             return !e->u.slice.is_single_pixel
                        ? mc_err(err, errsz,
@@ -737,31 +907,44 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
     }
 
     case MC_EXPR_UNARY:
-    {
-        mc_val_t v;
-        if (mc_scalar_eval_expr(e->u.unary.operand, &v, err, errsz) != 0 || v.type == MC_VAL_STRING)
+        if (eval_expr_depth(e->u.unary.operand, out, err, errsz, depth + 1) != 0)
         {
-            return (v.type == MC_VAL_STRING)
-                       ? mc_err(err, errsz,
-                                (e->u.unary.op == MC_TOK_MINUS) ? "Cannot negate expression"
-                                                                : "Invalid unary op on string")
-                       : -1;
+            return -1;
         }
-        out->type = (e->u.unary.op == MC_TOK_MINUS) ? v.type : MC_VAL_LONG;
-        out->lval = (e->u.unary.op == MC_TOK_MINUS) ? (long) (-(uint64_t) v.lval)
-                    : (e->u.unary.op == MC_TOK_BNOT)
-                        ? ~((v.type == MC_VAL_LONG) ? v.lval : (long) v.dval)
-                        : !mc_truth(&v);
-        out->dval = -v.dval;
+        if (out->type == MC_VAL_STRING)
+        {
+            return mc_err(err, errsz,
+                          (e->u.unary.op == MC_TOK_MINUS) ? "Cannot negate expression"
+                                                          : "Invalid unary op on string");
+        }
+        if (e->u.unary.op == MC_TOK_MINUS && out->type == MC_VAL_LONG && out->lval == INT64_MIN)
+        {
+            out->type = MC_VAL_DOUBLE;
+            out->dval = 0x1p63; /* -INT64_MIN overflows */
+            return 0;
+        }
+        if (e->u.unary.op == MC_TOK_MINUS)
+        {
+            out->lval = (long) (-(uint64_t) out->lval);
+            out->dval = -out->dval;
+        }
+        else
+        {
+            long bv   = (e->u.unary.op == MC_TOK_BNOT)
+                            ? ~((out->type == MC_VAL_LONG) ? out->lval : (long) out->dval)
+                            : !mc_truth(out);
+            out->type = MC_VAL_LONG;
+            out->lval = bv;
+            out->dval = -out->dval;
+        }
         return 0;
-    }
 
     case MC_EXPR_BINARY:
     {
         mc_tok_type_t op = e->u.binary.op;
         mc_val_t      l;
         mc_val_t      r;
-        if (mc_scalar_eval_expr(e->u.binary.left, &l, err, errsz) != 0)
+        if (eval_expr_depth(e->u.binary.left, &l, err, errsz, depth + 1) != 0)
         {
             return -1;
         }
@@ -769,25 +952,31 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         /* Short-circuit logical && and || */
         if (op == MC_TOK_AND || op == MC_TOK_OR)
         {
-            int lt = (mc_truth(&l) > 0);
-            if (l.type != MC_VAL_STRING && ((op == MC_TOK_AND && !lt) || (op == MC_TOK_OR && lt)))
+            if (l.type == MC_VAL_STRING)
             {
-                *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = (op == MC_TOK_OR) };
+                return mc_err(err, errsz, "Logical op on string");
+            }
+            int lt = (mc_truth(&l) > 0);
+            if ((op == MC_TOK_AND && !lt) || (op == MC_TOK_OR && lt))
+            {
+                out->type = MC_VAL_LONG;
+                out->lval = (op == MC_TOK_OR);
                 return 0;
             }
-            if (l.type == MC_VAL_STRING ||
-                mc_scalar_eval_expr(e->u.binary.right, &r, err, errsz) != 0 ||
-                r.type == MC_VAL_STRING)
+            if (eval_expr_depth(e->u.binary.right, &r, err, errsz, depth + 1) != 0)
             {
-                return (l.type == MC_VAL_STRING || r.type == MC_VAL_STRING)
-                           ? mc_err(err, errsz, "Logical op on string")
-                           : -1;
+                return -1;
             }
-            *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = (mc_truth(&r) > 0) };
+            if (r.type == MC_VAL_STRING)
+            {
+                return mc_err(err, errsz, "Logical op on string");
+            }
+            out->type = MC_VAL_LONG;
+            out->lval = (mc_truth(&r) > 0);
             return 0;
         }
 
-        if (mc_scalar_eval_expr(e->u.binary.right, &r, err, errsz) != 0)
+        if (eval_expr_depth(e->u.binary.right, &r, err, errsz, depth + 1) != 0)
         {
             return -1;
         }
@@ -795,89 +984,152 @@ int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t err
         /* String concatenation (+) and equality (==, !=) */
         if (l.type == MC_VAL_STRING || r.type == MC_VAL_STRING)
         {
-            char s1[MC_TOK_STR_MAX];
-            char s2[MC_TOK_STR_MAX];
-            mc_val_to_str(&l, s1, sizeof(s1), 1);
-            mc_val_to_str(&r, s2, sizeof(s2), 1);
-            if (op == MC_TOK_PLUS)
-            {
-                if (strlen(s1) + strlen(s2) >= sizeof(out->sval))
-                {
-                    return mc_err(err, errsz, "String concatenation overflow");
-                }
-                snprintf(out->sval, sizeof(out->sval), "%s%s", s1, s2);
-                out->type = MC_VAL_STRING;
-                return 0;
-            }
-            if ((op == MC_TOK_EQ || op == MC_TOK_NE) && l.type == MC_VAL_STRING &&
-                r.type == MC_VAL_STRING)
-            {
-                int eq = (strcmp(s1, s2) == 0);
-                *out   = (mc_val_t) { .type = MC_VAL_LONG, .lval = (op == MC_TOK_EQ) ? eq : !eq };
-                return 0;
-            }
-            return mc_err(err, errsz, "Cannot apply operator to string");
+            return eval_string_binop(op, &l, &r, out, err, errsz);
         }
 
         const char *berr = mc_scalar_binop(op, &l, &r, out);
+        if (berr != NULL && g_quiet_div && (op == MC_TOK_DIV || op == MC_TOK_MOD))
+        {
+            out->type = MC_VAL_DOUBLE;
+            out->dval = (op == MC_TOK_DIV) ? to_double(&l) / 0.0 : NAN;
+            return 0;
+        }
         return (berr != NULL) ? mc_err(err, errsz, "%s", berr) : 0;
     }
 
     case MC_EXPR_CHAIN:
-    {
-        mc_val_t prev;
-        if (mc_scalar_eval_expr(e->u.chain.operands[0], &prev, err, errsz) != 0)
-        {
-            return -1;
-        }
-        for (int i = 0; i < e->u.chain.nops; i++)
-        {
-            mc_val_t cur;
-            mc_val_t cmp;
-            if (mc_scalar_eval_expr(e->u.chain.operands[i + 1], &cur, err, errsz) != 0)
-            {
-                return -1;
-            }
-            const char *berr = mc_scalar_binop(e->u.chain.ops[i], &prev, &cur, &cmp);
-            if (berr != NULL)
-            {
-                return mc_err(err, errsz, "%s", berr);
-            }
-            if (cmp.lval == 0)
-            {
-                *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = 0 };
-                return 0;
-            }
-            prev = cur;
-        }
-        *out = (mc_val_t) { .type = MC_VAL_LONG, .lval = 1 };
-        return 0;
-    }
+        return eval_chain(e, out, err, errsz, depth);
 
     case MC_EXPR_TERNARY:
-    {
-        mc_val_t cv;
-        if (mc_scalar_eval_expr(e->u.ternary.cond, &cv, err, errsz) != 0)
+        if (eval_expr_depth(e->u.ternary.cond, out, err, errsz, depth + 1) != 0)
         {
             return -1;
         }
-        if (cv.type == MC_VAL_STRING)
+        if (out->type == MC_VAL_STRING)
         {
             return mc_err(err, errsz, "Condition cannot be string");
         }
-        return mc_scalar_eval_expr((mc_truth(&cv) > 0) ? e->u.ternary.t_expr : e->u.ternary.f_expr,
-                                   out, err, errsz);
-    }
+        return eval_expr_depth((mc_truth(out) > 0) ? e->u.ternary.t_expr : e->u.ternary.f_expr, out,
+                               err, errsz, depth + 1);
 
     case MC_EXPR_CALL:
-        return eval_call(e, out, err, errsz);
+        return eval_call(e, out, err, errsz, depth);
 
     case MC_EXPR_ASSIGN:
-        return eval_assign(e, out, err, errsz);
+        return eval_assign(e, out, err, errsz, depth);
 
     default:
         return mc_err(err, errsz, "a number is needed here, not an image");
     }
+}
+
+/**
+ * mc_scalar_eval_expr - Evaluate a resolved scalar expression tree into @out
+ * @e:     Resolved expression node (`e->needs_image` must be 0)
+ * @out:   Output scalar or string value
+ * @err:   Output buffer for runtime error message (may be NULL)
+ * @errsz: Size of @err buffer in bytes
+ *
+ * Implements short-circuit evaluation for logical `&&`/`||`, chained
+ * relational comparisons (`a <= x <= b`), and ternary `c ? t : f` expressions,
+ * as well as string concatenation (`+`) and string equality (`==`, `!=`).
+ *
+ * Return: 0 on success, -1 on runtime error
+ */
+int mc_scalar_eval_expr(const mc_expr_t *e, mc_val_t *out, char *err, size_t errsz)
+{
+    return eval_expr_depth(e, out, err, errsz, 0);
+}
+
+/**
+ * exec_for - Run a `for k = start:stop[:step] { ... }` statement
+ * @s:     The for statement
+ * @err:   Output buffer for a runtime error message (may be NULL)
+ * @errsz: Size of @err in bytes
+ *
+ * Every iteration counts in g_for_iters, which the outermost running for statement resets: a nest
+ * of loops runs at most MC_FOR_MAX_ITER iterations in all.
+ *
+ * Return: 0 on success, -1 on error
+ */
+static int exec_for(const mc_stmt_t *s, char *err, size_t errsz)
+{
+    mc_val_t vstart;
+    if (mc_scalar_eval_expr(s->u.for_stmt.start, &vstart, err, errsz) != 0)
+    {
+        return -1;
+    }
+    if (vstart.type == MC_VAL_STRING)
+    {
+        return mc_err(err, errsz, "for loop bounds must be numbers");
+    }
+    long vid = -1;
+    mc_store_scalar_var(s->u.for_stmt.var, &vid, &vstart);
+    while (!mc_prog_skip_active())
+    {
+        milk_safe_point(); /* between two iterations */
+        if (mcalc_cancelled)
+        {
+            return mc_err(err, errsz, "interrupted");
+        }
+        mc_val_t vstop;
+        mc_val_t vstep = { .type = MC_VAL_LONG, .lval = 1 };
+        if (mc_scalar_eval_expr(s->u.for_stmt.stop, &vstop, err, errsz) != 0 ||
+            (s->u.for_stmt.step != NULL &&
+             mc_scalar_eval_expr(s->u.for_stmt.step, &vstep, err, errsz) != 0))
+        {
+            return -1;
+        }
+        if (vstop.type == MC_VAL_STRING || vstep.type == MC_VAL_STRING)
+        {
+            return mc_err(err, errsz, "for loop bounds must be numbers");
+        }
+        double stpv = to_double(&vstep);
+        if (stpv == 0.0 || isnan(stpv))
+        {
+            return mc_err(err, errsz, "for loop step cannot be 0");
+        }
+        if (vid < 0)
+        {
+            vid = variable_ID(s->u.for_stmt.var);
+        }
+        const VARIABLE *vv   = &milk_data.variable[vid];
+        double          cur  = (vv->type == 1) ? (double) vv->value.l : vv->value.f;
+        double          endv = to_double(&vstop);
+        double          tol  = 1e-12 * fabs(stpv);
+        if (!((stpv > 0.0) ? (cur <= endv + tol) : (cur >= endv - tol)))
+        {
+            break;
+        }
+        if (++g_for_iters > MC_FOR_MAX_ITER)
+        {
+            return mc_err(err, errsz,
+                          "for loops exceeded %d iterations (nested loops count together)",
+                          MC_FOR_MAX_ITER);
+        }
+        if (mc_exec_sub_prog((struct mcalc_prog **) &((mc_stmt_t *) s)->u.for_stmt.sub_prog,
+                             s->u.for_stmt.body, err, errsz) != 0)
+        {
+            return -1;
+        }
+        if (mc_prog_skip_active())
+        {
+            break;
+        }
+        VARIABLE *vmut = &milk_data.variable[vid];
+        int       use_l =
+            (vmut->type == 1 && (vstep.type == MC_VAL_LONG || stpv == (double) (long) stpv));
+        long step_l = use_l ? ((vstep.type == MC_VAL_LONG) ? vstep.lval : (long) stpv) : 0;
+        long next_l = 0;
+        if (use_l && __builtin_add_overflow(vmut->value.l, step_l, &next_l))
+        {
+            use_l = 0;
+        }
+        mc_val_t nextv = use_l ? (mc_val_t) { .type = MC_VAL_LONG, .lval = next_l }
+                               : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = cur + stpv };
+        mc_store_scalar_var(s->u.for_stmt.var, &vid, &nextv);
+    }
+    return 0;
 }
 
 /**
@@ -996,79 +1248,13 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
 
     case MC_STMT_FOR:
     {
-        mc_val_t vstart;
-        if (mc_scalar_eval_expr(s->u.for_stmt.start, &vstart, err, errsz) != 0)
+        if (g_for_depth++ == 0)
         {
-            return -1;
+            g_for_iters = 0;
         }
-        if (vstart.type == MC_VAL_STRING)
-        {
-            return mc_err(err, errsz, "for loop bounds must be numbers");
-        }
-        long vid = -1;
-        mc_store_scalar_var(s->u.for_stmt.var, &vid, &vstart);
-        for (int iters = 0; !mc_prog_skip_active(); iters++)
-        {
-            milk_safe_point(); /* between two iterations */
-            if (mcalc_cancelled)
-            {
-                return mc_err(err, errsz, "interrupted");
-            }
-            mc_val_t vstop;
-            mc_val_t vstep = { .type = MC_VAL_LONG, .lval = 1 };
-            if (mc_scalar_eval_expr(s->u.for_stmt.stop, &vstop, err, errsz) != 0 ||
-                (s->u.for_stmt.step != NULL &&
-                 mc_scalar_eval_expr(s->u.for_stmt.step, &vstep, err, errsz) != 0))
-            {
-                return -1;
-            }
-            if (vstop.type == MC_VAL_STRING || vstep.type == MC_VAL_STRING)
-            {
-                return mc_err(err, errsz, "for loop bounds must be numbers");
-            }
-            double stpv = to_double(&vstep);
-            if (stpv == 0.0 || isnan(stpv))
-            {
-                return mc_err(err, errsz, "for loop step cannot be 0");
-            }
-            if (vid < 0)
-            {
-                vid = variable_ID(s->u.for_stmt.var);
-            }
-            const VARIABLE *vv   = &milk_data.variable[vid];
-            double          cur  = (vv->type == 1) ? (double) vv->value.l : vv->value.f;
-            double          endv = to_double(&vstop);
-            double          tol  = 1e-12 * fabs(stpv);
-            if (!((stpv > 0.0) ? (cur <= endv + tol) : (cur >= endv - tol)))
-            {
-                break;
-            }
-            if (iters >= MC_FOR_MAX_ITER ||
-                mc_exec_sub_prog((struct mcalc_prog **) &((mc_stmt_t *) s)->u.for_stmt.sub_prog,
-                                 s->u.for_stmt.body, err, errsz) != 0)
-            {
-                return (iters >= MC_FOR_MAX_ITER)
-                           ? mc_err(err, errsz, "for loop exceeded %d iterations", MC_FOR_MAX_ITER)
-                           : -1;
-            }
-            if (mc_prog_skip_active())
-            {
-                break;
-            }
-            VARIABLE *vmut = &milk_data.variable[vid];
-            int       use_l =
-                (vmut->type == 1 && (vstep.type == MC_VAL_LONG || stpv == (double) (long) stpv));
-            long step_l = use_l ? ((vstep.type == MC_VAL_LONG) ? vstep.lval : (long) stpv) : 0;
-            long next_l = 0;
-            if (use_l && __builtin_add_overflow(vmut->value.l, step_l, &next_l))
-            {
-                use_l = 0;
-            }
-            mc_val_t nextv = use_l ? (mc_val_t) { .type = MC_VAL_LONG, .lval = next_l }
-                                   : (mc_val_t) { .type = MC_VAL_DOUBLE, .dval = cur + stpv };
-            mc_store_scalar_var(s->u.for_stmt.var, &vid, &nextv);
-        }
-        return 0;
+        int rc = exec_for(s, err, errsz);
+        g_for_depth--;
+        return rc;
     }
     }
     return -1;

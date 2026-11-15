@@ -73,8 +73,7 @@ MILK_PARAMS_DEFINE(imseminfo, FPS_PARAMS_IMSEM_INFO);
 static MILK_HOT errno_t imseminfo_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_seminfo(p_imname);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_seminfo(p_imname) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imseminfo = {
@@ -100,8 +99,8 @@ MILK_PARAMS_DEFINE(imsetsempost, FPS_PARAMS_IMSEM);
 static MILK_HOT errno_t imsetsempost_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_sempost(p_imname, p_semindex);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_set_sempost(p_imname, p_semindex) < 0) ? RETURN_FAILURE
+                                                                        : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempost = {
@@ -132,13 +131,17 @@ MILK_PARAMS_DEFINE(imsetsempostl, FPS_PARAMS);
 
 static MILK_HOT errno_t imsetsempostl_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_image_set_sempost_loop(p_imname, p_semindex, p_dtus);
+    if (COREMOD_MEMORY_image_set_sempost_loop(p_imname, p_semindex, p_dtus) < 0)
+    {
+        ret = RETURN_FAILURE;
+    }
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempostl = {
@@ -164,8 +167,8 @@ MILK_PARAMS_DEFINE(imsetsemwait, FPS_PARAMS_IMSEM);
 static MILK_HOT errno_t imsetsemwait_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_semwait(p_imname, p_semindex);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_set_semwait(p_imname, p_semindex) < 0) ? RETURN_FAILURE
+                                                                        : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemwait = {
@@ -191,8 +194,8 @@ MILK_PARAMS_DEFINE(imsetsemflush, FPS_PARAMS_IMSEM);
 static MILK_HOT errno_t imsetsemflush_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_semflush(p_imname, p_semindex);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_set_semflush(p_imname, p_semindex) < 0) ? RETURN_FAILURE
+                                                                         : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemflush = {
@@ -249,9 +252,16 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
                (int) dcimg[ID].semReadPID[s]);
     }
     printf("----------------------------------\n");
-    int semval;
-    sem_getvalue(dcimg[ID].semlog, &semval);
-    printf(" semlog = %3d\n", semval);
+    if (dcimg[ID].semlog != NULL)
+    {
+        int semval = 0;
+        sem_getvalue(dcimg[ID].semlog, &semval);
+        printf(" semlog = %3d\n", semval);
+    }
+    else
+    {
+        printf(" semlog = none\n");
+    }
     printf("----------------------------------\n");
 
     return ID;
@@ -279,6 +289,13 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
     if (ID == -1)
     {
         PRINT_WARNING("image \"%s\" not found", IDname);
+        return -1;
+    }
+
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index < -1 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
         return -1;
     }
 
@@ -350,6 +367,13 @@ imageID COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, lo
         return -1;
     }
 
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index < -1 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
+        return -1;
+    }
+
     ImageStreamIO_sempost_loop(&dcimg[ID], index, dtus);
 
     return ID;
@@ -376,6 +400,13 @@ imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
     if (ID == -1)
     {
         PRINT_WARNING("image \"%s\" not found", IDname);
+        return -1;
+    }
+
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index < 0 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
         return -1;
     }
 
@@ -441,6 +472,13 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
     if (ID == -1)
     {
         PRINT_WARNING("image \"%s\" not found", IDname);
+        return -1;
+    }
+
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
         return -1;
     }
 

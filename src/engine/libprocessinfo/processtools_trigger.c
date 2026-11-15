@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include "processinfo_internal.h"
+#include "processinfo_signals.h"
 #include "processinfo_WriteMessage.h"
 #include "processtools_trigger.h"
 #include "ImageStreamIO/ImageStreamIO.h"
@@ -207,6 +208,8 @@ errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
         else
         {
             image->semReadPID[processinfo->triggersem] = getpid();
+            /* Flush pre-existing posts so the loop starts on new frames after activation */
+            ImageStreamIO_semflush(image, processinfo->triggersem);
         }
     }
 
@@ -343,8 +346,39 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         {
             deadline = now;
         }
-        while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL) == EINTR)
+        /* Wait toward deadline in <= 20 ms slices so CTRLval=EXIT or SIGINT/TERM wakes promptly */
+        while (!processinfo_exit_requested(processinfo))
         {
+            struct timespec cur;
+            clock_gettime(CLOCK_MONOTONIC, &cur);
+            int64_t rem_ns = (int64_t) (deadline.tv_sec - cur.tv_sec) * 1000000000LL +
+                             (deadline.tv_nsec - cur.tv_nsec);
+            if (rem_ns <= 0)
+            {
+                break;
+            }
+            struct timespec target = deadline;
+            int             sliced = (rem_ns > 20000000LL);
+            if (sliced)
+            {
+                target = cur;
+                target.tv_nsec += 20000000L;
+                if (target.tv_nsec >= 1000000000L)
+                {
+                    target.tv_sec++;
+                    target.tv_nsec -= 1000000000L;
+                }
+            }
+            int rc = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+            if (rc == 0 && !sliced)
+            {
+                break;
+            }
+        }
+        if (processinfo_exit_requested(processinfo))
+        {
+            processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_TIMEDOUT;
+            return RETURN_SUCCESS;
         }
         processinfo->triggerstreamcnt++;
 
@@ -378,7 +412,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
         // is semaphore at zero ?
         DEBUG_TRACEPOINT("test sem status");
-        semr = 0;
+        int drained = 0;
+        semr        = 0;
         while (semr == 0)
         {
             // this should only run once, returning semr = -1 with errno = EAGAIN
@@ -387,14 +422,15 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             semr = ImageStreamIO_semtrywait(image, processinfo->triggersem);
             if (semr == 0)
             {
-                processinfo->triggermissedframe++;
+                drained++;
             }
         }
+        processinfo->triggermissedframe = (drained > 0) ? (drained - 1) : 0;
 
-        // expected state: NBmissedframe = 0, semr = -1, errno = EAGAIN
-        // missed frame state: NBmissedframe>0, semr = -1, errno = EAGAIN
+        // expected state: drained == 0 (no pending frame yet)
+        // missed frame state: drained > 1
         DEBUG_TRACEPOINT("triggermissedframe = %d", processinfo->triggermissedframe);
-        if (processinfo->triggermissedframe == 0)
+        if (drained == 0)
         {
             DEBUG_TRACEPOINT("timedwait");
             // add timeout

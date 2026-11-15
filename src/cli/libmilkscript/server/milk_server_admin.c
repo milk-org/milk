@@ -45,6 +45,7 @@
 #include "CLIcore.h"
 #include "CLIcore_modules.h"
 #include "CLIcore_script.h"
+#include "CLIcore_signals.h"
 #include "mcalc.h"
 #include "milk_catalog.h"
 #include "milk_cmd_args.h"
@@ -409,7 +410,8 @@ int milk_server_history(int argc, char **argv, int *handled)
         {
             const char *fe = getenv("_MILK_FRONTEND");
             if (g_srvlog_shm == NULL || !(g_srvlog_shm->flags & MILK_SRVFLAG_INPROC) ||
-                (fe != NULL && strcmp(fe, "cli") != 0))
+                (fe != NULL && strcmp(fe, "cli") != 0) ||
+                (!cli_is_interactive_mode() && strcmp(a1, "--stats") != 0)) /* piped: no prompt */
             {
                 fprintf(stderr, "@history %s: at the milk-cli prompt\n", a1);
                 return 2;

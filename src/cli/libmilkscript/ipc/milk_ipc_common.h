@@ -144,7 +144,8 @@ typedef struct
 /**
  * @brief Start a background `milk-cli -q --server` on @sockpath detached (milk_detach.h), its output
  * in the file next to its log, and wait up to 5 s for `READY=1`; a failure is printed with the
- * server's reason, or the end of its output. Return: 0 once it is ready, -1
+ * server's reason, or the end of its output. One start per @sockpath at a time. Return: 0 once it
+ * is ready, 1 when a server already answers there, -1
  */
 int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_spawn_opts_t *opts);
 

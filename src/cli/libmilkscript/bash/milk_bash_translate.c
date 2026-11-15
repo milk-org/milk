@@ -13,9 +13,9 @@
  * `NAME="@{<expr>}"` becomes `{ milkcalc -v NAME "<expr>" ...; }`, bound without a substitution;
  * any other `@{<expr>}` becomes `${| milkcalc -v REPLY "<expr>" ...; }`, or `$(milkcalc ...)`,
  * which forks, when bash is older than 5.3 ($MILK_BASH_NO_FUNSUB). Each call ends with
- * `|| __milk_inline_err` (milk.bash), which reports a failure. `@{` right after a letter, digit
- * or `_`, git's `@{1}` and `@{-1}`, and `\@{` stay as written (in double quotes, `\@{` becomes
- * `@{`). No line is added or removed, so $LINENO matches the source.
+ * `|| __milk_inline_err` (milk.bash); milkget and milkcalc report the failure. `@{` right after a
+ * letter, digit or `_`, git's `@{1}` and `@{-1}`, and `\@{` stay as written (in double quotes,
+ * `\@{` becomes `@{`). No line is added or removed, so $LINENO matches the source.
  */
 
 #ifndef _GNU_SOURCE
@@ -172,26 +172,60 @@ static size_t scan_entity_path(const char *s, int *has_eq)
     return i;
 }
 
-/** Append single-quoted `'@{body}'` error label to @out. */
-static void append_inline_label(sbuf_t *out, const char *body, size_t n)
+/** Return the offset just past the `${...}` whose `$` is at `@p[@i]` (depth @d), or @n if open. */
+static size_t param_end(const char *p, size_t n, size_t i, int d)
 {
-    sbuf_append_str(out, " '@{");
-    for (size_t k = 0; k < n; k++)
+    int depth = 0;
+    for (size_t j = i; j < n; j++)
     {
-        if (body[k] == '\'')
+        if (mbt_cx(p + j) != MSL_PARAM || mbt_dp(p + j) != d)
         {
-            sbuf_append_str(out, "'\\''");
+            continue;
         }
-        else
+        if (p[j] == '\\')
         {
-            sbuf_append_ch(out, body[k]);
+            j++;
+            continue;
+        }
+        depth += (p[j] == '{') - (p[j] == '}');
+        if (depth == 0 && p[j] == '}')
+        {
+            return j + 1;
         }
     }
-    sbuf_append_str(out, "}'");
+    return n;
 }
 
-/** Emit a `milkget` or `milkcalc` substitution for an inline `@{...}` construct. */
-static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, int dq)
+/** Append the `@{...}` body @b[0..@n) at depth @d inside double quotes: a `${...}`, `$(...)` or
+ *  backtick in it opens its own quoting context in bash, so it is copied as written; the rest is
+ *  escaped (@in_dq: @b was already inside double quotes). */
+static void emit_body(sbuf_t *out, const char *b, size_t n, int d, int in_dq)
+{
+    size_t i = 0;
+    while (i < n)
+    {
+        size_t k = i;
+        while (k < n && mbt_dp(b + k) == d && mbt_cx(b + k) != MSL_PARAM)
+        {
+            k++;
+        }
+        sbuf_append_dq_escaped(out, b + i, k - i, in_dq);
+        i = k;
+        while (k < n && mbt_dp(b + k) > d)
+        {
+            k++;
+        }
+        if (k == i && k < n)
+        {
+            k = param_end(b, n, k, d);
+        }
+        sbuf_append_mem(out, b + i, k - i);
+        i = k;
+    }
+}
+
+/** Emit a `milkget` or `milkcalc` substitution for an inline `@{...}` construct at depth @d. */
+static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, int d, int dq)
 {
     int funsub = !milk_bash_funsub_disabled();
     if (dq)
@@ -202,7 +236,7 @@ static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, in
     if (is_calc)
     {
         sbuf_append_str(out, funsub ? "milkcalc -v REPLY \"" : "milkcalc \"");
-        sbuf_append_dq_escaped(out, body, n, !dq);
+        emit_body(out, body, n, d, !dq);
         sbuf_append_ch(out, '"');
     }
     else
@@ -210,14 +244,10 @@ static void emit_inline(sbuf_t *out, int is_calc, const char *body, size_t n, in
         /* quoted as the calculator text is: bash expands `$n` in the path, and neither splits
          * the result nor matches `s.dm*.xsize` against file names */
         sbuf_append_str(out, funsub ? "milkget -v REPLY \"" : "milkget \"");
-        sbuf_append_dq_escaped(out, body, n, !dq);
+        emit_body(out, body, n, d, !dq);
         sbuf_append_ch(out, '"');
     }
     sbuf_append_str(out, " || __milk_inline_err $?");
-    if (!is_calc)
-    {
-        append_inline_label(out, body, n);
-    }
     sbuf_append_str(out, funsub ? "; }" : ")");
     if (dq)
     {
@@ -274,6 +304,11 @@ static size_t inline_close(const char *p, size_t n, size_t i, int d)
         }
         if (c == MSL_DQ && mbt_dp(p + j) == d)
         {
+            if (mbt_cx(p + j) == MSL_PARAM) /* its quotes are its own: ${n:-"2"} */
+            {
+                j = param_end(p, n, j, d) - 1;
+                continue;
+            }
             if (mbt_cx(p + j) == MSL_DQ && p[j] == '\\' && j + 1 < n)
             {
                 if (p[j + 1] == '"')
@@ -350,7 +385,7 @@ static size_t try_inline(const char *p, size_t n, size_t i, int d, sbuf_t *out)
         {
             return 0;
         }
-        emit_inline(out, entity_ref_len(b) != bn, b, bn, c != MSL_DQ);
+        emit_inline(out, entity_ref_len(b) != bn, b, bn, d, c != MSL_DQ);
         return j + 1 - i;
     }
 
@@ -496,20 +531,9 @@ static int emit_assign_inline(const char *s, size_t n, int d, sbuf_t *out)
     sbuf_append_mem(out, s, i);
     sbuf_append_str(out, is_calc ? "{ milkcalc -v " : "{ milkget -v ");
     sbuf_append_mem(out, s + i, a - i);
-    if (is_calc)
-    {
-        sbuf_append_str(out, " \"");
-        sbuf_append_dq_escaped(out, b, bn, dq);
-        sbuf_append_str(out, "\" || __milk_inline_err $? ''");
-    }
-    else
-    {
-        sbuf_append_str(out, " \"");
-        sbuf_append_dq_escaped(out, b, bn, dq);
-        sbuf_append_str(out, "\" || __milk_inline_err $?");
-        append_inline_label(out, b, bn);
-    }
-    sbuf_append_ch(out, ' ');
+    sbuf_append_str(out, " \"");
+    emit_body(out, b, bn, d, dq);
+    sbuf_append_str(out, "\" || __milk_inline_err $? ");
     sbuf_append_mem(out, s + i, a - i);
     sbuf_append_str(out, "; }");
     sbuf_append_mem(out, s + e, n - e);

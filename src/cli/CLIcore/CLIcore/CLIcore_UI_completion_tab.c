@@ -204,7 +204,70 @@ enum
  *
  * Return: COMP_LIST, COMP_FILES (readline completes file names) or COMP_SHELLVARS
  */
-static int g_comp_in_quote = 0; /* the candidates go on inside an open quote: do not close it */
+static int    g_comp_in_quote   = 0; /* candidates go on inside an open quote: do not close */
+static int    g_comp_is_calc    = 0; /* calc/@{...} text is not interpreted by bash */
+static size_t g_comp_prefix_len = 0; /* length of leading prefix preserved verbatim */
+
+/**
+ * escape_shell_candidate - Quote shell metacharacters in a completion candidate
+ * @raw:        Heap-allocated candidate string (freed or returned)
+ * @prefix_len: Leading bytes copied from the user's open-quote word (not re-escaped)
+ *
+ * Return: Newly allocated escaped candidate (caller frees), or @raw if unchanged
+ */
+static char *escape_shell_candidate(char *raw, size_t prefix_len)
+{
+    int         q    = rl_completion_quote_character;
+    const char *meta = (q == '"') ? "\"\\$`" : (q == '\'') ? "'" : " \t\n\r\\\"'`$;|&()<>#*?[]{}!~";
+    size_t      len  = strlen(raw);
+    size_t      extra = 0;
+
+    if (prefix_len > len)
+    {
+        prefix_len = len;
+    }
+    if (q == 0 && g_comp_in_quote)
+    {
+        return raw;
+    }
+    for (size_t i = prefix_len; i < len; i++)
+    {
+        if (strchr(meta, raw[i]) != NULL)
+        {
+            extra += (q == '\'') ? 3 : 1;
+        }
+    }
+    if (extra == 0)
+    {
+        return raw;
+    }
+    char *esc = malloc(len + extra + 1);
+    if (esc == NULL)
+    {
+        return raw;
+    }
+    memcpy(esc, raw, prefix_len);
+    size_t j = prefix_len;
+    for (size_t i = prefix_len; i < len; i++)
+    {
+        if (strchr(meta, raw[i]) != NULL)
+        {
+            if (q == '\'')
+            {
+                esc[j++] = '\'';
+                esc[j++] = '\\';
+                esc[j++] = '\'';
+                esc[j++] = '\'';
+                continue;
+            }
+            esc[j++] = '\\';
+        }
+        esc[j++] = raw[i];
+    }
+    esc[j] = '\0';
+    free(raw);
+    return esc;
+}
 
 static int cli_complete_list(const char *line, int start, const char *full, char *out, size_t outsz)
 {
@@ -222,10 +285,12 @@ static int cli_complete_list(const char *line, int start, const char *full, char
     int         mode   = cli_ts_determine_completion_mode(line, start + (int) k, text, cmdname,
                                                           sizeof(cmdname), &argidx);
     g_comp_in_quote    = (k > 0);
+    g_comp_prefix_len  = (size_t) (text - full) + (inl ? 2 : 0);
+    g_comp_is_calc     = (inl || (cli_calc_mode && line[strspn(line, " \t")] != '@'));
     start += (int) k;
 
     out[0] = '\0';
-    if (inl || (cli_calc_mode && line[strspn(line, " \t")] != '@'))
+    if (g_comp_is_calc)
     {
         snprintf(ctype, sizeof(ctype), "calc");
     }
@@ -350,6 +415,10 @@ char *CLI_generator(const char *text, int state)
             /* no space or closing quote after a path or a call: it goes on */
             rl_completion_suppress_append = (c[n - 1] == '.' || c[n - 1] == '/' || c[n - 1] == '(');
             rl_completion_suppress_quote  = rl_completion_suppress_append || g_comp_in_quote;
+            if (!g_comp_is_calc)
+            {
+                c = escape_shell_candidate(c, g_comp_prefix_len);
+            }
             return c;
         }
         free(c);

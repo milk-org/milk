@@ -156,6 +156,7 @@ static void find_milk_include_dirs(char inc_dirs[8][PATH_MAX], int *n_inc)
  * Return: 0 on success, -1 on file I/O or compilation error
  */
 static int compile_c_to_so(const char *c_path,
+                           int         force_rebuild,
                            char       *so_out,
                            size_t      so_out_sz,
                            char       *err,
@@ -198,9 +199,13 @@ static int compile_c_to_so(const char *c_path,
     mc_cc_key(text, key);
     free(text);
     snprintf(so_out, so_out_sz, "%s/ext_%s.so", dir, key);
-    if (access(so_out, R_OK) == 0)
+    if (!force_rebuild && access(so_out, R_OK) == 0)
     {
         return 0;
+    }
+    if (force_rebuild && unlink(so_out) != 0 && errno == EISDIR)
+    {
+        (void) rmdir(so_out);
     }
 
     char        inc_dirs[8][PATH_MAX];
@@ -262,23 +267,47 @@ int mcalc_ext_load(const char *path, char *err, size_t errsz)
     }
     const char *dl_target = canon;
     size_t      plen      = strlen(canon);
-    if (plen > 2 && strcmp(canon + plen - 2, ".c") == 0)
+    int         is_c_src  = (plen > 2 && strcmp(canon + plen - 2, ".c") == 0);
+    if (is_c_src)
     {
-        if (compile_c_to_so(canon, so_path, sizeof(so_path), err, errsz) != 0)
+        if (compile_c_to_so(canon, 0, so_path, sizeof(so_path), err, errsz) != 0)
         {
             return -1;
         }
         dl_target = so_path;
     }
-    void *dl = dlopen(dl_target, RTLD_NOW | RTLD_LOCAL);
+    mc_ext_registry_source(canon); /* its entries are its own: no other file replaces them */
+    void                        *dl = dlopen(dl_target, RTLD_NOW | RTLD_LOCAL);
+    const milk_calc_ext_table_t *tbl =
+        (dl != NULL) ? (const milk_calc_ext_table_t *) dlsym(dl, "__milk_calc_ext_table") : NULL;
+    if ((dl == NULL || tbl == NULL) && is_c_src)
+    {
+        if (dl != NULL)
+        {
+            dlclose(dl);
+        }
+        if (err != NULL && errsz > 0)
+        {
+            err[0] = '\0';
+        }
+        if (compile_c_to_so(canon, 1, so_path, sizeof(so_path), err, errsz) != 0)
+        {
+            mc_ext_registry_source(NULL);
+            return -1;
+        }
+        dl  = dlopen(dl_target, RTLD_NOW | RTLD_LOCAL);
+        tbl = (dl != NULL) ? (const milk_calc_ext_table_t *) dlsym(dl, "__milk_calc_ext_table")
+                           : NULL;
+    }
     if (dl == NULL)
     {
+        mc_ext_registry_source(NULL);
         snprintf(err, errsz, "dlopen('%s'): %s", path, dlerror());
         return -1;
     }
-    const milk_calc_ext_table_t *tbl =
-        (const milk_calc_ext_table_t *) dlsym(dl, "__milk_calc_ext_table");
-    if (tbl == NULL || milk_calc_ext_register_table(tbl, err, errsz) != 0)
+    int reg = (tbl != NULL) ? milk_calc_ext_register_table(tbl, err, errsz) : -1;
+    mc_ext_registry_source(NULL);
+    if (reg != 0)
     {
         if (tbl == NULL)
         {

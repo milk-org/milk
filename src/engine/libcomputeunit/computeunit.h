@@ -46,6 +46,10 @@ int fpsexec_main_function(int              argc,
                           fps_compute_fn   COMPUTE_FN,
                           fps_confcheck_fn CONFCHECK_FN);
 
+/** fps_chdir_workdir() - enter the work directory of FPS @fps_name, where its unit runs and its
+ * relative paths resolve (nothing for a local or missing FPS); 0, or -1 after saying why not. */
+int fps_chdir_workdir(const char *fps_name);
+
 
 /**
  * @brief Standard initialization preamble for FPSINIT function

@@ -84,6 +84,7 @@ typedef struct
     const mc_expr_t *slice_expr;       /* slice AST node when has_slice == 1 */
     const mc_expr_t *scalar_expr;      /* scalar AST node when is_scalar == 1 */
     int              check_div_kind;   /* 1 = check != 0 (/ or /=), 2 = check != 0 (%) */
+    int              is_guarded;       /* 1 in a select or short-circuit: x / 0 is not an error */
     int              comp_gen_idx;     /* >= 0 if comprehension generator variable */
     int              is_x_bcast;       /* 1 if axis-0 broadcast (st[0] == 0) */
     uint8_t          op_naxis;         /* planned naxis when operand was added */
@@ -294,6 +295,9 @@ void mc_post_defer(void);
 
 /* Flush all deferred output stream updates in a single batch. */
 void mc_post_flush(void *processinfo);
+
+/* Drop deferred output updates without posting and clear their write flags. */
+void mc_post_discard(void);
 
 /* Return 1 if @id was written by this run and its post is still deferred (write flag set). */
 int mc_post_pending(imageID id);

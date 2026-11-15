@@ -12,6 +12,9 @@
  * help prints them and completion offers them.
  */
 
+#include <ctype.h>
+#include <errno.h>
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -209,7 +212,7 @@ static const milk_kw_opt_t opts_log[] = {
 static const milk_kw_opt_t opts_help[] = {
     { "--json", NULL, "the help as JSON" },
     { "--porcelain", NULL, "the help as plain lines, for programs" },
-    { "-k", "<regex>", "search keywords and command descriptions" },
+    { "-k", "<regex>", "search keywords, topics and commands" },
     { "--tui", NULL, "browse the help in a fuzzy finder (milk-cli REPL)" },
     { NULL, NULL, NULL }
 };
@@ -625,6 +628,32 @@ static int opt_find(const milk_keyword_t *k, const char *w, const char **eq)
     return -1;
 }
 
+const char *milk_kw_value_bad(const char *arg, const char *v)
+{
+    static const char *const counts = " <N> <n> <target> [N] ";
+    static const char *const times  = " <sec> <s> <seconds> <hz> <rate> <ms> [T] ";
+    char                     key[24];
+    snprintf(key, sizeof(key), " %s ", arg);
+    int is_count = (strstr(counts, key) != NULL);
+    if (!is_count && strstr(times, key) == NULL)
+    {
+        return NULL;
+    }
+    char *end = NULL;
+    errno     = 0;
+    if (is_count)
+    {
+        (void) strtoull(v, &end, 10);
+    }
+    else if (!isfinite(strtod(v, &end)))
+    {
+        end = NULL;
+    }
+    int ok = (isdigit((unsigned char) v[0]) || (!is_count && v[0] == '.')) && end != NULL &&
+             *end == '\0' && errno != ERANGE;
+    return ok ? NULL : is_count ? " needs an integer >= 0, not " : " needs a number >= 0, not ";
+}
+
 /** kw_bad() - report a usage error of keyword @a->k: "@<kw>: <msg><what>", its usage line; 1 */
 static int kw_bad(milk_kw_args_t *a, const char *msg, const char *what)
 {
@@ -646,7 +675,7 @@ int milk_kw_parse(const char *name, unsigned flags, int *argc, char **argv, milk
     {
         char                *w    = argv[i];
         const char          *eq   = NULL;
-        const char          *v    = "";
+        const char          *v    = NULL;
         char                *end  = NULL;
         int                  dash = (w[0] == '-' && w[1] != '\0');
         int                  r    = dash ? opt_find(a->k, w, &eq) : -1;
@@ -698,6 +727,17 @@ int milk_kw_parse(const char *name, unsigned flags, int *argc, char **argv, milk
                           strchr("0123456789.", argv[i + 1][0]) != NULL && argv[i + 1][0] != '\0'))
         {
             v = argv[++i];
+        }
+        const char *bad = (v != NULL && o->arg != NULL) ? milk_kw_value_bad(o->arg, v) : NULL;
+        if (bad != NULL)
+        {
+            fprintf(stderr, "@%s: %.*s%s'%s'\n", a->k->name, (int) strcspn(w, "="), w, bad, v);
+            a->rc = milk_lexicon_usage(a->k->name, stderr);
+            return 1;
+        }
+        if (v == NULL)
+        {
+            v = "";
         }
         if (r >= MILK_KW_NOPT || a->nocc >= MILK_KW_NOCC)
         {

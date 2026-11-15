@@ -57,19 +57,18 @@
 #include "milk_srvlog.h"
 
 /**
- * drain_stdin_to_memfd - Buffer piped stdin into an anonymous memfd before connecting to the server
+ * drain_stdin_to_memfd - Read the script piped to a batch `@pipe` into a memfd before connecting
  * @argc: Command argument count
  * @argv: Command argument vector
  *
- * Reading stdin prior to opening the single-threaded server connection prevents
- * deadlocks in pipelines such as `@grab --stdout im1 | ... | @replay --stdin im2`,
- * while supporting arbitrary-length text and binary (`--raw`) payloads.
+ * `@replay --stdin` gets the pipe itself: the session reads one frame of it, and a producer that
+ * needs the session (`@grab --stdout im1 | @replay --stdin im2 -`) runs in a copy of it.
  *
  * Return: Seeked memfd file descriptor on success, or -1 if stdin is not read by @argv.
  */
 static int drain_stdin_to_memfd(int argc, char **argv)
 {
-    if (argc < 1 || isatty(STDIN_FILENO))
+    if (argc < 1)
     {
         return -1;
     }
@@ -78,14 +77,7 @@ static int drain_stdin_to_memfd(int argc, char **argv)
     {
         c0++;
     }
-    /* streamwrite (@replay --stdin) reads stdin only when told to with a '-' argument */
-    int is_sw = 0;
-    for (int i = 1; strcmp(c0, "streamwrite") == 0 && i < argc; i++)
-    {
-        is_sw |= (strcmp(argv[i], "-") == 0);
-    }
-    int is_batch = (strcmp(c0, "pipe") == 0 && argc == 1);
-    if (!is_sw && !is_batch)
+    if (argc != 1 || strcmp(c0, "pipe") != 0 || isatty(STDIN_FILENO))
     {
         return -1;
     }
@@ -350,6 +342,30 @@ int milk_client_get_buf(const char *spec, char *out, size_t outsz, const milk_cl
     return (rc == 0 || rc == MILK_CLIENT_RC_TRANSPORT) ? rc : 1;
 }
 
+/* @get's message when the read of @spec failed (@rc 1; a lost session and q. print their own): no
+ * such stream (local image, FPS, process), no such property, or no match for a glob. Return: @rc */
+static int get_fail(int rc, const char *spec, const milk_client_hooks_t *hooks)
+{
+    static const char *const what[] = { "no such entity", "no such stream", "no such local image",
+                                        "no such FPS", "no such process" };
+    char                     ent[512];
+    const char              *name = NULL;
+
+    spec = (strncmp(spec, "json:", 5) == 0) ? spec + 5 : spec;
+    if (rc != 1 || milk_entity_ns_removed(spec) != NULL)
+    {
+        return rc;
+    }
+    milk_normalize_entity_spec(spec, ent, sizeof(ent));
+    milk_ns_kind_t k                       = milk_entity_ns_kind(ent, &name);
+    ent[(name - ent) + strcspn(name, ".")] = '\0'; /* s.cam of s.cam.xsize */
+    fprintf(stderr, "milk: %s: %s\n", spec,
+            (strpbrk(name, "*?") != NULL)                                   ? "no match"
+            : (k != MILK_NS_NONE && milk_client_exists(ent, 0, hooks) == 0) ? "no such property"
+                                                                            : what[k]);
+    return rc;
+}
+
 /**
  * milk_client_get - Read entity property @spec and print it or bind it to @varname
  * @spec:    Entity property specification
@@ -361,7 +377,7 @@ int milk_client_get_buf(const char *spec, char *out, size_t outsz, const milk_cl
 int milk_client_get(const char *spec, const char *varname, const milk_client_hooks_t *hooks)
 {
     char val[16384];
-    int  rc = milk_client_get_buf(spec, val, sizeof(val), hooks);
+    int  rc = get_fail(milk_client_get_buf(spec, val, sizeof(val), hooks), spec, hooks);
     if (rc == 0)
     {
         if (varname != NULL && varname[0] != '\0')
@@ -633,10 +649,12 @@ static int get_watch(int                        n,
                 snprintf(js, sizeof(js), "json:%s", specs[i]);
                 spec = js;
             }
-            if (milk_client_get_buf(spec, val, 16384, hooks) != 0)
+            int r = milk_client_get_buf(spec, val, 16384, hooks);
+            if (r != 0)
             {
                 if (first)
                 {
+                    get_fail(r, specs[i], hooks);
                     rc           = 1;
                     g_watch_stop = 1;
                     break;
@@ -761,7 +779,7 @@ int milk_client_get_argv(int argc, char **argv, const milk_client_hooks_t *hooks
     {
         return 1;
     }
-    int rc = milk_client_get_buf(spec, val, 16384, hooks);
+    int rc = get_fail(milk_client_get_buf(spec, val, 16384, hooks), specs[0], hooks);
     if (rc == 0)
     {
         client_bind_array(hooks, arrname != NULL ? arrname : assocname, arrname == NULL, val);
@@ -1203,7 +1221,7 @@ int milk_client_set_argv(int argc, char **argv, const milk_client_hooks_t *hooks
     int         i    = 0;
     undo_text_t undo = { NULL, 0, 0 };
     const char *nl = milk_ipc_get_var(hooks, "__MILK_NOLOG"); /* the writes of an undo or restore */
-    int         nolog = (nl != NULL && nl[0] != '\0');
+    int         nolog = (nl != NULL && nl[0] != '\0') || milk_kw_opt(&ka, "--restore") != NULL;
     while (i < argc)
     {
         milk_set_item_t it;

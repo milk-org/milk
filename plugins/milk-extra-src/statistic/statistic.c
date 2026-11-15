@@ -224,7 +224,12 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name)
     long naxis;
     long i;
 
-    ID_in     = image_ID(ID_in_name, dcimg, dcnimg);
+    ID_in = image_ID(ID_in_name, dcimg, dcnimg);
+    if (ID_in == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_in_name);
+        return -1;
+    }
     naxis     = dcimg[ID_in].md[0].naxis;
     nelements = 1;
     for (i = 0; i < naxis; i++)
@@ -235,6 +240,10 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name)
     copy_image_ID(ID_in_name, ID_out_name, 0);
 
     ID_out = image_ID(ID_out_name, dcimg, dcnimg);
+    if (ID_out == -1)
+    {
+        return -1;
+    }
     //  srand(time(NULL));
 
     for (ii = 0; ii < nelements; ii++)
@@ -254,7 +263,12 @@ long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double amp
     long naxis;
     long i;
 
-    ID_in     = image_ID(ID_in_name, dcimg, dcnimg);
+    ID_in = image_ID(ID_in_name, dcimg, dcnimg);
+    if (ID_in == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_in_name);
+        return -1;
+    }
     naxis     = dcimg[ID_in].md[0].naxis;
     nelements = 1;
     for (i = 0; i < naxis; i++)
@@ -265,6 +279,10 @@ long put_gauss_noise(const char *ID_in_name, const char *ID_out_name, double amp
     copy_image_ID(ID_in_name, ID_out_name, 0);
 
     ID_out = image_ID(ID_out_name, dcimg, dcnimg);
+    if (ID_out == -1)
+    {
+        return -1;
+    }
     //  srand(time(NULL));
 
     for (ii = 0; ii < nelements; ii++)

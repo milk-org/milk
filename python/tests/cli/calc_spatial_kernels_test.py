@@ -468,3 +468,45 @@ def test_icentroid_subpixel_and_threshold_and_unit(tmp_path):
     assert value(res.stdout, "zero") == "1,0", out
     ucx, ucy, ufl = [float(x) for x in value(res.stdout, "unit").split(",")]
     assert abs(ucx - 14.35) < 1e-3 and abs(ucy - 17.80) < 1e-3 and ufl > 500.0, out
+
+
+def test_prestage_scratch_of_another_statement_is_not_bound():
+    """Each statement's pre-stage scratch (`_tmpcalcps<N>`) is its own: a cached statement's float
+    scratch with the same index does not set the type of a later complex one, nor the reverse.
+    """
+    r = milk_bash(
+        '@calc "o = zeros(4,4) + 1" && @calc "a = abs(fft(o))" && @calc "q = zeros(4,4) + 1" '
+        '&& @calc "imax(a)" && @calc "imax(q)"'
+    )
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.split() == ["16", "1"], r.stdout
+
+
+def test_prestage_scratch_of_a_reduction_argument_is_its_own():
+    """A reduction's argument runs as a program of its own, whose first pre-stage scratch has the
+    name of the statement's (`_tmpcalcps1`): it neither writes over the statement's scratch (wrong
+    values) nor frees it (once the pool is full: a dimension mismatch on every run)."""
+    r = milk_bash(
+        '@calc "a = randn(zeros(64,48), 1)" && @calc "g = gauss(a,1)"\n'
+        '@calc "d = gauss(a,1) + imean(zeros(64,48) + 1)" && @calc "imax(abs(d - (g + 1)))"\n'
+        '@calc "e = abs(fft(a)) + abs(fft(a*2)) + abs(fft(a*3))"\n'
+        '@calc "d = gauss(a,1) + gauss(a,2) + gauss(a,3) + imean(zeros(3,3) + 1)" '
+        '&& @calc "imax(abs(d - (g + gauss(a,2) + gauss(a,3) + 1)))"'
+    )
+    assert r.returncode == 0, r.stderr
+    assert [float(x) for x in r.stdout.split()] == [0.0, 0.0], r.stdout + r.stderr
+
+
+def test_loadfits_keeps_nan_and_inf_pixels(tmp_path):
+    """BITPIX -64 NaN and inf pixels load as they are, twice in a row (an int null value was read
+    as 8 bytes: the second load put stack bytes in their place)."""
+    fits.writeto(
+        tmp_path / "nf.fits", np.array([1.0, np.nan, np.inf, -np.inf]), overwrite=True
+    )
+    res = milk_bash(
+        'iofits.loadfits nf.fits a 2 >/dev/null; @calc -a v "a"; echo "a=${v[*]}"\n'
+        'iofits.loadfits nf.fits b 2 >/dev/null; @calc -a v "b"; echo "b=${v[*]}"',
+        tmp_path,
+    )
+    assert value(res.stdout, "a") == "1 nan inf -inf", res.stdout + res.stderr
+    assert value(res.stdout, "b") == "1 nan inf -inf", res.stdout + res.stderr

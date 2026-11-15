@@ -298,7 +298,7 @@ static void fps_sync_and_override_by_name(const char      *fps_name,
  *
  * @return 0 on success or if skipped, -1 if chdir fails
  */
-static int fps_chdir_workdir(const char *fps_name)
+int fps_chdir_workdir(const char *fps_name)
 {
     if (fps_name[0] == '_')
     {

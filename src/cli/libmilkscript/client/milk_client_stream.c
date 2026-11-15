@@ -186,6 +186,12 @@ int milk_client_waitfor(int argc, char **argv, const milk_client_hooks_t *hooks)
                 wt.why);
         return 1;
     }
+    if (wt.kind == MILK_WAIT_STREAM && has_arg2 &&
+        (milk_kw_value_bad("<N>", arg2) != NULL || strtoull(arg2, NULL, 10) == 0))
+    {
+        fprintf(stderr, "@waitfor: the frame count needs an integer >= 1, not '%s'\n", arg2);
+        return milk_lexicon_usage("waitfor", stderr);
+    }
     if (wt.kind == MILK_WAIT_EXPR)
     {
         while (*target == '@')
@@ -883,8 +889,9 @@ int milk_client_sleep_argv(int argc, char **argv, const milk_client_hooks_t *hoo
     if (cur != NULL && cur[0] != '\0')
     {
         char *end = NULL;
+        errno     = 0;
         dl        = (int64_t) strtoll(cur, &end, 10);
-        if (*end != '\0')
+        if (*end != '\0' || errno == ERANGE)
         {
             fprintf(stderr, "@sleep: $%s is not a deadline (integer ns): %s\n", var, cur);
             return 2;
@@ -986,6 +993,11 @@ int milk_client_grab(int argc, char **argv, const milk_client_hooks_t *hooks)
     if (sname == NULL || nframes == NULL || outname == NULL ||
         (outname[0] == '\0' && fits_raw == NULL))
     {
+        return milk_lexicon_usage("grab", stderr);
+    }
+    if (milk_kw_value_bad("<N>", nframes) != NULL || strtoull(nframes, NULL, 10) == 0)
+    {
+        fprintf(stderr, "@grab: the frame count needs an integer >= 1, not '%s'\n", nframes);
         return milk_lexicon_usage("grab", stderr);
     }
 

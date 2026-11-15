@@ -43,9 +43,10 @@ void cli_milkrc_load(void)
 /**
  * @brief Display per-command invocation counts.
  *
- * Shows the top-20 most frequently called CLI
+ * Shows the top-20 most frequently called module
  * commands during this session, sorted by call
- * count in descending order.
+ * count in descending order (the root ones run behind
+ * keywords such as @history, @config and @help).
  */
 errno_t cli_cmdstats(void)
 {
@@ -59,7 +60,7 @@ errno_t cli_cmdstats(void)
     int          nused = 0;
     for (uint32_t i = 0; i < data.NBcmd; i++)
     {
-        if (data.cmd[i].callcount > 0)
+        if (data.cmd[i].callcount > 0 && data.cmd[i].moduleindex >= 0)
         {
             entries[nused].key   = data.cmd[i].key;
             entries[nused].count = data.cmd[i].callcount;

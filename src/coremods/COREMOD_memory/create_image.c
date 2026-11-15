@@ -32,6 +32,8 @@
 #    include "milkDebugTools.h"
 #endif
 #include <string.h>
+#include <sys/resource.h>
+#include <unistd.h>
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -39,6 +41,45 @@
 #include "list_image.h"
 #include "stream_sem.h"
 #include <computeunit.h>
+
+/**
+ * local_too_big - Refuse a local image larger than this process can ever allocate
+ * @img: IMGID about to be created
+ *
+ * ImageStreamIO_createIm() ends the process when the buffer of a local image cannot be allocated,
+ * which would take a whole session down: a local image of more bytes than the machine's memory (or
+ * the process's address-space limit) is refused here with a message instead.
+ *
+ * Return: 1 if @img is refused, 0 otherwise
+ */
+static int local_too_big(const IMGID *img)
+{
+    int esz = ImageStreamIO_typesize(img->mdt->datatype);
+    if (img->mdt->shared != 0 || esz <= 0)
+    {
+        return 0;
+    }
+    double bytes = (double) esz;
+    for (int a = 0; a < img->mdt->naxis; a++)
+    {
+        bytes *= (double) img->mdt->size[a];
+    }
+    double        lim = (double) sysconf(_SC_PHYS_PAGES) * (double) sysconf(_SC_PAGESIZE);
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_AS, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY &&
+        (double) rl.rlim_cur < lim)
+    {
+        lim = (double) rl.rlim_cur;
+    }
+    if (lim <= 0.0 || bytes <= lim)
+    {
+        return 0;
+    }
+    fprintf(stderr,
+            "ERROR: image \"%s\" needs %.3g GB, more than this process can allocate (%.3g GB)\n",
+            img->name, bytes / 1e9, lim / 1e9);
+    return 1;
+}
 
 /**
  * @brief Create or reuse an image (IMGID API)
@@ -87,7 +128,7 @@ errno_t create_image_ID_IMGID(IMGID *img)
         memmove(img->name, sp.name, strlen(sp.name) + 1);
     }
 
-    if (img->name[0] == '\0' || strchr(img->name, '@') != NULL || strchr(img->name, ':') != NULL)
+    if (img->name[0] == '\0' || strpbrk(img->name, "@:/") != NULL)
     {
         fprintf(stderr, "ERROR: invalid image name \"%s\"\n", img->name);
         img->ID = -1;
@@ -125,6 +166,12 @@ errno_t create_image_ID_IMGID(IMGID *img)
     if (exist_img.ID == -1)
     {
         imgid_free(&exist_img);
+        if (local_too_big(img))
+        {
+            img->ID = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
         img->ID     = next_avail_image_ID(img->ID);
         errno_t ret = ImageStreamIO_createIm(&dcimg[img->ID], img->name, img->mdt->naxis,
                                              img->mdt->size, img->mdt->datatype, img->mdt->shared,
@@ -184,6 +231,12 @@ errno_t create_image_ID_IMGID(IMGID *img)
             }
         }
 
+        if (mismatch && local_too_big(img))
+        {
+            img->ID = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
         if (mismatch)
         {
             delete_image_ID(img->name, DELETE_IMAGE_ERRMODE_WARNING);

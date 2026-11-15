@@ -44,8 +44,7 @@ MILK_PARAMS_DEFINE(listkw, FPS_PARAMS_listkw);
 static MILK_HOT errno_t listkw_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    image_list_keywords(p_listkw_imname);
-    return RETURN_SUCCESS;
+    return (image_list_keywords(p_listkw_imname) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imlistkw = {
@@ -81,13 +80,17 @@ MILK_PARAMS_DEFINE(writekwL, FPS_PARAMS);
 
 static MILK_HOT errno_t writekwL_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    image_write_keyword_L(p_imname, p_kname, p_kwval, p_comment);
+    if (image_write_keyword_L(p_imname, p_kname, p_kwval, p_comment) < 0)
+    {
+        ret = RETURN_FAILURE;
+    }
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imwritekwL = {
@@ -123,12 +126,12 @@ static long _image_write_keyword(IMGID       img,
     long ID = img.ID;
     if (ID == -1)
     {
-        return RETURN_FAILURE;
+        return -1;
     }
     long NBkw = dcimg[ID].md[0].NBkw;
 
     long kw = 0;
-    while ((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while ((kw < NBkw) && (dcimg[ID].kw[kw].type != 'N'))
     {
         kw++;
     }
@@ -218,20 +221,20 @@ long image_write_keyword_S(const char *IDname,
  */
 errno_t image_keyword_addL(IMGID img, const char *kwname, long kwval, const char *comment)
 {
-    _image_write_keyword(img, kwname, 'L', kwval, 0.0, NULL, comment);
-    return RETURN_SUCCESS;
+    return (_image_write_keyword(img, kwname, 'L', kwval, 0.0, NULL, comment) < 0) ? RETURN_FAILURE
+                                                                                   : RETURN_SUCCESS;
 }
 
 errno_t image_keyword_addD(IMGID img, const char *kwname, double kwval, const char *comment)
 {
-    _image_write_keyword(img, kwname, 'D', 0, kwval, NULL, comment);
-    return RETURN_SUCCESS;
+    return (_image_write_keyword(img, kwname, 'D', 0, kwval, NULL, comment) < 0) ? RETURN_FAILURE
+                                                                                 : RETURN_SUCCESS;
 }
 
 errno_t image_keyword_addS(IMGID img, const char *kwname, const char *kwval, const char *comment)
 {
-    _image_write_keyword(img, kwname, 'S', 0, 0.0, kwval, comment);
-    return RETURN_SUCCESS;
+    return (_image_write_keyword(img, kwname, 'S', 0, 0.0, kwval, comment) < 0) ? RETURN_FAILURE
+                                                                                : RETURN_SUCCESS;
 }
 
 /**
@@ -250,7 +253,7 @@ imageID image_list_keywords(const char *IDname)
     long ID = img.ID;
     if (img.ID == -1)
     {
-        return RETURN_FAILURE;
+        return -1;
     }
 
 

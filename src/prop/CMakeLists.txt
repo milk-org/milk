@@ -1,29 +1,23 @@
 set(LIBNAME "milkprop")
 
-set(SOURCEFILES
-    milk_shm_prop.c
-    milk_shm_prop_stream.c
-    milk_shm_prop_fps.c
-    milk_shm_prop_proc.c
-    milk_shm_cache.c)
+set(SOURCEFILES milk_shm_prop.c milk_shm_prop_stream.c milk_shm_prop_fps.c
+                milk_shm_prop_proc.c milk_shm_cache.c)
 
-set(INCLUDEFILES
-    milk_shm_prop.h
-    milk_shm_cache.h
-    milk_entity_ns.h)
+set(INCLUDEFILES milk_shm_prop.h milk_shm_cache.h milk_entity_ns.h)
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
+# NaN comparisons and isfinite() must keep IEEE semantics under -Ofast (as in
+# milkcalc/milkscript).
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-  target_compile_options(${LIBNAME} PRIVATE -fopenmp-simd)
+  target_compile_options(${LIBNAME} PRIVATE -fopenmp-simd -fno-finite-math-only)
 endif()
 
 target_include_directories(
   ${LIBNAME}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-         $<INSTALL_INTERFACE:include/milkprop>
-         $<INSTALL_INTERFACE:include>
+         $<INSTALL_INTERFACE:include/milkprop> $<INSTALL_INTERFACE:include>
   PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine>
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO>
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>
@@ -33,8 +27,8 @@ target_include_directories(
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libcomputeunit>
           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>)
 
-# src/coremods: COREMOD_arith's header-only statistics kernels (s.<im>.mean ...); no link, which
-# libmilkbash would inherit
+# src/coremods: COREMOD_arith's header-only statistics kernels (s.<im>.mean
+# ...); no link, which libmilkbash would inherit
 target_link_libraries(
   ${LIBNAME}
   PUBLIC ImageStreamIO

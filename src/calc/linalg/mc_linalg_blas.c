@@ -665,13 +665,16 @@ static int exec_matmul_or_alg(mc_slot_t              *slot,
         }
     }
 
-    /* Dispatch to GER, SYRK (when A*A^T or A^T*A), or general GEMM */
+    /* Dispatch to GER, SYRK (A*A^T or A^T*A when the old C is not read: syrk updates one
+     * triangle and mirrors it), or general GEMM */
     IMAGE *dst       = &milk_data.image[oid];
     dst->md[0].write = 1;
-    rc               = m->is_outer ? arith_image_ger_im(imA, imB, alpha, beta, dst)
-                       : (idA == idB && transA != transB && out_naxis == 2 && M == N)
-                           ? arith_image_syrk_im(imA, transA, alpha, beta, dst)
-                           : arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, dst);
+    mc_linalg_lock();
+    rc = m->is_outer ? arith_image_ger_im(imA, imB, alpha, beta, dst)
+         : (beta == 0.0 && idA == idB && transA != transB && out_naxis == 2 && M == N)
+             ? arith_image_syrk_im(imA, transA, alpha, beta, dst)
+             : arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, dst);
+    mc_linalg_unlock();
     if (rc != 0)
     {
         dst->md[0].write = 0;
@@ -906,10 +909,16 @@ static int exec_einsum(mc_slot_t       *slot,
         int  tB = (in_sub[1][0] == j_c && in_sub[1][1] == k_c)   ? 0
                   : (in_sub[1][0] == k_c && in_sub[1][1] == j_c) ? 1
                                                                  : -1;
-        if (tA >= 0 && tB >= 0 && arith_image_gemm_im(imA, tA, imB, tB, 1.0, 0.0, out) == 0)
+        if (tA >= 0 && tB >= 0)
         {
-            mc_out_post(oid);
-            goto done;
+            mc_linalg_lock();
+            int gm_rc = arith_image_gemm_im(imA, tA, imB, tB, 1.0, 0.0, out);
+            mc_linalg_unlock();
+            if (gm_rc == 0)
+            {
+                mc_out_post(oid);
+                goto done;
+            }
         }
     }
 
@@ -934,7 +943,9 @@ static int exec_einsum(mc_slot_t       *slot,
             mdB.naxis   = 1;
             mdB.size[0] = nxy;
             mdB.size[1] = 1;
-            ok          = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mc_linalg_lock();
+            ok = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mc_linalg_unlock();
         }
         else if (strlen(in_sub[1]) == 1 && out_nd == 2 && in_sub[0][0] == rhs_s[0] &&
                  in_sub[0][1] == rhs_s[1] && in_sub[0][2] == in_sub[1][0])
@@ -942,7 +953,9 @@ static int exec_einsum(mc_slot_t       *slot,
             mdO.naxis   = 1;
             mdO.size[0] = nxy;
             mdO.size[1] = 1;
-            ok          = (arith_image_gemm_im(&vA, 0, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mc_linalg_lock();
+            ok = (arith_image_gemm_im(&vA, 0, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mc_linalg_unlock();
         }
         else if (strlen(in_sub[1]) == 3 && out_nd == 2 && in_sub[0][0] == in_sub[1][0] &&
                  in_sub[0][1] == in_sub[1][1] && in_sub[0][2] == rhs_s[0] &&
@@ -951,7 +964,9 @@ static int exec_einsum(mc_slot_t       *slot,
             mdB.naxis   = 2;
             mdB.size[0] = nxy;
             mdB.size[1] = imB->md[0].size[2];
-            ok          = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mc_linalg_lock();
+            ok = (arith_image_gemm_im(&vA, 1, &vB, 0, 1.0, 0.0, &vO) == 0);
+            mc_linalg_unlock();
         }
         if (ok)
         {
@@ -1088,7 +1103,10 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
     alg_blas_match_t m;
 
     if (rhs->kind != MC_EXPR_CALL ||
-        (rhs->u.call.fn != NULL && rhs->u.call.fn->id == MC_FID_matmul))
+        (rhs->u.call.fn != NULL &&
+         (rhs->u.call.fn->id == MC_FID_matmul ||
+          (rhs->u.call.fn->id == MC_FID_outer &&
+           (cs->assign_op == MC_TOK_ADD_ASSIGN || cs->assign_op == MC_TOK_SUB_ASSIGN)))))
     {
         /* `x += matmul(A, B)` / `x -= ...` accumulate into x: match_alg_blas() sets beta */
         if (rhs->kind == MC_EXPR_CALL && cs->assign_op != MC_TOK_ADD_ASSIGN &&
@@ -1128,7 +1146,10 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             return -1;
         }
         milk_data.image[idC].md[0].write = 1;
-        if (arith_image_scal_im(alpha, &milk_data.image[idC]) == 0)
+        mc_linalg_lock();
+        rc = arith_image_scal_im(alpha, &milk_data.image[idC]);
+        mc_linalg_unlock();
+        if (rc == 0)
         {
             return finish_inplace_blas(slot, cs->is_anon, idC, in_unit, err, errsz);
         }
@@ -1144,7 +1165,9 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
             return -1;
         }
         milk_data.image[idC].md[0].write = 1;
+        mc_linalg_lock();
         rc = arith_image_axpy_im(alpha, &milk_data.image[idA], &milk_data.image[idC]);
+        mc_linalg_unlock();
         if (tmpA)
         {
             mc_tmp_release(idA);
@@ -1174,9 +1197,14 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         }
         milk_data.image[idC].md[0].write = 1;
         int ok = (arith_image_ger_check(&milk_data.image[idA], &milk_data.image[idB],
-                                        &milk_data.image[idC]) == 0 &&
-                  arith_image_ger_im(&milk_data.image[idA], &milk_data.image[idB], alpha, 1.0,
+                                        &milk_data.image[idC]) == 0);
+        if (ok)
+        {
+            mc_linalg_lock();
+            ok = (arith_image_ger_im(&milk_data.image[idA], &milk_data.image[idB], alpha, 1.0,
                                      &milk_data.image[idC]) == 0);
+            mc_linalg_unlock();
+        }
         if (!ok)
         {
             milk_data.image[idC].md[0].write = 0;
@@ -1206,9 +1234,14 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         }
         milk_data.image[idC].md[0].write = 1;
         int ok =
-            (arith_image_syrk_check(&milk_data.image[idA], transA, &milk_data.image[idC]) == 0 &&
-             arith_image_syrk_im(&milk_data.image[idA], transA, alpha, beta,
-                                 &milk_data.image[idC]) == 0);
+            (arith_image_syrk_check(&milk_data.image[idA], transA, &milk_data.image[idC]) == 0);
+        if (ok)
+        {
+            mc_linalg_lock();
+            ok = (arith_image_syrk_im(&milk_data.image[idA], transA, alpha, beta,
+                                      &milk_data.image[idC]) == 0);
+            mc_linalg_unlock();
+        }
         if (!ok)
         {
             milk_data.image[idC].md[0].write = 0;
@@ -1245,9 +1278,14 @@ int mc_exec_blas_call(mcalc_prog_t   *prog,
         const IMAGE *imA = &milk_data.image[idA], *imB = &milk_data.image[idB];
         IMAGE       *imC = &milk_data.image[idC];
         imC->md[0].write = 1;
-        int ok = is_symv ? (arith_image_symv_im(imA, imB, alpha, beta, imC) == 0)
-                         : (arith_image_matmul_check(imA, transA, imB, transB, imC, 0) == 0 &&
-                            arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, imC) == 0);
+        int ok = is_symv || (arith_image_matmul_check(imA, transA, imB, transB, imC, 0) == 0);
+        if (ok)
+        {
+            mc_linalg_lock();
+            ok = is_symv ? (arith_image_symv_im(imA, imB, alpha, beta, imC) == 0)
+                         : (arith_image_gemm_im(imA, transA, imB, transB, alpha, beta, imC) == 0);
+            mc_linalg_unlock();
+        }
         if (!ok)
         {
             imC->md[0].write = 0;

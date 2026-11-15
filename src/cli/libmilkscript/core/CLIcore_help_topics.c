@@ -130,7 +130,6 @@ void help_topic_cmdopts(void)
     printf(C_CMD "  -o, --overwrite    " C_RST "overwrite existing FITS files " C_NOTE
                  "(USE WITH CAUTION)\n" C_RST);
     printf(C_CMD "  -e, --errorexit    " C_RST "exit on error\n");
-    printf(C_CMD "  -Z, --idle         " C_RST "only run when X is idle\n");
     printf(C_CMD "  -A, --autocomplete " C_RST "enable inline autocomplete " C_NOTE
                  "(ON by default)\n" C_RST);
     printf(C_CMD "  --no-autocomplete  " C_RST "disable inline autocomplete\n");
@@ -206,7 +205,7 @@ void help_topic_commands(void)
     printf(C_CMD "  @help             " C_RST "Show the help index\n");
     printf(C_CMD "  @help <topic>     " C_RST "Show a topic, keyword, module or command\n");
     printf(C_CMD "  <cmd> -h          " C_RST "Help for a specific command (--help also works)\n");
-    printf(C_CMD "  @help -k <regex>  " C_RST "Search keywords and command descriptions\n");
+    printf(C_CMD "  @help -k <regex>  " C_RST "Search keywords, topics and commands\n");
     printf(C_CMD "  @help --tui       " C_RST "Interactive fuzzy command search\n");
     printf(C_CMD "  @history --tui    " C_RST "Interactive fuzzy history search\n");
     printf("\n");
@@ -807,23 +806,21 @@ int help_topic_dispatch(const char *topic)
 /* ------------------------------------------------------------------ */
 
 /* The help topics, in index order: name, description (also the JSON and porcelain indexes) */
-static const struct
-{
-    const char *name;
-    const char *descr;
-} help_topics[] = { { "bash", "Bash-enhanced mode (source milk.bash) and the @ syntax" },
-                    { "streams", "ImageStreamIO shared-memory streams, s./l., slicing" },
-                    { "fps", "Function Parameter Structures (@get/@set f.<name>.*)" },
-                    { "procinfo", "Processinfo telemetry and loop control (@get/@set p.*)" },
-                    { "milk", "Overview of streams, FPS, procinfo and TUI monitors" },
-                    { "variables", "Variables, arrays, arithmetic, entity properties" },
-                    { "flowcontrol", "if/while/for/case/functions and event triggers" },
-                    { "scripting", "Script files, I/O, pipes, builtins" },
-                    { "commands", "Module commands (milk.ci, mem.listim, iofits.loadfits ...)" },
-                    { "syntax", "Interactive REPL features, tab completion, piping" },
-                    { "cmdopts", "milk-cli command-line flags (-h, -s, -n ...)" },
-                    { "readline", "Key bindings of the milk-cli prompt" },
-                    { NULL, NULL } };
+const struct help_topic help_topics[] = {
+    { "bash", "Bash-enhanced mode (source milk.bash) and the @ syntax" },
+    { "streams", "ImageStreamIO shared-memory streams, s./l., slicing" },
+    { "fps", "Function Parameter Structures (@get/@set f.<name>.*)" },
+    { "procinfo", "Processinfo telemetry and loop control (@get/@set p.*)" },
+    { "milk", "Overview of streams, FPS, procinfo and TUI monitors" },
+    { "variables", "Variables, arrays, arithmetic, entity properties" },
+    { "flowcontrol", "if/while/for/case/functions and event triggers" },
+    { "scripting", "Script files, I/O, pipes, builtins" },
+    { "commands", "Module commands (milk.ci, mem.listim, iofits.loadfits ...)" },
+    { "syntax", "Interactive REPL features, tab completion, piping" },
+    { "cmdopts", "milk-cli command-line flags (-h, -s, -n ...)" },
+    { "readline", "Key bindings of the milk-cli prompt" },
+    { NULL, NULL }
+};
 
 /**
  * @brief Print only the available-topics list.
@@ -856,7 +853,7 @@ void print_milk_cli_help_json(void)
     printf("    {\"command\": \"<cmd> -h\", \"args\": \"\", \"description\": \"Help for a command "
            "or keyword\"},\n");
     printf("    {\"command\": \"@help -k\", \"args\": \"<regex>\", \"description\": \"Search "
-           "keywords and command descriptions\"},\n");
+           "keywords, topics and commands\"},\n");
     printf("    {\"command\": \"@unload / exit\", \"args\": \"\", \"description\": \"Unload "
            "milk.bash or exit milk-cli\"}\n");
     printf("  ]\n}\n");
@@ -873,7 +870,7 @@ void print_milk_cli_help_porcelain(void)
     printf(
         "QUICKREF\t@help\t[topic|keyword|module|module.cmd]\tHelp index, or help on one subject\n");
     printf("QUICKREF\t<cmd> -h\t\tHelp for a command or keyword\n");
-    printf("QUICKREF\t@help -k\t<regex>\tSearch keywords and command descriptions\n");
+    printf("QUICKREF\t@help -k\t<regex>\tSearch keywords, topics and commands\n");
     printf("QUICKREF\t@unload / exit\t\tUnload milk.bash or exit the milk shell\n");
 }
 
@@ -914,7 +911,7 @@ void print_milk_top_help(void)
            " This index, or a topic, keyword, module or module.cmd\n");
     printf("  " C_CMD "<cmd> -h          " C_RST
            " Arguments, types and defaults of a command or keyword\n");
-    printf("  " C_CMD "@help -k <regex>  " C_RST " Search keywords and command descriptions\n");
+    printf("  " C_CMD "@help -k <regex>  " C_RST " Search keywords, topics and commands\n");
     printf("  " C_CMD "@help --tui       " C_RST " Interactive fuzzy search (milk-cli REPL)\n");
     printf("  " C_CMD "@unload           " C_RST
            " Unload milk.bash integration from current bash terminal\n");
@@ -1010,6 +1007,7 @@ void print_milk_cli_help(void)
     printf(C_CMD "  --no-arg-hints       " C_RST "Disable argument hint line\n");
     printf(C_CMD "  --no-fuzzy           " C_RST "Disable fuzzy/substring matching\n");
     printf(C_CMD "  --verbose            " C_RST "Be verbose\n");
+    printf(C_CMD "  --listimf            " C_RST "Keep the list of images in ./imlist.txt\n");
     printf(C_CMD "  --format <file>      " C_RST
                  "Print a script re-indented (--format-in-place: rewrite it)\n");
     printf(C_CMD "  --outline <file>     " C_RST
@@ -1037,7 +1035,7 @@ void print_milk_cli_help(void)
     printf("  " C_CMD "@help bash    " C_RST "Detailed help for bash-enhanced @ syntax\n");
     printf("  " C_CMD "<cmd> -h      " C_RST "Help for a specific command or keyword\n");
     printf("  " C_CMD "@help <module>" C_RST "List commands in a module\n");
-    printf("  " C_CMD "@help -k <re> " C_RST "Search keywords and command descriptions\n");
+    printf("  " C_CMD "@help -k <re> " C_RST "Search keywords, topics and commands\n");
     printf("  " C_CMD "@unload / exit" C_RST "Unload milk.bash / exit the milk shell\n");
     printf("\n");
 }

@@ -42,7 +42,8 @@ if @test "imean(cam) > 1"; then echo bright; fi        # status 0 if true, 1 if 
   false. A string is an error, and so is an image (status 2): test `imin(im > 1)` for all pixels,
   `imax(im > 1)` for any.
 - `-v a,b,...` binds the values of the last statements, in order; an assignment's value is the
-  assigned value (`@calc -v x "y = 3"` gives 3).
+  assigned value (`@calc -v x "y = 3"` gives 3). An expression whose value is an image is an error
+  there: bind a reduction (`imean(im)`) or a pixel (`im[3,4]`).
 - Calculator variables come back to bash only through `-v` (and `@{…}`): after
   `@calc "x = 5"`, bash has no `$x`. Write `@calc -v x "5"`, or read it later with
   `@calc -v x "x"`. Commands that set calculator variables for their caller declare them:
@@ -89,7 +90,7 @@ Operators, loosest first:
 
 | Operators                       | Notes                                                            |
 | ------------------------------- | ---------------------------------------------------------------- |
-| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b`: a scalar `c` evaluates only its branch (in a fused statement both run, a zero divisor in the other one is not an error); an image `c` selects per pixel; `im[mask] = expr` (also `+=` `-=` `*=` `/=`) writes only where `mask != 0` |
+| `=` `+=` `-=` `*=` `/=`, `?:`   | `c ? a : b`: a scalar `c` evaluates only its branch (in a fused statement both run, and a zero divisor in either gives `inf` or NaN, not an error); an image `c` selects per pixel; `im[mask] = expr` (also `+=` `-=` `*=` `/=`) writes only where `mask != 0` |
 | `\|\|`, `&&`                    | skip the right side once the result is known: `0 && (x = 1)`     |
 | `\|`, `^^`, `&`                 | bitwise or, xor, and (on scalars and per pixel on images)        |
 | `==` `!=`, `<` `<=` `>` `>=`    | 1 or 0; on images, a 0/1 mask per pixel; comparisons may be chained (`0 <= x < n` evaluates `x` once as `(0 <= x) && (x < n)`) |
@@ -106,7 +107,7 @@ parameter, since `im[S:n]` would read `S:n` as a stream. Integer operands give a
 negative power (`pow(2, 62) + 1` is exact, `pow(2, -1)` is 0.5); an integer result that overflows
 becomes a double. `%` and `fmod` give C's `fmod` while $|x/y| < 2^{52}$, and NaN beyond, on numbers
 and images alike (`wrap_pi` likewise while $|x| < 2^{52} \cdot 2\pi$). A number divided by 0, or
-`% 0`, is an error, and so is an image divided by the number 0; an image divided by an image gives
+`% 0`, is an error (`fmod(x, 0)` is NaN, as in C), and so is an image divided by the number 0; an image divided by an image gives
 `inf` where the divisor is 0 (except `im /= divisor`, where a zero divisor pixel is an error). Numbers may be written `0x1f`, `0o17`, `0b101`; an integer
 too big for 64 bits is a double (`99999999999999999999` is `1e+20`). Bitwise
 operators (`&`, `|`, `^^`, `~`, `<<`, `>>`) also fuse into image expressions via `int64_t` casts
@@ -128,26 +129,27 @@ Functions (the math ones also apply per pixel to an image):
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | Math             | `sin cos tan asin acos atan sinh cosh tanh exp exp2 log log10 log2 sqrt cbrt ceil floor round trunc abs sign posi erf erfc isnan isfinite wrap_pi sinc`; `log` is the natural logarithm, `log10` is base 10, `trunc(x)` rounds toward zero, `wrap_pi(x)` wraps into $(-\pi, \pi]$, `sinc(x)` is $\sin(\pi x)/(\pi x)$ ($\text{sinc}(0)=1$) |
 | Math, 2-3 args   | `pow(a,b)`, `atan2(y,x)`, `hypot(x,y)`, `fmod(a,b)`, `min(a,b)`, `max(a,b)`, `clamp(x,lo,hi)` |
-| Datatype casts   | `f32 f64 u8 i8 u16 i16 u32 i32 u64 i64`: cast a scalar or produce an image of that type  |
+| Datatype casts   | `f32 f64 u8 i8 u16 i16 u32 i32 u64 i64`: cast a scalar or produce an image of that type; an integer cast of a number gives the integer that type stores (truncated toward zero and wrapped, NaN and inf give 0: `u32(-1)` is 4294967295, `i64(1e19)` is -8446744073709551616), a `u64` of $2^{63}$ or more as a double (`u64(-1)` is `1.84467440737096e+19`) |
 | Image to number  | `itot imin imax imean istd irms ivar imedian norm asum`, `perc(im,f)`, `dot(a,b)`, `trace(A)` |
 | Image to tuple   | `m, s[, lo, hi] = istats(im)`: mean, std, min, and max; `cx, cy[, flux] = icentroid(im[, th])`: thresholded flux-weighted CoG; `px, py = iargmax(im)` / `iargmin(im)` (2-D) and `px, py, pz = iargmax(cube)` / `iargmin(cube)` (3-D; `-1` when all NaN) |
-| Image to integer | `icount(im)` (non-zero pixels), `iargmax(im)`, `iargmin(im)`, `iamax(im)` (index of $\max \|x_i\|$) |
+| Image to integer | `icount(im)` (non-zero, non-NaN pixels), `iargmax(im)`, `iargmin(im)`, `iamax(im)` (index of $\max \|x_i\|$) |
 | Along one axis   | `itot imin imax imean istd irms ivar norm asum`, `cumsum(im[,axis])` plus an axis: `imean(cube, 2)` is the mean frame |
 | Stencil / LUT    | `shift(im,dx[,dy])` (edge-clamped 2-D neighbor offset), `roll(im,dx[,dy[,dz]])` (periodic wrap-around shift), `lut(x,tbl[,x0,dx])` (1-D linear LUT) |
 | Spatial / Remap  | `medfilt3(im)`, `medfilt5(im)`, `medfilt7(im)` ($3\times3$, $5\times5$, $7\times7$ median), `imin3(im)`, `imax3(im)` ($3\times3$ min/max erosion/dilation), `boxmean(im,r)` (separable $(2r+1)\times(2r+1)$ box mean, $r \in \{1..64\}$), `conv2(im,K)` (2-D convolution with odd kernel `K` up to $31\times31$), `gauss(im,sx[,sy])`, `bblur1pix(im[,amp,niter])`, `rotate2d(im[,angle])`, `circsym(im[,cx,cy])`, `circasym(im[,cx,cy])`, `interp2(im,xmap,ymap)`, `pixremap(im,map[,fill])`, `pixunmap(im,map[,n])`, `rprof(im[,cx,cy])` |
 | Temporal / Delay | `streamdelay(im[,weights], delay=..., unit=..., interp=..., avemode=..., window=..., buffsize=...)`: per-call-site ring-buffer delay, fractional interpolation, causal window average (`avemode` 1..4), or 1-D FIR filter in seconds (`unit=0`) or frames (`unit=1`) |
 | Image to image   | `where(c,a,b)`, `transpose(im)` (or `im.T`), `reshape(im,nx[,ny,nz])`, `rot90(im[,k])`, `hstack(A,B,...)`, `vstack(A,B,...)`, `dstack(A,B,...)`, `cat(axis,A,B,...)`, `vec(x0,...)` (or `[x0, ...]`; `vec(im)` flattens an image), `linspace(a,b,n)`, `[expr for x = a:b[:s], ...]`, `zeros(nx[,ny[,nz]])`, `eye(N[,M])`, `diag(X[,k])`, `matmul(A,B)` (or `A @ B`), `outer(x,y)`, `einsum("subscripts",A[,B])` |
 | BLAS (in-place)  | `scal(a,x)`, `axpy(a,x,y)`, `gemv(a,A,x,b,y)`, `symv(a,A,x,b,y)`, `ger(a,x,y,A)`, `syrk(a,A,b,C)`, `gemm(a,A,B,b,C)`; a transposed operand is written `A.T` |
-| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])`, `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B[,uplo])` (`"L"` by default), `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])`, `s = svd(A)` / `U, s, Vt = svd(A)` (thin SVD), `w = eigh(C)` / `w, V = eigh(C)` (symmetric eigendecomposition, ascending) |
+| LAPACK / Solvers | `trsv(A,b[,uplo[,diag]])`, `trsm(A,B[,uplo[,diag[,a]]])` (`uplo` is `"U"` by default and names the triangle of `A` as written: `trsv(L.T, b, "U")`), `solve(A,B[,reg])`, `gesv(A,B)`, `posv(A,B[,uplo])` (`"L"` by default), `gels(A,B)`, `inv(A)`, `pinv(A[,rtol])`, `s = svd(A)` / `U, s, Vt = svd(A)` (thin SVD), `w = eigh(C)` / `w, V = eigh(C)` (symmetric eigendecomposition, ascending) |
 | Spectral (FFTW)  | `fft(im)` (forward 1-D/2-D/3-D DFT to complex float, or complex double for float64 input), `ifft(im)` ($1/N$-normalized inverse DFT), `fftshift(im)` (swap half-spaces on all axes) |
 | Coordinates/PRNG | `ix iy ir itheta (im[, cx, cy])`: per pixel x, y, radius, angle from `(cx, cy)`, by default `(xsize/2, ysize/2)`; `rand([im[, seed]])` ($[0,1)$), `randn([im[, seed]])` ($\mathcal{N}(0,1)$) |
 | Strings          | `strlen toupper tolower`, `substr(s,start,len)`, `replace(s,old,new)`, `hex oct bin`     |
-| Complex images   | `cplx(re,im)`, `expi(phi)`, `real imag abs arg conj`; `+ - * /` and `-z` work on them    |
+| Complex images   | `cplx(re,im)`, `expi(phi)`, `real imag abs arg conj`; `+ - * /`, `-z`, and `c ? z : w` work on them |
 | User functions   | `def f(x, a, ...) = <expr>`: inline function usable on scalars and fused into image passes |
 
 `imin` and `imax` (and their axis forms) skip NaN pixels and give NaN only when every pixel is NaN.
 `imedian` and `perc` do not handle NaN, which sorts anywhere: leave NaN pixels out with a mask,
-`imedian(im, isfinite(im))`. The other reductions propagate NaN. `imedian` of an even number of
+`imedian(im, isfinite(im))`. `icount`, `iargmax`, `iargmin` and `iamax` skip NaN pixels too; the
+other reductions propagate NaN. `imedian` of an even number of
 pixels is the upper of the two middle ones; `istd` is the population standard deviation and `irms`
 the root mean square, $\sqrt{\text{mean}(x^2)}$. `shift(im, dx, dy)` reads `im[x+dx, y+dy]`, the
 nearest edge pixel past the border, while `roll(im, dx, dy)` wraps around periodically
@@ -169,7 +171,9 @@ A second image argument is a mask: `imean(im, mask)` (also `itot imin imax istd 
 norm asum`) and `perc(im, f, mask)` reduce over the pixels where the mask is not zero; no pixel
 gives NaN, or 0 for `itot`/`asum`/`norm`. A number instead is an axis. On the left-hand side of an
 assignment, `im[mask] = expr` (and `+=` `-=` `*=` `/=`) writes only the pixels where `mask` (an
-image or boolean expression of `im`'s shape) is non-zero, leaving other pixels untouched.
+image or boolean expression that broadcasts to `im`'s shape, as the right-hand side does) is non-zero,
+leaving other pixels untouched. A NaN mask pixel is off in a reduction, and on (`NaN != 0`) in
+`im[mask] = ...`, `where()` and an image `?:`.
 Matrices are column-major: a 2-D image is a matrix with `size[0]` (x) rows and `size[1]` (y)
 columns, so `A[i, j]` is row `i`, column `j`; a 1-D image is a column vector; and a cube
 (nx, ny, nz) is an (nx·ny) × nz matrix whose columns are its planes (`reshape(cube, nx*ny, nz)` is
@@ -186,8 +190,9 @@ single in-place BLAS pass. `einsum("subscripts", A[, B])` evaluates Einstein sum
 reductions, traces, diagonals, and transposes over 1-D to 3-D tensors (routing standard 2-D matrix
 and vector contractions to BLAS). `reshape(im, nx[, ny, nz])` reinterprets the contiguous elements
 of `im` with new dimensions (up to one dimension may be `-1`), `rot90(im[, k])` rotates a 2-D image
-counter-clockwise by $90^\circ \times k$, and `hstack`, `vstack`, `dstack`, and `cat(axis, A, B, ...)`
-concatenate up to 8 images. `[e1, e2, ...]` constructs a 1-D vector (`vec(e1, e2, ...)`),
+by $90^\circ \times k$ (`rot90(im)[x, y]` is `im[nx-1-y, x]`: counter-clockwise with y pointing
+down, clockwise as displayed with y up), and `hstack`, `vstack`, `dstack`, and
+`cat(axis, A, B, ...)` concatenate up to 16 images (`cat` up to 15). `[e1, e2, ...]` constructs a 1-D vector (`vec(e1, e2, ...)`),
 `linspace(a, b, n)` builds an $n$-point linearly spaced vector, and array comprehensions
 `[expr for x = a:b[:s], ...]` build 1-D, 2-D, or 3-D float images from loop bounds. `medfilt3`,
 `medfilt5`, and `medfilt7` apply exact $3\times3$, $5\times5$, and $7\times7$ 2-D median filters
@@ -200,7 +205,7 @@ gathers 2-D sub-pixel bilinearly interpolated values at `(xmap, ymap)`; `pixrema
 gathers `im[round(map)]` (filling out-of-range indices with `fill`, default `0`), while
 `pixunmap(im, map[, n])` computes the per-bin mean into a 2-D `(n, 1)` image (`n` defaults to
 $\max(\text{map})+1$, negative indices ignored) and `rprof(im[, cx, cy])` computes the azimuthal
-radial profile around `(cx, cy)` (default `(xsize/2, ysize/2)`).
+radial profile of a 2-D image around `(cx, cy)` (default `(xsize/2, ysize/2)`).
 
 ```bash
 @calc -v core 'imean(cam, ir(cam) < 10)'          # mean within 10 pixels of the centre
@@ -211,7 +216,7 @@ radial profile around `(cx, cy)` (default `(xsize/2, ysize/2)`).
 @calc "ramp = ix(cam, 0, 0) / s.cam.xsize"         # 0 ... 1 along x
 @calc "z = (cam - imean(cam)) / istd(cam)"         # multi-reduction in one fused expression
 @calc -v r "irms(cam - imean(cam))"                # nested reduction
-@calc "m, s, lo, hi = istats(cam)"                 # single-pass mean, std, min, max unpacking
+@calc "m, sd, lo, hi = istats(cam)"                # single-pass mean, std, min, max unpacking
 @calc "cx, cy, flux = icentroid(cam, 10.0)"        # thresholded sub-pixel center of gravity
 @calc "px, py = iargmax(cam)"                      # 2-D peak coordinates (px, py, pz on a 3-D cube)
 @calc "u, v = cam + 1, cam * 2"                    # single-pass multi-image assignment
@@ -234,7 +239,7 @@ Pixels of complex images go through `real`, `imag`, `abs`, `arg`, and `conj` (`a
 number); on a real image, `real(im)` is `im`, `imag(im)` is a zero image of the same shape, and
 `arg(im)` is `0` where pixels are $\ge 0$ and $\pi$ where pixels are $< 0$. Images combined pixel by
 pixel must have the same size on each axis, or size 1 (a 2-D image applies to every frame of a
-cube); `/=` takes only an image of the destination's size.
+cube), also for `/=`.
 
 ## Compute Units Without C
 
@@ -278,7 +283,7 @@ parameters under `Parameters`):
 | --- | --- | --- |
 | `-e`, `--expr` | `.unit.expr` | the statements, separated by `;` or newlines |
 | `-t`, `--trigger` | `.unit.trigger` | a stream whose frames run them; none: once, or each tick of `-loopd` |
-| `-p`, `--params` | `.unit.params` | parameters, `name:type[=default][:help]` as for `@args` (`int` `uint` `float` `bool` `str` `stream` `fits`): the values set them |
+| `-p`, `--params` | `.unit.params` | parameters, `name:type[=default][:help]` as for `@args` (`int` `uint` `float` `bool` `str` `stream` `fits`), separated by blanks (a help text is one word here; a word without `:` declares a `str`): the values set them |
 | `-f`, `--file` | `.unit.file` | read the statements from this file instead (`#` starts a comment) |
 | `-i`, `--init` | `.unit.init` | statements run once before frame 0 (and again if `.unit.init` is set live) |
 | `-I`, `--initfile` | `.unit.initfile` | read the init statements from this file instead |
@@ -287,13 +292,20 @@ parameters under `Parameters`):
 | | `.unit.error` | set by the unit: why the loop stopped |
 
 - `fpsinit`, and `exec` when the FPS does not exist yet, create the FPS from the unit options. On an
-  existing FPS, `-e` `-t` `-f` `-i` `-I` (with `set`, `exec` or `runstart`) write their `.unit.*`
-  entry, as `@set` does; `-p` cannot change: run `fpsinit` again to declare other parameters.
+  existing FPS, `-e` `-f` `-i` `-I` `-l` (with `fpsinit`, `set`, `exec` or `runstart`) write
+  their `.unit.*` entry, as `@set` does, and the FPS keeps its other values; `-t` updates the
+  trigger stream when the unit is stopped (or `@set f.NAME.unit.trigger=STREAM` before the next run)
+  and is refused with status 2 while the unit is running. `-p` cannot change: run
+  `fpsinit` again to declare other parameters (those declared before stay: `milk-fps-rm NAME`
+  first to drop them). File options are stored as absolute paths when they fit in an FPS string (63
+  characters); a relative path resolves in the unit's work directory, where `fpsinit` ran.
 - **Prepared at start.** The unit loads its libraries, runs the init statements and compiles the
   statements when it starts, before `runstart` returns: the first frame runs compiled kernels.
-  What cannot be done then, such as statements that read a stream created later, is done at the
-  first frame, as is the planning of an `fft` this machine has not run before
-  ([Fusion & Cost Model](#fusion-cost-model)).
+  Statements or init blocks (`-e` `-f` `-i` `-I`) that do not parse, a `-f` or `-I` file that
+  cannot be read, or a non-constant or invalid `prev()`/`hist()` lag never run: `runstart` fails
+  with status 1 and `.unit.error` says why. What else cannot be done then, such as statements that
+  read a stream created later, is done at the first frame, as is the planning of an `fft` this
+  machine has not run before ([Fusion & Cost Model](#fusion-cost-model)).
 - **Changed while it runs.** The statements are compiled again at the frame after `.unit.expr` or
   `.unit.file` is set (set `.unit.file` again to read the file again): with `@set`, the compiler
   runs inside the loop, which misses frames meanwhile (tens of milliseconds). Unit options given
@@ -333,9 +345,12 @@ parameters under `Parameters`):
   - `if <cond> { ... } elif <cond> { ... } else { ... }` groups multiple statements into
     conditional blocks (`else if` is written `elif`); conditions are kept as compiled scalar programs (`< 1` µs per check).
   - `for k = start:stop[:step] { ... }` runs a bounded loop (inclusive of `stop`, default `step`
-    `1`); more than 100,000 iterations in a frame is an error.
+    `1`); more than 100,000 iterations of a loop, those of the loops nested in it included, is an
+    error.
   - `local name = <expr>` (or `L:name = <expr>` / `@L:name = <expr>`) creates a process-private
-    scratch image that is not exported to `/dev/shm`. When a `local` image is consumed only by
+    scratch image that is not exported to `/dev/shm`; later statements read it as `name` even when
+    a shared stream of that name exists, but a session or unit that already has that stream open
+    refuses it. When a `local` image is consumed only by
     the immediately following compatible statement in the same basic block, the compiler merges
     both statements into one cache-resident pass and elides the intermediate memory write.
   - `def f(x, a, ...) = <expr>` defines an inline function, at most 64 of them with 1 to 8
@@ -346,7 +361,8 @@ parameters under `Parameters`):
     that draws random numbers or keeps state (`rand`, `ema`, `post`, a C extension) may be used
     only once in the body. A `def` is a statement of its own, not inside `if` or `for`, and
     belongs to the text that holds it: the statements do not see a `def` of `.unit.init`. In `@calc`
-    its body is checked when it is defined: every name other than a parameter, and every function,
+    a `def` lasts for the session (64 at most; a `def` of the same name replaces it), and its body
+    is checked when it is defined: every name other than a parameter, and every function,
     must exist; in a unit, where the body may use a name the program creates later, at each call.
   - `ema(expr, alpha)` maintains a per-call-site persistent exponential moving average image or
     scalar, `s = (1 - alpha) * s + alpha * expr`, updated in a step of its own before the
@@ -371,7 +387,10 @@ parameters under `Parameters`):
     `n % N` holds frame `n`), filled after the statements of each tick, so inside a tick it holds
     frames `n-1` to `n-N`; `prev(s)` and `prev(s, k)` read frame `n-1` and `n-k` of it, for `k`
     from 1 to `N-1` (`diff = cam - prev(cam)`, `bg = imean(cam_hist, 2)`), as images of `s`'s shape;
-    a `prev` of an undeclared stream declares a ring of depth 2. The ring is a stream, so other
+    a `prev` of an undeclared stream declares a ring of depth 2. The stream must exist when the unit
+    builds its program: make an output the program writes in `.unit.init` (`-i "o = cam * 0"`).
+    A `<s>_hist` of another depth, left by another unit, is refused: remove it
+    (`mem.rmshmim cam_hist`) once no unit uses it. The ring is a stream, so other
     processes read it too. A program has at most 16 rings and 128 statements; `hist` and `prev`
     work only in a unit (outside one, and with `--explain`, they are an error).
   - `zeros(nx[, ny[, nz]])` makes a zero image of that shape (float; cast for another type,
@@ -400,9 +419,10 @@ parameters under `Parameters`):
   timeouts.
 - Threads: `.procinfo.NBthread` defaults to 0, which lets the thread policy decide (one thread
   below 512 K pixels, then $\lfloor \text{pixels} / 256\text{K}\rfloor$ up to the physical cores
-  allowed by the process's affinity mask, so a unit pinned with `taskset` to one core stays
-  single-threaded). A positive value, or `MILK_CALC_THREADS=N`, caps the OpenMP and OpenBLAS thread
-  count at that many threads (`OMP_NUM_THREADS` is respected when neither is set).
+  allowed by the process's affinity mask, counting only its P-cores on a hybrid CPU unless it holds
+  none, so a unit pinned with `taskset` to one core stays single-threaded). A positive value, or
+  `MILK_CALC_THREADS=N`, caps the OpenMP and OpenBLAS thread count at that many threads
+  (`OMP_NUM_THREADS` is respected when neither is set).
 - `-loopd SEC` ticks on an absolute deadline (`clock_nanosleep`, timer slack 1 µs below 1 ms), so
   periods of a few tens of µs hold without drift; a tick that ran long resumes from now rather
   than bursting to catch up.
@@ -410,23 +430,27 @@ parameters under `Parameters`):
   variables are out of its reach. A statement that makes a new image creates it as a stream. Shared
   streams recreated in `$MILK_SHM_DIR` with the same shape and compatible type are mapped again:
   the trigger after its next timeout, the others within half a second.
-- The `-p` parameters are calculator variables that `@set` changes while the loop runs. A
-  statement that assigns one (`total = itot(out)`) writes it back to the FPS on each frame, for
-  `@get`, `@waitfor` and other units. A `stream` parameter (`in:stream=cam0`, `out:stream=out0`)
-  binds an input or output stream name dynamically so `@set f.dsub.in=cam1` re-targets the unit on
-  the next frame.
-- An error stops the loop: a bad statement, or an image whose size or type changed. The target of
-  the statement that failed is not posted, and its write flag is cleared, so its readers do not
-  see a torn frame from then on.
+- The `-p` parameters are calculator variables that `@set` changes while the loop runs; when a `-p`
+  parameter has the same name as a stream, identifier references and compound assignments (`k += 1`)
+  resolve to the bound parameter. A statement that assigns one (`total = itot(out)`) writes it back
+  to the FPS on each frame, for `@get`, `@waitfor` and other units. A `stream` parameter
+  (`in:stream=cam0`, `out:stream=out0`) binds an input or output stream name dynamically so
+  `@set f.dsub.in=cam1` re-targets the unit on the next frame.
+- An error stops the loop: a bad statement, a `NaN`, infinite or out-of-range assignment to an integer
+  `-p` parameter, or an image whose size or type changed. Targets staged by earlier statements in
+  the failing frame are discarded alongside the failing target (not posted, write flags cleared), so
+  readers never see partial multi-statement output from then on.
 - FPS strings hold 63 characters, so longer programs go in a file (`-f` or `-I`). `-p` may be longer
   on the `fpsinit` or `exec` command line that creates the FPS.
 
-`milk-fpsexec-milk-script` takes `-c`/`--cmd` (the snippet, `.unit.cmd`), `-t` (`.unit.trigger`),
+`milk-fpsexec-milk-script` takes `-c`/`--cmd` (the snippet, `.unit.cmd`), `-t` (`.unit.trigger`,
+updatable when stopped or via `@set` before starting, refused with status 2 while running),
 `-p` (`.unit.params`: `name:type[=default][:help]`, synced into shell variables before each tick;
 the values set them), and `-f` (`.unit.file`: read the script from a file instead of `.unit.cmd`).
 The 0-based frame counter `_n` is also set on each tick. A new `.unit.cmd` or `.unit.file` applies
-from the next tick. A tick that fails stops the loop, with its status in `.unit.error`; end the
-snippet with `|| :` to go on. Ctrl-C or `runstop` interrupts a running tick. A tick costs its
+from the next tick. `return` (`return 0` or `return N`) returns from that tick cleanly with exit
+status `N`; any non-zero status stops the loop with its status in `.unit.error` (end the
+snippet with `|| :` to go on). Ctrl-C or `runstop` interrupts a running tick. A tick costs its
 commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
 
 ## Fusion & Cost Model
@@ -440,11 +464,12 @@ the calculator's thread team), compiled into `<key>.so` in the kernel cache, and
 real-time machine whose home is on a network file system, set `MILK_CALC_CACHE` to a local disk. Run-time compiles (these kernels, [`-l` C
 extensions](#auto-compilation-and-caching-l-lib) and `milk-cc`) use `$MILK_CALC_CC` (default: the
 compiler milk was built with) and one flag list, `MILK_CC_FLAGS` in `CMakeLists.txt`:
-`-O3 -pipe -march=native -ffast-math -fno-finite-math-only -mno-recip -fopenmp-simd` (NaN tests and
-divisions stay IEEE); kernels add `-fno-associative-math` so they round as scalar evaluation does.
+`-O3 -pipe -march=native -ffast-math -fno-finite-math-only -mno-recip -fopenmp-simd` (`-mno-recip`
+with GCC on x86-64; NaN tests and divisions stay IEEE); kernels add `-fno-associative-math` so they round as scalar evaluation does.
 The key covers the source, compiler, flags and CPU; the cache directory must be a real directory
 owned by you (a symlink or another user's directory is refused), and beyond 4096 kernels those
-loaded longest ago are deleted. Runtime scalar values, slice bounds (`im[k:k+7, :]`), `shift`/`roll`
+loaded longest ago are deleted, down to 3584 (an extension's `ext_<key>.so` and the `.fftw` files
+are kept). Runtime scalar values, slice bounds (`im[k:k+7, :]`), `shift`/`roll`
 offsets, and live SHM properties (`s.`, `f.`, `p.`) are passed in the kernel's call argument struct
 rather than baked into the C source, so changing a variable or slice offset in a loop reuses the
 already-loaded `.so` with zero recompilation.
@@ -452,20 +477,23 @@ already-loaded `.so` with zero recompilation.
 An expression made of same-size images, numbers, arithmetic, comparisons, bitwise operators, the
 per-pixel math functions, complex operations, `where`, `?:` with an image condition, `shift`,
 `roll`, `lut`, `ema`, inline `def` functions, the coordinate/PRNG functions, live SHM numeric
-properties, and up to four full-image, nested, or masked scalar reductions
+properties, and full-image, nested, or masked scalar reductions
 (`(a - imean(a)) / istd(a)`, `irms(a - imean(a))`, `imean(a, mask)`, `dot(a, b)`) runs in one fused
 SIMD/OpenMP C pass without temporary images, however many operators it has, and assigning it to an
-existing image of the same size and type writes in place. Multiple reductions over the same
-sub-expression (`(a - imin(a)) / (imax(a) - imin(a))`, `m, s, lo, hi = istats(a)`) are deduplicated
-into a single reduction pass. Passes and reductions size their thread team to one thread below
-512 K pixels, then $\lfloor \text{pixels} / 256\text{K}\rfloor$ up to the physical core count (`MILK_CALC_THREADS=N` or
-`.procinfo.NBthread` overrides it; `OMP_NUM_THREADS` is used when neither is set; OpenBLAS calls
-size their pool the same way).
+existing image of the same size and type writes in place (a pass takes at most 64 operands: its
+images, its output and its separate scalar terms). Two reductions of the same argument written as
+separate terms (`(a - imean(a)) / istd(a)`, `(a - imin(a)) / imax(a)`) share one traversal unless
+one is `irms`, `norm` or `asum`, and `m, s, lo, hi = istats(a)` takes one; a reduction inside a
+larger scalar term (`imax(a) - imin(a)`) takes its own. Passes and reductions size their thread team to one thread below
+512 K pixels, then $\lfloor \text{pixels} / 256\text{K}\rfloor$ up to the physical cores allowed
+by the affinity mask, P-cores only on a hybrid CPU (`MILK_CALC_THREADS=N` or `.procinfo.NBthread`
+overrides it; `OMP_NUM_THREADS` is used when neither is set; OpenBLAS calls size their pool the
+same way, from their multiply-add count).
 
 A pass runs in float32 when every operand and destination is `float` or an 8- or 16-bit integer
 (`u8 i8 u16 i16`, exact in float32: a camera frame needs no cast), and in double when any of them is
-`double` or a 32- or 64-bit integer; a stencil, `lut`, `pixremap` or `interp2` on an integer image
-keeps its pass in double. `@calc --explain` shows which.
+`double` or a 32- or 64-bit integer; a stencil, `pixremap` or `interp2` on an integer image, and a
+`lut` with an integer table, keep their pass in double. `@calc --explain` shows which.
 
 `@calc --explain "<statements>"` compiles the statements as a unit would and prints, per statement,
 how it executes: a fused pass with its shape, precision, operand count and thread count (the one
@@ -482,14 +510,15 @@ its image (no copy), an operand whose extent is 1 on an axis is broadcast along 
 (`a - row - col`, `cube - dark`), a sliced or masked left-hand side (`out[0:63,:] = …`,
 `hist[:,:,_n % 8] = cam`, `out[mask] = …`) is written in place, and `imean(cube, 2)`,
 `istd(a, 0)` and the other axis forms are computed in a pre-stage before the pixel loop and read as
-operands on their own axis (`a - imean(a, 1)` subtracts each column's mean, `a - imean(a, 0)` each
-row's, also when `a` is not square; assigned on their own they keep the squeezed shape, `ny` values
+operands on their own axis (`a - imean(a, 1)` subtracts, at each x, the mean over y, and
+`a - imean(a, 0)`, at each y, the mean over x, also when `a` is not square; assigned on their own they keep the squeezed shape, `ny` values
 for `imean(a, 0)`). `where(c, a, b)` and `c ? a : b` with a scalar `c` and image branches are fused
 too. Bounds that hold variables (`out[k:k+7,:]`, `ring[:,:,_n % 8]`, `prev(cam)`) are evaluated each
 time the statement runs and passed into the compiled C kernel; a bound that would change the slice's
 shape is an error. Order statistics (`imedian`, `perc`) and whole-image library operators (the
 spatial filters `medfilt*`, `imin3`, `imax3`, `boxmean`, `conv2` and `gauss`, which are COREMOD_arith
-kernels with clamped edges that filter a cube plane by plane, and `fft`, `ifft`, `svd`, `eigh`,
+kernels with clamped edges (all but `boxmean` and `conv2`, which take 2-D images only, filter a cube
+plane by plane), and `fft`, `ifft`, `svd`, `eigh`,
 solvers) run as pre-stages into
 scratch images reused across frames from a 4-buffer (256 MiB) pool (`_tmpcalcpool<k>`). A unit plans
 each new `fft` or `ifft` shape with `FFTW_MEASURE`: the first frame that uses it can take up to
@@ -515,8 +544,8 @@ on the file's path and contents, reuses that `.so` until the file changes, and l
 was loaded is compiled and loaded again the next time it is named, and replaces what it
 registered; a `.so` rebuilt at the same path is taken by a new session or unit only. A `.c` file
 is compiled as C; there is no C++ path. `MILK_CALC_LIBS` (files separated by spaces, `,` or `:`)
-loads extensions in every calculator call, and a `loadlib <file>` statement loads one from
-calculator text.
+loads extensions in every `@calc` and `@test` of the shell, its value at that call (units load
+theirs with `-l` only), and a `loadlib <file>` statement loads one from `@calc` text.
 
 ---
 

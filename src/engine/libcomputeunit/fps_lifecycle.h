@@ -42,6 +42,15 @@ int fps_generic_init(const char      *fps_name,
                      int              nb_b,
                      int              procinfo);
 
+/**
+ * @brief Populate `.procinfo.triggersname` and semaphore mode from a trigger binding.
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter bindings array
+ * @param nb_b      Number of bindings
+ */
+void fps_autopopulate_trigger_stream(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b);
+
 
 /**
  * @brief Force trigger settings for -loops mode.

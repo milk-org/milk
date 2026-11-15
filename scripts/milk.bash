@@ -129,7 +129,7 @@ _MILK_BUILTIN_LOADED=0
 # the builtins of libmilkbash.so (also what @unload disables)
 declare -ga __MILK_BUILTINS=(milkcall milkget milkset milkcalc milktest milkexists milkls milkwaitfor
     milkwaitany milkgrab milkcomplete milkshutdown milksession milklog milktranslate milkcloexec milksleep
-    milkdefer milkargs)
+    milkdefer milkargs milkloopdepth)
 # the keywords that are builtins themselves, loaded as kw<name> and named @<name> (no shell function
 # per call); "${__MILK_KWBUILTINS[@]/#kw/@}" are their names
 declare -ga __MILK_KWBUILTINS=(kwcalc kwtest kwget kwset kwexists kwls kwwaitfor kwwaitany kwsleep kwgrab kwlog
@@ -253,15 +253,12 @@ _milk_defer_restore() {
     fi
 }
 
-# Report a failed inline expansion (status $1, source text $2 if any), empty the variable it was
-# bound to ($3, for NAME=@{...}), and pass the status on.
+# A failed inline expansion (status $1; milkget or milkcalc said why): empty the variable it was
+# bound to ($2, for NAME=@{...}), and pass the status on.
 # MILK_STRICT=1 makes it fatal like `set -u`, except at an interactive prompt.
 __milk_inline_err() {
     if [[ -n "${2:-}" ]]; then
-        printf 'milk: %s: inline expansion failed\n' "$2" >&2
-    fi
-    if [[ -n "${3:-}" ]]; then
-        printf -v "$3" '%s' ''
+        printf -v "$2" '%s' ''
     fi
     if [[ "${MILK_STRICT:-0}" == 1 && $- != *i* && "${__MILK_INTERACTIVE:-0}" != 1 ]]; then
         exit "$1"
@@ -292,12 +289,15 @@ _milk_source_impl() {
         echo "Error: source: file not found: $1" >&2
         return 1
     fi
-    if (( __once )); then
-        local __rp
-        __rp="$(realpath "$1" 2>/dev/null || echo "$1")"
-        [[ -n "${__MILK_INC_ONCE[$__rp]:-}" ]] && return 0
-        __MILK_INC_ONCE[$__rp]=1
+    local __rp
+    if (( __once )); then # the same file (device and inode) as one this shell already sourced
+        for __rp in "${!__MILK_INC_ONCE[@]}"; do
+            [[ "$1" -ef "${__rp}" ]] && return 0
+        done
     fi
+    __rp="$1"
+    [[ "$1" == /* ]] || __rp="${PWD}/$1"
+    __MILK_INC_ONCE[${__rp}]=1 # every file sourced, plainly or with --once
     if (( __MILK_SOURCE_DEPTH >= 32 )); then
         echo "Error: maximum source recursion depth (32) exceeded" >&2
         return 1
@@ -494,6 +494,13 @@ _milk_on_impl() {
         esac
     done
 
+    # the watcher starts in the background: check its numbers now, or it would end silently
+    local num='^([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?$'
+    if [[ -n "${timeout_sec}" && ! ${timeout_sec} =~ ${num} ]] ||
+        [[ -n "${every}" && ${every} =~ ^[0.]*([eE].*)?$ ]]; then
+        _milk_on_usage
+        return 2
+    fi
     if [[ -n "${when}${every}" ]]; then
         _milk_on_cond "$@"
         return
@@ -522,6 +529,8 @@ _milk_on_cond() {
     fi
     if (( $# == 1 )); then action=$1; else action="$(printf '%q ' "$@")"; fi
     label=${when:+when:${when}}${every:+every:${every}}
+    # the watcher would end at its first evaluation of an expression that does not evaluate
+    [[ -z "${when}" ]] || milktest "(${when}) != 0" || (( $? < 2 )) || return 2
     local __milk_parent=${BASHPID}
     (
         milkcloexec --watcher "${__milk_parent}" || exit 0
@@ -846,7 +855,7 @@ if (( ${#__MILK_USERCMD[@]} )); then
         milkcall help "$@"
     }
     @help() {
-        local n rc=0 ns_user=0 ns_server=0
+        local n rc=0 ns_user=0 ns_server=0 out=""
         if (( $# == 1 )) && [[ -n "${__MILK_USERCMD[$1]+x}" ]]; then
             [[ -n "${__MILK_USERCMD[$1]}" ]] && echo "$1 - ${__MILK_USERCMD[$1]}"
             "$1" -h
@@ -858,10 +867,6 @@ if (( ${#__MILK_USERCMD[@]} )); then
                 if [[ -n "${__MILK_USERCMD[${n}]+x}" ]]; then ns_user=1; else ns_server=1; fi
             done
         fi
-        if (( ! ns_user || ns_server )); then
-            __milk_help_server "$@"
-            rc=$?
-        fi
         for n in "${!__MILK_USERCMD[@]}"; do # all of them, or a namespace's, or those -k finds
             case "$#:${1-}" in
                 0:) ;;
@@ -869,8 +874,15 @@ if (( ${#__MILK_USERCMD[@]} )); then
                 1:*) (( ns_user )) && [[ "${n}" == "$1".* ]] || continue ;;
                 *) continue ;;
             esac
-            printf '  %-28s %s (user command)\n' "${n}" "${__MILK_USERCMD[${n}]}"
+            printf -v out '%s  %-28s %s (user command)\n' "${out}" "${n}" "${__MILK_USERCMD[${n}]}"
         done
+        if [[ $#:${1-} == 2:-k && -n ${out} ]]; then # a user command matches: not "no match"
+            __milk_help_server "$@" 2>/dev/null
+        elif (( ! ns_user || ns_server )); then
+            __milk_help_server "$@"
+            rc=$?
+        fi
+        printf '%s' "${out}"
         return ${rc}
     }
 fi
@@ -917,6 +929,10 @@ command_not_found_handle() {
             return 127
         fi
     fi
+    if [[ "${cmd}" != *.* && -n "${__MILK_SHORT[${cmd}]:-}" ]]; then # an old command word: listim
+        echo "milk: ${cmd} was removed; use: ${__MILK_SHORT[${cmd}]// / or }" >&2
+        return 127
+    fi
     if declare -F __milk_prev_cnf_handle >/dev/null; then
         __milk_prev_cnf_handle "$@"
         return $?
@@ -931,13 +947,20 @@ command_not_found_handle() {
 # the server's completer (milk_complete): command names, arguments, the keywords' options and
 # words (milk_keywords.c), calculator text
 _milk_complete() {
-    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local cur="${COMP_WORDS[COMP_CWORD]}" __i
     if [[ ${COMP_CWORD} -eq 0 ]]; then
         mapfile -t COMPREPLY < <(milkcomplete "${cur}" cmd 2>/dev/null)
-        return 0
+    else
+        mapfile -t COMPREPLY < <(milkcomplete "${cur}" \
+            "arg:${COMP_WORDS[0]}:${COMP_CWORD}:${COMP_WORDS[COMP_CWORD - 1]}" 2>/dev/null)
     fi
-    mapfile -t COMPREPLY < <(milkcomplete "${cur}" \
-        "arg:${COMP_WORDS[0]}:${COMP_CWORD}:${COMP_WORDS[COMP_CWORD - 1]}" 2>/dev/null)
+    if [[ ${cur} != @\{* && ${cur} != \"* && ${cur} != \'* ]]; then
+        for __i in "${!COMPREPLY[@]}"; do
+            if [[ ${COMPREPLY[__i]} == *[[:space:]\\\'\"\`\$\;\|\&\(\)\<\>\#\*\?\[\]\{\}\!\~]* ]]; then
+                printf -v 'COMPREPLY[__i]' '%q' "${COMPREPLY[__i]}"
+            fi
+        done
+    fi
 }
 
 __milk_all_fns=("${__MILK_CATALOG[@]}")
@@ -1179,7 +1202,8 @@ _milk_prompt_impl() {
 }
 
 if [[ -n "${_milk_session_arg}" ]] && ! _milk_session_impl use "${_milk_session_arg}" >/dev/null 2>&1 &&
-    ! _milk_session_impl new "${_milk_session_arg}" >/dev/null; then
+    ! _milk_session_impl new "${_milk_session_arg}" >/dev/null &&
+    ! _milk_session_impl use "${_milk_session_arg}" >/dev/null 2>&1; then # another shell started it
     echo "milk.bash: this shell uses its own session" >&2
 fi
 unset _milk_session_arg

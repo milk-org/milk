@@ -55,19 +55,6 @@ errno_t fps_init_from_bindings(FPS             *fps,
                                      bindings[bind_idx].type, fpflag, bindings[bind_idx].ptr,
                                      &pindex);
         functionparameter_SetParamCLIindex(fps, pindex, cli_index);
-
-        /* add_entry starts an ON/OFF entry OFF (the flag is its value): apply the default, read as
-         * an int32 like the resync does */
-        if (bindings[bind_idx].type == FPTYPE_ONOFF && pindex >= 0 &&
-            bindings[bind_idx].ptr != NULL)
-        {
-            int32_t on = *(int32_t *) bindings[bind_idx].ptr ? 1 : 0;
-            if (on)
-            {
-                fps->parray[pindex].fpflag |= FPFLAG_ONOFF;
-            }
-            fps->parray[pindex].val.i64[0] = on;
-        }
     }
     return RETURN_SUCCESS;
 }
@@ -116,8 +103,8 @@ void fps_fill_farg_examples(CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int n
                      *(double *) bindings[ii].ptr);
             break;
         case FPTYPE_ONOFF:
-            snprintf(farg[ii].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%ld",
-                     *(uint64_t *) bindings[ii].ptr);
+            snprintf(farg[ii].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%d",
+                     *(int32_t *) bindings[ii].ptr ? 1 : 0);
             break;
         case FPTYPE_PID:
             snprintf(farg[ii].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%d",

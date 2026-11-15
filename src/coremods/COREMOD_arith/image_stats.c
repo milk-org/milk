@@ -341,7 +341,8 @@ double arith_image_percentile_im(const IMAGE *im, const IMAGE *mask, double frac
         uint8_t mdt = (mask != NULL) ? mask->md[0].datatype : 0;
         for (uint64_t i = 0; i < nel; i++)
         {
-            if (mask == NULL || arith_read_im_pix(mask, mdt, i) != 0.0)
+            double mv = (mask != NULL) ? arith_read_im_pix(mask, mdt, i) : 1.0;
+            if (!arith_isnan_d(mv) && mv != 0.0) /* a NaN mask pixel is off, as in the others */
             {
                 double v = arith_read_im_pix(im, dt, i);
                 if (is_flt)

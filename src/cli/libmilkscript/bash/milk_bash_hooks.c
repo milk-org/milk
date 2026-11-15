@@ -319,6 +319,27 @@ int milkcloexec_builtin(WORD_LIST *list)
 }
 
 /**
+ * milkloopdepth_builtin - Set the loop depth seen by `break` and `continue`
+ * @list: Single decimal depth argument (`0` or `1`)
+ *
+ * The coprocess loop (`milk_bash_coproc.c`) sets depth 0 before sourcing each
+ * command so top-level `break` or `continue` cannot affect the coprocess loop,
+ * and restores depth 1 afterward.
+ *
+ * Return: EXECUTION_SUCCESS on success, or EXECUTION_FAILURE if unavailable
+ */
+int milkloopdepth_builtin(WORD_LIST *list)
+{
+    int *depth = (int *) dlsym(RTLD_DEFAULT, "loop_level");
+    if (depth == NULL || list == NULL || list->word == NULL)
+    {
+        return EXECUTION_FAILURE;
+    }
+    *depth = atoi(list->word->word);
+    return EXECUTION_SUCCESS;
+}
+
+/**
  * sync_funsub_env - Set `MILK_BASH_NO_FUNSUB` from the running shell's `BASH_VERSION`
  *
  * Honors any non-empty user setting of `MILK_BASH_NO_FUNSUB` and otherwise enables

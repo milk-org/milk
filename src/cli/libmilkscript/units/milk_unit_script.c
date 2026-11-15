@@ -47,6 +47,7 @@
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "fps_args.h"
+#include "fps_modulevars_resync.h"
 #include "milk_bash_internal.h"
 #include "fps_unit_options.h"
 #include "processinfo_signals.h"
@@ -477,7 +478,8 @@ static int shell_start(char *err, size_t errsz)
     dprintf(sh_in,
             "/milk.bash >/dev/null || exit 1\n"
             "milkcloexec %d 2>/dev/null || true\n"
-            "__milk_unit_tick() { _n=$1; eval \"$__MILK_UNIT_CMD\" </dev/null; printf '%%d\\n' $? "
+            "__milk_unit_body() { eval \"$__MILK_UNIT_CMD\"; }\n"
+            "__milk_unit_tick() { _n=$1; __milk_unit_body \"$1\" </dev/null; printf '%%d\\n' $? "
             ">&%d; }\n"
             "echo ready >&%d\n",
             SCRIPT_STATUS_FD, SCRIPT_STATUS_FD, SCRIPT_STATUS_FD);
@@ -531,7 +533,20 @@ static errno_t compute(const MILK_RUNNABLE *self)
     uint64_t    pcnt[SCRIPT_MAXPAR] = { 0 };
     int         npar                = nbind - SCRIPT_NFIXED;
     int64_t     frame_n             = 0;
-    const char *tname               = dcfpsptr->cmdset.triggerstreamname;
+    const char *tname;
+
+    /* Pull live @set edits before reading cmdset/procinfo so .unit.trigger overrides apply. */
+    fpsresync_fps_to_modvar(dcfpsptr, dcfpsbindings, dcfpsnbindings, 1);
+    if (trigger[0] != '\0' && strcmp(trigger, dcfpsptr->cmdset.triggerstreamname) != 0)
+    {
+        strncpy(dcfpsptr->cmdset.triggerstreamname, trigger, STRINGMAXLEN_IMAGE_NAME - 1);
+        dcfpsptr->cmdset.triggerstreamname[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
+        functionparameter_SetParamValue_STRING(dcfpsptr, ".procinfo.triggersname", trigger);
+        dcfpsptr->cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+        functionparameter_SetParamValue_INT64(dcfpsptr, ".procinfo.triggermode",
+                                              PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+    }
+    tname = dcfpsptr->cmdset.triggerstreamname;
 
     error[0] = '\0';
     functionparameter_SetParamValue_STRING(dcfpsptr, ".unit.error", "");
@@ -634,9 +649,9 @@ int main(int argc, char **argv)
             "                        \"name:type[=default][:help] ...\",\n"
             "                        types int uint float bool str stream fits\n"
             "  -f, --file FILE       commands from FILE instead of -c (.unit.file)\n"
-            "  fpsinit and exec create the FPS from them; on an existing FPS, -c -t -f update\n"
-            "  .unit.* (applied from the next tick) and -p cannot change. Why the loop\n"
-            "  stopped is recorded in .unit.error.\n"
+            "  fpsinit and exec create the FPS from them; on an existing FPS, -c -f update\n"
+            "  .unit.* (applied from the next tick), -t updates when stopped (stop unit\n"
+            "  first), and -p cannot change. Why the loop stopped is in .unit.error.\n"
             "  Example:\n"
             "    milk-fpsexec-milk-script -n mon -t cam -p \"log:str=cam.log\" \\\n"
             "        -c '@get s.cam.mean >> \"$log\"' exec\n",

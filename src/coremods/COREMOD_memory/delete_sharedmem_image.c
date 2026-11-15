@@ -40,6 +40,10 @@ static char imname[FUNCTION_PARAMETER_STRMAXLEN] = "im";
 errno_t destroy_shared_image_ID(const char *__restrict imname)
 {
     IMGID img = imgid_make_from_name(imname);
+    if (img.stream_parse_error)
+    {
+        return RETURN_FAILURE;
+    }
     resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
 
     if ((img.ID != -1) && (img.im->md[0].shared == 1))
@@ -72,15 +76,16 @@ MILK_PARAMS_DEFINE(delete_sharedmem_image, FPS_PARAMS);
 
 static MILK_HOT errno_t delete_sharedmem_image_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
 
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    FUNC_CHECK_RETURN(destroy_shared_image_ID(imname));
+    ret = destroy_shared_image_ID(imname);
 
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 

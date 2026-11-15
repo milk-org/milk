@@ -272,7 +272,11 @@ long mc_resolve_or_autoconnect_image(const char *name)
         return -1;
     }
     const char *bare = (sp.name != NULL && sp.name[0] != '\0') ? sp.name : name;
-    imageID     id   = image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE);
+    if (strchr(bare, '/') != NULL)
+    {
+        return -1;
+    }
+    imageID     id = image_ID(bare, milk_data.image, milk_data.NB_MAX_IMAGE);
     char        shmpath[512];
     struct stat st;
 

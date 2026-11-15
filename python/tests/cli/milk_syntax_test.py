@@ -30,6 +30,7 @@ See also:    docs/guide/scripting.md, "Keywords", "Module Commands", "Arguments"
 
 from __future__ import annotations
 
+import json
 import os
 import pty
 import re
@@ -319,10 +320,10 @@ def test_calc_blas_levels_1_2_3_and_algebraic_fusion(tmp_path):
 def test_calc_lapack_solvers_and_inverses(tmp_path):
     res = milk_cli_script(
         "@calc 'U = reshape(vec(2, 0, 0, 1, 3, 0, -1, 2, 4), 3, 3); b = vec(1, 5, 8)'\n"
-        '@calc \'xu = trsv(U, b, "U"); xut = trsv(transpose(U), b, "U")\'\n'
+        '@calc \'xu = trsv(U, b, "U"); xut = trsv(transpose(U), b, "L")\'\n'
         "@calc -v trsv_err1,trsv_err2 'imax(abs(matmul(U, xu) - b)); imax(abs(matmul(transpose(U), xut) - b))'\n"
-        '@calc \'B2 = reshape(vec(1, 5, 8, 2, -1, 4), 3, 2); Xm = trsm(U, B2, "U", "N", 2.0)\'\n'
-        "@calc -v trsm_err 'imax(abs(matmul(U, Xm) - 2.0 * B2))'\n"
+        '@calc \'B2 = reshape(vec(1, 5, 8, 2, -1, 4), 3, 2); Xm = trsm(U, B2, "U", "N", 2.0); Xt = trsm(U.T, B2, "L")\'\n'
+        "@calc -v trsm_err,trsm_err2 'imax(abs(matmul(U, Xm) - 2.0 * B2)); imax(abs(matmul(transpose(U), Xt) - B2))'\n"
         "@calc 'A = reshape(vec(4, 1, 2, 1, 5, 1, 2, 1, 3), 3, 3)'\n"
         "@calc 'xg = gesv(A, b); xp = posv(A, b); xs = solve(A, b); Ai = inv(A)'\n"
         "@calc -v gesv_err,posv_err,solve_err,inv_err 'imax(abs(matmul(A, xg) - b)); imax(abs(matmul(A, xp) - b)); imax(abs(matmul(A, xs) - b)); imax(abs(matmul(A, Ai) - eye(3)))'\n"
@@ -338,7 +339,7 @@ def test_calc_lapack_solvers_and_inverses(tmp_path):
         "@calc 'Ptall = pinv(Atall); Pwide = pinv(Awide)'\n"
         "@calc -v pinv_t1,pinv_t2 'imax(abs(matmul(Atall, matmul(Ptall, Atall)) - Atall)); imax(abs(matmul(Ptall, Atall) - eye(2)))'\n"
         "@calc -v pinv_w1,pinv_w2 'imax(abs(matmul(Awide, matmul(Pwide, Awide)) - Awide)); imax(abs(matmul(Awide, Pwide) - eye(2)))'\n"
-        'echo "tr=$trsv_err1 $trsv_err2 $trsm_err"\n'
+        'echo "tr=$trsv_err1 $trsv_err2 $trsm_err $trsm_err2"\n'
         'echo "sq=$gesv_err $posv_err $solve_err $inv_err"\n'
         'echo "ls=$gels_tall_err $gels_wide_err $ridge_tall_err $ridge_wide_err"\n'
         'echo "pinv=$pinv_t1 $pinv_t2 $pinv_w1 $pinv_w2"',
@@ -649,3 +650,260 @@ def test_keyword_options_come_from_one_table(tmp_path):
     assert value(res.stdout, "help") == "1", out
     assert value(res.stdout, "comp").split() == ["--timeout"], out
     assert value(res.stdout, "hid") == "", out  # --flush-undo is internal: not offered
+
+
+def test_counts_and_times_are_numbers(tmp_path):
+    """A count (`-n`, `--cnt-min`, the frames of @grab and @waitfor) is an integer >= 0 and a
+    time or rate (`-t`, `--every`) a number >= 0: anything else is a usage error, not a value read
+    up to its first odd character (`1e12` frames were 1), nor a wait that never ends."""
+    bad = (
+        "@waitfor s.cam -t -1",
+        "@waitfor s.cam -t nan",
+        "@waitfor s.cam 0 -t 1",
+        "@log -n abc",
+        "@assert --cnt-min 1e30 s.cam",
+        "@grab s.cam 1e12 g",
+        "@grab s.cam 2.5 g",
+        "@on --every 0 -- true",
+        "@on -t -1 s.cam -- true",
+        "t=99999999999999999999999; @sleep --every 0.01 t",
+    )
+    script = 'mem.mk2Dim "@S:cam" 8 8 >/dev/null\n'
+    script += "".join(
+        f'{c} >/dev/null 2>>err.txt; echo "b{i}=$?"\n' for i, c in enumerate(bad)
+    )
+    script += '@waitfor s.cam 2 -t 0.2; echo "ok=$?"'
+    res = milk_bash(script, tmp_path, timeout=20)
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, f"b{i}") for i in range(len(bad))] == ["2"] * len(
+        bad
+    ), out
+    err = (tmp_path / "err.txt").read_text()
+    assert "@waitfor: -t needs a number >= 0, not '-1'" in err, err
+    assert "@assert: --cnt-min needs an integer >= 0, not '1e30'" in err, err
+    assert "@grab: the frame count needs an integer >= 1, not '1e12'" in err, err
+    assert value(res.stdout, "ok") == "124", out
+
+
+def test_get_failure_says_why(tmp_path):
+    res = milk_bash(
+        "mem.mk2Dim s.gcam 4 4 >/dev/null\n"
+        '@get s.gcam.bogus; echo "a=$?"\n'
+        '@get s.nosuch.xsize; echo "b=$?"\n'
+        '@get -v v f.nosuch.x; echo "c=$?"\n'
+        '@get "s.zz*.xsize"; echo "d=$?"\n',
+        tmp_path,
+    )
+    assert [value(res.stdout, k) for k in "abcd"] == ["1"] * 4, res.stdout
+    for msg in (
+        "milk: s.gcam.bogus: no such property",
+        "milk: s.nosuch.xsize: no such stream",
+        "milk: f.nosuch.x: no such FPS",
+        "milk: s.zz*.xsize: no match",
+    ):
+        assert msg in res.stderr, res.stderr
+
+
+def test_inline_failure_one_message(tmp_path):
+    res = milk_cli_script('x=old; x=@{s.nosuch.xsize}; echo "b=[$x] rc=$?"', tmp_path)
+    assert value(res.stdout, "b") == "[] rc=1"
+    out = res.stdout + res.stderr
+    assert out.count("milk: s.nosuch.xsize: no such stream") == 1, out
+    assert "inline expansion failed" not in out
+
+
+def test_restore_lists_and_sets_only_the_changes(tmp_path):
+    """@restore --dry-run lists, and @restore sets, only the values the live state no longer holds."""
+    res = milk_bash(
+        "mem.mk2Dim s.ub 4 4 >/dev/null\n"
+        "@set s.ub.kw.G=1; @set s.ub.kw.H=abc; @snapshot -o b.json 's.ub*' >/dev/null\n"
+        "@set s.ub.kw.G=2\n"
+        '@restore --dry-run b.json >dry.txt; echo "dry=$? $(@get s.ub.kw.G)"\n'
+        '@restore b.json; echo "app=$? $(@get s.ub.kw.G)"\n'
+        '@restore --dry-run b.json >dry2.txt; echo "dry2=$?"',
+        tmp_path,
+    )
+    assert value(res.stdout, "dry") == "0 2"
+    assert (tmp_path / "dry.txt").read_text() == "@set s.ub.kw.G = 1\n"
+    assert value(res.stdout, "app") == "0 1"
+    assert value(res.stdout, "dry2") == "0"
+    assert (tmp_path / "dry2.txt").read_text() == ""
+
+
+def test_set_restore_not_in_undo_log(tmp_path):
+    res = milk_bash(
+        "mem.mk2Dim s.ub 4 4 >/dev/null\n"
+        "@set s.ub.kw.G=1 s.ub.kw.M=1\n@set s.ub.kw.M=2\n"
+        "f() { @set --restore s.ub.kw.G=5; }\nf\n"
+        '@restore --undo; echo "D:u=$? $(@get s.ub.kw.M) $(@get s.ub.kw.G)"',
+        tmp_path,
+    )
+    assert events(res.stdout) == ["u=0 1 1"]
+
+
+def test_small_statuses(tmp_path):
+    """`@session who` of no session, an `@on --when` expression that does not evaluate and a name
+    declared twice in `@args` are errors (1, 2, 2), not a header, a dead watcher or a silent pick.
+    """
+    res = milk_bash(
+        '@session who nosuch >/dev/null 2>e1; echo "who=$?"\n'
+        "@on --when 'syntax((' -- true 2>e2; echo \"on=$?,$(@on --list | wc -l)\"\n"
+        "f() { @args 'n:int' 'n:int' -- \"$@\"; }; f 1 2 2>e3; echo \"args=$?\"",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, k) for k in ("who", "on", "args")] == [
+        "1",
+        "2,0",
+        "2",
+    ], out
+    assert "no session nosuch" in (tmp_path / "e1").read_text()
+    assert "calc error" in (tmp_path / "e2").read_text()
+    assert "'n' is declared twice" in (tmp_path / "e3").read_text()
+
+
+def test_slash_and_traversal_rejected_in_stream_names(tmp_path):
+    """Stream names with '/' or '..' never probe or write outside MILK_SHM_DIR."""
+    mlk_dir = tmp_path / "MLK"
+    mlk_dir.mkdir()
+    res = milk_bash(
+        'parent=$(dirname "$MILK_SHM_DIR")\n'
+        "before=$(find \"$parent\" -maxdepth 1 -name '*.im.shm' | wc -l)\n"
+        'mem.mk2Dim "@L:loc" 4 4 >/dev/null\n'
+        'mem.imcp2shm loc ../outside >/dev/null 2>&1; echo "cp2shm=$?"\n'
+        'mem.cp loc "@S:../outside" >/dev/null 2>&1; echo "cp=$?"\n'
+        'mem.mk2Dim "@S:../outside" 4 4 >/dev/null 2>&1; echo "mk1=$?"\n'
+        'mem.mk2Dim "foo/bar" 4 4 >/dev/null 2>&1; echo "mk2=$?"\n'
+        'mem.imsetcnt0 ../outside 1 >/dev/null 2>&1; echo "cnt0=$?"\n'
+        'mem.rmshmim ../outside >/dev/null 2>&1; echo "rmshm=$?"\n'
+        '@exists "s.../x" >/dev/null 2>&1; echo "ex=$?"\n'
+        '@set "s.../outside.cnt0=1" >/dev/null 2>&1; echo "s1=$?"\n'
+        '@set "s.foo/bar.cnt0=1" >/dev/null 2>&1; echo "s2=$?"\n'
+        'milk-stream-rm ../outside >/dev/null 2>&1; echo "srm=$?"\n'
+        "after=$(find \"$parent\" -maxdepth 1 -name '*.im.shm' | wc -l)\n"
+        'echo "delta=$((after - before))"; [ ! -e "$parent/outside.im.shm" ] && echo "no_out=1"\n'
+        "echo \"alive=$(@calc '2 + 3')\"",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    for key in ("cp2shm", "cp", "mk1", "mk2", "cnt0", "rmshm", "ex", "s1", "s2", "srm"):
+        assert value(res.stdout, key) not in (None, "0"), f"{key}: {out}"
+    assert value(res.stdout, "delta") == "0" and value(res.stdout, "no_out") == "1", out
+    assert value(res.stdout, "alive") == "5", out
+    assert list(mlk_dir.iterdir()) == []
+
+
+def test_meta_options_on_zero_param_and_onoff_commands(tmp_path):
+    """Meta-options work on 0-param commands and FPTYPE_ONOFF initializes cleanly."""
+    res = milk_bash(
+        'mem.mk2Dim "@L:keep" 4 4 >/dev/null\n'
+        'mem.rmall --no-run >nr.txt 2>&1; echo "nr=$?"\n'
+        '@exists l.keep && echo "kept=1"\n'
+        'mem.rmall --default >/dev/null 2>&1; echo "def=$?"\n'
+        'mem.rmall --save=p >/dev/null 2>&1; echo "sav=$?"\n'
+        'mem.listim --json --no-run >lnr.txt 2>&1; echo "lnr=$?"\n'
+        'mem.im3D_to_stream2D in out --no-run >/dev/null 2>&1; echo "i3d=$?"\n'
+        'mem.im3D_to_stream2D --default .loop_mode=1 >/dev/null 2>&1; echo "onoff=$?"\n'
+        'mem.streamdelay --default .delaysec=1 >/dev/null 2>&1; echo "sd=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "nr") == "0", out
+    assert "mem.rmall" in (tmp_path / "nr.txt").read_text()
+    assert value(res.stdout, "kept") == "1", out
+    assert value(res.stdout, "def") == "2" and value(res.stdout, "sav") == "2", out
+    assert value(res.stdout, "lnr") == "0", out
+    assert "mem.listim" in (tmp_path / "lnr.txt").read_text()
+    assert value(res.stdout, "i3d") == "0" and value(res.stdout, "onoff") == "0", out
+    assert value(res.stdout, "sd") == "0", out
+
+
+def test_missing_image_and_sem_bounds_return_failure(tmp_path):
+    """Missing-image calls and out-of-range sem indices fail cleanly with status 1."""
+    cmds = (
+        ("gn", "stat.putgaussnoise _no1 _out1 1"),
+        ("add", "imgbasic.addim _no1 _no2 _out1 0 0"),
+        ("cor", "fft.fcorrel _no1 _no2 _out1"),
+        ("tr", "fft.transl _no1 _out1 1 0"),
+        ("cs", "info.cubestats _no1 _no2 stats.txt"),
+        ("mv", "mem.mv _no1 _out1"),
+        ("cp2", "mem.imcp2shm _no1 _out1"),
+        ("kwl", "mem.imkwlist _no1"),
+        ("lkw", "mem.imlistkw _no1"),
+        ("wkw", "mem.imwritekwL _no1 K 1 c"),
+        ("c0", "mem.imsetcnt0 _no1 1"),
+        ("si", "mem.imseminfo _no1"),
+        ("ap2c", "mem.ap2c _no1 _no2 _out1"),
+        ("bc", "iofits.breakcube _no1"),
+        ("d3", "tools.dispim3d _no1 1"),
+        ("sp", "mem.imsetsempost im1 99"),
+        ("sf", "mem.imsetsemflush im1 99"),
+    )
+    script = 'mem.mk2Dim "@L:loc" 4 4 >/dev/null\nmem.mk2Dim "@S:im1" 4 4 >/dev/null\n'
+    script += "".join(f'{cmd} >/dev/null 2>&1; echo "{tag}=$?"\n' for tag, cmd in cmds)
+    script += (
+        'mem.imseminfo loc >locsem.txt 2>&1; echo "locrc=$?"\n'
+        "echo \"alive=$(@calc '3 + 4')\""
+    )
+    res = milk_bash(script, tmp_path)
+    out = res.stdout + res.stderr
+    for tag, cmd in cmds:
+        assert value(res.stdout, tag) == "1", f"{cmd}: {out}"
+    assert value(res.stdout, "locrc") == "0", out
+    assert "semlog = none" in (tmp_path / "locsem.txt").read_text()
+    assert value(res.stdout, "alive") == "7", out
+
+
+def test_fpsdump_keys_and_fpsload_missing(tmp_path):
+    """milk.fpsdump emits short parameter keys; milk.fpsload on missing FPS returns 1."""
+    res = milk_bash(
+        UNIT_HELPERS
+        + 'milk-fpsexec-milk-calc -n fd -p "gain:float=1" -e "o = gain" fpsinit >/dev/null\n'
+        'milk.fpsdump fd >d1.txt; echo "d1=$?"\n'
+        'milk.fpsdump -t fd >d2.txt; echo "d2=$?"\n'
+        'milk.fpsdump --json fd >d3.json; echo "d3=$?"\n'
+        'milk.fpsload nosuch >/dev/null 2>&1; echo "fl=$?"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert [value(res.stdout, k) for k in ("d1", "d2", "d3")] == ["0", "0", "0"], out
+    assert value(res.stdout, "fl") == "1", out
+    d1 = (tmp_path / "d1.txt").read_text()
+    d2 = (tmp_path / "d2.txt").read_text()
+    d3 = json.loads((tmp_path / "d3.json").read_text())
+    assert "gain=" in d1 and "conf.datadir=" in d1 and "fd.gain=" not in d1, d1
+    assert "gain" in d2 and "conf.datadir" in d2 and "fd.gain" not in d2, d2
+    assert any("gain" in str(k) for k in d3) or "gain" in json.dumps(d3), d3
+
+
+def test_set_kw_validation_and_empty_option_values(tmp_path):
+    """@set validates keyword sizes/ranges; empty keyword option values return 2 quickly."""
+    bad_set = (
+        "s.kws.kw.=1",
+        "s.kws.kw.TOOLONGKEYNAME123=1",
+        "s.kws.kw.K=0123456789abcdef",
+        "s.kws.kw.INTBIG=99999999999999999999",
+        "s.kws.kw.FLTBIG=1e400",
+    )
+    bad_opt = (
+        '@log -n ""',
+        '@assert --max-age "" s.im1',
+        '@waitfor s.im1 -t ""',
+        "@waitfor s.im1 --timeout=",
+    )
+    script = 'mem.mk2Dim "@S:kws" 4 4 >/dev/null\nmem.mk2Dim "@S:im1" 4 4 >/dev/null\n'
+    script += '@set s.kws.kw.GOOD=42; echo "good=$?"\n'
+    script += "".join(
+        f'@set "{s}" >/dev/null 2>&1; echo "s{i}=$?"\n' for i, s in enumerate(bad_set)
+    )
+    script += "".join(
+        f'{c} >/dev/null 2>&1; echo "o{i}=$?"\n' for i, c in enumerate(bad_opt)
+    )
+    script += 'echo "kept=$(@get s.kws.kw.GOOD)"'
+    res = milk_bash(script, tmp_path, timeout=15)
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "good") == "0" and value(res.stdout, "kept") == "42", out
+    for i in range(len(bad_set)):
+        assert value(res.stdout, f"s{i}") not in (None, "0"), out
+    for i in range(len(bad_opt)):
+        assert value(res.stdout, f"o{i}") == "2", out

@@ -332,7 +332,7 @@ int milk_client_connect_or_start(const milk_client_hooks_t *hooks)
                 sname);
         return -1;
     }
-    if (autostart_server(hooks, sockpath) == 0)
+    if (autostart_server(hooks, sockpath) >= 0) // 1: another command of this shell started it
     {
         fd = milk_client_connect(sockpath);
         if (fd >= 0)
@@ -383,7 +383,8 @@ static void try_add_packed_var(milk_packed_vars_t        *pv,
 }
 
 /**
- * milk_client_pack_digits - Pack the shell's MILK_DPDIGITS: the session prints with its digits
+ * milk_client_pack_digits - Pack the shell's MILK_DPDIGITS and MILK_CALC_LIBS: the session prints
+ * with its digits and loads its libraries
  * @pv:    Packed variable accumulator
  * @hooks: Optional shell callback hooks
  *
@@ -392,6 +393,7 @@ static void try_add_packed_var(milk_packed_vars_t        *pv,
 void milk_client_pack_digits(milk_packed_vars_t *pv, const milk_client_hooks_t *hooks)
 {
     try_add_packed_var(pv, hooks, "MILK_DPDIGITS");
+    try_add_packed_var(pv, hooks, "MILK_CALC_LIBS");
 }
 
 /**

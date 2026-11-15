@@ -260,6 +260,24 @@ def test_setup_failure_is_never_ready(tmp_path):
     assert "exited before its loop started" in start and "ready after" not in start, out
 
 
+def test_statements_that_do_not_parse_are_never_ready(tmp_path):
+    """milk.calc statements that do not parse make runstart fail, with the reason in .unit.error;
+    statements that read a stream created later start (test_E8_calc_is_prepared_at_start).
+    """
+    res = lt_bash(
+        'milk-fpsexec-milk-calc -n lp -t cam -e "op = (cam" fpsinit >/dev/null\n'
+        'milk-fpsexec-milk-calc -n lp runstart >start.log 2>&1; echo "start=$?"\n'
+        'echo "error=[$(@get f.lp.unit.error)]"; echo "state=$(state lp)"',
+        tmp_path,
+        "",
+    )
+    out = out_of(res, tmp_path)
+    assert value(res.stdout, "start") == "1", out
+    assert value(res.stdout, "error") == "[Expected ')']", out
+    assert value(res.stdout, "state") == "failed", out
+    assert "ready after" not in (tmp_path / "start.log").read_text(), out
+
+
 def test_slow_start_times_out_then_runs(tmp_path, ltunit):
     """A loop not active within --timeout gives 124 and state starting, then running."""
     res = lt_bash(
@@ -850,3 +868,112 @@ def test_unit_under_taskset_keeps_its_cpu_mask(tmp_path):
             proc.kill()
             proc.wait()
         shutil.rmtree(shm_dir, ignore_errors=True)
+
+
+def test_output_log_rotation_preserves_inode(tmp_path, ltunit):
+    """Rotating run.out copies to run.out.1 and truncates in place so existing holders keep inode."""
+    res = lt_bash(
+        "MILK_UNIT_OUT_MAX=1K $LT -n rotin fpsinit .lines=40 >/dev/null\n"
+        "$LT -n rotin runstart >/dev/null\n"
+        'ino1=$(stat -c %i "$U/rotin.fps.d/run.out")\n'
+        "for i in $(seq 8); do mem.imsetsempost lt_in -1 >/dev/null; sleep 0.4; "
+        '[ -s "$U/rotin.fps.d/run.out.1" ] && break; done\n'
+        'ino2=$(stat -c %i "$U/rotin.fps.d/run.out")\n'
+        "$LT -n rotin runstop >/dev/null\n"
+        'ino3=$(stat -c %i "$U/rotin.fps.d/run.out")\n'
+        'has1=0; [ -s "$U/rotin.fps.d/run.out.1" ] && has1=1\n'
+        'echo "ino1=$ino1"; echo "ino2=$ino2"; echo "ino3=$ino3"; echo "has1=$has1"',
+        tmp_path,
+        ltunit,
+    )
+    out = out_of(res, tmp_path)
+    assert value(res.stdout, "has1") == "1", out
+    assert value(res.stdout, "ino1") == value(res.stdout, "ino2"), out
+    assert value(res.stdout, "ino2") == value(res.stdout, "ino3"), out
+
+
+def test_delay_mode_stops_quickly_and_semflush_drains_stale(tmp_path):
+    """DELAY loops wake on exit request within <1s, and stale trigger sem counts drain before start."""
+    res = milk_bash(
+        HELPERS
+        + 'milk-fpsexec-milk-calc -n dl5 -loopd 5.0 -e "dlo = cam" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n dl5 runstart >/dev/null\n"
+        "sleep 0.2; t0=$(date +%s%N)\n"
+        "milk-fpsexec-milk-calc -n dl5 runstop >/dev/null; rcs=$?\n"
+        't1=$(date +%s%N); echo "rcs=$rcs"; echo "ms=$(( (t1 - t0) / 1000000 ))"\n'
+        'mem.mk2Dim "@S:st" 4 4 >/dev/null; @calc "st = 1"\n'
+        'for i in 2 3 4 5; do @calc "st = $i"; done\n'
+        'milk-fpsexec-milk-calc -n sf -t st -p "k:int=0 m:int=-1" -e "k += 1; m = _missed" '
+        "fpsinit >/dev/null\n"
+        "milk-fpsexec-milk-calc -n sf runstart >/dev/null\n"
+        'sleep 0.3; echo "k_idle=$(@get f.sf.k)"\n'
+        '@calc "st = 6"; sleep 0.3; echo "k_one=$(@get f.sf.k)"; echo "m_one=$(@get f.sf.m)"\n'
+        "milk-fpsexec-milk-calc -n sf runstop >/dev/null",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rcs") == "0", out
+    assert int(value(res.stdout, "ms") or 9999) < 1500, out
+    assert value(res.stdout, "k_idle") == "0", out
+    assert value(res.stdout, "k_one") == "1", out
+    assert value(res.stdout, "m_one") == "0", out
+
+
+def test_trigger_option_update_stopped_and_refused_running(tmp_path):
+    """-t and @set update .unit.trigger when stopped; -t is refused with status 2 while running."""
+    res = milk_bash(
+        HELPERS
+        + 'mem.mk2Dim "@S:tr1" 4 4 >/dev/null; mem.mk2Dim "@S:tr2" 4 4 >/dev/null\n'
+        '@calc "tr1 = 10; tr2 = 20"\n'
+        'milk-fpsexec-milk-calc -n tu -p "seen:int=0" -e "seen += 1; tout = cam" fpsinit >/dev/null\n'
+        "milk-fpsexec-milk-calc -n tu -t tr1 set >/dev/null; rcs1=$?\n"
+        'echo "t1=$(@get f.tu.unit.trigger):$(@get f.tu.procinfo.triggersname)"\n'
+        "@set f.tu.unit.trigger=tr2\n"
+        "milk-fpsexec-milk-calc -n tu runstart >/dev/null\n"
+        'sleep 0.2; @calc "tr2 = 25"; sleep 0.3\n'
+        'echo "seen=$(@get f.tu.seen)"; echo "pt=$(@get f.tu.procinfo.triggersname)"\n'
+        "milk-fpsexec-milk-calc -n tu -t tr1 set >/dev/null 2>&1; rc_run=$?\n"
+        "milk-fpsexec-milk-calc -n tu runstop >/dev/null\n"
+        'milk-fpsexec-milk-script -n ts -c "true" fpsinit >/dev/null\n'
+        "@set f.ts.unit.trigger=tr1\n"
+        "milk-fpsexec-milk-script -n ts runstart >/dev/null\n"
+        "milk-fpsexec-milk-script -n ts -t tr2 runstart >/dev/null 2>&1; rc_srun=$?\n"
+        'echo "pt_s=$(@get f.ts.procinfo.triggersname)"; echo "rcs1=$rcs1"\n'
+        'echo "rc_run=$rc_run"; echo "rc_srun=$rc_srun"\n'
+        "milk-fpsexec-milk-script -n ts runstop >/dev/null",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "t1") == "tr1:tr1", out
+    assert int(value(res.stdout, "seen") or 0) >= 1, out
+    assert value(res.stdout, "pt") == "tr2", out
+    assert value(res.stdout, "pt_s") == "tr1", out
+    assert value(res.stdout, "rcs1") == "0", out
+    assert value(res.stdout, "rc_run") == "2", out
+    assert value(res.stdout, "rc_srun") == "2", out
+
+
+def test_milk_fps_rm_exact_default_regex_and_errors(tmp_path):
+    """milk-fps-rm defaults to exact match, uses -r for regex, and returns 1 on invalid/empty."""
+    res = milk_bash(
+        HELPERS + "calc_unit rmtest cam; calc_unit rmtest_extra cam\n"
+        "milk-fps-rm rmtest >/dev/null; rc_ok=$?\n"
+        'echo "rc_ok=$rc_ok"; echo "gone_s=$(state rmtest)"; echo "keep_s=$(state rmtest_extra)"\n'
+        'milk-fps-rm -r "bad[" >/dev/null 2>&1; rc_badre=$?\n'
+        "milk-fps-rm no_such_fps_xyz >/dev/null 2>&1; rc_miss=$?\n"
+        "calc_unit rmtest2 cam\n"
+        'milk-fps-rm -r "^rmtest" </dev/null >/dev/null 2>&1; rc_nontty=$?\n'
+        'milk-fps-rm -r "^rmtest_extra$" >/dev/null; rc_re=$?\n'
+        "milk-fps-rm rmtest2 >/dev/null\n"
+        'echo "rc_badre=$rc_badre"; echo "rc_miss=$rc_miss"\n'
+        'echo "rc_nontty=$rc_nontty"; echo "rc_re=$rc_re"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "rc_ok") == "0", out
+    assert value(res.stdout, "gone_s") == "", out
+    assert value(res.stdout, "keep_s") != "", out
+    assert value(res.stdout, "rc_badre") == "1", out
+    assert value(res.stdout, "rc_miss") == "1", out
+    assert value(res.stdout, "rc_nontty") == "1", out
+    assert value(res.stdout, "rc_re") == "0", out

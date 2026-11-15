@@ -271,7 +271,7 @@ static int pick_slot(const ent_hdr_t *first, int n, size_t stride)
 static stream_ent_t *lookup_or_open_stream_locked(const char *name)
 {
     g_cache_full = 0;
-    if (name == NULL || name[0] == '\0')
+    if (name == NULL || name[0] == '\0' || strchr(name, '/') != NULL)
     {
         return NULL;
     }

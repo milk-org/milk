@@ -122,6 +122,13 @@ typedef struct
  * Return: 0, or non-zero when the caller returns a->rc. */
 int milk_kw_parse(const char *name, unsigned flags, int *argc, char **argv, milk_kw_args_t *a);
 
+/** milk_kw_value_bad() - for a value whose placeholder @arg is a count (`<N>` `<n>` `<target>` `[N]`)
+ * or a time or rate (`<sec>` `<s>` `<seconds>` `<hz>` `<rate>` `<ms>` `[T]`): the end of the message
+ * " needs an integer >= 0, not " or " needs a number >= 0, not " when @v is not a decimal integer >= 0,
+ * or a finite number >= 0; NULL when it is one, or @arg is not a number. milk_kw_parse() checks the
+ * option values with it. */
+const char *milk_kw_value_bad(const char *arg, const char *v);
+
 /** milk_kw_opt() - the value of option @opt (one of its spellings) in @a: NULL if it was not
  * given, "" for a flag. */
 const char *milk_kw_opt(const milk_kw_args_t *a, const char *opt);

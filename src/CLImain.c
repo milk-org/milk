@@ -232,10 +232,6 @@ int main(int argc, char *argv[])
     {
         printf("EXIT CODE %d\n", dcexitcode);
     }
-    else
-    {
-        printf("\n");
-    }
 
     // clean-up calling thread
     //pthread_exit(NULL);

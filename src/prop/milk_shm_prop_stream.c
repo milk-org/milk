@@ -16,6 +16,8 @@
  * else float, else string.
  */
 
+#include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <pthread.h>
 
@@ -49,6 +51,10 @@
 IMAGE *milk_shm_prop_find_or_open_stream(const char *sname, IMAGE *tmp_img, int *need_close)
 {
     *need_close = 0;
+    if (sname == NULL || sname[0] == '\0' || strchr(sname, '/') != NULL)
+    {
+        return NULL;
+    }
     if (MILK_LOCAL_IMAGES != NULL)
     {
         for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)
@@ -743,13 +749,76 @@ int milk_shm_prop_set_stream(const char *name,
     }
     if (prop[kw_off] == '\0')
     {
+        fprintf(stderr, "ERROR: empty keyword name in 's.%s.%s'\n", name, prop);
         return -1;
     }
-    char kname[KEYWORD_MAX_STRING]; // stored width: look up by the name as it will be stored
-    snprintf(kname, sizeof(kname), "%s", prop + kw_off);
-    if (strlen(prop + kw_off) >= sizeof(kname))
+    if (val == NULL)
     {
-        fprintf(stderr, "WARNING: keyword name '%s' truncated to '%s'\n", prop + kw_off, kname);
+        fprintf(stderr, "ERROR: missing value for keyword 's.%s.%s'\n", name, prop);
+        return -1;
+    }
+    if (strlen(prop + kw_off) >= KEYWORD_MAX_STRING)
+    {
+        fprintf(stderr, "ERROR: keyword name '%s' exceeds %d characters\n", prop + kw_off,
+                KEYWORD_MAX_STRING - 1);
+        return -1;
+    }
+    if (comment != NULL && strlen(comment) >= KEYWORD_MAX_COMMENT)
+    {
+        fprintf(stderr, "ERROR: keyword comment exceeds %d characters\n", KEYWORD_MAX_COMMENT - 1);
+        return -1;
+    }
+
+    char    kname[KEYWORD_MAX_STRING];
+    char    kw_type = 'S';
+    int64_t kw_lval = 0;
+    double  kw_dval = 0.0;
+
+    snprintf(kname, sizeof(kname), "%s", prop + kw_off);
+
+    if (val[0] != '\0' && !isspace((unsigned char) val[0]))
+    {
+        char *endp     = NULL;
+        errno          = 0;
+        long long lval = strtoll(val, &endp, 10);
+        if (endp != val && *endp == '\0')
+        {
+            if (errno == ERANGE || lval < INT64_MIN || lval > INT64_MAX)
+            {
+                fprintf(stderr, "ERROR: keyword integer value '%s' out of int64 range\n", val);
+                return -1;
+            }
+            kw_type = 'L';
+            kw_lval = (int64_t) lval;
+        }
+        else
+        {
+            const char *p = (val[0] == '+' || val[0] == '-') ? val + 1 : val;
+            int         starts_num =
+                (isdigit((unsigned char) p[0]) || (p[0] == '.' && isdigit((unsigned char) p[1])));
+            if (starts_num)
+            {
+                errno       = 0;
+                endp        = NULL;
+                double dval = strtod(val, &endp);
+                if (endp != val && *endp == '\0')
+                {
+                    if (!isfinite(dval) || (errno == ERANGE && (dval < -1.0 || dval > 1.0)))
+                    {
+                        fprintf(stderr, "ERROR: keyword float value '%s' out of range\n", val);
+                        return -1;
+                    }
+                    kw_type = 'D';
+                    kw_dval = dval;
+                }
+            }
+        }
+    }
+    if (kw_type == 'S' && strlen(val) >= KEYWORD_MAX_STRING)
+    {
+        fprintf(stderr, "ERROR: keyword string value '%s' exceeds %d characters\n", val,
+                KEYWORD_MAX_STRING - 1);
+        return -1;
     }
 
     IMAGE *im = milk_shm_prop_find_stream(name); /* cached mapping: never closed here */
@@ -790,26 +859,18 @@ int milk_shm_prop_set_stream(const char *name,
     {
         snprintf(im->kw[slot].comment, KEYWORD_MAX_COMMENT, "%s", comment);
     }
-    char     *endp = NULL;
-    long long lval = strtoll(val, &endp, 10);
-    if (val[0] != '\0' && endp != val && *endp == '\0')
+    im->kw[slot].type = kw_type;
+    if (kw_type == 'L')
     {
-        im->kw[slot].value.numl = (int64_t) lval;
-        im->kw[slot].type       = 'L';
+        im->kw[slot].value.numl = kw_lval;
+    }
+    else if (kw_type == 'D')
+    {
+        im->kw[slot].value.numf = kw_dval;
     }
     else
     {
-        double dval = strtod(val, &endp);
-        if (val[0] != '\0' && endp != val && *endp == '\0')
-        {
-            im->kw[slot].value.numf = dval;
-            im->kw[slot].type       = 'D';
-        }
-        else
-        {
-            snprintf(im->kw[slot].value.valstr, KEYWORD_MAX_STRING, "%s", val);
-            im->kw[slot].type = 'S';
-        }
+        snprintf(im->kw[slot].value.valstr, KEYWORD_MAX_STRING, "%s", val);
     }
     im->kw[slot].cnt++;
 
@@ -824,6 +885,10 @@ int milk_shm_prop_set_stream(const char *name,
  */
 int milk_shm_prop_exists_stream(const char *name)
 {
+    if (name == NULL || name[0] == '\0' || strchr(name, '/') != NULL)
+    {
+        return 0;
+    }
     if (MILK_LOCAL_IMAGES != NULL)
     {
         for (long i = 0; i < MILK_NB_LOCAL_IMAGES; i++)

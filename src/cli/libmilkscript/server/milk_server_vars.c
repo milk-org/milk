@@ -10,11 +10,11 @@
  *              outputs a command declares reach the shell, without losing digits on the way.
  * Does:        stores the shell variables a request carries (a number in `dcvar[]`, text in
  *              `cli_vars[]`; never over an image of that name), keeping a variable's exact value
- *              when the text is what milk printed for it; takes the shell's MILK_DPDIGITS for the
- *              request; fingerprints a command's declared outputs (CLICMDDATA.outvars) before it
- *              runs, and sends those it changed back as SETVAR; tells whether a line of milk-cli's
- *              calc mode can run in milk-cli's process, its names known and synced since the
- *              last bash command.
+ *              when the text is what milk printed for it; takes the shell's MILK_DPDIGITS and
+ *              MILK_CALC_LIBS for the request; fingerprints a command's declared outputs
+ *              (CLICMDDATA.outvars) before it runs, and sends those it changed back as SETVAR;
+ *              tells whether a line of milk-cli's calc mode can run in milk-cli's process, its
+ *              names known and synced since the last bash command.
  * Used by:     milk_server_eval.c (CALC and TEST), milk_server_dispatch.c (CALL);
  *              milk_bash_coproc.c and milk_bash_exec.c (calc mode). Declared in
  *              milk_server_internal.h and milk_server.h.
@@ -139,6 +139,11 @@ void milk_server_sync_bash_vars(const uint8_t *buf,
         {
             long nd          = strtol(vval, NULL, 10);
             cli_float_digits = (nd >= 1 && nd <= 17) ? (int) nd : 15;
+            continue;
+        }
+        if (strcmp(vname, "MILK_CALC_LIBS") == 0) /* each calculator call loads them */
+        {
+            setenv(vname, vval, 1);
             continue;
         }
         if (vname[0] == '\0' || mc_is_reserved_const(vname)) /* pi, nan, inf */

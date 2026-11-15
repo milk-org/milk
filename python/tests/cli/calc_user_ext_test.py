@@ -846,6 +846,45 @@ def test_edited_extension_is_loaded_again(tmp_path):
     assert value(res.stdout, "m") == "10,15", res.stdout + res.stderr
 
 
+def test_a_refused_library_registers_nothing_and_names_stay_owned(tmp_path):
+    """A library refused at its second entry leaves no first entry behind (it pointed into code
+    that was unloaded: calling it crashed the command), and a name another library or milk itself
+    registered is not taken over (bblur1pix is a built-in extension)."""
+
+    def lib(*names):
+        body = '#include "milk_calc_ext.h"\n'
+        body += "static void k2(float *restrict out, const float *restrict in, const void *P, int len)\n"
+        body += "{ (void) P; for (int i = 0; i < len; i++) out[i] = in[i] * 2.0f; }\n"
+        regs = ", ".join(f'MILK_CALC_REG_BLK("{n}", k2, NULL, 1)' for n in names)
+        return body + f"MILK_CALC_EXT_EXPORT({regs});\n"
+
+    (tmp_path / "partial.c").write_text(lib("goodk", "sqrt"))
+    (tmp_path / "builtin.c").write_text(lib("bblur1pix"))
+    (tmp_path / "twice.c").write_text(lib("dupk", "dupk"))
+    (tmp_path / "first.c").write_text(lib("ownk"))
+    (tmp_path / "second.c").write_text(lib("ownk"))
+    res = milk_bash(
+        '@calc "raw = zeros(4, 4) + 2"\n'
+        '@calc --lib partial.c "1" 2>>err.txt; echo "partial=$?"\n'
+        '@calc "o = goodk(raw)" 2>>err.txt; echo "goodk=$?"\n'
+        '@calc --lib builtin.c "1" 2>>err.txt; echo "builtin=$?"\n'
+        '@calc --lib twice.c "1" 2>>err.txt; echo "twice=$?"\n'
+        '@calc --lib first.c "1"; @calc --lib second.c "1" 2>>err.txt; echo "second=$?"\n'
+        '@calc -v m "imean(ownk(raw)) + imean(bblur1pix(raw))"; echo "m=$m"',
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert [
+        value(res.stdout, k) for k in ("partial", "goodk", "builtin", "twice", "second")
+    ] == ["2"] * 5, out
+    err = (tmp_path / "err.txt").read_text()
+    assert "unknown function 'goodk'" in err and "CRASH" not in out, err
+    assert "extension 'bblur1pix' is already defined by milk" in err, err
+    assert "extension 'dupk' is defined twice" in err, err
+    assert "extension 'ownk' is already defined by" in err and "first.c" in err, err
+    assert value(res.stdout, "m") not in (None, ""), out
+
+
 def test_operator_with_too_many_ports_is_refused(tmp_path):
     """Nine input ports used to load and overrun the per-call port arrays."""
     ports = (
@@ -864,3 +903,98 @@ def test_operator_with_too_many_ports_is_refused(tmp_path):
     out = res.stdout + res.stderr + (tmp_path / "many.err").read_text()
     assert value(res.stdout, "rc") != "0", out
     assert "at most 8" in out, out
+
+
+def test_milk_calc_libs_is_read_at_each_call(tmp_path):
+    """MILK_CALC_LIBS exported after the session started reaches @calc and @test (units load
+    their libraries with -l only: the FPS records them)."""
+    (tmp_path / "kw.c").write_text(
+        '#include "milk_calc_ext.h"\n'
+        "static void f(float *restrict out, const float *restrict in, const void *P, int len)\n"
+        "{ for (int i = 0; i < len; i++) out[i] = 5.0f; }\n"
+        "MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK(kw, f, NULL, 1));\n"
+    )
+    res = milk_bash(
+        '@calc "raw = zeros(4,4)"; export MILK_CALC_LIBS=kw.c\n'
+        '@calc "a = kw(raw)"; @calc -v m "imean(a)"; @test "imean(kw(raw)) == 5"; echo "t=$?"\n'
+        'echo "m=$m"',
+        tmp_path,
+    )
+    assert value(res.stdout, "m") == "5", res.stdout + res.stderr
+    assert value(res.stdout, "t") == "0", res.stdout + res.stderr
+
+
+def test_param_keyword_and_noparams(tmp_path):
+    """X(".kw", field, ...): ".kw" names the call keyword and FPS parameter; MILK_CALC_NOPARAMS compiles."""
+    (tmp_path / "kwk.c").write_text(r"""
+#include "milk_calc_ext.h"
+#define KWK_PARAMS(X) \
+    X(".gain", g, FPTYPE_FLOAT64, 2.0, FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Gain")
+MILK_CALC_PARAMS(kwk, KWK_PARAMS);
+static void kwk_f(float *restrict out, const float *restrict in, const struct kwk_par *P, int len)
+{
+    for (int i = 0; i < len; i++)
+    {
+        out[i] = in[i] * (float) P->g;
+    }
+}
+static void negk_f(float *restrict out, const float *restrict in, const void *P, int len)
+{
+    for (int i = 0; i < len; i++)
+    {
+        out[i] = -in[i];
+    }
+}
+MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK("kwk", kwk_f, kwk, 1),
+                     MILK_CALC_REG_BLK("negk", negk_f, MILK_CALC_NOPARAMS, 1));
+""")
+    res = milk_bash(
+        """
+mem.mk2Dim "@S:kin" 4 4 >/dev/null
+@calc "kin = 1"
+@calc --lib kwk.c "ko1 = kwk(kin, gain = 3)"; echo "rc=$?"
+@calc --lib kwk.c "ko2 = negk(kin)"
+echo "ko1=$(@calc 'imax(ko1)')"
+echo "ko2=$(@calc 'imax(ko2)')"
+@calc --lib kwk.c "ko3 = kwk(kin, g = 3)" 2>/dev/null; echo "g_rc=$?"
+milk-fpsexec-milk-calc -n u_kwkt -l kwk.c -e "ko4 = kwk(kin)" exec >/dev/null 2>&1
+echo "fps=$(@get f.u_kwkt.kwk.gain)"
+milk-fpsexec-milk-calc -l kwk.c --list kwk | grep -q "params: gain]" && echo "list=ok"
+""",
+        tmp_path,
+    )
+    assert [
+        value(res.stdout, k) for k in ("rc", "ko1", "ko2", "g_rc", "fps", "list")
+    ] == ["0", "3", "-1", "2", "2", "ok"], (res.stdout + res.stderr)
+
+
+def test_unit_with_relative_lib_is_driven_from_another_dir(tmp_path):
+    """.unit.libs holding a relative path (here the absolute one does not fit in an FPS string)
+    resolves in the unit's work directory: runstart and runstop work from another directory, and
+    runstop needs no library (one that no longer compiles cannot keep the unit running).
+    """
+    d = tmp_path / ("d" * 60)
+    d.mkdir()
+    (d / "kl.c").write_text(
+        '#include "milk_calc_ext.h"\n'
+        "static void f(float *restrict out, const float *restrict in, const void *P, int len)"
+        " { for (int i = 0; i < len; i++) out[i] = 9.0f; }\n"
+        "MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK(kl, f, NULL, 1));\n"
+    )
+    res = milk_bash(
+        f"""
+@calc "S:cam = zeros(4,4)"
+cd {d}; milk-fpsexec-milk-calc -n urt -t cam -l kl.c -e "ort = kl(cam)" fpsinit >/dev/null
+cd {tmp_path}
+milk-fpsexec-milk-calc -n urt runstart >/dev/null; echo "start=$?"
+@calc "S:cam = cam + 1"; sleep 0.3; echo "o=$(@get s.ort.mean)"
+echo "syntax error" >> {d}/kl.c
+milk-fpsexec-milk-calc -n urt runstop >/dev/null; echo "stop=$?"
+cd {d}; sed -i '$d' kl.c; milk-fpsexec-milk-calc -n urt runstop >/dev/null 2>&1
+""",
+        tmp_path,
+    )
+    out = res.stdout + res.stderr
+    assert value(res.stdout, "start") == "0", out
+    assert value(res.stdout, "o") == "9", out
+    assert value(res.stdout, "stop") == "0", out

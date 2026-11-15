@@ -62,7 +62,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
     DEBUG_TRACE_FSTART();
 
     fitsfile *fptr = NULL; /* pointer to the FITS file; defined in fitsio.h */
-    int       nulval, anynul;
+    int       anynul;      /* nulval NULL: no null checking (NaN pixels stay NaN) */
     long      bitpixl = 0;
 
     uint32_t naxes[3];
@@ -72,7 +72,6 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
     unsigned char *barray = NULL;
     long          *larray = NULL;
 
-    nulval = 0;
     anynul = 0;
     bscale = 1;
     bzero  = 0;
@@ -253,7 +252,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 
         {
             int status = 0;
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, NULL,
                           imgout->im->array.F, &anynul, &status);
             FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
@@ -275,7 +274,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 
         {
             int status = 0;
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval,
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, NULL,
                           imgout->im->array.D, &anynul, &status);
             FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
@@ -297,7 +296,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 
         {
             int status = 0;
-            fits_read_img(fptr, 20, fpixel, nelements, &nulval, imgout->im->array.UI16, &anynul,
+            fits_read_img(fptr, 20, fpixel, nelements, NULL, imgout->im->array.UI16, &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
@@ -325,7 +324,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         }
         {
             int status = 0;
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray, &anynul,
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, NULL, larray, &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
@@ -362,7 +361,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 
         {
             int status = 0;
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, larray, &anynul,
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, NULL, larray, &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }
@@ -399,7 +398,7 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
 
         {
             int status = 0;
-            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, &nulval, barray, &anynul,
+            fits_read_img(fptr, data_type_code(bitpix), fpixel, nelements, NULL, barray, &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status, errmode, "fits_read_img bitpix=%d", bitpix);
         }

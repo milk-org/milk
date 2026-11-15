@@ -704,7 +704,7 @@ static void spawn_print_tail(const char *path)
     }
 }
 
-int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_spawn_opts_t *opts)
+static int spawn_daemon(const char *binpath, const char *sockpath, const milk_spawn_opts_t *opts)
 {
     char             exe[PATH_MAX];
     char             out[512];
@@ -789,6 +789,10 @@ int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_
     {
         return 0;
     }
+    if (w == MILKDETACH_FAILED && r.err == EADDRINUSE && milk_ipc_ping_socket(sockpath))
+    {
+        return 1;
+    }
     if (w == MILKDETACH_FAILED)
     {
         fprintf(stderr, "milk: the server for %s did not start: %s: %s\n", sockpath, r.status,
@@ -809,6 +813,35 @@ int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_
         spawn_print_tail(out);
     }
     return -1;
+}
+
+int milk_ipc_spawn_daemon(const char *binpath, const char *sockpath, const milk_spawn_opts_t *opts)
+{
+    char out[512];
+    char lock[520];
+    int  lfd = -1;
+
+    // one start at a time: a starter that waited finds the server up, and leaves its output file
+    // alone; the lock file goes once the server is up, so whoever still locks it finds it up too
+    if (milk_srvlog_out_path(sockpath, out, sizeof(out)) == 0)
+    {
+        snprintf(lock, sizeof(lock), "%s.lock", out);
+        lfd = open(lock, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0600);
+    }
+    if (lfd >= 0)
+    {
+        milkos_lock_file(lfd, 1);
+    }
+    int rc = milk_ipc_ping_socket(sockpath) ? 1 : spawn_daemon(binpath, sockpath, opts);
+    if (lfd >= 0)
+    {
+        if (rc >= 0)
+        {
+            unlink(lock);
+        }
+        close(lfd);
+    }
+    return rc;
 }
 
 /**

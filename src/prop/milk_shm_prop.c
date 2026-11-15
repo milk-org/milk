@@ -1582,9 +1582,10 @@ int milk_shm_prop_snapshot(int argc, char **argv)
     free(lbuf);
 
     fprintf(fp, "\n}\n");
-    if (fp != stdout)
+    if (fp != stdout && (ferror(fp) | fclose(fp)) != 0) /* a full disk shows here */
     {
-        fclose(fp);
+        fprintf(stderr, "Error: @snapshot: cannot write '%s'\n", out_file);
+        rc = 1;
     }
     return rc;
 }
@@ -1764,6 +1765,37 @@ static int scan_next_json_kv(const char **cursor, char *key, size_t keysz, char 
 }
 
 /**
+ * snapshot_read - Read the snapshot file @path of keyword @kw (`diff`, `restore`)
+ * @kw:   Keyword name, for the messages
+ * @path: File path, or `"-"` for stdin
+ *
+ * Return: the file's text (caller frees), or NULL after a message when it cannot be read or is
+ *         not a JSON object, which @snapshot writes (any other text would read as no entry)
+ */
+static char *snapshot_read(const char *kw, const char *path)
+{
+    char *s = read_file_all(path);
+    if (s == NULL)
+    {
+        fprintf(stderr, "Error: @%s: cannot read '%s'\n", kw, path);
+        return NULL;
+    }
+    const char *b = s + strspn(s, " \t\r\n");
+    size_t      n = strlen(b);
+    while (n > 0 && isspace((unsigned char) b[n - 1]))
+    {
+        n--;
+    }
+    if (n < 2 || b[0] != '{' || b[n - 1] != '}')
+    {
+        fprintf(stderr, "Error: @%s: '%s' is not a snapshot (a JSON object)\n", kw, path);
+        free(s);
+        return NULL;
+    }
+    return s;
+}
+
+/**
  * snapshot_values_equal - Compare two snapshot property values with numeric tolerance
  * @a: First property value string
  * @b: Second property value string
@@ -1821,10 +1853,9 @@ int milk_shm_prop_diff(int argc, char **argv)
         return 2;
     }
 
-    char *content = read_file_all(in_file);
+    char *content = snapshot_read("diff", in_file);
     if (content == NULL)
     {
-        fprintf(stderr, "Error: @diff: cannot read '%s'\n", in_file);
         return 2;
     }
 
@@ -1857,7 +1888,8 @@ int milk_shm_prop_diff(int argc, char **argv)
 }
 
 /**
- * @brief Restore FPS parameters and stream FITS keywords from a JSON snapshot (`@restore`).
+ * @brief Restore FPS parameters and stream FITS keywords from a JSON snapshot (`@restore`); a
+ *        value the live state already holds (as `@diff` compares) is left alone, and not listed.
  */
 int milk_shm_prop_restore(int argc, char **argv)
 {
@@ -1888,13 +1920,12 @@ int milk_shm_prop_restore(int argc, char **argv)
     if (in_file == NULL)
     {
         fprintf(stderr, "Usage: @restore [--dry-run] <snapshot.json> [glob_filter...]\n");
-        return 1;
+        return 2;
     }
 
-    char *content = read_file_all(in_file);
+    char *content = snapshot_read("restore", in_file);
     if (content == NULL)
     {
-        fprintf(stderr, "Error: @restore: cannot read '%s'\n", in_file);
         return 1;
     }
 
@@ -1905,7 +1936,9 @@ int milk_shm_prop_restore(int argc, char **argv)
 
     while (scan_next_json_kv(&cur, key, sizeof(key), sval, sizeof(sval)))
     {
-        if (!snapshot_key_matches(key, nfilters, filters))
+        char lval[1024];
+        if (!snapshot_key_matches(key, nfilters, filters) ||
+            (milk_shm_prop_get(key, lval, sizeof(lval)) == 0 && snapshot_values_equal(sval, lval)))
         {
             continue;
         }

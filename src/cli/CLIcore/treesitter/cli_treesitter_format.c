@@ -183,6 +183,17 @@ static void print_folds_ast_walk(TSNode      node,
     }
 }
 
+/**
+ * is_quoted_ctx - Check whether a shell context preserves whitespace inside a value
+ * @c: Byte context from `msl_scan()` (`enum msl_ctx`)
+ *
+ * Return: true if @c is inside single quotes, double quotes, ANSI-C quotes, or `${...}`
+ */
+static bool is_quoted_ctx(unsigned char c)
+{
+    return c == MSL_SQ || c == MSL_DQ || c == MSL_ANSI || c == MSL_PARAM;
+}
+
 #endif /* USE_TREESITTER */
 
 /**
@@ -275,47 +286,47 @@ char *cli_ts_format_code(const char *code, int indent_width)
         }
     }
 
-    char **raw_lines     = (char **) calloc((size_t) num_lines, sizeof(char *));
+    bool  *verbatim      = (bool *) calloc((size_t) num_lines, sizeof(bool));
     char **trimmed_lines = (char **) calloc((size_t) num_lines, sizeof(char *));
     int   *line_depth    = (int *) calloc((size_t) num_lines, sizeof(int));
-    if (!raw_lines || !trimmed_lines || !line_depth)
+    if (!verbatim || !trimmed_lines || !line_depth)
     {
-        free(raw_lines);
+        free(verbatim);
         free(trimmed_lines);
         free(line_depth);
         return NULL;
     }
 
-    const char *p        = code;
-    int         line_idx = 0;
+    msl_map_t      map      = { 0 };
+    int            map_ok   = (msl_scan(code, strlen(code), &map) == 0);
+    unsigned char *ctx      = map_ok ? map.ctx : NULL;
+    const char    *p        = code;
+    int            line_idx = 0;
     while (*p != '\0' && line_idx < num_lines)
     {
         const char *nl      = strchr(p, '\n');
         size_t      linelen = nl ? (size_t) (nl - p) : strlen(p);
-        char       *line    = (char *) malloc(linelen + 1);
-        if (line)
+        size_t      off     = (size_t) (p - code);
+        size_t      b       = 0;
+        size_t      e       = linelen;
+        /* Keep heredoc rows and continuations of multi-line quoted text verbatim */
+        verbatim[line_idx] =
+            ctx && (ctx[off] == MSL_HEREDOC || (off > 0 && is_quoted_ctx(ctx[off - 1])));
+        while (!verbatim[line_idx] && b < e && (p[b] == ' ' || p[b] == '\t' || p[b] == '\r'))
         {
-            memcpy(line, p, linelen);
-            line[linelen] = '\0';
+            b++;
         }
-        raw_lines[line_idx] = line;
-
-        const char *start = line ? line : "";
-        while (*start == ' ' || *start == '\t' || *start == '\r')
+        while (!verbatim[line_idx] && e > b &&
+               (p[e - 1] == ' ' || p[e - 1] == '\t' || p[e - 1] == '\r') &&
+               !(ctx && is_quoted_ctx(ctx[off + e - 1])))
         {
-            start++;
+            e--;
         }
-        size_t slen = strlen(start);
-        while (slen > 0 &&
-               (start[slen - 1] == ' ' || start[slen - 1] == '\t' || start[slen - 1] == '\r'))
-        {
-            slen--;
-        }
-        char *tline = (char *) malloc(slen + 1);
+        char *tline = (char *) malloc(e - b + 1);
         if (tline)
         {
-            memcpy(tline, start, slen);
-            tline[slen] = '\0';
+            memcpy(tline, p + b, e - b);
+            tline[e - b] = '\0';
         }
         trimmed_lines[line_idx] = tline;
         line_idx++;
@@ -362,7 +373,7 @@ char *cli_ts_format_code(const char *code, int indent_width)
                 }
                 continue;
             }
-            int d = line_depth[i];
+            int d = verbatim[i] ? 0 : line_depth[i];
             if (cli_ts_is_transition_token_line(tline) && d > 0)
             {
                 d--;
@@ -395,10 +406,13 @@ char *cli_ts_format_code(const char *code, int indent_width)
 
     for (int i = 0; i < num_lines; i++)
     {
-        free(raw_lines[i]);
         free(trimmed_lines[i]);
     }
-    free(raw_lines);
+    if (map_ok)
+    {
+        msl_free(&map);
+    }
+    free(verbatim);
     free(trimmed_lines);
     free(line_depth);
     return out;

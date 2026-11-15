@@ -12,6 +12,7 @@
  * Does:        mc_scalar_binop() applies a binary operator: exact 64-bit arithmetic on two
  *              integers (a double on overflow; `/` always gives a double), double arithmetic
  *              otherwise; mc_scalar_pow() keeps an integer power exact when it fits;
+ *              mc_scalar_cast() casts to an integer type as an image of that type stores it;
  *              mc_val_to_str() formats a value; mc_scalar_str_fn() runs `strlen`, `toupper`,
  *              `tolower`, `substr`, `replace`, `hex`, `oct` and `bin`. mcalc_local() evaluates an
  *              expression of numbers, operators, `pi`, `nan`, `inf`, in_local math functions and
@@ -125,6 +126,30 @@ void mc_scalar_pow(const mc_val_t *a, const mc_val_t *b, mc_val_t *out)
         return;
     }
     *out = mk_d(pow(val_num(a), val_num(b)));
+}
+
+/**
+ * mc_scalar_cast - Cast @a to integer datatype @dt as an image of that type stores it
+ * @dt:  Integer `_DATATYPE_*` of the cast function
+ * @a:   Scalar value to cast
+ * @out: Output scalar result (`MC_VAL_LONG`, or `MC_VAL_DOUBLE` for a `u64` of 2^63 or more)
+ *
+ * Truncated toward zero, then wrapped into the type (a double modulo 2^64 first, exact since
+ * beyond 2^53 a double is an integer); NaN and infinities give 0, as in mc_write_im_pix().
+ */
+void mc_scalar_cast(uint8_t dt, const mc_val_t *a, mc_val_t *out)
+{
+    double w = (a->type == MC_VAL_LONG || !isfinite(a->dval)) ? 0.0 : fmod(a->dval, 0x1p64);
+    long   si =
+        (a->type == MC_VAL_LONG) ? a->lval : (long) ((w < 0.0) ? 0 - (uint64_t) -w : (uint64_t) w);
+    long r = (dt == _DATATYPE_UINT8)    ? (uint8_t) si
+             : (dt == _DATATYPE_INT8)   ? (int8_t) si
+             : (dt == _DATATYPE_UINT16) ? (uint16_t) si
+             : (dt == _DATATYPE_INT16)  ? (int16_t) si
+             : (dt == _DATATYPE_UINT32) ? (uint32_t) si
+             : (dt == _DATATYPE_INT32)  ? (int32_t) si
+                                        : si;
+    *out   = (dt == _DATATYPE_UINT64 && si < 0) ? mk_d((double) (uint64_t) si) : mk_l(r);
 }
 
 /* ========================================================================= */
@@ -565,8 +590,9 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
         return mk_d(k->dval);
     case MC_TOK_MINUS:
         v = eval_local_primary(x, live);
-        return (v.type == MC_VAL_LONG) ? mk_l((long) (0UL - (unsigned long) v.lval))
-                                       : mk_d(-v.dval);
+        return (v.type != MC_VAL_LONG) ? mk_d(-v.dval)
+               : (v.lval == LONG_MIN)  ? mk_d(0x1p63) /* -INT64_MIN overflows */
+                                       : mk_l(-v.lval);
     case MC_TOK_BNOT:
         v = eval_local_primary(x, live);
         return mk_l(!live ? 0 : ~((v.type == MC_VAL_LONG) ? v.lval : (long) v.dval));
@@ -608,6 +634,12 @@ static mc_val_t eval_local_primary(mc_lexp_t *x, int live)
         {
             mc_val_t r;
             mc_scalar_pow(&va[0], &va[1], &r);
+            return r;
+        }
+        if (is_int_dt(fn->cast_dt))
+        {
+            mc_val_t r;
+            mc_scalar_cast(fn->cast_dt, &va[0], &r);
             return r;
         }
         if (nargs == 1 && fn->fn1 != NULL)
@@ -688,8 +720,13 @@ static mc_val_t eval_local_expr(mc_lexp_t *x, int min_prec, int live)
             }
             int      all_ok = live && !x->bail && val_num(&cmp) != 0.0;
             mc_val_t prev   = right;
-            while (!x->bail && mc_is_rel_tok(x->t[x->pos].type))
+            for (int n = 1; !x->bail && mc_is_rel_tok(x->t[x->pos].type); n++)
             {
+                if (n >= MC_MAX_CHAIN) /* too long: the session's error */
+                {
+                    x->bail = 1;
+                    break;
+                }
                 mc_tok_type_t cop = x->t[x->pos++].type;
                 mc_val_t      cur = eval_local_expr(x, prec + 1, all_ok);
                 if (all_ok && !x->bail)

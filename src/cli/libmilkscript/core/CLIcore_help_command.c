@@ -463,7 +463,7 @@ static const char *ns_topic(const char *name)
     }
 }
 
-/** help_search() - keywords and commands whose name or description matches regex @pattern. */
+/** help_search() - keywords, topics and commands whose name or description matches @pattern. */
 static errno_t help_search(const char *pattern)
 {
     regex_t re;
@@ -478,6 +478,14 @@ static errno_t help_search(const char *pattern)
         if (regexec(&re, k->name, 0, NULL, 0) == 0 || regexec(&re, k->summary, 0, NULL, 0) == 0)
         {
             printf(COLORCMD "@%-24s" COLORRESET " %s\n", k->name, k->summary);
+            found++;
+        }
+    }
+    for (const struct help_topic *t = help_topics; t->name != NULL; t++)
+    {
+        if (regexec(&re, t->name, 0, NULL, 0) == 0 || regexec(&re, t->descr, 0, NULL, 0) == 0)
+        {
+            printf(COLORCMD "@help %-19s" COLORRESET " %s\n", t->name, t->descr);
             found++;
         }
     }
@@ -504,7 +512,7 @@ static errno_t help_search(const char *pattern)
     regfree(&re);
     if (found == 0)
     {
-        printf("no keyword or command matches '%s'\n", pattern);
+        fprintf(stderr, "@help -k: no keyword, topic or command matches '%s'\n", pattern);
     }
     return RETURN_SUCCESS;
 }

@@ -5,16 +5,16 @@ Purpose:     the translator rewrites only @{...} and its escaped form; heredocs,
              in ways that are hard to trace.
 Does:        checks that `<<` in arithmetic or in @{...} is not a heredoc; that strings,
              continuation lines and a second heredoc body stay as written; that `$'...'`,
-             `${#...}`, a quoted @calc text and a `case` pattern that is a bash keyword are read
-             as bash reads them; that an @{...} result is neither globbed nor split; that $LINENO
-             matches the source, also with -e; that top-level and @source'd lines agree; the bash
-             each @{...} form becomes; that git's `@{-1}` and an `@{` right after a letter are
-             left alone.
+             `${#...}`, quotes in a `$(...)`, backtick or `${...}` inside @{...}, a quoted @calc
+             text and a `case` pattern that is a bash keyword are read as bash reads them; that an
+             @{...} result is neither globbed nor split; that $LINENO matches the source, also
+             with -e; that top-level and @source'd lines agree; the bash each @{...} form
+             becomes; that git's `@{-1}` and an `@{` right after a letter are left alone.
 Covers:      milk_translate_shorthand_to_bash() and the bash scanner it uses
              (src/cli/libmilkscript/bash/milk_bash_translate.c, milk_shell_lex.c), through
              `milk-call translate`; milk-cli -s and -e, which run the translated lines in their
              bash co-process.
-Uses:        conftest.py: translate, milk_cli_script, _run_bash, _env, _run, value.
+Uses:        conftest.py: translate, milk_bash, milk_cli_script, _run_bash, _env, _run, value.
 See also:    docs/guide/scripting.md, "The Language at a Glance"; bash_integration_test.py.
 """
 
@@ -26,7 +26,15 @@ from milk.cliwrap import (
     HAVE_CLI,
     MILK_CLI_EXEC,
 )
-from tests.cli.conftest import _env, _run, _run_bash, milk_cli_script, translate, value
+from tests.cli.conftest import (
+    _env,
+    _run,
+    _run_bash,
+    milk_bash,
+    milk_cli_script,
+    translate,
+    value,
+)
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),
@@ -200,3 +208,19 @@ def test_integer_braces_are_left_to_git(tmp_path):
     assert value(res.stdout, "c") == "@{-1}", res.stdout + res.stderr
     assert value(res.stdout, "d") == "img@{1+1}", res.stdout + res.stderr
     assert value(res.stdout, "e") == "img2", res.stdout + res.stderr
+
+
+def test_quotes_in_bash_expansions_inside_inline(tmp_path):
+    """A `$(...)`, backtick or `${...}` inside @{...} keeps its own quotes, as in bash: they were
+    escaped, so `cat` got `"g.txt"` and `@{1 + ${n:-"2"}}` was 12."""
+    (tmp_path / "g.txt").write_text("21\n")
+    (tmp_path / "q.milk").write_text(
+        "f=g.txt; unset n\n"
+        'g=@{2 * $(cat "$f")}; echo "g=$g"\n'
+        'x=@{1 + ${n:-"2"}}; echo "x=$x"\n'
+        'echo "y=@{1 + ${n:-"2"}}"\n'
+        'echo "b=@{2 * `cat "$f"`}"\n'
+    )
+    res = milk_bash("@source q.milk", tmp_path)
+    got = [value(res.stdout, k) for k in ("g", "x", "y", "b")]
+    assert got == ["42", "3", "3", "42"], res.stdout + res.stderr

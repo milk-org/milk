@@ -53,6 +53,7 @@ typedef struct
     mc_tok_list_t *tl;
     int            in_slice_bracket;
     int            nest;
+    int            expr_depth;
     int            err_flag;
     int            err_line;
     int            err_col;
@@ -470,9 +471,16 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
     else if (t->type == MC_TOK_MINUS || t->type == MC_TOK_BNOT || t->type == MC_TOK_NOT)
     {
         advance_tok(ctx);
+        if (++ctx->expr_depth > MC_EXPR_MAX_DEPTH)
+        {
+            parse_err(ctx, t, "expression nested too deeply (max %d)", MC_EXPR_MAX_DEPTH);
+            ctx->expr_depth--;
+            return alloc_expr(MC_EXPR_LONG, t);
+        }
         node                  = alloc_expr(MC_EXPR_UNARY, t);
         node->u.unary.op      = t->type;
         node->u.unary.operand = parse_primary(ctx);
+        ctx->expr_depth--;
         return node;
     }
     else if (t->type == MC_TOK_LPAREN)
@@ -553,16 +561,24 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
     }
 
     /* Postfix matrix transpose (.T -> transpose(node)) */
+    int saved_depth = ctx->expr_depth;
     while (!ctx->err_flag && cur_tok(ctx)->type == MC_TOK_DOT_T)
     {
+        if (++ctx->expr_depth > MC_EXPR_MAX_DEPTH)
+        {
+            parse_err(ctx, cur_tok(ctx), "expression nested too deeply (max %d)",
+                      MC_EXPR_MAX_DEPTH);
+            break;
+        }
         node = make_call(advance_tok(ctx), "transpose", node, NULL);
     }
+    ctx->expr_depth = saved_depth;
 
     return node;
 }
 
 /**
- * parse_expr - Precedence-climbing parser for binary, chained, and ternary expressions
+ * parse_expr_inner - Precedence-climbing parser for binary, chained, and ternary expressions
  * @ctx:      Active parser context
  * @min_prec: Minimum operator precedence to bind at this recursion level
  *
@@ -574,7 +590,7 @@ static mc_expr_t *parse_primary(mc_parse_ctx_t *ctx)
  *
  * Return: Root `mc_expr_t` node of the parsed sub-expression
  */
-static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
+static mc_expr_t *parse_expr_inner(mc_parse_ctx_t *ctx, int min_prec)
 {
     mc_expr_t *left = parse_primary(ctx);
     while (!ctx->err_flag)
@@ -587,6 +603,11 @@ static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
             break;
         }
         advance_tok(ctx);
+        if (++ctx->expr_depth > MC_EXPR_MAX_DEPTH)
+        {
+            parse_err(ctx, op_tok, "expression nested too deeply (max %d)", MC_EXPR_MAX_DEPTH);
+            break;
+        }
 
         if (mc_is_assign_tok(op))
         {
@@ -661,6 +682,27 @@ static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
         left                = bin;
     }
     return left;
+}
+
+/**
+ * parse_expr - Precedence-climbing parser wrapper enforcing MC_EXPR_MAX_DEPTH
+ * @ctx:      Active parser context
+ * @min_prec: Minimum operator precedence to bind at this recursion level
+ *
+ * Return: Root `mc_expr_t` node of the parsed sub-expression
+ */
+static mc_expr_t *parse_expr(mc_parse_ctx_t *ctx, int min_prec)
+{
+    if (++ctx->expr_depth > MC_EXPR_MAX_DEPTH)
+    {
+        parse_err(ctx, cur_tok(ctx), "expression nested too deeply (max %d)", MC_EXPR_MAX_DEPTH);
+        ctx->expr_depth--;
+        return alloc_expr(MC_EXPR_LONG, cur_tok(ctx));
+    }
+    int        saved_depth = ctx->expr_depth - 1;
+    mc_expr_t *res         = parse_expr_inner(ctx, min_prec);
+    ctx->expr_depth        = saved_depth;
+    return res;
 }
 
 /* ========================================================================= */

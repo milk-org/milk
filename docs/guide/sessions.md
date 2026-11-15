@@ -66,8 +66,10 @@ See also: [Scripting](scripting.md) · [CLI Syntax](CLIcore.md) · [FIFO Command
 - A unit started from a named session records it (`f.X.session`; empty for a shell's own), and
   `@session ls` counts it under `UNITS`. Units outlive their session, unless `@session end --units`
   stops them, the way `milk-fps-runstop` does (through `systemctl` for a unit that systemd runs).
-- `@session end` from another shell ends a `milk-cli` session, and that `milk-cli` once its running
-  command line returns; inside `milk-cli`, `exit` does.
+- `@session end <N>` from another shell, where `N` is the number of a `milk-cli`'s own session, ends
+  that session, and the `milk-cli` once its running command line returns; inside `milk-cli`, `exit`
+  does. Ending a named session that a `milk-cli --session NAME` uses leaves that `milk-cli` running:
+  its milk commands then fail with `session NAME has ended`.
 - What a session's server prints goes to the file `@session status` names,
   `milk-srv.<uid>.<name>.out`, next to its log `milk-srv.<uid>.<name>.log.shm` in `MILK_SHM_DIR`; a
   session that ends by itself leaves both until `@session ls` or `prune` removes them. `@log`
@@ -106,22 +108,26 @@ but local images and variables it creates are not kept. While a command runs, th
 its next safe point (see below), or after 50 ms when none comes.
 
 A session shared by several shells runs their commands one at a time too. A command that another
-shell (another process group) sends while a long one runs waits for it, and then runs with
-everything the long one left; at a terminal it says `milk: waiting for '<command>'`, and Ctrl-C gives
-up without running it. `milkcall --nowait <cmd>` fails at once instead, with `milk: busy: <command>
-for N s` and status 1.
+shell, or a background job of the same script (an `@on` action), sends while a long one runs waits
+for it, and then runs with everything the long one left; at a terminal it says `milk: waiting for
+'<command>'`, and Ctrl-C gives up without running it. `milkcall --nowait <cmd>` fails at once
+instead, with `milk: busy: <command> for N s` and status 1. A `--nowait` command that writes a stream
+the long command waits for would wait for ever: send it with `milkcall --async`.
 
 Reads (`@get`, `@exists`, `@test`, completion) do not wait for the command to end. Those of another
 shell are answered by the command itself at its next safe point, where its images and variables are
 whole: between two statements, steps or loop iterations of a calculator program, two iterations of
 a module command's processing loop, two steps of a `@pipe`. A command made of one long step (a
 large decomposition, a module command without a loop) has none: a read that has waited 2 s is
-told `milk: busy: <command> for N s`, with status 255, and those still waiting when it ends are
-answered then. Reads from the command's own process group (a stage of its pipeline, a background
-job of the same script) are answered at the next safe point too, but the command may be waiting
-for their sender: when no safe point comes within 50 ms, a copy of the session answers, which
-shows the images as they are at that instant, possibly half-written. Such a copy ends after 30 s
-without an answer.
+told `milk: busy: <command> for N s`, with status 255 (completion gets no message), and those still
+waiting when it ends are answered then. Reads from the command's own process group (a stage of its
+pipeline, a background job of the same script) are answered at the next safe point too, but the
+command may be waiting for their sender: when no safe point comes within 50 ms, a copy of the
+session answers, which shows the images as they are at that instant, possibly half-written. Such a
+copy ends after 30 s without an answer. Inside a calculator BLAS/LAPACK call (OpenBLAS threads),
+any copy is deferred until that call completes; module commands calling OpenBLAS/LAPACK directly
+outside the calculator (`COREMOD_linalgebra`, `cacao`) do not hold that guard and can deadlock if
+forked while active.
 
 Ctrl-C asks the session to stop the command. If the session does not answer (it is stopped, or
 stuck), a second Ctrl-C two seconds or more after the first gives the shell its prompt back, with
@@ -142,11 +148,11 @@ and stream FITS keywords:
 @assert "istd(wfs) < 0.5" "residual diverged" # fails with the values of both sides
 @assert --running --fps-min 500 s.cam "camera stalled"
 @assert --max-age 0.1 --cnt-min 100 --dim 128x128 s.cam   # last frame at most 0.1 s old, ...
-@assert s.dark -m "no dark"                   # an entity alone: it exists (-e, --exists)
+@assert s.dark -m "no dark"                   # an entity alone: it exists (--exists)
 @log -n 20                                    # recent milk commands, timing and output
 @log --errors
 @session                                      # the session in use, its output file
-@config prompt preset std                     # live telemetry in the prompt
+@config prompt preset std                     # live telemetry in the bash prompt
 @config                                       # digits, precision, procinfo
 ```
 

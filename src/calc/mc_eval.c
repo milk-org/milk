@@ -637,10 +637,16 @@ static void emit_scalar_result(const mc_val_t *result, int is_assign_op, const c
  * @is_multi:  1 if the statement unpacked into multiple LHS targets
  * @lhs_name:  Assigned target name for REPL summary output
  *
- * Return: 0 on success, -1 if pixel formatting fails in `MCALC_OUT_PIXELS` mode
+ * Return: 0 on success, -1 if pixel formatting fails in `MCALC_OUT_PIXELS` mode or the value of
+ *         an expression (not an assignment) is to be bound (`-v`)
  */
 static int emit_image_result(imageID im_id, int is_assign, int is_multi, const char *lhs_name)
 {
+    if (mcalc_out_mode == MCALC_OUT_BIND && !is_assign)
+    {
+        report_err(NULL, "the value is an image: reduce it (imean, imax...) to a number");
+        return -1;
+    }
     if (is_multi || mcalc_out_mode == MCALC_OUT_BIND)
     {
         if (mcalc_out_mode == MCALC_OUT_BIND)

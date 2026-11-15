@@ -87,6 +87,10 @@ typedef void (*mcalc_ext_scalar_out_cb_t)(const char *var_name, const char *desc
 /** mcalc_ext_load() - compile (if .c) and load a user C extension into the calculator. */
 int mcalc_ext_load(const char *path, char *err, size_t errsz);
 
+/** mc_ext_registry_source() - the file whose extensions register next (NULL or "": milk itself);
+ * an entry is replaced only by the file that registered it. */
+void mc_ext_registry_source(const char *path);
+
 /** mcalc_ext_load_list() - load a list of user C extensions separated by spaces, `,` or `:`. */
 int mcalc_ext_load_list(const char *libs_str, char *err, size_t errsz);
 
@@ -122,6 +126,9 @@ mcalc_prog *mcalc_prog_new(const char          *text,
                            int                  nvars,
                            char                *err,
                            size_t               errsz);
+
+/** mcalc_prog_parse() - 0 when @text parses (its names are not looked up), else -1 with @err. */
+int mcalc_prog_parse(const char *text, char *err, size_t errsz);
 
 /** mcalc_prog_assigns() - return 1 if a statement in @p assigns bound variable @i. */
 int mcalc_prog_assigns(const mcalc_prog *p, int i);

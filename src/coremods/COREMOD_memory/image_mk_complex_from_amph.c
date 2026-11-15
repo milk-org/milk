@@ -202,11 +202,12 @@ static MILK_HOT errno_t image_mk_complex_from_amph_compute(const MILK_RUNNABLE *
     IMGID imgpha  = imgid_make_from_name(inphaimname);
     IMGID imgoutC = imgid_make_from_name(outimname);
 
+    errno_t ret = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
+        ret = mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
     }
     MILK_PROCINFO_END(self)
     imgid_free(&imgamp);
@@ -214,7 +215,7 @@ static MILK_HOT errno_t image_mk_complex_from_amph_compute(const MILK_RUNNABLE *
     imgid_free(&imgoutC);
 
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 

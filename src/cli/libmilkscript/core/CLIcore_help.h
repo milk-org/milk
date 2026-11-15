@@ -41,6 +41,13 @@ void print_milk_top_help(void);
 /** @brief Print only the available-topics list */
 void print_help_topic_list(void);
 
+/** help_topics - the help topics in index order, then { NULL, NULL } */
+extern const struct help_topic
+{
+    const char *name;
+    const char *descr;
+} help_topics[];
+
 /* Per-topic help functions */
 void help_topic_bash(void);
 void help_topic_cmdopts(void);

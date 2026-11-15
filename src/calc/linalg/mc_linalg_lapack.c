@@ -25,6 +25,7 @@
 
 #include <ctype.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -32,12 +33,32 @@
 #include <string.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkcommon/milk_forkguard.h"
 #include "milk_blas_lapacke.h"
 #include "libmilkdata/milkdata.h"
 #include "COREMOD_arith/image_linalg.h"
 #include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/image_ID.h"
 #include "linalg/mc_linalg.h"
+
+/* Threaded OpenBLAS registers a pthread_atfork handler that tears down its worker pool during fork;
+ * hold this fork-guarded mutex around BLAS/LAPACK library calls so a session copy waits safely. */
+static pthread_mutex_t g_linalg_lock = PTHREAD_MUTEX_INITIALIZER;
+
+__attribute__((constructor)) static void register_linalg_fork_guard(void)
+{
+    milk_fork_guard(&g_linalg_lock);
+}
+
+void mc_linalg_lock(void)
+{
+    pthread_mutex_lock(&g_linalg_lock);
+}
+
+void mc_linalg_unlock(void)
+{
+    pthread_mutex_unlock(&g_linalg_lock);
+}
 
 /* ============================================================================
  * Error Reporting and Matrix Buffer Utilities
@@ -259,6 +280,10 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
     {
         return -1;
     }
+    if (transA) /* uplo names the triangle of op(A); BLAS wants the one of the stored A */
+    {
+        uplo = (uplo == 'U') ? 'L' : 'U';
+    }
 
     imageID idA = -1, idB = -1;
     int     tmpA = 0, tmpB = 0, rc = 0;
@@ -315,6 +340,7 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
     CBLAS_TRANSPOSE cb_trans = transA ? CblasTrans : CblasNoTrans;
     CBLAS_DIAG      cb_diag  = (diag == 'U') ? CblasUnit : CblasNonUnit;
     CBLAS_SIDE      cb_side  = (side == 'L') ? CblasLeft : CblasRight;
+    mc_linalg_lock();
     if (!is_sm)
     {
         cblas_dtrsv(CblasColMajor, cb_uplo, cb_trans, cb_diag, (int) K, A_d, (int) K, B_d, 1);
@@ -324,6 +350,7 @@ static int exec_trsv_or_trsm(mc_slot_t       *slot,
         cblas_dtrsm(CblasColMajor, cb_side, cb_uplo, cb_trans, cb_diag, (int) M, (int) N, 1.0, A_d,
                     (int) K, B_d, (int) M);
     }
+    mc_linalg_unlock();
 #else
     if (!is_sm || side == 'L')
     {
@@ -529,10 +556,12 @@ static int jacobi_svd_d(int m, int n, double *A, double *U_out, double *S_out, d
 static int run_svd_d(int m, int n, double *A, double *U_out, double *S_out, double *Vt_out)
 {
 #ifdef HAVE_LAPACKE
-    int q    = (m < n) ? m : n;
+    int q = (m < n) ? m : n;
+    mc_linalg_lock();
     int info = (U_out == NULL && Vt_out == NULL)
                    ? LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'N', m, n, A, m, S_out, NULL, 1, NULL, 1)
                    : LAPACKE_dgesdd(LAPACK_COL_MAJOR, 'S', m, n, A, m, S_out, U_out, m, Vt_out, q);
+    mc_linalg_unlock();
     if (info >= 0)
     {
         return (info == 0) ? 0 : -1;
@@ -565,7 +594,9 @@ static int run_eigh_d(int n, double *C, int want_v, double *w_out)
         }
     }
 #ifdef HAVE_LAPACKE
+    mc_linalg_lock();
     int info = LAPACKE_dsyevd(LAPACK_COL_MAJOR, want_v ? 'V' : 'N', 'L', n, C, n, w_out);
+    mc_linalg_unlock();
     if (info >= 0)
     {
         return (info == 0) ? 0 : -1;
@@ -685,7 +716,10 @@ static int solve_linear_d(mc_fn_id_t fn,
 #ifdef HAVE_LAPACKE
     if (fn == MC_FID_posv)
     {
-        if (LAPACKE_dposv(LAPACK_COL_MAJOR, uplo, N, NRHS, A, N, B, N) != 0)
+        mc_linalg_lock();
+        int pinfo = LAPACKE_dposv(LAPACK_COL_MAJOR, uplo, N, NRHS, A, N, B, N);
+        mc_linalg_unlock();
+        if (pinfo != 0)
         {
             return mc_err(err, errsz, "posv: matrix is not positive definite");
         }
@@ -695,7 +729,13 @@ static int solve_linear_d(mc_fn_id_t fn,
     if (fn == MC_FID_gesv || (fn == MC_FID_solve && M == N))
     {
         int *ipiv = calloc((size_t) N, sizeof(int));
-        int  info = ipiv ? LAPACKE_dgesv(LAPACK_COL_MAJOR, N, NRHS, A, N, ipiv, B, N) : -1;
+        int  info = -1;
+        if (ipiv != NULL)
+        {
+            mc_linalg_lock();
+            info = LAPACKE_dgesv(LAPACK_COL_MAJOR, N, NRHS, A, N, ipiv, B, N);
+            mc_linalg_unlock();
+        }
         free(ipiv);
         if (info != 0)
         {
@@ -716,7 +756,9 @@ static int solve_linear_d(mc_fn_id_t fn,
         {
             memcpy(&Bpad[j * ldb], &B[j * M], sizeof(double) * (size_t) M);
         }
+        mc_linalg_lock();
         int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', M, N, NRHS, A, M, Bpad, ldb);
+        mc_linalg_unlock();
         for (int j = 0; info == 0 && j < NRHS; j++)
         {
             memcpy(&X_out[j * N], &Bpad[j * ldb], sizeof(double) * (size_t) N);
@@ -851,8 +893,10 @@ static int exec_pinv_or_inv(mc_slot_t       *slot,
                 }
             }
 #ifdef HAVE_BLAS
+            mc_linalg_lock();
             cblas_dgemm(CblasColMajor, CblasTrans, CblasTrans, (int) N, (int) M, q, 1.0, Vt, q, U,
                         (int) M, 0.0, Out_d, (int) N);
+            mc_linalg_unlock();
 #else
             for (uint64_t j = 0; j < M; j++)
             {
@@ -1037,6 +1081,7 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
         double  *G = calloc((size_t) (K * K), sizeof(double));
         double  *R = calloc((size_t) (K * NRHS), sizeof(double));
 #ifdef HAVE_BLAS
+        mc_linalg_lock();
         cblas_dsyrk(CblasColMajor, CblasLower, (M >= N) ? CblasTrans : CblasNoTrans, (int) K,
                     (int) L, 1.0, A_d, (int) M, 0.0, G, (int) K);
         if (M >= N)
@@ -1044,6 +1089,7 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
             cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, (int) N, (int) NRHS, (int) M, 1.0,
                         A_d, (int) M, B_d, (int) M, 0.0, R, (int) N);
         }
+        mc_linalg_unlock();
 #else
         for (uint64_t j = 0; j < K; j++)
         {
@@ -1077,8 +1123,10 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
         if (rc == 0 && M < N)
         {
 #ifdef HAVE_BLAS
+            mc_linalg_lock();
             cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, (int) N, (int) NRHS, (int) M, 1.0,
                         A_d, (int) M, R, (int) M, 0.0, X_d, (int) N);
+            mc_linalg_unlock();
 #else
             for (uint64_t r = 0; r < NRHS; r++)
             {
