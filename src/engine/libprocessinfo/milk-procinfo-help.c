@@ -63,9 +63,9 @@ int main(int argc, char *argv[])
 
     printf(C_HDR "Example:\n" C_RST);
     printf("Configure 'myfps00' to compute only when 'cam01' gets a new frame:\n");
-    printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.triggermode 3\n" C_RST);
-    printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.triggersname cam01\n" C_RST);
-    printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.enabled 1\n" C_RST);
+    printf("  $ " C_CMD "milk-fps-set myfps00.procinfo.triggermode=3 \\\n"
+           "                 myfps00.procinfo.triggersname=cam01 \\\n"
+           "                 myfps00.procinfo.enabled=ON\n" C_RST);
     printf("  $ " C_CMD "milk-fps-runstart myfps00\n" C_RST);
     printf("\n");
 
@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf("  " C_CMD "milk-procCTRL" C_RST "      : Interactive TUI task manager\n");
+    printf("  " C_CMD "milk-procinfo-list" C_RST " : List active processinfo entries\n");
+    printf("  " C_CMD "milk-procinfo-info" C_RST " : Detailed timing and CPU affinity report\n");
     printf("  " C_CMD "milk-procinfo-rm" C_RST "   : Remove processinfo shared memory segment\n");
     printf("  " C_CMD "milk-procCTRL-scan" C_RST " : Non-interactive scan of active processes\n");
     printf("\n");

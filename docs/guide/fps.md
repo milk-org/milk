@@ -72,6 +72,7 @@ milk-fpsexec-milk-calc -n dsub -t cam -e "out = cam - dark" fpsinit   # make the
 milk-fps-runstart dsub              # start its loop in the background; returns once it runs
 milk-fps-list                       # the units and their states
 milk-fps-log -f dsub                # follow what it prints
+milk-fps-wait dsub                  # block via pidfd until a finite run (or --conf) exits
 milk-fps-runstop dsub               # stop it: a request, then signals if needed
 milk-fps-rm -f dsub                 # stop it and remove its FPS
 ```
@@ -79,9 +80,20 @@ milk-fps-rm -f dsub                 # stop it and remove its FPS
 - **Start**: `runstart` (and `confstart`) returns once the loop runs (exit status 0), with the
   worker's messages when it fails (1: a parameter check, a missing stream, a crash at start), or
   with status 124 when it is not ready within 10 s (`--timeout S`, `MILK_UNIT_START_TIMEOUT`); the
-  unit then keeps starting. A unit that already runs is left alone (status 0).
-- **Stop**: `runstop` asks the loop to exit (and wakes it), then sends SIGINT, SIGTERM and SIGKILL
-  if it does not; `MILK_UNIT_STOP_TIMEOUTS=T2,T3` sets the waits. It returns once the process is gone.
+  unit then keeps starting. A unit that already runs is left alone (status 0). `milk-fps-runstart`
+  and the other `milk-fps-{conf,run}*` tools accept multiple unit names (`-q` quiet) and fan them
+  out in parallel.
+- **Stop & wait**: `runstop` asks the loop to exit (and wakes it), then sends SIGINT, SIGTERM and
+  SIGKILL if it does not; `MILK_UNIT_STOP_TIMEOUTS=T2,T3` sets the waits. It returns once the
+  process is gone. `milk-fps-wait [-t SEC] [--conf] <name>...` waits via `pidfd` until finite
+  workers exit, returning 1 if any unit failed.
+- **Batch deployment**: `milk-fps-init` initializes one or more units concurrently from CLI
+  arguments or `-b <file|->` (`<fpsname> <fpsexec> [args...]`), skipping existing `.fps.shm` files
+  unless `--restart` is passed. `milk-fps-set` writes single `<fps>.<param> <val>`, multi-argument
+  `key=val ...`, or `-b <file|->` batches with two-pass validation and `--skip-running`,
+  `--respect-writerun`, or `-f` guards. In `milk-cli`, `milk-script`, and `source milk.bash`, the
+  auto-loaded `fpspipe.{workdir,loadfits,init,setparams,commit,status,teardown}` commands wrap
+  these primitives with uncommitted-exit rollback (`<cmd> -h` shows each command's arguments).
 - **State**: each role of a unit is `stopped`, `starting`, `running`, `stopping`, `exited` or
   `failed`. `milk-fps-list`, `milk-fps-info`, `@get f.NAME.status`, `@waitfor f.NAME running` and
   the TUIs all read the same state.

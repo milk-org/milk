@@ -122,26 +122,35 @@ void help_topic_cmdopts(void)
     printf(C_TITLE "          COMMAND LINE OPTIONS  (cmdopts)\n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
-    printf(C_CMD "  -h, --help         " C_RST "print help index and exit\n");
-    printf(C_CMD "  -v, --version      " C_RST "print version and exit\n");
-    printf(C_CMD "  -i, --info         " C_RST "print version, settings, info\n");
-    printf(C_CMD "  --verbose          " C_RST "be verbose\n");
-    printf(C_CMD "  -d <level>         " C_RST "set debug level at startup\n");
-    printf(C_CMD "  -o, --overwrite    " C_RST "overwrite existing FITS files " C_NOTE
+    printf(C_CMD "  -h, --help           " C_RST "print help index and exit\n");
+    printf(C_CMD "  -h1, --help-oneline  " C_RST "print one-line description and exit\n");
+    printf(C_CMD "  -v, --version        " C_RST "print version and exit\n");
+    printf(C_CMD "  -i, --info           " C_RST "print version, settings, info\n");
+    printf(C_CMD "  -q, --quiet          " C_RST "start without banner and startup messages\n");
+    printf(C_CMD "  --verbose            " C_RST "be verbose\n");
+    printf(C_CMD "  -d <level>           " C_RST "set debug level at startup\n");
+    printf(C_CMD "  -o, --overwrite      " C_RST "overwrite existing FITS files " C_NOTE
                  "(USE WITH CAUTION)\n" C_RST);
-    printf(C_CMD "  -e, --errorexit    " C_RST "exit on error\n");
-    printf(C_CMD "  -A, --autocomplete " C_RST "enable inline autocomplete " C_NOTE
+    printf(C_CMD "  -e, --errorexit      " C_RST "exit on error\n");
+    printf(C_CMD "  --listimf            " C_RST "write image list to ./imlist.txt\n");
+    printf(C_CMD "  -A, --autocomplete   " C_RST "enable inline autocomplete " C_NOTE
                  "(ON by default)\n" C_RST);
-    printf(C_CMD "  --no-autocomplete  " C_RST "disable inline autocomplete\n");
+    printf(C_CMD "  --no-autocomplete    " C_RST "disable inline autocomplete\n");
     printf(C_CMD "  --no-history-suggest " C_RST "disable history suggestions\n");
-    printf(C_CMD "  --no-arg-hints     " C_RST "disable argument hint line\n");
-    printf(C_CMD "  --no-fuzzy         " C_RST "disable fuzzy/substring matching\n");
-    printf(C_CMD "  -f, --fifoflag     " C_RST "enable default fifo input\n");
-    printf(C_CMD "  -F <fifoname>      " C_RST "specify custom fifo name\n");
-    printf(C_CMD "  -c, --command <cmd>" C_RST " execute single command and exit\n");
-    printf(C_CMD "  -s <file>          " C_RST "execute startup script\n");
-    printf(C_CMD "  -n <name>          " C_RST "specify process name\n");
-    printf(C_CMD "  -p <priority>      " C_RST "set RT priority (0-99)\n");
+    printf(C_CMD "  --no-arg-hints       " C_RST "disable argument hint line\n");
+    printf(C_CMD "  --no-fuzzy           " C_RST "disable fuzzy/substring matching\n");
+    printf(C_CMD "  -f, --fifoflag       " C_RST "enable default fifo input\n");
+    printf(C_CMD "  -F <fifoname>        " C_RST "specify custom fifo name\n");
+    printf(C_CMD "  -c, --command <cmd>  " C_RST "execute single command and exit\n");
+    printf(C_CMD "  -s <file>            " C_RST "execute script file and exit (or feed fifo)\n");
+    printf(C_CMD "  -n <name>            " C_RST "specify process name\n");
+    printf(C_CMD "  -p <priority>        " C_RST "set RT priority (0-99)\n");
+    printf(C_CMD "  --session <name>     " C_RST "use named session (started if not running)\n");
+    printf(C_CMD "  --server <socket>    " C_RST "run as a session server on abstract socket\n");
+    printf(C_CMD "  --idle-timeout <s>   " C_RST "with --server: exit after <s>s idle\n");
+    printf(C_CMD "  --format <file>      " C_RST "format script (--format-in-place rewrites)\n");
+    printf(C_CMD "  --outline <file>     " C_RST "print structural block outline of script\n");
+    printf(C_CMD "  --catalog            " C_RST "write installed module command catalog\n");
     printf("\n");
 }
 
@@ -493,9 +502,10 @@ void help_topic_milk(void)
     printf("  " C_CMD "@set --tui <fps> " C_RST "Interactive FPS parameter editor (milk-cli)\n");
     printf("\n");
     printf(C_HDR "Stream Management:\n" C_RST);
-    printf("  " C_CMD "milk-FITS2shm f.fits s " C_RST "Load FITS into SHM stream\n");
-    printf("  " C_CMD "milk-shm2FITS s f.fits " C_RST "Save SHM stream to FITS\n");
-    printf("  " C_CMD "milk-stream-help        " C_RST "Stream usage guide\n");
+    printf("  " C_CMD "milk-FITS2shm exec f.fits @S:s" C_RST " Load FITS into SHM stream\n");
+    printf("  " C_CMD "milk-shm2FITSloop s 1.0       " C_RST
+           "Periodically save SHM stream to FITS\n");
+    printf("  " C_CMD "milk-stream-help              " C_RST "Stream usage guide\n");
     printf("\n");
     printf(C_HDR "FPS Executables:\n" C_RST);
     printf("  " C_CMD "milk-fpsexec-list       " C_RST "List all fpsexec programs\n");
@@ -631,9 +641,14 @@ static void help_topic_streams(void)
     printf(C_HDR "4. Standalone OS Tools:\n" C_RST);
     printf("  " C_CMD "milk-streamCTRL        " C_RST
            "milk-CTRL on its streams view (stream monitor)\n");
-    printf("  " C_CMD "milk-termview <stream> " C_RST "Live terminal pixel viewer\n");
+    printf("  " C_CMD "milk-termview <s...>   " C_RST "Live 2D/3D terminal pixel viewer\n");
+    printf("  " C_CMD "milk-stream-list       " C_RST "List active shared-memory streams\n");
     printf("  " C_CMD "milk-stream-info <s>   " C_RST
            "Detailed stream lineage & reader/writer PIDs\n");
+    printf("  " C_CMD "milk-stream-link       " C_RST
+           "Atomically create/swap .im.shm symlinks (-s, <src>=<link>, -b)\n");
+    printf("  " C_CMD "milk-stream-wait <sp>  " C_RST
+           "Wait via inotify/semaphores for <name>[:WxH][+N]\n");
     printf("  " C_CMD "milk-stream-help       " C_RST "Full C API & architecture guide\n");
     printf("\n");
 }
@@ -667,12 +682,21 @@ static void help_topic_fps(void)
            " Save, compare, or restore FPS/stream state snapshots\n");
     printf("  " C_CMD "@exists [-r] f.<name>  " C_RST
            "Check if FPS SHM exists (or its run process is alive)\n");
+    printf("  " C_CMD "fpspipe.<cmd>          " C_RST
+           "Pipeline commands: workdir, loadfits, init, setparams, commit, status, teardown\n");
     printf("\n");
     printf(C_HDR "2. Standalone OS Tools:\n" C_RST);
     printf("  " C_CMD "milk-fpsCTRL           " C_RST
            "Interactive TUI parameter editor & launcher\n");
     printf("  " C_CMD "milk-fpsexec-list      " C_RST
-           "List all standalone V2 compute unit binaries\n");
+           "List all standalone compute unit binaries\n");
+    printf("  " C_CMD "milk-fps-init          " C_RST
+           "Initialize one or more FPS units concurrently (-b <manifest>)\n");
+    printf("  " C_CMD "milk-fps-set           " C_RST
+           "Set FPS parameters (<fps>.<p>=<v>... or -b <batch>)\n");
+    printf("  " C_CMD "milk-fps-wait          " C_RST
+           "Wait via pidfd for detached worker units to exit\n");
+    printf("  " C_CMD "milk-fps-log [-f] <f>  " C_RST "Show or follow a unit's output\n");
     printf("  " C_CMD "milk-fps-list          " C_RST
            "List active FPS instances from outside a session\n");
     printf("  " C_CMD "milk-fps-help          " C_RST "Full FPS architecture & C API guide\n");

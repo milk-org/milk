@@ -43,22 +43,31 @@ int main(int argc, char *argv[])
            "Each stream is represented by a shared-memory file on disk at:\n"
            "  " C_BOLD "/dev/shm/<streamname>.im.shm" C_RST "\n\n");
 
-    printf(C_HDR "Inspecting and Monitoring Streams\n" C_RST);
+    printf(C_HDR "Inspecting and Managing Streams\n" C_RST);
     printf("  " C_CMD "milk-streamCTRL" C_RST
            "         milk-CTRL on its streams view (like top/htop for streams)\n"
+           "  " C_CMD "milk-stream-list" C_RST "        List active shared-memory streams\n"
            "  " C_CMD "milk-stream-info " C_STRM "<name>" C_RST
            " Detailed configuration and connection graph\n"
            "  " C_CMD "milk-stream-graph" C_RST
            "       Output a DOT graph of stream-process topologies\n"
-           "  " C_CMD "milk-termview " C_STRM "<name>" C_RST
-           "    Interactive terminal viewer for 2D stream pixels\n"
+           "  " C_CMD "milk-termview " C_STRM "<name>..." C_RST
+           " Interactive terminal viewer for 2D/3D stream pixels\n"
+           "  " C_CMD "milk-stream-create / milk-stream-rm " C_STRM "<name>..." C_RST
+           " Create or remove SHM streams\n"
+           "  " C_CMD "milk-stream-link " C_STRM "<src>=<link>..." C_RST
+           " Atomically create/swap .im.shm symlinks (-s, -b)\n"
+           "  " C_CMD "milk-stream-wait " C_STRM "<spec>..." C_RST
+           " Wait via inotify/semaphores for <name>[:WxH[xD]][+N]\n"
            "\n");
 
     printf(C_HDR "File I/O and Conversion\n" C_RST);
-    printf("  " C_CMD "milk-FITS2shm exec " C_STRM "<file.fits> @S:<stream>" C_RST
+    printf("  " C_CMD "milk-FITS2shm exec " C_STRM "<file.fits[.gz|.fz]> @S:<stream>" C_RST
            " Load a FITS file into a new stream\n"
-           "  " C_CMD "milk-shm2FITS " C_STRM "<stream> <file.fits>" C_RST
-           " Save a stream snapshot to a FITS file\n"
+           "  " C_CMD "milk-fpsexec-iofits-saveFITS exec " C_STRM "<stream> <file.fits>" C_RST
+           " Save a stream snapshot to FITS\n"
+           "  " C_CMD "milk-shm2FITSloop " C_STRM "<stream> <delay_sec>" C_RST
+           " Periodically save a stream to FITS\n"
            "\n");
 
     printf(C_HDR "Synchronization and Semaphores\n" C_RST);

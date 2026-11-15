@@ -314,7 +314,8 @@ pytest -k
 
     Some **test-suite wide** fixture perform setup once before any test and cleanup after all the tests are done;
     these are used to isolate the test environment at each run: `MILK_SHM_DIR` and `MILK_PROC_DIR` are
-    redirected to `/tmp/milk_shm_dir_pytest`, and a private tmux server is used (`TMUX_TMPDIR`).
+    redirected to `/tmp/milk_shm_dir_pytest`, and `TMUX_TMPDIR` isolates the tmux socket used by the
+    TUI pane drivers (`python/tests/tui/`).
 
     To connect to the same environment by hand in a own shell, mirror that environment first:
 

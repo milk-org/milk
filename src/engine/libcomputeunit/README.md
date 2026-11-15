@@ -8,18 +8,22 @@ dependency. Umbrella header: `computeunit.h`.
 
 | File                                    | Description                                                                       |
 | --------------------------------------- | --------------------------------------------------------------------------------- |
+| `core/milk_runnable.c`                  | `MILK_RUNNABLE` runtime helpers and parameter defaults                            |
+| `core/milk_runnable_main.c`             | generated `main()` entry point for `EXPORT_FPSEXEC` executables                   |
 | `core/fps_standalone_main.c`            | `fpsexec_main_function`: command-line driver of every fpsexec                     |
 | `core/fps_lifecycle.c`                  | generic init / conf / run / stop                                                  |
 | `cli/fps_cli_init.c`                    | create FPS entries from bindings; fill CLI examples                               |
 | `cli/fps_cli_sync.c`                    | standalone argv to FPS to module variables                                        |
-| `core/fps_unit_options.c`                      | harness of the code-free units (`milk.calc`, `milk.script`): options, `-p` declarations |
+| `core/fps_unit_options.c`               | harness of the code-free units (`milk.calc`, `milk.script`): options, `-p` declarations |
 | `params/fps_modulevars_resync.c`        | FPS to module-local variable sync via bindings                                    |
-| `core/fps_unit_startstop.c`                       | unit lifecycle (`fps_unit_startstop.h`): start, stop, environment, front-end tools, scripts |
+| `core/fps_unit_startstop.c`             | unit lifecycle (`fps_unit_startstop.h`): start, stop, environment, front-end tools, scripts |
 | `state/fps_CONF*.c`, `fps_FPCONF*.c`    | conf process start/stop/setup/loop/exit                                           |
 | `state/fps_RUN*.c`                      | run process start/stop/exit                                                       |
 | `procinfo/fps_processinfo*.c`           | processinfo entries and signalling for FPS                                        |
 | `procinfo/fps_apply_process_settings.c` | apply cset / taskset / RT priority from FPS                                       |
-| `tools/milk-fps-cmd.c`                  | `milk-fps-{confstart,confstop,confstep,runstart,runstop}`                         |
+| `tools/milk-fps-init.c`                 | `milk-fps-init`: initialize one or more FPS units in parallel (`-b` manifests)    |
+| `tools/milk-fps-cmd.c`                  | `milk-fps-{confstart,confstop,confstep,runstart,runstop,run}`                     |
+| `tools/milk-fps-wait.c`                 | `milk-fps-wait`: wait via `pidfd` for detached worker units to exit               |
 | `tools/milk-fps-log.c`                  | `milk-fps-log`: a unit's output, optionally followed                              |
 | `tools/milk-fps-rm.c`                   | `milk-fps-rm`: stop a unit, remove its FPS and unit directory                     |
 

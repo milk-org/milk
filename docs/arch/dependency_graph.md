@@ -548,9 +548,10 @@ All cacao modules link the runnable base set. Additional links per module:
 | milk-procCTRL                     | milkprocessinfo, ImageStreamIO                                                    |
 | milk-streamCTRL                   | a link to milk-CTRL (opens its streams view)                                      |
 | milk-CTRL                         | milkctrl_model (milkfps, milkcomputeunit, milkprocessinfo, milkdata, ImageStreamIO) |
-| milk-fps-list/search/set/track/log| milkfps                                                                           |
+| milk-fps-list/search/set/track    | milkfps                                                                           |
 | milk-fps-info                     | milkfps, ImageStreamIO, milkprocessinfo, milkdata                                 |
-| milk-fps-rm/conf*/run*            | milkcomputeunit                                                                   |
+| milk-fps-init/wait/log/rm/conf*/run* | milkcomputeunit                                                                |
+| milk-stream-create/link/list/rm/wait | ImageStreamIO                                                                  |
 
 </details>
 

@@ -13,7 +13,8 @@ Linear algebra operations: SVD, pseudo-inverse, matrix multiplication via BLAS a
 | `GPUloadCmat.c`                        | Load control matrix into GPU memory                 |
 | `GramSchmidt.c`                        | Gram-Schmidt orthogonalization                      |
 | `MVM_CPU.c`                            | CPU matrix-vector multiplication                    |
-| `MVMextractModes.c`                    | Extract modal coefficients via MVM                  |
+| `MVMextractModes.cpp`                  | Extract modal coefficients via MVM                  |
+| `mvm_auxiliaries.cpp`                  | Auxiliary helpers for modal MVM extraction          |
 | `PCAmatch.c`                           | Match two PCA decompositions                        |
 | `Qexpand.c`                            | Expand Q matrix from PCA decomposition              |
 | `SGEMM.c`                              | Single-precision general matrix multiply (SGEMM)    |
@@ -33,7 +34,7 @@ Linear algebra operations: SVD, pseudo-inverse, matrix multiplication via BLAS a
 | Executable                          | Source File                 | Description                              |
 | ----------------------------------- | --------------------------- | ---------------------------------------- |
 | `milk-fpsexec-linalg-gramschmidt`   | `GramSchmidt.c`             | Gram-Schmidt orthogonalization           |
-| `milk-fpsexec-linalg-MVMextract`    | `MVMextractModes.c`         | Extract modal coefficients via MVM       |
+| `milk-fpsexec-linalg-MVMextract`    | `MVMextractModes.cpp`       | Extract modal coefficients via MVM       |
 | `milk-fpsexec-linalg-PCAmatch`      | `PCAmatch.c`                | Match two PCA decompositions             |
 | `milk-fpsexec-linalg-Qexpand`       | `Qexpand.c`                 | Expand Q matrix from PCA decomposition   |
 | `milk-fpsexec-linalg-SGEMM`         | `SGEMM.c`                   | Single-precision general matrix multiply |

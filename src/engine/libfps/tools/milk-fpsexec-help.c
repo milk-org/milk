@@ -163,13 +163,18 @@ int main(int argc, char *argv[])
            " keep the loop in your terminal (gdb, valgrind, a service manager).\n\n");
 
     /* ---- Alternate tools ---- */
-    printf(C_HDR "Alternate Tools (After FPS Created)\n" C_RST);
-    printf("  Once an FPS exists, you can also use"
-           " generic FPS tools:\n"
-           "    " C_CMD "milk-fps-confstart " C_FPS "<fpsname>\n" C_RST "    " C_CMD
-           "milk-fps-confstop  " C_FPS "<fpsname>\n" C_RST "    " C_CMD "milk-fps-runstart  " C_FPS
-           "<fpsname>\n" C_RST "    " C_CMD "milk-fps-runstop   " C_FPS "<fpsname>\n" C_RST
-           "    " C_CMD "milk-fps-confstep  " C_FPS "<fpsname>\n" C_RST "\n");
+    printf(C_HDR "Alternate Tools (Multi-Unit & Batch Deployment)\n" C_RST);
+    printf("  Generic C tools initialize, configure, start, and await one or more units:\n"
+           "    " C_CMD "milk-fps-init      " C_FPS "<fpsname>" C_RST
+           " <fpsexec> [args...]  (or -b <manifest>)\n"
+           "    " C_CMD "milk-fps-set       " C_FPS "<fpsname>" C_CMD ".<param>=<val> ..." C_RST
+           "   (or -b <batch>)\n"
+           "    " C_CMD "milk-fps-confstart " C_FPS "<fpsname>...\n" C_RST "    " C_CMD
+           "milk-fps-confstop  " C_FPS "<fpsname>...\n" C_RST "    " C_CMD
+           "milk-fps-confstep  " C_FPS "<fpsname>...\n" C_RST "    " C_CMD
+           "milk-fps-runstart  " C_FPS "<fpsname>...\n" C_RST "    " C_CMD
+           "milk-fps-runstop   " C_FPS "<fpsname>...\n" C_RST "    " C_CMD
+           "milk-fps-wait      " C_FPS "<fpsname>...\n" C_RST "\n");
 
     /* ---- See also ---- */
     printf(C_NOTE "Run " C_CMD "milk-fps-help" C_NOTE " for FPS concepts,"

@@ -29,7 +29,6 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 | Script                       | Description                                        |
 | ---------------------------- | -------------------------------------------------- |
 | `milk.bash`                  | Sourceable GNU Bash integration layer (module commands, `@` keywords, entities, calculator) |
-| `commands.d/fpspipe.bash`    | Auto-loaded `fpspipe.*` pipeline commands (`workdir`, `loadfits`, `init`, `setparams`, `commit`, `status`, `teardown`) |
 | `milk-env.sh`                | Sourceable environment switcher (`fdev`, `dev`, `status`) |
 | `milk-cc`                    | Compile a `@calc` C extension (`.so`) or a `MILK_RUNNABLE` unit (executable) into the current directory |
 | `milk-check`                 | Verify installation (libraries, paths, SHM)        |
@@ -44,6 +43,19 @@ Installed from the root `CMakeLists.txt` into `bin/`:
 | `milk-demopipeline`          | Start a 9-unit demonstration pipeline (a milk script) |
 | `merge3DfitsTelemetry`       | Merge 3D FITS telemetry cubes                      |
 | `waitforfile`                | Block until a specified file appears               |
+
+Installed from `scripts/commands.d/` into `share/milk/commands.d/` (sourced automatically by
+`milk.bash`, `milk-cli`, and `milk-script`):
+
+| Script       | Description                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| `fpspipe.bash` | `fpspipe.*` pipeline lifecycle commands (`workdir`, `loadfits`, `init`, `setparams`, `commit`, `status`, `teardown`) |
+
+Installed from `src/cli/overview/scripts/` into `bin/`:
+
+| Script            | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `milk-setup-caps` | Grant `CAP_PERFMON` perf-counter capability to `milk-CTRL` |
 
 ## 3. Stream Utilities (`scripts/`)
 
@@ -110,7 +122,6 @@ milk-script $MILK_INSTALLDIR/share/milk/scripts/makecircleofdisks.milk \
 
 | Script                        | Description                       |
 | ----------------------------- | --------------------------------- |
-| `milk-stream-crop`            | Crop a sub-region from a stream   |
 | `milk-fpslistadd-SCICROPMASK` | Add science crop mask to FPS list |
 | `milk-fpslistadd-WFSCROPMASK` | Add WFS crop mask to FPS list     |
 

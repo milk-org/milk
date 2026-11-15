@@ -37,9 +37,11 @@ Interactive Command Line Interface (REPL) and syntax-aware UI layer for the
   display.
 - `CLIcore/CLIcore_UI_builtins*.c` — Interactive UI built-in commands and FIFO
   control.
-- `CLIcore/CLIcore_UI_bookmark.c` — Directory bookmark management.
 - `CLIcore/CLIcore_UI_prompt.c` — Prompt string formatting (`PS1`).
 - `CLIcore/CLIcore_help_tui.c` — Interactive ANSI help browser.
+- `milk-help.c`, `milk-cli-help.c`, `milk-cli-help-synchro.c`, `milk-stream-help.c`,
+  `milk-fuzzy-match.c` — Standalone CLI help and fuzzy-matching utilities.
+- `termview/` — `milk-termview` interactive ANSI 2D/3D shared-memory stream viewer.
 - `treesitter/cli_treesitter.h` — Public API for syntax highlighting, completion
   context, diagnostics, and formatting.
 - `treesitter/cli_treesitter_internal.h` — Shared internal state across

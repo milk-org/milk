@@ -207,7 +207,7 @@ milk-fpsexec-milk-calc -n wfsclean runstart
 ```
 
 On first load, `milk` compiles `wfskernels.c` and reuses the cached `.so` until the file changes
-([compiler, flags and cache](calculator.md#auto-compilation-and-caching-l-lib)).
+([compiler, flags and cache](calculator.md#auto-compilation-and-caching)).
 
 ---
 
@@ -464,7 +464,7 @@ milk-cc custom_scale.c
 `milk-cc` also compiles Tier 1 / Tier 2 `.c` files (those using `MILK_CALC_EXT_EXPORT`) into
 shared libraries (`<stem>.so`) when you prefer pre-compiling `.so` plugins ahead of time. Both modes
 use the calculator's compiler and flags
-([`MILK_CALC_CC`, `MILK_CC_FLAGS`](calculator.md#fusion-cost-model)) with
+([`MILK_CALC_CC`, `MILK_CC_FLAGS`](calculator.md#fusion-and-cost-model)) with
 `-Wall -Wextra -Wno-unused-parameter`, and a unit adds `-fopenmp -DMILK_NO_CLI`; `-v` prints the
 command:
 

@@ -170,7 +170,9 @@ cam.average -h               # the usage, from the declaration
 - `*.bash` files in `$MILK_INSTALLDIR/share/milk/commands.d` and
   `${XDG_CONFIG_HOME:-~/.config}/milk/commands.d` are loaded with milk.bash (in plain bash, milk-cli
   and milk-script). The `module.cmd` functions they define are commands like the others: completion,
-  `@unload`, and `@help` (the comment line right above a definition is its description).
+  `@unload`, and `@help` (the comment line right above a definition is its description). Milk ships
+  `fpspipe.bash` (`fpspipe.workdir`, `loadfits`, `init`, `setparams`, `commit`, `status`,
+  `teardown`; see [FPS](fps.md#3-running-units)).
 
 ## Entities
 
@@ -438,7 +440,7 @@ group work with `@pipe`, and use `@sleep` rather than `sleep` for short waits. O
 5.3 (or with `MILK_BASH_NO_FUNSUB=1`), `@{…}` inside a word falls back to `$(…)`: it costs a fork
 and runs in a subshell (so `MILK_STRICT=1` exits only that subshell); `NAME=@{…}` does not. For image
 expression fusion, slice/broadcast views, and temporary pool reuse, see
-**[Calculator & Scripted Compute Units — Fusion & Cost Model](calculator.md#fusion-cost-model)**.
+**[Calculator & Scripted Compute Units — Fusion and Cost Model](calculator.md#fusion-and-cost-model)**.
 
 ## Sessions
 

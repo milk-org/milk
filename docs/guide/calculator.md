@@ -305,7 +305,7 @@ parameters under `Parameters`):
   cannot be read, or a non-constant or invalid `prev()`/`hist()` lag never run: `runstart` fails
   with status 1 and `.unit.error` says why. What else cannot be done then, such as statements that
   read a stream created later, is done at the first frame, as is the planning of an `fft` this
-  machine has not run before ([Fusion & Cost Model](#fusion-cost-model)).
+  machine has not run before ([Fusion and Cost Model](#fusion-and-cost-model)).
 - **Changed while it runs.** The statements are compiled again at the frame after `.unit.expr` or
   `.unit.file` is set (set `.unit.file` again to read the file again): with `@set`, the compiler
   runs inside the loop, which misses frames meanwhile (tens of milliseconds). Unit options given
@@ -407,7 +407,7 @@ parameters under `Parameters`):
   `m, s, lo, hi = istats(cam)`, `px, py = iargmax(cam)`, `v = dot(a, b)`, `v = imean(cam, mask)`),
   or a scalar variable assignment (`=`, `+=`, `-=`, `*=`, `/=`) combining numbers, parameters,
   variables, live SHM properties, and scalar reductions (`ema = 0.9 * ema + 0.1 * irms(cam - dark)`)
-  is compiled once into native C code (a cached `.so`, see [Fusion & Cost Model](#fusion-cost-model))
+  is compiled once into native C code (a cached `.so`, see [Fusion and Cost Model](#fusion-and-cost-model))
   or a scalar/BLAS plan and runs directly on each frame without re-parsing; consecutive compatible
   element-wise assignments in the same basic block are automatically fused into a single
   cache-resident pass. In `out /= image`, a zero pixel in the divisor is caught inside the fused
@@ -453,7 +453,7 @@ status `N`; any non-zero status stops the loop with its status in `.unit.error` 
 snippet with `|| :` to go on). Ctrl-C or `runstop` interrupts a running tick. A tick costs its
 commands plus a pipe round trip (about 0.1 ms), which suits slow loops.
 
-## Fusion & Cost Model
+## Fusion and Cost Model
 
 Every image expression or reduction statement is lowered to a typed AST, normalized by algebraic and
 fusion passes, emitted as restricted C99 source with `#pragma omp simd` loops (rows are split across
@@ -462,7 +462,7 @@ the calculator's thread team), compiled into `<key>.so` in the kernel cache, and
 `${XDG_CACHE_HOME:-~/.cache}/milk/calc`, which a reboot keeps; where that directory cannot be used
 (no home, not writable, mounted noexec) it is `${TMPDIR:-/tmp}/milk-calc-cache-<uid>`. On a
 real-time machine whose home is on a network file system, set `MILK_CALC_CACHE` to a local disk. Run-time compiles (these kernels, [`-l` C
-extensions](#auto-compilation-and-caching-l-lib) and `milk-cc`) use `$MILK_CALC_CC` (default: the
+extensions](#auto-compilation-and-caching) and `milk-cc`) use `$MILK_CALC_CC` (default: the
 compiler milk was built with) and one flag list, `MILK_CC_FLAGS` in `CMakeLists.txt`:
 `-O3 -pipe -march=native -ffast-math -fno-finite-math-only -mno-recip -fopenmp-simd` (`-mno-recip`
 with GCC on x86-64; NaN tests and divisions stay IEEE); kernels add `-fno-associative-math` so they round as scalar evaluation does.
@@ -534,11 +534,11 @@ without editing CMake files. **[C Extensions (`milk_calc_ext.h` & `milk-cc`)](ca
 describes the tiers, their registration macros, how their parameters appear in a unit's FPS, and the
 `milk_calc_ext.h` API.
 
-### Auto-Compilation and Caching (`-l` / `--lib`)
+### Auto-Compilation and Caching
 
 Passing a `.c` file to `@calc --lib my_kernels.c "..."` or
 `milk-fpsexec-milk-calc -l my_kernels.c ...` compiles it as a kernel is compiled (same compiler,
-flags and cache directory, see [Fusion & Cost Model](#fusion-cost-model)) into `ext_<key>.so`, keyed
+flags and cache directory, see [Fusion and Cost Model](#fusion-and-cost-model)) into `ext_<key>.so`, keyed
 on the file's path and contents, reuses that `.so` until the file changes, and loads it via
 `dlopen()`; a compile error reports the compiler's first error line. A `.c` file edited after it
 was loaded is compiled and loaded again the next time it is named, and replaces what it

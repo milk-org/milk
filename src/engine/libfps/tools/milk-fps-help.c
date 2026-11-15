@@ -72,29 +72,43 @@ int main(int argc, char *argv[])
 
     printf(C_HDR "Modifying Parameters\n" C_RST);
     printf("  " C_CMD "milk-fps-set " C_FPS "<fpsname>" C_CMD ".<param> <value>" C_RST "\n"
+           "  " C_CMD "milk-fps-set " C_FPS "<fpsname>" C_CMD ".<param>=<value> ..." C_RST "\n"
+           "  " C_CMD "milk-fps-set -b " C_RST "<file|-> [--skip-running|--respect-writerun|-f]\n"
            "  Example:\n"
            "    $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD ".gain 1.5\n" C_RST "    $ " C_CMD
-           "milk-fps-set " C_FPS "myfps00" C_CMD ".verbose 1\n" C_RST "\n");
+           "milk-fps-set " C_FPS "myfps00" C_CMD ".gain=1.5 " C_FPS "myfps00" C_CMD
+           ".verbose=1\n" C_RST "\n");
 
     printf(C_HDR "Tracking Parameter Changes\n" C_RST);
     printf("  " C_CMD "milk-fps-track " C_FPS "<fpsname>" C_RST
            "   Monitor live parameter changes\n\n");
 
-    printf(C_HDR "Managing Execution\n" C_RST);
-    printf(
-        "  Each FPS may have a config loop"
-        " (conf) and a run loop:\n"
-        "    " C_CMD "milk-fps-confstart " C_FPS "<fpsname>" C_RST "   Start config loop\n"
-        "    " C_CMD "milk-fps-confstop  " C_FPS "<fpsname>" C_RST "   Stop config loop\n"
-        "    " C_CMD "milk-fps-confstep  " C_FPS "<fpsname>" C_RST "   Single config step\n"
-        "    " C_CMD "milk-fps-runstart  " C_FPS "<fpsname>" C_RST "   Start run loop\n"
-        "    " C_CMD "milk-fps-runstop   " C_FPS "<fpsname>" C_RST "   Stop run loop\n"
-        "    " C_CMD "milk-fps-run       " C_FPS "<fpsname>" C_RST
-        "   Run loop in the foreground, for a service manager\n"
-        "                                   (systemd: share/milk/systemd/milk-unit@.service)\n\n");
+    printf(C_HDR "Initializing & Managing Execution\n" C_RST);
+    printf("  Initialize units (single or parallel -b manifest) and manage conf/run loops:\n"
+           "    " C_CMD "milk-fps-init      " C_FPS "<fpsname>" C_RST
+           " <fpsexec> [args...]   Initialize unit(s) (-b <file|->)\n"
+           "    " C_CMD "milk-fps-confstart " C_FPS "<fpsname>..." C_RST
+           "   Start config loop(s) in parallel (-q)\n"
+           "    " C_CMD "milk-fps-confstop  " C_FPS "<fpsname>..." C_RST
+           "   Stop config loop(s) in parallel (-q)\n"
+           "    " C_CMD "milk-fps-confstep  " C_FPS "<fpsname>..." C_RST
+           "   Single config step (-q)\n"
+           "    " C_CMD "milk-fps-runstart  " C_FPS "<fpsname>..." C_RST
+           "   Start run loop(s) in parallel (-q)\n"
+           "    " C_CMD "milk-fps-runstop   " C_FPS "<fpsname>..." C_RST
+           "   Stop run loop(s) in parallel (-q)\n"
+           "    " C_CMD "milk-fps-wait      " C_FPS "<fpsname>..." C_RST
+           "   Wait via pidfd for worker exit (-t SEC, --conf)\n"
+           "    " C_CMD "milk-fps-log [-f]  " C_FPS "<fpsname>" C_RST
+           "      Show or follow unit output\n"
+           "    " C_CMD "milk-fps-run       " C_FPS "<fpsname>" C_RST
+           "      Run loop in the foreground, for a service manager\n"
+           "                                      (systemd: "
+           "share/milk/systemd/milk-unit@.service)\n\n");
 
     printf(C_HDR "Removing FPS\n" C_RST);
-    printf("  " C_CMD "milk-fps-rm " C_FPS "<fpsname>" C_RST "     Remove FPS shared memory\n"
+    printf("  " C_CMD "milk-fps-rm " C_FPS "<fpsname>..." C_RST
+           "  Remove FPS shared memory (-f stop running, -r regex, --ignore-missing)\n"
            "  " C_CMD "milk-fps-rm" C_RST "              Interactive mode"
            " (select from list)\n\n");
 

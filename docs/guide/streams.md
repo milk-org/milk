@@ -73,7 +73,9 @@ memory (`@S:`), while `l.im1` or `local.im1` selects local process memory (`@L:`
 
 > [!NOTE]
 > FITS configuration files (`./conf/shmim.<name>.fits`) are checked automatically in the default
-> search order when connecting to a stream. No explicit modifier is needed.
+> search order when connecting to a stream. No explicit modifier is needed. `iofits.loadfits`
+> (`milk-fpsexec-iofits-loadfits` and `milk-FITS2shm`) natively loads uncompressed `.fits`, gzip
+> `.fits.gz`, and Rice tile-compressed `.fits.fz` images and cubes.
 
 Modifiers are composable: `@LE:name` means "local memory, must exist", and `@STF32:im1` means
 "shared memory, float32".
@@ -110,11 +112,20 @@ These are parsed by `imgid_make_from_name()`. Keyword count and circular buffer 
 `mdt->NBkw` and `mdt->CBsize` before the image is created ([§5](#5-c-api-imgid)). Shared memory is the
 default; use `@S:` for explicit shared-memory annotation if needed.
 
-## 4. Introspection
+## 4. Introspection and CLI Tools
 
 Tools like `milk-streamCTRL` provide real-time introspection into active streams, displaying frame
 arrival rates, recent values, and the current state of semaphores without disrupting operations.
-To look at a stream's image in the terminal, use [`milk-termview`](termview.md).
+To look at 2D or 3D stream pixels in the terminal, use [`milk-termview`](termview.md).
+
+Standalone C utilities manage and synchronize shared-memory streams from outside a session:
+
+| Tool | Purpose |
+| --- | --- |
+| `milk-stream-list`, `milk-stream-info` | List active streams or inspect a stream's metadata, readers/writers, and lineage |
+| `milk-stream-create`, `milk-stream-rm` | Create streams, or remove streams (`-r` regex, `--ignore-missing`, multi-target) |
+| `milk-stream-link` | Create or atomically swap `.im.shm` symlinks (`-s <src> <link>`, `<src>=<link>...`, `-b <file\|->`) |
+| `milk-stream-wait` | Block via `inotify` and semaphores until `<stream>[:WxH[xD]][+N]` exists, matches geometry, and advances `N` frames |
 
 ## 5. C API (`IMGID`)
 

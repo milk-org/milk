@@ -16,6 +16,21 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-14** — Pipeline deployment tools, `fpspipe.*` commands, and native compressed FITS
+  loading. C deployment tools avoid per-parameter process spawns and sleep polling: `milk-fps-init`
+  initializes multiple `fpsexec` units in parallel from arguments or `-b` manifests (skipping
+  existing `.fps.shm` files unless `--restart` is given), `milk-fps-set` accepts multi-argument
+  `key=val` and `-b` batch files with two-pass validation and `--skip-running` /
+  `--respect-writerun` / `-f` guards, `milk-fps-{confstart,confstop,confstep,runstart,runstop}` fan
+  out across multiple units in parallel (`-q` quiet), `milk-fps-wait` waits on detached workers via
+  `pidfd`, `milk-stream-wait` waits via `inotify` and POSIX semaphores for stream creation, `:WxH`
+  geometry, and `+N` frames, `milk-stream-link` adds direct `-s`, `<src>=<link>` and `-b` atomic
+  symlink swaps, and `milk-fps-rm` / `milk-stream-rm` add `--ignore-missing` and multi-target exact
+  removal. Auto-loaded `share/milk/commands.d/fpspipe.bash` provides `fpspipe.{workdir,loadfits,init,setparams,commit,status,teardown}`
+  with uncommitted-exit rollback (`@defer --exit`). `iofits.loadfits` natively decompresses gzip
+  (`.fits.gz`) and Rice tile-compressed (`.fits.fz`) FITS images and cubes while filtering
+  structural `BINTABLE` compression keywords. See [FPS](guide/fps.md#3-running-units) and
+  [Streams](guide/streams.md#4-introspection-and-cli-tools) `#fps` `#streams` `#cli` `#performance`
 - **2026-11-14** — Fixes from a review of the CLI, calculator and JIT (fuzzing, ASan, doc checks),
   with changes a script may notice. Silent wrong results fixed: `C += outer(x, y)` overwrote `C`,
   a lowered `A.T @ A` update made a non-symmetric `C` symmetric, `trsv`/`trsm` read `uplo` of the
