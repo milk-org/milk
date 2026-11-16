@@ -15,7 +15,7 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "CLI"
 
     ```bash
-    milk-pipeinit clone $MILK_ROOT/milk-examples/pipelines/pipelinebasic-conf ~/pipes  # (1)!
+    milk-pipeinit clone --milk pipelinebasic ~/pipes  # (1)!
     cd ~/pipes
     ```
 

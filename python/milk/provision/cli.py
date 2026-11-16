@@ -50,7 +50,7 @@ def pipeinit_list(folder: Path):
 
 
 @milk_pipeinit.command("clone")
-@click.argument("src", type=_dir)
+@click.argument("src", type=click.Path(path_type=Path))
 @click.argument("dest_parent", type=click.Path(path_type=Path), default=".")
 @click.option("-u", "--update", is_flag=True, help="Reclone into an existing target.")
 @click.option(
@@ -59,10 +59,33 @@ def pipeinit_list(folder: Path):
     is_flag=True,
     help="Reclone, deleting all but the target's .git.",
 )
-def pipeinit_clone(src: Path, dest_parent: Path, update: bool, override: bool):
+@click.option(
+    "--milk",
+    "examples",
+    flag_value="milk",
+    help="SRC is a NAME or NAME-conf in the milk examples.",
+)
+@click.option(
+    "--cacao",
+    "examples",
+    flag_value="cacao",
+    help="SRC is a NAME or NAME-conf in the cacao examples.",
+)
+def pipeinit_clone(
+    src: Path, dest_parent: Path, update: bool, override: bool, examples: str | None
+):
     """Copy the conf files of confdir SRC into DEST_PARENT (default: cwd)."""
     from .clone import clone
 
+    if examples:
+        from .. import env
+
+        base = env.examples(examples)
+        src = next(
+            (p for p in (base / src, base / f"{src}-conf") if p.is_dir()), base / src
+        )
+    if not src.is_dir():
+        raise click.BadParameter(f"{src} is not a directory.", param_hint="SRC")
     click.echo(f"Cloned {src} to {clone(src, dest_parent, update, override)}")
 
 

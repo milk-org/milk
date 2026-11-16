@@ -156,7 +156,7 @@ flowchart LR
 | Command | Effect |
 |---|---|
 | `milk-pipeinit list [DIR]` | List the confdirs and rootdirs in DIR (default cwd). |
-| `milk-pipeinit clone SRC [DEST_PARENT] [-u\|-d]` | Copy the conf files of SRC to `DEST_PARENT/<SRC name>` (default cwd). Refuses an existing target unless `-u`/`--update` (copy over it) or `-d`/`--override` (first delete all but its `.git`, leaving a fresh clone whose changes git tracks). Runs no hooks and no git. |
+| `milk-pipeinit clone SRC [DEST_PARENT] [-u\|-d] [--milk\|--cacao]` | Copy the conf files of SRC to `DEST_PARENT/<SRC name>` (default cwd). With `--milk` or `--cacao`, SRC is a name looked up as `SRC` or `SRC-conf` in `$MILK_ROOT/milk-examples/pipelines` or `$MILK_ROOT/plugins/cacao-src/AOloopControl/examples`. Refuses an existing target unless `-u`/`--update` (copy over it) or `-d`/`--override` (first delete all but its `.git`, leaving a fresh clone whose changes git tracks). Runs no hooks and no git. |
 | `milk-pipeinit consolidate CONFDIR [--refetch ID ...] [--refetch-all]` | Run the pending conf hooks; print the ids that ran. `--refetch` reruns a hook even when resolved: upstream changes (for example a new file at an rsync source) are not detected otherwise. |
 | `milk-pipeinit resolve DIR` | Print the resolved configuration of a confdir or a rootdir as TOML. |
 | `milk-pipeinit init CONFDIR [--parent DIR] [--set K=V ...]` | Consolidate CONFDIR and build `<DIR>/<name>-rootdir` (DIR defaults to CONFDIR's parent). Refuses an existing rootdir. |

@@ -29,6 +29,18 @@ def root() -> Path:
     return _require_dir("MILK_ROOT")
 
 
+def examples(source: str) -> Path:
+    """The pipeline examples of ``source`` ("milk" or "cacao") under ``$MILK_ROOT``."""
+    sub = {
+        "milk": "milk-examples/pipelines",
+        "cacao": "plugins/cacao-src/AOloopControl/examples",
+    }[source]
+    path = root() / sub
+    if not path.is_dir():
+        raise EnvError(f"No {source} examples directory", path=path)
+    return path
+
+
 def installdir() -> Path:
     """The milk install tree, ``$MILK_INSTALLDIR``."""
     return _require_dir("MILK_INSTALLDIR")
