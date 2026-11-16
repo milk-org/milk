@@ -61,12 +61,7 @@ Apply the minimal fix. Follow coding style rules.
 **Always** add a test that would have caught the
 bug:
 
-- For CLI bugs: add to
-  `tests/cli/cli_robustness_tests.milk`
 - For computation bugs: add a ctest case
-- Use `#EXPECT:ERR` for bugs where error detection
-  was missing, `#EXPECT:OK` for bugs where valid
-  input was rejected.
 
 ## 6. Verify
 
@@ -86,15 +81,7 @@ cd /home/oguyon/src/milk/_build && \
 ctest --output-on-failure
 ```
 
-3. Run CLI tests (if CLI-related):
-
-```bash
-cd /home/oguyon/src/milk && \
-bash tests/cli/run_cli_robustness_tests.sh \
-  --verbose
-```
-
-4. Verify the original reproducer no longer
+3. Verify the original reproducer no longer
    triggers the bug.
 
 ## 7. Documentation

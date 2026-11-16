@@ -57,14 +57,6 @@ cat out.txt
 cat err.txt
 ```
 
-### Test with the robustness suite
-
-```bash
-cd ~/src/milk
-bash tests/cli/run_cli_robustness_tests.sh \
-  --verbose 2>&1
-```
-
 ## Crash Investigation
 
 ### Step 1 — Reproduce

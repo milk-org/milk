@@ -12,13 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from milk.operate import tasks as _tasks
-
-if not hasattr(
-    _tasks, "RunStart"
-):  # parked until O1 lands: P1 deletes these two statements
-    pytest.skip("O1 not implemented yet", allow_module_level=True)
-
 import matplotlib
 from pyMilk.interfacing.fps import FPS
 

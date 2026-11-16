@@ -120,9 +120,6 @@ def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
     out_shm.destroy()
 
 
-def test_loopd(): ...
-
-
 def test_raises_on_missing_fps(fixt_fpsinit_pinfo):
     compu: StreamDelayComputeUnit = fixt_fpsinit_pinfo
     assert compu.fps

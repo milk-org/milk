@@ -85,7 +85,7 @@ set(TESTNAME "milksemloopspeed")
 add_test(NAME "${TESTNAME}"
          COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/milk-semloopspeed "-D"
                  "123456")
-set_property(TEST "${TESTNAME}" PROPERTY LABELS "perf")
+set_property(TEST "${TESTNAME}" PROPERTY LABELS "benchmark")
 set_property(TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
 set_property(TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION
                                          "cnt0 = 123457")

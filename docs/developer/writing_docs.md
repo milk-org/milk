@@ -34,13 +34,13 @@ How a confdir is laid out and what `conf.toml` can say.
 
 ### 2.1. Audiences
 
-| Audience | Reads | Example content |
-|---|---|---|
-| Operator | how to run a system | commands, states, failures |
-| Integrator | how to write and tune a configuration | file formats, keys, custom plans |
-| Internals | how the code works | package layout, contracts, C expansions of milk |
-| Developer | how to work on milk itself | build, coding standards, tooling, these rules |
-| Maintainers | governance and maintenance | TBC |
+| Audience    | Reads                                 | Example content                                 |
+| ----------- | ------------------------------------- | ----------------------------------------------- |
+| Operator    | how to run a system                   | commands, states, failures                      |
+ | Integrator  | how to write and tune a configuration | file formats, keys, custom plans               |
+| Internals   | how the code works                    | package layout, contracts, C expansions of milk |
+| Developer   | how to work on milk itself            | build, coding standards, tooling, these rules   |
+| Maintainers | governance and maintenance            | TBC                                             |
 
 A page has one audience. Put it in the nav group that matches: user pages under User Guide
 (Internals as a subgroup of the topic), developer pages under Developer Guide, maintainer pages under Maintenance.

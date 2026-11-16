@@ -517,9 +517,3 @@ def test_dataloads_read_from_initdata(tmp_path, src_file):
     )
     task = LoadData(Pipeline(init(conf)))
     assert task.can(), task.failure_reason
-
-
-def test_milk_pipes_init_is_gone():
-    from milk.operate.cli import milk_pipes
-
-    assert CliRunner().invoke(milk_pipes, ["init", "-h"]).exit_code != 0

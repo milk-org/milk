@@ -26,7 +26,7 @@ work):
 
 - Add Kernel-Doc to undocumented functions
   (use `batch-kernel-doc` skill)
-- Add CLI robustness tests (use `cli-test-writer`)
+- Add CLI robustness tests
 - Fix type consistency gaps (`/check-type-consistency`)
 - Update module READMEs
 

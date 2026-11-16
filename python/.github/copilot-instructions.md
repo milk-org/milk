@@ -47,6 +47,7 @@ milk build (see `tests/conftestaux/milk.py`). The existing suite must stay green
 - Fixtures shared across test files live in `tests/conftestaux/` and are registered in
   `tests/conftest.py` (`pytest_plugins`). Do not add `conftest.py` files in subfolders. Reuse an
   existing fixture before writing a new one.
+- **No trivial testing**:
 
 **Stop rule (important):**
 - If a failure looks caused by something outside this package (milk C code or binaries, pyMilk,

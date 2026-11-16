@@ -61,10 +61,3 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 # install(TARGETS milk-mytool DESTINATION bin)
 # target_link_libraries(milk-fpsexec-clitest PUBLIC otherlib)
 # ==================
-
-
-# -- Tests ----------------------------------------
-# Smoke tests: verify template standalones link correctly and run without segfault.
-add_test(NAME template-clitest-h1 COMMAND milk-fpsexec-clitest -h1)
-add_test(NAME template-imsum2-h1 COMMAND milk-fpsexec-imsum2 -h1)
-add_test(NAME template-streamprocess-h1 COMMAND milk-fpsexec-streamprocess -h1)

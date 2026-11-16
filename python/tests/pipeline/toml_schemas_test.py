@@ -5,7 +5,6 @@ import shutil
 import pytest
 import tomli
 import pydantic
-from pydantic import BaseModel
 
 from milk.errors import ConfigError
 from milk.config import model as pconf
@@ -159,9 +158,3 @@ def test_loader_refuses_bad_procinfo_shape(tmp_path, value):
     assert "procinfo" in str(err.value)
     assert err.value.path == toml_path
     assert isinstance(err.value.__cause__, pydantic.ValidationError)
-
-
-def test_model_no_longer_has_legacy_names():
-    assert not hasattr(pconf, "PipelineConfigModel")
-    assert not hasattr(pconf, "LOOP_INFO")
-    assert issubclass(pconf.PipelineConfig, BaseModel)

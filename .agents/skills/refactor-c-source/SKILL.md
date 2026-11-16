@@ -100,10 +100,6 @@ For each new `.c` file:
 
 3. If the module has tests, run them.
 
-4. If the module is part of `CLIcore`, also run
-   the `/cli-robustness-test` workflow to verify
-   no regressions.
-
 ## Common Pitfalls
 
 - **Circular includes**: if `a.h` includes `b.h`

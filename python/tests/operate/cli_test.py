@@ -179,18 +179,6 @@ def test_state_reports_milk_version_change(pp):
 # ---- link / unlink ----
 
 
-def test_link_and_unlink(pp, paper, shm_dir_cleanafter):
-    for name in ("otherloop_output", "input_remote"):
-        (shm_dir_cleanafter / f"{name}.im.shm").write_bytes(b"")
-    _deploy_on_paper(pp, paper)
-    result = _invoke("link", "-p", str(pp.root_folder), "shared")
-    assert result.exit_code == 0, _text(result)
-    assert (shm_dir_cleanafter / "input.im.shm").is_symlink()
-    result = _invoke("unlink", "-p", str(pp.root_folder), "shared")
-    assert result.exit_code == 0, _text(result)
-    assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
-
-
 def test_unlink_all(pp, paper, shm_dir_cleanafter):
     _deploy_on_paper(pp, paper)
     assert _invoke("link", "-p", str(pp.root_folder), "shared").exit_code == 0

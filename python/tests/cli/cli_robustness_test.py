@@ -464,7 +464,6 @@ TESTLIST_EXPECT_GREP_WORKING: list[tuple[list[str], str]] = [
     (["echo comment_ok # this is a comment and should not error"], "comment_ok"),
     (["echo indented_comment_ok   # indented comment"], "indented_comment_ok"),
 ]
-TESTLIST_EXPECT_GREP_XFAILING: list[tuple[list[str], str]] = []
 # fmt: on
 
 
@@ -482,8 +481,6 @@ def test_expect_ok(milk_cmds: list[str]):
 @pytest.mark.timeout(TIMEOUT)
 @pytest.mark.parametrize("milk_cmds", TESTLIST_EXPECT_ERROR)
 def test_expect_error(milk_cmds: list[str]):
-    if milk_cmds == ["pwd --invalid-option-xyz"]:
-        pytest.mark.xfail(reason=f'the test for "pwd --invalid-option-xyz" is broken.')
     joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         combined = result.stdout + result.stderr
@@ -495,20 +492,6 @@ def test_expect_error(milk_cmds: list[str]):
 @pytest.mark.timeout(TIMEOUT)
 @pytest.mark.parametrize("milk_cmds,needle", TESTLIST_EXPECT_GREP_WORKING)
 def test_expect_grep(milk_cmds: list[str], needle: str):
-    joined_cmd = ";".join(milk_cmds)
-    with CLICommands(milk_cmds) as result:
-        assert (
-            needle in result.stdout
-        ), f'"\033[1;33m{joined_cmd}\033[0m" (grepping:{needle}): expected {needle!r} in stdout, got: "{result.stdout}"'
-
-
-@pytest.mark.skipif(
-    len(TESTLIST_EXPECT_GREP_XFAILING) == 0, reason="No listed xfail tests."
-)
-@pytest.mark.xfail(reason="CLI doesn't behave as expected for control flow statements.")
-@pytest.mark.timeout(TIMEOUT)
-@pytest.mark.parametrize("milk_cmds,needle", TESTLIST_EXPECT_GREP_XFAILING)
-def test_expect_grep_xfails(milk_cmds: list[str], needle: str):
     joined_cmd = ";".join(milk_cmds)
     with CLICommands(milk_cmds) as result:
         assert (

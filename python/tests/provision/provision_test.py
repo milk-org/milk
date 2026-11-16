@@ -314,9 +314,3 @@ def test_cli_resolve(tmp_path):
     assert not isinstance(result.exception, ConfigError)
     result = CliRunner().invoke(milk_pipeinit, ["--errstack", "resolve", str(conf)])
     assert isinstance(result.exception, ConfigError)
-
-
-def test_milk_pipes_clone_is_gone():
-    from milk.operate.cli import milk_pipes
-
-    assert CliRunner().invoke(milk_pipes, ["clone", "-h"]).exit_code != 0

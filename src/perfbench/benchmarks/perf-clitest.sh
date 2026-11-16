@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# perfbench test wrapper for clitest
+# perfbench benchmark wrapper for clitest
 #
 # Creates the dummy stream required by
 # milk-fpsexec-clitest, then runs the
