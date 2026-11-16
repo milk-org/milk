@@ -114,11 +114,10 @@ class CMakeBuildExt(build_ext):
                     "-DCMAKE_CXX_COMPILER={}/bin/g++".format(os.environ["CUDA_ROOT"])
                 ]
             cmake_args += ["-DUSE_CUDA=ON"]
-        else:
-            cmake_args += ["-DUSE_CUDA=OFF"]
+        # Without CUDA_ROOT, USE_CUDA follows the engine's libImageStreamIO (see bindings/CMakeLists.txt).
 
-        # Warning, overriden in CMakeLists.txt anyway.
-        cmake_args += ["-Dbuild_python_module=ON"]
+        # SYSTEM (installed milk, found via pkg-config / $MILK_INSTALLDIR) or BUNDLED.
+        cmake_args += ["-DPYMILK_ENGINE=" + os.environ.get("PYMILK_ENGINE", "SYSTEM")]
 
         self.announce("Configuring cmake project", level=3)
         command_a = f"cmake {ext.sourcedir} " + " ".join(cmake_args)

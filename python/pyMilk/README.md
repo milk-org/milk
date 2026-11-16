@@ -7,36 +7,26 @@ pyMilk means to provide a user-side interaction channel between your python scri
 - __ProcessInfo__ a telemetry structure for monitoring RTC processes, also hosted in IPC-accessible shared memory.
 - __FPS__ Function Parameter Structure, an IPC key-value structure that is usually used to channel information between a real-time runtime program, and a user-facing control environment or automated orchestrator.
 
-For interfacing with the underlying C API of MILK we use a [pybind](https://github.com/pybind/pybind11) linking deployed with the C library [ImageStreamIO](https://github.com/milk-org/ImageStreamIO) (ISIO).
+For interfacing with the underlying C API of MILK we use [nanobind](https://github.com/wjakob/nanobind) extensions linked against the milk engine libraries: [ImageStreamIO](https://github.com/milk-org/ImageStreamIO) (ISIO), ProcessInfo and FPS.
 
 - Credit to Arnaud Sevin for the pybind11 modules and many other contributions.
 - Credit to Frantz Martinache for defining the API for the SHM python binding.
 
 ## Installing
 
-Installing the software is straightforward and done entirely with `pip`, with some caveats to avoid collisions with the underlying MILK installation.
+pyMilk lives in the milk repository, under `python/pyMilk`. Its nanobind extensions (`ImageStreamIOWrap`, `FpsWrap`, `ProcessInfoWrap`) are built with CMake from `bindings/`; `ImageStreamIOWrap.cpp` is compiled from milk's `src/engine/ImageStreamIO/python_module`.
 
-### There is no existing MILK installation:
+The C engine is selected with the `PYMILK_ENGINE` environment variable:
 
-Clone the repo with ImageStreamIO as submodule:
-```
-git clone https://github.com/milk-org/pyMilk --recurse-submodules
-```
-
-Install pyMilk **in "developer mode"** (`-e` flag; CMake is misbehaved with `pip install .`). Developer mode does not copy source files in your python package manager.
-The source code actually used is the one in the present pyMilk folder. If you intend to change python sources, this approach is more convenient.
+- `SYSTEM` (default): link the libraries of an installed milk, located with pkg-config (`milk.pc`, `ImageStreamIO.pc`). Set `MILK_INSTALLDIR`, or put its `lib/pkgconfig` in `PKG_CONFIG_PATH`. Install milk from the same checkout first: the build stops if the checkout's ImageStreamIO version differs from the installed one.
+- `BUNDLED`: build the engine from source into pyMilk, without a milk installation. Not implemented yet.
 
 ```
-cd pyMilk
-pip install -e .
+cd milk/python/pyMilk
+MILK_INSTALLDIR=/usr/local/milk pip install -e .
 ```
 
-### You have otherwise installed MILK/CACAO
-
-In case you need MILK/CACAO as well, beyond merely interacting with SHMs and FPSs with pyMilk in standalone mode, you may encounter some weirdness with name and library resolution.
-Please let me know in the Github Issues.
-
-At this stage, having a full installation of MILK/CACAO is the only way to use the FPS features of pyMilk. You will need to compile the CacaoProcessTools python module that is packaged with MILK. See installation instructions there.
+Use developer mode (`-e`). The extensions link with an RPATH to the installed milk `lib/`; after reinstalling milk, rebuild pyMilk.
 
 ## Usage
 

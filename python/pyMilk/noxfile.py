@@ -56,7 +56,7 @@ def _set_cuda_env(session: nox.Session) -> None:
 """
 I am investigating nox as an option to run the (some) tests with multiple "installation modes"
 In particular, with the dependency on libImageStreamIO.so and the building of the python
-module with pybind, and combining between editable and non-editable installs,
+modules with nanobind, and combining between editable and non-editable installs,
 comprehending _what_ exactly happens is tricky.
 
 Nox should allow making virgin python environments, installing one way or another, and
@@ -71,8 +71,8 @@ and whether the tests are run from pyMilk dir or externally. This matters due to
 def tests_not_installed_inner(session: nox.Session):
     """
     NOT INSTALLED, ie no pip install; test from inside the project root.
-    INNER testing, ie we run pytest while PWD is $PYMILK_ROOT (often $HOME/src/pyMilk/)
-    ACTUALLY THAT CANNOT WORK, due to uncompiled ImageStreamIO / CacaoProcessTools which gets compiled on install.
+    INNER testing, ie we run pytest while PWD is $PYMILK_ROOT (milk/python/pyMilk/)
+    ACTUALLY THAT CANNOT WORK, due to the uncompiled nanobind extensions (ImageStreamIOWrap / FpsWrap / ProcessInfoWrap) which get compiled on install.
     """
     ...
 
@@ -82,7 +82,7 @@ def tests_editable_inner_outer(session: nox.Session):
     """
     EDITABLE installation, ie `pip install -e .`; test from inside the project root.
 
-    INNER testing, ie we run pytest while PWD is $PYMILK_ROOT (often $HOME/src/pyMilk/)
+    INNER testing, ie we run pytest while PWD is $PYMILK_ROOT (milk/python/pyMilk/)
     OUTER testing, ie we run pytest while PWD is NOT $PYMILK_ROOT; here's its /tmp/nox
 
     We do both to ensure package name shadowing when running in the directory is not an issue.

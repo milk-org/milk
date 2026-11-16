@@ -9,13 +9,16 @@ extern "C"
 {
 #include "fps.h"
 #include "fps_internal.h"
+#include "fps_connect.h"
+#include "fps_disconnect.h"
 #include "fps_CONFstart.h"
+#include "fps_CONFstop.h"
+#include "fps_FPCONFexit.h"
+#include "fps_FPCONFloopstep.h"
 #include "fps_RUNstart.h"
-//#include "../fps_tmux.h"
-//#include "../fps_paramvalue.h"
-//#include "../fps_connect.h"
-//#include "../fps_add_entry.h"
-//#include "../fps_internal.h"
+#include "fps_RUNstop.h"
+#include "fps_RUNexit.h"
+#include "fps_tmux.h"
 #include "processinfo.h"
 }
 
@@ -144,7 +147,7 @@ class pyFps
     {
         if (fps_.SMfd != -1)
         {
-            function_parameter_struct_disconnect(&fps_);
+            fps_disconnect(&fps_);
         }
     }
 
@@ -195,7 +198,7 @@ class pyFps
      */
     int connect()
     {
-        return function_parameter_struct_connect(name_.c_str(), &fps_, FPSCONNECT_SIMPLE);
+        return fps_connect(name_.c_str(), &fps_, FPSCONNECT_SIMPLE);
     };
 
     /**
@@ -203,7 +206,7 @@ class pyFps
      */
     int disconnect()
     {
-        return function_parameter_struct_disconnect(&fps_);
+        return fps_disconnect(&fps_);
     }
 
     /**
