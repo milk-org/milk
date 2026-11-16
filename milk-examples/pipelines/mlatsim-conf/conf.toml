@@ -55,21 +55,3 @@ procinfo.enabled = true
 procinfo.loopcntMax = -1
 procinfo.triggermode = 4      # delay
 procinfo.triggerdelay = 0.001
-
-[compute_units.mlat]          # one measurement per run; the run ends by itself
-exec = "cacao-fpsexec-cacaopt-mlat"
-
-[compute_units.mlat.fps]
-dmstream = "{compute_units.dmdelay.fps.in_name}"
-wfsstream = "{compute_units.wfscam.fps.out_sname}"
-pokemap = "null"
-OPDamp = 1.0
-CPA = 2.0
-frameratewait = 0.5
-NBiter = 50
-wfsNBframemax = 10
-option.saveseq = false
-option.seqNBframe = 20
-procinfo.enabled = true
-procinfo.loopcntMax = 0       # a single pass (milk counts from 0)
-procinfo.triggermode = 0      # immediate

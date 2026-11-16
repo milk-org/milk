@@ -1,15 +1,53 @@
-[compute_units.acquWFS.fps]
-procinfo.enabled = true
-procinfo.triggersname = 'aol{_ln}_wfsim'
-procinfo.triggermode = 3
-procinfo.triggertimeout = 0.1
+[compute_units.acquWFS.fps]         # raw WFS frame -> aol{_ln}_imWFS0..3
+AOloopindex = '{loop_number}'
+insname = 'aol{_ln}_wfsim'
+wfszpo = 'aol{_ln}_wfszpo'
+comp.darksub = false
+comp.WFSnormalize = false
+comp.WFSrefsub = false
+comp.WFSsigav = false
+comp.WFSrefc = false
 
-[compute_units.wfs2modes.fps]
+[compute_units.wfs2modes.fps]       # WFS image -> control mode values
+insname = 'aol{_ln}_imWFS2'
+inmasksname = 'null'                 # optional; unused if absent
+immodes = 'aol{_ln}_CMmodesWFS'
+outcoeff = 'aol{_ln}_modevalWFS'
+axmode = 0                           # extract
+option.MODENORM = true
+GPUindex = 99                        # CPU (BLAS)
 
-[compute_units.mfilt.fps]
+[compute_units.mfilt.fps]           # modal filter (integrator)
+AOloopindex = '{loop_number}'
+inmval = 'aol{_ln}_modevalWFS'
+outmval = 'aol{_ln}_modevalDM'
+loopgain = 0.2
+loopmult = 0.99
+looplimit = 1.0
+loopON = false
 
-[compute_units.modes2dm.fps]
+[compute_units.modes2dm.fps]        # mode values -> DM command
+insname = 'aol{_ln}_modevalDM'
+inmasksname = 'null'
+immodes = 'aol{_ln}_CMmodesDM'
+outcoeff = 'aol{_ln}_dmC'
+axmode = 1                           # expand
+option.MODENORM = false
+GPUindex = 99
 
 [compute_units.mlat.fps]
+dmstream = "{compute_units.modes2dm.fps.outcoeff}"
+wfsstream = "{compute_units.wfs2modes.fps.insname}"
+pokemap = "null"
+OPDamp = 1.0
+CPA = 2.0
+frameratewait = 0.5
+NBiter = 50
+wfsNBframemax = 10
+option.saveseq = false
+option.seqNBframe = 20
+procinfo.enabled = true
+procinfo.loopcntMax = 0       # a single pass (milk counts from 0)
+procinfo.triggermode = 0      # immediate
 
 [compute_units.measlinresp.fps]

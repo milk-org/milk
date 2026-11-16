@@ -1,0 +1,27 @@
+long_name = "streamburstcamsim"
+name = "camsim"
+loop_number = 2
+tasks = [ "init_folders", "fetch_assets", "fps_init", "conf_start" ]
+
+# Clock-driven camera simulator
+# signal cube => streamburst (clock) -> camera simulator ==> WFS
+
+[sessions]
+burst = 'milk-fpsexec-mem-streamburst'
+wfscamsim = 'cacao-fpsexec-cacaoiot-wfscamsim'
+
+
+[burst]
+inname = 'signalcube'
+outname = 'wfssignal'
+usperiod = 1000
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+
+[wfscamsim]
+wfssignal = '{burst.outname}'
+wfscamim = 'wfsim'
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 3
+procinfo.triggersname = '{wfscamsim.wfssignal}'
