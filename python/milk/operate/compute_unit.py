@@ -1,10 +1,30 @@
 from __future__ import annotations
 
+import os
 import subprocess
+from dataclasses import dataclass
+from typing import IO
 
 from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 
 from ..errors import ComputeUnitError
+
+
+@dataclass
+class _PipeCapture:
+    """A subprocess pipe, read without blocking, and everything read from it so far."""
+
+    pipe: IO[bytes]
+    data: bytes = b""
+
+    def __post_init__(self) -> None:
+        os.set_blocking(self.pipe.fileno(), False)
+
+    def read(self) -> str:
+        chunk = self.pipe.read()  # None if nothing available
+        if chunk:
+            self.data += chunk
+        return self.data.decode(errors="replace")
 
 
 def fpslist(exec_name: str):
@@ -37,6 +57,20 @@ class ComputeUnit:
 
         self.fps: FPS | None = None
         self._trylink_fps()
+
+        # Output of the last subprocess issued by runstart().
+        self._run_out: _PipeCapture | None = None
+        self._run_err: _PipeCapture | None = None
+
+    @property
+    def last_stdout(self) -> str:
+        """Output of the last runstart() subprocess so far."""
+        return self._run_out.read() if self._run_out else ""
+
+    @property
+    def last_stderr(self) -> str:
+        """Error output of the last runstart() subprocess so far."""
+        return self._run_err.read() if self._run_err else ""
 
     def _trylink_fps(self, raise_on_miss: bool = False) -> None:
         """Try to link to the named FPS, raising FPSDoesntExistError only if raise_on_miss."""
@@ -153,9 +187,12 @@ class ComputeUnit:
             args = ()
 
         if tmux:
-            self._subprocess_complete("runstart", "-tmux", *args)
+            proc = self._subprocess_complete("runstart", "-tmux", *args)
+            self._run_out, self._run_err = None, None
         else:
-            self._subprocess_start("runstart", *args, wrap_in_shell=True)
+            proc = self._subprocess_start("runstart", *args, wrap_in_shell=True)
+            self._run_out = _PipeCapture(proc.stdout)  # type: ignore[arg-type]
+            self._run_err = _PipeCapture(proc.stderr)  # type: ignore[arg-type]
 
     def runstop(self) -> None:
         self._trylink_fps(raise_on_miss=True)

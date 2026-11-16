@@ -45,21 +45,12 @@ static void fps_autopopulate_trigger_stream(FPS *fps, FPS_CLI_BINDING *bindings,
         if ((bindings[ii].fpflag & FPFLAG_TRIGGER_STREAM) &&
             (bindings[ii].type == FPTYPE_STREAMNAME))
         {
-            /*
-             * ptr holds the default stream name
-             * buffer (char[]) for string types.
-             */
             trigger_name = (const char *) bindings[ii].ptr;
             break;
         }
     }
 
-    if (trigger_name == NULL)
-    {
-        return;
-    }
-
-    if (trigger_name[0] == '\0')
+    if (trigger_name == NULL || trigger_name[0] == '\0')
     {
         return;
     }
