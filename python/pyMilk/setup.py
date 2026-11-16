@@ -79,7 +79,7 @@ class CMakeBuildExt(build_ext):
             lib_drop_in_directory = extdir + "/" + ext.package
         else:
             # self.build_temp is:    build/temp.linux-x86_64-cpython-310
-            # build_temp_subdir is:  build/temp.linux-x86_64-cpython-310/ImageStreamIO
+            # build_temp_subdir is:  build/temp.linux-x86_64-cpython-310/bindings
             # drop lib in:
             #       build/lib.linux-x86_64-cpython/pyMilk
             build_temp_path = pathlib.Path(os.path.abspath(self.build_temp))
@@ -143,7 +143,7 @@ with open("README.md", "r") as f:
 # raise ValueError(sys.argv)
 
 PACKAGE_PYMILK = "pyMilk"
-PACKAGE_LIBS = "milkengine"
+PACKAGE_LIBS = "bindings"
 setup(
     packages=[PACKAGE_LIBS],  # same as name
     ext_modules=[

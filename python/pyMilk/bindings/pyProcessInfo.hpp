@@ -5,8 +5,8 @@
 extern "C"
 {
 #include <string.h>
-#include "ProcessInfo-engine/processinfo.h"
-#include "ProcessInfo-engine/processtools.h"
+#include "processinfo.h"
+#include "processtools.h"
 }
 
 class pyProcessInfo

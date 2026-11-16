@@ -6,9 +6,9 @@
 #include <string>
 #include <cstring>
 
-#include "ProcessInfo-engine/processinfo.h"
-//#include "ProcessInfo-engine/pinfo_struct_api.h"
-//#include "ProcessInfo-engine/pinfo_exec.h"
+#include "processinfo.h"
+//#include "pinfo_struct_api.h"
+//#include "pinfo_exec.h"
 
 #include "pyProcessInfo.hpp"
 

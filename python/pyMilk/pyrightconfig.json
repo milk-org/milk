@@ -8,14 +8,13 @@
         "**/__pycache__",
         "**/.mypy_cache",
         "**/.pytest_cache",
-        "ImageStreamIO",
         ".eggs",
         "*ctypes*",
         "**/node_modules",
         "**/.*",
         "tests/",
         "pyMilk/visual/",
-        "pyMilk/milkengine/"
+        "pyMilk/bindings/"
     ],
     "reportMissingImports": true,
     "reportMissingTypeStubs": false,

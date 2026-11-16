@@ -7,16 +7,16 @@
 
 extern "C"
 {
-#include "Fps-engine/fps.h"
-#include "Fps-engine/fps_internal.h"
-#include "Fps-engine/fps_CONFstart.h"
-#include "Fps-engine/fps_RUNstart.h"
+#include "fps.h"
+#include "fps_internal.h"
+#include "fps_CONFstart.h"
+#include "fps_RUNstart.h"
 //#include "../fps_tmux.h"
 //#include "../fps_paramvalue.h"
 //#include "../fps_connect.h"
 //#include "../fps_add_entry.h"
 //#include "../fps_internal.h"
-#include "ProcessInfo-engine/processinfo.h"
+#include "processinfo.h"
 }
 
 /**

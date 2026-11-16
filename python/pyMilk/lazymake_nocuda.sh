@@ -1,6 +1,6 @@
 #!/bin/bash
 
 cd _build
-cmake ../milkengine -DNOCUDA=ON
+cmake ../bindings
 make
 find . -name *.so | xargs -I {} cp {} ../pyMilk/
