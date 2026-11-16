@@ -1,0 +1,61 @@
+# FUTURE (F-1): de-nest pyMilk. This distribution is temporarily embedded at
+# milk/python/pyMilk/; move it to the top level of milk as a top-level submodule.
+# Keep paths into milk (e.g. ../../src/engine) in one place so the move is trivial.
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=58", "wheel", 'nanobind', 'cmake']
+
+[project]
+authors = [{ name = "Vincent Deo", email = "vdeo@naoj.org" }]
+description = "Python bindings and utilities to use with MILK and CACAO"
+name = "pyMilk"
+readme = "README.md"
+version = "1.2"
+dependencies = [
+    "docopt",
+    "libtmux",
+    "numpy",
+    # "cupy", # KEEP OPTIONAL
+    "tqdm",
+    "astropy",
+]
+
+[project.urls]
+"Homepage" = "http://www.github.com/milk-org/pyMilk"
+
+
+[tool.setuptools.packages.find]
+include = ["pyMilk*"]
+
+[project.scripts]
+shmPlot = "pyMilk.visual.shmPlot:main"
+shmImshow = "pyMilk.visual.shmImshow:main"
+shmTermshow = "pyMilk.visual.shmTermshow:main"
+zmq_send = "pyMilk.scripts.zmq_send:main"
+zmq_recv = "pyMilk.scripts.zmq_recv:main"
+updatekw = "pyMilk.scripts.updatekw:main"
+creashmim = "pyMilk.scripts.creashmim:main"
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--ignore=mains/*"]
+
+[tool.coverage.run]
+command_line = "-m pytest"
+branch = true
+source = ["./pyMilk"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    'TYPE_CHECKING:',
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
+ignore_errors = true
+omit = ["tests/*", "setup.py"]

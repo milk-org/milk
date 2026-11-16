@@ -1,0 +1,17 @@
+/**
+ * @file processinfo_internal.h
+ * @brief Processinfo internal module
+ */
+
+#ifndef PROCESSINFO_INTERNAL_H
+#define PROCESSINFO_INTERNAL_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+#include "ImageStreamIO/milkDebugTools.h"
+#include "ImageStreamIO/ImageStruct.h"
+
+#endif
