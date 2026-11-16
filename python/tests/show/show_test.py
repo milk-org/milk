@@ -55,13 +55,18 @@ def test_r_redraws_from_the_current_file(tmp_path):
     assert _peak(fig) == 5000.0
 
 
-def test_cli_mlat_shows_the_figure(tmp_path, monkeypatch):
-    _write_dat(tmp_path, 3000.0)
+def test_cli_mlat_shows_the_figure(make_tmp_pipeline, monkeypatch):
+    pp = make_tmp_pipeline(
+        '[compute_units.mlat]\nexec = "cacao-fpsexec-cacaopt-mlat"\n'
+    )
+    datadir = pp.work_folder / f"fps.{pp.config.fps_name('mlat')}.datadir"
+    datadir.mkdir(parents=True)
+    _write_dat(datadir, 3000.0)
     shown = []
     monkeypatch.setattr("matplotlib.pyplot.show", lambda: shown.append(1))
-    result = CliRunner().invoke(milk_show, ["mlat", str(tmp_path)])
+    result = CliRunner().invoke(milk_show, ["mlat", "-p", str(pp.root_folder)])
     assert result.exit_code == 0, result.output
     assert shown == [1]
-    assert (
-        CliRunner().invoke(milk_show, ["mlat", str(tmp_path / "nope")]).exit_code == 2
-    )
+    (datadir / "hardwlatency.dat").unlink()
+    result = CliRunner().invoke(milk_show, ["mlat", "-p", str(pp.root_folder)])
+    assert result.exit_code == 1  # ClickException: no hardwlatency.dat
