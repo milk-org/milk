@@ -57,7 +57,8 @@ static int64_t  opt_modenorm                              = 1;
 #define FPS_PARAMS(X)                                                                           \
     X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,                            \
       "GPU index, 99 for CPU [BLAS if avail.], 98 for plain CPU [OMP if avail.]")               \
-    X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
+    X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_TRIGGER_STREAM,                 \
+      "input stream name")                                                                      \
     X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
       "spatial mask stream name")                                                               \
     X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
