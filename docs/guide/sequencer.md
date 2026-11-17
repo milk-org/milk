@@ -15,7 +15,7 @@ orchestration via shared memory.
 
 See also: [Function Processing System (FPS)](fps.md)
 
----
+______________________________________________________________________
 
 ## 1. Architecture
 
@@ -31,7 +31,7 @@ See also: [Function Processing System (FPS)](fps.md)
 3. **`milk-cli` Commands (`seq.*`):** A suite of CLI commands for submitting inputs, checking
    status, and managing sequencer instances dynamically.
 
----
+______________________________________________________________________
 
 ## 2. CLI Integration
 
@@ -53,7 +53,7 @@ milk-exec "seq.status calibloop"
 milk-exec "seq.submit calibloop load next_step.seq"
 ```
 
----
+______________________________________________________________________
 
 ## 3. Scripting Capabilities
 
@@ -120,7 +120,7 @@ You can compose scripts using the `include` directive:
 include setup.seq
 ```
 
----
+______________________________________________________________________
 
 ## 4. The `milk-fpsCTRL` TUI
 

@@ -10,7 +10,7 @@ key-value store.
 See also: [FPS](fps.md) · [Performance Tuning](../operations/performance.md) ·
 [Programmer's Guide](../arch/programmers_guide.md)
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -32,7 +32,7 @@ shared memory and a central Valkey (or Redis) server. This enables:
   └──────────┘          └──────────────┘          └──────────┘
 ```
 
----
+______________________________________________________________________
 
 ## Quick Start
 
@@ -70,7 +70,7 @@ $ milk-fps-valkey -V 192.168.1.100
 $ milk-fps-valkey -V 192.168.1.100
 ```
 
----
+______________________________________________________________________
 
 ## Key Features
 
@@ -82,7 +82,7 @@ $ milk-fps-valkey -V 192.168.1.100
 | Auto-reconnect     | Recovers from Valkey restarts    |
 | Regex filtering    | Sync only matching FPS names     |
 
----
+______________________________________________________________________
 
 ## Common Options
 
@@ -97,16 +97,16 @@ $ milk-fps-valkey [OPTIONS] [regex_pattern]
 | `-i, --interval`    | `0.1`       | Poll interval (seconds) |
 | `-h, --help`        | —           | Show help               |
 
----
+______________________________________________________________________
 
 ## Detailed Documentation
 
 For full architecture details, key schema, PubSub protocol, troubleshooting, and C API reference,
 see the comprehensive README:
 
-→ [`src/fpsvalkey/README.md`]({{ github_blob_url }}/src/fpsvalkey/README.md)
+→ [`src/fpsvalkey/README.md`](<{{ github_blob_url }}/src/fpsvalkey/README.md>)
 
----
+______________________________________________________________________
 
 ## Building
 
@@ -120,9 +120,9 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
-See [`src/fpsvalkey/README.md`]({{ github_blob_url }}/src/fpsvalkey/README.md) for detailed build instructions and
+See [`src/fpsvalkey/README.md`](<{{ github_blob_url }}/src/fpsvalkey/README.md>) for detailed build instructions and
 prerequisites.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

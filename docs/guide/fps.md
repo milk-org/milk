@@ -136,15 +136,15 @@ For complete keyboard shortcuts and display modes, see [fpsCTRL Reference](fpsCT
 
     **Input/Output presets:**
 
-    | Flag                            | Effect                                            |
-    | ------------------------------- | ------------------------------------------------- |
-    | `FPFLAG_DEFAULT_INPUT`          | Active, used, visible, writable, writeconf,       |
-    |                                 | saveonchange, feedback, writestatus                |
-    | `FPFLAG_DEFAULT_OUTPUT`         | Active, used, visible (read-only)                  |
-    | `FPFLAG_DEFAULT_INPUT_STREAM`   | `DEFAULT_INPUT` + run-required + stream-check      |
-    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | `DEFAULT_INPUT_STREAM` + trigger                   |
-    | `FPFLAG_DEFAULT_OUTPUT_STREAM`  | `DEFAULT_INPUT` + stream-check (writable, saveable)|
-    | `FPFLAG_DEFAULT_STATUS`         | Active, used, visible (read-only status display)   |
+    | Flag                            | Effect                                              |
+    | ------------------------------- | --------------------------------------------------- |
+    | `FPFLAG_DEFAULT_INPUT`          | Active, used, visible, writable, writeconf,         |
+    |                                 | saveonchange, feedback, writestatus                 |
+    | `FPFLAG_DEFAULT_OUTPUT`         | Active, used, visible (read-only)                   |
+    | `FPFLAG_DEFAULT_INPUT_STREAM`   | `DEFAULT_INPUT` + run-required + stream-check       |
+    | `FPFLAG_DEFAULT_TRIGGER_STREAM` | `DEFAULT_INPUT_STREAM` + trigger                    |
+    | `FPFLAG_DEFAULT_OUTPUT_STREAM`  | `DEFAULT_INPUT` + stream-check (writable, saveable) |
+    | `FPFLAG_DEFAULT_STATUS`         | Active, used, visible (read-only status display)    |
 
     **Modifiers (combine with presets):**
 
@@ -226,6 +226,6 @@ Positional arguments that are not a command (e.g. `milk-fpsexec-mymod 2.5 100`) 
 executable connects to the FPS if it exists, otherwise creates a local one, maps the arguments onto
 the primary parameters, and runs the compute function exactly as `milk-cli` would.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

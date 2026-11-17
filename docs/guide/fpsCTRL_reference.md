@@ -116,6 +116,6 @@ The default display mode at startup is **Control** (mode 3).
 | `x`    | Exit fpsCTRL          |
 | Ctrl+C | Exit (signal handler) |
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

@@ -2,7 +2,7 @@
 
 Common issues and solutions when building, installing, and running `milk`.
 
----
+______________________________________________________________________
 
 ## 1. Installation
 
@@ -15,11 +15,13 @@ Common issues and solutions when building, installing, and running `milk`.
     **Solution:** Install the development headers:
 
     === "Ubuntu/Debian"
+
         ```bash
         sudo apt-get install libcfitsio-dev
         ```
 
     === "CentOS/RHEL"
+
         ```bash
         sudo yum install cfitsio-devel
         ```
@@ -42,24 +44,27 @@ Common issues and solutions when building, installing, and running `milk`.
     **Solution:** Install the development headers, or build without CLI:
 
     === "Install headers"
+
         ```bash
         sudo apt-get install libreadline-dev
         ```
 
     === "Build standalone-only (No CLI)"
+
         ```bash
         cmake .. -DUSE_CLI=OFF
         ```
 
 ??? faq "Library not found at runtime"
+
     ```text
     error while loading shared libraries: libImageStreamIO.so
     ```
 
-    This  generally relates to a stray legacy install. Try to locate and remove/isolate it.
+    This generally relates to a stray legacy install. Try to locate and remove/isolate it.
     The modern installation of milk does not require manipulating the linker path.
 
----
+______________________________________________________________________
 
 ## 2. Shared Memory
 
@@ -107,7 +112,7 @@ See also: [Streams](../guide/streams.md)
     export MILK_SHM_DIR=/path/to/custom/shmdir
     ```
 
----
+______________________________________________________________________
 
 ## 3. FPS / Process Control
 
@@ -145,7 +150,7 @@ See also: [FPS](../guide/fps.md) · [Process Info](../guide/procinfo.md)
     2. Check if the tmux session exists: `tmux ls`
     3. Verify the FPS name has no spaces or special characters.
 
----
+______________________________________________________________________
 
 ## 4. CLI
 
@@ -175,7 +180,7 @@ See also: [CLI Reference](../guide/CLIcore.md)
 
     If the module is a plugin, ensure it was compiled and the `.so` file is in the library path.
 
----
+______________________________________________________________________
 
 ## 5. Performance
 
@@ -201,7 +206,7 @@ See also: [CLI Reference](../guide/CLIcore.md)
 
     Typical values: >100 kHz on modern hardware.
 
----
+______________________________________________________________________
 
 ## 6. Getting Help
 
@@ -211,6 +216,6 @@ See also: [CLI Reference](../guide/CLIcore.md)
 - **Documentation:** See [docs/index.md](../index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

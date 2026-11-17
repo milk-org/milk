@@ -1,7 +1,9 @@
 # Dependency System: managing extra dependencies
 
 <!-- prettier-ignore -->
+
 !!! info "TL;DR:"
+
     Do not try to modify the module's `CMakeLists.txt` into highly customized include and linkage
     rules. MILK provides magic tags `// MILK_CMAKE_REQUEST_<X>` and `// MILK_CMAKE_MANDATE_<X>`,
     with e.g. `<X> = CUDA`, from where all includes and linkage is handled automatically.
@@ -32,7 +34,9 @@ If the library is located, `-DUSE_<X>=ON` is maintained and a symbol `-DHAVE_<X>
 be `TRUE` or unset).
 
 <!-- prettier-ignore -->
+
 !!! Note
+
     In case of package `<X>` providing multiple features, or packages `<X>` and `<Y>` providing the
     same feature, several flags may be set: `-DHAVE_<a>`, `-DHAVE_<b>`, ...
 

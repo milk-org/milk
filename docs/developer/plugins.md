@@ -21,9 +21,12 @@ Typically, plugins are placed inside an intermediate group folder such as:
 - `plugins/cacao-src/<your_plugin>` (For `cacao` AO loop modules)
 
 <!-- prettier-ignore -->
+
 !!! note
+
     Because plugins are decoupled, it's very common for them to be their own isolated git repositories.
     You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic
+
 links.
 
 ### Standalone Executables Relation to Core
@@ -32,14 +35,14 @@ When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`),
 
 ## 2. Module layout
 
-| Path             | Content                                                       |
-| ---------------- | ------------------------------------------------------------- |
-| `<modulename>.c` | Module registry (`MILK_MODULE_RUNNABLES`)                     |
-| `<modulename>.h` | Module header and `extern` declarations of its runnables      |
-| `CMakeLists.txt` | CMake build configuration (see below)                         |
-| `README.md`      | Module overview, source file table, dependencies              |
-| `scripts/`       | Shell scripts and utilities (optional)                        |
-| `*.c` / `*.h`    | Source files, each holding one or several runnables           |
+| Path             | Content                                                  |
+| ---------------- | -------------------------------------------------------- |
+| `<modulename>.c` | Module registry (`MILK_MODULE_RUNNABLES`)                |
+| `<modulename>.h` | Module header and `extern` declarations of its runnables |
+| `CMakeLists.txt` | CMake build configuration (see below)                    |
+| `README.md`      | Module overview, source file table, dependencies         |
+| `scripts/`       | Shell scripts and utilities (optional)                   |
+| `*.c` / `*.h`    | Source files, each holding one or several runnables      |
 
 Copy `src/milk_module_example/CMakeLists.txt`; its skeleton and rules are in the [Programmer's Guide](../arch/programmers_guide.md#6-cmakeliststxt-conventions).
 
@@ -75,6 +78,6 @@ Once your `CMakeLists.txt` and C sources are in progress:
 3. Look for the message `ADDING SUBDIR = plugins/milk-extra-src/my_new_plugin`. If you see that,
    `milk` has successfully hooked your plugin into the global project.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

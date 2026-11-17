@@ -18,6 +18,6 @@ include data files, scripts, and extended documentation.
 
 For more details see the [Programmer's Guide](../arch/programmers_guide.md).
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)
