@@ -1090,11 +1090,13 @@ int mc_plan_build(mcalc_prog_t *p, char *err, size_t errsz)
             }
         }
 
-        /* Single-call multi-LHS image decomposition (e.g. `u, s, vt = svd(A)`) */
+        /* Single-call multi-LHS image decomposition (e.g. `u, s, vt = svd(A)`) or extension */
         if (s->kind == MC_STMT_MULTI_ASSIGN && s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2 &&
-            mc_multi_lhs_is_image(s->u.multi.rhs[0], 0))
+            (mc_multi_lhs_is_image(s->u.multi.rhs[0], 0) ||
+             (s->u.multi.rhs[0]->kind == MC_EXPR_CALL && s->u.multi.rhs[0]->u.call.ext_id >= 0)))
         {
             mc_step_t *st       = alloc_step(p, MC_STEP_CTOR, idx);
+            st->ctor.slot_idx   = -1;
             st->ctor.multi_stmt = s;
             st->ctor.rhs_expr   = s->u.multi.rhs[0];
             for (int j = 0; j < s->u.multi.nlhs; j++)

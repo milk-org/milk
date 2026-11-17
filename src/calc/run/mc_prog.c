@@ -1014,8 +1014,9 @@ static int run_prog_steps(mcalc_prog_t *p, int in_unit, char *err, size_t errsz)
         else if (st->kind == MC_STEP_CTOR)
         {
             rc             = mc_exec_ctor(p, &st->ctor, in_unit, err, errsz);
-            p->last_was_im = 1;
-            p->last_im_id  = (rc == 0) ? p->slots[st->ctor.slot_idx].im_id : -1;
+            p->last_was_im = (st->ctor.slot_idx >= 0);
+            p->last_im_id =
+                (rc == 0 && st->ctor.slot_idx >= 0) ? p->slots[st->ctor.slot_idx].im_id : -1;
         }
         else if (st->kind == MC_STEP_PASS)
         {

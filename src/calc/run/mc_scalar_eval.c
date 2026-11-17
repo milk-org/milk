@@ -53,6 +53,7 @@
 #include "COREMOD_memory/stream_sem.h"
 #include "COREMOD_memory/variable_ID.h"
 #include "front/mc_ast.h"
+#include "linalg/mc_linalg.h"
 #include "plan/mc_plan.h"
 #include "mcalc_host.h"
 #include "milk_entity_ns.h"
@@ -1179,6 +1180,10 @@ int mc_scalar_exec_stmt(const mc_stmt_t *s, mc_val_t *out, char *err, size_t err
     {
         if (s->u.multi.nrhs == 1 && s->u.multi.nlhs >= 2)
         {
+            if (s->u.multi.rhs[0]->kind == MC_EXPR_CALL && s->u.multi.rhs[0]->u.call.ext_id >= 0)
+            {
+                return mc_exec_multi_linalg_or_ext(NULL, NULL, s, 0, out, err, errsz);
+            }
             return mc_exec_multi_reduce(s, out, err, errsz);
         }
         if (s->u.multi.nrhs != s->u.multi.nlhs)

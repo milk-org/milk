@@ -841,6 +841,10 @@ static int exec_ext_op(mcalc_prog_t                *prog,
             mc_store_scalar_var(lhs->u.ident.bare[0] != '\0' ? lhs->u.ident.bare
                                                              : lhs->u.ident.name,
                                 &lhs->u.ident.var_id, &sv);
+            if (prog != NULL)
+            {
+                prog->last_scalar = sv;
+            }
             if (out_val != NULL)
             {
                 *out_val = sv;
