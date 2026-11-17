@@ -393,20 +393,24 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /* Build the system model */
-    OV_MODEL model;
-    memset(&model, 0, sizeof(model));
-    ov_model_full_scan(&model);
+    /* Build the system model on the heap (~9 MB exceeds default 8 MB stack) */
+    OV_MODEL *model = (OV_MODEL *) calloc(1, sizeof(OV_MODEL));
+    if (model == NULL)
+    {
+        PRINT_ERROR("out of memory allocating OV_MODEL");
+        return 1;
+    }
+    ov_model_full_scan(model);
 
     /* Find the requested process */
     int pi = -1;
     if (target_pid > 0)
     {
-        pi = ov_find_proc_by_pid(&model, target_pid);
+        pi = ov_find_proc_by_pid(model, target_pid);
     }
     else
     {
-        pi = find_proc_by_name(&model, proc_name);
+        pi = find_proc_by_name(model, proc_name);
     }
 
     if (pi < 0)
@@ -420,11 +424,13 @@ int main(int argc, char *argv[])
             PRINT_ERROR("process '%s' not found", proc_name);
         }
         ov_scan_cache_cleanup();
+        free(model);
         return 1;
     }
 
-    print_proc_info(&model, pi);
+    print_proc_info(model, pi);
 
     ov_scan_cache_cleanup();
+    free(model);
     return 0;
 }
