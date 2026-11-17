@@ -1,13 +1,15 @@
 # Working with git
 
 <!-- prettier-ignore -->
+
 !!! note
+
     This file: `docs/developer/WorkingWithGit.md`
 
 See also: [Writing Docs](writing_docs.md) · [Adding Plugins](plugins.md) ·
 [Compile Instructions](../quickstart/compile.md)
 
----
+______________________________________________________________________
 
 ## 1. Source Code and Modules
 
@@ -32,12 +34,16 @@ All code changes **must** go through a pull request. Never commit directly to `f
 ### Required Steps
 
 1. **Create a feature branch** from `framework-dev`:
-   - Use a descriptive name, e.g., `feat/new-stream-processor`, `fix/imfunctions-else-if`,
-     `perf/mvm-blas-upgrade`, `docs/update-guide`.
+
+    - Use a descriptive name, e.g., `feat/new-stream-processor`, `fix/imfunctions-else-if`,
+      `perf/mvm-blas-upgrade`, `docs/update-guide`.
 
 2. **Make commits** on the feature branch. Keep commits atomic and well-described.
+
 3. **Push** the feature branch to origin.
+
 4. **Create a PR** targeting `framework-dev`. Include a clear title and description of the changes.
+
 5. **Do not merge** — let the maintainer review and merge.
 
 ## 3. Parallel Development using Git Worktrees
@@ -57,11 +63,11 @@ underlying local `.git` repository.
 
 2. **Create Track-Specific Worktrees:** Create sibling directories for your parallel tracks.
 
-   ```bash
-   cd ~/src/milk
-   git worktree add ../milk-docs -b docs/my-task framework-dev
-   git worktree add ../milk-cli -b feat/my-cli-task framework-dev
-   ```
+    ```bash
+    cd ~/src/milk
+    git worktree add ../milk-docs -b docs/my-task framework-dev
+    git worktree add ../milk-cli -b feat/my-cli-task framework-dev
+    ```
 
 3. **Isolate Builds:** Each worktree should have its own dedicated `_build` directory. This ensures
    CMake caches and compiled object files do not interfere with each other when you context-switch.
@@ -69,12 +75,12 @@ underlying local `.git` repository.
 4. **Reusing Worktrees:** When you finish a task (e.g., your CLI feature is merged), **do not**
    delete the worktree. Reuse it for your next CLI task to preserve your CMake build cache:
 
-   ```bash
-   cd ~/src/milk-cli
-   git checkout framework-dev
-   git pull --ff-only origin framework-dev
-   git checkout -b feat/my-next-cli-task
-   ```
+    ```bash
+    cd ~/src/milk-cli
+    git checkout framework-dev
+    git pull --ff-only origin framework-dev
+    git checkout -b feat/my-next-cli-task
+    ```
 
 ## 4. Releasing a New Version
 
@@ -84,6 +90,7 @@ When releasing a new version from `framework-dev` (or the equivalent stable bran
 - Update version information in `README.md`
 
 !!! warning "For the future:"
+
     There is quite a bit more to do in defining how we make a release of milk and cacao.
     To be determined and spelled out in the future...
 
@@ -97,18 +104,21 @@ $ git push origin main --tags
 ```
 
 <!-- prettier-ignore -->
+
 !!! note
+
     Modules that are shared between packages (e.g., `milk` and `cacao`) can have parallel version number
     histories. Any new version, regardless of which package it is associated with, includes all previous
+
 changes.
 
----
+______________________________________________________________________
 
 ## 5. Source Code Documentation (doxygen)
 
 Doxygen generation is currently removed; see
 [Writing Docs: C API reference](writing_docs.md#9-c-api-reference).
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

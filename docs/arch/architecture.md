@@ -12,7 +12,7 @@ diving into code.
 
 See also: [Programmer's Guide](programmers_guide.md) · [Dependency Graph](dependency_graph.md)
 
----
+______________________________________________________________________
 
 ## 1. Purpose
 
@@ -20,7 +20,7 @@ See also: [Programmer's Guide](programmers_guide.md) · [Dependency Graph](depen
 high-performance scientific computing. It orchestrates many small, independent compute units that
 communicate through zero-copy shared memory, enabling microsecond-latency data pipelines.
 
----
+______________________________________________________________________
 
 ## 2. Design Philosophy
 
@@ -31,7 +31,7 @@ communicate through zero-copy shared memory, enabling microsecond-latency data p
 | **Live reconfiguration**        | Parameters live in shared memory (FPS); any process, CLI, or TUI can change them while the pipeline runs.              |
 | **Layered build**               | The build system is tiered (Engine → Core → Full) so embedded or headless deployments only compile the minimal subset. |
 
----
+______________________________________________________________________
 
 ## 3. The Three Pillars
 
@@ -71,7 +71,7 @@ graph TD
 | **FPS** (Function Processing System) | `fps.*.shm`        | [fps.md](../guide/fps.md)           |
 | **processinfo**                      | `proc.*.shm`       | [procinfo.md](../guide/procinfo.md) |
 
----
+______________________________________________________________________
 
 ## 4. Layered Architecture
 
@@ -113,7 +113,7 @@ Each layer corresponds to a **build tier** that can be compiled independently:
 
 → Details: [Build Tiers](../quickstart/build_tiers.md) · [Dependency Graph](dependency_graph.md)
 
----
+______________________________________________________________________
 
 ## 5. Source Tree
 
@@ -179,7 +179,7 @@ milk/
 └── _build/                            ← Build output
 ```
 
----
+______________________________________________________________________
 
 ## 6. Data Flow
 
@@ -214,7 +214,7 @@ Each box in this pipeline is an independent process:
 - Monitored via processinfo heartbeats
 - Running inside a dedicated tmux session
 
----
+______________________________________________________________________
 
 ## 7. Compute Units (Standalone Executables)
 
@@ -255,7 +255,7 @@ They can run in two modes:
 
 → Details: [Programmer's Guide](programmers_guide.md)
 
----
+______________________________________________________________________
 
 ## 8. Plugin System
 
@@ -321,7 +321,7 @@ graph TD
 
 → Details: [Adding Plugins](../developer/plugins.md)
 
----
+______________________________________________________________________
 
 ## 9. User Interfaces
 
@@ -336,7 +336,7 @@ graph TD
 
 → Details: [CLI Overview](../quickstart/CLI_Overview.md) · [Scripts Reference](../guide/scripts.md)
 
----
+______________________________________________________________________
 
 ## 10. Multi-Host Operation
 
@@ -352,24 +352,24 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 
 → Details: [Valkey Integration](../guide/valkey.md)
 
----
+______________________________________________________________________
 
 ## 11. Document Map
 
-| Document                                            | Scope                                               |
-| --------------------------------------------------- | --------------------------------------------------- |
-| **This document**                                   | System-level architecture overview                  |
-| [Programmer's Guide](programmers_guide.md)          | Writing compute units, C API, CMake conventions     |
-| [Dependency Graph](dependency_graph.md)             | Library-level build dependencies (mermaid diagrams) |
-| [Streams](../guide/streams.md)                      | ImageStreamIO API, IMGID, semaphore model           |
-| [FPS](../guide/fps.md)                              | Parameter types, fpsCTRL, fpsexec command line      |
-| [Process Info](../guide/procinfo.md)                | Heartbeat API, loop profiling                       |
-| [Performance Tuning](../operations/performance.md)  | CPU pinning, RT scheduling, GPU, network            |
-| [Debugging](../operations/debugging.md)             | GDB, tmux logs, common failures                     |
-| [Valkey Integration](../guide/valkey.md)            | Multi-host parameter sync                           |
-| [Build Tiers](../quickstart/build_tiers.md)         | Compilation tier configuration                      |
-| [Adding Plugins](../developer/plugins.md)           | Plugin module creation guide                        |
+| Document                                           | Scope                                               |
+| -------------------------------------------------- | --------------------------------------------------- |
+| **This document**                                  | System-level architecture overview                  |
+| [Programmer's Guide](programmers_guide.md)         | Writing compute units, C API, CMake conventions     |
+| [Dependency Graph](dependency_graph.md)            | Library-level build dependencies (mermaid diagrams) |
+| [Streams](../guide/streams.md)                     | ImageStreamIO API, IMGID, semaphore model           |
+| [FPS](../guide/fps.md)                             | Parameter types, fpsCTRL, fpsexec command line      |
+| [Process Info](../guide/procinfo.md)               | Heartbeat API, loop profiling                       |
+| [Performance Tuning](../operations/performance.md) | CPU pinning, RT scheduling, GPU, network            |
+| [Debugging](../operations/debugging.md)            | GDB, tmux logs, common failures                     |
+| [Valkey Integration](../guide/valkey.md)           | Multi-host parameter sync                           |
+| [Build Tiers](../quickstart/build_tiers.md)        | Compilation tier configuration                      |
+| [Adding Plugins](../developer/plugins.md)          | Plugin module creation guide                        |
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

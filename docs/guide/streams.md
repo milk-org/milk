@@ -168,7 +168,9 @@ images and streams as function arguments.
     ```
 
 <!-- prettier-ignore -->
+
 !!! tip
+
     Functions should prefer passing parameters using `IMGID` pointers and accessing pixels through
     `img.im->array.F` or similar data type unions based on `img.im->md->datatype`.
 
@@ -210,6 +212,6 @@ oldest ancestor in the chain.
 - In `streamCTRL`: select a stream and press `t` to see the full process trace.
 - In `milk-CTRL` overview: the trace is used to draw stream→process→stream dependency graphs.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

@@ -6,7 +6,7 @@ post-mortem analysis of crashes.
 See also: [Process Info](../guide/procinfo.md) · [FPS](../guide/fps.md) · [FAQ & Troubleshooting](../quickstart/faq.md) ·
 [Performance Tuning](performance.md)
 
----
+______________________________________________________________________
 
 ## 1. Inspecting Running Processes
 
@@ -47,7 +47,7 @@ $ milk-streamCTRL
 Verify that streams are receiving frames (check frame counter `cnt0` is incrementing) and that
 semaphore counts are not accumulating (which would indicate a stalled consumer).
 
----
+______________________________________________________________________
 
 ## 2. Tmux Log Inspection
 
@@ -64,11 +64,13 @@ $ tmux attach -t <session-name>
 ```
 
 <!-- prettier-ignore -->
+
 !!! tip
+
     Each tmux session typically has three windows: `ctrl` (control commands), `run` (the main loop), and
     `conf` (the configuration loop). Switch windows with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
 
----
+______________________________________________________________________
 
 ## 3. GDB Debugging
 
@@ -113,7 +115,7 @@ $ gdb /usr/local/milk/bin/milk-fpsexec-mymodule \
 (gdb) bt
 ```
 
----
+______________________________________________________________________
 
 ## 4. Common Issues
 
@@ -153,7 +155,7 @@ $ rm /dev/shm/mystale_stream.im.shm
 **Likely cause:** The `IMGID` was not resolved or the stream was deleted. Always check the return
 value of `mkIMGID_from_name()` and verify `img.im != NULL` before accessing pixel data.
 
----
+______________________________________________________________________
 
 ## 5. Build-Time Debugging
 
@@ -167,10 +169,12 @@ $ sudo make install
 ```
 
 <!-- prettier-ignore -->
+
 !!! important
+
     Remember to switch back to `Release` or `RelWithDebInfo` for production use — `Debug` builds disable
     optimizations and are significantly slower.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

@@ -10,12 +10,14 @@ standalone executables:
 | **PGO + LTO** | Both                     | **15–40%**      |
 
 <!-- prettier-ignore -->
+
 !!! tip
+
     For maximum performance on production AO systems, enable **both** PGO and static LTO. The techniques
     are complementary — LTO exposes cross-library code to GCC, and PGO then trains the optimizer with
     real branch/call data across that larger scope.
 
----
+______________________________________________________________________
 
 ## 1. Link-Time Optimization (LTO)
 
@@ -122,7 +124,9 @@ and FPS parameter access are all compiled into a single contiguous code region. 
 instruction prefetcher can stream this code sequentially, and the entire hot loop fits in L1i.
 
 <!-- prettier-ignore -->
+
 !!! important
+
     For real-time AO loops running at 1–10 kHz, icache pressure is the dominant performance bottleneck
     after algorithmic optimization. Reducing the hot-path footprint from scattered `.so` pages to a
     compact inlined binary is one of the most impactful optimizations available.
@@ -183,7 +187,9 @@ sudo make install
 `milk-perfbench` build tag: **`O3 LTO [x86_64]`**
 
 <!-- prettier-ignore -->
+
 !!! important
+
     Always pass `-DUSE_STATIC_LTO=OFF` explicitly when switching to Option B. CMake caches values
     between runs — if `USE_STATIC_LTO=ON` was set previously, it remains active until explicitly
     cleared. Forgetting this causes a link error: `cannot find -lImageStreamIO_static`.
@@ -238,7 +244,7 @@ Possible `Build:` values:
 | `O3 PGO LTO [x86_64]`        | PGO + dynamic LTO          |
 | `O3 PGO LTO-static [x86_64]` | PGO + static LTO (maximum) |
 
----
+______________________________________________________________________
 
 ## 2. Profile-Guided Optimization (PGO)
 
@@ -317,12 +323,14 @@ silently ignores missing profiles when `-fprofile-correction` is set.
 | Shared libraries | `pgo/shared/`     | Aggregated across all runs |
 
 <!-- prettier-ignore -->
+
 !!! tip
+
     For the best results, run each fpsexec with a workload that closely matches production use: same
     stream sizes, same number of modes, same loop rate. The more representative the training run, the
     better the optimization.
 
----
+______________________________________________________________________
 
 ## 3. Combined PGO + Static LTO
 
@@ -375,7 +383,7 @@ PGO needs to **see** the function bodies to optimize them. Static LTO makes libr
 visible. Together, PGO can profile-optimize code paths that span `fpsexec.c` → `ImageStreamIO` →
 `milkfps` — the entire hot path of a real-time loop becomes a single optimization unit.
 
----
+______________________________________________________________________
 
 ## 4. Library Architecture
 
@@ -440,7 +448,7 @@ libCOREMODiofits_static.a
 └─────────────────────────────────────┘
 ```
 
----
+______________________________________________________________________
 
 ## 5. CMake Build Options Summary
 
@@ -484,7 +492,9 @@ cmake .. \
 ```
 
 <!-- prettier-ignore -->
+
 !!! danger
+
     CMake **caches** all `-D` options between runs. Always pass `-DUSE_STATIC_LTO=OFF` explicitly when
     switching away from static LTO. Omitting it leaves `USE_STATIC_LTO=ON` in the cache and causes
     `cannot find -lImageStreamIO_static`.
@@ -495,14 +505,14 @@ Add `cmake_policy(SET CMP0069 NEW)` to any `CMakeLists.txt` that calls `add_libr
 the `INTERPROCEDURAL_OPTIMIZATION` policy warning when `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON` is
 set. This is already applied to `CLIcore`.
 
----
+______________________________________________________________________
 
 ## 6. Manual CMake Flags (Dynamic Libs)
 
 This is **Option B** from section 1.6 — applying PGO on top of dynamic-lib LTO when `USE_STATIC_LTO`
 is not used.
 
----
+______________________________________________________________________
 
 ## 7. Notes
 
@@ -520,7 +530,7 @@ is not used.
   `strings | grep MILK_BUILD:`. The `milk-perfbench` header reports this as the `Build:` line,
   allowing unambiguous verification that the right optimization level was applied.
 
----
+______________________________________________________________________
 
 ## 8. Fully Static Binaries with musl libc
 
@@ -529,7 +539,9 @@ installing any runtime libraries — you can build `fpsexec` executables against
 [musl libc](https://musl.libc.org/) instead of glibc.
 
 <!-- prettier-ignore -->
+
 !!! note
+
     The standard static LTO build (section 1.6 Option A) still depends on the system glibc at runtime (3
     libs: `libc.so`, `ld-linux.so`, `libm.so`). The musl build here produces a true **zero-dependency**
     binary.
@@ -661,6 +673,6 @@ musl implements the POSIX (XSI) variant of `strerror_r` which returns `int`, whe
 to the GNU variant returning `char *`. The milk source correctly detects this via
 `#ifndef __GLIBC__` in `ImageStreamIO.c` — no user action needed.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

@@ -9,7 +9,7 @@ tags:
 Working notes on design decisions that are correct for the project's current philosophy but may need revisiting if that philosophy changes.
 Not a tutorial — see [Architecture](arch/architecture.md) and [PGO](operations/pgo.md) for those.
 
----
+______________________________________________________________________
 
 ## Milk plugination philosophy
 
@@ -42,7 +42,7 @@ We would also have to freeze the ABI for good, more so if we'd allow consumer LT
 
 And we'd have to review licensing implications of shipping static libs and what's in them.
 
----
+______________________________________________________________________
 
 ## Follow-ups to the `MILK_RUNNABLE` API
 
@@ -51,7 +51,7 @@ Context: `MILK_RUNNABLE` (see `src/engine/libcomputeunit/milk_runnable.h`, [Prog
 - **Clean up `IMGID.h`** (`src/engine/libfps/IMGID.h`). `COREMOD_memory/imageID.h` includes `CLIcore.h` and needs its own sibling headers (`read_shmim.h`, `create_image.h`, `delete_image.h`) included first, which is why new-style sources must include `milk_runnable.h` before `COREMOD_memory.h`.
 - **Drop the `CLIcore.h` / `CLIcore_standalone.h` dual mode for the new API.** New-style modules are compiled once with `-DMILK_NO_CLI` only to redirect `imageID.h` away from the full CLI headers. Making `imageID.h` engine-tier would remove the define, the stub `DATA data` layout hazard, the silently failing `CLI_checkarg*` stubs, and the `milk_runnable.h` include of `CLIcore_standalone.h`. The module include path should also stop depending on the `CLIcore` target.
 
----
+______________________________________________________________________
 
 ## A running demo pipeline in Python
 

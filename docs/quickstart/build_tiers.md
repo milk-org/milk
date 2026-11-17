@@ -1,11 +1,13 @@
 # Build Tiers
 
 <!-- prettier-ignore -->
+
 !!! note
+
     The milk build system supports multiple build tiers, controlled by CMake options. Lower tiers
     have fewer external dependencies and produce a smaller footprint.
 
----
+______________________________________________________________________
 
 ## Overview
 
@@ -42,8 +44,11 @@ If you have the dependency `<X>` installed, you may request MILK to fetch it wit
 CMake will issue warnings when some features are disabled due to a missing dependency -- either because `-DUSE_<X>=OFF` was set, or because the library wasn't found by CMake.
 
 <!-- prettier-ignore -->
+
 !!! note
+
     **There is crosstalk between those dependencies:**
+
     - MKL always provides BLAS and Lapacke
     - OpenBLAS always provides BLAS, sometimes LAPACKE
     - Lapacke can be installed standalone, and MKL and OpenBLAS deactivated (in which case BLAS
@@ -72,8 +77,11 @@ $ sudo make install
 ```
 
 <!-- prettier-ignore-start -->
+
 !!! info
+
     **Quirks on the build variables:**
+
     - `USE_CLI=ON` automatically enables `USE_COREMODS=ON`
     - Plugins are only built when `USE_COREMODS=ON`
     - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles remaining modules without cfitsio linkage.
@@ -81,6 +89,7 @@ $ sudo make install
     ## Behavior When `cfitsio` Is Disabled
 
 !!! info
+
     **when FITS capability is removed from -DUSE_CFITSIO=OFF**
     FITS-dependent code paths are compiled out via `#ifdef USE_CFITSIO` guards:
 
@@ -92,11 +101,13 @@ $ sudo make install
     | `COREMOD_tools`  | No impact                                                                            |
 
 !!! tip
+
     The engine and core tiers are ideal for embedded or real-time deployments where only
     shared-memory stream processing is needed and disk I/O to FITS files is unnecessary.
+
 <!-- prettier-ignore-end -->
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)
 ,

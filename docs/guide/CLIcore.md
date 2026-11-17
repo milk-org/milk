@@ -10,14 +10,16 @@ The interactive CLI is provided by the `milk-cli` executable (typically aliased 
 code is in `src/cli/CLIcore/`.
 
 <!-- prettier-ignore -->
+
 !!! note
+
     Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See
     [FPS](fps.md#6-standalone-executables-fpsexec).
 
 See also: [FPS](fps.md) · [Streams](streams.md) · [FAQ](../quickstart/faq.md) ·
 [Build Tiers](../quickstart/build_tiers.md)
 
----
+______________________________________________________________________
 
 ## Starting & Configuring
 
@@ -111,7 +113,7 @@ object paths separated by space, comma or semicolon):
 MILKCLI_ADD_LIBS="/path/libMyFirstModule.so /path/libMySecondModule.so" milk-cli
 ```
 
----
+______________________________________________________________________
 
 ## Input & Editing
 
@@ -132,9 +134,9 @@ milk-cli > <command> <arg1> <arg2>   # comment
 
 - **First argument:** matches command → image → filename
 - **Additional arguments:** context-aware based on command's parameter types:
-  - `FILENAME` / `FITSFILENAME` args → filesystem paths
-  - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
-  - Other args → match image stream names
+    - `FILENAME` / `FITSFILENAME` args → filesystem paths
+    - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
+    - Other args → match image stream names
 - Fuzzy (substring) matching automatically kicks in when prefix matching finds nothing
 
 ```text
@@ -180,7 +182,9 @@ milk-cli > synhl on              # enable (default)
 ```
 
 <!-- prettier-ignore -->
+
 !!! tip
+
     If you encounter rendering issues with syntax highlighting, disable it with `synhl off`.
 
 ### Auto-Correction
@@ -192,7 +196,7 @@ milk-cli > mem.lisim
 Command 'mem.lisim' not found. Did you mean 'mem.listim'?
 ```
 
----
+______________________________________________________________________
 
 ## Help & Discovery
 
@@ -235,7 +239,7 @@ milk-cli > cd <dir>                # change current working directory
 milk-cli > pwd                     # print current working directory
 ```
 
----
+______________________________________________________________________
 
 ## History
 
@@ -301,7 +305,7 @@ milk-cli > sessionlog off         # stop logging
 
 Each entry includes a timestamp and elapsed time since the session started.
 
----
+______________________________________________________________________
 
 ## Shell Features
 
@@ -443,7 +447,7 @@ milk-cli > watch 1000 mem.listim   # repeat every 1000ms
 
 Press any key to stop the repeating execution.
 
----
+______________________________________________________________________
 
 ## Customization
 
@@ -472,7 +476,7 @@ milk-cli > bookmark rm setup
 
 Bookmarks persist in `~/.milk_bookmarks`.
 
----
+______________________________________________________________________
 
 ## External Integration
 
@@ -574,6 +578,6 @@ milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
         | xargs -I {} echo iofits.save_fl {} {}_tmp.fits > /dev/shm/.myctl.fifo.0012345
 ```
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

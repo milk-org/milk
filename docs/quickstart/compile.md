@@ -7,12 +7,14 @@ render_macros: true
 See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
 [CLI Overview](CLI_Overview.md) · [Programmer's Guide](../arch/programmers_guide.md)
 
----
+______________________________________________________________________
 
 ## 1. Download and install milk
 
 <!-- prettier-ignore -->
+
 !!! info
+
     This page describes installation of the core package milk.
     If you install an application package (cacao or coffee),
     replace "milk" with "cacao" in these instructions.
@@ -22,11 +24,13 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     "Package installation commands (quickstart)"
 
     === "Ubuntu / Debian"
+
         ```bash
         sudo apt-get install gcc cmake pkg-config libcfitsio-dev libreadline-dev libfftw3-dev libgsl-dev tmux
         ```
 
     === "CentOS / RHEL / Fedora"
+
         ```bash
         sudo yum install gcc cmake pkg-config cfitsio-devel readline-devel fftw3-devel gsl-devel tmux
         ```
@@ -57,8 +61,8 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     **lapacke** is often provided by either MKL or OpenBLAS.
     If using neither, standalone lapacke is needed: `apt install liblapacke-dev` or `yum install lapacke-devel`.
 
-
 !!! tip
+
     For a minimal POSIX-only build, all optional dependencies can be skipped. See
     [Build Tiers](build_tiers.md) for details.
 
@@ -77,12 +81,14 @@ See also: [Build Tiers](build_tiers.md) · [FAQ & Troubleshooting](faq.md) ·
     ```
 
 __Clone:__
+
 ```bash
 git clone --recursive https://github.com/milk-org/milk.git
 cd milk
 ```
 
 __Build:__
+
 ```bash
 mkdir _build && cd _build
 cmake ..
@@ -95,7 +101,7 @@ For minimal or partial builds (engine-only, core without cfitsio, etc.), see
 
 The sections below cover post-installation setup and optional configuration.
 
----
+______________________________________________________________________
 
 ## 2. Environment variables
 
@@ -108,13 +114,15 @@ Set in `.bashrc` or equivalent:
 | `MILK_SHM_DIR`    | `/milk/shm`           | Shared memory directory |
 
 !!! warning "MILK_INSTALLDIR"
+
     `MILK_INSTALLDIR` should point to the installation.
     Generally we set a symbolic link once and for all:
+
     ```bash
     sudo ln -sfn "/usr/local/milk-<version>" /usr/local/milk
     ```
 
----
+______________________________________________________________________
 
 ## 3. tmpfs (optional but quite necessary to get performance)
 
@@ -126,13 +134,13 @@ $ sudo mkdir -p /milk/shm
 $ sudo mount /milk/shm
 ```
 
----
+______________________________________________________________________
 
 ## 4. Further reading:
 
 - See [Build Tiers](build_tiers.md)
 - See [Running multiple versions side by side](../developer/multiversion.md).
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)
