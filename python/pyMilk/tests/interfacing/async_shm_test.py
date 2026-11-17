@@ -24,9 +24,6 @@ def test_shm_threaded_pingpong(threaded_shm_data_pingpong):
     s_to_p, s_from_p, process = threaded_shm_data_pingpong
 
     dat = np.zeros((2, 3, 4), np.float32)
-    import time
-
-    time.sleep(1.0)
 
     for _ in range(23):
         s_to_p.set_data(dat)

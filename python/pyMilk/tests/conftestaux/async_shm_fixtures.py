@@ -3,6 +3,7 @@ from __future__ import annotations
 import multiprocessing
 
 try:
+    # spawn is needed for GPU profiling in children and C/C++ coverage (although more costly)
     multiprocessing.set_start_method("spawn")
     # Ensure the repo root is in sys.path so that spawned processes (which
     # inherit sys.path via multiprocessing preparation data) can import
@@ -17,6 +18,7 @@ try:
 except RuntimeError:
     pass
 
+import abc
 import time
 import numpy as np
 import pytest
@@ -80,175 +82,199 @@ def serve_external_shm(request):
     # s.destroy()
 
 
-def _thread_func_pingpong(
-    toprocess_name: str,
-    fromprocess_name: str,
-    shape,
-    dtype,
-    location: int,
-    delay: float,
-    evt,
-) -> None:
-    shm_toprocess = SHM(toprocess_name)
-    shm_fromprocess = SHM(fromprocess_name)
+class _SubprocessTask(abc.ABC):
+    """Body of the subprocess spawned by `subfixture`.
 
-    shm_toprocess._checkGrabSemaphore()
-    shm_toprocess.IMAGE.semflush(shm_toprocess.semID)
+    `run` is the Process target: `setup`, then the startup handshake on
+    `evt` (post once, wait for the parent to clear, so the exit checks on the
+    same event don't fire), then `main`. `evt` is set again by the parent to
+    request exit.
+    """
 
-    shm_fromprocess._checkGrabSemaphore()
-    shm_fromprocess.IMAGE.semflush(shm_fromprocess.semID)
+    def __init__(
+        self,
+        toprocess_name: str,
+        fromprocess_name: str,
+        shape: tuple[int, ...],
+        dtype: np.typing.DTypeLike,
+        location: int,
+        delay: float,
+        evt: T_Event,
+    ) -> None:
+        self.toprocess_name = toprocess_name
+        self.fromprocess_name = fromprocess_name
+        self.shape = shape
+        self.dtype = dtype
+        self.location = location
+        self.delay = delay
+        self.evt = evt
 
-    break_all = False
+    @abc.abstractmethod
+    def setup(self) -> None: ...
 
-    while True:
-        while not shm_toprocess.check_sem_timedwait(0.001):
-            if evt.is_set():
-                break_all = True
+    @abc.abstractmethod
+    def main(self) -> None: ...
+
+    def run(self) -> None:
+        self.setup()
+        self.evt.set()
+        while self.evt.is_set():
+            time.sleep(0.001)
+        self.main()
+
+
+class _Pingpong(_SubprocessTask):
+    def setup(self) -> None:
+        self.shm_toprocess = SHM(self.toprocess_name)
+        self.shm_fromprocess = SHM(self.fromprocess_name)
+
+        self.shm_toprocess._checkGrabSemaphore()
+        self.shm_toprocess.IMAGE.semflush(self.shm_toprocess.semID)
+
+        self.shm_fromprocess._checkGrabSemaphore()
+        self.shm_fromprocess.IMAGE.semflush(self.shm_fromprocess.semID)
+
+    def main(self) -> None:
+        break_all = False
+
+        while True:
+            while not self.shm_toprocess.check_sem_timedwait(0.001):
+                if self.evt.is_set():
+                    break_all = True
+                    break
+            if self.evt.is_set() or break_all:
                 break
-        if evt.is_set() or break_all:
-            break
 
-        # Repost the semaphores.
-        dat = shm_toprocess.get_data(
-            False
-        )  # check_sem_timedwait clicked the semaphore.
-        # print('P: giggity')
-        time.sleep(delay)
-        shm_fromprocess.set_data(dat + 1)
+            # Repost the semaphores.
+            dat = self.shm_toprocess.get_data(
+                False
+            )  # check_sem_timedwait clicked the semaphore.
+            time.sleep(self.delay)
+            self.shm_fromprocess.set_data(dat + 1)
 
 
-def _thread_func_looper(
-    toprocess_name: str,
-    fromprocess_name: str,
-    shape,
-    dtype,
-    location: int,
-    delay: float,
-    evt,
-) -> None:
-    shm_fromprocess = SHM(fromprocess_name)
-    dat = shm_fromprocess.get_data()
-    ii = -1
-    while True:
-        ii += 1
-        if evt.is_set():
-            break
-        dat[:] = ii
-        time.sleep(delay)
-        shm_fromprocess.set_data(dat)
+class _Looper(_SubprocessTask):
+    def setup(self) -> None:
+        self.shm_fromprocess = SHM(self.fromprocess_name)
+        self.dat = self.shm_fromprocess.get_data()
+
+    def main(self) -> None:
+        ii = -1
+        while True:
+            ii += 1
+            if self.evt.is_set():
+                break
+            self.dat[:] = ii
+            time.sleep(self.delay)
+            self.shm_fromprocess.set_data(self.dat)
 
 
-def _thread_func_looper_with_forceful_recreation(
-    toprocess_name: str,
-    fromprocess_name: str,
-    shape,
-    dtype,
-    location: int,
-    delay: float,
-    evt,
-) -> None:
-    shm_fromprocess = SHM(fromprocess_name)
-    dat = shm_fromprocess.get_data()
-    ii = -1
-    while True:
-        ii += 1
-        if evt.is_set():
-            break
+class _LooperWithForcefulRecreation(_Looper):
+    def main(self) -> None:
+        ii = -1
+        while True:
+            ii += 1
+            if self.evt.is_set():
+                break
 
-        dat[:] = ii
-        time.sleep(delay)
-        shm_fromprocess.close()
-        shm_fromprocess = SHM(
-            fromprocess_name, dat
-        )  # I count that this induces a set_data and sempost
+            self.dat[:] = ii
+            time.sleep(self.delay)
+            self.shm_fromprocess.close()
+            self.shm_fromprocess = SHM(
+                self.fromprocess_name, self.dat
+            )  # I count that this induces a set_data and sempost
 
 
-def _thread_func_create_kill_recreate(
-    toprocess_name: str,
-    fromprocess_name: str,
-    shape,
-    dtype,
-    location: int,
-    delay: float,
-    evt,
-) -> None:
-    shm_toprocess = SHM(toprocess_name)
-    shm_fromprocess = SHM(fromprocess_name)
-    time.sleep(0.1)  # be sure we got time to instantiate in main process
-    shm_toprocess.repost()
-    print(f"orig -- {shm_toprocess.IMAGE.md.inode}")
-    time.sleep(0.1)
-    shm_toprocess = SHM(toprocess_name, (shape, dtype), location=location)
-    shm_fromprocess.repost()
-    print(f"recreated -- {shm_toprocess.IMAGE.md.inode}")
-    time.sleep(0.1)
-    shm_toprocess.repost()
+class _CreateKillRecreate(_SubprocessTask):
+    def setup(self) -> None:
+        self.shm_toprocess = SHM(self.toprocess_name)
+        self.shm_fromprocess = SHM(self.fromprocess_name)
 
-    time.sleep(0.1)
-    shm_toprocess = SHM(toprocess_name, ((5, 2, 3), np.int32), location=location)
-    shm_fromprocess.repost()
-    print(f"recreated -- {shm_toprocess.IMAGE.md.inode}")
-    time.sleep(0.1)
-    shm_toprocess.repost()
+    def main(self) -> None:
+        shm_toprocess, shm_fromprocess = self.shm_toprocess, self.shm_fromprocess
+        time.sleep(0.1)  # be sure we got time to instantiate in main process
+        shm_toprocess.repost()
+        print(f"orig -- {shm_toprocess.IMAGE.md.inode}")
+        time.sleep(0.1)
+        shm_toprocess = SHM(
+            self.toprocess_name, (self.shape, self.dtype), location=self.location
+        )
+        shm_fromprocess.repost()
+        print(f"recreated -- {shm_toprocess.IMAGE.md.inode}")
+        time.sleep(0.1)
+        shm_toprocess.repost()
+
+        time.sleep(0.1)
+        shm_toprocess = SHM(
+            self.toprocess_name, ((5, 2, 3), np.int32), location=self.location
+        )
+        shm_fromprocess.repost()
+        print(f"recreated -- {shm_toprocess.IMAGE.md.inode}")
+        time.sleep(0.1)
+        shm_toprocess.repost()
 
 
 @pytest.fixture
 def threaded_shm_data_pingpong(request):
-    yield from subfixture(request, _thread_func_pingpong)
+    yield from subfixture(request, _Pingpong)
 
 
 @pytest.fixture
 def threaded_shm_data_pingpong_gpu(request):
-    yield from subfixture(request, _thread_func_pingpong, location=0)
+    yield from subfixture(request, _Pingpong, location=0)
 
 
 @pytest.fixture
 def threaded_shm_poster(request):
-    yield from subfixture(request, _thread_func_looper)
+    yield from subfixture(request, _Looper)
 
 
 @pytest.fixture
 def threaded_shm_poster_recreator(request):
-    yield from subfixture(request, _thread_func_looper_with_forceful_recreation)
+    yield from subfixture(request, _LooperWithForcefulRecreation)
 
 
 @pytest.fixture
 def threaded_shm_create_kill_recreate(request):
-    yield from subfixture(request, _thread_func_create_kill_recreate)
+    yield from subfixture(request, _CreateKillRecreate)
 
 
-def subfixture(request, subprocess_callable, location=-1):
+def subfixture(
+    request: pytest.FixtureRequest,
+    task_cls: type[_SubprocessTask],
+    location: int = -1,
+) -> typ.Generator[tuple[SHM, SHM, multiprocessing.Process], None, None]:
 
     prefix, shape, dtype, delay = request.param
 
     shm_toprocess = SHM(prefix + "_toprocess", (shape, dtype), location=location)
     shm_fromprocess = SHM(prefix + "_fromprocess", (shape, dtype), location=location)
-    exit_event = multiprocessing.Event()
+    # Startup handshake (child sets, parent waits and clears), then exit signal.
+    sync_event = multiprocessing.Event()
 
     # Originally attempted with a threading.Thread, but that causes issues
     # because the semID issued is identical !
-    subprocess = multiprocessing.Process(
-        target=subprocess_callable,
-        args=(
-            prefix + "_toprocess",
-            prefix + "_fromprocess",
-            shape,
-            dtype,
-            location,
-            delay,
-            exit_event,
-        ),
-        daemon=False,
+    task = task_cls(
+        prefix + "_toprocess",
+        prefix + "_fromprocess",
+        shape,
+        dtype,
+        location,
+        delay,
+        sync_event,
     )
+    subprocess = multiprocessing.Process(target=task.run, daemon=False)
     subprocess.start()
 
     shm_toprocess._checkGrabSemaphore()
     shm_fromprocess._checkGrabSemaphore()
     shm_toprocess.IMAGE.semflush(shm_toprocess.semID)
     shm_fromprocess.IMAGE.semflush(shm_fromprocess.semID)
+    assert sync_event.wait(timeout=10.0), "subprocess never signaled ready"
+    sync_event.clear()
     yield shm_toprocess, shm_fromprocess, subprocess
 
-    exit_event.set()
+    sync_event.set()
     subprocess.join(timeout=1.0)
 
     assert not subprocess.is_alive()
