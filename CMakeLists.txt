@@ -744,6 +744,7 @@ if(USE_CLI)
 
   install(FILES scripts/milk.bash DESTINATION share/milk)
   install(FILES scripts/commands.d/fpspipe.bash
+                scripts/commands.d/sysmon.bash
           DESTINATION share/milk/commands.d)
 
 endif(USE_CLI)

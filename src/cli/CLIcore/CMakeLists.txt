@@ -348,6 +348,23 @@ target_include_directories(
 target_link_libraries(milk-procinfo-info PRIVATE milkctrl_model)
 install(TARGETS milk-procinfo-info DESTINATION bin)
 
+# milk-sysmon: headless CPU/GPU/NUMA/PROCESSINFO/SHM compute profiler
+add_executable(
+  milk-sysmon
+  ../overview/tools/milk-sysmon.c)
+target_include_directories(
+  milk-sysmon
+  PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+          ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+          ${CMAKE_SOURCE_DIR}/src/engine/libfps
+          ${CMAKE_SOURCE_DIR}/src/cli/overview
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/ansi
+          ${CMAKE_SOURCE_DIR}/src/cli/overview/tools)
+target_link_libraries(milk-sysmon PRIVATE milkctrl_model m)
+install(TARGETS milk-sysmon DESTINATION bin)
+
+install(PROGRAMS ../overview/tools/milk-perf-report DESTINATION bin)
+
 # milk-fuzzy-match: bigram fuzzy string matcher
 add_executable(milk-fuzzy-match milk-fuzzy-match.c)
 target_include_directories(milk-fuzzy-match
