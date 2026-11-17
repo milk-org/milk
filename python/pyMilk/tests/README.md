@@ -60,15 +60,12 @@ coverage report
 
 With a special build, we can enable coverage in C files while running the test stack purely from pytest.
 
-Compiling/installing with PIP:
+Compiling/installing with PIP (objects and `.gcda` files land in `build/<wheel_tag>/`):
 ```bash
-COVERAGE=ON python setup.py build_ext --inplace --build-temp ./_build_pip
+COVERAGE=ON pip install -e .
 ```
 
-FIXME: we'll fix the following by disambiguating the libraries names.
 ```bash
-cp _build_pip/pyMilk/*.so pyMilk/
-sudo cp _build_pip/pyMilk/lib*.so /usr/local/milk/lib/ # Override milk libImageStreamIO.so... otherwise linking is confused.
 coverage run
 gcovr --verbose -r . --html-details -o gcov_html/c_coverage.html
 firefox ./gcov_html/c_coverage.html

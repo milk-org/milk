@@ -3,8 +3,8 @@
 # Keep paths into milk (e.g. ../../src/engine) in one place so the move is trivial.
 
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = ["setuptools>=58", "wheel", 'nanobind', 'cmake']
+build-backend = "scikit_build_core.build"
+requires = ["scikit-build-core>=0.10", "nanobind"]
 
 [project]
 authors = [{ name = "Vincent Deo", email = "vdeo@naoj.org" }]
@@ -25,8 +25,25 @@ dependencies = [
 "Homepage" = "http://www.github.com/milk-org/pyMilk"
 
 
-[tool.setuptools.packages.find]
-include = ["pyMilk*"]
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+cmake.version = ">=3.17"
+cmake.source-dir = "bindings"
+cmake.build-type = "Release"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["pyMilk"]
+
+[tool.scikit-build.cmake.define]
+PYMILK_ENGINE = { env = "PYMILK_ENGINE", default = "SYSTEM" }
+
+[[tool.scikit-build.overrides]]
+if.env.COVERAGE = "ON"
+cmake.build-type = "Coverage"
+
+[[tool.scikit-build.overrides]]
+# Without CUDA_ROOT, USE_CUDA follows the engine's libImageStreamIO.
+if.env.CUDA_ROOT = true
+cmake.define.USE_CUDA = "ON"
 
 [project.scripts]
 shmPlot = "pyMilk.visual.shmPlot:main"
@@ -65,4 +82,4 @@ exclude_lines = [
     "raise ImportError",
 ]
 ignore_errors = true
-omit = ["tests/*", "setup.py"]
+omit = ["tests/*"]

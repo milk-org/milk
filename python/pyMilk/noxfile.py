@@ -23,6 +23,7 @@ def _imagestreamio_has_cuda(session: nox.Session) -> bool:
             "from pyMilk.interfacing.shm import IMAGESTREAMIO_HAVE_CUDA; raise SystemExit(not IMAGESTREAMIO_HAVE_CUDA)",
         ],
         capture_output=True,
+        cwd=session.create_tmp(),  # Not the project dir: its pyMilk/ would shadow the install.
     )
     return result.returncode == 0
 
@@ -116,7 +117,14 @@ def tests_editable_inner_outer(session: nox.Session):
     # (as otherwise necessary for CUDA)
     tmp_dir = session.create_tmp()
     session.chdir(tmp_dir)
-    shutil.copytree(project_dir + "/tests", tmp_dir + "/tests")
+    session.run(
+        "rsync",
+        "-a",
+        "--delete",
+        project_dir + "/tests/",
+        tmp_dir + "/tests/",
+        external=True,
+    )
     with session.chdir(tmp_dir):
         session.run("pytest", "-x", "--pdb", project_dir)
     shutil.rmtree(tmp_dir + "/tests")
@@ -143,7 +151,14 @@ def tests_non_editable_inner_and_outer(session: nox.Session):
 
     tmp_dir = session.create_tmp()
     session.chdir(tmp_dir)
-    shutil.copytree(project_dir + "/tests", tmp_dir + "/tests")
+    session.run(
+        "rsync",
+        "-a",
+        "--delete",
+        project_dir + "/tests/",
+        tmp_dir + "/tests/",
+        external=True,
+    )
     with session.chdir(tmp_dir):
         session.run("pytest", project_dir)
     shutil.rmtree(tmp_dir + "/tests")

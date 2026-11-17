@@ -11,7 +11,8 @@ try:
 
     _repo_root = _os.path.abspath(_os.path.join(__file__, "../../.."))
     if _repo_root not in _sys.path:
-        _sys.path.insert(0, _repo_root)
+        # append, don't prepend: its pyMilk/  must not shadow the install.
+        _sys.path.append(_repo_root)
     del _sys, _os, _repo_root
 except RuntimeError:
     pass

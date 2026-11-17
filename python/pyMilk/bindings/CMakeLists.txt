@@ -8,6 +8,14 @@ cmake_minimum_required(VERSION 3.17)
 #
 # ImageStreamIOWrap.cpp belongs to ImageStreamIO (M-4) but is always compiled here, into pyMilk.
 
+# CUDA_ROOT may ship the host compilers matching its nvcc.
+if(DEFINED ENV{CUDA_ROOT} AND EXISTS "$ENV{CUDA_ROOT}/bin/gcc" AND NOT CMAKE_C_COMPILER)
+  set(CMAKE_C_COMPILER "$ENV{CUDA_ROOT}/bin/gcc")
+endif()
+if(DEFINED ENV{CUDA_ROOT} AND EXISTS "$ENV{CUDA_ROOT}/bin/g++" AND NOT CMAKE_CXX_COMPILER)
+  set(CMAKE_CXX_COMPILER "$ENV{CUDA_ROOT}/bin/g++")
+endif()
+
 project(pyMilkBindings LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -144,10 +152,10 @@ target_link_libraries(ProcessInfoWrap PRIVATE milk_engine::milkprocessinfo milk_
 
 set(PYMILK_MODULES ImageStreamIOWrap FpsWrap ProcessInfoWrap)
 
-# The modules are used from the build tree (setup.py drops them into pyMilk/), so the
-# build RPATH is what ships: point it at the engine libraries.
+# scikit-build-core installs the modules into the pyMilk package; RPATH to the engine libraries.
 set_target_properties(${PYMILK_MODULES} PROPERTIES BUILD_RPATH "${PYMILK_ENGINE_RPATH}"
                                                     INSTALL_RPATH "${PYMILK_ENGINE_RPATH}")
+install(TARGETS ${PYMILK_MODULES} LIBRARY DESTINATION pyMilk)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
   foreach(mod ${PYMILK_MODULES})
