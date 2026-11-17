@@ -479,13 +479,13 @@ nox -s tests_run_coverage           # run the coverage session, which is not in 
 
 The python coverage report:
 
-```
+```bash
 <browser> $MILK_ROOT/cov_py/index.html
 ```
 
 and the C coverage report:
 
-```
+```bash
 <browser> $MILK_ROOT/cov_c/index.html
 ```
 
