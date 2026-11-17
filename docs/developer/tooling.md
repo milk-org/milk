@@ -145,6 +145,7 @@ Formatting is enforced by [pre-commit](https://pre-commit.com) hooks, configured
 | `black`                              | Python         |
 | `cmake-format`                       | CMake          |
 | `mdformat`                           | Markdown       |
+| `markdownlint-cli2`                  | Markdown       |
 | whitespace, end-of-file, yaml, merge | all text files |
 | `check-added-large-files`            | all files      |
 
@@ -156,7 +157,7 @@ what the formatting hooks outputs is the source of truth.
 !!! question "Prerequisites"
 
     - `git` and `pip` available; `pre-commit` itself downloads pinned versions of `clang-format`,
-      `black`, `cmake-format` and `mdformat` in its own virtualenv, so none of them needs a system install.
+      `black`, `cmake-format`, `mdformat` and `markdownlint-cli2` in its own virtualenv, so none of them needs a system install.
 
 ### 3.1 Setup
 
@@ -175,7 +176,7 @@ pre-commit install
 
 The typical usage is the one that is forced upon the developer.
 Upon running `git commit`, the hook invokes `pre-commit run`.
-By default this applies the pre-commit hooks on all the __staged files__.
+By default this applies the pre-commit hooks on all the **staged files**.
 
 | Possible outcomes:                     | Then:                                                |
 | -------------------------------------- | ---------------------------------------------------- |
@@ -229,7 +230,8 @@ Style rules (for C/C++) and best practices that `clang-format` cannot enforce (c
 minimization) are covered in [Coding standards](coding_standards.md).
 
 Documentation changes are additionally checked in CI (`.github/workflows/docs-lint.yml`) with
-`markdownlint` (`.markdownlint.yml`), a link checker and a typos checker (`_typos.toml`).
+`markdownlint` (`.markdownlint.yml`, also a pre-commit hook on the same files), a link checker
+and a typos checker (`_typos.toml`).
 
 </details>
 

@@ -62,7 +62,7 @@ frame = shm.get_data(check=True, timeout=None)   # wait forever
 
 `check=True` waits on one of the stream's semaphores, the same mechanism as the C API, with
 microsecond wake-up latency. The semaphore is flushed before waiting, so the frame returned was
-written *after* the call started: this is the way to wait for a fresh frame rather than take the
+written _after_ the call started: this is the way to wait for a fresh frame rather than take the
 latest one.
 
 ### 2.3. Grabbing many frames: `multi_recv_data()`

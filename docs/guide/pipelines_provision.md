@@ -18,7 +18,7 @@ Edits can then happen in two places:
 
 - **in the confdir**: the normal workflow. The rootdir does not change until a `resync`.
 - **in `rootdir/conf/`**: a hand edit of a deployed pipeline. It takes effect at the next deploy
-  and is reported as a *local* drift; nothing in the confdir is affected.
+  and is reported as a _local_ drift; nothing in the confdir is affected.
 
 The confdir workflow, after editing the confdir:
 

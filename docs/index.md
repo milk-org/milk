@@ -42,7 +42,6 @@ Who might you be?
 - A core developer -- Coding standards, internal craziness, library layers, API references
 - A maintainer -- I need to know about the geeky stuff, project management, release cycle, future avenues !
 
-
 -->
 
 ## :rocket: Getting Started

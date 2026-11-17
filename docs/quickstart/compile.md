@@ -80,14 +80,14 @@ ______________________________________________________________________
     export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
     ```
 
-__Clone:__
+**Clone:**
 
 ```bash
 git clone --recursive https://github.com/milk-org/milk.git
 cd milk
 ```
 
-__Build:__
+**Build:**
 
 ```bash
 mkdir _build && cd _build

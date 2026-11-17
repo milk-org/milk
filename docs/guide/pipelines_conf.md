@@ -165,7 +165,7 @@ product = "dm.fits"
 `id` and `product` are unique within a pipeline. A product is a plain name (no `/`, not ending in
 `.tag`). Next to each product, `data/<product>.tag` records the hook's declaration digest and the
 product's content hash. A hook is pending, and re-run, when its product is missing, its bytes
-changed, or its declaration changed. Upstream changes at an rsync source are *not* detected: use
+changed, or its declaration changed. Upstream changes at an rsync source are _not_ detected: use
 `consolidate --refetch ID` or `--refetch-all`.
 
 ### 3.4. System linkages
