@@ -65,8 +65,6 @@ def serve_external_shm(request):
     )
     subprocess.start()
 
-    time.sleep(1.0)
-
     while True:
         time.sleep(0.01)
         try:
