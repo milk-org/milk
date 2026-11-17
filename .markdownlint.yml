@@ -1,6 +1,16 @@
 # markdownlint configuration for milk project
 # See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 
+
+# Nested list indents
+MD007:
+  indent: 4
+
+# Fenced code blocks should be surrounded by blank lines
+MD031: false
+# Emphasis forced to **emphasis**. We tolerate __emphasis__ here.
+MD050: false
+
 # Disable line-length — we wrap manually but tables and
 # long links can legitimately exceed 80 chars.
 MD013: false
