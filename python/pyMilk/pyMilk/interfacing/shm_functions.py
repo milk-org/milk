@@ -4,6 +4,7 @@ import os
 import glob
 
 from .isio_shmlib import SHM, check_SHM_name
+from .shm import MILK_SHM_DIR
 from pyMilk.util import img_shapes
 
 import numpy as np
@@ -12,8 +13,6 @@ import typing as typ
 
 if typ.TYPE_CHECKING:
     import numpy.typing as npt
-
-MILK_SHM_DIR = os.environ["MILK_SHM_DIR"]
 
 
 def creashmim(
@@ -66,7 +65,7 @@ def creashmim(
 
     if delete_existing:
         try:
-            os.remove(f"{MILK_SHM_DIR}/{name_no_ext}.im.shm")
+            os.remove(f"{MILK_SHM_DIR()}/{name_no_ext}.im.shm")
         except FileNotFoundError:
             pass
 
