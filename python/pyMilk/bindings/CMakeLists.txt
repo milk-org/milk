@@ -138,6 +138,7 @@ target_link_libraries(FpsWrap PRIVATE milk_engine::milkfps milk_engine::milkcomp
                                       milk_engine::ImageStreamIO)
 
 nanobind_add_module(ProcessInfoWrap ProcessInfoWrap.cpp)
+target_compile_definitions(ProcessInfoWrap PRIVATE PYMILK_ENGINE="${PYMILK_ENGINE}")
 target_link_libraries(ProcessInfoWrap PRIVATE milk_engine::milkprocessinfo milk_engine::milkcommon
                                               milk_engine::ImageStreamIO)
 

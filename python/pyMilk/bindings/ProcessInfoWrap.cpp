@@ -34,6 +34,7 @@ NB_MODULE(ProcessInfoWrap, m)
     m.doc() = "ProcessInfoWrap library module";
 
     m.attr("PROCESSINFO_NBtimer") = PROCESSINFO_NBtimer;
+    m.attr("PYMILK_ENGINE")       = PYMILK_ENGINE; // "SYSTEM" or "BUNDLED"
 
     if (!nb::type<timespec>().is_valid())
     { // Possible multiple registration warning
