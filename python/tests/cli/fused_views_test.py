@@ -315,7 +315,10 @@ def test_phase7_library_and_spatial_ops(tmp_path):
         '@calc "T1 = A.T @ B; T2 = matmul(transpose(A), B); err_tr = imax(abs(T1 - T2))"\n'
         "@calc 'E1 = einsum(\"ij,jk->ik\", A, B); err_ein = imax(abs(E1 - M2))'\n"
         '@calc "U, S, Vt = svd(A); Sonly = svd(A); err_svd = imax(abs(S - Sonly))"\n'
-        '@calc "H = A + A.T; W, V = eigh(H); Wonly = eigh(H); err_eigh = imax(abs(W - Wonly))"\n'
+        '@calc "H = A + A.T; W, V = eigh(H); Wonly = eigh(H); '
+        'Wk, Vk = eigh(H, 3); Wk_only = eigh(H, 3); '
+        'err_eigh = imax(abs(W - Wonly)) + imax(abs(Wk - W[5:7])) + imax(abs(Wk - Wk_only)) + '
+        'imax(abs((H @ Vk[:, 2]) - Wk[2] * Vk[:, 2])) + imax(abs((Vk.T @ Vk) - eye(3)))"\n'
         '@calc "F = fft(A); R = real(ifft(F)); Fs = fftshift(F); err_fft = imax(abs(R - A))"\n'
         '@calc "Fx = fft(A, 0); Rx = real(ifft(Fx, 0)); Fy = fft(A, 1); Ry = real(ifft(Fy, 1)); '
         'Cx = fft(1.0 + 0.5 * iy(A), 0); Cy = fft(1.0 + 0.5 * ix(A), 1); '

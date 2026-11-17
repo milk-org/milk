@@ -685,6 +685,75 @@ static int run_eigh_d(int n, double *C, int want_v, double *w_out)
 }
 
 /**
+ * run_eigh_top_d - Compute the @k largest eigenpairs of a real symmetric `n x n` matrix @C
+ * @n:      Order of square matrix @C
+ * @k:      Number of largest eigenpairs to compute (`1 <= k <= n`)
+ * @C:      In/out `n x n` column-major symmetric matrix (destroyed)
+ * @want_v: Non-zero to write the @k eigenvectors into @V_out
+ * @w_out:  Output array of @k eigenvalues sorted ascending (largest at `@k - 1`)
+ * @V_out:  Output `n x k` column-major eigenvector matrix (unused when `!@want_v`)
+ *
+ * Uses `LAPACKE_dsyevr` (`range = 'I'`, indices `n - k + 1 .. n`) when `k < n`, avoiding full
+ * tridiagonal eigenvector back-transformation on large covariance matrices.
+ *
+ * Return: 0 on success, -1 on failure
+ */
+static int run_eigh_top_d(int n, int k, double *C, int want_v, double *w_out, double *V_out)
+{
+    if (k == n)
+    {
+        int rc = run_eigh_d(n, C, want_v, w_out);
+        if (rc == 0 && want_v && V_out != NULL && V_out != C)
+        {
+            memcpy(V_out, C, sizeof(double) * (size_t) n * (size_t) n);
+        }
+        return rc;
+    }
+    for (int j = 0; j < n; j++)
+    {
+        for (int i = j + 1; i < n; i++)
+        {
+            C[j * n + i] = C[i * n + j] = 0.5 * (C[j * n + i] + C[i * n + j]);
+        }
+    }
+#ifdef HAVE_LAPACKE
+    lapack_int  m_found = 0;
+    lapack_int *isuppz  = calloc(2 * (size_t) (n > 0 ? n : 1), sizeof(lapack_int));
+    if (isuppz == NULL)
+    {
+        return -1;
+    }
+    mc_linalg_lock();
+    int info = LAPACKE_dsyevr(LAPACK_COL_MAJOR, want_v ? 'V' : 'N', 'I', 'L', n, C, n, 0.0, 0.0,
+                              n - k + 1, n, 0.0, &m_found, w_out, want_v ? V_out : NULL,
+                              want_v ? n : 1, isuppz);
+    mc_linalg_unlock();
+    free(isuppz);
+    if (info >= 0)
+    {
+        return (info == 0 && m_found == k) ? 0 : -1;
+    }
+#endif
+    double *w_all = calloc((size_t) (n > 0 ? n : 1), sizeof(double));
+    if (w_all == NULL)
+    {
+        return -1;
+    }
+    int rc = run_eigh_d(n, C, want_v, w_all);
+    if (rc == 0)
+    {
+        memcpy(w_out, w_all + (n - k), sizeof(double) * (size_t) k);
+        if (want_v && V_out != NULL)
+        {
+            memcpy(V_out, C + (size_t) (n - k) * (size_t) n,
+                   sizeof(double) * (size_t) n * (size_t) k);
+        }
+    }
+    free(w_all);
+    return rc;
+}
+
+/**
  * solve_linear_d - Solve `A * X = B` via Cholesky (`posv`), LU (`gesv`), QR/LQ (`gels`), or SVD
  * @fn:    Solver (`MC_FID_posv`, `MC_FID_gesv`, `MC_FID_gels` or `MC_FID_solve`)
  * @uplo:  Triangle selector (`'L'` or `'U'`) for `"posv"`
@@ -995,12 +1064,33 @@ int mc_exec_lapack_call(mcalc_prog_t   *prog,
             }
             return mc_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
         }
-        uint64_t Q   = (M < N) ? M : N;
-        double  *A_d = alloc_mat_d(imA, 0, M, N);
-        double  *S_d = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
-        rc           = (!A_d || !S_d) ? mc_err(err, errsz, "%s: out of memory", fname)
-                       : is_eigh      ? run_eigh_d((int) N, A_d, 0, S_d)
-                                      : run_svd_d((int) M, (int) N, A_d, NULL, S_d, NULL);
+        uint64_t Q = (M < N) ? M : N;
+        if (is_eigh && rhs->u.call.nargs == 2)
+        {
+            double kd = 0.0;
+            if (mc_eval_scalar_d(rhs->u.call.args[1], &kd, err, errsz) != 0)
+            {
+                if (tmpA)
+                {
+                    mc_tmp_release(idA);
+                }
+                return -1;
+            }
+            if (!isfinite(kd) || floor(kd) != kd || kd < 1.0 || kd > (double) N)
+            {
+                if (tmpA)
+                {
+                    mc_tmp_release(idA);
+                }
+                return mc_err(err, errsz, "%s: k out of range", fname);
+            }
+            Q = (uint64_t) kd;
+        }
+        double *A_d = alloc_mat_d(imA, 0, M, N);
+        double *S_d = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
+        rc          = (!A_d || !S_d) ? mc_err(err, errsz, "%s: out of memory", fname)
+                      : is_eigh      ? run_eigh_top_d((int) N, (int) Q, A_d, 0, S_d, NULL)
+                                     : run_svd_d((int) M, (int) N, A_d, NULL, S_d, NULL);
         if (rc != 0)
         {
             (void) mc_err(err, errsz, "%s: did not converge", fname); /* unless a message is set */
@@ -1216,16 +1306,40 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
         }
         return mc_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
     }
-    uint8_t out_dt = (imA->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    uint64_t Q     = (M < N) ? M : N;
-    double  *A_d   = alloc_mat_d(imA, 0, M, N);
-    double  *S_d   = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
-    double  *U_d   = is_eigh ? NULL : calloc((size_t) (M * Q), sizeof(double));
-    double  *Vt_d  = is_eigh ? NULL : calloc((size_t) (Q * N), sizeof(double));
+    uint8_t out_dt =
+        (imA->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+    uint64_t Q      = (M < N) ? M : N;
+    if (is_eigh && rhs->u.call.nargs == 2)
+    {
+        double kd = 0.0;
+        if (mc_eval_scalar_d(rhs->u.call.args[1], &kd, err, errsz) != 0)
+        {
+            if (tmpA)
+            {
+                mc_tmp_release(idA);
+            }
+            return -1;
+        }
+        if (!isfinite(kd) || floor(kd) != kd || kd < 1.0 || kd > (double) N)
+        {
+            if (tmpA)
+            {
+                mc_tmp_release(idA);
+            }
+            return mc_err(err, errsz, "%s: k out of range", fname);
+        }
+        Q = (uint64_t) kd;
+    }
+    double *A_d   = alloc_mat_d(imA, 0, M, N);
+    double *S_d   = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
+    double *Ve_d  = (is_eigh && Q < N) ? calloc((size_t) (N * Q), sizeof(double)) : NULL;
+    double *U_d   = is_eigh ? NULL : calloc((size_t) (M * Q), sizeof(double));
+    double *Vt_d  = is_eigh ? NULL : calloc((size_t) (Q * N), sizeof(double));
+    double *Vout  = (Ve_d != NULL) ? Ve_d : A_d;
 
-    rc = (!A_d || !S_d || (!is_eigh && (!U_d || !Vt_d)))
+    rc = (!A_d || !S_d || (is_eigh && Q < N && !Ve_d) || (!is_eigh && (!U_d || !Vt_d)))
              ? mc_err(err, errsz, "%s: out of memory", fname)
-         : is_eigh ? run_eigh_d((int) N, A_d, 1, S_d)
+         : is_eigh ? run_eigh_top_d((int) N, (int) Q, A_d, 1, S_d, Vout)
                    : run_svd_d((int) M, (int) N, A_d, U_d, S_d, Vt_d);
     if (rc != 0)
     {
@@ -1233,11 +1347,11 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
     }
 
     int            nlhs      = is_eigh ? 2 : 3;
-    const double  *bufs[3]   = { is_eigh ? S_d : U_d, is_eigh ? A_d : S_d, Vt_d };
+    const double  *bufs[3]   = { is_eigh ? S_d : U_d, is_eigh ? Vout : S_d, Vt_d };
     const uint8_t  nax[3]    = { is_eigh ? 1 : 2, is_eigh ? 2 : 1, 2 };
     const uint32_t szs[3][3] = {
-        { (uint32_t) (is_eigh ? N : M), (uint32_t) (is_eigh ? 1 : Q), 1 },
-        { (uint32_t) (is_eigh ? N : Q), (uint32_t) (is_eigh ? N : 1), 1 },
+        { (uint32_t) (is_eigh ? Q : M), (uint32_t) (is_eigh ? 1 : Q), 1 },
+        { (uint32_t) (is_eigh ? N : Q), (uint32_t) (is_eigh ? Q : 1), 1 },
         { (uint32_t) Q, (uint32_t) N, 1 },
     };
 
@@ -1266,6 +1380,7 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
 
     free(A_d);
     free(S_d);
+    free(Ve_d);
     free(U_d);
     free(Vt_d);
     if (tmpA)

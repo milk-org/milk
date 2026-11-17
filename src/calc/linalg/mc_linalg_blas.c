@@ -115,6 +115,15 @@ int mc_resolve_linalg_call(mc_expr_t *e,
             return mc_err(err, errsz, "%s: axis out of range", fname);
         }
     }
+    if (fn == MC_FID_eigh && nargs == 2 && e->u.call.args[1]->kind == MC_EXPR_LONG)
+    {
+        long k = e->u.call.args[1]->u.lval;
+        if (k < 1 || (e->u.call.args[0]->res_naxis == 2 && e->u.call.args[0]->res_size[0] > 0 &&
+                      (uint64_t) k > e->u.call.args[0]->res_size[0]))
+        {
+            return mc_err(err, errsz, "%s: k out of range", fname);
+        }
+    }
 
     /* Mark result as an image and infer output element datatype and static shape */
     e->needs_image = 1;
@@ -178,6 +187,14 @@ int mc_resolve_linalg_call(mc_expr_t *e,
     {
         e->res_naxis = e->u.call.args[0]->res_naxis;
         memcpy(e->res_size, e->u.call.args[0]->res_size, sizeof(e->res_size));
+    }
+    else if (fn == MC_FID_eigh && nlhs == 1 && nargs == 2 &&
+             e->u.call.args[1]->kind == MC_EXPR_LONG && e->u.call.args[1]->u.lval >= 1)
+    {
+        e->res_naxis   = 1;
+        e->res_size[0] = (uint32_t) e->u.call.args[1]->u.lval;
+        e->res_size[1] = 1;
+        e->res_size[2] = 1;
     }
     if (fn == MC_FID_fft || fn == MC_FID_ifft)
     {
