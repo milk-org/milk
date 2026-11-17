@@ -87,6 +87,30 @@ errno_t fps_add_processinfo_entries(FPS *fps)
         fps->parray[pindex_NBthread].val.i64[3] = maxNBthread_default[3];
     }
 
+    // -1: inherit MILK_NUMANODE / default, -2: GPU-local node, >= 0: node index
+    long numanode_default[4] = { -1, -2, 16, -1 };
+    long pindex_numanode     = -1;
+    function_parameter_add_entry(fps, ".procinfo.numanode", "NUMA node (-2 auto,-1 off)",
+                                 FPTYPE_INT64, FPFLAG, &numanode_default, &pindex_numanode);
+    if (pindex_numanode >= 0)
+    {
+        fps->parray[pindex_numanode].val.i64[1] = numanode_default[1];
+        fps->parray[pindex_numanode].val.i64[2] = numanode_default[2];
+        fps->parray[pindex_numanode].val.i64[3] = numanode_default[3];
+    }
+
+    // 0: inherit MILK_OMP_WAIT_POLICY, 1: PASSIVE (GOMP_SPINCOUNT=0), 2: ACTIVE
+    long ompwait_default[4] = { 0, 0, 2, 0 };
+    long pindex_ompwait     = -1;
+    function_parameter_add_entry(fps, ".procinfo.OMPwait", "OpenMP wait (0 inh,1 pas,2 act)",
+                                 FPTYPE_INT64, FPFLAG, &ompwait_default, &pindex_ompwait);
+    if (pindex_ompwait >= 0)
+    {
+        fps->parray[pindex_ompwait].val.i64[1] = ompwait_default[1];
+        fps->parray[pindex_ompwait].val.i64[2] = ompwait_default[2];
+        fps->parray[pindex_ompwait].val.i64[3] = ompwait_default[3];
+    }
+
     // PROCESSINFO
     long fp_pinfoenabled = 0;
     function_parameter_add_entry(fps, ".procinfo.enabled", "procinfo mode", FPTYPE_ONOFF, FPFLAG,

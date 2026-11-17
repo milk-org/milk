@@ -23,6 +23,10 @@ set(SOURCEFILES
     state/fps_CONFstart.c
     state/fps_CONFstop.c)
 
+# fps_apply_process_settings.c needs _GNU_SOURCE before <sched.h> for CPU_SET
+set_source_files_properties(procinfo/fps_apply_process_settings.c
+                            PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 # Single translation unit
 set_target_properties(${LIBNAME} PROPERTIES UNITY_BUILD ON

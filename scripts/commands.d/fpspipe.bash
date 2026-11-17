@@ -41,13 +41,88 @@ __fpspipe_rollback_uncommitted() {
     return 0
 }
 
+__fpspipe_resolve_numa() {
+    local req="${1:-auto}" node="-1" p v c n sib first_sib cpulist=""
+    __FPSPIPE_NUMA_NODE="-1"
+    __FPSPIPE_NUMA_CPULIST=""
+    case "${req}" in
+        -1|off|OFF|none|NONE|"") return 0 ;;
+        auto|AUTO|gpu|GPU|-2)
+            for p in /sys/bus/pci/devices/*; do
+                [[ -r "${p}/vendor" && -r "${p}/class" && -r "${p}/numa_node" ]] || continue
+                read -r v < "${p}/vendor" || continue
+                [[ "${v}" == "0x10de" || "${v}" == "0x1002" ]] || continue
+                read -r c < "${p}/class" || continue
+                case "${c}" in 0x0300*|0x0302*|0x0380*) ;; *) continue ;; esac
+                read -r n < "${p}/numa_node" || continue
+                if [[ "${n}" =~ ^[0-9]+$ ]]; then
+                    node="${n}"
+                    [[ "${v}" == "0x10de" ]] && break
+                fi
+            done
+            if (( node < 0 )) && [[ -d /sys/devices/system/node/node1 ]]; then
+                node=0
+            fi
+            ;;
+        *[!0-9]*) return 0 ;;
+        *) node="${req}" ;;
+    esac
+    (( node >= 0 )) || return 0
+    [[ -r "/sys/devices/system/node/node${node}/cpulist" ]] || return 0
+    read -r cpulist < "/sys/devices/system/node/node${node}/cpulist" || return 0
+    if [[ "${cpulist}" == *,* ]]; then
+        local first_part="${cpulist%%,*}"
+        local first_cpu="${first_part%%-*}"
+        local sib_file="/sys/devices/system/cpu/cpu${first_cpu}/topology/thread_siblings_list"
+        if [[ -r "${sib_file}" ]]; then
+            read -r sib < "${sib_file}"
+            first_sib="${sib#*,}"
+            if [[ "${first_sib}" != "${sib}" && "${first_part}" == *-* ]]; then
+                local hi="${first_part#*-}"
+                if (( ${first_sib%%,*} > hi )); then
+                    cpulist="${first_part}"
+                fi
+            fi
+        fi
+    fi
+    __FPSPIPE_NUMA_NODE="${node}"
+    __FPSPIPE_NUMA_CPULIST="${cpulist}"
+}
+
 # Initialize FPS pipeline workspace, environment, and uncommitted-exit rollback
 fpspipe.workdir() {
     @args 'name:str:pipeline name' \
           'rootdir:str:pipeline root directory' \
           'prefix:str=:stream prefix (e.g. aol0_)' \
           'app:str=milk:FPS keyword application tag' \
-          'restart:bool=0:restart active units during deployment' -- "$@"
+          'restart:bool=0:restart active units during deployment' \
+          'numanode:str=:NUMA node policy (empty=MILK_NUMANODE or auto, -1/off)' \
+          'ompwait:str=:OpenMP wait policy (empty=MILK_OMP_WAIT_POLICY or PASSIVE)' -- "$@"
+
+    local eff_omp="${ompwait:-${MILK_OMP_WAIT_POLICY:-PASSIVE}}"
+    case "${eff_omp}" in
+        PASSIVE|passive|1)
+            export MILK_OMP_WAIT_POLICY="PASSIVE" OMP_WAIT_POLICY="PASSIVE" GOMP_SPINCOUNT="0"
+            ;;
+        ACTIVE|active|2)
+            export MILK_OMP_WAIT_POLICY="ACTIVE" OMP_WAIT_POLICY="ACTIVE"
+            unset GOMP_SPINCOUNT
+            ;;
+        off|OFF|none|NONE)
+            unset MILK_OMP_WAIT_POLICY
+            ;;
+    esac
+
+    local eff_numa="${numanode:-${MILK_NUMANODE:-auto}}"
+    __fpspipe_resolve_numa "${eff_numa}"
+    if [[ -n "${__FPSPIPE_NUMA_CPULIST}" ]] && (( __FPSPIPE_NUMA_NODE >= 0 )); then
+        export MILK_NUMANODE="${__FPSPIPE_NUMA_NODE}"
+        if command -v taskset >/dev/null 2>&1; then
+            taskset -a -pc "${__FPSPIPE_NUMA_CPULIST}" "$$" >/dev/null 2>&1 || true
+        fi
+    else
+        export MILK_NUMANODE="-1"
+    fi
 
     mkdir -p "${rootdir}" || return 1
     rootdir="$(cd "${rootdir}" && pwd -P)" || return 1
@@ -170,6 +245,40 @@ fpspipe.loadfits() {
         fi
     fi
     return 0
+}
+
+# Save a shared-memory stream to a FITS file in-process via iofits.saveFITS
+fpspipe.savefits() {
+    @args 'sfx:str:stream suffix or full stream name' \
+          'dst:str:destination FITS path (with or without .fits)' -- "$@"
+
+    local sname="${sfx}"
+    if ! @exists "s.${sname}"; then
+        if [[ -n "${FPSPIPE_PREFIX:-}" && "${sfx}" != "${FPSPIPE_PREFIX}"* ]] &&
+           @exists "s.${FPSPIPE_PREFIX}${sfx}"; then
+            sname="${FPSPIPE_PREFIX}${sfx}"
+        else
+            echo "fpspipe.savefits: stream '${sfx}' not found in SHM" >&2
+            return 1
+        fi
+    fi
+
+    local abs_dst out_dir out_base
+    abs_dst="$(realpath -m "${dst}")" || return 1
+    if [[ "${abs_dst}" != *.fits && "${abs_dst}" != *.fits.gz && "${abs_dst}" != *.fits.fz ]]; then
+        abs_dst="${abs_dst}.fits"
+    fi
+    out_dir="$(dirname "${abs_dst}")"
+    out_base="$(basename "${abs_dst}")"
+    mkdir -p "${out_dir}" || return 1
+
+    # iofits.saveFITS truncates .out_fname at FUNCTION_PARAMETER_STRMAXLEN (63 chars),
+    # so invoke from out_dir (restoring PWD) and pass "!${out_base}".
+    local old_pwd="${PWD}" rc=0
+    cd "${out_dir}" || return 1
+    iofits.saveFITS "@S:${sname}" "!${out_base}" >/dev/null || rc=$?
+    cd "${old_pwd}" || true
+    return "${rc}"
 }
 
 # Initialize FPS compute units concurrently from a manifest

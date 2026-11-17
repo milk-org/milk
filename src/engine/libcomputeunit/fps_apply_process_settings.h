@@ -19,11 +19,11 @@
 /**
  * @brief Apply process-level settings from FPS parameters.
  *
- * Reads .procinfo.taskset, .procinfo.cset and .procinfo.RTprio
- * from the FPS and applies them to the current process
- * (CPU affinity, cgroup migration, RT priority) through
- * milk-makecsetandrt. .procinfo.NBthread reaches OpenMP through
- * the environment a unit's starter builds.
+ * Reads .procinfo.cset, .procinfo.numanode, .procinfo.taskset, and
+ * .procinfo.RTprio from the FPS and applies them to the current
+ * process (cgroup migration, NUMA physical-core affinity, CPU mask,
+ * RT priority). .procinfo.NBthread and .procinfo.OMPwait reach
+ * OpenMP through the environment a unit's starter builds.
  *
  * @param fps  Connected FPS to read settings from
  * @return RETURN_SUCCESS or RETURN_FAILURE

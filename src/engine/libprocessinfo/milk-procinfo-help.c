@@ -54,6 +54,8 @@ int main(int argc, char *argv[])
     printf("  " C_BOLD "procinfo.RTprio" C_RST
            "       Assign Linux thread priority (SCHED_FIFO).\n");
     printf("  " C_BOLD "procinfo.taskset" C_RST "      Set CPU affinity mapping.\n");
+    printf("  " C_BOLD "procinfo.numanode" C_RST "     Pin to NUMA node (-2 GPU-local, -1 off).\n");
+    printf("  " C_BOLD "procinfo.OMPwait" C_RST "      OpenMP wait (0 inherit, 1 PASSIVE, 2 ACTIVE).\n");
     printf("  " C_BOLD "procinfo.triggermode" C_RST "  Determine what drives the computation:\n");
     printf("                          0: IMMEDIATE (Continuous loop)\n");
     printf("                          3: SEMAPHORE (Stream semWait trigger)\n");

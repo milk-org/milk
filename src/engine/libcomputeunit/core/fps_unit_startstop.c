@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <stdarg.h>
+#include <strings.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -335,6 +336,24 @@ static int fpsunit_env_set(FPSUNIT_ENV *e, const char *key, const char *val)
     return fpsunit_env_put(e, kv);
 }
 
+static void fpsunit_env_unset(FPSUNIT_ENV *e, const char *key)
+{
+    size_t klen = strlen(key);
+    for (int i = 0; i < e->n;)
+    {
+        if (strncmp(e->v[i], key, klen) == 0 && e->v[i][klen] == '=')
+        {
+            free(e->v[i]);
+            memmove(&e->v[i], &e->v[i + 1], (size_t) (e->n - i) * sizeof(char *));
+            e->n--;
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
 static void fpsunit_env_free(FPSUNIT_ENV *e)
 {
     for (int i = 0; i < e->n; i++)
@@ -483,6 +502,41 @@ static int fpsunit_env_overrides(FPSUNIT_ENV *e,
             snprintf(num, sizeof(num), "%ld", nbthread); // read by libgomp when it loads (U8)
             rc |= fpsunit_env_set(e, "OMP_NUM_THREADS", num);
         }
+    }
+    long ompwait = 0;
+    if (role >= 0 && functionparameter_GetParamIndex(fps, ".procinfo.OMPwait") >= 0)
+    {
+        ompwait = functionparameter_GetParamValue_INT64(fps, ".procinfo.OMPwait");
+    }
+    if (ompwait == 0)
+    {
+        const char *ow = getenv("MILK_OMP_WAIT_POLICY");
+        if (ow != NULL && *ow != '\0')
+        {
+            if (strcasecmp(ow, "PASSIVE") == 0 || strcmp(ow, "1") == 0)
+            {
+                ompwait = 1;
+            }
+            else if (strcasecmp(ow, "ACTIVE") == 0 || strcmp(ow, "2") == 0)
+            {
+                ompwait = 2;
+            }
+        }
+    }
+    if (ompwait == 1)
+    {
+        rc |= fpsunit_env_set(e, "OMP_WAIT_POLICY", "PASSIVE");
+        rc |= fpsunit_env_set(e, "GOMP_SPINCOUNT", "0");
+    }
+    else if (ompwait == 2)
+    {
+        rc |= fpsunit_env_set(e, "OMP_WAIT_POLICY", "ACTIVE");
+        fpsunit_env_unset(e, "GOMP_SPINCOUNT");
+    }
+    const char *numanode_env = getenv("MILK_NUMANODE");
+    if (numanode_env != NULL && *numanode_env != '\0')
+    {
+        rc |= fpsunit_env_set(e, "MILK_NUMANODE", numanode_env);
     }
     if (fps->md->workdir[0] != '\0')
     {
