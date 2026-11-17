@@ -998,3 +998,45 @@ cd {d}; sed -i '$d' kl.c; milk-fpsexec-milk-calc -n urt runstop >/dev/null 2>&1
     assert value(res.stdout, "start") == "0", out
     assert value(res.stdout, "o") == "9", out
     assert value(res.stdout, "stop") == "0", out
+
+
+def test_calc_d_autoload_and_opt_out(tmp_path):
+    """Extensions installed into `MILK_CALC_EXT_DIR` (mirroring `lib/milk/calc.d`) are
+    auto-loaded by `@calc`, `--list`, and `milk-fpsexec-milk-calc`, and skipped when
+    `MILK_CALC_NO_AUTOLOAD=1`.
+    """
+    ext_dir = tmp_path / "calc.d"
+    ext_dir.mkdir()
+    src = tmp_path / "autoext.c"
+    src.write_text(
+        '#include "milk_calc_ext.h"\n'
+        '#define AUTOEXT_PARAMS(X) X(".gain", gain, FPTYPE_FLOAT64, 3.0, '
+        'FPFLAG_DEFAULT_INPUT | FPFLAG_WRITERUN, "Gain")\n'
+        "MILK_CALC_PARAMS(autoext_mul, AUTOEXT_PARAMS);\n"
+        "static void autoext_f(float *restrict out, const float *restrict in, "
+        "const struct autoext_mul_par *P, int len) {\n"
+        "  float g = (float) P->gain;\n"
+        "  for (int i = 0; i < len; i++) out[i] = g * in[i];\n"
+        "}\n"
+        "MILK_CALC_EXT_EXPORT(MILK_CALC_REG_BLK(autoext_mul, autoext_f, autoext_mul, 1));\n"
+    )
+    res = milk_bash(
+        f"""
+milk-cc {src} -o {ext_dir}/libautoext.so
+export MILK_CALC_EXT_DIR={ext_dir}
+@calc -v a "S:im = zeros(4, 4) + 2; out = autoext_mul(im); imean(out)"
+echo "a=$a"
+milk-fpsexec-milk-calc -n u_auto -e "uout = autoext_mul(im)" exec >/dev/null 2>&1
+echo "u=$(@get s.uout.mean) g=$(@get f.u_auto.autoext_mul.gain)"
+milk-fpsexec-milk-calc --list autoext_mul | grep -q "autoext_mul" && echo "list=1" || echo "list=0"
+MILK_CALC_NO_AUTOLOAD=1 milk-fpsexec-milk-calc --list autoext_mul >/dev/null 2>&1
+echo "noauto_rc=$?"
+""",
+        tmp_path,
+    )
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert value(res.stdout, "a") == "6", res.stdout + res.stderr
+    assert value(res.stdout, "u") == "6", res.stdout + res.stderr
+    assert value(res.stdout, "g") == "3", res.stdout + res.stderr
+    assert value(res.stdout, "list") == "1", res.stdout + res.stderr
+    assert value(res.stdout, "noauto_rc") == "1", res.stdout + res.stderr

@@ -16,6 +16,11 @@ Significant features and upgrades, newest first. Minor bugfixes are omitted — 
 
 ### 2026-11
 
+- **2026-11-17** — Telemetry timing file API (`tlm_timing.h` in `COREMOD_memory`) and calculator
+  enhancements for time-series and PCA workflows: batched 1-D `fft(im, axis)` / `ifft(im, axis)`,
+  top-`k` symmetric `eigh(C, k)` via `LAPACKE_dsyevr`, and automatic loading of installed C
+  extensions from `$MILK_INSTALLDIR/lib/milk/calc.d/` (overridable via `MILK_CALC_EXT_DIR`,
+  disabled via `MILK_CALC_NO_AUTOLOAD=1`). `#api` `#performance` `#cli`
 - **2026-11-14** — Pipeline deployment tools, `fpspipe.*` commands, and native compressed FITS
   loading. C deployment tools avoid per-parameter process spawns and sleep polling: `milk-fps-init`
   initializes multiple `fpsexec` units in parallel from arguments or `-b` manifests (skipping

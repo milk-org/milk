@@ -87,6 +87,9 @@ typedef void (*mcalc_ext_scalar_out_cb_t)(const char *var_name, const char *desc
 /** mcalc_ext_load() - compile (if .c) and load a user C extension into the calculator. */
 int mcalc_ext_load(const char *path, char *err, size_t errsz);
 
+/** mcalc_ext_autoload() - auto-load `*.so` extensions from `$MILK_INSTALLDIR/lib/milk/calc.d`. */
+void mcalc_ext_autoload(void);
+
 /** mc_ext_registry_source() - the file whose extensions register next (NULL or "": milk itself);
  * an entry is replaced only by the file that registered it. */
 void mc_ext_registry_source(const char *path);

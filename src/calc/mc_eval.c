@@ -969,6 +969,8 @@ static int eval_bash_inner(const char *input, int is_test, int *out_rc)
         return 0;
     }
 
+    mcalc_ext_autoload();
+
     const char *env_libs = getenv("MILK_CALC_LIBS");
     if (env_libs != NULL && env_libs[0] != '\0')
     {
@@ -1192,6 +1194,7 @@ int mcalc_eval_bash(const char *input, int is_test, int *out_rc)
     {
         return eval_bash_inner(input, is_test, out_rc);
     }
+    mcalc_ext_autoload();
     static _Thread_local mc_tok_list_t s_tl;
     char                               err[512]  = "";
     mc_stmt_t                         *head      = NULL;

@@ -295,6 +295,7 @@ static void *bind_declared(const char *name, uint64_t type, const char *help)
 /** declare() - bind the parameters of @text ("name:type[=default][:help]", blank-separated) and of -l. */
 static int declare(const char *text)
 {
+    mcalc_ext_autoload();
     int rc = milk_unit_declare("milk.calc", text, bind_declared);
 
     if (rc == 0 && (libs[0] != '\0' || mcalc_ext_count() > 0))
@@ -352,6 +353,7 @@ static int find_params(const char *name)
     FPS fps;
     int rc = 0;
 
+    mcalc_ext_autoload();
     if (fps_connect(name, &fps, FPSCONNECT_SIMPLE) == -1)
     {
         return 0;
@@ -490,6 +492,7 @@ static int check_program(void)
         return 0;
     }
     milk_data_init(); /* the image and variable tables: fpsexec's main has not run yet */
+    mcalc_ext_autoload();
     if ((libs[0] == '\0' || mcalc_ext_load_list(libs, err, sizeof(err)) == 0) &&
         (text = source_text(expr, file, err, sizeof(err))) != NULL)
     {
@@ -600,6 +603,10 @@ static int unit_prepare(PROCESSINFO *processinfo, calc_loop_ctx *ctx, char *err,
     uint64_t pe_cnt         = (ctx->pe >= 0) ? dcfpsptr->parray[ctx->pe].value_cnt : 0;
     uint64_t pf_cnt         = (ctx->pf >= 0) ? dcfpsptr->parray[ctx->pf].value_cnt : 0;
 
+    if (!ctx->init_done)
+    {
+        mcalc_ext_autoload();
+    }
     if (libs[0] != '\0' &&
         (!ctx->init_done ||
          (ctx->pl >= 0 && dcfpsptr->parray[ctx->pl].value_cnt != ctx->libs_built)))
@@ -885,6 +892,7 @@ int main(int argc, char **argv)
                     break;
                 }
             }
+            mcalc_ext_autoload();
             return mcalc_print_catalog(pat, json_mode);
         }
     }

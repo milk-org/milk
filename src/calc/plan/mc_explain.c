@@ -116,6 +116,7 @@ static void count_scalar_ops_reds(const mc_expr_t *e, int *ops, int *reds)
 int mcalc_prog_explain(const char *text, FILE *out)
 {
     char err[512] = "";
+    mcalc_ext_autoload();
     mc_udef_save(); /* its defs stay out of the session */
     mcalc_prog *p = mcalc_prog_new(text, NULL, 0, err, sizeof(err));
     mc_udef_restore();

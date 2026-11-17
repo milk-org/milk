@@ -544,8 +544,10 @@ on the file's path and contents, reuses that `.so` until the file changes, and l
 was loaded is compiled and loaded again the next time it is named, and replaces what it
 registered; a `.so` rebuilt at the same path is taken by a new session or unit only. A `.c` file
 is compiled as C; there is no C++ path. `MILK_CALC_LIBS` (files separated by spaces, `,` or `:`)
-loads extensions in every `@calc` and `@test` of the shell, its value at that call (units load
-theirs with `-l` only), and a `loadlib <file>` statement loads one from `@calc` text.
+loads extensions in every `@calc` and `@test` of the shell, its value at that call, any `*.so`
+installed under `$MILK_INSTALLDIR/lib/milk/calc.d/` (or `$MILK_CALC_EXT_DIR`; set
+`MILK_CALC_NO_AUTOLOAD=1` to skip) is auto-loaded by sessions and `milk.calc` units before explicit
+`-l` / `MILK_CALC_LIBS` entries, and a `loadlib <file>` statement loads one from `@calc` text.
 
 ---
 

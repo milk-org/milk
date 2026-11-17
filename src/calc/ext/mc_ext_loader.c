@@ -35,6 +35,7 @@
 #define _GNU_SOURCE
 
 #include <ctype.h>
+#include <dirent.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
@@ -58,6 +59,10 @@
 static char            loaded_libs[CALC_EXT_MAX_LIBS][PATH_MAX];
 static struct timespec loaded_mtime[CALC_EXT_MAX_LIBS];
 static int             n_loaded_libs = 0;
+
+static char            autoload_dir[PATH_MAX];
+static struct timespec autoload_mtime;
+static int             autoload_checked = 0;
 
 /* ============================================================================================== */
 /* On-Demand `.c` -> `.so` Compilation                                                            */
@@ -364,6 +369,89 @@ int mcalc_ext_load_list(const char *libs_str, char *err, size_t errsz)
         }
     }
     return 0;
+}
+
+void mcalc_ext_autoload(void)
+{
+    const char *no_auto = getenv("MILK_CALC_NO_AUTOLOAD");
+    if (no_auto != NULL && strcmp(no_auto, "1") == 0)
+    {
+        return;
+    }
+
+    char        dir[PATH_MAX] = "";
+    const char *ext_dir       = getenv("MILK_CALC_EXT_DIR");
+    if (ext_dir != NULL && ext_dir[0] != '\0')
+    {
+        snprintf(dir, sizeof(dir), "%s", ext_dir);
+    }
+    else
+    {
+        const char *inst = getenv("MILK_INSTALLDIR");
+        if (inst != NULL && inst[0] != '\0')
+        {
+            snprintf(dir, sizeof(dir), "%s/lib/milk/calc.d", inst);
+        }
+        else
+        {
+            Dl_info dli;
+            if (dladdr((void *) &mcalc_ext_load, &dli) != 0 && dli.dli_fname != NULL)
+            {
+                char  rpath[PATH_MAX];
+                char *rp = realpath(dli.dli_fname, rpath);
+                char *sl = (rp != NULL) ? strrchr(rp, '/') : NULL;
+                if (sl != NULL)
+                {
+                    *sl = '\0';
+                    snprintf(dir, sizeof(dir), "%s/milk/calc.d", rp);
+                }
+            }
+        }
+    }
+    if (dir[0] == '\0')
+    {
+        return;
+    }
+
+    struct stat st;
+    if (stat(dir, &st) != 0 || !S_ISDIR(st.st_mode))
+    {
+        return;
+    }
+    if (autoload_checked && strcmp(autoload_dir, dir) == 0 &&
+        st.st_mtim.tv_sec == autoload_mtime.tv_sec &&
+        st.st_mtim.tv_nsec == autoload_mtime.tv_nsec)
+    {
+        return;
+    }
+    snprintf(autoload_dir, sizeof(autoload_dir), "%s", dir);
+    autoload_mtime   = st.st_mtim;
+    autoload_checked = 1;
+
+    struct dirent **namelist = NULL;
+    int             n        = scandir(dir, &namelist, NULL, alphasort);
+    if (n < 0)
+    {
+        return;
+    }
+    for (int i = 0; i < n; i++)
+    {
+        const char *name = namelist[i]->d_name;
+        size_t      len  = strlen(name);
+        if (len > 3 && strcmp(name + len - 3, ".so") == 0)
+        {
+            char full[PATH_MAX];
+            char lerr[512] = "";
+            int  nw        = snprintf(full, sizeof(full), "%s/%s", dir, name);
+            if (nw > 0 && (size_t) nw < sizeof(full) &&
+                mcalc_ext_load(full, lerr, sizeof(lerr)) != 0)
+            {
+                fprintf(stderr, "milk: calc.d: %s\n", lerr);
+            }
+        }
+        free(namelist[i]);
+    }
+    free(namelist);
 }
 
 /**

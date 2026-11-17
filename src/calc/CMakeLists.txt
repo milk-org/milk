@@ -116,6 +116,7 @@ install(
 install(FILES ${INCLUDEFILES} DESTINATION include/milkcalc)
 install(FILES ${INCLUDEFILES} DESTINATION include)
 install(FILES milk_calc_ext.h DESTINATION include/milkscript)
+install(DIRECTORY DESTINATION lib/milk/calc.d)
 
 add_executable(milk-fpsexec-milk-calc units/milk_unit_calc.c)
 target_compile_definitions(milk-fpsexec-milk-calc PRIVATE MILK_NO_CLI)

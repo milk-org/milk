@@ -900,6 +900,9 @@ static int list_row(const char  *cat,
  */
 int mcalc_print_catalog(const char *pattern, int json_mode)
 {
+#ifndef MILK_BASH_CLIENT
+    mcalc_ext_autoload();
+#endif
     const char *last    = NULL;
     int         matched = 0;
 

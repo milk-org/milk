@@ -207,7 +207,10 @@ milk-fpsexec-milk-calc -n wfsclean runstart
 ```
 
 On first load, `milk` compiles `wfskernels.c` and reuses the cached `.so` until the file changes
-([compiler, flags and cache](calculator.md#auto-compilation-and-caching)).
+([compiler, flags and cache](calculator.md#auto-compilation-and-caching)). Pre-compiled `.so`
+extension libraries installed into `$MILK_INSTALLDIR/lib/milk/calc.d/` (or `$MILK_CALC_EXT_DIR`
+if set) are loaded automatically by `@calc`, `--explain`, `--list`, and `milk-fpsexec-milk-calc`
+units without passing `-l` or `MILK_CALC_LIBS` (set `MILK_CALC_NO_AUTOLOAD=1` to disable).
 
 ---
 
