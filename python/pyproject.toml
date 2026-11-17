@@ -34,6 +34,10 @@ addopts = [
     "--ignore=tests/mains",
     "--ignore=pyMilk",
     "--ignore=specs",
+    # Unused by milk tests; they add Flask/Jinja2 and IPython-stack imports at startup.
+    "-p", "no:dash",
+    "-p", "no:returns",
+    "-p", "no:anyio",
 ]
 
 [tool.coverage.run]

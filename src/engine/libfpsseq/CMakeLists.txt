@@ -7,7 +7,7 @@ target_include_directories(
                     $<INSTALL_INTERFACE:include/libfpsseq>)
 target_include_directories(
   milkfpsseq
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libcomputeunit/cmd>)
+  PRIVATE $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libcomputeunit/cmd>)
 target_link_libraries(milkfpsseq PUBLIC milkfps milkcomputeunit milkprocessinfo
                                         ImageStreamIO rt)
 install(
@@ -30,7 +30,7 @@ endif()
 # milk-seq standalone executable
 add_executable(milk-seq milk-seq.c)
 target_include_directories(milk-seq
-                           PRIVATE ${CMAKE_SOURCE_DIR}/src/engine/libfps)
+                           PRIVATE ${MILK_SOURCE_DIR}/src/engine/libfps)
 target_link_libraries(
   milk-seq
   PUBLIC milkfpsseq

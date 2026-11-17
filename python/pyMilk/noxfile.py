@@ -5,6 +5,14 @@ import subprocess
 from pathlib import Path
 
 nox.options.error_on_missing_interpreters = False
+nox.options.reuse_existing_virtualenvs = True
+# Prefer uv; fall back to virtualenv (pip) when uv is not installed
+VENV_BACKEND = "uv|virtualenv"
+
+# pyMilk's sessions test the BUNDLED engine without any milk install (M-1);
+# milk's own sessions (python/noxfile.py) test SYSTEM.
+os.environ["PYMILK_ENGINE"] = "BUNDLED"
+os.environ.pop("MILK_INSTALLDIR", None)
 
 
 def _imagestreamio_has_cuda(session: nox.Session) -> bool:
@@ -67,7 +75,7 @@ and whether the tests are run from pyMilk dir or externally. This matters due to
 """
 
 
-@nox.session
+@nox.session(venv_backend=VENV_BACKEND)
 def tests_not_installed_inner(session: nox.Session):
     """
     NOT INSTALLED, ie no pip install; test from inside the project root.
@@ -77,7 +85,7 @@ def tests_not_installed_inner(session: nox.Session):
     ...
 
 
-@nox.session
+@nox.session(venv_backend=VENV_BACKEND)
 def tests_editable_inner_outer(session: nox.Session):
     """
     EDITABLE installation, ie `pip install -e .`; test from inside the project root.
@@ -114,7 +122,7 @@ def tests_editable_inner_outer(session: nox.Session):
     shutil.rmtree(tmp_dir + "/tests")
 
 
-@nox.session
+@nox.session(venv_backend=VENV_BACKEND)
 def tests_non_editable_inner_and_outer(session: nox.Session):
     """
     NON-EDITABLE installation, ie `pip install .`; run from both inside and outside the project root.
@@ -141,7 +149,7 @@ def tests_non_editable_inner_and_outer(session: nox.Session):
     shutil.rmtree(tmp_dir + "/tests")
 
 
-@nox.session(default=False)
+@nox.session(venv_backend=VENV_BACKEND, default=False)
 def tests_run_coverage(session: nox.Session):
     print(os.path.abspath(os.getcwd()))
     session.run("./clean.sh", external=True)

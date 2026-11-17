@@ -54,7 +54,7 @@ function(milk_add_static_lto LIBNAME)
         $<TARGET_PROPERTY:milkcomputeunit_static,INTERFACE_INCLUDE_DIRECTORIES>
         $<INSTALL_INTERFACE:include>)
     target_link_libraries(${_static} PUBLIC m milkfps_static milkcomputeunit_static
-        milkcommon ${ARG_LINK_LIBS})
+        milkcommon_static ${ARG_LINK_LIBS})
     # Unresolved symbols are looked up in archives that follow this one.
     set(_core milkCOREMODmemory_static milkCOREMODtools_static
         milkCOREMODarith_static)

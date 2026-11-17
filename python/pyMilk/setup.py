@@ -93,6 +93,8 @@ class CMakeBuildExt(build_ext):
 
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + lib_drop_in_directory,
+            # The interpreter running this build
+            "-DPython_EXECUTABLE=" + sys.executable,
         ]
 
         if os.environ.get("COVERAGE", None) == "ON":

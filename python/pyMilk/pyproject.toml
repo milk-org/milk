@@ -40,7 +40,14 @@ creashmim = "pyMilk.scripts.creashmim:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["--import-mode=importlib", "--ignore=mains/*"]
+addopts = [
+    "--import-mode=importlib",
+    "--ignore=mains/*",
+    # Unused by pyMilk tests; they add Flask/Jinja2 and IPython-stack imports at startup.
+    "-p", "no:dash",
+    "-p", "no:returns",
+    "-p", "no:anyio",
+]
 
 [tool.coverage.run]
 command_line = "-m pytest"
