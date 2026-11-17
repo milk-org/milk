@@ -56,17 +56,19 @@
 #ifdef HAVE_FFTW3
 /**
  * struct fft_cache_entry_t - Cached FFTW3/FFTW3F plan
- * @naxis:  Transform rank (1, 2, or 3)
- * @sz:     Transform dimensions `[nx, ny, nz]` in ImageStreamIO order
- * @is_dbl: Non-zero for double precision (`fftw_plan`), 0 for single precision (`fftwf_plan`)
- * @kind:   `FFT_R2C` (forward, real input), `FFT_FWD` or `FFT_INV` (in-place complex)
- * @nth:    Number of threads the plan runs on
+ * @naxis:   Transform rank (1, 2, or 3)
+ * @axis:    Transform axis (`-1` for full n-D, `0..2` for batched 1-D along that axis)
+ * @sz:      Transform dimensions `[nx, ny, nz]` in ImageStreamIO order
+ * @is_dbl:  Non-zero for double precision (`fftw_plan`), 0 for single precision (`fftwf_plan`)
+ * @kind:    `FFT_R2C` (forward, real input), `FFT_FWD` or `FFT_INV` (in-place complex)
+ * @nth:     Number of threads the plan runs on
  * @measure: Planned with `FFTW_MEASURE` (a unit's), else `FFTW_ESTIMATE`
- * @plan:   Opaque `fftw_plan` or `fftwf_plan`, made for 64-byte aligned buffers
+ * @plan:    Opaque `fftw_plan` or `fftwf_plan`, made for 64-byte aligned buffers
  */
 typedef struct
 {
     uint8_t  naxis;
+    int8_t   axis;
     uint32_t sz[3];
     int      is_dbl;
     int      kind;
@@ -199,6 +201,7 @@ static void fft_wisdom(int is_dbl, int save)
 /**
  * fft_plan - Look up or make the plan of a transform on (@in, @out)
  * @naxis:  Transform rank (1, 2, or 3)
+ * @axis:   Transform axis (`-1` for full n-D, `0..2` for batched 1-D along that axis)
  * @sz:     Transform dimensions `[nx, ny, nz]` (fast axis `nx = sz[0]`)
  * @is_dbl: Non-zero for double precision
  * @kind:   `FFT_R2C`, `FFT_FWD` or `FFT_INV`
@@ -216,6 +219,7 @@ static void fft_wisdom(int is_dbl, int save)
  * Return: The plan, or NULL if FFTW could not make it
  */
 static void *fft_plan(uint8_t        naxis,
+                      int8_t         axis,
                       const uint32_t sz[3],
                       int            is_dbl,
                       int            kind,
@@ -227,8 +231,8 @@ static void *fft_plan(uint8_t        naxis,
     for (int i = 0; i < g_fft_cache_n; i++)
     {
         const fft_cache_entry_t *e = &g_fft_cache[i];
-        if (e->naxis == naxis && memcmp(e->sz, sz, sizeof(e->sz)) == 0 && e->is_dbl == is_dbl &&
-            e->kind == kind && e->nth == nth && e->measure >= measure)
+        if (e->naxis == naxis && e->axis == axis && memcmp(e->sz, sz, sizeof(e->sz)) == 0 &&
+            e->is_dbl == is_dbl && e->kind == kind && e->nth == nth && e->measure >= measure)
         {
             return e->plan;
         }
@@ -269,7 +273,35 @@ static void *fft_plan(uint8_t        naxis,
     /* a measured plan is first asked of the kept planning results, and timed if they lack it */
     for (int timed = 0; timed < 2 && plan == NULL; timed++, flags &= ~FFTW_WISDOM_ONLY)
     {
-        if (is_dbl)
+        if (axis >= 0)
+        {
+            ptrdiff_t    strides[3] = { 1, (ptrdiff_t) sz[0],
+                                        (ptrdiff_t) sz[0] * (ptrdiff_t) sz[1] };
+            fftw_iodim64 dim        = { (ptrdiff_t) sz[axis], strides[axis], strides[axis] };
+            fftw_iodim64 hm[2];
+            int          hm_rank = 0;
+            for (int a = 0; a < (int) naxis; a++)
+            {
+                if (a != axis && sz[a] > 1)
+                {
+                    hm[hm_rank++] =
+                        (fftw_iodim64) { (ptrdiff_t) sz[a], strides[a], strides[a] };
+                }
+            }
+            if (is_dbl)
+            {
+                plan = (void *) fftw_plan_guru64_dft(
+                    1, &dim, hm_rank, hm_rank ? hm : NULL, (fftw_complex *) in,
+                    (fftw_complex *) out, sign, flags);
+            }
+            else
+            {
+                plan = (void *) fftwf_plan_guru64_dft(
+                    1, &dim, hm_rank, hm_rank ? hm : NULL, (fftwf_complex *) in,
+                    (fftwf_complex *) out, sign, flags);
+            }
+        }
+        else if (is_dbl)
         {
             plan = (kind == FFT_R2C) ? (void *) fftw_plan_dft_r2c(naxis, dims, (double *) in,
                                                                   (fftw_complex *) out, flags)
@@ -308,6 +340,7 @@ static void *fft_plan(uint8_t        naxis,
     }
     g_fft_cache[slot] = (fft_cache_entry_t) {
         .naxis   = naxis,
+        .axis    = axis,
         .sz      = { sz[0], sz[1], sz[2] },
         .is_dbl  = is_dbl,
         .kind    = kind,
@@ -418,7 +451,59 @@ static void write_pix_any(IMAGE *out, uint8_t dt, uint64_t idx, double re, doubl
  *
  * Return: void
  */
-static void fft_load(const IMAGE *src, uint8_t sdt, void *buf, uint64_t nel, int is_dbl, int real)
+typedef struct
+{
+    const IMAGE *src;
+    void        *buf;
+    int          is_dbl;
+} fft_load_cplx_t;
+
+static void fft_load_real_cplx_job(void *ctx, int tid, int nth, uint64_t lo, uint64_t hi)
+{
+    const fft_load_cplx_t *j = (const fft_load_cplx_t *) ctx;
+    (void) tid;
+    (void) nth;
+    if (j->is_dbl)
+    {
+        double  tmp[ARITH_ELEM_BLK];
+        double *dst = (double *) j->buf;
+        for (uint64_t off = lo; off < hi; off += ARITH_ELEM_BLK)
+        {
+            int len = (int) ((hi - off < ARITH_ELEM_BLK) ? hi - off : ARITH_ELEM_BLK);
+            arith_load_block_d_inline(j->src, off, len, tmp);
+            double *p = dst + 2 * off;
+            _Pragma("omp simd") for (int i = 0; i < len; i++)
+            {
+                p[2 * i]     = tmp[i];
+                p[2 * i + 1] = 0.0;
+            }
+        }
+    }
+    else
+    {
+        float  tmp[ARITH_ELEM_BLK];
+        float *dst = (float *) j->buf;
+        for (uint64_t off = lo; off < hi; off += ARITH_ELEM_BLK)
+        {
+            int len = (int) ((hi - off < ARITH_ELEM_BLK) ? hi - off : ARITH_ELEM_BLK);
+            arith_load_block_f_inline(j->src, off, len, tmp);
+            float *p = dst + 2 * off;
+            _Pragma("omp simd") for (int i = 0; i < len; i++)
+            {
+                p[2 * i]     = tmp[i];
+                p[2 * i + 1] = 0.0f;
+            }
+        }
+    }
+}
+
+static void fft_load(const IMAGE *src,
+                     uint8_t      sdt,
+                     void        *buf,
+                     uint64_t     nel,
+                     int          is_dbl,
+                     int          real,
+                     int          nth)
 {
     if (real)
     {
@@ -439,6 +524,12 @@ static void fft_load(const IMAGE *src, uint8_t sdt, void *buf, uint64_t nel, int
     if (sdt == (is_dbl ? _DATATYPE_COMPLEX_DOUBLE : _DATATYPE_COMPLEX_FLOAT))
     {
         memcpy(buf, src->array.raw, 2 * (size_t) nel * (is_dbl ? sizeof(double) : sizeof(float)));
+        return;
+    }
+    if (sdt != _DATATYPE_COMPLEX_FLOAT && sdt != _DATATYPE_COMPLEX_DOUBLE)
+    {
+        fft_load_cplx_t job = { src, buf, is_dbl };
+        arith_team_run(nth, nel, fft_load_real_cplx_job, &job);
         return;
     }
     for (uint64_t i = 0; i < nel; i++)
@@ -575,7 +666,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
         return -1;
     }
     const IMAGE *src   = &milk_data.image[src_id];
-    uint8_t      naxis = src->md[0].naxis;
+    uint8_t naxis = src->md[0].naxis;
     if (naxis < 1 || naxis > 3)
     {
         if (src_tmp)
@@ -583,6 +674,28 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
             mc_tmp_release(src_id);
         }
         return mc_err(err, errsz, "%s: expected 1D, 2D, or 3D image", rhs->u.call.fn->name);
+    }
+    int8_t axis = -1;
+    if (rhs->u.call.nargs == 2)
+    {
+        double ax_d = 0.0;
+        if (mc_eval_scalar_d(rhs->u.call.args[1], &ax_d, err, errsz) != 0)
+        {
+            if (src_tmp)
+            {
+                mc_tmp_release(src_id);
+            }
+            return -1;
+        }
+        if (!isfinite(ax_d) || floor(ax_d) != ax_d || ax_d < 0.0 || ax_d >= (double) naxis)
+        {
+            if (src_tmp)
+            {
+                mc_tmp_release(src_id);
+            }
+            return mc_err(err, errsz, "%s: axis out of range", rhs->u.call.fn->name);
+        }
+        axis = (int8_t) ax_d;
     }
     uint32_t sz[3] = {
         src->md[0].size[0],
@@ -614,15 +727,16 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
         }
         return -1;
     }
-    IMAGE *out  = &milk_data.image[oid];
-    int    sign = is_ifft ? 1 : -1;
+    IMAGE   *out      = &milk_data.image[oid];
+    int      sign     = is_ifft ? 1 : -1;
+    uint64_t norm_len = (axis >= 0) ? (uint64_t) sz[axis] : nel;
 
 #ifdef HAVE_FFTW3
-    /* Real input: a real-to-complex transform of half the spectrum, mirrored into the other half;
-     * complex input and ifft: an in-place complex transform. Both run in 64-byte aligned scratch,
-     * kept by the step, so FFTW's SIMD code applies. */
+    /* Full-image real input: real-to-complex transform of half the spectrum, mirrored into the
+     * other half; complex input, ifft, and batched 1-D axis transforms: in-place complex DFT. */
     (void) sign;
-    int      r2c  = !is_ifft && sdt != _DATATYPE_COMPLEX_FLOAT && sdt != _DATATYPE_COMPLEX_DOUBLE;
+    int      r2c  = (axis < 0) && !is_ifft && sdt != _DATATYPE_COMPLEX_FLOAT &&
+                    sdt != _DATATYPE_COMPLEX_DOUBLE;
     size_t   el   = is_dbl ? sizeof(double) : sizeof(float);
     uint64_t nh   = (uint64_t) (sz[0] / 2 + 1) * sz[1] * sz[2];
     size_t   a_in = ((size_t) nel * el * (r2c ? 1 : 2) + 63) & ~(size_t) 63;
@@ -645,10 +759,10 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
     char *res  = r2c ? in + a_in : in;
     int   nth  = milk_omp_team_size(nel, 65536);
     int   kind = r2c ? FFT_R2C : (is_ifft ? FFT_INV : FFT_FWD);
-    fft_load(src, sdt, in, nel, is_dbl, r2c);
+    fft_load(src, sdt, in, nel, is_dbl, r2c, nth);
 
     pthread_mutex_lock(&g_fft_lock);
-    void *plan = fft_plan(naxis, sz, is_dbl, kind, nth, in_unit != 0, in, res);
+    void *plan = fft_plan(naxis, axis, sz, is_dbl, kind, nth, in_unit != 0, in, res);
     if (plan != NULL && is_dbl)
     {
         if (r2c)
@@ -685,7 +799,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
                            sz[2],
                            is_dbl,
                            r2c,
-                           is_ifft ? 1.0 / (double) nel : 1.0 };
+                           is_ifft ? 1.0 / (double) norm_len : 1.0 };
         arith_team_run(nth, (uint64_t) sz[1] * sz[2], fft_store_job, &st);
     }
 #else
@@ -701,55 +815,64 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
     {
         read_pix_any(src, sdt, i, &re[i], &im[i]);
     }
-    for (uint32_t z = 0; z < sz[2]; z++)
+    if (axis < 0 || axis == 0)
+    {
+        for (uint32_t z = 0; z < sz[2]; z++)
+        {
+            for (uint32_t y = 0; y < sz[1]; y++)
+            {
+                uint64_t base = ((uint64_t) z * sz[1] + y) * sz[0];
+                dft_1d_line(sz[0], sign, &re[base], &im[base], or_b, oi_b);
+                memcpy(&re[base], or_b, sizeof(double) * sz[0]);
+                memcpy(&im[base], oi_b, sizeof(double) * sz[0]);
+            }
+        }
+    }
+    if ((axis < 0 && naxis >= 2) || axis == 1)
+    {
+        for (uint32_t z = 0; z < sz[2]; z++)
+        {
+            for (uint32_t x = 0; x < sz[0]; x++)
+            {
+                for (uint32_t y = 0; y < sz[1]; y++)
+                {
+                    uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
+                    tr[y]        = re[idx];
+                    ti[y]        = im[idx];
+                }
+                dft_1d_line(sz[1], sign, tr, ti, or_b, oi_b);
+                for (uint32_t y = 0; y < sz[1]; y++)
+                {
+                    uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
+                    re[idx]      = or_b[y];
+                    im[idx]      = oi_b[y];
+                }
+            }
+        }
+    }
+    if ((axis < 0 && naxis == 3) || axis == 2)
     {
         for (uint32_t y = 0; y < sz[1]; y++)
         {
-            uint64_t base = ((uint64_t) z * sz[1] + y) * sz[0];
-            dft_1d_line(sz[0], sign, &re[base], &im[base], or_b, oi_b);
-            memcpy(&re[base], or_b, sizeof(double) * sz[0]);
-            memcpy(&im[base], oi_b, sizeof(double) * sz[0]);
-        }
-    }
-    for (uint32_t z = 0; naxis >= 2 && z < sz[2]; z++)
-    {
-        for (uint32_t x = 0; x < sz[0]; x++)
-        {
-            for (uint32_t y = 0; y < sz[1]; y++)
+            for (uint32_t x = 0; x < sz[0]; x++)
             {
-                uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
-                tr[y]        = re[idx];
-                ti[y]        = im[idx];
-            }
-            dft_1d_line(sz[1], sign, tr, ti, or_b, oi_b);
-            for (uint32_t y = 0; y < sz[1]; y++)
-            {
-                uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
-                re[idx]      = or_b[y];
-                im[idx]      = oi_b[y];
+                for (uint32_t z = 0; z < sz[2]; z++)
+                {
+                    uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
+                    tr[z]        = re[idx];
+                    ti[z]        = im[idx];
+                }
+                dft_1d_line(sz[2], sign, tr, ti, or_b, oi_b);
+                for (uint32_t z = 0; z < sz[2]; z++)
+                {
+                    uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
+                    re[idx]      = or_b[z];
+                    im[idx]      = oi_b[z];
+                }
             }
         }
     }
-    for (uint32_t y = 0; naxis == 3 && y < sz[1]; y++)
-    {
-        for (uint32_t x = 0; x < sz[0]; x++)
-        {
-            for (uint32_t z = 0; z < sz[2]; z++)
-            {
-                uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
-                tr[z]        = re[idx];
-                ti[z]        = im[idx];
-            }
-            dft_1d_line(sz[2], sign, tr, ti, or_b, oi_b);
-            for (uint32_t z = 0; z < sz[2]; z++)
-            {
-                uint64_t idx = ((uint64_t) z * sz[1] + y) * sz[0] + x;
-                re[idx]      = or_b[z];
-                im[idx]      = oi_b[z];
-            }
-        }
-    }
-    double scale = is_ifft ? (1.0 / (double) nel) : 1.0;
+    double scale = is_ifft ? (1.0 / (double) norm_len) : 1.0;
     for (uint64_t i = 0; i < nel; i++)
     {
         write_pix_any(out, out_dt, i, re[i] * scale, im[i] * scale);

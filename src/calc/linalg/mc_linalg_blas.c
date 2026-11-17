@@ -99,11 +99,21 @@ int mc_resolve_linalg_call(mc_expr_t *e,
     int              nargs = e->u.call.nargs;
     (void) any_im;
 
-    /* Validate multi-LHS arity for matrix decompositions */
+    /* Validate multi-LHS arity for matrix decompositions and literal axis for fft/ifft */
     if ((fn == MC_FID_svd && nlhs != 1 && nlhs != 3) ||
         (fn == MC_FID_eigh && nlhs != 1 && nlhs != 2))
     {
         return mc_err(err, errsz, "%s: wrong number of LHS targets", fname);
+    }
+    if ((fn == MC_FID_fft || fn == MC_FID_ifft) && nargs == 2 &&
+        e->u.call.args[1]->kind == MC_EXPR_LONG)
+    {
+        long ax = e->u.call.args[1]->u.lval;
+        if (ax < 0 || ax > 2 ||
+            (e->u.call.args[0]->res_naxis > 0 && ax >= e->u.call.args[0]->res_naxis))
+        {
+            return mc_err(err, errsz, "%s: axis out of range", fname);
+        }
     }
 
     /* Mark result as an image and infer output element datatype and static shape */

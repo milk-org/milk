@@ -317,6 +317,9 @@ def test_phase7_library_and_spatial_ops(tmp_path):
         '@calc "U, S, Vt = svd(A); Sonly = svd(A); err_svd = imax(abs(S - Sonly))"\n'
         '@calc "H = A + A.T; W, V = eigh(H); Wonly = eigh(H); err_eigh = imax(abs(W - Wonly))"\n'
         '@calc "F = fft(A); R = real(ifft(F)); Fs = fftshift(F); err_fft = imax(abs(R - A))"\n'
+        '@calc "Fx = fft(A, 0); Rx = real(ifft(Fx, 0)); Fy = fft(A, 1); Ry = real(ifft(Fy, 1)); '
+        'Cx = fft(1.0 + 0.5 * iy(A), 0); Cy = fft(1.0 + 0.5 * ix(A), 1); '
+        'err_fft_ax = imax(abs(Rx - A)) + imax(abs(Ry - A)) + imax(abs(Cx[1:7, :])) + imax(abs(Cy[:, 1:7]))"\n'
         '@calc "Hs = hstack(A, B); Vs = vstack(A, B); Ds = dstack(A, B); Cs = cat(0, A, B)"\n'
         '@calc "err_cat = imax(abs(Hs - Cs)) + abs(icount(Hs) - 128) + abs(icount(Ds) - 128)"\n'
         '@calc "R4 = rot90(rot90(A, 1), 3); R2 = rot90(rot90(A, 2), 2); '
@@ -327,10 +330,10 @@ def test_phase7_library_and_spatial_ops(tmp_path):
         '@calc "im = 10.0 + 0 * A; im[3, 4] = 50.0; im[6, 2] = 2.0"\n'
         '@calc "mn = imin3(im); mx = imax3(im); bm = boxmean(im, 1)"\n'
         '@calc "v_mx = mx[4, 4]; v_mn = mn[5, 2]; v_bm = bm[3, 4]"\n'
-        "@calc -v err_mm,err_tr,err_ein,err_svd,err_eigh,err_fft,err_cat,err_rot,err_conv "
-        '"err_mm; err_tr; err_ein; err_svd; err_eigh; err_fft; err_cat; err_rot; err_conv"\n'
+        "@calc -v err_mm,err_tr,err_ein,err_svd,err_eigh,err_fft,err_fft_ax,err_cat,err_rot,err_conv "
+        '"err_mm; err_tr; err_ein; err_svd; err_eigh; err_fft; err_fft_ax; err_cat; err_rot; err_conv"\n'
         '@calc -v v_mx,v_mn,v_bm "v_mx; v_mn; v_bm"\n'
-        'echo "errs=$err_mm,$err_tr,$err_ein,$err_svd,$err_eigh,$err_fft,$err_cat,$err_rot,$err_conv"\n'
+        'echo "errs=$err_mm,$err_tr,$err_ein,$err_svd,$err_eigh,$err_fft,$err_fft_ax,$err_cat,$err_rot,$err_conv"\n'
         'echo "res=$v_mx,$v_mn,$v_bm"\n'
     )
     res = milk_bash(script, tmp_path)
