@@ -58,6 +58,7 @@ Memory management for images
 | `stream_sem.c`                 | Stream semaphore operations                              |
 | `stream_slice.c`               | Extract slice views from streams                         |
 | `stream_updateloop.c`          | Send burst of frames to a stream                         |
+| `tlm_timing.c`                 | Fast fixed-point reader/writer for telemetry timing files |
 | `trigmerge.c`                  | Merge up to 16 input stream triggers (any-of / all-of) into one trigger stream |
 | `variable_ID.c`                | Find variable ID(s) from name                            |
 
