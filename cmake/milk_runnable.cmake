@@ -106,6 +106,7 @@ endfunction()
 
 
 function(milk_add_fpsexec_stubs LIBNAME)
+  string(ASCII 27 _esc)
   get_target_property(_objs ${LIBNAME} MILK_OBJECTS_TARGET)
   _milk_target_source_files(${_objs} _sources)
 
@@ -122,7 +123,7 @@ function(milk_add_fpsexec_stubs LIBNAME)
       list(GET _export 2 _unit)
       if(_dropped)
         get_filename_component(_src_name "${_src}" NAME)
-        message(STATUS "[SKIP] fpsexec ${_prefix}-fpsexec-${_id}: ${_src_name} (unmet MANDATE_*)")
+        message(STATUS "${_esc}[33m[SKIP] fpsexec ${_prefix}-fpsexec-${_id}: ${_src_name} (unmet MANDATE_*)${_esc}[0m")
         continue()
       endif()
       _milk_add_fpsexec_stub(${LIBNAME} ${_prefix} ${_id} ${_unit} "${_src}")
