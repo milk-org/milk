@@ -90,12 +90,14 @@ ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_pla
 ## 4. Installing
 
 ```bash
-pip install -e python/  # (1)!
+PYMILK_ENGINE=SYSTEM pip install python/pyMilk  # (1)!
+pip install -e python/
 ```
 
-1. Run from the milk repository root.
+1. Run from the milk repository root, with milk installed and `MILK_INSTALLDIR` set. See
+   [pyMilk: Installation](pyMilk.md#1-installation).
 
-The package needs [pyMilk](https://github.com/milk-org/pyMilk) for SHM and FPS access, and
+The package needs [pyMilk](pyMilk.md), built in SYSTEM mode, for SHM and FPS access, and
 `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` set in the environment of anything that touches
 the live system. `import milk` itself works without a milk environment.
 

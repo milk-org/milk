@@ -260,9 +260,9 @@ in which we can build milk with different options, then run the tests; or use se
 !!! question "Prerequisites"
     - A Python environment (see the note at the top of this page).
     - `pytest`, `pytest-timeout`, `nox` and `uv` installed (`nox` sessions use the `uv` backend).
-    - `pyMilk`, installed from `python/pyMilk` (see 4.1). Some tests use it to interact with SHMs and FPSs.
-    - An installed `milk` python-package: `cd $MILK_ROOT/python && pip install -e .`. TODO: be better at naming
     - A built and locally installed `milk`, with `MILK_INSTALLDIR` pointing to it.
+    - The `pyMilk` and `milk` Python packages, installed from `python/` (see 4.1).
+      Some tests use pyMilk to interact with shared memory structures.
     - `tmux` and a writable `/tmp`: the tests spawn private tmux servers and shared-memory
       directories.
 
@@ -271,10 +271,14 @@ in which we can build milk with different options, then run the tests; or use se
 ```bash
 export MILK_INSTALLDIR=<path to your milk install>
 
-cd python
-pip install -e pyMilk # pyMilk, built against the milk in MILK_INSTALLDIR
+cd $MILK_ROOT/python
+PYMILK_ENGINE=SYSTEM pip install -e pyMilk # pyMilk, built against the milk in MILK_INSTALLDIR
+pip install -e .                           # the milk package
 pip install pytest pytest-timeout nox
 ```
+
+(Re)install pyMilk after reinstalling milk. See [pyMilk: Installation](../guide/pyMilk.md#1-installation)
+for the engine modes.
 
 ### 4.2 pytest
 
@@ -374,8 +378,9 @@ pytest -k
 an isolated tree and a clean set of packages.
 
 We use it to run the milk tests with various build options, or to run coverage reports.
-The default sessions install `milk` and `pyMilk`, configures and builds milk
-in a temporary directory, installs it there, and runs `pytest`. The build variants are:
+The default sessions configure and build milk in a temporary directory, install it there,
+install `milk` and `pyMilk` (in _SYSTEM_ mode), and run `pytest`. The build
+variants are:
 
 | Default sessions               | `USE_CLI` | `USE_STATIC_LTO` |
 | ------------------------------ | --------- | ---------------- |
@@ -392,6 +397,14 @@ nox -l                              # list sessions
 nox -s build_and_pytest_nocli_nolto # one session, including those excluded by default
 
 nox -s tests_run_coverage           # run the coverage session, which is not in the defaults; See #5 below.
+```
+
+pyMilk has its own sessions in `python/pyMilk/noxfile.py`. They install pyMilk with the BUNDLED
+engine, with no milk install, and run its tests (editable and non-editable):
+
+```bash
+cd $MILK_ROOT/python/pyMilk
+nox
 ```
 
 !!! tip

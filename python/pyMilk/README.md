@@ -16,17 +16,16 @@ For interfacing with the underlying C API of MILK we use [nanobind](https://gith
 
 pyMilk lives in the milk repository, under `python/pyMilk`. Its nanobind extensions (`ImageStreamIOWrap`, `FpsWrap`, `ProcessInfoWrap`) are built with CMake from `bindings/`; `ImageStreamIOWrap.cpp` is compiled from milk's `src/engine/ImageStreamIO/python_module`.
 
-The C engine is selected with the `PYMILK_ENGINE` environment variable:
-
-- `SYSTEM` (default): link the libraries of an installed milk, located with pkg-config (`milk.pc`, `ImageStreamIO.pc`). Set `MILK_INSTALLDIR`, or put its `lib/pkgconfig` in `PKG_CONFIG_PATH`. Install milk from the same checkout first: the build stops if the checkout's ImageStreamIO version differs from the installed one.
-- `BUNDLED`: build the engine from source into pyMilk, without a milk installation. Not implemented yet.
-
 ```
-cd milk/python/pyMilk
-MILK_INSTALLDIR=/usr/local/milk pip install -e .
+# With an installed milk (SYSTEM, default)
+MILK_INSTALLDIR=/usr/local/milk PYMILK_ENGINE=SYSTEM pip install .
+# Without milk: engine compiled into pyMilk (BUNDLED)
+PYMILK_ENGINE=BUNDLED pip install .
 ```
 
-Use developer mode (`-e`). The extensions link with an RPATH to the installed milk `lib/`; after reinstalling milk, rebuild pyMilk.
+See [pyMilk: Installation](../../docs/guide/pyMilk.md#1-installation) for the details of each mode.
+
+Python 3.9+ is required to be able to use nanobind.
 
 ## Usage
 

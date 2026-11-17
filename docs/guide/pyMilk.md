@@ -8,7 +8,7 @@ render_macros: true
 
 # pyMilk
 
-[pyMilk](https://github.com/milk-org/pyMilk) is the Python side of milk's shared memory: the
+pyMilk is the Python side of milk's shared memory: the
 `SHM` class for streams and the `FPS` class for function parameter structures, with numpy
 arrays in and out. It is what scripts, viewers and offline analysis use to talk to a running
 system.
@@ -21,17 +21,40 @@ To deploy and operate pipelines of milk compute units from Python (the `milk` pa
 
 ## 1. Installation
 
-```bash
-git clone https://github.com/milk-org/pyMilk --recurse-submodules  # (1)!
-cd pyMilk
-pip install -e .
-```
+pyMilk lives in the milk repository, under `python/pyMilk`. Its three nanobind extensions
+(`ImageStreamIOWrap`, `FpsWrap`, `ProcessInfoWrap`) are compiled at install time, so `cmake`, a
+C/C++ compiler and the ImageStreamIO submodule are needed (`git submodule update --init` from the
+milk root). The `PYMILK_ENGINE` environment variable picks where the C engine comes from:
 
-1. `--recurse-submodules` fetches ImageStreamIO, which the bindings are compiled from.
+=== "SYSTEM (default): with an installed milk"
 
-The `-e` (developer mode) install is the supported one: the bindings are compiled in place
-from the ImageStreamIO submodule. Streams need nothing else. The `FPS` class needs a full
-milk installation, since it binds milk's own FPS library.
+    ```bash
+    export MILK_INSTALLDIR=/usr/local/milk  # (1)!
+    PYMILK_ENGINE=SYSTEM pip install $MILK_ROOT/python/pyMilk
+    ```
+
+    1. Or put `$MILK_INSTALLDIR/lib/pkgconfig` in `PKG_CONFIG_PATH`: the libraries are found
+       through `milk.pc` and `ImageStreamIO.pc`.
+
+    The extensions link milk's installed shared libraries, the same ones the fpsexecs use, with
+    an RPATH to `$MILK_INSTALLDIR/lib`. Install milk from the same checkout first: the build stops
+    if the checkout's ImageStreamIO version differs from the installed one. Reinstall pyMilk after
+    reinstalling milk. CUDA support follows the installed `libImageStreamIO`.
+
+    Use this mode on any machine that runs milk; the [`milk` package](pipelines.md#4-installing)
+    warns at import when pyMilk was built otherwise.
+
+=== "BUNDLED: without installing milk"
+
+    ```bash
+    PYMILK_ENGINE=BUNDLED pip install $MILK_ROOT/python/pyMilk
+    ```
+
+    The engine (`src/engine`) is compiled from the checkout into each extension, as private static
+    code. No milk installation is needed: for laptops and viewer-only machines. CUDA is off unless
+    `CUDA_ROOT` is set.
+
+Add `-e` for a developer (editable) install.
 
 `MILK_SHM_DIR` must be set: a stream named `mystream` is the file `$MILK_SHM_DIR/mystream.im.shm`.
 
