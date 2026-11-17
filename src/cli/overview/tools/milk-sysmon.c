@@ -229,23 +229,23 @@ static int cmp_int64(const void *a, const void *b)
 
 typedef struct
 {
-    char     hostname[128];
-    char     kernel[128];
-    char     cpu_model[128];
-    int      nb_cpus;
-    int      nb_numa;
-    char     numa_cpulist[SYSMON_MAX_NUMA][128];
-    int8_t   cpu_to_numa[SYSMON_MAX_CPUS];
-    char     governor[64];
-    double   cpu_max_mhz;
-    double   ram_total_mb;
-    double   ram_avail_mb;
-    double   shm_total_mb;
-    double   shm_free_mb;
-    int      perf_paranoid;
-    char     bash_version[128];
-    char     shmdir[PATH_MAX];
-    char     procdir[PATH_MAX];
+    char   hostname[128];
+    char   kernel[128];
+    char   cpu_model[128];
+    int    nb_cpus;
+    int    nb_numa;
+    char   numa_cpulist[SYSMON_MAX_NUMA][128];
+    int8_t cpu_to_numa[SYSMON_MAX_CPUS];
+    char   governor[64];
+    double cpu_max_mhz;
+    double ram_total_mb;
+    double ram_avail_mb;
+    double shm_total_mb;
+    double shm_free_mb;
+    int    perf_paranoid;
+    char   bash_version[128];
+    char   shmdir[PATH_MAX];
+    char   procdir[PATH_MAX];
 
     int    gpu_present;
     char   gpu_name[128];
@@ -416,11 +416,11 @@ static void collect_host_info(host_info_t *h)
     }
 
     h->gpu_numa_node = -1;
-    fp = popen("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,"
-               "pcie.link.gen.current,pcie.link.gen.max,"
-               "pcie.link.width.current,pcie.link.width.max,"
-               "memory.total,power.limit --format=csv,noheader,nounits 2>/dev/null",
-               "r");
+    fp               = popen("nvidia-smi --query-gpu=name,driver_version,pci.bus_id,"
+                             "pcie.link.gen.current,pcie.link.gen.max,"
+                             "pcie.link.width.current,pcie.link.width.max,"
+                             "memory.total,power.limit --format=csv,noheader,nounits 2>/dev/null",
+                             "r");
     if (fp)
     {
         char line[512];
@@ -457,7 +457,7 @@ static void collect_host_info(host_info_t *h)
                 h->gpu_vram_total_mib = atof(cols[7]);
                 h->gpu_power_limit_w  = atof(cols[8]);
 
-                char sysbus[64];
+                char        sysbus[64];
                 const char *bp = h->gpu_pci_bus;
                 if (strlen(bp) >= 12 && strncmp(bp, "0000", 4) == 0 && bp[8] == ':')
                 {
@@ -508,11 +508,11 @@ typedef struct
 
 typedef struct
 {
-    FILE           *stream_fp;
-    int             stream_fd;
-    char            rdbuf[4096];
-    size_t          rdlen;
-    gpu_sample_t    cur;
+    FILE        *stream_fp;
+    int          stream_fd;
+    char         rdbuf[4096];
+    size_t       rdlen;
+    gpu_sample_t cur;
 
     pthread_t       app_thread;
     pthread_mutex_t app_mtx;
@@ -757,19 +757,19 @@ static void sample_cpu(cpu_sampler_t *cs, const host_info_t *h, cpu_metrics_t *o
             }
             if (cs->has_prev)
             {
-                cpu_raw_t *p     = &cs->prev[idx];
-                long long  du    = (cur.user - p->user) + (cur.nice - p->nice);
-                long long  ds    = (cur.sys - p->sys) + (cur.irq - p->irq) + (cur.softirq - p->softirq);
-                long long  diow  = cur.iowait - p->iowait;
-                long long  didle = cur.idle - p->idle;
-                long long  dtot  = du + ds + diow + didle + (cur.steal - p->steal);
+                cpu_raw_t *p  = &cs->prev[idx];
+                long long  du = (cur.user - p->user) + (cur.nice - p->nice);
+                long long ds = (cur.sys - p->sys) + (cur.irq - p->irq) + (cur.softirq - p->softirq);
+                long long diow  = cur.iowait - p->iowait;
+                long long didle = cur.idle - p->idle;
+                long long dtot  = du + ds + diow + didle + (cur.steal - p->steal);
                 if (dtot > 0)
                 {
-                    double busy  = (double) (dtot - didle - diow) / (double) dtot;
-                    double uf    = (double) du / (double) dtot;
-                    double sf    = (double) ds / (double) dtot;
-                    double iowf  = (double) diow / (double) dtot;
-                    double pct   = 100.0 * busy;
+                    double busy = (double) (dtot - didle - diow) / (double) dtot;
+                    double uf   = (double) du / (double) dtot;
+                    double sf   = (double) ds / (double) dtot;
+                    double iowf = (double) diow / (double) dtot;
+                    double pct  = 100.0 * busy;
                     out->total_cores += busy;
                     out->user_cores += uf;
                     out->sys_cores += sf;
@@ -834,14 +834,14 @@ static void sample_cpu(cpu_sampler_t *cs, const host_info_t *h, cpu_metrics_t *o
 
 typedef struct
 {
-    pid_t    pid;
-    char     name[80];
-    char     cmdline[128];
-    char     kind[16]; /* "procinfo", "fps", "cli" */
-    int      alive;
-    int      seen_samples;
-    double   first_seen_t;
-    double   last_seen_t;
+    pid_t  pid;
+    char   name[80];
+    char   cmdline[128];
+    char   kind[16]; /* "procinfo", "fps", "cli" */
+    int    alive;
+    int    seen_samples;
+    double first_seen_t;
+    double last_seen_t;
 
     /* OS CPU & scheduler totals */
     uint64_t prev_utime;
@@ -972,11 +972,11 @@ typedef struct
 } phase_mark_t;
 
 /* Read proc stats directly for CPU ticks, memory, context switches, and NUMA threads */
-static void update_proc_os_stats(tracked_proc_t *tp,
+static void update_proc_os_stats(tracked_proc_t    *tp,
                                  const host_info_t *h,
-                                 double clk_tck,
-                                 double dt_tick,
-                                 int    in_cl)
+                                 double             clk_tck,
+                                 double             dt_tick,
+                                 int                in_cl)
 {
     char path[128];
     snprintf(path, sizeof(path), "/proc/%d/stat", (int) tp->pid);
@@ -1038,7 +1038,7 @@ static void update_proc_os_stats(tracked_proc_t *tp,
         return;
     }
 
-    tp->alive = 1;
+    tp->alive    = 1;
     long page_kb = sysconf(_SC_PAGESIZE) / 1024;
     if (page_kb > 0)
     {
@@ -1075,8 +1075,8 @@ static void update_proc_os_stats(tracked_proc_t *tp,
     tp->prev_stime   = st;
     tp->has_prev_cpu = 1;
 
-    int      th = 1;
-    int64_t  hwm = 0;
+    int      th   = 1;
+    int64_t  hwm  = 0;
     uint64_t vctx = 0, nvctx = 0, mig = 0;
     snprintf(path, sizeof(path), "/proc/%d/status", (int) tp->pid);
     fp = fopen(path, "r");
@@ -1294,22 +1294,22 @@ static void extract_pinfo_ring(const PROCESSINFO *pi, tracked_proc_t *tp, int in
     {
         tp->timing_is_cl = 1;
     }
-    tp->timing_n     = nv;
-    tp->exec_p50_ns  = exec_ns[nv / 2];
-    tp->exec_p95_ns  = exec_ns[(nv * 95) / 100];
-    tp->exec_p99_ns  = exec_ns[(nv * 99) / 100];
-    tp->exec_max_ns  = exec_ns[nv - 1];
-    tp->iter_p50_ns  = iter_ns[nv / 2];
-    tp->iter_p95_ns  = iter_ns[(nv * 95) / 100];
-    tp->iter_p99_ns  = iter_ns[(nv * 99) / 100];
-    tp->iter_max_ns  = iter_ns[nv - 1];
-    tp->jitter_ns    = tp->iter_p99_ns - tp->iter_p50_ns;
+    tp->timing_n    = nv;
+    tp->exec_p50_ns = exec_ns[nv / 2];
+    tp->exec_p95_ns = exec_ns[(nv * 95) / 100];
+    tp->exec_p99_ns = exec_ns[(nv * 99) / 100];
+    tp->exec_max_ns = exec_ns[nv - 1];
+    tp->iter_p50_ns = iter_ns[nv / 2];
+    tp->iter_p95_ns = iter_ns[(nv * 95) / 100];
+    tp->iter_p99_ns = iter_ns[(nv * 99) / 100];
+    tp->iter_max_ns = iter_ns[nv - 1];
+    tp->jitter_ns   = tp->iter_p99_ns - tp->iter_p50_ns;
 }
 
 static void refresh_pinfo_rings(const host_info_t *h,
-                                tracked_proc_t *procs,
-                                int             nb_procs,
-                                int             in_cl)
+                                tracked_proc_t    *procs,
+                                int                nb_procs,
+                                int                in_cl)
 {
     for (int i = 0; i < nb_procs; i++)
     {
@@ -1385,10 +1385,7 @@ static tracked_proc_t *find_or_add_proc(tracked_proc_t *procs,
     return tp;
 }
 
-static void scan_extra_cli_procs(uid_t           my_uid,
-                                 tracked_proc_t *procs,
-                                 int            *nb_procs,
-                                 double          t_rel)
+static void scan_extra_cli_procs(uid_t my_uid, tracked_proc_t *procs, int *nb_procs, double t_rel)
 {
     DIR *d = opendir("/proc");
     if (!d)
@@ -1515,15 +1512,15 @@ static int load_phases_file(const char *path, phase_mark_t *phases, int max_phas
     char line[256];
     while (n < max_phases && fgets(line, sizeof(line), fp) != NULL)
     {
-        double ts = 0.0;
+        double ts     = 0.0;
         char   id[64] = "", lbl[128] = "";
         char  *t1 = strchr(line, '\t');
         if (!t1)
         {
             continue;
         }
-        *t1 = '\0';
-        ts  = atof(line);
+        *t1      = '\0';
+        ts       = atof(line);
         char *t2 = strchr(t1 + 1, '\t');
         if (t2)
         {
@@ -1582,16 +1579,16 @@ static void write_csv(const char          *csv_path,
     {
         return;
     }
-    fprintf(fp,
-            "t_rel_s,phase,total_cores,sim_cores,user_cores,sys_cores,iowait_cores,"
-            "numa0_cores,numa1_cores,max_core_pct,cores_gt10,cores_gt50,"
-            "cpu_freq_mean_mhz,cpu_freq_max_mhz,gpu_util_pct,gpu_mem_util_pct,"
-            "gpu_vram_mib,gpu_power_w,gpu_sm_mhz,gpu_mem_mhz,gpu_temp_c,"
-            "shm_bw_mb_s,shm_total_mb,active_procs,active_streams\n");
+    fprintf(fp, "t_rel_s,phase,total_cores,sim_cores,user_cores,sys_cores,iowait_cores,"
+                "numa0_cores,numa1_cores,max_core_pct,cores_gt10,cores_gt50,"
+                "cpu_freq_mean_mhz,cpu_freq_max_mhz,gpu_util_pct,gpu_mem_util_pct,"
+                "gpu_vram_mib,gpu_power_w,gpu_sm_mhz,gpu_mem_mhz,gpu_temp_c,"
+                "shm_bw_mb_s,shm_total_mb,active_procs,active_streams\n");
     for (int i = 0; i < nb_ticks; i++)
     {
         const tick_sample_t *t = &ticks[i];
-        int pi = (t->phase_idx >= 0) ? t->phase_idx : resolve_phase_idx(phases, nb_phases, t->rel_s);
+        int                  pi =
+            (t->phase_idx >= 0) ? t->phase_idx : resolve_phase_idx(phases, nb_phases, t->rel_s);
         const char *pid_str = (pi >= 0 && pi < nb_phases) ? phases[pi].id : "unmarked";
         fprintf(fp,
                 "%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%d,%d,"
@@ -1616,28 +1613,28 @@ static void write_phase_summary_json(FILE                *fp,
                                      int                  nb_ticks,
                                      double               total_dur)
 {
-    int    cnt       = 0;
-    double dur       = 0.0;
-    double core_s    = 0.0;
+    int    cnt        = 0;
+    double dur        = 0.0;
+    double core_s     = 0.0;
     double sim_core_s = 0.0;
-    double sim_pk    = 0.0;
-    double user_s    = 0.0;
-    double sys_s     = 0.0;
-    double numa0_s   = 0.0;
-    double numa1_s   = 0.0;
-    double cores_pk  = 0.0;
-    double gpu_sum   = 0.0;
-    double gpu_pk    = 0.0;
-    double gmem_sum  = 0.0;
-    double vram_pk   = 0.0;
-    double pwr_sum   = 0.0;
-    double pwr_pk    = 0.0;
-    double energy_j  = 0.0;
-    double smclk_sum = 0.0;
-    double shm_sum   = 0.0;
-    double shm_pk    = 0.0;
-    double t_min     = 0.0;
-    double t_max     = 0.0;
+    double sim_pk     = 0.0;
+    double user_s     = 0.0;
+    double sys_s      = 0.0;
+    double numa0_s    = 0.0;
+    double numa1_s    = 0.0;
+    double cores_pk   = 0.0;
+    double gpu_sum    = 0.0;
+    double gpu_pk     = 0.0;
+    double gmem_sum   = 0.0;
+    double vram_pk    = 0.0;
+    double pwr_sum    = 0.0;
+    double pwr_pk     = 0.0;
+    double energy_j   = 0.0;
+    double smclk_sum  = 0.0;
+    double shm_sum    = 0.0;
+    double shm_pk     = 0.0;
+    double t_min      = 0.0;
+    double t_max      = 0.0;
 
     for (int i = 0; i < nb_ticks; i++)
     {
@@ -1731,18 +1728,18 @@ static void write_phase_summary_json(FILE                *fp,
     fprintf(fp, "    }");
 }
 
-static void write_json(const char            *json_path,
-                       const host_info_t     *h,
-                       double                 wall_total_s,
-                       double                 cl_total_s,
-                       const tick_sample_t   *ticks,
-                       int                    nb_ticks,
-                       const phase_mark_t    *phases,
-                       int                    nb_phases,
-                       const tracked_proc_t  *procs,
-                       int                    nb_procs,
+static void write_json(const char             *json_path,
+                       const host_info_t      *h,
+                       double                  wall_total_s,
+                       double                  cl_total_s,
+                       const tick_sample_t    *ticks,
+                       int                     nb_ticks,
+                       const phase_mark_t     *phases,
+                       int                     nb_phases,
+                       const tracked_proc_t   *procs,
+                       int                     nb_procs,
                        const tracked_stream_t *streams,
-                       int                    nb_streams)
+                       int                     nb_streams)
 {
     FILE *fp = fopen(json_path, "w");
     if (!fp)
@@ -1825,20 +1822,20 @@ static void write_json(const char            *json_path,
         {
             dur_s = 0.2;
         }
-        double   cl_tot_s   = p->cl_user_s + p->cl_sys_s;
-        double   cl_denom   = (cl_total_s > 0.1) ? cl_total_s : 1.0;
-        uint64_t numa_tot   = 0;
+        double   cl_tot_s = p->cl_user_s + p->cl_sys_s;
+        double   cl_denom = (cl_total_s > 0.1) ? cl_total_s : 1.0;
+        uint64_t numa_tot = 0;
         for (int nn = 0; nn < h->nb_numa; nn++)
         {
             numa_tot += p->numa_hits[nn];
         }
-        uint64_t n0         = p->numa_hits[0];
-        uint64_t n1         = (h->nb_numa > 1) ? p->numa_hits[1] : 0;
-        double   n_rem_pct  = 0.0;
+        uint64_t n0        = p->numa_hits[0];
+        uint64_t n1        = (h->nb_numa > 1) ? p->numa_hits[1] : 0;
+        double   n_rem_pct = 0.0;
         if (numa_tot > 0 && h->gpu_numa_node >= 0 && h->gpu_numa_node < h->nb_numa)
         {
-            n_rem_pct = 100.0 * (double) (numa_tot - p->numa_hits[h->gpu_numa_node]) /
-                        (double) numa_tot;
+            n_rem_pct =
+                100.0 * (double) (numa_tot - p->numa_hits[h->gpu_numa_node]) / (double) numa_tot;
         }
         long cl_loops = (p->cl_has_loop && p->cl_loopcnt_end >= p->cl_loopcnt_start)
                             ? (p->cl_loopcnt_end - p->cl_loopcnt_start)
@@ -1964,8 +1961,8 @@ static void print_help(const char *prog, int mh_color)
            mh_color ? MH_RST : "", "Stop cleanly when sentinel file appears");
     printf("  %s%-24s%s %s\n", mh_color ? MH_OPT : "", "-r, --rate HZ", mh_color ? MH_RST : "",
            "Sampling rate in Hz (default: 5.0)");
-    printf("  %s%-24s%s %s\n", mh_color ? MH_OPT : "", "-d, --duration SEC",
-           mh_color ? MH_RST : "", "Max run duration in seconds (default: unlimited)");
+    printf("  %s%-24s%s %s\n", mh_color ? MH_OPT : "", "-d, --duration SEC", mh_color ? MH_RST : "",
+           "Max run duration in seconds (default: unlimited)");
     printf("  %s%-24s%s %s\n", mh_color ? MH_OPT : "", "--snapshot", mh_color ? MH_RST : "",
            "Take a single quick sample (~0.25 s) and exit");
     printf("  %s%-24s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
@@ -2059,9 +2056,9 @@ int main(int argc, char *argv[])
     sigaction(SIGTERM, &sa, NULL);
 
     ov_dirs_init();
-    host_info_t *host = (host_info_t *) calloc(1, sizeof(host_info_t));
-    OV_MODEL    *model = (OV_MODEL *) calloc(1, sizeof(OV_MODEL));
-    tracked_proc_t   *procs   = (tracked_proc_t *) calloc(SYSMON_MAX_PROCS, sizeof(tracked_proc_t));
+    host_info_t      *host  = (host_info_t *) calloc(1, sizeof(host_info_t));
+    OV_MODEL         *model = (OV_MODEL *) calloc(1, sizeof(OV_MODEL));
+    tracked_proc_t   *procs = (tracked_proc_t *) calloc(SYSMON_MAX_PROCS, sizeof(tracked_proc_t));
     tracked_stream_t *streams =
         (tracked_stream_t *) calloc(SYSMON_MAX_STREAMS, sizeof(tracked_stream_t));
     phase_mark_t *phases = (phase_mark_t *) calloc(SYSMON_MAX_PHASES, sizeof(phase_mark_t));
@@ -2075,12 +2072,12 @@ int main(int argc, char *argv[])
     gpu_mon_t gmon;
     gpu_mon_start(&gmon, host->gpu_present);
 
-    int           nb_procs   = 0;
-    int           nb_streams = 0;
-    int           nb_phases  = 0;
-    int           tick_cap   = 2048;
-    int           nb_ticks   = 0;
-    tick_sample_t *ticks     = (tick_sample_t *) calloc((size_t) tick_cap, sizeof(tick_sample_t));
+    int            nb_procs   = 0;
+    int            nb_streams = 0;
+    int            nb_phases  = 0;
+    int            tick_cap   = 2048;
+    int            nb_ticks   = 0;
+    tick_sample_t *ticks      = (tick_sample_t *) calloc((size_t) tick_cap, sizeof(tick_sample_t));
     if (!ticks)
     {
         fprintf(stderr, "milk-sysmon: out of memory\n");
@@ -2113,10 +2110,11 @@ int main(int argc, char *argv[])
         double dt_tick = now_m - prev_mono;
         prev_mono      = now_m;
 
-        nb_phases       = load_phases_file(phases_file, phases, SYSMON_MAX_PHASES, t0_epoch);
-        int cur_pidx    = resolve_phase_idx(phases, nb_phases, t_rel);
-        int in_cl_phase = (cur_pidx >= 0 && strcmp(phases[cur_pidx].id, "closed_loop_warmup") != 0 &&
-                           strncmp(phases[cur_pidx].id, "closed_loop", 11) == 0);
+        nb_phases    = load_phases_file(phases_file, phases, SYSMON_MAX_PHASES, t0_epoch);
+        int cur_pidx = resolve_phase_idx(phases, nb_phases, t_rel);
+        int in_cl_phase =
+            (cur_pidx >= 0 && strcmp(phases[cur_pidx].id, "closed_loop_warmup") != 0 &&
+             strncmp(phases[cur_pidx].id, "closed_loop", 11) == 0);
         if (in_cl_phase && dt_tick > 0.0)
         {
             cl_dur_s += dt_tick;
@@ -2195,7 +2193,8 @@ int main(int argc, char *argv[])
         for (int a = 0; a < gmon.nb_apps; a++)
         {
             const gpu_app_t *ga = &gmon.apps[a];
-            tracked_proc_t  *tp = find_or_add_proc(procs, &nb_procs, ga->pid, ga->comm, "cli", t_rel);
+            tracked_proc_t  *tp =
+                find_or_add_proc(procs, &nb_procs, ga->pid, ga->comm, "cli", t_rel);
             if (tp)
             {
                 double m = (double) ga->mem_mib;
@@ -2210,9 +2209,9 @@ int main(int argc, char *argv[])
         pthread_mutex_unlock(&gmon.app_mtx);
 
         /* Track ImageStreamIO SHM streams & bandwidth */
-        double   shm_bw    = 0.0;
-        double   shm_bytes = 0.0;
-        int      act_s     = 0;
+        double shm_bw    = 0.0;
+        double shm_bytes = 0.0;
+        int    act_s     = 0;
         for (int i = 0; i < model->nb_streams; i++)
         {
             const OV_STREAM *os = &model->streams[i];
@@ -2232,9 +2231,9 @@ int main(int argc, char *argv[])
             shm_bytes += (double) st->frame_bytes;
             if (st->has_prev && dt_tick > 0.01 && os->cnt0 >= st->prev_cnt0)
             {
-                uint64_t dc   = os->cnt0 - st->prev_cnt0;
-                double   hz   = (double) dc / dt_tick;
-                double   mbs  = ((double) dc * (double) st->frame_bytes) / (dt_tick * 1.0e6);
+                uint64_t dc  = os->cnt0 - st->prev_cnt0;
+                double   hz  = (double) dc / dt_tick;
+                double   mbs = ((double) dc * (double) st->frame_bytes) / (dt_tick * 1.0e6);
                 shm_bw += mbs;
                 if (hz > st->peak_hz)
                 {

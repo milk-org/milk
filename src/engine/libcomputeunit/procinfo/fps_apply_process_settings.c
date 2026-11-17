@@ -170,8 +170,8 @@ static void apply_numanode(FPS *fps)
     if (node == -1)
     {
         const char *env = getenv("MILK_NUMANODE");
-        if (env == NULL || *env == '\0' || strcmp(env, "-1") == 0 ||
-            strcasecmp(env, "off") == 0 || strcasecmp(env, "none") == 0)
+        if (env == NULL || *env == '\0' || strcmp(env, "-1") == 0 || strcasecmp(env, "off") == 0 ||
+            strcasecmp(env, "none") == 0)
         {
             return;
         }
