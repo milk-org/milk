@@ -81,12 +81,13 @@ def serve_external_shm(request):
 
 
 class _SubprocessTask(abc.ABC):
-    """Body of the subprocess spawned by `subfixture`.
+    """Task run by the session worker (`_async_worker`) on behalf of `subfixture`.
 
-    `run` is the Process target: `setup`, then the startup handshake on
-    `evt` (post once, wait for the parent to clear, so the exit checks on the
-    same event don't fire), then `main`. `evt` is set again by the parent to
-    request exit.
+    `run`: `setup`, then the startup handshake on `evt` (post once, wait for
+    the parent to clear, so the exit checks on the same event don't fire),
+    then `main`. `evt` is set again by the parent to request exit.
+    Instances travel through a Queue, so `evt` is not an attribute: it is the
+    worker's, passed at spawn time.
     """
 
     def __init__(
@@ -97,7 +98,6 @@ class _SubprocessTask(abc.ABC):
         dtype: np.typing.DTypeLike,
         location: int,
         delay: float,
-        evt: T_Event,
     ) -> None:
         self.toprocess_name = toprocess_name
         self.fromprocess_name = fromprocess_name
@@ -105,7 +105,6 @@ class _SubprocessTask(abc.ABC):
         self.dtype = dtype
         self.location = location
         self.delay = delay
-        self.evt = evt
 
     @abc.abstractmethod
     def setup(self) -> None: ...
@@ -113,7 +112,8 @@ class _SubprocessTask(abc.ABC):
     @abc.abstractmethod
     def main(self) -> None: ...
 
-    def run(self) -> None:
+    def run(self, evt: T_Event) -> None:
+        self.evt = evt
         self.setup()
         self.evt.set()
         while self.evt.is_set():
@@ -212,46 +212,82 @@ class _CreateKillRecreate(_SubprocessTask):
         shm_toprocess.repost()
 
 
-@pytest.fixture
-def threaded_shm_data_pingpong(request):
-    yield from subfixture(request, _Pingpong)
+def _worker_loop(
+    tasks: multiprocessing.Queue, done: multiprocessing.Queue, evt: T_Event
+) -> None:
+    """Session worker: run tasks until None. Reports None or a traceback per task."""
+    import traceback
+
+    while (task := tasks.get()) is not None:
+        try:
+            task.run(evt)
+            done.put(None)
+        except BaseException:
+            done.put(traceback.format_exc())
+
+
+class _AsyncWorker(typ.NamedTuple):
+    tasks: multiprocessing.Queue
+    done: multiprocessing.Queue
+    evt: T_Event
+
+
+@pytest.fixture(scope="session")
+def _async_worker() -> typ.Generator[_AsyncWorker, None, None]:
+    """One spawned process for the whole session, so `subfixture` doesn't pay
+    interpreter start-up and import cost for every test."""
+    # Originally attempted with a threading.Thread, but that causes issues
+    # because the semID issued is identical !
+    worker = _AsyncWorker(
+        multiprocessing.Queue(), multiprocessing.Queue(), multiprocessing.Event()
+    )
+    process = multiprocessing.Process(target=_worker_loop, args=worker, daemon=True)
+    process.start()
+
+    yield worker
+
+    worker.tasks.put(None)
+    process.join(timeout=1.0)
+    assert not process.is_alive()
 
 
 @pytest.fixture
-def threaded_shm_data_pingpong_gpu(request):
-    yield from subfixture(request, _Pingpong, location=0)
+def threaded_shm_data_pingpong(request, _async_worker):
+    yield from subfixture(request, _async_worker, _Pingpong)
 
 
 @pytest.fixture
-def threaded_shm_poster(request):
-    yield from subfixture(request, _Looper)
+def threaded_shm_data_pingpong_gpu(request, _async_worker):
+    yield from subfixture(request, _async_worker, _Pingpong, location=0)
 
 
 @pytest.fixture
-def threaded_shm_poster_recreator(request):
-    yield from subfixture(request, _LooperWithForcefulRecreation)
+def threaded_shm_poster(request, _async_worker):
+    yield from subfixture(request, _async_worker, _Looper)
 
 
 @pytest.fixture
-def threaded_shm_create_kill_recreate(request):
-    yield from subfixture(request, _CreateKillRecreate)
+def threaded_shm_poster_recreator(request, _async_worker):
+    yield from subfixture(request, _async_worker, _LooperWithForcefulRecreation)
+
+
+@pytest.fixture
+def threaded_shm_create_kill_recreate(request, _async_worker):
+    yield from subfixture(request, _async_worker, _CreateKillRecreate)
 
 
 def subfixture(
     request: pytest.FixtureRequest,
+    worker: _AsyncWorker,
     task_cls: type[_SubprocessTask],
     location: int = -1,
-) -> typ.Generator[tuple[SHM, SHM, multiprocessing.Process], None, None]:
+) -> typ.Generator[tuple[SHM, SHM], None, None]:
 
     prefix, shape, dtype, delay = request.param
 
     shm_toprocess = SHM(prefix + "_toprocess", (shape, dtype), location=location)
     shm_fromprocess = SHM(prefix + "_fromprocess", (shape, dtype), location=location)
-    # Startup handshake (child sets, parent waits and clears), then exit signal.
-    sync_event = multiprocessing.Event()
 
-    # Originally attempted with a threading.Thread, but that causes issues
-    # because the semID issued is identical !
     task = task_cls(
         prefix + "_toprocess",
         prefix + "_fromprocess",
@@ -259,23 +295,23 @@ def subfixture(
         dtype,
         location,
         delay,
-        sync_event,
     )
-    subprocess = multiprocessing.Process(target=task.run, daemon=False)
-    subprocess.start()
+    worker.tasks.put(task)
 
     shm_toprocess._checkGrabSemaphore()
     shm_fromprocess._checkGrabSemaphore()
     shm_toprocess.IMAGE.semflush(shm_toprocess.semID)
     shm_fromprocess.IMAGE.semflush(shm_fromprocess.semID)
-    assert sync_event.wait(timeout=10.0), "subprocess never signaled ready"
-    sync_event.clear()
-    yield shm_toprocess, shm_fromprocess, subprocess
+    # Startup handshake (worker sets, parent waits and clears), then exit signal.
+    if not worker.evt.wait(timeout=10.0):
+        pytest.fail(f"worker never signaled ready: {worker.done.get(timeout=0.1)}")
+    worker.evt.clear()
+    yield shm_toprocess, shm_fromprocess
 
-    sync_event.set()
-    subprocess.join(timeout=1.0)
-
-    assert not subprocess.is_alive()
+    worker.evt.set()
+    error = worker.done.get(timeout=1.0)
+    worker.evt.clear()
+    assert error is None, error
 
     shm_toprocess.destroy()
     shm_fromprocess.destroy()

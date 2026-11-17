@@ -35,8 +35,8 @@ def test_fps_manager(yield_4_fps: tuple[AutoFPS, ...]):
     assert a.run_stop()
     assert a.conf_stop()
 
-    assert not a.conf_start(timeoutsync=0.5)
-    assert not a.run_start(timeoutsync=0.5)
+    assert not a.conf_start(timeoutsync=0.1)
+    assert not a.run_start(timeoutsync=0.1)
 
-    assert a.run_stop(timeoutsync=0.5)
-    assert a.conf_stop(timeoutsync=0.5)
+    assert a.run_stop(timeoutsync=0.1)
+    assert a.conf_stop(timeoutsync=0.1)

@@ -21,7 +21,7 @@ fail.
 def test_shm_threaded_pingpong(threaded_shm_data_pingpong):
     # thread = threaded_shm_data_pingpong
 
-    s_to_p, s_from_p, process = threaded_shm_data_pingpong
+    s_to_p, s_from_p = threaded_shm_data_pingpong
 
     dat = np.zeros((2, 3, 4), np.float32)
 
@@ -32,33 +32,11 @@ def test_shm_threaded_pingpong(threaded_shm_data_pingpong):
         assert np.all(dat2 == 1)
 
 
-"""
-# Does not work. Reason unknown. It's probably the forked approach and memory pointers and some bs?
-
-@pytest.mark.parametrize('threaded_shm_data_pingpong_gpu',
-                         [('x', (2, 3, 4), np.float32, 0.01)], indirect=True)
-def test_shm_threaded_pingpong_gpu(threaded_shm_data_pingpong_gpu):
-    #thread = threaded_shm_data_pingpong
-
-    s_to_p, s_from_p, process = threaded_shm_data_pingpong_gpu
-
-    dat = np.zeros((2, 3, 4), np.float32)
-    import time
-    time.sleep(1.0)
-
-    for _ in range(23):
-        s_to_p.set_data(dat)
-        #print(f'M: getting {_=}')
-        dat2 = s_from_p.get_data(True, checkSemAndFlush=False)
-        assert np.all(dat2 == 1)
-"""
-
-
 @pytest.mark.parametrize(
-    "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.002)], indirect=True
+    "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.005)], indirect=True
 )
 def test_shm_threaded_poster(threaded_shm_poster):
-    s_to_p, s_from_p, process = threaded_shm_poster
+    s_to_p, s_from_p = threaded_shm_poster
 
     for ii in range(25):
         dat = s_from_p.get_data(True)
@@ -66,10 +44,10 @@ def test_shm_threaded_poster(threaded_shm_poster):
 
 
 @pytest.mark.parametrize(
-    "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.002)], indirect=True
+    "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.005)], indirect=True
 )
 def test_shm_threaded_poster_2(threaded_shm_poster):
-    s_to_p, s_from_p, process = threaded_shm_poster
+    s_to_p, s_from_p = threaded_shm_poster
 
     for ii in range(25):
         dat = s_from_p.get_data(True, timeout=None)
@@ -82,7 +60,7 @@ def test_shm_threaded_poster_2(threaded_shm_poster):
     indirect=True,
 )
 def test_shm_threaded_poster_overwriter(threaded_shm_poster_recreator):
-    s_to_p, s_from_p, process = threaded_shm_poster_recreator
+    s_to_p, s_from_p = threaded_shm_poster_recreator
 
     for ii in range(25):
         s_from_p.non_block_wait_semaphore(0.001)
@@ -98,7 +76,7 @@ def test_shm_threaded_poster_overwriter(threaded_shm_poster_recreator):
     indirect=True,
 )
 def test_shm_threaded_poster_overwriter_2(threaded_shm_poster_recreator):
-    s_to_p, s_from_p, process = threaded_shm_poster_recreator
+    s_to_p, s_from_p = threaded_shm_poster_recreator
 
     for ii in range(25):
         s_from_p.non_block_wait_until_recreation(0.001)
@@ -112,7 +90,7 @@ def test_shm_threaded_poster_overwriter_2(threaded_shm_poster_recreator):
     "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.002)], indirect=True
 )
 def test_multi_recv_data(threaded_shm_poster):
-    _, s_from_p, _ = threaded_shm_poster
+    _, s_from_p = threaded_shm_poster
 
     dat = s_from_p.multi_recv_data(100, False)
 
@@ -129,7 +107,7 @@ def test_multi_recv_data(threaded_shm_poster):
 )
 @pytest.mark.parametrize("do_counter", (True, False))
 def test_multi_recv_data_2(threaded_shm_poster, do_counter):
-    _, s_from_p, _ = threaded_shm_poster
+    _, s_from_p = threaded_shm_poster
 
     dat = s_from_p.multi_recv_data(100, True, monitorCount=do_counter)
 
@@ -146,7 +124,7 @@ def test_multi_recv_data_2(threaded_shm_poster, do_counter):
     indirect=True,
 )
 def test_link_kill_ressucitate(threaded_shm_create_kill_recreate):
-    s_to_p, s_from_p, _ = threaded_shm_create_kill_recreate
+    s_to_p, s_from_p = threaded_shm_create_kill_recreate
     print(f"passed from fixt -- {s_to_p.IMAGE.md.inode}")
 
     s_to_p.get_data(True)
