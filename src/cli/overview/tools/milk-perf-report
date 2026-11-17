@@ -709,7 +709,12 @@ def compile_markdown(
         subsys[sub]["vram"] += p.get("gpu_vram_peak_mib", 0.0)
     gpu_procs = [p for p in cl_procs if p.get("gpu_vram_peak_mib", 0.0) > 1.0]
     gpu_vram_sum_gib = sum(p.get("gpu_vram_peak_mib", 0.0) for p in gpu_procs) / 1024.0
-    numa_procs = [p for p in cl_procs if (p.get("numa0_hits", 0) + p.get("numa1_hits", 0)) > 0]
+    numa_procs = [
+        p
+        for p in cl_procs
+        if (p.get("numa0_hits", 0) + p.get("numa1_hits", 0)) > 0
+        and classify_process(p["name"], p.get("cmdline", "")) != "Orchestration"
+    ]
     avg_numa1_pct = (
         sum(p.get("numa_remote_pct", 0.0) for p in numa_procs) / len(numa_procs)
         if numa_procs
@@ -917,9 +922,9 @@ def compile_markdown(
             ("mlat_s", "Hardware latency measurement (`mlat`)", "30 poke bursts + shift-corr"),
             ("mkhadamard_s", "Hadamard basis generation (`mkHadamard`)", "CPU matrix init"),
             ("measlinresp_s", "Hadamard RM (`measlinresp`)", "4x N_H * 4 / WFS_Hz pokes"),
-            ("haddec_and_masks_s", "Hadamard decode (`aolHaddec`)", "O(H^2 * Npix) OpenMP loop"),
-            ("maskextrapolate_s", "Synthetic mode extrapolation", "Single-thread O(N_act^2)"),
-            ("sgemm_s", "Synthetic WFS RM (`linalg.sgemm`)", "cuBLAS GPU (~5 ms vs 90s C)"),
+            ("haddec_and_masks_s", "Hadamard decode (`aolHaddec`)", "Tiled OpenMP FWHT / SGEMM"),
+            ("maskextrapolate_s", "Synthetic mode extrapolation", "OpenMP + active-coord lookup"),
+            ("sgemm_s", "Synthetic WFS RM (`generateRMWFS`)", "cuBLAS / OpenBLAS SGEMM"),
             ("compstrcm_svd_s", "SVD control matrix (`compstrCM`)", "GPU/LAPACK pseudo-inverse"),
         ]
         for key, title, note in step_defs:
@@ -979,7 +984,7 @@ def compile_markdown(
                 f"{mv_mib/max(fv_mib, 1.0):.1f}x |"
             )
         lines.append(
-            f"| Open-Loop Test Wall Time | {m['wall_s']:.2f} s | {f['wall_s']:.2f} s | "
+            f"| 10s Closed-Loop Wall Time | {m['wall_s']:.2f} s | {f['wall_s']:.2f} s | "
             f"{m['wall_s']/max(f['wall_s'],0.01):.2f}x |"
         )
         lines.append("")
