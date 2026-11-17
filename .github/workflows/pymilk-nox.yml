@@ -1,0 +1,43 @@
+name: nox pyMilk (bundled standalone)
+
+on:
+  push:
+    branches: [framework-dev, dev, main]
+    paths: ['python/pyMilk/**', 'src/engine/**', '.github/workflows/pymilk-nox.yml']
+  pull_request:
+    branches: [framework-dev, dev, main]
+    paths: ['python/pyMilk/**', 'src/engine/**', '.github/workflows/pymilk-nox.yml']
+
+jobs:
+  nox:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python/pyMilk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true # uv wheel/download cache
+          cache-dependency-glob: python/pyMilk/pyproject.toml
+
+      - uses: actions/cache@v4 # nox venvs + scikit-build incremental CMake build dirs
+        with:
+          path: |
+            python/pyMilk/.nox
+            python/pyMilk/build
+          key: pymilk-nox-${{ runner.os }}-py3.12-${{ hashFiles('python/pyMilk/pyproject.toml', 'python/pyMilk/noxfile.py', 'python/pyMilk/bindings/**', 'src/engine/**') }}
+          restore-keys: pymilk-nox-${{ runner.os }}-py3.12-
+
+      - run: uv tool install nox
+
+      # -r: reuse cached venvs (installs still run, incremental via build/ cache).
+      # On failure, retry with fresh venvs.
+      - run: nox -r || nox -N

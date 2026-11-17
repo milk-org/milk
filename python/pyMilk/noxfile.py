@@ -126,7 +126,7 @@ def tests_editable_inner_outer(session: nox.Session):
         external=True,
     )
     with session.chdir(tmp_dir):
-        session.run("pytest", "-x", "--pdb", project_dir)
+        session.run("pytest", "-x", project_dir)
     shutil.rmtree(tmp_dir + "/tests")
 
 

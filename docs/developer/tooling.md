@@ -407,6 +407,8 @@ cd $MILK_ROOT/python/pyMilk
 nox
 ```
 
+These pyMilk sessions also run in CI: `.github/workflows/pymilk-nox.yml`.
+
 !!! tip
     The nox session setups try to fetch the required packages from the various archives.
 
