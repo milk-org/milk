@@ -11,9 +11,14 @@ on:
 jobs:
   nox:
     runs-on: ubuntu-latest
+    env:
+      # -v names each test; -x stops at the first failure so its report prints before any later hang;
+      # faulthandler dumps the main process's stack if a test runs > 120 s.
+      PYTEST_ADDOPTS: "-v -x -o faulthandler_timeout=120"
     defaults:
       run:
         working-directory: python/pyMilk
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:

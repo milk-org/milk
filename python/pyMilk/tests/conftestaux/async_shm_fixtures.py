@@ -19,7 +19,9 @@ except RuntimeError:
     pass
 
 import abc
+import queue
 import time
+import warnings
 import numpy as np
 import pytest
 
@@ -215,9 +217,11 @@ class _CreateKillRecreate(_SubprocessTask):
 def _worker_loop(
     tasks: multiprocessing.Queue, done: multiprocessing.Queue, evt: T_Event
 ) -> None:
-    """Session worker: run tasks until None. Reports None or a traceback per task."""
+    """Session worker: run tasks until None. Reports None or a traceback per task.
+    Puts "ready" on `done` once started (imports done), before the first task."""
     import traceback
 
+    done.put("ready")
     while (task := tasks.get()) is not None:
         try:
             task.run(evt)
@@ -243,12 +247,23 @@ def _async_worker() -> typ.Generator[_AsyncWorker, None, None]:
     )
     process = multiprocessing.Process(target=_worker_loop, args=worker, daemon=True)
     process.start()
+    # Spawn + imports can take seconds on a cold CI runner: wait here, not in the
+    # first test's 10 s handshake.
+    try:
+        ready = worker.done.get(timeout=20.0)
+    except queue.Empty:
+        process.kill()
+        pytest.fail(f"async worker not ready after 20 s (alive={process.is_alive()})")
+    assert ready == "ready", ready
 
     yield worker
 
     worker.tasks.put(None)
     process.join(timeout=1.0)
-    assert not process.is_alive()
+    if process.is_alive():
+        # Don't raise: a session-teardown error aborts pytest before the ERRORS report.
+        process.kill()
+        warnings.warn("async worker still busy at session end; killed")
 
 
 @pytest.fixture
@@ -304,7 +319,11 @@ def subfixture(
     shm_fromprocess.IMAGE.semflush(shm_fromprocess.semID)
     # Startup handshake (worker sets, parent waits and clears), then exit signal.
     if not worker.evt.wait(timeout=10.0):
-        pytest.fail(f"worker never signaled ready: {worker.done.get(timeout=0.1)}")
+        try:
+            report = worker.done.get_nowait()
+        except queue.Empty:
+            report = "nothing reported (worker busy or stuck)"
+        pytest.fail(f"worker never signaled ready: {report}")
     worker.evt.clear()
     yield shm_toprocess, shm_fromprocess
 

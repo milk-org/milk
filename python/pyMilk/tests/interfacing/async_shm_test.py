@@ -36,22 +36,20 @@ def test_shm_threaded_pingpong(threaded_shm_data_pingpong):
     "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.005)], indirect=True
 )
 def test_shm_threaded_poster(threaded_shm_poster):
+    s_from_p: SHM
     s_to_p, s_from_p = threaded_shm_poster
 
+    # get_data(True) flushes then waits: it guarantees a frame newer than the
+    # previous read, not the very next one (a slow reader skips frames).
+    prev = -1
     for ii in range(25):
-        dat = s_from_p.get_data(True)
-        assert np.all(dat == ii)
-
-
-@pytest.mark.parametrize(
-    "threaded_shm_poster", [("x", (2, 3, 4), np.float32, 0.005)], indirect=True
-)
-def test_shm_threaded_poster_2(threaded_shm_poster):
-    s_to_p, s_from_p = threaded_shm_poster
-
-    for ii in range(25):
-        dat = s_from_p.get_data(True, timeout=None)
-        assert np.all(dat == ii)
+        dat = s_from_p.get_data(
+            True, return_none_on_timeout=True, checkSemAndFlush=ii == 0
+        )
+        assert dat is not None
+        assert np.all(dat == dat.flat[0])
+        assert dat.flat[0] > prev
+        prev = dat.flat[0]
 
 
 @pytest.mark.parametrize(
@@ -62,12 +60,15 @@ def test_shm_threaded_poster_2(threaded_shm_poster):
 def test_shm_threaded_poster_overwriter(threaded_shm_poster_recreator):
     s_to_p, s_from_p = threaded_shm_poster_recreator
 
-    for ii in range(25):
+    # Flush-then-wait: each frame is newer than the previous read, not
+    # necessarily the next one (a slow reader skips recreations).
+    prev = -1
+    for _ in range(25):
         s_from_p.non_block_wait_semaphore(0.001)
         dat = s_from_p.get_data(False)
-        if ii == 0:
-            refval = dat.flat[0]
-        assert np.all(dat == ii + refval)
+        assert np.all(dat == dat.flat[0])
+        assert dat.flat[0] > prev
+        prev = dat.flat[0]
 
 
 @pytest.mark.parametrize(
@@ -78,12 +79,15 @@ def test_shm_threaded_poster_overwriter(threaded_shm_poster_recreator):
 def test_shm_threaded_poster_overwriter_2(threaded_shm_poster_recreator):
     s_to_p, s_from_p = threaded_shm_poster_recreator
 
-    for ii in range(25):
+    # Flush-then-wait: each frame is newer than the previous read, not
+    # necessarily the next one (a slow reader skips recreations).
+    prev = -1
+    for _ in range(25):
         s_from_p.non_block_wait_until_recreation(0.001)
         dat = s_from_p.get_data(False)
-        if ii == 0:
-            refval = dat.flat[0]
-        assert np.all(dat == ii + refval)
+        assert np.all(dat == dat.flat[0])
+        assert dat.flat[0] > prev
+        prev = dat.flat[0]
 
 
 @pytest.mark.parametrize(

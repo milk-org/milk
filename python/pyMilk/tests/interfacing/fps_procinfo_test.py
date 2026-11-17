@@ -8,6 +8,10 @@ from pyMilk.interfacing.fps import FPS, ProcessInfoFps
 
 MILK_BINARY = "milk-fpsexec-mem-streamdelay"
 
+pytestmark = pytest.mark.skipif(
+    shutil.which(MILK_BINARY) is None, reason=f"{MILK_BINARY} not in PATH"
+)
+
 
 @pytest.fixture
 def fixt_fpsinit_from_milk_pinfo():
