@@ -68,6 +68,7 @@ static char     outfname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
 static int32_t  compressON                                = 0;
 static float    savetime                                  = 0.0;
 static uint32_t writerRTprio                              = 0;
+static int32_t  zslice                                    = -1;
 
 
 /* ================================================================
@@ -95,7 +96,9 @@ static uint32_t writerRTprio                              = 0;
       "toggle compression on/off")                                                              \
     X(".savetime", &savetime, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_OUTPUT, "time taken to save")   \
     X(".writerRTprio", &writerRTprio, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                   \
-      "writer real-time priority")
+      "writer real-time priority")                                                              \
+    X(".zslice", &zslice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT,                                \
+      "3D slice index to log (-1 = use cnt1)")
 
 
 /* ================================================================
@@ -174,10 +177,9 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
     IMGID inimg = imgid_make_from_name(streamname);
     resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
-    if (inimg.md->naxis == 3)
+    if (inimg.md->naxis == 3 && zslice < 0)
     {
-        PRINT_ERROR("streamFITSlog with 3D data"
-                    " is NOT supported");
+        PRINT_ERROR("streamFITSlog with 3D data requires .zslice >= 0 (using cnt1 fallback)");
     }
 
     uint32_t xsize = inimg.md->size[0];
@@ -275,7 +277,8 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
             return RETURN_FAILURE;
         }
 
-        int thread_initialized = 0;
+        int       thread_initialized = 0;
+        pthread_t thread_savefits;
 
         framecnt   = 0;
         frameindex = 0;
@@ -422,6 +425,18 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                                 clock_gettime(CLOCK_MILK, &timenow);
                                 array_time[tindex] = timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
+                                if (aqtimekwi == -1 && inimg.md->NBkw > 0)
+                                {
+                                    for (int kwi = 0; kwi < inimg.md->NBkw; kwi++)
+                                    {
+                                        if (strcmp(inimg.im->kw[kwi].name, "_MAQTIME") == 0)
+                                        {
+                                            aqtimekwi = kwi;
+                                            break;
+                                        }
+                                    }
+                                }
+
                                 if (aqtimekwi != -1)
                                 {
                                     array_aqtime[tindex] =
@@ -443,7 +458,10 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                             ptr0_0 = (char *) inimg.im->array.raw;
                             if (inimg.md->naxis == 3)
                             {
-                                ptr0 = ptr0_0 + framesize * inimg.md->cnt1;
+                                uint32_t sl = (zslice >= 0 && (uint32_t) zslice < inimg.md->size[2])
+                                                  ? (uint32_t) zslice
+                                                  : inimg.md->cnt1;
+                                ptr0        = ptr0_0 + framesize * sl;
                             }
                             else
                             {
@@ -532,8 +550,54 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                     }
 
                     {
-                        static pthread_t thread_savefits;
-                        static int       iret_savefits;
+                        int iret_savefits;
+
+                        if (thread_initialized == 1)
+                        {
+                            long  cnt0start = inimg.md->cnt0;
+                            void *tret_ptr  = NULL;
+
+                            if (pthread_tryjoin_np(thread_savefits, &tret_ptr) == EBUSY)
+                            {
+                                if (VERBOSE > 0)
+                                {
+                                    printf("%5d  PREVIOUS"
+                                           " SAVE THREAD"
+                                           " NOT TERMINATED"
+                                           " -> waiting\n",
+                                           __LINE__);
+                                }
+                                pthread_join(thread_savefits, &tret_ptr);
+                                if (VERBOSE > 0)
+                                {
+                                    printf("%5d  PREVIOUS"
+                                           " SAVE THREAD"
+                                           " NOW COMPLETED"
+                                           " -> continuing"
+                                           "\n",
+                                           __LINE__);
+                                }
+                            }
+                            else if (VERBOSE > 0)
+                            {
+                                printf("%5d  PREVIOUS"
+                                       " SAVE THREAD"
+                                       " ALREADY"
+                                       " COMPLETED"
+                                       " -> OK\n",
+                                       __LINE__);
+                            }
+                            free(tret_ptr);
+                            thread_initialized = 0;
+                            savetime           = tmsg->timespan;
+                            if (VERBOSE > 0)
+                            {
+                                printf("\n **************"
+                                       " MISSED  %ld"
+                                       " frames\n",
+                                       inimg.md->cnt0 - cnt0start);
+                            }
+                        }
 
                         snprintf(tmsg->fname, sizeof(tmsg->fname), "%s", FITSffilename);
                         snprintf(tmsg->fnameascii, sizeof(tmsg->fnameascii), "%s",
@@ -581,55 +645,6 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                             snprintf(tmsg->compress_string, sizeof(tmsg->compress_string),
                                      "[compress R"
                                      " 1,1,10000]");
-                        }
-
-                        if (thread_initialized == 1)
-                        {
-                            long cnt0start = inimg.md->cnt0;
-
-                            if (pthread_tryjoin_np(thread_savefits, NULL) == EBUSY)
-                            {
-                                if (VERBOSE > 0)
-                                {
-                                    printf("%5d  PREVIOUS"
-                                           " SAVE THREAD"
-                                           " NOT TERMINATED"
-                                           " -> waiting\n",
-                                           __LINE__);
-                                }
-                                void *tret_ptr = NULL;
-                                pthread_join(thread_savefits, &tret_ptr);
-                                free(tret_ptr);
-                                if (VERBOSE > 0)
-                                {
-                                    printf("%5d  PREVIOUS"
-                                           " SAVE THREAD"
-                                           " NOW COMPLETED"
-                                           " -> continuing"
-                                           "\n",
-                                           __LINE__);
-                                }
-                            }
-                            else
-                            {
-                                if (VERBOSE > 0)
-                                {
-                                    printf("%5d  PREVIOUS"
-                                           " SAVE THREAD"
-                                           " ALREADY"
-                                           " COMPLETED"
-                                           " -> OK\n",
-                                           __LINE__);
-                                }
-                            }
-                            savetime = tmsg->timespan;
-                            if (VERBOSE > 0)
-                            {
-                                printf("\n **************"
-                                       " MISSED  %ld"
-                                       " frames\n",
-                                       inimg.md->cnt0 - cnt0start);
-                            }
                         }
 
                         tmsg->writerRTprio = writerRTprio;
@@ -689,6 +704,72 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
         }
 
         MILK_PROCINFO_END(self)
+
+        if (thread_initialized == 1)
+        {
+            void *tret_ptr = NULL;
+            pthread_join(thread_savefits, &tret_ptr);
+            free(tret_ptr);
+            thread_initialized = 0;
+            savetime           = tmsg->timespan;
+        }
+
+        if (frameindex > 0)
+        {
+            if (buffindex == 0)
+            {
+                __builtin_memcpy(imgbuff0.im->kw, inimg.im->kw,
+                                 sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+                snprintf(tmsg->iname, sizeof(tmsg->iname), "%s", imgbuff0.md->name);
+                tmsg->arrayindex  = array_cnt0;
+                tmsg->arraycnt0   = array_cnt0;
+                tmsg->arraycnt1   = array_cnt1;
+                tmsg->arraytime   = array_time;
+                tmsg->arrayaqtime = array_aqtime;
+            }
+            else
+            {
+                __builtin_memcpy(imgbuff1.im->kw, inimg.im->kw,
+                                 sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
+                snprintf(tmsg->iname, sizeof(tmsg->iname), "%s", imgbuff1.md->name);
+                tmsg->arrayindex  = &array_cnt0[cubesize];
+                tmsg->arraycnt0   = &array_cnt0[cubesize];
+                tmsg->arraycnt1   = &array_cnt1[cubesize];
+                tmsg->arraytime   = &array_time[cubesize];
+                tmsg->arrayaqtime = &array_aqtime[cubesize];
+            }
+            snprintf(tmsg->fname, sizeof(tmsg->fname), "%s", FITSffilename);
+            snprintf(tmsg->fnameascii, sizeof(tmsg->fnameascii), "%s", ASCIITIMEffilename);
+            snprintf(tmsg->fname_auxFITSheader, sizeof(tmsg->fname_auxFITSheader),
+                     "%s/%s.aux.fits", dcshmdir, streamname);
+            tmsg->saveascii = 1;
+            tmsg->cubesize  = frameindex;
+            tmsg->partial   = (frameindex != cubesize) ? 1 : 0;
+            if (compressON == 0)
+            {
+                tmsg->compress_string[0] = '\0';
+            }
+            else
+            {
+                snprintf(tmsg->compress_string, sizeof(tmsg->compress_string),
+                         "[compress R 1,1,10000]");
+            }
+            tmsg->writerRTprio = writerRTprio;
+            if (pthread_create(&thread_savefits, NULL, save_telemetry_fits_function, tmsg) == 0)
+            {
+                void *tret_ptr = NULL;
+                pthread_join(thread_savefits, &tret_ptr);
+                free(tret_ptr);
+                savetime = tmsg->timespan;
+                filecnt++;
+                frameindex = 0;
+            }
+        }
+
+        if (dcfpsptr != NULL)
+        {
+            fpsresync_modvar_to_fps(dcfpsptr, dcfpsbindings, dcfpsnbindings);
+        }
 
         free(array_time);
         free(array_aqtime);

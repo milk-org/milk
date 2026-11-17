@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <pthread.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "processinfo_internal.h"
@@ -11,6 +13,63 @@
 #ifndef CLOCK_MILK
 #    define CLOCK_MILK CLOCK_REALTIME
 #endif
+
+static inline void propagate_long_kw(const IMAGE *in_im,
+                                     IMAGE       *out_im,
+                                     const char  *kw_name,
+                                     const char  *kw_comment)
+{
+    if (in_im == NULL || out_im == NULL || in_im == out_im || in_im->md == NULL ||
+        out_im->md == NULL || in_im->kw == NULL || out_im->kw == NULL)
+    {
+        return;
+    }
+
+    int     nb_in  = in_im->md[0].NBkw;
+    int     in_idx = -1;
+    int64_t in_val = 0;
+    for (int k = 0; k < nb_in; k++)
+    {
+        if (in_im->kw[k].type == 'L' && strcmp(in_im->kw[k].name, kw_name) == 0)
+        {
+            in_idx = k;
+            in_val = in_im->kw[k].value.numl;
+            break;
+        }
+    }
+    if (in_idx < 0 || in_val <= 0)
+    {
+        return;
+    }
+
+    int nb_out    = out_im->md[0].NBkw;
+    int empty_idx = -1;
+    for (int k = 0; k < nb_out; k++)
+    {
+        if (strcmp(out_im->kw[k].name, kw_name) == 0)
+        {
+            if (out_im->kw[k].type == 'L' && out_im->kw[k].value.numl >= in_val)
+            {
+                return;
+            }
+            out_im->kw[k].type       = 'L';
+            out_im->kw[k].value.numl = in_val;
+            return;
+        }
+        if (empty_idx < 0 && out_im->kw[k].name[0] == '\0')
+        {
+            empty_idx = k;
+        }
+    }
+
+    if (empty_idx >= 0)
+    {
+        snprintf(out_im->kw[empty_idx].name, KEYWORD_MAX_STRING, "%s", kw_name);
+        out_im->kw[empty_idx].type       = 'L';
+        out_im->kw[empty_idx].value.numl = in_val;
+        snprintf(out_im->kw[empty_idx].comment, KEYWORD_MAX_COMMENT, "%s", kw_comment);
+    }
+}
 
 /* getpid() is a real syscall on glibc >= 2.25: cache it, reset in a forked child */
 static pid_t g_pid = 0;
@@ -107,6 +166,14 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
             {
                 output_image->streamproctrace[0].cnt0 = input_image->md[0].cnt0;
             }
+        }
+
+        if (input_image != NULL)
+        {
+            propagate_long_kw(input_image, output_image, "_MAQTIME",
+                              "Acquisition time [us since Unix epoch]");
+            propagate_long_kw(input_image, output_image, "_MTICK",
+                              "Master simulation tick index");
         }
 
         DEBUG_TRACEPOINT(" ");
