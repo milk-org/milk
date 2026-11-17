@@ -43,7 +43,7 @@ imageID break_cube(const char *restrict ID_name)
     resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
     if (imgin.ID == -1)
     {
-        return RETURN_FAILURE;
+        return -1;
     }
 
     uint32_t xsize = imgin.md->size[0];
@@ -64,8 +64,7 @@ imageID break_cube(const char *restrict ID_name)
 
         IMGID imgfr       = imgid_make_from_name_2D(framename, xsize, ysize);
         imgfr.mdt->shared = 0;
-        imgfr.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&imgfr);
+        imgid_create_registered(&imgfr);
 
         for (uint32_t ii = 0; ii < xsize; ii++)
         {
@@ -90,15 +89,16 @@ MILK_PARAMS_DEFINE(breakcube, FPS_PARAMS);
 
 static MILK_HOT errno_t breakcube_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
 
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    break_cube(inname);
+    ret = (break_cube(inname) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_iofits_breakcube = {

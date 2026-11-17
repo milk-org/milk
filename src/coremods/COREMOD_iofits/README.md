@@ -6,24 +6,25 @@ I/O routines for FITS format
 
 | File                    | Description                                                     |
 | ----------------------- | --------------------------------------------------------------- |
-| `breakcube.c`           | Breakcube module                                                |
-| `check_fitsio_status.c` | set print to 0 if error message should not be printed to stderr |
-| `data_type_code.c`      | Data type code module                                           |
-| `file_exists.c`         | File exists module                                              |
-| `images2cube.c`         | ==========================================                      |
-| `is_fits_file.c`        | Is fits file module                                             |
-| `loadfits.c`            | load FITS format files                                          |
-| `loadmemstream.c`       | load memory stream                                              |
-| `read_keyword.c`        | Read keyword module                                             |
-| `savefits.c`            | Save image to FITS file                                         |
+| `COREMOD_iofits.c`      | Module registry (`MILK_MODULE_RUNNABLES`)                       |
+| `breakcube.c`           | Split a 3D image cube into individual 2D slice images           |
+| `check_fitsio_status.c` | Report CFITSIO error status                                     |
+| `data_type_code.c`      | Map between `ImageStreamIO` and CFITSIO datatype codes          |
+| `file_exists.c`         | Check whether a file exists on disk                             |
+| `images2cube.c`         | Combine individual 2D images into a 3D cube                     |
+| `is_fits_file.c`        | Check whether a path is a readable FITS file                    |
+| `loadfits.c`            | Load FITS images/cubes (`.fits`, gzip `.fits.gz`, Rice `.fits.fz`) |
+| `loadmemstream.c`       | Load FITS file directly into a shared-memory stream             |
+| `read_keyword.c`        | Read FITS header keywords                                       |
+| `savefits.c`            | Save image or stream to a FITS file                             |
 
 ## Standalone Executables
 
-| Executable                      | Source File     | Description                                |
-| ------------------------------- | --------------- | ------------------------------------------ |
-| `milk-fpsexec-iofits-saveFITS`  | `savefits.c`    | Save image to FITS file                    |
-| `milk-fpsexec-iofits-loadfits`  | `loadfits.c`    | load FITS format files                     |
-| `milk-fpsexec-iofits-imgs2cube` | `images2cube.c` | ========================================== |
+| Executable                      | Source File     | Description                                                        |
+| ------------------------------- | --------------- | ------------------------------------------------------------------ |
+| `milk-fpsexec-iofits-saveFITS`  | `savefits.c`    | Save image as a FITS file                                          |
+| `milk-fpsexec-iofits-loadfits`  | `loadfits.c`    | Load FITS file (`.fits`, `.fits.gz`, `.fits.fz`) into memory/SHM   |
+| `milk-fpsexec-iofits-imgs2cube` | `images2cube.c` | Combine individual 2D images into a 3D cube                        |
 
 ## Dependencies
 

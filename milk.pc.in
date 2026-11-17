@@ -8,5 +8,5 @@ Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
 
 Requires:
-Libs: -L${libdir} @LINKSTRING@ -lm -lreadline -lncurses -lcfitsio -ldl -lrt -lgomp
+Libs: -L${libdir} @LINKSTRING@ -lm -lreadline -lcfitsio -ldl -lrt -lgomp
 Cflags: -I${includedir} @DFLAGS@

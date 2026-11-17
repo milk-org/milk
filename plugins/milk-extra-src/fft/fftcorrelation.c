@@ -39,8 +39,7 @@ MILK_PARAMS_DEFINE(fftcorrelation, FPS_PARAMS);
 static MILK_HOT errno_t fftcorrelation_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    fft_correlation(p_in1, p_in2, p_out);
-    return RETURN_SUCCESS;
+    return (fft_correlation(p_in1, p_in2, p_out) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_fft_fftcorrelation = {
@@ -75,7 +74,17 @@ imageID fft_correlation(const char *ID_name1, const char *ID_name2, const char *
     char fft1name[STRINGMAXLEN_IMGNAME];
     char fft1pname[STRINGMAXLEN_IMGNAME];
 
-    ID1      = image_ID(ID_name1, dcimg, dcnimg);
+    ID1 = image_ID(ID_name1, dcimg, dcnimg);
+    if (ID1 == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name1);
+        return -1;
+    }
+    if (image_ID(ID_name2, dcimg, dcnimg) == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name2);
+        return -1;
+    }
     nelement = dcimg[ID1].md[0].nelement;
 
     WRITE_IMAGENAME(ft1name, "_ft1_%d", (int) getpid());

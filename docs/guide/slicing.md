@@ -17,20 +17,23 @@ Append `[axis0, axis1, axis2]` to any stream name. Each axis specification follo
 
 | Form               | Meaning                      |
 | ------------------ | ---------------------------- |
-| `*`                | Full axis, forward           |
+| `*`, `:`           | Full axis, forward           |
 | `-*`               | Full axis, reversed (flip)   |
 | `N`                | Single index N               |
 | `start:end`        | Inclusive range [start, end] |
-| `start:end::step`  | Range with stride            |
+| `start:`, `:end`   | From start to the last index, from 0 to end |
+| `start:end::step`  | Range with stride (also `start:end:step`, and `::step` over the full axis) |
 | `start:end::stepb` | Range with binning (average) |
 | _(empty)_          | Same as `*`                  |
 
-**Indexing is 0-based, inclusive on both ends.**
+**Indexing is 0-based, inclusive on both ends.** In calculator text, a bound may be an expression
+with variables or `end` (`size[axis] - 1`): `@calc "out = im[n:n+2, 1:end-1]"`.
 
 ### Examples
 
 ```text
 im[0:19,10:29]       # 2D crop: x=0..19, y=10..29
+im[1:end-1,1:end-1]  # 2D interior: drop 1-pixel border on both axes
 im[*,-*]             # Flip Y axis
 im[0:99::2,*]        # X stride: every other column
 im[0:99::4b,*]       # X binning: average groups of 4
@@ -90,9 +93,9 @@ buffer back into the source at the correct offsets.
 In CLI arithmetic expressions, sliced image names are preserved as single tokens. The bracket
 contents are kept together with the image name:
 
-```text
-milk> mk2Dim im 100 100   # create 100×100 image
-milk> out = im[10:29,10:29] + 1.0
+```bash
+mem.mk2Dim im 100 100                 # create a 100×100 image
+@calc "out = im[10:29,10:29] + 1.0"
 ```
 
 ### FPS Compute Units
@@ -112,27 +115,27 @@ data[0] = 42.0f;
 imgid_put_image(&imgin);
 ```
 
-### Shared Memory Exposure
+### Evaluation in `@calc` vs `imgid_get_image()`
 
-By default, materialized slices are **local-only** buffers (not visible to other processes). To
-expose a sliced view as shared memory, use the `@S:` prefix:
+- **In `@calc` expressions**: Slices (crops, strides, flips, single-index reductions, and `::Nb`
+  binned slices) are evaluated directly inside the compiled C kernel over the underlying image
+  buffer without allocating an intermediate image.
+- **Via `imgid_get_image()` in C**: Materialized slices are **local-only** buffers allocated once in
+  process memory (`data.image` with `shared = 0`) and reused across frames whenever `cnt0` advances.
 
-```text
-@S:im[0:63,0:63]
+### Output (LHS) Slicing and Masked Assignment
+
+Slicing or boolean masks can be used on the left-hand side of assignments (`=`, `+=`, `-=`, `*=`,
+`/=`) to write into a sub-region or masked pixel set in place:
+
+```bash
+@calc "im[10:19,10:19] = 0.0"     # zero a 10x10 region inside im
+@calc "im[im > 4000] = 4000"      # clamp pixels where im > 4000 in place
+@calc "im[mask] *= flat"          # update only pixels where mask != 0
 ```
 
-This creates a shared memory stream with a deterministic name derived from the source name and slice
-specification (e.g., `im__s_0_63_0_63`).
-
-### Output (LHS) Slicing
-
-Slicing can also be used on the left-hand side of assignments to write into a sub-region:
-
-```text
-milk> im[10:19,10:19] = 0.0
-```
-
-This zeroes a 10×10 region inside the stream `im`.
+A mask index goes on the target only: the right-hand side is written with whole images, and only
+the pixels the mask selects are computed and stored.
 
 ## Performance
 

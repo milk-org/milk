@@ -20,4 +20,3 @@ Structure, descriptors and CMake: [`docs/arch/programmers_guide.md`](../../docs/
 - Writing a stream: set `outimg->md->write = 1` before touching pixels;
   `processinfo_update_output_stream()` clears it and posts the semaphores.
 - Default image size of units processing images: 128x128.
-- Check `docs/arch/dependency_graph.md` before adding a cross-module dependency.

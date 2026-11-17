@@ -5,8 +5,8 @@ exampleDescription="
 milk-fpsCTRL tool
 
 The tool provides an interactive way to view and edit the content of FPSs.
-It also allows for FPS configuration and run processes to run/stop within
-tmux sessions.
+It also starts and stops the configuration and run processes of units, in
+the background (Ctrl+a follows a unit's output).
 "
 
 CLIinput="

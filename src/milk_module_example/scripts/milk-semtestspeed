@@ -49,7 +49,7 @@ mk2Dim "s>imA" 100 100
 mk2Dim "s>imB" 100 100
 imsetsempost imA -1
 imsetsempost imB -1
-exitCLI
+exit
 EOF
 
 
@@ -71,7 +71,7 @@ tmux send-keys -t loopAB "shmimpoke ..triggersname imA" C-M
 tmux send-keys -t loopAB "shmimpoke ..loopcntMax ${NBLOOP}" C-M
 
 tmux send-keys -t loopAB "shmimpoke imB" C-M
-tmux send-keys -t loopAB "exitCLI" C-M
+tmux send-keys -t loopAB "exit" C-M
 
 
 
@@ -83,5 +83,5 @@ shmimpoke ..triggermode 3
 shmimpoke ..triggersname imB
 shmimpoke ..loopcntMax ${NBLOOP}
 shmimpoke imA
-exitCLI
+exit
 EOF

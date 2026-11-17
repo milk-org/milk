@@ -48,7 +48,6 @@ def func_compute_unit_cleanup(compu: ComputeUnit):
     tp(compu.runstop)
     tp(compu.confstop)
     if compu.fps:
-        tp(compu.fps.tmux_stop)
         md = compu.fps.fps.md()
         for pid in (md.runpid, md.confpid):
             if pid == 0:  # never started

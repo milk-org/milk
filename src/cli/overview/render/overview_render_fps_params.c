@@ -62,8 +62,8 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
     OV_RECT r = lay->r_fps_params;
 
     /* Guard: need a valid FPS selection with params */
-    int fsel = lay->sel_fps;
-    if (fsel < 0 || fsel >= m->nb_fps)
+    int fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    if (fsel < 0)
     {
         ov_draw_panel_border(r.row, r.col, r.height, r.width, "PARAMS", OV_FG_DIM, 0, 0);
         return;
@@ -176,7 +176,7 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
             ov_theme_fg(OV_FG_DIM);
             ov_buf_printf("  ");
 
-            ov_theme_fg(is_sel ? OV_FG_TEXT : (ov_rgb_t) { 220, 200, 100 });
+            ov_theme_fg(is_sel ? OV_FG_TEXT : OV_FG_ACCENT);
             ov_buf_printf("%-*.*s/", kw - 1, kw - 1, item->name);
 
             ov_theme_fg(OV_FG_DIM);
@@ -209,17 +209,17 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
 
             if (ws)
             {
-                ov_theme_fg(is_sel ? OV_FG_ACTIVE : (ov_rgb_t) { 80, 200, 80 });
+                ov_theme_fg(OV_FG_ACTIVE);
                 ov_buf_printf("W ");
             }
             else if (wc)
             {
-                ov_theme_fg(is_sel ? OV_FG_TEXT : (ov_rgb_t) { 220, 180, 60 });
+                ov_theme_fg(is_sel ? OV_FG_TEXT : OV_FG_WARN);
                 ov_buf_printf("C ");
             }
             else
             {
-                ov_theme_fg(is_sel ? OV_FG_DIM : (ov_rgb_t) { 160, 60, 60 });
+                ov_theme_fg(is_sel ? OV_FG_DIM : OV_FG_OFF);
                 ov_buf_printf("NW");
             }
             ov_buf_printf(" ");
@@ -249,12 +249,12 @@ void ov_render_fps_params_panel(OV_LAYOUT *lay, const OV_MODEL *m)
                 int is_on = (val[0] == 'O' && val[1] == 'N');
                 if (is_on)
                 {
-                    ov_theme_fg(is_sel ? OV_FG_ACTIVE : (ov_rgb_t) { 60, 220, 60 });
+                    ov_theme_fg(OV_FG_ACTIVE);
                     ov_buf_printf("%-*s", vw, "ON");
                 }
                 else
                 {
-                    ov_theme_fg(is_sel ? OV_FG_DIM : (ov_rgb_t) { 160, 60, 60 });
+                    ov_theme_fg(is_sel ? OV_FG_DIM : OV_FG_OFF);
                     ov_buf_printf("%-*s", vw, "OFF");
                 }
             }

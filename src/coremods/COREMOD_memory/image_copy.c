@@ -20,6 +20,7 @@
 
 #include "milk_runnable.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkdata/milkdata.h" /* milk_table_bump() */
 
 #include "create_image.h"
 #include "delete_image.h"
@@ -64,8 +65,7 @@ MILK_PARAMS_DEFINE(cp, FPS_PARAMS_2STR);
 static MILK_HOT errno_t cp_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    copy_image_ID(p_srcname, p_dstname, 0);
-    return RETURN_SUCCESS;
+    return (copy_image_ID(p_srcname, p_dstname, 0) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_cp = {
@@ -92,8 +92,7 @@ MILK_PARAMS_DEFINE(mv, FPS_PARAMS_2STR);
 static MILK_HOT errno_t mv_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    chname_image_ID(p_srcname, p_dstname);
-    return RETURN_SUCCESS;
+    return (chname_image_ID(p_srcname, p_dstname) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_mv = {
@@ -119,13 +118,14 @@ MILK_PARAMS_DEFINE(imcp2shm, FPS_PARAMS_2STR);
 
 static MILK_HOT errno_t imcp2shm_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_cp2shm(p_srcname, p_dstname);
+    ret = COREMOD_MEMORY_cp2shm(p_srcname, p_dstname);
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imcp2shm = {
@@ -176,12 +176,15 @@ static void image_copy_publish(IMGID *img)
 imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
-
-    uint32_t naxis = imgin->md[0].naxis;
     if (imgin->ID == -1)
     {
-        return RETURN_FAILURE;
+        return -1;
     }
+    if (imgout->stream_parse_error)
+    {
+        return -1;
+    }
+    uint32_t naxis = imgin->md[0].naxis;
     uint32_t size[3];
     for (uint32_t i = 0; i < naxis; i++)
     {
@@ -232,7 +235,18 @@ imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared)
         imgout->mdt->shared   = shared;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
         imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (imgout->im == NULL || imgid_mkimage(imgout) != IMAGESTREAMIO_SUCCESS)
+        {
+            free(imgout->im); // nothing was registered: a bad name, or no memory
+            imgout->im = NULL;
+            imgout->ID = -1;
+            return -1;
+        }
+        if (RegisterIMGID(imgout, dcimg, dcnimg) ==
+            -1) // a new image must be in the table to be found
+        {
+            return -1;
+        }
     }
 
     imgout->md[0].write = 1;
@@ -275,21 +289,27 @@ imageID copy_image_ID(const char *restrict name, const char *restrict newname, i
 imageID chname_image_ID_IMGID(IMGID *imgin, const char *new_name)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
+    if (imgin->ID == -1)
+    {
+        return -1;
+    }
+    if (new_name[0] == '\0' || strpbrk(new_name, "@:/") != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid image name \"%s\"\n", new_name);
+        return -1;
+    }
 
     if ((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
         snprintf(imgin->im->name, STRINGMAXLEN_IMAGE_NAME, "%s", new_name);
-        if (imgin->ID == -1)
-        {
-            return RETURN_FAILURE;
-        }
+        milk_table_bump();
         snprintf(imgin->name, STRINGMAXLEN_IMAGE_NAME, "%s", new_name);
     }
     else
     {
         printf("Cannot change name %s -> %s : new name already in use\n", imgin->name, new_name);
+        return -1;
     }
-
 
     return imgin->ID;
 }
@@ -321,12 +341,12 @@ imageID chname_image_ID(const char *restrict ID_name, const char *restrict new_n
 errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout)
 {
     resolveIMGID(imgin, ERRMODE_WARN, dcimg, dcnimg);
-
-    uint32_t naxis = imgin->md[0].naxis;
-    if (imgin->ID == -1)
+    if (imgin->ID == -1 || imgout->stream_parse_error)
     {
         return RETURN_FAILURE;
     }
+
+    uint32_t naxis = imgin->md[0].naxis;
     uint32_t size[3];
     for (uint32_t k = 0; k < naxis; k++)
     {
@@ -375,7 +395,18 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout)
         imgout->mdt->datatype = datatype;
         imgout->mdt->shared   = 1;
         imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (imgout->im == NULL || imgid_mkimage(imgout) != IMAGESTREAMIO_SUCCESS)
+        {
+            free(imgout->im); // nothing was registered: a bad name, or no memory
+            imgout->im = NULL;
+            imgout->ID = -1;
+            return RETURN_FAILURE;
+        }
+        if (RegisterIMGID(imgout, dcimg, dcnimg) ==
+            -1) // a new image must be in the table to be found
+        {
+            return RETURN_FAILURE;
+        }
     }
 
     imgout->md[0].write = 1;

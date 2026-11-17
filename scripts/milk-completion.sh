@@ -56,7 +56,7 @@ _milk_complete()
 
     if [[ "$cur" == -* ]]; then
         # Standard options for `milk-cli` main executable
-        local opts="-h --help -v --version -i --info --verbose -d -o --overwrite -e --errorexit -Z --idle -A --autocomplete --no-autocomplete --no-history-suggest --no-arg-hints --no-fuzzy -f --fifoflag -F -s -n -p"
+        local opts="-h --help -v --version -i --info --verbose -d -o --overwrite -e --errorexit -A --autocomplete --no-autocomplete --no-history-suggest --no-arg-hints --no-fuzzy -f --fifoflag -F -s -n -p"
         COMPREPLY=( $(compgen -W "${opts}" -- "$cur") )
         return 0
     fi

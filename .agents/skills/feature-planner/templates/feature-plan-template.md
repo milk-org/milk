@@ -3,8 +3,8 @@
 ## Overview
 
 **Goal**: [One-sentence description of the feature]
-**Scope**: [Engine / Core / Full] · [New module /
-Extension / Modification]
+**Scope**: [Engine / Core / Plugins / Calc & JIT / Full] ·
+[New module / Extension / Modification]
 **Template**: [MILK_RUNNABLE unit / stream processor /
 plain function / CLI builtin / none]
 
@@ -12,7 +12,7 @@ plain function / CLI builtin / none]
 
 ### Build Tier
 
-- **Affected tier(s)**: [Engine / Core / Full]
+- **Affected tier(s)**: [Engine / Core / Plugins / Calc & JIT / Full]
 - **New dependencies**: [list or "none"]
 - **Dependency direction valid**: [yes/no — check
   `docs/arch/dependency_graph.md`]

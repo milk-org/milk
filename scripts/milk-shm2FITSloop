@@ -91,7 +91,7 @@ pname="${tmuxname}"
 # ---------------------------------------------------------------------------
 function cleanup {
     echo "clean exit"
-    tmux send-keys -t "${tmuxname}" "exitCLI" C-m 2>/dev/null || true
+    tmux send-keys -t "${tmuxname}" "exit" C-m 2>/dev/null || true
 }
 trap cleanup EXIT
 

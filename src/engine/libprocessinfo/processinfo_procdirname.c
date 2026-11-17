@@ -51,7 +51,7 @@ errno_t processinfo_procdirname(char *procdname)
         }
         else
         {
-            printf(" [ WARNING ] '%s' does not exist\n", MILK_PROC_DIR);
+            fprintf(stderr, " [ WARNING ] '%s' does not exist\n", MILK_PROC_DIR);
         }
     }
 

@@ -16,6 +16,7 @@
 #include "milk_runnable.h"
 #include "cubecollapse.h"
 #include "computeunit.h"
+#include "COREMOD_arith/image_stats.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -45,18 +46,7 @@ static char cubecollapse_outimname[FUNCTION_PARAMETER_STRMAXLEN];
 
 static void cube_collapse_step(IMAGE *imgin, IMAGE *imgout)
 {
-    uint32_t xsize = imgin->md[0].size[0];
-    uint32_t ysize = imgin->md[0].size[1];
-    uint32_t ksize = imgin->md[0].size[2];
-    for (uint32_t i = 0; i < xsize * ysize; i++)
-    {
-        float v = 0.0;
-        for (uint32_t k = 0; k < ksize; k++)
-        {
-            v += imgin->array.F[k * xsize * ysize + i];
-        }
-        imgout->array.F[i] = v;
-    }
+    arith_image_reduce_axis_im(imgin, 2, ARITH_RED_SUM, imgout);
 }
 
 

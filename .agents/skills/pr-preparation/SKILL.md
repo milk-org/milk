@@ -9,18 +9,20 @@ description: End-to-end pull request packaging with
 
 This skill automates the end-to-end workflow of
 packaging completed work into a pull request,
-following the project's `git-workflow.md` rules.
+following the [`git-workflow`](../../rules/git-workflow.md) rule.
 
 ## When to Use
 
 - After completing any code changes that should
-  be merged into `framework-dev`
+  be merged into `framework-dev` (or `dev`, if
+  the user says so)
 - Triggered by user saying "create PR", "submit
   PR", "prepare PR", or similar
 
 ## Prerequisites
 
 - All changes are committed on a feature branch
+  (never on `dev` or `framework-dev`)
 - The feature branch has been pushed to origin
 - Build passes (`/compile-test`)
 - Tests pass (if applicable)
@@ -33,7 +35,7 @@ Collect the following automatically:
 # Current branch name
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-# Target branch (always framework-dev)
+# Target branch: framework-dev unless the user says dev
 TARGET="framework-dev"
 
 # Commits on this branch not in target
@@ -50,21 +52,13 @@ git diff --stat ${TARGET}..HEAD | \
 
 ## Step 2 — Draft the PR Title
 
-Format: `<type>: <concise description>`
-
-Type prefixes (match branch prefix):
-
-- `feat:` — new feature
-- `fix:` — bug fix
-- `perf:` — performance improvement
-- `refactor:` — code restructuring
-- `docs:` — documentation only
-- `chore:` — maintenance, CI, tooling
+Format: `<type>: <concise description>`, with the
+types and the 72-character limit of the
+`git-workflow` rule, *Commit Messages* (the type
+matches the branch prefix).
 
 Example: `refactor: split CLIcore_script.c into
 logical sub-modules`
-
-Keep the title under 72 characters.
 
 ## Step 3 — Draft the PR Body
 
@@ -89,7 +83,7 @@ Use this template:
 ## Verification
 
 - [ ] Build passes (`/compile-test`)
-- [ ] Tests pass (ctest / CLI robustness)
+- [ ] Tests pass (pytest, docs/developer/tooling.md §4)
 - [Other verification steps performed]
 
 ## Prompt Summary
@@ -102,7 +96,7 @@ why this approach was chosen.]
 
 ## Authorship
 
-- **Model**: Gemini 3.1 Pro (ask user to confirm)
+- **Model(s)**: [model(s) that contributed code; ask the user to confirm]
 - **Reviewed and signed off by**: [User's name]
 ```
 
@@ -114,7 +108,7 @@ Present the complete PR draft to the user via
 - **Title**
 - **Body** (full markdown)
 - **Source branch**
-- **Target branch** (`framework-dev`)
+- **Target branch** (`framework-dev` unless the user says `dev`)
 - **Draft status** (draft or ready for review)
 
 > [!CAUTION]
@@ -151,16 +145,8 @@ Only after the user approves:
 ## Branch Naming Verification
 
 Before creating the PR, verify the branch name
-follows conventions:
-
-| Prefix      | For              |
-| ----------- | ---------------- |
-| `feat/`     | New features     |
-| `fix/`      | Bug fixes        |
-| `perf/`     | Performance work |
-| `refactor/` | Restructuring    |
-| `docs/`     | Documentation    |
-| `chore/`    | Maintenance      |
+uses the prefixes of the `git-workflow` rule,
+*Commit Messages*.
 
 If the branch name doesn't follow convention,
 suggest renaming before PR creation (this

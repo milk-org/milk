@@ -106,7 +106,7 @@ csetpmove ${CPUSET}
 rtprio ${RTPRIO}
 readshmim ${STREAM_NAME}
 ${milk_send_function} ${STREAM_NAME} ${TARGET_IP} ${PORT} 0 ${RTPRIO}
-exitCLI
+exit
 EOF
 else # RECEIVE
     pname="netw-receive-${PORT}"
@@ -114,6 +114,6 @@ else # RECEIVE
 csetpmove ${CPUSET}
 rtprio ${RTPRIO}
 ${milk_receive_function} ${PORT} 0 ${RTPRIO}
-exitCLI
+exit
 EOF
 fi

@@ -300,8 +300,15 @@ errno_t function_parameter_add_entry(FPS        *fps,
                 break;
 
             case FPTYPE_ONOFF:
-                funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
+            {
+                int32_t on                        = *((int32_t *) valueptr) ? 1 : 0;
+                funcparamarray[pindex].val.i64[0] = on;
+                if (on)
+                {
+                    funcparamarray[pindex].fpflag |= FPFLAG_ONOFF;
+                }
                 break;
+            }
 
             case FPTYPE_FILENAME:
             case FPTYPE_FITSFILENAME:

@@ -4,10 +4,10 @@
 
 /**
  * @file termview.h
- * @brief Terminal image viewer — public API.
+ * @brief Terminal image viewer - public API.
  *
  * Renders a milk shared-memory stream to the terminal using ANSI
- * TrueColor (24-bit RGB) escape sequences.  No ncurses dependency.
+ * TrueColor (24-bit RGB) escape sequences. No ncurses dependency.
  */
 
 #ifndef _TERMVIEW_H
@@ -23,15 +23,15 @@ typedef int errno_t;
 /** @brief Available colormaps */
 typedef enum
 {
-    COLORMAP_GREYSCALE = 0, /**< Black → White (monochrome)             */
-    COLORMAP_HEAT,          /**< Black→Blue→Cyan→Yellow→Red             */
-    COLORMAP_COLD,          /**< Black→Blue→Cyan→White                  */
-    COLORMAP_JET,           /**< Blue→Cyan→Green→Yellow→Red             */
-    COLORMAP_INFERNO,       /**< Black→Deep Purple→Orange→Yellow        */
-    COLORMAP_VIRIDIS,       /**< Deep Purple→Teal→Yellow-Green          */
-    COLORMAP_MAGMA,         /**< Black→Purple→Pink→Orange→White         */
-    COLORMAP_PLASMA,        /**< Dark Blue→Purple→Pink→Yellow           */
-    COLORMAP_BONE,          /**< Black→Blue-Grey→Light Blue-Grey→White  */
+    COLORMAP_GREYSCALE = 0, /**< Black->White (monochrome)             */
+    COLORMAP_HEAT,          /**< Black->Blue->Cyan->Yellow->Red             */
+    COLORMAP_COLD,          /**< Black->Blue->Cyan->White                  */
+    COLORMAP_JET,           /**< Blue->Cyan->Green->Yellow->Red             */
+    COLORMAP_INFERNO,       /**< Black->Deep Purple->Orange->Yellow        */
+    COLORMAP_VIRIDIS,       /**< Deep Purple->Teal->Yellow-Green          */
+    COLORMAP_MAGMA,         /**< Black->Purple->Pink->Orange->White         */
+    COLORMAP_PLASMA,        /**< Dark Blue->Purple->Pink->Yellow           */
+    COLORMAP_BONE,          /**< Black->Blue-Grey->Light Blue-Grey->White  */
     COLORMAP_RAINBOW,
     COLORMAP_TURBO,
     COLORMAP_OCEAN,
@@ -60,16 +60,27 @@ typedef enum
 /** @brief Display range modes */
 typedef enum
 {
-    RANGE_MINMAX = 0, /**< Full min–max of visible pixels         */
-    RANGE_001_999,    /**< 0.1th–99.9th percentile                */
-    RANGE_005_995,    /**< 0.5th–99.5th percentile                */
-    RANGE_01_99,      /**< 1st–99th percentile                    */
-    RANGE_05_95,      /**< 5th–95th percentile                    */
-    RANGE_10_90,      /**< 10th–90th percentile                   */
-    RANGE_15_85,      /**< 15th–85th percentile                   */
-    RANGE_20_80,      /**< 20th–80th percentile                   */
+    RANGE_MINMAX = 0, /**< Full min-max of visible pixels         */
+    RANGE_001_999,    /**< 0.1th-99.9th percentile                */
+    RANGE_005_995,    /**< 0.5th-99.5th percentile                */
+    RANGE_01_99,      /**< 1st-99th percentile                    */
+    RANGE_05_95,      /**< 5th-95th percentile                    */
+    RANGE_10_90,      /**< 10th-90th percentile                   */
+    RANGE_15_85,      /**< 15th-85th percentile                   */
+    RANGE_20_80,      /**< 20th-80th percentile                   */
     RANGE_NB
 } termview_range_t;
+
+/** @brief 3D stream viewing modes */
+typedef enum
+{
+    TV_3D_SLICE = 0, /**< Single 2D slice (X x Y) along the last dimension */
+    TV_3D_GALLERY,   /**< All slices tiled at once as a 2D gallery         */
+    TV_3D_REMAP_XY,  /**< Remap 3D->2D: merge X and Y axes ((X*Y) x Z)     */
+    TV_3D_REMAP_XZ,  /**< Remap 3D->2D: merge X and Z axes ((X*Z) x Y)     */
+    TV_3D_REMAP_YZ,  /**< Remap 3D->2D: merge Y and Z axes (X x (Y*Z))     */
+    TV_3D_NB
+} termview_3d_mode_t;
 
 /** @brief All runtime options for termview_screen() */
 typedef struct
@@ -80,17 +91,30 @@ typedef struct
     bool                range_locked; /**< Freeze min/max when true      */
     double              manual_min;
     double              manual_max;
-    bool                flip_h; /**< Flip image horizontally       */
-    bool                flip_v; /**< Flip image vertically         */
+    bool                flip_h;       /**< Flip image horizontally       */
+    bool                flip_v;       /**< Flip image vertically         */
+    int                 fps;          /**< UI refresh rate [Hz], 1..120   */
+    bool                range_smooth; /**< steady auto range (hysteresis) */
+    bool                lowbw;        /**< hold sub-threshold changes to cut output */
+    int                 colors;       /**< colour depth: 0 auto, 1 = 16, 2 = 256, 3 = 24-bit */
+    termview_3d_mode_t  mode3d;       /**< 3D display mode (slice, gallery, 2D remap) */
+    int                 slice;        /**< active 0-based slice index in TV_3D_SLICE  */
 } termview_options_t;
 
+/** termview_options_init() - Default options: greyscale, linear, min-max, 20 fps, no flips. */
+void termview_options_init(termview_options_t *opt);
+
 /**
- * Open and display a milk shared-memory stream in the terminal.
- *
- * @param imagename  Stream name (resolved via MILK_SHM_DIR or /dev/shm)
- * @param options    Initial display options
- * @return           0 on success
+ * termview_run() - View stream @name (name, name.im.shm or path) until the user quits.
+ * Returns the process exit status; terminating signals are re-raised after cleanup.
  */
-errno_t termview_screen(const char *imagename, termview_options_t options);
+int termview_run(const char *name, const termview_options_t *opt);
+
+/**
+ * termview_run_multi() - View @nstreams streams (@names) until the user quits.
+ * When @nstreams > 1, all streams must be 2D with identical dimensions and share
+ * the same display range, scaling, and colorbar.
+ */
+int termview_run_multi(const char *const *names, int nstreams, const termview_options_t *opt);
 
 #endif /* _TERMVIEW_H */

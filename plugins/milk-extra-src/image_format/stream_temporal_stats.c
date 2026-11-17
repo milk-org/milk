@@ -31,19 +31,19 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *in_name      = NULL;
-static int32_t *ptr_n_frames = NULL;
-static double  *ptr_timeout  = NULL;
+static char    in_name[FUNCTION_PARAMETER_STRMAXLEN] = "in_name";
+static int32_t ptr_n_frames                          = 0;
+static double  ptr_timeout                           = 0.0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                  \
-    X(".in_name", &in_name, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".n_frames", &ptr_n_frames, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,               \
-      "Stats every n frames max")                                                      \
+#define FPS_PARAMS(X)                                                                 \
+    X(".in_name", in_name, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".n_frames", &ptr_n_frames, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,              \
+      "Stats every n frames max")                                                     \
     X(".timeout", &ptr_timeout, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "Stats at timeout (sec)")
 
 
@@ -298,8 +298,8 @@ static MILK_HOT errno_t stream_temporal_stats_compute(const MILK_RUNNABLE *self)
 
     clock_gettime(CLOCK_MILK, &time1);
 
-    PRINT_WARNING("Timeout: %f", *ptr_timeout);
-    PRINT_WARNING("Frames: %d", *ptr_n_frames);
+    PRINT_WARNING("Timeout: %f", ptr_timeout);
+    PRINT_WARNING("Frames: %d", ptr_n_frames);
 
     /*
     PROCESSINFO INIT
@@ -329,7 +329,7 @@ static MILK_HOT errno_t stream_temporal_stats_compute(const MILK_RUNNABLE *self)
         */
         clock_gettime(CLOCK_MILK, &time2);
 
-        if ((n_frames_acc >= *ptr_n_frames || timespec_diff_double(time1, time2) > *ptr_timeout))
+        if ((n_frames_acc >= ptr_n_frames || timespec_diff_double(time1, time2) > ptr_timeout))
         {
             if (n_frames_acc >= 1)
             {

@@ -8,6 +8,8 @@
  *          variables via FPS_CLI_BINDING
  */
 
+#include <string.h>
+
 #include "fps_modulevars_resync.h"
 #include "fps_GetParamIndex.h"
 
@@ -82,7 +84,8 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     if (b->type == FPTYPE_FLOAT64)
     {
         double newval = *((double *) b->ptr);
-        if (fps->parray[pindex].val.f64[0] != newval)
+        /* bits, not `!=`: -Ofast takes a NaN as equal to anything, and NaN != NaN otherwise */
+        if (memcmp(&fps->parray[pindex].val.f64[0], &newval, sizeof(newval)) != 0)
         {
             fps->parray[pindex].val.f64[0] = newval;
             changed                        = 1;
@@ -91,7 +94,7 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     else if (b->type == FPTYPE_FLOAT32)
     {
         float newval = *((float *) b->ptr);
-        if (fps->parray[pindex].val.f32[0] != newval)
+        if (memcmp(&fps->parray[pindex].val.f32[0], &newval, sizeof(newval)) != 0)
         {
             fps->parray[pindex].val.f32[0] = newval;
             changed                        = 1;
@@ -203,14 +206,23 @@ errno_t fpsresync_fps_to_modvar(FPS             *fps,
     {
         FPS_CLI_BINDING *b = &bindings[ii];
 
-        if (b->_fps_pindex == UINT64_MAX - 2 || force_cache_build)
+        if (b->_fps_pindex == -2 || force_cache_build) /* -2: unresolved (see fps_cli_binding.h) */
         {
-            b->_fps_pindex   = functionparameter_GetParamIndex(fps, b->fpskeyword);
-            b->_fps_last_cnt = fps->parray[b->_fps_pindex].value_cnt;
+            b->_fps_pindex = functionparameter_GetParamIndex(fps, b->fpskeyword);
+            if (b->_fps_pindex < 0)
+            {
+                b->_fps_pindex = -1; /* not found: never read parray[-1], never try again */
+                continue;
+            }
+            b->_fps_last_cnt = (int64_t) fps->parray[b->_fps_pindex].value_cnt;
         }
-        else if (b->_fps_pindex == UINT64_MAX - 1)
+        else if (b->_fps_pindex < 0)
         {
             continue; // Not resolved once, won't try to resolve again.
+        }
+        else if ((int64_t) fps->parray[b->_fps_pindex].value_cnt == b->_fps_last_cnt)
+        {
+            continue; /* unchanged since the last read: nothing to copy (strings are 64 B each) */
         }
 
         sync_fps_to_local(fps, b->_fps_pindex, b);
@@ -249,6 +261,16 @@ errno_t fpsresync_modvar_to_fps(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
     for (int ii = 0; ii < nb_b; ii++)
     {
         FPS_CLI_BINDING *b = &bindings[ii];
+        if (b->_fps_pindex < 0)
+        {
+            continue;
+        }
+        if ((int64_t) fps->parray[b->_fps_pindex].value_cnt != b->_fps_last_cnt)
+        {
+            /* another process wrote it since this iteration read it (@set, a TUI): that value wins.
+             * _fps_last_cnt stays behind on purpose, so the next read sees the change and copies it */
+            continue;
+        }
         sync_local_to_fps(fps, b->_fps_pindex, b);
         // Must update the counter; if there was a concurrent upgrade it would otherwise supersede
         // at the next iteration

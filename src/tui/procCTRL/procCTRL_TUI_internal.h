@@ -20,6 +20,16 @@ extern short unsigned int wrow;
 extern short unsigned int wcol;
 
 
+/* A registry entry as the user saw it: a slot reused by another process does not match */
+typedef struct
+{
+    int    pindex;
+    pid_t  pid;
+    double ctime; /* pinfolist->createtime[pindex] */
+} procctrl_ident_t;
+
+#define PROCCTRL_SEL_MAX 256
+
 typedef struct
 {
     PROCINFOPROC *procinfoproc;
@@ -48,6 +58,11 @@ typedef struct
     struct timespec  t_disp_prev;
     struct timespec  t_disp_cur;
     STRINGLISTENTRY *CPUsetList;
+
+    procctrl_ident_t cur;       /* cursor identity: actions target it, not a row number */
+    int              cur_found; /* cur was on screen last frame */
+    procctrl_ident_t sel[PROCCTRL_SEL_MAX];
+    int              nsel;
 } procctrl_context_t;
 
 // Render function
@@ -55,6 +70,8 @@ void procctrl_render_frame(procctrl_context_t *ctx, int NBactive);
 
 // Input handling function
 void procctrl_handle_keyboard_event(procctrl_context_t *ctx, int ch, int NBactive);
+void procctrl_follow_cursor(procctrl_context_t *ctx, int NBactive);
+int  procctrl_is_selected(const procctrl_context_t *ctx, int pindex);
 
 /* Sort context (defined in procCTRL_TUI_sort.c) */
 extern int              sort_ctx_m;

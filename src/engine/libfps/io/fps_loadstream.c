@@ -117,9 +117,9 @@ imageID functionparameter_LoadStream(FPS *fps, int pindex, int fpsconnectmode)
     {
         printf(" \033[1;31m[CONF-REQUIRED]\033[0m");
     }
-    if (sp.loc != '\0' || sp.must_exist || sp.must_new)
+    if (sp.loc != '\0' || sp.must_exist || sp.must_new || sp.datatype != 0)
     {
-        char label[8];
+        char label[16];
         fps_streamname_modifier_label(&sp, label, sizeof(label));
         printf(" %s", label);
     }

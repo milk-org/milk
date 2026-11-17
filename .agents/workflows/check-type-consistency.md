@@ -20,13 +20,14 @@ grep -rn 'switch.*datatype\|switch.*atype\|case _DATATYPE_\|case CLIARG_' \
 
 ## 2. Define the Complete Type Set
 
-The canonical set of image data types is:
+The canonical set of image data types (`ImageStruct.h`) is:
 
 ```
 _DATATYPE_UINT8, _DATATYPE_INT8,
 _DATATYPE_UINT16, _DATATYPE_INT16,
 _DATATYPE_UINT32, _DATATYPE_INT32,
 _DATATYPE_UINT64, _DATATYPE_INT64,
+_DATATYPE_HALF,
 _DATATYPE_FLOAT, _DATATYPE_DOUBLE,
 _DATATYPE_COMPLEX_FLOAT,
 _DATATYPE_COMPLEX_DOUBLE

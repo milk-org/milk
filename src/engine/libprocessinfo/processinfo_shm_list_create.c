@@ -57,11 +57,16 @@ errno_t processinfo_shm_list_create(long *pindex_out)
         printf("CREATING PROCESSINFO LIST\n");
 
         size_t sharedsize = sizeof(PROCESSINFOLIST);
-        umask(0);
-        SM_fd = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
+        SM_fd             = open(SM_fname, O_RDWR | O_CREAT | O_TRUNC, (mode_t) FILEMODE);
         if (SM_fd == -1)
         {
             PRINT_ERROR("open(%s) failed: %s", SM_fname, strerror(errno));
+            goto fail;
+        }
+        /* FILEMODE whatever the umask, which stays as the process set it */
+        if (fchmod(SM_fd, (mode_t) FILEMODE) != 0)
+        {
+            PRINT_ERROR("fchmod(%s) failed: %s", SM_fname, strerror(errno));
             goto fail;
         }
 
@@ -106,7 +111,7 @@ errno_t processinfo_shm_list_create(long *pindex_out)
             FUNC_RETURN_FAILURE("processinfo_shm_link(%s) failed", SM_fname);
         }
 
-        while ((pinfolist->active[pindex] != 0) && (pindex < PROCESSINFOLISTSIZE))
+        while (pindex < PROCESSINFOLISTSIZE && pinfolist->active[pindex] != 0)
         {
             pindex++;
         }

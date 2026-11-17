@@ -83,8 +83,9 @@ For each new `.c` file:
 
 ## Phase 3 — Update the Build System
 
-1. **Re-run `cmake`**: sources and headers are globbed by
-   the module's `CMakeLists.txt`, so no edit is needed.
+1. **Re-run `cmake`**: module `CMakeLists.txt` files (coremods, plugins, the template) glob their
+   sources and headers. The engine libraries, `src/calc`, `src/prop`, `src/tui`, `CLIcore` and
+   `libmilkscript` list their sources explicitly: add the new files to that list.
 
 ## Phase 4 — Verify
 
@@ -100,8 +101,8 @@ For each new `.c` file:
 
 3. If the module has tests, run them.
 
-4. If the module is part of `CLIcore`, also run
-   the `/cli-robustness-test` workflow to verify
+4. If the code is part of the CLI (`src/cli/`), also
+   run the `/cli-robustness-test` workflow to verify
    no regressions.
 
 ## Common Pitfalls
@@ -116,7 +117,8 @@ For each new `.c` file:
 - **Macro definitions**: if the original file
   defines macros used by multiple groups, move them
   to the `.h` file or a shared header.
-- **Include order**: project convention is:
+- **Include order**: runnable sources include `milk_runnable.h` first and never `CLIcore.h`
+  ([Header Hierarchy](../../../docs/arch/programmers_guide.md#header-hierarchy)); then:
   1. Own header (`"myfile.h"`)
-  2. Project headers (`"CLIcore.h"`, `"fps.h"`)
+  2. Project headers (`"fps.h"`)
   3. System headers (`<stdio.h>`, `<math.h>`)

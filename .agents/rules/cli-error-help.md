@@ -1,64 +1,18 @@
 ---
-description: CLI commands must print a red error message
-  and colored help on argument errors.
+description: Argument errors of module commands, units and @args are usage errors (exit status 2)
+  reported in one line, the way usage_error() does.
 ---
 
-# CLI Argument Error + Help Display
+# CLI Argument Errors
 
-When a CLI command fails due to missing arguments or
-wrong argument types, the error handler must:
+The argument rules and their errors are described for users in
+[Scripting — Arguments](../../docs/guide/scripting.md#arguments): a missing, invalid or extra value,
+or a parameter given twice, is a usage error, the command does not run, and it exits with status 2.
 
-1. **Print the error message with "ERROR" in red**
-   using ANSI escape codes (bold red `\033[1;31m`).
-2. **Print the full command help** by calling
-   `help_command()` — this produces the same
-   colored output as the `-h` / `?` help display.
-
-## Where This Applies
-
-- `CLI_checkarg_array()` in
-  `CLIcore_checkargs.c` — handles both
-  missing-argument and wrong-type failures.
-- Both paths (missing mandatory arg and
-  accumulated type errors) must emit the red
-  error line **and** the help output.
-
-## Error Message Format
-
-Use a consistent format for argument errors:
-
-```c
-printf("\n\033[1;31mERROR\033[0m %s\n",
-       error_description);
-```
-
-## Implementation Pattern
-
-```c
-/* Missing mandatory argument */
-printf("\n\033[1;31mERROR\033[0m "
-       "Missing mandatory argument %d "
-       "(%s: %s)\n",
-       CLIarg, tag, descr);
-help_command(data.cmd[data.cmdindex].key);
-return RETURN_CLICHECKARGARRAY_FAILURE;
-
-/* Wrong argument type(s) after all args checked */
-if (nberr > 0)
-{
-    printf("\n\033[1;31mERROR\033[0m "
-           "%d argument(s) have wrong type\n",
-           nberr);
-    help_command(data.cmd[data.cmdindex].key);
-    return RETURN_CLICHECKARGARRAY_FAILURE;
-}
-```
-
-## What NOT to Do
-
-- Do not print help for runtime errors that are
-  unrelated to argument parsing (e.g., file not
-  found, stream unavailable). Those are handled
-  by `PRINT_ERROR()` macros.
-- Do not duplicate the help output — call
-  `help_command()` once per error path.
+- Module commands report through `usage_error()` in
+  `src/cli/libmilkscript/core/CLIcore_checkargs.c`: `milk: <command>: <what is wrong>` on stderr,
+  then a one-line usage; `<command> -h` shows the full help.
+- Words bind to parameters in `milk_args_bind()` and values are read by `milk_argval_parse()`
+  (`src/engine/libfps/params/fps_args.c`), for module commands, unit command lines
+  (`fps_cli_sync.c`) and `@args` (`milk_client_args.c`) alike: change the rules there, once.
+- A keyword's usage error prints its lexicon synopsis: `milk_lexicon_usage("<keyword>", stderr)`.

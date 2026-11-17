@@ -29,6 +29,9 @@
 #include "processinfo.h"
 #include "processinfo_shm_link.h"
 #include "processtools_trigger.h"
+#include "processinfo_labels.h"
+#include "processinfo_timing.h"
+#include "processinfo_list.h"
 
 #define PROCESSINFOLISTSIZE 50000
 
@@ -63,7 +66,7 @@ typedef struct
 
     char state;
     char statusmsg[200];
-    char tmuxname[100];
+    char unitname[100];
 
     int NBsubprocesses;
     int subprocPIDarray[MAXNBSUBPROCESS];
@@ -235,9 +238,7 @@ errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
                                          IMAGE       *output_image,
                                          IMAGE       *input_image);
 
-#ifdef USE_NCURSES
 errno_t processinfo_CTRLscreen();
-#endif
 
 #define PROCINFOLOOP_START                                 \
     processinfo_loopstart(processinfo);                    \

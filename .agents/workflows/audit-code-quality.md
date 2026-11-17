@@ -13,7 +13,8 @@ Run this workflow when asked to review or audit code quality, or when you notice
    - Check if any function is excessively long. Extract complex or duplicated logic into smaller helper functions.
 
 2. **Review Readability, Simplicity, and Code Style**:
-   - Verify general adherence to all rules in `code-style-guide.md`.
+   - Verify adherence to the [coding standards](../../docs/developer/coding_standards.md) and to
+     all rules in `code-style-guide.md`.
    - Look for deeply nested blocks (`if` inside `for` inside `if`). Refactor using early exits.
    - Verify variables are declared in the narrowest possible scope (using `{ }` code blocks).
    - Ensure lines are under the 100-character limit.

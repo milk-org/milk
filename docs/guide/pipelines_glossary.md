@@ -71,8 +71,8 @@ resync
 ## 3. Live system
 
 compute unit (CompU)
-:   One milk `fpsexec` executable in a pipeline, with its FPS, its conf and run processes and its
-    tmux session. [Normative](pipelines_internals.md#term-compute-unit)
+:   One milk `fpsexec` executable in a pipeline, with its FPS and its conf and run processes.
+    [Normative](pipelines_internals.md#term-compute-unit)
 
 kind
 :   The protocol a pipeline declares (`kind = "…"`). Kinds other than `generic`: not yet

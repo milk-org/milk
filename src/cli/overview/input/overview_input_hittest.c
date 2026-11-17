@@ -35,21 +35,27 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         return;
     }
 
+    if (m != NULL && lay->r_scan_info.width > 0 && INSIDE(lay->r_scan_info, mr, mc))
+    {
+        int n = snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip), "Scan stages (ms):");
+        for (int st = 0; st < OV_STAGE_COUNT && n > 0 && (size_t) n < sizeof(lay->hover_tooltip);
+             st++)
+        {
+            n += snprintf(lay->hover_tooltip + n, sizeof(lay->hover_tooltip) - (size_t) n,
+                          " %s %.1f", ov_stage_name(st), m->stage_ms[st]);
+        }
+        return;
+    }
+
     if (mr == lay->r_header.row)
     {
-        int commit_w    = (int) strlen(MILK_GIT_COMMIT) + 3;
-        int shmdir_w    = (int) strlen(ov_get_shmdir()) + 8;
-        int badge_start = lay->r_header.col + 18 + commit_w + shmdir_w;
-        int badge_w     = lay->ctrl_mode ? 13 : 15;
-        if (mc >= badge_start && mc < badge_start + badge_w)
+        if (lay->r_ctrl_badge.width > 0 && INSIDE(lay->r_ctrl_badge, mr, mc))
         {
             snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
                      "Control Mode: Toggle write access & actions (key: c)");
             return;
         }
-        int hover_badge_start = badge_start + badge_w + 1;
-        int hover_badge_w     = lay->mouse_hover ? 15 : 16;
-        if (mc >= hover_badge_start && mc < hover_badge_start + hover_badge_w)
+        if (lay->r_hover_badge.width > 0 && INSIDE(lay->r_hover_badge, mr, mc))
         {
             snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
                      "Mouse Hover: Toggle hover tooltips (key: m)");
@@ -95,35 +101,18 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
 
     if (mr == lay->r_tabs.row)
     {
-        int tab_widths[OV_VIEW_COUNT];
-        int tabs_total_width = 0;
-        for (int v = 0; v < OV_VIEW_COUNT; v++)
-        {
-            tab_widths[v] = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-            tabs_total_width += tab_widths[v];
-        }
-        int help_width = 11;
-        int help_col   = (lay->term_cols >= tabs_total_width + help_width)
-                             ? (lay->term_cols - help_width + 1)
-                             : (tabs_total_width + 1);
-
-        if (mc >= help_col && mc < help_col + help_width)
+        int t = ov_tabbar_hit(mc);
+        if (t == OV_TABBAR_HELP)
         {
             snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
                      "Help: Toggle interactive help & keybinding menu (key: h)");
             return;
         }
-
-        int tx = 1;
-        for (int v = 0; v < OV_VIEW_COUNT; v++)
+        if (t >= 0)
         {
-            if (mc >= tx && mc < tx + tab_widths[v])
-            {
-                snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
-                         "View: Switch to %s view (key: F%d)", ov_view_label((ov_view_t) v), v + 2);
-                return;
-            }
-            tx += tab_widths[v];
+            snprintf(lay->hover_tooltip, sizeof(lay->hover_tooltip),
+                     "View: Switch to %s view (key: F%d)", ov_views[t].label, ov_views[t].fkey);
+            return;
         }
     }
 
@@ -171,7 +160,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_fps + body_row;
+                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
                 if (idx < m->nb_fps)
                 {
                     lay->hover_idx = idx;
@@ -189,7 +178,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         }
         else if (body_row >= 0)
         {
-            int idx = lay->scroll_stream + body_row;
+            int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
             if (idx < m->nb_streams)
             {
                 lay->hover_idx = idx;
@@ -206,7 +195,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         }
         else if (body_row >= 0)
         {
-            int idx = lay->scroll_proc + body_row;
+            int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
             if (idx < m->nb_procs)
             {
                 lay->hover_idx = idx;
@@ -220,17 +209,17 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
         int body_row    = mr - lay->r_graph.row - 2;
         if (body_row >= 0)
         {
-            if (lay->graph_tab_mode == 0 && lay->view != OV_VIEW_LOOPS)
+            if (lay->subtab == OV_SUB_CONN && lay->view != OV_VIEW_LOOPS)
             {
-                int idx = lay->scroll_graph + body_row;
+                int idx = lay->sub[OV_SUB_CONN].scroll + body_row;
                 if (idx < m->nb_edges)
                 {
                     lay->hover_idx = idx;
                 }
             }
-            else if (lay->graph_tab_mode == 1 || lay->view == OV_VIEW_LOOPS)
+            else if (lay->subtab == OV_SUB_LOOPS || lay->view == OV_VIEW_LOOPS)
             {
-                int idx = lay->scroll_loop + body_row;
+                int idx = lay->sub[OV_SUB_LOOPS].scroll + body_row;
                 if (idx < m->nb_loops)
                 {
                     lay->hover_idx = idx;
@@ -254,7 +243,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_stream + body_row;
+                int idx = lay->panel[OV_FOCUS_STREAMS].scroll + body_row;
                 if (idx < m->nb_streams)
                 {
                     lay->hover_idx = idx;
@@ -271,7 +260,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_proc + body_row;
+                int idx = lay->panel[OV_FOCUS_PROCS].scroll + body_row;
                 if (idx < m->nb_procs)
                 {
                     lay->hover_idx = idx;
@@ -288,7 +277,7 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             }
             else if (body_row >= 0)
             {
-                int idx = lay->scroll_fps + body_row;
+                int idx = lay->panel[OV_FOCUS_FPS].scroll + body_row;
                 if (idx < m->nb_fps)
                 {
                     lay->hover_idx = idx;
@@ -301,17 +290,17 @@ void ov_hittest(OV_LAYOUT *lay, const OV_MODEL *m, int mr, int mc)
             int body_row    = mr - lay->r_graph.row - 2;
             if (body_row >= 0)
             {
-                if (lay->graph_tab_mode == 0)
+                if (lay->subtab == OV_SUB_CONN)
                 {
-                    int idx = lay->scroll_graph + body_row;
+                    int idx = lay->sub[OV_SUB_CONN].scroll + body_row;
                     if (idx < m->nb_edges)
                     {
                         lay->hover_idx = idx;
                     }
                 }
-                else if (lay->graph_tab_mode == 1)
+                else if (lay->subtab == OV_SUB_LOOPS)
                 {
-                    int idx = lay->scroll_loop + body_row;
+                    int idx = lay->sub[OV_SUB_LOOPS].scroll + body_row;
                     if (idx < m->nb_loops)
                     {
                         lay->hover_idx = idx;

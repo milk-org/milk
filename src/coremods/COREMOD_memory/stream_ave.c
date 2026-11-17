@@ -190,9 +190,10 @@ static MILK_HOT errno_t streamave_compute(const MILK_RUNNABLE *self)
         return RETURN_FAILURE;
     }
 
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec(in.im, imgoutave, imgoutrms, d1, d2);
+    rc = fpsexec(in.im, imgoutave, imgoutrms, d1, d2);
 
     MILK_PROCINFO_END(self)
     free(d1);
@@ -200,7 +201,7 @@ static MILK_HOT errno_t streamave_compute(const MILK_RUNNABLE *self)
     {
         free(d2);
     }
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_streamave = {

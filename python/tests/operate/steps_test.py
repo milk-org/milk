@@ -137,9 +137,7 @@ def test_runstart_fails_when_the_run_never_shows(pp, fake_compus, monkeypatch):
     monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
     fake = fake_compus["delay0"]
     fake.conf = True
-    fake.runstart = lambda tmux=False: fake.calls.append(
-        "runstart"
-    )  # run never appears
+    fake.runstart = lambda: fake.calls.append("runstart")  # run never appears
     with pytest.raises(TaskDidNotSucceedError, match="basic_delay0"):
         pp.task_do(RunStart(pp, ["delay0"]))
 

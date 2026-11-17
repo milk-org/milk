@@ -20,8 +20,7 @@ description, module dependencies.
   registry (initially empty).
 - `<module>.h`, `README.md`, and `CMakeLists.txt` copied from `src/milk_module_example/`.
 
-Plugins under `plugins/` are discovered automatically and are never committed to `milk` (except
-`plugins/milk-extra-src/`). Core modules are listed in the root `CMakeLists.txt`.
+Core modules are listed in the root `CMakeLists.txt`.
 
 ## 3. Verify
 

@@ -8,7 +8,6 @@ import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
-import libtmux
 import pytest
 
 from milk.operate.plans import run_plan
@@ -52,14 +51,7 @@ def cloned_pipeline():
     else:
         assert cloned.root_folder.is_relative_to("/tmp")
     with contextlib.suppress(Exception):
-        cloned.nuke_unsafe()
-    tsrv = libtmux.Server()
-    for cu in cloned.config.compute_units:
-        session = tsrv.sessions.get(
-            session_name=cloned.config.fps_name(cu), default=None
-        )
-        if session is not None:
-            session.kill()
+        cloned.nuke_unsafe()  # its teardown stops the units
     shutil.rmtree(conf)
 
 
@@ -81,9 +73,9 @@ def _fake_compu(fpsname: str) -> SimpleNamespace:
         run_isrunning=lambda: compu.run,
         destroy=destroy,
     )
-    compu.confstart = lambda tmux=False: compu.calls.append("confstart")
+    compu.confstart = lambda: compu.calls.append("confstart")
     compu.confstop = lambda: compu.calls.append("confstop")
-    compu.runstart = lambda tmux=False: (
+    compu.runstart = lambda: (
         compu.calls.append("runstart"),
         setattr(compu, "run", True),
     )

@@ -10,41 +10,36 @@
 
 #include "fps.h"
 #include "fpsCTRL_TUIcompat.h"
+#include "fpsCTRL_units.h"
 
+
+/* The pid of @role's process (the last one if none runs), coloured by the unit state (U10) */
+static void level0_role_pid(FPS *fps, FPS_UNIT_ROLE role)
+{
+    FPS_UNIT_STATUS st;
+    fpsctrl_unit_status(fps, role, &st);
+    int col = (st.state == FPS_UNIT_RUNNING)   ? 2
+              : (st.state == FPS_UNIT_FAILED)  ? 4
+              : fps_unit_state_alive(st.state) ? 3
+                                               : 0;
+    if (col != 0)
+    {
+        screenprint_setcolor(col);
+    }
+    TUI_printfw("%07d ", (int) st.pid);
+    if (col != 0)
+    {
+        screenprint_unsetcolor(col);
+    }
+}
 
 /**
- * @brief Render a summary line for a top-level FPS node.
- *
- * Shows FPS name, process status, run/conf state,
- * and loop rate in a single dashboard row.
+ * @brief Render a summary line for a top-level FPS node: conf pid, conf errors, run pid, coloured by
+ * the unit states (green running, yellow starting or stopping, red failed).
  */
 void fpsCTRLscreen_level0node_summary(FPS *fps)
 {
-    pid_t pid;
-
-    pid = fps->md->confpid;
-    if ((getpgid(pid) >= 0) && (pid > 0))
-    {
-        screenprint_setcolor(2);
-        TUI_printfw("%07d ", (int) pid);
-        screenprint_unsetcolor(2);
-    }
-    else // PID not active
-    {
-        if (fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
-        {
-            // not clean exit
-            screenprint_setcolor(4);
-            TUI_printfw("%07d ", (int) pid);
-            screenprint_unsetcolor(4);
-        }
-        else
-        {
-            // All OK
-            TUI_printfw("%07d ", (int) pid);
-        }
-    }
-
+    level0_role_pid(fps, FPS_UNIT_CONF);
 
     if (fps->md->conferrcnt > 99)
     {
@@ -65,26 +60,5 @@ void fpsCTRLscreen_level0node_summary(FPS *fps)
         screenprint_unsetcolor(2);
     }
 
-    pid = fps->md->runpid;
-    if ((getpgid(pid) >= 0) && (pid > 0))
-    {
-        screenprint_setcolor(2);
-        TUI_printfw("%07d ", (int) pid);
-        screenprint_unsetcolor(2);
-    }
-    else
-    {
-        if (fps->md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
-        {
-            // not clean exit
-            screenprint_setcolor(4);
-            TUI_printfw("%07d ", (int) pid);
-            screenprint_unsetcolor(4);
-        }
-        else
-        {
-            // All OK
-            TUI_printfw("%07d ", (int) pid);
-        }
-    }
+    level0_role_pid(fps, FPS_UNIT_RUN);
 }

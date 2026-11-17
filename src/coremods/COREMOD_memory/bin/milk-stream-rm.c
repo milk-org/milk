@@ -32,7 +32,7 @@ static void print_help(const char *progname, int mh_color)
 {
     milk_help_banner(progname, SR_DESC, mh_color);
     milk_help_section("Usage", mh_color);
-    printf("  %s%s%s [%soptions%s] [%sSTREAM_NAME%s]\n\n", mh_color ? MH_CMD : "", progname,
+    printf("  %s%s%s [%soptions%s] [%sSTREAM_NAME%s ...]\n\n", mh_color ? MH_CMD : "", progname,
            mh_color ? MH_RST : "", mh_color ? MH_OPT : "", mh_color ? MH_RST : "",
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
     milk_help_section("Description", mh_color);
@@ -42,6 +42,10 @@ static void print_help(const char *progname, int mh_color)
            "Treat STREAM_NAME as a regex (may match multiple)");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-f, --force", mh_color ? MH_RST : "",
            "Skip confirmation prompt (use with -r)");
+    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "--ignore-missing", mh_color ? MH_RST : "",
+           "Succeed without error when stream does not exist");
+    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-q, --quiet", mh_color ? MH_RST : "",
+           "Suppress informational stdout messages");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-v, --verbose", mh_color ? MH_RST : "",
            "Verbose output");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
@@ -75,16 +79,36 @@ static void print_help(const char *progname, int mh_color)
  * Handles both symlinks and real SHM files.
  * Returns 0 on success, 1 on failure.
  */
-static int remove_single_stream(const char *shmdir, const char *sname, int verbose)
+static int remove_single_stream(const char *shmdir,
+                                const char *sname,
+                                int         verbose,
+                                int         quiet,
+                                int         ignore_missing)
 {
+    if (sname[0] == '\0' || strchr(sname, '/') != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid stream name '%s'\n", sname);
+        return 1;
+    }
+
     char fullpath[512];
 
     snprintf(fullpath, sizeof(fullpath), "%s/%s.im.shm", shmdir, sname);
 
-    /* Check if symlink — just unlink */
+    /* Check if symlink or missing */
     struct stat lbuf;
 
-    if (lstat(fullpath, &lbuf) == 0 && S_ISLNK(lbuf.st_mode))
+    if (lstat(fullpath, &lbuf) != 0)
+    {
+        if (errno == ENOENT && ignore_missing)
+        {
+            return 0;
+        }
+        fprintf(stderr, "Error: cannot open stream '%s'.\n", sname);
+        return 1;
+    }
+
+    if (S_ISLNK(lbuf.st_mode))
     {
         if (verbose)
         {
@@ -92,12 +116,19 @@ static int remove_single_stream(const char *shmdir, const char *sname, int verbo
         }
         if (unlink(fullpath) != 0)
         {
+            if (errno == ENOENT && ignore_missing)
+            {
+                return 0;
+            }
             PRINT_ERROR("unlink: %s", strerror(errno));
             return 1;
         }
-        printf("  Stream symlink '%s'"
-               " removed.\n",
-               sname);
+        if (!quiet)
+        {
+            printf("  Stream symlink '%s'"
+                   " removed.\n",
+                   sname);
+        }
         return 0;
     }
 
@@ -135,7 +166,10 @@ static int remove_single_stream(const char *shmdir, const char *sname, int verbo
         return 1;
     }
 
-    printf("  Stream '%s' removed.\n", sname);
+    if (!quiet)
+    {
+        printf("  Stream '%s' removed.\n", sname);
+    }
     return 0;
 }
 
@@ -319,29 +353,45 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int verbose   = 0;
-    int use_regex = 0;
-    int force     = 0;
+    enum
+    {
+        OPT_IGNORE_MISSING = 1001
+    };
+
+    int verbose        = 0;
+    int quiet          = 0;
+    int use_regex      = 0;
+    int force          = 0;
+    int ignore_missing = 0;
     int opt;
 
     static struct option long_options[] = { { "verbose", no_argument, 0, 'v' },
+                                            { "quiet", no_argument, 0, 'q' },
                                             { "regex", no_argument, 0, 'r' },
                                             { "force", no_argument, 0, 'f' },
+                                            { "ignore-missing", no_argument, 0,
+                                              OPT_IGNORE_MISSING },
                                             { "help", no_argument, 0, 'h' },
                                             { 0, 0, 0, 0 } };
 
-    while ((opt = getopt_long(argc, argv, "vrfh", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "vqrfh", long_options, NULL)) != -1)
     {
         switch (opt)
         {
         case 'v':
             verbose = 1;
             break;
+        case 'q':
+            quiet = 1;
+            break;
         case 'r':
             use_regex = 1;
             break;
         case 'f':
             force = 1;
+            break;
+        case OPT_IGNORE_MISSING:
+            ignore_missing = 1;
             break;
         case 'h':
             break; /* handled above */
@@ -374,29 +424,64 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------
-     * Mode 1: Exact match (default with pattern)
+     * Mode 1: Exact match (one or more names)
      * ----------------------------------------*/
     if (pattern != NULL && !use_regex)
     {
-        return remove_single_stream(shmdir, pattern, verbose);
+        int errors = 0;
+        for (int arg_idx = optind; arg_idx < argc; arg_idx++)
+        {
+            errors += remove_single_stream(shmdir, argv[arg_idx], verbose, quiet, ignore_missing);
+        }
+        return (errors > 0) ? 1 : 0;
     }
 
     /* ------------------------------------------
      * Scan all streams for regex/interactive mode
      * ----------------------------------------*/
     {
+        regex_t regex;
+        int     regex_compiled = 0;
+
+        if (use_regex && pattern != NULL)
+        {
+            int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
+            if (ret != 0)
+            {
+                fprintf(stderr, "Error: invalid regex '%s'.\n", pattern);
+                return 1;
+            }
+            regex_compiled = 1;
+        }
+
         int    capacity  = 64;
         char **all_names = NULL;
         int    total     = scan_streams(shmdir, &all_names, capacity);
 
         if (total < 0)
         {
+            if (regex_compiled)
+            {
+                regfree(&regex);
+            }
             return 1;
         }
 
         if (total == 0)
         {
-            printf("No streams found.\n");
+            if (regex_compiled)
+            {
+                regfree(&regex);
+            }
+            if (use_regex && pattern != NULL && ignore_missing)
+            {
+                free(all_names);
+                return 0;
+            }
+            if (!quiet)
+            {
+                printf("No streams found.\n");
+            }
             free(all_names);
             return 1;
         }
@@ -406,22 +491,6 @@ int main(int argc, char *argv[])
          * ----------------------------------------*/
         if (use_regex && pattern != NULL)
         {
-            regex_t regex;
-            int     ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
-            if (ret != 0)
-            {
-                fprintf(stderr,
-                        "Error: invalid regex"
-                        " '%s'.\n",
-                        pattern);
-                for (int i = 0; i < total; i++)
-                {
-                    free(all_names[i]);
-                }
-                free(all_names);
-                return 1;
-            }
-
             /* Filter matching streams */
             int    match_cap   = 64;
             int    match_count = 0;
@@ -466,23 +535,30 @@ int main(int argc, char *argv[])
 
             if (match_count == 0)
             {
+                free(match_names);
+                if (ignore_missing)
+                {
+                    return 0;
+                }
                 fprintf(stderr,
                         "No streams matching"
                         " '%s' found.\n",
                         pattern);
-                free(match_names);
                 return 1;
             }
 
             /* Show matches */
-            printf("\n  Streams matching '%s'"
-                   " (%d):\n\n",
-                   pattern, match_count);
-            for (int i = 0; i < match_count; i++)
+            if (!(quiet && force))
             {
-                printf("    %s\n", match_names[i]);
+                printf("\n  Streams matching '%s'"
+                       " (%d):\n\n",
+                       pattern, match_count);
+                for (int i = 0; i < match_count; i++)
+                {
+                    printf("    %s\n", match_names[i]);
+                }
+                printf("\n");
             }
-            printf("\n");
 
             /* Confirm unless -f */
             if (!force)
@@ -504,7 +580,8 @@ int main(int argc, char *argv[])
 
             for (int i = 0; i < match_count; i++)
             {
-                errors += remove_single_stream(shmdir, match_names[i], verbose);
+                errors +=
+                    remove_single_stream(shmdir, match_names[i], verbose, quiet, ignore_missing);
                 free(match_names[i]);
             }
             free(match_names);
@@ -568,7 +645,8 @@ int main(int argc, char *argv[])
         {
             if (selected[i])
             {
-                errors += remove_single_stream(shmdir, all_names[i], verbose);
+                errors +=
+                    remove_single_stream(shmdir, all_names[i], verbose, quiet, ignore_missing);
             }
         }
 

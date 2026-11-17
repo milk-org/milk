@@ -8,6 +8,7 @@
  */
 
 #include "computeunit.h"
+#include "libmilkcommon/milk_omp_team.h"
 
 /** @brief Add parameters to FPS for real-time process settings
  *
@@ -53,7 +54,8 @@ errno_t fps_add_processinfo_entries(FPS *fps)
                                  FPFLAG, NULL, NULL);
 
     // value = -1 indicates no RT priority
-    long RTprio_default[4] = { fps->cmdset.RT_priority, -1, 49, 20 };
+    long RTprio_default[4] = { (fps->cmdset.RT_priority > 0) ? fps->cmdset.RT_priority : -1, -1, 49,
+                               20 };
     long pindex_RTprio     = -1;
     function_parameter_add_entry(fps, ".procinfo.RTprio", "RTprio", FPTYPE_INT64, FPFLAG,
                                  &RTprio_default, &pindex_RTprio);
@@ -69,11 +71,12 @@ errno_t fps_add_processinfo_entries(FPS *fps)
                                  NULL);
 
     // taskset
-    function_parameter_add_entry(fps, ".procinfo.taskset", "CPUs mask", FPTYPE_STRING, FPFLAG,
-                                 "1-127", NULL);
+    function_parameter_add_entry(fps, ".procinfo.taskset", "CPUs mask", FPTYPE_STRING, FPFLAG, "",
+                                 NULL); /* empty: keep the mask the process was started with */
 
-    // value = 0 indicates process will adjust to available nb cores
-    long maxNBthread_default[4] = { 1, 0, 128, 1 };
+    // value = 0: the team policy decides (milk_omp_team_size: image size, physical cores, affinity);
+    // a positive value caps OpenMP teams (and OpenBLAS) at that many threads
+    long maxNBthread_default[4] = { 0, 0, 128, 0 };
     long pindex_NBthread        = -1;
     function_parameter_add_entry(fps, ".procinfo.NBthread", "max NB threads", FPTYPE_INT64, FPFLAG,
                                  &maxNBthread_default, &pindex_NBthread);
@@ -82,6 +85,30 @@ errno_t fps_add_processinfo_entries(FPS *fps)
         fps->parray[pindex_NBthread].val.i64[1] = maxNBthread_default[1];
         fps->parray[pindex_NBthread].val.i64[2] = maxNBthread_default[2];
         fps->parray[pindex_NBthread].val.i64[3] = maxNBthread_default[3];
+    }
+
+    // -1: inherit MILK_NUMANODE / default, -2: GPU-local node, >= 0: node index
+    long numanode_default[4] = { -1, -2, 16, -1 };
+    long pindex_numanode     = -1;
+    function_parameter_add_entry(fps, ".procinfo.numanode", "NUMA node (-2 auto,-1 off)",
+                                 FPTYPE_INT64, FPFLAG, &numanode_default, &pindex_numanode);
+    if (pindex_numanode >= 0)
+    {
+        fps->parray[pindex_numanode].val.i64[1] = numanode_default[1];
+        fps->parray[pindex_numanode].val.i64[2] = numanode_default[2];
+        fps->parray[pindex_numanode].val.i64[3] = numanode_default[3];
+    }
+
+    // 0: inherit MILK_OMP_WAIT_POLICY, 1: PASSIVE (GOMP_SPINCOUNT=0), 2: ACTIVE
+    long ompwait_default[4] = { 0, 0, 2, 0 };
+    long pindex_ompwait     = -1;
+    function_parameter_add_entry(fps, ".procinfo.OMPwait", "OpenMP wait (0 inh,1 pas,2 act)",
+                                 FPTYPE_INT64, FPFLAG, &ompwait_default, &pindex_ompwait);
+    if (pindex_ompwait >= 0)
+    {
+        fps->parray[pindex_ompwait].val.i64[1] = ompwait_default[1];
+        fps->parray[pindex_ompwait].val.i64[2] = ompwait_default[2];
+        fps->parray[pindex_ompwait].val.i64[3] = ompwait_default[3];
     }
 
     // PROCESSINFO

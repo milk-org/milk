@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(example03_fps)
 
-option(USE_NCURSES "Enable ncurses and TUI support" OFF)
 
 set(MILK_ROOT "../..")
 set(MILK_INSTALL "${MILK_ROOT}/_build/_install")

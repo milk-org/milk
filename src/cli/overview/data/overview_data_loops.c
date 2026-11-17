@@ -22,19 +22,19 @@
  * @depth:          Current path depth
  * @path:           Array recording current traversal path
  * @in_path:        Bitmask/array marking nodes currently on the DFS path
- * @adj:            Adjacency matrix of outgoing edges
- * @adj_cnt:        Count of outgoing edges per node
+ * @off:            Loop successors of node v: to[off[v] .. off[v + 1])
+ * @to:             Successor nodes
  * @total_explored: Pointer to running counter of explored states
  */
-static void dfs_search_cycles(OV_MODEL *model,
-                              int       start_node,
-                              int       curr_node,
-                              int       depth,
-                              int      *path,
-                              uint8_t  *in_path,
-                              const int adj[OV_MAX_NODES][64],
-                              const int adj_cnt[OV_MAX_NODES],
-                              int      *total_explored)
+static void dfs_search_cycles(OV_MODEL  *model,
+                              int        start_node,
+                              int        curr_node,
+                              int        depth,
+                              int       *path,
+                              uint8_t   *in_path,
+                              const int *off,
+                              const int *to,
+                              int       *total_explored)
 {
     if (model->nb_loops >= OV_MAX_LOOPS || *total_explored > 4096)
     {
@@ -50,9 +50,9 @@ static void dfs_search_cycles(OV_MODEL *model,
     path[depth]        = curr_node;
     in_path[curr_node] = 1;
 
-    for (int i = 0; i < adj_cnt[curr_node]; i++)
+    for (int i = off[curr_node]; i < off[curr_node + 1]; i++)
     {
-        int next = adj[curr_node][i];
+        int next = to[i];
 
         if (next == start_node && depth >= 1)
         {
@@ -69,7 +69,7 @@ static void dfs_search_cycles(OV_MODEL *model,
             /* Avoid visiting nodes with index < start_node to reduce redundant traversals */
             if (next >= start_node)
             {
-                dfs_search_cycles(model, start_node, next, depth + 1, path, in_path, adj, adj_cnt,
+                dfs_search_cycles(model, start_node, next, depth + 1, path, in_path, off, to,
                                   total_explored);
             }
         }
@@ -82,6 +82,48 @@ static void dfs_search_cycles(OV_MODEL *model,
  * Loop Detection & Metric Computation Engine
  * ========================================================= */
 
+/** loop_sig_cmp - qsort order of loops by canonical signature, so loop IDs do not depend on scan order. */
+static int loop_sig_cmp(const void *a, const void *b)
+{
+    return strcmp(((const OV_LOOP *) a)->signature, ((const OV_LOOP *) b)->signature);
+}
+
+/** loop_add_rate - fold one member rate into the loop min/max; 0 Hz counts (a stalled member is the bottleneck). */
+static void loop_add_rate(OV_LOOP *lp, double hz, int *nrates)
+{
+    if (hz < lp->min_hz)
+    {
+        lp->min_hz = hz;
+    }
+    if (hz > lp->max_hz)
+    {
+        lp->max_hz = hz;
+    }
+    (*nrates)++;
+}
+
+/** loop_add_proc_health - fold one process state into the loop RUN/PAUS/ERR/STAL flags and rate. */
+static void loop_add_proc_health(OV_LOOP *lp, const OV_PROC *pr, int *nrates)
+{
+    if (pr->loopstat != PROCESSINFO_LOOPSTAT_ACTIVE)
+    {
+        lp->is_running = 0;
+    }
+    else if (pr->stale_count >= OV_STALE_SCANS)
+    {
+        lp->is_stale = 1;
+    }
+    if (pr->loopstat == PROCESSINFO_LOOPSTAT_PAUSE)
+    {
+        lp->is_paused = 1;
+    }
+    if (pr->loopstat == PROCESSINFO_LOOPSTAT_ERROR || pr->loopstat == PROCESSINFO_LOOPSTAT_CRASHED)
+    {
+        lp->is_error = 1;
+    }
+    loop_add_rate(lp, pr->loop_hz, nrates);
+}
+
 /**
  * ov_detect_loops - Detect all elementary directed cycles in the graph.
  * @model: System model containing streams, processes, FPS, nodes, and edges
@@ -89,7 +131,12 @@ static void dfs_search_cycles(OV_MODEL *model,
  */
 void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
 {
-    if (model == NULL || model->nb_nodes <= 0)
+    if (model == NULL)
+    {
+        return;
+    }
+    model->loops_truncated = 0;
+    if (model->nb_nodes <= 0)
     {
         return;
     }
@@ -121,36 +168,26 @@ void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
 
     model->nb_loops = 0;
 
-    /* Build adjacency lists */
-    static int adj[OV_MAX_NODES][64];
-    static int adj_cnt[OV_MAX_NODES];
-    memset(adj_cnt, 0, sizeof(adj_cnt));
-
-    for (int ei = 0; ei < model->nb_edges; ei++)
+    /* Loop successors of each node: targets of its valid loop edges, each once (from the model adjacency) */
+    static int off[OV_MAX_NODES + 1];
+    static int to[OV_MAX_EDGES];
+    static int seen[OV_MAX_NODES]; /* last node that listed this target */
+    int        nto = 0;
+    memset(seen, 0xff, sizeof(seen));
+    for (int u = 0; u < model->nb_nodes; u++)
     {
-        const OV_EDGE *e = &model->edges[ei];
-        if (is_valid_loop_edge(model, e, mode))
+        off[u] = nto;
+        for (int k = model->adj_out_off[u]; k < model->adj_out_off[u + 1]; k++)
         {
-            int u = e->src_node;
-            int v = e->tgt_node;
-            if (adj_cnt[u] < 64)
+            const OV_EDGE *e = &model->edges[model->adj_out[k]];
+            if (is_valid_loop_edge(model, e, mode) && seen[e->tgt_node] != u)
             {
-                int dup = 0;
-                for (int k = 0; k < adj_cnt[u]; k++)
-                {
-                    if (adj[u][k] == v)
-                    {
-                        dup = 1;
-                        break;
-                    }
-                }
-                if (!dup)
-                {
-                    adj[u][adj_cnt[u]++] = v;
-                }
+                seen[e->tgt_node] = u;
+                to[nto++]         = e->tgt_node;
             }
         }
     }
+    off[model->nb_nodes] = nto;
 
     /* Search for cycles starting from each stream node */
     int     path[OV_MAX_LOOP_NODES];
@@ -162,12 +199,24 @@ void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
         if (model->nodes[ni].type == OV_NODE_STREAM)
         {
             int total_explored = 0;
-            dfs_search_cycles(model, ni, ni, 0, path, in_path, adj, adj_cnt, &total_explored);
+            dfs_search_cycles(model, ni, ni, 0, path, in_path, off, to, &total_explored);
+            if (total_explored > 4096 || model->nb_loops >= OV_MAX_LOOPS)
+            {
+                model->loops_truncated = 1;
+            }
             if (model->nb_loops >= OV_MAX_LOOPS)
             {
                 break;
             }
         }
+    }
+
+    /* Stable IDs: order by signature, then number and name */
+    qsort(model->loops, (size_t) model->nb_loops, sizeof(model->loops[0]), loop_sig_cmp);
+    for (int l = 0; l < model->nb_loops; l++)
+    {
+        model->loops[l].loop_id = l + 1;
+        ov_loop_set_names(model, &model->loops[l]);
     }
 
     /* Tag member entities and aggregate health/rate metrics */
@@ -176,103 +225,72 @@ void ov_detect_loops(OV_MODEL *model, sg_mode_t mode)
         OV_LOOP *lp   = &model->loops[l];
         uint32_t mask = (UINT32_C(1) << l);
 
-        lp->is_running   = 1;
-        lp->is_paused    = 0;
-        lp->is_stale     = 0;
-        lp->is_error     = 0;
-        lp->min_hz       = 1e9;
-        lp->max_hz       = 0.0;
-        int active_rates = 0;
+        lp->is_running = 1;
+        lp->is_paused  = 0;
+        lp->is_stale   = 0;
+        lp->is_error   = 0;
+        lp->min_hz     = 1e9;
+        lp->max_hz     = 0.0;
+        int nrates     = 0;
 
-        /* Streams */
         for (int i = 0; i < lp->nb_streams; i++)
         {
             int si = lp->stream_indices[i];
             if (si >= 0 && si < model->nb_streams)
             {
-                model->streams[si].loop_mask |= mask;
-                model->streams[si].nb_loops++;
-                if (model->streams[si].primary_loop_id == 0)
+                OV_STREAM *st = &model->streams[si];
+                st->loop_mask |= mask;
+                st->nb_loops++;
+                if (st->primary_loop_id == 0)
                 {
-                    model->streams[si].primary_loop_id = lp->loop_id;
+                    st->primary_loop_id = lp->loop_id;
                 }
-                if (model->streams[si].update_hz > 0.0)
-                {
-                    if (model->streams[si].update_hz < lp->min_hz)
-                    {
-                        lp->min_hz = model->streams[si].update_hz;
-                    }
-                    if (model->streams[si].update_hz > lp->max_hz)
-                    {
-                        lp->max_hz = model->streams[si].update_hz;
-                    }
-                    active_rates++;
-                }
+                loop_add_rate(lp, st->update_hz, &nrates);
             }
         }
 
-        /* Processes */
         for (int i = 0; i < lp->nb_procs; i++)
         {
             int pi = lp->proc_indices[i];
             if (pi >= 0 && pi < model->nb_procs)
             {
-                model->procs[pi].loop_mask |= mask;
-                model->procs[pi].nb_loops++;
-                if (model->procs[pi].primary_loop_id == 0)
+                OV_PROC *pr = &model->procs[pi];
+                pr->loop_mask |= mask;
+                pr->nb_loops++;
+                if (pr->primary_loop_id == 0)
                 {
-                    model->procs[pi].primary_loop_id = lp->loop_id;
+                    pr->primary_loop_id = lp->loop_id;
                 }
-
-                const OV_PROC *pr = &model->procs[pi];
-                if (pr->loopstat != 1)
-                {
-                    lp->is_running = 0;
-                }
-                if (pr->loopstat == 2)
-                {
-                    lp->is_paused = 1;
-                }
-                if (pr->loopstat == 4)
-                {
-                    lp->is_error = 1;
-                }
-                if (pr->stale_count > 2)
-                {
-                    lp->is_stale = 1;
-                }
-
-                if (pr->loop_hz > 0.0)
-                {
-                    if (pr->loop_hz < lp->min_hz)
-                    {
-                        lp->min_hz = pr->loop_hz;
-                    }
-                    if (pr->loop_hz > lp->max_hz)
-                    {
-                        lp->max_hz = pr->loop_hz;
-                    }
-                    active_rates++;
-                }
+                loop_add_proc_health(lp, pr, &nrates);
             }
         }
 
-        /* FPS */
+        /* An FPS runs only through its run process: no RUN by vacuous truth */
         for (int i = 0; i < lp->nb_fps; i++)
         {
             int fi = lp->fps_indices[i];
             if (fi >= 0 && fi < model->nb_fps)
             {
-                model->fps[fi].loop_mask |= mask;
-                model->fps[fi].nb_loops++;
-                if (model->fps[fi].primary_loop_id == 0)
+                OV_FPS *f = &model->fps[fi];
+                f->loop_mask |= mask;
+                f->nb_loops++;
+                if (f->primary_loop_id == 0)
                 {
-                    model->fps[fi].primary_loop_id = lp->loop_id;
+                    f->primary_loop_id = lp->loop_id;
+                }
+                int rp = f->run_alive ? ov_find_proc_by_pid(model, f->runpid) : -1;
+                if (!f->run_alive)
+                {
+                    lp->is_running = 0;
+                }
+                else if (rp >= 0)
+                {
+                    loop_add_proc_health(lp, &model->procs[rp], &nrates);
                 }
             }
         }
 
-        if (active_rates == 0)
+        if (nrates == 0)
         {
             lp->min_hz = 0.0;
         }

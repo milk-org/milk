@@ -13,21 +13,15 @@ update that module's `README.md`.
 2. An existing source file is renamed or deleted.
 3. A source file's purpose changes significantly
    (warrants a description update).
+4. An `EXPORT_FPSEXEC` line is added, removed or
+   renamed (the fpsexec table).
 
 ## Required Actions
 
-1. Open the module's `README.md` (e.g.,
-   `src/coremods/COREMOD_arith/README.md`).
-2. Update the **source file table**:
-   ```
-   | File | Description |
-   |------|-------------|
-   | foo.c | Brief description |
-   ```
-3. If the file is new, add a row with a concise
-   description of what the file does.
-4. If the file was removed, delete its row.
-5. If the file was renamed, update the filename
-   in the table.
-6. Summarize documentation updates in the task
+1. Update the module's `README.md` (e.g.,
+   `src/coremods/COREMOD_arith/README.md`), whose
+   contents [programmers_guide.md §7](../../docs/arch/programmers_guide.md#7-c-source-file-conventions)
+   lists: add, remove or rename the rows of the source
+   file and fpsexec tables.
+2. Summarize documentation updates in the task
    summary.

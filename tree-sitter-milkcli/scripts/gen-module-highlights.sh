@@ -12,8 +12,8 @@
 #   ./scripts/gen-module-highlights.sh --install
 #   ./scripts/gen-module-highlights.sh --stdout
 #
-# Runs milk-cli to discover all registered module
-# commands (listim, saveFITS, imcrop, etc.) and
+# Reads the install-time command catalog to list all module
+# commands (mem.listim, iofits.saveFITS, etc.) and
 # generates tree-sitter highlight predicates so
 # they appear as @function.builtin in Neovim.
 #
@@ -41,41 +41,18 @@ info()  { echo -e "${CYAN}[INFO]${NC}  $*" >&2; }
 ok()    { echo -e "${GREEN}[OK]${NC}    $*" >&2; }
 err()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-# ---- Check milk is available ----
-if ! command -v milk &>/dev/null; then
-    err "milk not found in PATH."
-    err "Make sure milk is installed and sourced."
-    err "  source /usr/local/milk/bin/milk-setup.sh"
+# ---- The command catalog written at install (milk-cli --catalog) ----
+if [[ -z "${MILK_INSTALLDIR:-}" ]] && command -v milk-cli &>/dev/null; then
+    MILK_INSTALLDIR="$(cd "$(dirname "$(command -v milk-cli)")/.." && pwd)"
+fi
+CATALOG="${MILK_INSTALLDIR:-}/share/milk/catalog.d"
+if [[ ! -d "${CATALOG}" ]]; then
+    err "No command catalog (${CATALOG}): install milk, or set MILK_INSTALLDIR."
     exit 1
 fi
 
-# ---- Extract command list from milk-cli ----
-info "Extracting registered commands from milk-cli..."
-
-# Run milk with cmd? to list all commands, extract
-# the first column (command name). Filter out:
-#  - empty lines
-#  - header lines (starting with -)
-#  - help/internal commands (already in grammar)
-CMDS=$(milk << 'MILKEOF' 2>/dev/null
-cmd?
-exitCLI
-MILKEOF
-)
-
-# Parse out just command names (first word of each
-# non-header line).
-# The cmd? output format is:
-#   cmdname   arginfo   description
-CMD_LIST=$(echo "$CMDS" \
-    | grep -v '^\s*$' \
-    | grep -v '^\s*-' \
-    | grep -v '^milk' \
-    | grep -v '^$' \
-    | awk '{print $1}' \
-    | grep -v '^cmd' \
-    | grep -E '^[a-zA-Z_][a-zA-Z0-9_.]*$' \
-    | sort -u)
+info "Reading the module commands of ${CATALOG}..."
+CMD_LIST=$(cut -f1 "${CATALOG}"/*.tsv | sort -u)
 
 COUNT=$(echo "$CMD_LIST" | wc -l)
 info "Found $COUNT module commands"
@@ -92,7 +69,7 @@ generate_queries() {
     echo ";   ./scripts/gen-module-highlights.sh"
     echo ""
     echo "; Match registered module commands as builtins"
-    echo "((identifier) @function.builtin"
+    echo "((module_command) @function.builtin"
     echo " (#any-of? @function.builtin"
 
     echo "$CMD_LIST" | while read -r cmd; do

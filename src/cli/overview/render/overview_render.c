@@ -11,73 +11,69 @@
 #include "overview_render_fps_params.h"
 #include "overview_render_loops.h"
 #include <stdio.h>
-/**
- * ov_render__dispatch_view - route rendering to active view panels.
- * @lay: Pointer to layout structure.
- * @m:   Pointer to data model snapshot.
- * @rel: Pointer to relationship lookup tables.
- */
-static void ov_render__dispatch_view(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+/** render_dash - F2: the three lists, the preview line, and the bottom-right sub-tab. */
+static void render_dash(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
 {
-    switch (lay->view)
-    {
-    case OV_VIEW_DASHBOARD:
-        ov_render_preview_line(lay, m);
-        ov_render_streams_panel(lay, m, rel);
-        ov_render_procs_panel(lay, m, rel);
-        ov_render_fps_panel(lay, m, rel);
-        int rendered = 0;
-        if (lay->graph_tab_mode == 1)
-        {
-            ov_render_loops_panel(lay, m);
-            rendered = 1;
-        }
-        else if (lay->graph_tab_mode == 2)
-        {
-            rendered = ov_render_detail_panel(lay, m);
-        }
-        else if (lay->graph_tab_mode == 3)
-        {
-            rendered = ov_render_resources_panel(lay, m);
-        }
+    ov_render_preview_line(lay, m);
+    ov_render_streams_panel(lay, m, rel);
+    ov_render_procs_panel(lay, m, rel);
+    ov_render_fps_panel(lay, m, rel);
+    ov_render_subtab(lay, m);
+}
 
-        if (!rendered)
-        {
-            ov_render_graph_panel(lay, m);
-        }
-        break;
-    case OV_VIEW_GRAPH:
-        ov_render_graph_panel(lay, m);
-        break;
-    case OV_VIEW_LOOPS:
-        ov_render_loops_view(lay, m);
-        break;
-    case OV_VIEW_STREAMS:
-        ov_render_streams_panel(lay, m, rel);
-        break;
-    case OV_VIEW_PROCS:
-        ov_render_procs_panel(lay, m, rel);
-        break;
-    case OV_VIEW_FPS:
-        ov_render_fps_param_info(lay, m);
-        ov_render_fps_panel(lay, m, rel);
-        int cur_fsel = ov_get_selected_fps_idx(lay, m);
-        if (cur_fsel >= 0 && cur_fsel < m->nb_fps && m->fps[cur_fsel].nb_disp_params > 0)
-        {
-            ov_render_fps_params_panel(lay, m);
-        }
-        else
-        {
-            /* No params: draw empty right panel */
-            ov_draw_panel_border(lay->r_fps_params.row, lay->r_fps_params.col,
-                                 lay->r_fps_params.height, lay->r_fps_params.width, "PARAMS",
-                                 OV_FG_DIM, 0, 0);
-        }
-        break;
-    default:
-        break;
+/** render_streams - F3: the stream list and its inspector. */
+static void render_streams(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+{
+    ov_render_streams_panel(lay, m, rel);
+    ov_render_stream_inspector(lay, m);
+}
+
+/** render_procs - F4. */
+static void render_procs(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+{
+    ov_render_procs_panel(lay, m, rel);
+}
+
+/** render_fps - F5: FPS list, info line, and the parameter tree of the FPS under the cursor. */
+static void render_fps(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+{
+    ov_render_fps_param_info(lay, m);
+    ov_render_fps_panel(lay, m, rel);
+    int cur_fsel = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    if (cur_fsel >= 0 && cur_fsel < m->nb_fps && m->fps[cur_fsel].nb_disp_params > 0)
+    {
+        ov_render_fps_params_panel(lay, m);
+    }
+    else
+    {
+        ov_draw_panel_border(lay->r_fps_params.row, lay->r_fps_params.col, lay->r_fps_params.height,
+                             lay->r_fps_params.width, "PARAMS", OV_FG_DIM, 0, 0);
     }
 }
+
+/** render_conn - F6: the sub-tab panel full screen. */
+static void render_conn(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+{
+    (void) rel;
+    ov_render_subtab(lay, m);
+}
+
+/** render_loops - F7. */
+static void render_loops(OV_LAYOUT *lay, const OV_MODEL *m, const OV_RELATED *rel)
+{
+    (void) rel;
+    ov_render_loops_view(lay, m);
+}
+
+/* Body renderer of each view, indexed by ov_view_t (descriptors: overview_view.c) */
+static void (*const view_render[OV_VIEW_COUNT])(OV_LAYOUT *,
+                                                const OV_MODEL *,
+                                                const OV_RELATED *) = {
+    [OV_VIEW_DASHBOARD] = render_dash, [OV_VIEW_STREAMS] = render_streams,
+    [OV_VIEW_PROCS] = render_procs,    [OV_VIEW_FPS] = render_fps,
+    [OV_VIEW_GRAPH] = render_conn,     [OV_VIEW_LOOPS] = render_loops,
+};
+
 /**
  * ov_render__draw_edge_highlights - draw split-pane hover highlights for draggable separators.
  * @lay: Pointer to layout structure.
@@ -85,7 +81,7 @@ static void ov_render__dispatch_view(OV_LAYOUT *lay, const OV_MODEL *m, const OV
 static void ov_render__draw_edge_highlights(const OV_LAYOUT *lay)
 {
     /* Highlight movable edges if hovering */
-    if (lay->mouse_hover && !lay->show_help)
+    if (lay->mouse_hover && !lay->help.show)
     {
         ov_theme_fg(OV_FG_WARN);
         ov_theme_bg(OV_BG_TERMINAL);
@@ -166,17 +162,22 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     ov_render_tabs(lay);
 
     /* Render view panels if help overlay is not active */
-    if (!lay->show_help)
+    if (!lay->help.show && (int) lay->view >= 0 && lay->view < OV_VIEW_COUNT)
     {
-        ov_render__dispatch_view(lay, m, &rel);
+        view_render[lay->view](lay, m, &rel);
+    }
+    if (lay->help.show || !ov_view_has_panel(lay->view, OV_FOCUS_GRAPH) ||
+        lay->view == OV_VIEW_LOOPS || lay->subtab != OV_SUB_RES)
+    {
+        pid_perf_close(); /* counters stay attached to a process only while RESOURCES shows them */
     }
 
-    if (lay->show_help)
+    if (lay->help.show)
     {
         ov_render_help(lay, m);
     }
 
-    if (!lay->show_help)
+    if (!lay->help.show)
     {
         ov_render_cmdlog(lay);
     }
@@ -187,6 +188,7 @@ void ov_render_frame(OV_LAYOUT *lay, const OV_MODEL *m)
     /* End frame overlays */
     ov_render_theme_popup(lay);
     ov_draw_tooltip(lay);
+    ov_render_confirm(lay, m);
 
     ov_buf_flush_delta(lay->term_rows, lay->term_cols);
 }

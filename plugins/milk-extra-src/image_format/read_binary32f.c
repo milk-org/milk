@@ -82,8 +82,7 @@ imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
 
     IMGID imgout       = imgid_make_from_name_2D(IDname, xsize, ysize);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     long i = 0;
     for (long jj = 0; jj < ysize; jj++)

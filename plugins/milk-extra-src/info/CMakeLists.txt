@@ -12,30 +12,8 @@ project(lib_${LIBNAME}_project)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/..")
 
-# CUSTOM ===========
-# NCURSES libs also feed the static LTO archive, which is built from the objects.
-# CLIcore is the only other place that resolves NCURSES, and it is skipped with USE_CLI=OFF.
-if(USE_NCURSES AND NOT NCURSES_LIBRARIES)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(NCURSES REQUIRED ncurses)
-endif()
-
-set(_info_link_libs)
-if(USE_NCURSES)
-  set(_info_link_libs ${NCURSES_LIBRARIES})
-endif()
-# ==================
-
-milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES} LINK_LIBS ${_info_link_libs})
+milk_add_runnable_module(${LIBNAME} SOURCES ${SOURCEFILES})
 milk_add_fpsexec_stubs(${LIBNAME})
-
-# CUSTOM ===========
-if(USE_NCURSES)
-  target_compile_definitions(${LIBNAME}_objs PRIVATE USE_NCURSES)
-  target_include_directories(${LIBNAME}_objs PRIVATE ${NCURSES_INCLUDE_DIR})
-  target_link_libraries(${LIBNAME} PRIVATE ${NCURSES_LIBRARIES})
-endif()
-# ==================
 
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)

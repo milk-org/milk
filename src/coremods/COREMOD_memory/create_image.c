@@ -31,6 +31,9 @@
 #    include "libmilkdata/milkdata.h"
 #    include "milkDebugTools.h"
 #endif
+#include <string.h>
+#include <sys/resource.h>
+#include <unistd.h>
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -38,6 +41,45 @@
 #include "list_image.h"
 #include "stream_sem.h"
 #include <computeunit.h>
+
+/**
+ * local_too_big - Refuse a local image larger than this process can ever allocate
+ * @img: IMGID about to be created
+ *
+ * ImageStreamIO_createIm() ends the process when the buffer of a local image cannot be allocated,
+ * which would take a whole session down: a local image of more bytes than the machine's memory (or
+ * the process's address-space limit) is refused here with a message instead.
+ *
+ * Return: 1 if @img is refused, 0 otherwise
+ */
+static int local_too_big(const IMGID *img)
+{
+    int esz = ImageStreamIO_typesize(img->mdt->datatype);
+    if (img->mdt->shared != 0 || esz <= 0)
+    {
+        return 0;
+    }
+    double bytes = (double) esz;
+    for (int a = 0; a < img->mdt->naxis; a++)
+    {
+        bytes *= (double) img->mdt->size[a];
+    }
+    double        lim = (double) sysconf(_SC_PHYS_PAGES) * (double) sysconf(_SC_PAGESIZE);
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_AS, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY &&
+        (double) rl.rlim_cur < lim)
+    {
+        lim = (double) rl.rlim_cur;
+    }
+    if (lim <= 0.0 || bytes <= lim)
+    {
+        return 0;
+    }
+    fprintf(stderr,
+            "ERROR: image \"%s\" needs %.3g GB, more than this process can allocate (%.3g GB)\n",
+            img->name, bytes / 1e9, lim / 1e9);
+    return 1;
+}
 
 /**
  * @brief Create or reuse an image (IMGID API)
@@ -53,13 +95,83 @@
 errno_t create_image_ID_IMGID(IMGID *img)
 {
     DEBUG_TRACE_FSTART();
+    if (img->stream_parse_error)
+    {
+        img->ID = -1;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
+    }
+
+    if (img->name[0] == '@' || strncmp(img->name, "s.", 2) == 0 ||
+        strncmp(img->name, "stream.", 7) == 0 || strncmp(img->name, "l.", 2) == 0 ||
+        strncmp(img->name, "local.", 6) == 0)
+    {
+        FPS_STREAMNAME_PARSED sp = fps_streamname_parse(img->name);
+        if (sp.error)
+        {
+            fprintf(stderr, "ERROR: invalid stream modifier prefix in \"%s\"\n", img->name);
+            img->stream_parse_error = 1;
+            img->ID                 = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
+        if (sp.loc != '\0')
+        {
+            img->stream_loc = sp.loc;
+        }
+        img->stream_must_exist = sp.must_exist;
+        img->stream_must_new   = sp.must_new;
+        if (sp.datatype != 0)
+        {
+            img->stream_datatype = sp.datatype;
+        }
+        memmove(img->name, sp.name, strlen(sp.name) + 1);
+    }
+
+    if (img->name[0] == '\0' || strpbrk(img->name, "@:/") != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid image name \"%s\"\n", img->name);
+        img->ID = -1;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
+    }
+
+    if (img->stream_loc == 'L')
+    {
+        img->mdt->shared = 0;
+    }
+    else if (img->stream_loc == 'S')
+    {
+        img->mdt->shared = 1;
+    }
+    if (img->stream_datatype != 0)
+    {
+        img->mdt->datatype = img->stream_datatype;
+    }
+
     DEBUG_TRACEPOINT("FARG %s %ld %d %d %d %d", img->name, (long) img->mdt->naxis,
                      (int) img->mdt->datatype, img->mdt->shared, img->mdt->NBkw, img->mdt->CBsize);
     IMGID exist_img = imgid_make_from_name(img->name);
     resolveIMGID(&exist_img, ERRMODE_NULL, dcimg, dcnimg);
 
+    if (img->stream_must_new && exist_img.ID != -1)
+    {
+        fprintf(stderr, "ERROR: @N modifier -- image \"%s\" already exists\n", img->name);
+        imgid_free(&exist_img);
+        img->ID = -1;
+        DEBUG_TRACE_FEXIT();
+        return RETURN_FAILURE;
+    }
+
     if (exist_img.ID == -1)
     {
+        imgid_free(&exist_img);
+        if (local_too_big(img))
+        {
+            img->ID = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
         img->ID     = next_avail_image_ID(img->ID);
         errno_t ret = ImageStreamIO_createIm(&dcimg[img->ID], img->name, img->mdt->naxis,
                                              img->mdt->size, img->mdt->datatype, img->mdt->shared,
@@ -76,6 +188,7 @@ errno_t create_image_ID_IMGID(IMGID *img)
     {
         // Image name already in use — check compatibility
         img->ID = exist_img.ID;
+        imgid_free(&exist_img);
 
         int mismatch = 0;
 
@@ -118,6 +231,12 @@ errno_t create_image_ID_IMGID(IMGID *img)
             }
         }
 
+        if (mismatch && local_too_big(img))
+        {
+            img->ID = -1;
+            DEBUG_TRACE_FEXIT();
+            return RETURN_FAILURE;
+        }
         if (mismatch)
         {
             delete_image_ID(img->name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -540,4 +659,21 @@ errno_t create_3DCimage_ID(const char *__restrict ID_name,
     }
     imgid_free(&img);
     return retval;
+}
+
+errno_t imgid_create_registered(IMGID *img)
+{
+    if (create_image_ID_IMGID(img) != RETURN_SUCCESS || img->ID == -1)
+    {
+        img->im = NULL;
+        img->md = NULL;
+        return RETURN_FAILURE;
+    }
+    img->im        = &dcimg[img->ID];
+    img->md        = img->im->md;
+    img->createcnt = img->im->createcnt;
+    /* a compatible image of the same name is reused: clear it like a new one */
+    memset(img->im->array.raw, 0,
+           (size_t) ImageStreamIO_typesize(img->md->datatype) * img->md->nelement);
+    return RETURN_SUCCESS;
 }

@@ -55,8 +55,7 @@ imageID basic_stretch(const char *__restrict name_in,
 
     IMGID imgout       = imgid_make_from_name_2D(name_out, naxes[0], naxes[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (uint32_t ii = 0; ii < naxes[0]; ii++)
     {
@@ -107,8 +106,7 @@ imageID basic_stretch_range(const char *__restrict name_in,
 
     IMGID imgout       = imgid_make_from_name_2D(name_out, naxes[0], naxes[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (long step = 0; step < NBstep; step++)
     {
@@ -187,8 +185,7 @@ imageID basic_stretchc(const char *__restrict name_in, const char *__restrict na
 
     IMGID imgout       = imgid_make_from_name_2D(name_out, naxes[0], naxes[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
     for (uint32_t ii = 0; ii < naxes[0]; ii++)
     {

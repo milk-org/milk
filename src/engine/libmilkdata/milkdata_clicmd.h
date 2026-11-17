@@ -144,6 +144,9 @@ typedef struct
     // pointer to optional custom FPS conf check function
     errno_t (*FPS_customCONFcheck)();
 
+    // calculator variables the command sets for its caller, space-separated (NULL: none)
+    const char *outvars;
+
 } CLICMDDATA;
 
 #endif // MILKDATA_CLICMD_H

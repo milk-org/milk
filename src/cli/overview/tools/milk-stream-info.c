@@ -16,8 +16,6 @@
 #include <string.h>
 
 /* Required by overview_defs.h (extern) */
-volatile sig_atomic_t ov_sigINT  = 0;
-volatile sig_atomic_t ov_sigTERM = 0;
 
 /**
  * print_help - Print command-line help message for milk-stream-info
@@ -97,22 +95,28 @@ int main(int argc, char *argv[])
 
     const char *stream_name = argv[optind];
 
-    /* Build the system model */
-    OV_MODEL model;
-    memset(&model, 0, sizeof(model));
-    ov_model_full_scan(&model);
+    /* Build the system model on the heap (~9 MB exceeds default 8 MB stack) */
+    OV_MODEL *model = (OV_MODEL *) calloc(1, sizeof(OV_MODEL));
+    if (model == NULL)
+    {
+        PRINT_ERROR("out of memory allocating OV_MODEL");
+        return 1;
+    }
+    ov_model_full_scan(model);
 
     /* Find the requested stream */
-    int si = ov_find_stream_by_name(&model, stream_name);
+    int si = ov_find_stream_by_name(model, stream_name);
     if (si < 0)
     {
         PRINT_ERROR("stream '%s' not found in shared memory", stream_name);
         ov_scan_cache_cleanup();
+        free(model);
         return 1;
     }
 
-    print_stream_info(&model, si);
+    print_stream_info(model, si);
 
     ov_scan_cache_cleanup();
+    free(model);
     return 0;
 }

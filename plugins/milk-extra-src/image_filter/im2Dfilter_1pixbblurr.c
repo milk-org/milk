@@ -10,31 +10,30 @@
  */
 
 #include "milk_runnable.h"
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-
-#include "libmilkcommon/pixel_dispatch.h"
 
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *iminname  = NULL;
-static char     *imoutname = NULL;
-static float    *blurramp  = NULL;
-static uint32_t *NBloop    = NULL;
+static char     iminname[FUNCTION_PARAMETER_STRMAXLEN]  = "inim";
+static char     imoutname[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
+static float    blurramp                                = 1;
+static uint32_t NBloop                                  = 1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                         \
-    X(".iminname", &iminname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image name") \
-    X(".imoutname", &imoutname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")  \
-    X(".blurramp", &blurramp, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,                        \
-      "value of side pixs (total = 1 for 3 pix)")                                             \
-    X(".axis", &NBloop, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT,                               \
+#define FPS_PARAMS(X)                                                                        \
+    X(".iminname", iminname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image name") \
+    X(".imoutname", imoutname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image name")  \
+    X(".blurramp", &blurramp, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,                       \
+      "value of side pixs (total = 1 for 3 pix)")                                            \
+    X(".axis", &NBloop, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT,                              \
       "number of times operation is performed")
 
 
@@ -47,13 +46,9 @@ MILK_PARAMS_DEFINE(im2Dfilter_1pixbblurr, FPS_PARAMS);
 static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, long NBiter)
 {
     DEBUG_TRACE_FSTART();
-    // custom stream process function code
 
-    // resolve imgpos
     resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg);
 
-
-    // create eigenvalues array if needed
     if (imgout->ID == -1)
     {
         imgout->mdt->naxis = 2;
@@ -68,75 +63,10 @@ static errno_t imfilter_im2D_1pixblurr(IMGID imgin, IMGID *imgout, float amp, lo
         createimagefromIMGID(imgout);
     }
 
-
-    uint32_t xsize = imgin.md->size[0];
-    uint32_t ysize = imgin.md->size[1];
-
-
-    float coeff1 = amp;                           // side pixels (x4)
-    float coeff2 = amp * amp;                     // corner pixels (x4)
-    float coeff0 = 1.0 - 4.0 * (coeff1 + coeff2); // central pixel
-
-
-    // temp arrays
-    float *tmpfim0 = (float *) malloc(sizeof(float) * xsize * ysize);
-    float *tmpfim1 = (float *) malloc(sizeof(float) * xsize * ysize);
-
-
-    // copy input to tmpfim0
-    //
-#define COPY_IN_CASE(DT, ACC, CTYPE)                       \
-    case DT:                                               \
-        for (uint32_t ii = 0; ii < xsize * ysize; ii++)    \
-        {                                                  \
-            tmpfim0[ii] = (float) imgin.im->array.ACC[ii]; \
-        }                                                  \
-        break;
-
-    switch (imgin.md->datatype)
+    if (arith_image_bblur1pix_im(imgin.im, imgout->im, (double) amp, (int) NBiter) != 0)
     {
-        FOREACH_REAL_DATATYPE(COPY_IN_CASE)
-    default:
-        break;
+        return RETURN_FAILURE;
     }
-#undef COPY_IN_CASE
-
-
-    for (int iter = 0; iter < NBiter; iter++)
-    {
-        memset(tmpfim1, 0, sizeof(float) * xsize * ysize);
-
-        _Pragma("omp parallel for") for (uint32_t jj = 1; jj < ysize - 1; jj++)
-        {
-            _Pragma("omp simd") for (uint32_t ii = 1; ii < xsize - 1; ii++)
-            {
-                float val = 0.0f;
-                // central
-                val += coeff0 * tmpfim0[jj * xsize + ii];
-
-                // sides
-                val += coeff1 * tmpfim0[jj * xsize + ii + 1];
-                val += coeff1 * tmpfim0[jj * xsize + ii - 1];
-                val += coeff1 * tmpfim0[(jj + 1) * xsize + ii];
-                val += coeff1 * tmpfim0[(jj - 1) * xsize + ii];
-
-                // corners
-                val += coeff2 * tmpfim0[(jj + 1) * xsize + ii + 1];
-                val += coeff2 * tmpfim0[(jj + 1) * xsize + ii - 1];
-                val += coeff2 * tmpfim0[(jj - 1) * xsize + ii + 1];
-                val += coeff2 * tmpfim0[(jj - 1) * xsize + ii - 1];
-
-                tmpfim1[jj * xsize + ii] = val;
-            }
-        }
-        memcpy(tmpfim0, tmpfim1, sizeof(float) * xsize * ysize);
-    }
-
-    memcpy(imgout->im->array.F, tmpfim0, sizeof(float) * xsize * ysize);
-
-    free(tmpfim0);
-    free(tmpfim1);
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -163,7 +93,7 @@ static MILK_HOT errno_t im2Dfilter_1pixbblurr_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        imfilter_im2D_1pixblurr(imgin, &imgout, *blurramp, *NBloop);
+        imfilter_im2D_1pixblurr(imgin, &imgout, blurramp, NBloop);
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }

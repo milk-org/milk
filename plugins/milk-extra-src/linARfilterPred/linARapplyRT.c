@@ -52,11 +52,12 @@ MILK_PARAMS_DEFINE(linARapplyRT, FPS_PARAMS);
 
 static MILK_HOT errno_t linARapplyRT_compute(const MILK_RUNNABLE *self)
 {
+    errno_t rc = RETURN_SUCCESS;
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    fpsexec();
+    rc = fpsexec();
     MILK_PROCINFO_END(self)
-    return RETURN_SUCCESS;
+    return rc;
 }
 
 const MILK_RUNNABLE runnable_linARfilterPred_linARapplyRT = {

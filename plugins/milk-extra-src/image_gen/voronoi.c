@@ -26,10 +26,17 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char           *inpos = NULL;
-static LOCVAR_OUTIMG2D outim;
-static float          *radius  = NULL;
-static float          *gapsize = NULL;
+static char            inpos[FUNCTION_PARAMETER_STRMAXLEN]      = "pts.dat";
+static char            outim_name[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
+static uint32_t        outim_xsize                              = 256;
+static uint32_t        outim_ysize                              = 256;
+static uint32_t        outim_shared                             = 0;
+static uint32_t        outim_NBkw                               = 10;
+static uint32_t        outim_CBsize                             = 0;
+static LOCVAR_OUTIMG2D outim   = { outim_name,    &outim_xsize, &outim_ysize, NULL,
+                                   &outim_shared, &outim_NBkw,  &outim_CBsize };
+static float           radius  = 0.1;
+static float           gapsize = 0.1;
 
 
 /* ================================================================
@@ -37,7 +44,13 @@ static float          *gapsize = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                             \
-    X(".inpos", &inpos, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "points positions, filename") \
+    X(".inpos", inpos, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "points positions, filename")  \
+    X(".outim.name", outim_name, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")          \
+    X(".outim.xsize", &outim_xsize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "x size")             \
+    X(".outim.ysize", &outim_ysize, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "y size")             \
+    X(".outim.shared", &outim_shared, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "shared flag")      \
+    X(".outim.NBkw", &outim_NBkw, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "number keywords")      \
+    X(".outim.CBsize", &outim_CBsize, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "circ buffer size") \
     X(".radius", &radius, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "radius")                      \
     X(".gapsize", &gapsize, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "gap size")
 
@@ -265,8 +278,8 @@ static MILK_HOT errno_t voronoi_compute(const MILK_RUNNABLE *self)
 
     {
         image_gen_make_voronoi_map(&imgpos, &imgout,
-                                   *radius, // maximum radius of each Voronoi zone
-                                   *gapsize // gap between Voronoi zones
+                                   radius, // maximum radius of each Voronoi zone
+                                   gapsize // gap between Voronoi zones
         );
 
 

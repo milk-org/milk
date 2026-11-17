@@ -80,8 +80,7 @@ underlying local `.git` repository.
 
 When releasing a new version from `framework-dev` (or the equivalent stable branch):
 
-- Update version number in `CMakeLists.txt`
-- Update version information in `README.md`
+- Update `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_PATCH` in `CMakeLists.txt`
 
 !!! warning "For the future:"
     There is quite a bit more to do in defining how we make a release of milk and cacao.

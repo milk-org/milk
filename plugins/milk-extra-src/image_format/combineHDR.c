@@ -28,10 +28,10 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *flistname = NULL;
-static double *satlevel  = NULL;
-static double *biaslevel = NULL;
-static char   *outimname = NULL;
+static char   flistname[FUNCTION_PARAMETER_STRMAXLEN] = "HDRfilelist.txt";
+static double satlevel                                = 0.0;
+static double biaslevel                               = 0.0;
+static char   outimname[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
 
 
 /* ================================================================
@@ -39,10 +39,10 @@ static char   *outimname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                      \
-    X(".flistname", &flistname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "file list name")  \
+    X(".flistname", flistname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "file list name")   \
     X(".satlevel", &satlevel, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "Saturation level") \
     X(".biaslevel", &biaslevel, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "Bias level")     \
-    X(".outimname", &outimname, FPTYPE_STRING_NOT_STREAM, 1, FPFLAG_DEFAULT_INPUT, "output image")
+    X(".outimname", outimname, FPTYPE_STRING_NOT_STREAM, 1, FPFLAG_DEFAULT_INPUT, "output image")
 
 
 /* ================================================================
@@ -395,10 +395,10 @@ static MILK_HOT errno_t combineHDR_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    printf("satlevel  = %f\n", *satlevel);
-    printf("biaslevel = %f\n", *biaslevel);
+    printf("satlevel  = %f\n", satlevel);
+    printf("biaslevel = %f\n", biaslevel);
 
-    combine_HDR_image(flistname, *satlevel, *biaslevel, outimname);
+    combine_HDR_image(flistname, satlevel, biaslevel, outimname);
 
     MILK_PROCINFO_END(self)
 

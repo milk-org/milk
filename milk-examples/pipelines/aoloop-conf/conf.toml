@@ -1,7 +1,6 @@
 long_name = "aoloop"
 name = "aoloop"
 loop_number = 0
-teardown_kill_tmux = true
 _ln = '{loop_number}' # alias
 
 [compute_units]

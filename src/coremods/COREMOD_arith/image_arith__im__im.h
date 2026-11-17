@@ -21,8 +21,6 @@
 
 #include <libfps/IMGID.h>
 
-double Ppositive(double a);
-
 
 /* ==========================================================
  * X-macro table: all unary image operations.

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_data_internal.h"
+#include "fps_unit_state.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -122,16 +123,20 @@ static int sort_fps_by_ancestry(const void *a, const void *b)
 }
 
 /**
- * sort_fps_by_tmux - Compare FPS entries by tmux session status
+ * sort_fps_by_state - Compare FPS entries by the state of their run process: running, starting,
+ * stopping, failed, exited, stopped
  * @a: Pointer to first OV_FPS
  * @b: Pointer to second OV_FPS
  *
  * Return: Negative, zero, or positive comparison result.
  */
-static int sort_fps_by_tmux(const void *a, const void *b)
+static int sort_fps_by_state(const void *a, const void *b)
 {
-    int ta = ((const OV_FPS *) a)->tmux_flags;
-    int tb = ((const OV_FPS *) b)->tmux_flags;
+    static const int rank[] = { [FPS_UNIT_RUNNING] = 0,  [FPS_UNIT_STARTING] = 1,
+                                [FPS_UNIT_STOPPING] = 2, [FPS_UNIT_FAILED] = 3,
+                                [FPS_UNIT_EXITED] = 4,   [FPS_UNIT_STOPPED] = 5 };
+    int              ta     = rank[((const OV_FPS *) a)->run_state % 6];
+    int              tb     = rank[((const OV_FPS *) b)->run_state % 6];
     if (ta < tb)
     {
         return -ov_sort_dir_mul;
@@ -168,18 +173,21 @@ static int sort_fps_by_nstreams(const void *a, const void *b)
 /** Number of sortable FPS columns. */
 #define OV_FPS_SORT_NCOL 6
 
+/** tie_fps - name order (processes: then PID), the tie-break of every key. */
+static int tie_fps(const void *a, const void *b)
+{
+    return strcmp(((const OV_FPS *) a)->name, ((const OV_FPS *) b)->name);
+}
+
 /**
- * ov_sort_fps - Sort FPS array in model according to selected key and direction
+ * ov_sort_fps - fill @order with the model indices in sort order (the model is not moved)
  * @model: Pointer to data model
  * @key:   Column sort key index
  * @dir:   Sort direction (0 for asc, 1 for desc)
+ * @order: Output, model->nb_fps entries
  */
-void ov_sort_fps(OV_MODEL *model, int key, int dir)
+void ov_sort_fps(const OV_MODEL *model, int key, int dir, int *order)
 {
-    if (model->nb_fps < 2)
-    {
-        return;
-    }
     ov_sort_dir_mul = dir ? -1 : 1;
     int (*cmp)(const void *, const void *);
     switch (key)
@@ -197,7 +205,7 @@ void ov_sort_fps(OV_MODEL *model, int key, int dir)
         cmp = sort_fps_by_rpid;
         break;
     case 5:
-        cmp = sort_fps_by_tmux;
+        cmp = sort_fps_by_state;
         break;
     case 6:
         cmp = sort_fps_by_nstreams;
@@ -206,5 +214,5 @@ void ov_sort_fps(OV_MODEL *model, int key, int dir)
         cmp = sort_fps_by_name;
         break;
     }
-    qsort(model->fps, (size_t) model->nb_fps, sizeof(OV_FPS), cmp);
+    ov_sort_index(model->fps, sizeof(OV_FPS), model->nb_fps, cmp, tie_fps, order);
 }

@@ -1,4 +1,4 @@
-"""R4a acceptance tests (milk): the deploy and teardown plans on real FPSs, tmux and SHM.
+"""R4a acceptance tests (milk): the deploy and teardown plans on real FPSs, processes and SHM.
 
 Needs milk binaries and the session spoofing of tests/conftestaux/milk.py.
 See specs/009-r4a-rundir-state-plans/brief.md.
@@ -7,7 +7,6 @@ See specs/009-r4a-rundir-state-plans/brief.md.
 from __future__ import annotations
 
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -26,15 +25,6 @@ RESOURCES = Path(__file__).parents[1] / "resources"
 NAMES = ("basic_delay0", "basic_delay1")
 
 
-def _tmux_has(session: str) -> bool:
-    return (
-        subprocess.run(
-            ["tmux", "has-session", "-t", session], capture_output=True
-        ).returncode
-        == 0
-    )
-
-
 def _fps_exists(name: str) -> bool:
     try:
         FPS(name)
@@ -46,7 +36,7 @@ def _fps_exists(name: str) -> bool:
 @pytest.fixture
 def live(tmp_path, request):
     """pipelinebasic initialized in tmp_path. Parametrize indirectly with init overrides.
-    Teardown with tmux killing always runs at the end, whatever the test did."""
+    Teardown always runs at the end, whatever the test did."""
     conf = tmp_path / "pipelinebasic-conf"
     shutil.copytree(RESOURCES / "pipelinebasic-conf", conf)
     overrides = getattr(request, "param", None) or {}
@@ -57,8 +47,6 @@ def live(tmp_path, request):
         run_plan(final, "teardown")
     except Exception:
         pass
-    for name in NAMES:
-        subprocess.run(["tmux", "kill-session", "-t", name], capture_output=True)
 
 
 def test_deploy_from_cold(live):
@@ -117,17 +105,8 @@ def test_teardown_cleans_fps_without_rundir(live):
     assert state(live).state is State.COLD
 
 
-@pytest.mark.parametrize("live", [{"teardown_kill_tmux": False}], indirect=True)
-def test_teardown_keeps_tmux_by_default_and_redeploys(live):
+def test_teardown_then_redeploy(live):
     run_plan(live, "deploy")
     run_plan(live, "teardown")
-    assert all(_tmux_has(n) for n in NAMES)  # sessions survive
-    run_plan(live, "deploy")  # and a redeploy reuses them
+    run_plan(live, "deploy")
     assert state(live).state is State.CONFIGURED
-
-
-@pytest.mark.parametrize("live", [{"teardown_kill_tmux": True}], indirect=True)
-def test_teardown_kills_tmux_when_asked(live):
-    run_plan(live, "deploy")
-    run_plan(live, "teardown")
-    assert not any(_tmux_has(n) for n in NAMES)

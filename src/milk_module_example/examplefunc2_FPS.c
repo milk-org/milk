@@ -15,13 +15,13 @@
 #include "examplefunc2_FPS.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// Local variables pointers
+// Local variables
 
-static char   *inimname;
-static double *scoeff;
+static char   inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static double scoeff                                 = 0.0;
 
-#define IMSUM2_PARAMS(X)                                                                \
-    X(".in_name", &inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
+#define IMSUM2_PARAMS(X)                                                               \
+    X(".in_name", inimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input image") \
     X(".scaling", &scoeff, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "scaling coefficient")
 
 MILK_PARAMS_DEFINE(imsum2, IMSUM2_PARAMS);
@@ -80,7 +80,7 @@ static MILK_HOT errno_t imsum2_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     {
-        example_compute_2Dimage_total(&img, *scoeff);
+        example_compute_2Dimage_total(&img, scoeff);
         if (img.ID == -1)
         {
             return RETURN_FAILURE;

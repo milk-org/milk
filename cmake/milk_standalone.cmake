@@ -10,7 +10,6 @@
 set(_MILK_STANDALONE_LIBS
     milkfps
     milkcomputeunit
-    milkfpsseq
     milkdata
     milkprocessinfo
     ImageStreamIO
@@ -38,7 +37,6 @@ if(USE_STATIC_LTO)
       milkCOREMODtools_static
       milkCOREMODarith_static
       milkcomputeunit_static
-      milkfpsseq_static
       milkfps_static
       milkdata_static
       milkprocessinfo_static

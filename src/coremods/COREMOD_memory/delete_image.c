@@ -17,6 +17,7 @@
 
 #include "image_ID.h"
 #include "list_image.h"
+#include "libmilkdata/milkdata.h" /* milk_table_bump() */
 
 // Forward declaration(s)
 /**
@@ -71,6 +72,7 @@ static MILK_HOT errno_t delete_image_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     IMGID img = imgid_make_from_name(imname);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
     FUNC_CHECK_RETURN(delete_image_IMGID(&img, (int) errmode_ptr));
 
     MILK_PROCINFO_END(self)
@@ -272,6 +274,7 @@ errno_t delete_image(IMGID *img, int errmode)
 
         // Mark slot free LAST, after all cleanup
         dcimg[ID].used = 0;
+        milk_table_bump();
     }
 
 

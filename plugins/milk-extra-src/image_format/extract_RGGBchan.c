@@ -14,11 +14,11 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inim[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static char outimR[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char outimG1[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char outimG2[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char outimB[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char inim[FUNCTION_PARAMETER_STRMAXLEN]    = "inim";
+static char outimR[FUNCTION_PARAMETER_STRMAXLEN]  = "inim";
+static char outimG1[FUNCTION_PARAMETER_STRMAXLEN] = "outimG1";
+static char outimG2[FUNCTION_PARAMETER_STRMAXLEN] = "outimG2";
+static char outimB[FUNCTION_PARAMETER_STRMAXLEN]  = "outimB";
 
 
 /* ================================================================

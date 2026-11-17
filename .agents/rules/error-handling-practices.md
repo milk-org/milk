@@ -196,9 +196,9 @@ handle to its sentinel value (`-1`, `NULL`,
 can release unconditionally.
 
 This is the **only approved use of `goto`** in the
-codebase, matching Linux kernel convention (already
-cited as the project style baseline in
-`code-style-guide.md`).
+codebase, matching Linux kernel convention (the
+project style baseline in
+[Coding Standards](../../docs/developer/coding_standards.md)).
 
 ```c
 errno_t example_function(const char *path, size_t sz)

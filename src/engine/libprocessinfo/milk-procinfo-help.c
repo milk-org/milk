@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
     printf("\n");
 
     printf(C_HDR "FPS Integration\n" C_RST);
-    printf("When an FPS is procinfo-enabled (via the `-procinfo` flag\n");
-    printf("upon initialization), a new group (`.procinfo`) appears.\n");
+    printf("An fpsexec unit gets processinfo by default (`--no-procinfo`\n");
+    printf("at fpsinit turns it off), with a `.procinfo` parameter group.\n");
     printf("\n");
     printf("Important Procinfo Parameters:\n");
     printf("  " C_BOLD "procinfo.enabled" C_RST
@@ -54,6 +54,9 @@ int main(int argc, char *argv[])
     printf("  " C_BOLD "procinfo.RTprio" C_RST
            "       Assign Linux thread priority (SCHED_FIFO).\n");
     printf("  " C_BOLD "procinfo.taskset" C_RST "      Set CPU affinity mapping.\n");
+    printf("  " C_BOLD "procinfo.numanode" C_RST "     Pin to NUMA node (-2 GPU-local, -1 off).\n");
+    printf("  " C_BOLD "procinfo.OMPwait" C_RST
+           "      OpenMP wait (0 inherit, 1 PASSIVE, 2 ACTIVE).\n");
     printf("  " C_BOLD "procinfo.triggermode" C_RST "  Determine what drives the computation:\n");
     printf("                          0: IMMEDIATE (Continuous loop)\n");
     printf("                          3: SEMAPHORE (Stream semWait trigger)\n");
@@ -63,9 +66,9 @@ int main(int argc, char *argv[])
 
     printf(C_HDR "Example:\n" C_RST);
     printf("Configure 'myfps00' to compute only when 'cam01' gets a new frame:\n");
-    printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.triggermode 3\n" C_RST);
-    printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.triggersname cam01\n" C_RST);
-    printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.enabled 1\n" C_RST);
+    printf("  $ " C_CMD "milk-fps-set myfps00.procinfo.triggermode=3 \\\n"
+           "                 myfps00.procinfo.triggersname=cam01 \\\n"
+           "                 myfps00.procinfo.enabled=ON\n" C_RST);
     printf("  $ " C_CMD "milk-fps-runstart myfps00\n" C_RST);
     printf("\n");
 
@@ -74,6 +77,8 @@ int main(int argc, char *argv[])
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
     printf("  " C_CMD "milk-procCTRL" C_RST "      : Interactive TUI task manager\n");
+    printf("  " C_CMD "milk-procinfo-list" C_RST " : List active processinfo entries\n");
+    printf("  " C_CMD "milk-procinfo-info" C_RST " : Detailed timing and CPU affinity report\n");
     printf("  " C_CMD "milk-procinfo-rm" C_RST "   : Remove processinfo shared memory segment\n");
     printf("  " C_CMD "milk-procCTRL-scan" C_RST " : Non-interactive scan of active processes\n");
     printf("\n");

@@ -13,12 +13,12 @@ The core libraries in Milk follow a strict hierarchical dependency chain. It is 
 
 2.  **libprocessinfo** (`milkprocessinfo`)
     - **Description:** Provides tools for process monitoring, control, and synchronization. It defines the `PROCESSINFO` structure and manages process lists in shared memory.
-    - **Dependencies:** `ImageStreamIO` (It uses image streams for trigger mechanisms), `rt` (Real-time), `ncurses` (TUI), `pthread`.
+    - **Dependencies:** `ImageStreamIO` (It uses image streams for trigger mechanisms), `rt` (Real-time), `pthread`.
     - **Used by:** `libfps`.
 
 3.  **libfps** (`milkfps`)
     - **Description:** The Function Parameter Structure library. It provides a framework for managing function parameters, configuration, and runtime control via a standardized interface (CLI and TUI).
-    - **Dependencies:** `libprocessinfo` (For process integration), `ImageStreamIO` (For stream parameters), `ncurses`.
+    - **Dependencies:** `libprocessinfo` (For process integration), `ImageStreamIO` (For stream parameters).
 
 ## Example Progression
 
@@ -27,3 +27,4 @@ The examples in this directory mirror this hierarchy:
 - **`example01_ImageStreamIO/`**: Demonstrates how to create, write to, and read from Image Streams using the base `ImageStreamIO` library.
 - **`example02_processinfo/`**: Builds upon ImageStreamIO to show how to register a process, monitor its status, and handle process triggers.
 - **`example03_fps/`**: The most advanced level, demonstrating how to wrap a function with `libfps` to gain automatic parameter management, configuration/run loops, and CLI integration.
+- **`example04_aoloop/`**: An adaptive optics loop built from calculator compute units and a bash script, with no C code and no cacao: simulated phase WFS, DM channel combiner, WFS acquisition, two MVMs and a modal filter, with latency and timing measurements.

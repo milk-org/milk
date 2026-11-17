@@ -2,18 +2,14 @@ set(LIBNAME "milkcomputeunit")
 set(SRCNAME "libcomputeunit")
 
 set(SOURCEFILES
-    cmd/fps_execFPScmd.c
-    cmd/fps_tmux.c
-    cmd/fps_processcmdline_interactive.c
-    cmd/fps_processcmdline_file.c
-    cmd/fps_process_fpsCMDarray.c
     cli/fps_cli_init.c
     cli/fps_cli_sync.c
     core/fps_lifecycle.c
     core/fps_standalone_main.c
+    core/fps_unit_startstop.c
     core/milk_runnable.c
     core/milk_runnable_main.c
-    io/fps_read_fpsCMD_fifo.c
+    core/fps_unit_options.c
     params/fps_modulevars_resync.c
     procinfo/fps_processinfo.c
     procinfo/fps_processinfo_entries.c
@@ -26,6 +22,10 @@ set(SOURCEFILES
     state/fps_RUNstop.c
     state/fps_CONFstart.c
     state/fps_CONFstop.c)
+
+# fps_apply_process_settings.c needs _GNU_SOURCE before <sched.h> for CPU_SET
+set_source_files_properties(procinfo/fps_apply_process_settings.c
+                            PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 # Single translation unit
@@ -62,12 +62,32 @@ if(USE_STATIC_LTO)
                                                  milkcommon)
 endif()
 
-# Generic FPS lifecycle command, compiled once per binary name
+# Generic FPS lifecycle command, compiled once per binary name (milk-fps-run: for service managers)
 set(FPS_GENERIC_CMDS milk-fps-confstart milk-fps-confstop milk-fps-runstart
-                     milk-fps-runstop milk-fps-confstep)
+                     milk-fps-runstop milk-fps-confstep milk-fps-run)
 
 foreach(cmd ${FPS_GENERIC_CMDS})
   add_executable(${cmd} tools/milk-fps-cmd.c)
   target_link_libraries(${cmd} PUBLIC ${LIBNAME} pthread m)
   install(TARGETS ${cmd} DESTINATION bin)
 endforeach()
+
+# Output of a unit (run.out / conf.out)
+add_executable(milk-fps-log tools/milk-fps-log.c)
+target_link_libraries(milk-fps-log PUBLIC milkfps)
+install(TARGETS milk-fps-log DESTINATION bin)
+
+# Removing an FPS stops its unit first
+add_executable(milk-fps-rm tools/milk-fps-rm.c)
+target_link_libraries(milk-fps-rm PUBLIC ${LIBNAME} pthread m)
+install(TARGETS milk-fps-rm DESTINATION bin)
+
+# Wait for detached FPS unit run/conf processes to finish
+add_executable(milk-fps-wait tools/milk-fps-wait.c)
+target_link_libraries(milk-fps-wait PUBLIC ${LIBNAME} pthread m)
+install(TARGETS milk-fps-wait DESTINATION bin)
+
+# Initialize one or more FPS compute units in parallel
+add_executable(milk-fps-init tools/milk-fps-init.c)
+target_link_libraries(milk-fps-init PUBLIC ${LIBNAME} pthread m)
+install(TARGETS milk-fps-init DESTINATION bin)

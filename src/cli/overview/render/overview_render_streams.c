@@ -37,11 +37,11 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
     memset(local_depth, 0, sizeof(local_depth));
     {
         int eff_sel = -1;
-        if (lay->mouse_hover && lay->hover_global_stream >= 0)
+        if (lay->mouse_hover && lay->panel[OV_FOCUS_STREAMS].hover_idx >= 0)
         {
             for (int i = 0; i < filt_n; i++)
             {
-                if (filt_idx[i] == lay->hover_global_stream)
+                if (filt_idx[i] == lay->panel[OV_FOCUS_STREAMS].hover_idx)
                 {
                     eff_sel = i;
                     break;
@@ -49,27 +49,28 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
             }
         }
         else if (lay->freeze && lay->freeze_focus == OV_FOCUS_STREAMS &&
-                 lay->freeze_sel_stream >= 0 && lay->freeze_sel_stream < filt_n)
+                 lay->panel[OV_FOCUS_STREAMS].freeze_row >= 0 &&
+                 lay->panel[OV_FOCUS_STREAMS].freeze_row < filt_n)
         {
-            eff_sel = lay->freeze_sel_stream;
+            eff_sel = lay->panel[OV_FOCUS_STREAMS].freeze_row;
         }
-        else if (lay->focus == OV_FOCUS_STREAMS && lay->sel_stream >= 0 && lay->sel_stream < filt_n)
+        else if (lay->focus == OV_FOCUS_STREAMS && lay->panel[OV_FOCUS_STREAMS].sel >= 0 &&
+                 lay->panel[OV_FOCUS_STREAMS].sel < filt_n)
         {
-            eff_sel = lay->sel_stream;
+            eff_sel = lay->panel[OV_FOCUS_STREAMS].sel;
         }
 
         if (eff_sel >= 0)
         {
-            int        root_si = filt_idx[eff_sel];
-            SG_LINEAGE lin;
-            sg_compute_lineage(m, root_si, SG_MODE_FULL, &lin);
+            int               root_si = filt_idx[eff_sel];
+            const SG_LINEAGE *lin     = ov_lineage(m, root_si, SG_MODE_FULL);
 
-            for (int a = 0; a < lin.nb_ancestors; a++)
+            for (int a = 0; a < lin->nb_ancestors; a++)
             {
-                int si = lin.ancestors[a].stream_idx;
+                int si = lin->ancestors[a].stream_idx;
                 if (si >= 0 && si < m->nb_streams)
                 {
-                    int d = lin.ancestors[a].depth;
+                    int d = lin->ancestors[a].depth;
                     if (d > 127)
                     {
                         d = 127;
@@ -77,12 +78,12 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
                     local_depth[si] = (int8_t) (-d);
                 }
             }
-            for (int di = 0; di < lin.nb_descendants; di++)
+            for (int di = 0; di < lin->nb_descendants; di++)
             {
-                int si = lin.descendants[di].stream_idx;
+                int si = lin->descendants[di].stream_idx;
                 if (si >= 0 && si < m->nb_streams)
                 {
-                    int dp = lin.descendants[di].depth;
+                    int dp = lin->descendants[di].depth;
                     if (dp > 127)
                     {
                         dp = 127;
@@ -94,7 +95,7 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
     }
 
     int max_rows = r.height - 4;
-    int start    = lay->scroll_stream;
+    int start    = lay->panel[OV_FOCUS_STREAMS].scroll;
 
     regex_t re;
     int     has_re = 0;
@@ -106,20 +107,21 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
         }
     }
 
-    if (filt_n == 0 && active_filter[0] != '\0')
+    if (filt_n == 0)
     {
-        int row = hrow + 2;
-        ov_buf_pos(row, r.col + 1);
-        ov_theme_bg(OV_BG_PANEL);
-        ov_theme_fg(OV_FG_WARN);
-        char msg[128];
-        snprintf(msg, sizeof(msg), "  No matching streams for '/%s/'", active_filter);
-        ov_buf_printf("%s", msg);
-        render_pad_spaces((int) strlen(msg), r.width);
-        for (int i = 1; i < max_rows; i++)
+        char msg[192];
+        if (active_filter[0] != '\0')
         {
-            clear_row(hrow + 2 + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+            snprintf(msg, sizeof(msg), "  No matching streams for '/%s/'", active_filter);
         }
+        else
+        {
+            snprintf(msg, sizeof(msg),
+                     "  No streams \xe2\x80\x94 start a pipeline, or milk-CTRL -d DIR (now %s)",
+                     ov_get_shmdir());
+        }
+        render_empty_rows(r, hrow + 2, max_rows,
+                          (active_filter[0] != '\0') ? OV_FG_WARN : OV_FG_DIM, msg);
         if (has_re)
         {
             regfree(&re);
@@ -143,7 +145,8 @@ static void ov_streams__render_rows(const OV_LAYOUT  *lay,
             clear_row(row, r.col + 1, r.width - 2, OV_BG_PANEL);
         }
     }
-    render_scroll_indicators(r, lay->scroll_stream, max_rows, filt_n, OV_FG_STREAM);
+    render_scroll_indicators(r, lay->panel[OV_FOCUS_STREAMS].scroll, max_rows, filt_n,
+                             OV_FG_STREAM);
     if (has_re)
     {
         regfree(&re);
@@ -161,21 +164,22 @@ void ov_render_streams_panel(const OV_LAYOUT *lay, const OV_MODEL *m, const OV_R
     OV_RECT r = lay->r_streams;
 
     int         filt_idx[OV_MAX_STREAMS];
-    int         filt_n        = ov_filter_streams(lay, m, rel, filt_idx, OV_MAX_STREAMS);
+    int         filt_n        = ov_rows(lay, m, OV_FOCUS_STREAMS, filt_idx, OV_MAX_STREAMS);
     const char *active_filter = ov_get_active_filter_for(lay, OV_FOCUS_STREAMS);
 
     /* Panel title with prominent filter indicator */
     {
-        int loop_id = (lay->loop_filter_active && lay->sel_loop >= 0 && lay->sel_loop < m->nb_loops)
-                          ? lay->sel_loop + 1
+        int loop_id = (lay->loop_filter_active && lay->sub[OV_SUB_LOOPS].sel >= 0 &&
+                       lay->sub[OV_SUB_LOOPS].sel < m->nb_loops)
+                          ? lay->sub[OV_SUB_LOOPS].sel + 1
                           : -1;
         ov_draw_panel_border_filter(r.row, r.col, r.height, r.width, "STREAMS", OV_FG_STREAM,
                                     lay->focus == OV_FOCUS_STREAMS, 0, lay->ctrl_blink, loop_id,
-                                    lay->filter_stream, lay->filter_stream_active, filt_n,
-                                    m->nb_streams);
+                                    lay->panel[OV_FOCUS_STREAMS].filter,
+                                    lay->panel[OV_FOCUS_STREAMS].filter_on, filt_n, m->nb_streams);
     }
 
-    ov_streams__render_header(lay, r);
+    ov_table_header(&ov_streams_table, lay, r, OV_FG_STREAM_HDR);
     ov_streams__render_rows(lay, m, rel, r, filt_idx, filt_n, active_filter);
 
     int max_rows = r.height - 4;

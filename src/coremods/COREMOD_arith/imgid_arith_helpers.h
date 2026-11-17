@@ -33,7 +33,9 @@ static inline void imgid_ensure_output(IMGID *src, IMGID *dst)
 {
     if (dst->im == NULL)
     {
+        uint8_t saved_shared = dst->mdt->shared;
         imgid_copy(src, dst);
+        dst->mdt->shared = saved_shared;
     }
     if (dst->im == NULL)
     {
@@ -78,19 +80,6 @@ static inline int imgid_same_dims(const IMGID *img1, const IMGID *img2)
         }
     }
     return 1;
-}
-
-/**
- * @brief Check if first image is 3D cube and second is 2D matching slice
- *
- * @param cube  Potential 3D cube image
- * @param slice Potential 2D slice image
- * @return 1 if cube is 3D and slice is 2D with matching [x, y], 0 otherwise
- */
-static inline int imgid_is_cube_slice(const IMGID *cube, const IMGID *slice)
-{
-    return (cube->md->naxis == 3 && slice->md->naxis == 2 &&
-            cube->md->size[0] == slice->md->size[0] && cube->md->size[1] == slice->md->size[1]);
 }
 
 #endif /* IMGID_ARITH_HELPERS_H */

@@ -10,6 +10,7 @@
 #include "milk_runnable.h"
 #include "computeunit.h"
 
+#include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Forward declaration
@@ -46,18 +47,13 @@ imageID image_basic_SwapAxis2D_byID(imageID IDin, const char *__restrict IDout_n
     uint32_t xsize = dcimg[IDin].md[0].size[0];
     uint32_t ysize = dcimg[IDin].md[0].size[1];
 
-    IMGID imgout       = imgid_make_from_name_2D(IDout_name, ysize, xsize);
+    IMGID imgout = imgid_make_from_name_2D(IDout_name, ysize, xsize);
+    imgout.mdt->datatype =
+        (dcimg[IDin].md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
-    for (uint32_t ii = 0; ii < xsize; ii++)
-    {
-        for (uint32_t jj = 0; jj < ysize; jj++)
-        {
-            imgout.im->array.F[ii * ysize + jj] = dcimg[IDin].array.F[jj * xsize + ii];
-        }
-    }
+    arith_image_transpose_im(&dcimg[IDin], imgout.im);
 
     return imgout.ID;
 }

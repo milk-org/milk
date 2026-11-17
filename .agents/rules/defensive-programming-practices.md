@@ -20,13 +20,13 @@ The `milk` project adheres to strong defensive programming practices to guarante
 ## 3. Input Validation (Outside the Hot Path)
 
 - **Untrusted input:** Treat all external input—CLI arguments, file contents, environment variables, and SHM parameters—as untrusted. Validate lengths, ranges, and formats prior to processing.
-- **Milk context:** Validate FPS parameters in configuration callbacks (e.g., `customCONFcheck` or setup functions), not inside the `fpsexec()` compute loop. Validate `IMGID` or stream dimensions (e.g., `stream.size[0]`) once before entering pixel-processing hot paths to ensure zero overhead in real-time execution.
+- **Milk context:** Validate FPS parameters in configuration callbacks (e.g., `customCONFcheck` or setup functions), not inside the unit's compute loop. Validate `IMGID` or stream dimensions (e.g., `img.md->size[0]`) once before entering pixel-processing hot paths to ensure zero overhead in real-time execution.
 
 ## 4. Integer Arithmetic and Bounds Checking
 
 - **Safe arithmetic:** Prevent integer overflow and underflow. Be mindful of signed versus unsigned comparisons.
 - **Array access:** Validate array indices before accessing memory.
-- **Milk context:** Hoist bounds checking and size validation _outside_ of `#pragma omp simd` or tight compute loops. Pre-compute safe loop boundaries based on `stream.size[x]` during the initialization phase to guarantee safety without impacting the performance of the hot path.
+- **Milk context:** Hoist bounds checking and size validation _outside_ of `#pragma omp simd` or tight compute loops. Pre-compute safe loop boundaries based on `img.md->size[x]` during the initialization phase to guarantee safety without impacting the performance of the hot path.
 
 ## 5. State Initialization
 
@@ -46,7 +46,7 @@ The `milk` project adheres to strong defensive programming practices to guarante
 
 ## 8. Time-of-Check to Time-of-Use (TOCTOU) in Shared Memory
 
-- **Concurrent mutation:** When dealing with `/dev/shm` IPC, understand that shared memory can change between the time you check it and the time you use it. Another tmux session or compute unit might alter a stream's dimensions or state while you are reading it.
+- **Concurrent mutation:** When dealing with shared-memory IPC (`$MILK_SHM_DIR`), understand that shared memory can change between the time you check it and the time you use it. Another process or compute unit might alter a stream's dimensions or state while you are reading it.
 - **Enforcement:** Rely on atomic operations, semaphores (as detailed in `concurrency-practices.md`), or local caching of immutable state before entering your compute loops.
 
 ## 9. Safe Signal Handling

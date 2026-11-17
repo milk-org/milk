@@ -22,21 +22,23 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inmatU    = NULL;
-static char    *invecS    = NULL;
-static char    *inmatV    = NULL;
-static char    *outmatM   = NULL;
-static int32_t *GPUdevice = NULL;
+static char    inmatU[FUNCTION_PARAMETER_STRMAXLEN]  = "inM";
+static char    invecS[FUNCTION_PARAMETER_STRMAXLEN]  = "inS";
+static char    inmatV[FUNCTION_PARAMETER_STRMAXLEN]  = "inV";
+static char    outmatM[FUNCTION_PARAMETER_STRMAXLEN] = "outM";
+static int32_t GPUdevice                             = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                           \
-    X(".inU", &inmatU, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix U")            \
-    X(".inS", &invecS, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input singular values vec") \
-    X(".inV", &inmatV, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix V")
+#define FPS_PARAMS(X)                                                                          \
+    X(".inU", inmatU, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix U")            \
+    X(".inS", invecS, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input singular values vec") \
+    X(".inV", inmatV, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix V")            \
+    X(".outM", outmatM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output M")                    \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -146,7 +148,7 @@ static MILK_HOT errno_t SVDmkM_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        SVDmkM(imginU, imginS, imginV, &imgoutM, *GPUdevice);
+        SVDmkM(imginU, imginS, imginV, &imgoutM, GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutM.im, NULL);
     }
     MILK_PROCINFO_END(self)

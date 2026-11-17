@@ -20,7 +20,7 @@ report with source-level fix suggestions.
 
 - GCC with LTO support (standard on the project)
 - `objdump` (from binutils)
-- Existing milk source tree at `/home/oguyon/src/milk`
+- Commands run from the root of the milk source tree
 
 ---
 
@@ -34,8 +34,8 @@ is undisturbed.
 1. Create and configure the LTO inspection build:
 
 ```bash
-mkdir -p /home/oguyon/src/milk/_build_lto_inspect && \
-cd /home/oguyon/src/milk/_build_lto_inspect && \
+mkdir -p _build_lto_inspect && \
+cd _build_lto_inspect && \
 cmake .. \
   -DUSE_STATIC_LTO=ON \
   -DVEC_REPORT=ON \
@@ -45,7 +45,7 @@ cmake .. \
 2. Build and capture vectorization diagnostics:
 
 ```bash
-cd /home/oguyon/src/milk/_build_lto_inspect && \
+cd _build_lto_inspect && \
 cmake --build . -- -j$(nproc) 2>&1 \
   | tee vec_report_full.log
 ```
@@ -64,7 +64,7 @@ was not vectorized and points to source lines.
 4. Extract unique vectorization failures:
 
 ```bash
-cd /home/oguyon/src/milk/_build_lto_inspect && \
+cd _build_lto_inspect && \
 grep -E 'note:.*not vectorized|missed:' \
   vec_report_full.log \
   | sed 's|.*/src/|src/|' \
@@ -101,7 +101,7 @@ expensive math calls, I/O in hot paths.
    performance-critical:
 
 ```bash
-cd /home/oguyon/src/milk/_build_lto_inspect && \
+cd _build_lto_inspect && \
 TARGETS=$(find . \
   \( -name 'milk-fpsexec-*' \
      -o -name 'cacao-fpsexec-*' \) \
@@ -112,7 +112,7 @@ echo "Found $(echo "$TARGETS" | wc -l) executables"
 8. Disassemble each target:
 
 ```bash
-cd /home/oguyon/src/milk/_build_lto_inspect && \
+cd _build_lto_inspect && \
 mkdir -p asm_output && \
 for BIN in $TARGETS; do
   BASENAME=$(basename "$BIN")
@@ -125,7 +125,7 @@ done
    disassembly files:
 
 ```bash
-cd /home/oguyon/src/milk/_build_lto_inspect/asm_output
+cd _build_lto_inspect/asm_output
 
 echo "=== Float-Double promotions ==="
 grep -rn 'cvtss2sd\|cvtsd2ss' *.asm | head -30
@@ -158,7 +158,7 @@ grep -rn 'divss\|divsd\|divps\|divpd' \
     `printf` or `malloc` is a problem — only those in
     compute loops matter. Use the function name from
     the disassembly section headers (e.g.,
-    `<fpsexec>:`, `<compute_function>:`) to determine
+    `<imsum2_compute>:`, any `<*_compute>:`) to determine
     which findings are in hot paths.
 
 ---
@@ -188,7 +188,7 @@ grep -rn 'divss\|divsd\|divps\|divpd' \
 | I/O in hot path              | Guard with `if (VERBOSE > 0)`                                               |
 | Allocation in hot path       | Move to init phase, reuse buffers                                           |
 | `pow()` in loop              | Specialize: `x*x` for exp=2, `sqrtf` for exp=0.5, `powf` for other          |
-| Missing `MILK_HOT`           | Add `MILK_HOT` to `fpsexec()` and compute functions                         |
+| Missing `MILK_HOT`           | Add `MILK_HOT` to `<stem>_compute()` and hot helpers                        |
 
 13. Present the report to the user, grouped by
     executable and severity.
@@ -200,7 +200,7 @@ grep -rn 'divss\|divsd\|divps\|divpd' \
 14. Remove the inspection build directory when done:
 
 ```bash
-rm -rf /home/oguyon/src/milk/_build_lto_inspect
+rm -rf _build_lto_inspect
 ```
 
 ---
@@ -218,6 +218,5 @@ rm -rf /home/oguyon/src/milk/_build_lto_inspect
 - **Build time**: Static LTO builds take significantly
   longer. Expect 2-5× the normal build time.
 - **Combine with PGO**: For the most informative
-  inspection, use `-DUSE_PGO=USE -DUSE_STATIC_LTO=ON`
-  to see what PGO+LTO together produce. This requires
-  a prior PGO GENERATE pass.
+  inspection, build PGO and static LTO together as
+  [pgo.md §3](../../docs/operations/pgo.md#3-combined-pgo-static-lto) shows.

@@ -4,11 +4,38 @@
 
 #include "stream_graph_internal.h"
 
+#include <stdlib.h>
+
+/* A child of a tree node: a stream and one of its readers (-1: none) */
+typedef struct
+{
+    int stream_idx;
+    int reader_node_idx;
+} SG_CHILD;
+
+/** sg_child_push - append (@stream_idx, @reader) to the growable array *@v. Return: 0, -1 out of memory. */
+static int sg_child_push(SG_CHILD **v, int *n, int *cap, int stream_idx, int reader)
+{
+    if (*n == *cap)
+    {
+        int       nc = (*cap > 0) ? 2 * *cap : 8;
+        SG_CHILD *p  = realloc(*v, (size_t) nc * sizeof(SG_CHILD));
+        if (p == NULL)
+        {
+            return -1;
+        }
+        *v   = p;
+        *cap = nc;
+    }
+    (*v)[(*n)++] = (SG_CHILD) { stream_idx, reader };
+    return 0;
+}
+
 static void sg_dfs_tree(const OV_MODEL *m,
                         int             current_stream,
                         int             reader_node_idx,
                         int             target_stream,
-                        int             target_proc,
+                        int             target_node,
                         const uint64_t *S_words,
                         sg_mode_t       mode,
                         const char     *prefix,
@@ -20,7 +47,7 @@ static void sg_dfs_tree(const OV_MODEL *m,
                         SG_TREE_NODE   *out_nodes,
                         int            *nb_out_nodes)
 {
-    if (*nb_out_nodes >= OV_MAX_NODES)
+    if (*nb_out_nodes >= OV_MAX_NODES || path_len >= SG_TREE_MAX_DEPTH)
     {
         return;
     }
@@ -45,17 +72,14 @@ static void sg_dfs_tree(const OV_MODEL *m,
     node->name[sizeof(node->name) - 1] = '\0';
 
     /* Find reader proc */
-    node->reader_name[0] = '\0';
-    node->is_target_proc = 0;
+    node->reader_name[0]  = '\0';
+    node->reader_node_idx = reader_node_idx;
+    node->is_target_proc  = (reader_node_idx >= 0 && reader_node_idx == target_node);
     if (reader_node_idx >= 0)
     {
         const OV_NODE *rn = &m->nodes[reader_node_idx];
         strncpy(node->reader_name, rn->name, sizeof(node->reader_name) - 1);
         node->reader_name[sizeof(node->reader_name) - 1] = '\0';
-        if (rn->type == OV_NODE_PROC && rn->index == target_proc)
-        {
-            node->is_target_proc = 1;
-        }
     }
 
     /* Build prefix */
@@ -80,103 +104,53 @@ static void sg_dfs_tree(const OV_MODEL *m,
 
     path[path_len] = current_stream;
 
-    /* Find children nodes (stream, reader) */
-    struct
-    {
-        int stream_idx;
-        int reader_node_idx;
-    } child_nodes[OV_MAX_NODES];
-    int nb_child_nodes = 0;
+    /* Children: (stream written by the reader, each of its readers in S), on the heap: this recurses */
+    SG_CHILD *child          = NULL;
+    int       nb_child_nodes = 0, cap_child = 0;
 
     if (reader_node_idx >= 0)
     {
-        /* Find streams written by the reader process/FPS */
-        int child_streams[OV_MAX_STREAMS];
-        int nb_child_streams = 0;
-
-        for (int ei = 0; ei < m->nb_edges; ei++)
+        for (int ki = OV_ADJ_B(m, out, reader_node_idx); ki < OV_ADJ_E(m, out, reader_node_idx);
+             ki++)
         {
-            const OV_EDGE *e = &m->edges[ei];
-            if (e->src_node == reader_node_idx &&
-                (e->type == OV_EDGE_PROC_WRITES_STREAM || e->type == OV_EDGE_FPS_OUTPUT_STREAM))
+            const OV_EDGE *e      = &m->edges[m->adj_out[ki]];
+            int            c_node = e->tgt_node;
+            if ((e->type != OV_EDGE_PROC_WRITES_STREAM && e->type != OV_EDGE_FPS_OUTPUT_STREAM) ||
+                c_node < 0 || c_node >= m->nb_nodes || m->nodes[c_node].type != OV_NODE_STREAM ||
+                !sg_bget(S_words, m->nodes[c_node].index))
             {
-                int c_node = e->tgt_node;
-                if (c_node >= 0 && c_node < m->nb_nodes && m->nodes[c_node].type == OV_NODE_STREAM)
-                {
-                    int c_stream = m->nodes[c_node].index;
-                    if (sg_bget(S_words, c_stream))
-                    {
-                        int duplicate = 0;
-                        for (int k = 0; k < nb_child_streams; k++)
-                        {
-                            if (child_streams[k] == c_stream)
-                            {
-                                duplicate = 1;
-                                break;
-                            }
-                        }
-                        if (!duplicate)
-                        {
-                            child_streams[nb_child_streams++] = c_stream;
-                        }
-                    }
-                }
+                continue;
             }
-        }
-
-        /* For each child stream, find its reader processes/FPS in S */
-        for (int i = 0; i < nb_child_streams; i++)
-        {
-            int c_stream = child_streams[i];
-            int n_node   = m->streams[c_stream].node_idx;
-            int readers[OV_MAX_PROCS];
-            int nb_readers = 0;
-
-            if (n_node >= 0)
+            int c_stream = m->nodes[c_node].index, seen = 0;
+            for (int k = 0; k < nb_child_nodes && !seen; k++)
             {
-                for (int ei = 0; ei < m->nb_edges; ei++)
-                {
-                    const OV_EDGE *e1 = &m->edges[ei];
-                    if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode))
-                    {
-                        int r_node    = e1->tgt_node;
-                        int duplicate = 0;
-                        for (int k = 0; k < nb_readers; k++)
-                        {
-                            if (readers[k] == r_node)
-                            {
-                                duplicate = 1;
-                                break;
-                            }
-                        }
-                        if (!duplicate)
-                        {
-                            readers[nb_readers++] = r_node;
-                        }
-                    }
-                }
+                seen = (child[k].stream_idx == c_stream);
+            }
+            if (seen)
+            {
+                continue; /* two edges to one stream */
             }
 
-            if (nb_readers == 0)
+            /* its readers in S, each once; none: the stream alone */
+            int first = nb_child_nodes, n_node = m->streams[c_stream].node_idx;
+            for (int kj = (n_node >= 0) ? OV_ADJ_B(m, out, n_node) : 0;
+                 n_node >= 0 && kj < OV_ADJ_E(m, out, n_node); kj++)
             {
-                if (nb_child_nodes < OV_MAX_NODES)
+                const OV_EDGE *e1  = &m->edges[m->adj_out[kj]];
+                int            dup = !sg_edge_matches_mode_from_stream(e1, mode);
+                for (int k = first; k < nb_child_nodes && !dup; k++)
                 {
-                    child_nodes[nb_child_nodes].stream_idx      = c_stream;
-                    child_nodes[nb_child_nodes].reader_node_idx = -1;
-                    nb_child_nodes++;
+                    dup = (child[k].reader_node_idx == e1->tgt_node);
+                }
+                if (!dup &&
+                    sg_child_push(&child, &nb_child_nodes, &cap_child, c_stream, e1->tgt_node) != 0)
+                {
+                    break;
                 }
             }
-            else
+            if (nb_child_nodes == first)
             {
-                for (int r = 0; r < nb_readers; r++)
-                {
-                    if (nb_child_nodes < OV_MAX_NODES)
-                    {
-                        child_nodes[nb_child_nodes].stream_idx      = c_stream;
-                        child_nodes[nb_child_nodes].reader_node_idx = readers[r];
-                        nb_child_nodes++;
-                    }
-                }
+                sg_child_push(&child, &nb_child_nodes, &cap_child, c_stream, -1);
             }
         }
     }
@@ -195,10 +169,11 @@ static void sg_dfs_tree(const OV_MODEL *m,
 
     for (int i = 0; i < nb_child_nodes; i++)
     {
-        sg_dfs_tree(m, child_nodes[i].stream_idx, child_nodes[i].reader_node_idx, target_stream,
-                    target_proc, S_words, mode, child_prefix, (i == nb_child_nodes - 1), 0,
-                    depth + 1, path, path_len + 1, out_nodes, nb_out_nodes);
+        sg_dfs_tree(m, child[i].stream_idx, child[i].reader_node_idx, target_stream, target_node,
+                    S_words, mode, child_prefix, (i == nb_child_nodes - 1), 0, depth + 1, path,
+                    path_len + 1, out_nodes, nb_out_nodes);
     }
+    free(child);
 }
 
 /**
@@ -222,17 +197,8 @@ int sg_compute_render_tree(const OV_MODEL *m,
     }
 
     const OV_NODE *sn            = &m->nodes[start_node];
-    int            target_stream = -1;
-    int            target_proc   = -1;
-
-    if (sn->type == OV_NODE_STREAM)
-    {
-        target_stream = sn->index;
-    }
-    else if (sn->type == OV_NODE_PROC)
-    {
-        target_proc = sn->index;
-    }
+    int            target_stream = (sn->type == OV_NODE_STREAM) ? sn->index : -1;
+    int            target_node   = (sn->type == OV_NODE_STREAM) ? -1 : start_node;
 
     uint64_t S_words[SG_BSET_WORDS(OV_MAX_STREAMS)];
     memset(S_words, 0, sizeof(S_words));
@@ -253,8 +219,9 @@ int sg_compute_render_tree(const OV_MODEL *m,
             sg_bset(S_words, lin.descendants[i].stream_idx);
         }
     }
-    else if (target_proc != -1)
+    else if (sn->type == OV_NODE_PROC || sn->type == OV_NODE_FPS)
     {
+        /* Process and FPS roots: the streams reachable from that node, upstream or downstream */
         int8_t depths[OV_MAX_NODES];
         memset(depths, 127, sizeof(depths));
         sg_compute_node_depths(m, start_node, mode, depths);
@@ -262,7 +229,7 @@ int sg_compute_render_tree(const OV_MODEL *m,
 
         for (int i = 0; i < m->nb_nodes; i++)
         {
-            if (depths[i] < 127 || depths[i] > -127)
+            if (depths[i] != 127)
             {
                 if (m->nodes[i].type == OV_NODE_STREAM)
                 {
@@ -293,26 +260,22 @@ int sg_compute_render_tree(const OV_MODEL *m,
             continue;
         }
 
-        for (int ei = 0; ei < m->nb_edges; ei++)
+        for (int ki = OV_ADJ_B(m, out, n_node); ki < OV_ADJ_E(m, out, n_node); ki++)
         {
-            const OV_EDGE *e1 = &m->edges[ei];
-            if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode))
+            const OV_EDGE *e1 = &m->edges[m->adj_out[ki]];
+            if (sg_edge_matches_mode_from_stream(e1, mode))
             {
                 int p_node = e1->tgt_node;
-                for (int ej = 0; ej < m->nb_edges; ej++)
+                for (int kj = OV_ADJ_B(m, out, p_node); kj < OV_ADJ_E(m, out, p_node); kj++)
                 {
-                    const OV_EDGE *e2 = &m->edges[ej];
-                    if (e2->src_node == p_node)
+                    int c_node = m->edges[m->adj_out[kj]].tgt_node;
+                    if (c_node >= 0 && c_node < m->nb_nodes &&
+                        m->nodes[c_node].type == OV_NODE_STREAM)
                     {
-                        int c_node = e2->tgt_node;
-                        if (c_node >= 0 && c_node < m->nb_nodes &&
-                            m->nodes[c_node].type == OV_NODE_STREAM)
+                        int c_stream = m->nodes[c_node].index;
+                        if (sg_bget(S_words, c_stream))
                         {
-                            int c_stream = m->nodes[c_node].index;
-                            if (sg_bget(S_words, c_stream))
-                            {
-                                has_parent[c_stream] = 1;
-                            }
+                            has_parent[c_stream] = 1;
                         }
                     }
                 }
@@ -362,10 +325,10 @@ int sg_compute_render_tree(const OV_MODEL *m,
 
         if (n_node >= 0)
         {
-            for (int ei = 0; ei < m->nb_edges; ei++)
+            for (int ki = OV_ADJ_B(m, out, n_node); ki < OV_ADJ_E(m, out, n_node); ki++)
             {
-                const OV_EDGE *e1 = &m->edges[ei];
-                if (e1->src_node == n_node && sg_edge_matches_mode_from_stream(e1, mode))
+                const OV_EDGE *e1 = &m->edges[m->adj_out[ki]];
+                if (sg_edge_matches_mode_from_stream(e1, mode))
                 {
                     int r_node    = e1->tgt_node;
                     int duplicate = 0;
@@ -377,7 +340,7 @@ int sg_compute_render_tree(const OV_MODEL *m,
                             break;
                         }
                     }
-                    if (!duplicate)
+                    if (!duplicate && nb_readers < OV_MAX_PROCS) /* readers are processes or FPS */
                     {
                         readers[nb_readers++] = r_node;
                     }
@@ -411,7 +374,7 @@ int sg_compute_render_tree(const OV_MODEL *m,
     for (int i = 0; i < nb_root_nodes; i++)
     {
         sg_dfs_tree(m, root_nodes[i].stream_idx, root_nodes[i].reader_node_idx, target_stream,
-                    target_proc, S_words, mode, "", (i == nb_root_nodes - 1), 1, 0, path, 0,
+                    target_node, S_words, mode, "", (i == nb_root_nodes - 1), 1, 0, path, 0,
                     out_nodes, &nb_out);
     }
 

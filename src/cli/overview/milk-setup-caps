@@ -2,19 +2,20 @@
 # milk-setup-caps: Grant Linux capabilities to milk executables
 #
 # Capabilities applied:
-#   milk-CTRL:          CAP_PERFMON + CAP_SYS_ADMIN  (HW perf counters)
+#   milk-CTRL:          CAP_PERFMON (HW perf counters); CAP_SYS_ADMIN on kernels < 5.8
 
 # Early-exit for -h1 before sourcing
 case "${1-}" in
     -h1|--help-oneline)
-        echo "grant capabilities (perf counters, RT priority) to milk executables"
+        echo "grant the perf-counter capability to milk-CTRL"
         exit 0 ;;
 esac
 
-MSdescr="grant capabilities (perf counters, RT priority) to milk executables"
-MSextdescr="Grant Linux capabilities to milk executables:
-  - CAP_PERFMON + CAP_SYS_ADMIN on milk-CTRL for hardware performance counters
-  - CAP_SYS_NICE on all milk-fpsexec-* and cacao-fpsexec-* for RT scheduling
+MSdescr="grant the perf-counter capability to milk-CTRL"
+MSextdescr="Grant milk-CTRL the capability to read hardware performance counters:
+  - CAP_PERFMON (Linux 5.8 and later)
+  - CAP_SYS_ADMIN on older kernels, which have no CAP_PERFMON
+File capabilities are lost when milk-CTRL is reinstalled: run this again after install.
 You will be prompted for your sudo password if not running as root."
 
 source milk-script-std-config
@@ -56,8 +57,15 @@ echo ""
 # ── milk-CTRL: hardware performance counters ──
 CTRL="${BINDIR}/milk-CTRL"
 if [ -f "$CTRL" ]; then
-    echo "  milk-CTRL: cap_perfmon,cap_sys_admin+ep"
-    run_setcap "cap_perfmon,cap_sys_admin+ep" "$CTRL"
+    # CAP_PERFMON exists since Linux 5.8; never grant CAP_SYS_ADMIN where it is enough
+    kver=$(uname -r | cut -d- -f1)
+    if [ "$(printf '%s\n5.8\n' "$kver" | sort -V | head -1)" = "5.8" ]; then
+        caps="cap_perfmon+ep"
+    else
+        caps="cap_sys_admin+ep"
+    fi
+    echo "  milk-CTRL: ${caps}"
+    run_setcap "$caps" "$CTRL"
 else
     echo "  milk-CTRL: not found (skipping)"
 fi

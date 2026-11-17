@@ -8,6 +8,7 @@
  */
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "linopt_imtools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -21,12 +22,12 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  imvecname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static char  inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "";
-static char  inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char  outimname[FUNCTION_PARAMETER_STRMAXLEN]     = "";
-static long *xsizein                                     = NULL;
-static long *ysizein                                     = NULL;
+static char    imvecname[FUNCTION_PARAMETER_STRMAXLEN]     = "imvec";
+static char    inpixiname[FUNCTION_PARAMETER_STRMAXLEN]    = "pixi";
+static char    inpixmultname[FUNCTION_PARAMETER_STRMAXLEN] = "pixmult";
+static char    outimname[FUNCTION_PARAMETER_STRMAXLEN]     = "outim";
+static int64_t xsizein                                     = 512;
+static int64_t ysizein                                     = 512;
 
 
 /* ================================================================
@@ -88,13 +89,18 @@ errno_t linopt_imtools_vec_to_2DImage(const char *IDvec_name,
 
     IMGID imgout       = imgid_make_from_name_2D(ID_name, xsize, ysize);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
 
+    const float *restrict vecptr = imgvec.im->array.F;
+    const float *restrict mptr   = imgpixm.im->array.F;
+    const int64_t *restrict pixi = imgpixi.im->array.SI64;
+    float *restrict outptr       = imgout.im->array.F;
+    int nth                      = milk_omp_team_size((uint64_t) NBpix, 262144);
+
+#pragma omp parallel for num_threads(nth) if (nth > 1)
     for (long k = 0; k < NBpix; k++)
     {
-        imgout.im->array.F[imgpixi.im->array.SI64[k]] =
-            imgvec.im->array.F[k] / imgpixm.im->array.F[k];
+        outptr[pixi[k]] = vecptr[k] / mptr[k];
     }
 
     if (outID != NULL)
@@ -113,8 +119,8 @@ static MILK_HOT errno_t vec_to_2Dimage_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_imtools_vec_to_2DImage(imvecname, inpixiname, inpixmultname, outimname, *xsizein,
-                                  *ysizein, NULL);
+    linopt_imtools_vec_to_2DImage(imvecname, inpixiname, inpixmultname, outimname, xsizein, ysizein,
+                                  NULL);
 
     MILK_PROCINFO_END(self)
 

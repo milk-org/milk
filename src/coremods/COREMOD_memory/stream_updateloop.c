@@ -123,14 +123,18 @@ MILK_PARAMS_DEFINE(creaimstream, FPS_PARAMS);
 
 static MILK_HOT errno_t creaimstream_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_image_streamupdateloop(p_inname, p_outname, p_usperiod, p_NBcubes, p_period,
-                                          p_offsetus, p_syncname, p_semtrig, p_timingmode);
+    if (COREMOD_MEMORY_image_streamupdateloop(p_inname, p_outname, p_usperiod, p_NBcubes, p_period,
+                                              p_offsetus, p_syncname, p_semtrig, p_timingmode) < 0)
+    {
+        ret = RETURN_FAILURE;
+    }
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_creaimstream = {
@@ -157,9 +161,10 @@ MILK_PARAMS_DEFINE(creaimstreamstrig, FPS_PARAMS);
 static MILK_HOT errno_t creaimstreamstrig_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_streamupdateloop_semtrig(p_inname, p_outname, p_period, p_offsetus,
-                                                  p_syncname, p_semtrig, p_timingmode);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_streamupdateloop_semtrig(p_inname, p_outname, p_period, p_offsetus,
+                                                          p_syncname, p_semtrig, p_timingmode) < 0)
+               ? RETURN_FAILURE
+               : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_creaimstreamstrig = {
@@ -309,7 +314,11 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
     if (NBcubes < 1)
     {
         PRINT_ERROR("invalid number of input cubes, needs to be >0");
-        return RETURN_FAILURE;
+        if (dcprocinfo == 1)
+        {
+            processinfo_cleanExit(processinfo);
+        }
+        return -1;
     }
 
     int      sync_semwaitindex = -1;
@@ -344,6 +353,16 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
             resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
             IDsync = img.ID;
         }
+        if (IDsync == -1)
+        {
+            PRINT_ERROR("sync stream \"%s\" not found", IDsync_name);
+            free(IDin);
+            if (dcprocinfo == 1)
+            {
+                processinfo_cleanExit(processinfo);
+            }
+            return -1;
+        }
         sync_semwaitindex = ImageStreamIO_getsemwaitindex(&dcimg[IDsync], semtrig);
 
         for (long cubeindex = 0; cubeindex < NBcubes; cubeindex++)
@@ -375,7 +394,11 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
         {
             PRINT_ERROR("input image %s should be 3D", IDinname);
             free(IDin);
-            return RETURN_FAILURE;
+            if (dcprocinfo == 1)
+            {
+                processinfo_cleanExit(processinfo);
+            }
+            return -1;
         }
 
         uint32_t size0 = dcimg[IDin[0]].md[0].size[0];
@@ -394,8 +417,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
             imgout_tmp.mdt->size[1]  = size1;
             imgout_tmp.mdt->datatype = datatype;
             imgout_tmp.mdt->shared   = 1;
-            imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgout_tmp);
+            imgid_create_registered(&imgout_tmp);
             IDout = imgout_tmp.ID;
         }
     }
@@ -592,7 +614,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
         if (naxis != 3)
         {
             PRINT_ERROR("input image %s should be 3D", IDinname);
-            return RETURN_FAILURE;
+            return -1;
         }
 
         uint32_t size0 = dcimg[IDin].md[0].size[0];
@@ -611,8 +633,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
             imgout_tmp.mdt->size[1]  = size1;
             imgout_tmp.mdt->datatype = datatype;
             imgout_tmp.mdt->shared   = 1;
-            imgout_tmp.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgout_tmp);
+            imgid_create_registered(&imgout_tmp);
             IDout = imgout_tmp.ID;
         }
     }
@@ -628,12 +649,17 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
         resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
         IDsync = img.ID;
     }
+    if (IDsync == -1)
+    {
+        PRINT_ERROR("sync stream \"%s\" not found", IDsync_name);
+        return -1;
+    }
 
     long kk  = 0;
     long kk1 = 0;
 
     int sync_semwaitindex;
-    sync_semwaitindex = ImageStreamIO_getsemwaitindex(&dcimg[IDin], semtrig);
+    sync_semwaitindex = ImageStreamIO_getsemwaitindex(&dcimg[IDsync], semtrig);
 
     while (1)
     {

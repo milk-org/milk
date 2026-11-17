@@ -5,8 +5,8 @@ description: Sync worktree to latest framework-dev and start a new feature branc
 # Sync Worktree
 
 Run this workflow at the **start of a new task** in any
-worktree to rebase onto the latest `framework-dev` and
-create a fresh feature branch.
+worktree to fast-forward `framework-dev` and create a
+fresh feature branch from it.
 
 ## Steps
 
@@ -16,38 +16,17 @@ create a fresh feature branch.
    - `git stash` them, or
    - abort the sync.
 
-2. **Fetch latest refs from origin:**
+2. **Ask the user for the new branch name** if they
+   haven't provided one. Use the prefixes of the
+   `git-workflow` rule, *Commit Messages*.
 
-// turbo
+3. **Update `framework-dev` and create the branch** with the commands of WorkingWithGit.md
+   [§3](../../docs/developer/WorkingWithGit.md#3-parallel-development-using-git-worktrees)
+   (*Reusing Worktrees*). If the fast-forward fails (local `framework-dev` has
+   diverged), stop and report the issue to the user.
 
-```bash
-git fetch origin
-```
-
-3. **Switch to framework-dev and fast-forward:**
-
-```bash
-git checkout framework-dev
-git pull --ff-only origin framework-dev
-```
-
-If the fast-forward fails (local `framework-dev` has
-diverged), stop and report the issue to the user.
-
-4. **Ask the user for the new branch name** if they
-   haven't provided one. Follow the naming convention
-   from the `git-workflow` rule:
-   - `feat/`, `fix/`, `perf/`, `refactor/`, `docs/`,
-     `chore/` prefixes.
-
-5. **Create and switch to the new feature branch:**
-
-```bash
-git checkout -b <branch-name>
-```
-
-6. **Prompt the user** whether to rebuild now. If yes,
+4. **Prompt the user** whether to rebuild now. If yes,
    run the `/compile-test` workflow. If no, skip.
 
-7. Report that the worktree is synced and ready for
+5. Report that the worktree is synced and ready for
    work on the new branch.

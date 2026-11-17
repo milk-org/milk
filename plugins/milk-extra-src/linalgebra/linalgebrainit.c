@@ -6,12 +6,6 @@
  */
 
 // MILK_CMAKE_MANDATE_CUDA
-// MILK_CMAKE_REQUEST_MAGMA
-
-#ifdef HAVE_MAGMA
-#    include "magma_lapack.h"
-#    include "magma_v2.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,10 +62,10 @@ const MILK_RUNNABLE runnable_linalgebra_linalgebrainit = {
 
 
 /**
- * @brief Initialize CUDA and MAGMA
+ * @brief Initialize CUDA
  *
  * Finds CUDA devices
- * Initializes CUDA and MAGMA libraries
+ * Initializes the CUDA library
  *
  * @return number of CUDA devices found
  *
@@ -112,10 +106,6 @@ int LINALGEBRA_init()
                "GHz)\n",
                clockRate * 1e-3f, clockRate * 1e-6f);
         printf("\n");
-#    ifdef HAVE_MAGMA
-        printf("Using MAGMA library\n");
-        magma_print_environment();
-#    endif
 
         printf("\n");
     }

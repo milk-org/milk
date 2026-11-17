@@ -25,10 +25,10 @@ const int INFO_HEADER_SIZE = 40;
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char BMPfname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char imRname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char imGname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char imBname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+static char BMPfname[FUNCTION_PARAMETER_STRMAXLEN] = "out.bmp";
+static char imRname[FUNCTION_PARAMETER_STRMAXLEN]  = "imR";
+static char imGname[FUNCTION_PARAMETER_STRMAXLEN]  = "imG";
+static char imBname[FUNCTION_PARAMETER_STRMAXLEN]  = "imB";
 
 
 /* ================================================================

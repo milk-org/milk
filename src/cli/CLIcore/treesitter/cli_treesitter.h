@@ -107,19 +107,6 @@ int cli_ts_detect_color_level(void);
 void cli_ts_cleanup(void);
 
 /**
- * @brief Check if an input line/buffer is syntactically incomplete
- *
- * Uses tree-sitter AST to inspect if the buffer has missing closing
- * tokens (such as done, fi, }, unclosed quotes or brackets) or
- * ends with continuation operators (|, &&, ||, \\).
- *
- * @param buffer  Input string to test
- * @return 1 if input is incomplete and needs continuation lines,
- *         0 if complete or empty
- */
-int cli_ts_is_incomplete(const char *buffer);
-
-/**
  * @brief Determine completion mode and command context using tree-sitter AST
  *
  * Inspects the input buffer up to cursor position @p start to determine

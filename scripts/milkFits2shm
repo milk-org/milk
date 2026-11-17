@@ -347,7 +347,7 @@ loadfits "${FITSfname}" im
 readshmim "${STREAMname}"
 imcpshm im "${STREAMname}"
 readshmimsize ${STREAMname} "./loadedSM/${STREAMname0}.imsize"
-exitCLI
+exit
 EOF
 
     # copy imsize to conf

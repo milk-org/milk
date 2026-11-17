@@ -3,75 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include "overview_render_internal.h"
-/**
- * render_highlighted_name - Render a name with regex search-match highlighting
- * @name:      String to render
- * @max_len:   Maximum characters to display
- * @re:        Pointer to compiled regex or NULL
- * @has_re:    Flag indicating whether regex is compiled
- * @normal_fg: Default foreground color
- * @row_bg:    Current row background color
- */
-void render_highlighted_name(const char *name,
-                             int         max_len,
-                             regex_t    *re,
-                             int         has_re,
-                             ov_rgb_t    normal_fg,
-                             ov_rgb_t    row_bg)
-{
-    int len = (int) strlen(name);
-    if (len > max_len)
-    {
-        len = max_len;
-    }
-
-    regmatch_t pm[1];
-    if (has_re && regexec(re, name, 1, pm, 0) == 0)
-    {
-        int b_len = pm[0].rm_so;
-        if (b_len > max_len)
-        {
-            b_len = max_len;
-        }
-
-        int m_len = pm[0].rm_eo - pm[0].rm_so;
-        if (b_len + m_len > max_len)
-        {
-            m_len = max_len - b_len;
-        }
-
-        int a_len = len - (b_len + m_len);
-
-        if (b_len > 0)
-        {
-            ov_buf_printf("%.*s", b_len, name);
-        }
-        if (m_len > 0)
-        {
-            ov_buf_bold();
-            ov_buf_fg(255, 255, 255);
-            ov_buf_printf("%.*s", m_len, name + b_len);
-            ov_buf_reset_attr();
-            ov_theme_bg(row_bg);
-            ov_theme_fg(normal_fg);
-        }
-        if (a_len > 0)
-        {
-            ov_buf_printf("%.*s", a_len, name + b_len + m_len);
-        }
-    }
-    else
-    {
-        ov_buf_printf("%.*s", len, name);
-    }
-
-    int pad = max_len - len;
-    if (pad > 0)
-    {
-        ov_buf_hline(' ', pad);
-    }
-}
-
 
 /**
  * render_dtype - Get 3-character mnemonic string for datatype
@@ -151,6 +82,22 @@ void clear_row(int row, int col, int width, ov_rgb_t bg)
     ov_theme_bg(bg);
     ov_buf_hline(' ', width);
     ov_buf_reset_attr();
+}
+
+/** render_empty_rows - message @msg on the first of @max_rows panel rows from @row, the others cleared. */
+void render_empty_rows(OV_RECT r, int row, int max_rows, ov_rgb_t fg, const char *msg)
+{
+    ov_buf_pos(row, r.col + 1);
+    ov_theme_bg(OV_BG_PANEL);
+    ov_theme_fg(fg);
+    int cols  = 0;
+    int bytes = ov_utf8_fit(msg, (int) strlen(msg), r.width - 2, &cols);
+    ov_buf_printf("%.*s", bytes, msg);
+    render_pad_spaces(cols, r.width);
+    for (int i = 1; i < max_rows; i++)
+    {
+        clear_row(row + i, r.col + 1, r.width - 2, OV_BG_PANEL);
+    }
 }
 
 /**
@@ -250,104 +197,117 @@ void render_scroll_indicators(OV_RECT r, int scroll, int max_rows, int total, ov
 }
 
 /**
- * ov_render_cell - Render a single table cell with highlighting and collapse support
- * @logical_col:     Column index in logical data table
- * @vis_col:         Visible column index on screen
- * @fg:              Foreground color
- * @bg:              Background color
- * @str:             Cell text content
- * @hs_rem:          Pointer to horizontal scroll remaining characters
- * @printed:         Pointer to running count of printed characters
- * @avail:           Maximum available width
- * @highlighted_col: Currently highlighted column index
- * @collapsed_mask:  Bitmask of collapsed columns
+ * ov_render_cell - draw table cell @str of table column @col (\x01..\x02 marks highlighted text) on @bg, lit
+ * when @col is @highlighted_col and shown as » when collapsed; stops at @avail columns of *@printed.
  */
-void ov_render_cell(int         logical_col,
-                    int         vis_col,
+void ov_render_cell(int         col,
                     ov_rgb_t    fg,
                     ov_rgb_t    bg,
                     const char *str,
-                    int        *hs_rem,
                     int        *printed,
                     int         avail,
                     int         highlighted_col,
                     uint32_t    collapsed_mask)
 {
-    int is_high = (vis_col == highlighted_col);
-    int is_coll = (collapsed_mask & (1U << logical_col)) != 0;
-
-    /* Determine background color */
-    ov_rgb_t cell_bg = bg;
-    if (is_high)
+    ov_rgb_t cell_bg = (col == highlighted_col) ? ov_theme_highlight_bg(bg) : bg;
+    if (collapsed_mask & (1U << col))
     {
-        cell_bg = ov_theme_highlight_bg(bg);
+        str = "\xc2\xbb";
     }
     ov_theme_bg(cell_bg);
-
-    /* Format the string depending on collapsed state */
-    char cell_str[256];
-    if (is_coll)
-    {
-        /* Collapsed to 1 character. Show double-chevron (») indicating it is hidden. */
-        strcpy(cell_str, "\xc2\xbb");
-    }
-    else
-    {
-        strncpy(cell_str, str, sizeof(cell_str) - 1);
-        cell_str[sizeof(cell_str) - 1] = '\0';
-    }
-
-    int skip = 0;
-    if (hs_rem && *hs_rem > 0)
-    {
-        skip = *hs_rem;
-    }
-
-    /* Print character by character, handling \x01 and \x02 markup */
-    int vis_col_ctr = 0;
-    int i           = 0;
     ov_theme_fg(fg);
-
-    while (cell_str[i] != '\0' && (!printed || *printed < avail))
+    for (int i = 0; str[i] != '\0' && *printed < avail;)
     {
-        if (cell_str[i] == '\x01')
+        if (str[i] == '\x01')
         {
-            if (vis_col_ctr >= skip)
-            {
-                ov_buf_bold();
-                ov_buf_underline();
-                ov_theme_fg(OV_FG_BRIGHT);
-            }
+            ov_buf_bold();
+            ov_buf_underline();
+            ov_theme_fg(OV_FG_BRIGHT);
             i++;
         }
-        else if (cell_str[i] == '\x02')
+        else if (str[i] == '\x02')
         {
-            if (vis_col_ctr >= skip)
-            {
-                ov_buf_reset_attr();
-                ov_theme_bg(cell_bg);
-                ov_theme_fg(fg);
-            }
+            ov_buf_reset_attr();
+            ov_theme_bg(cell_bg);
+            ov_theme_fg(fg);
             i++;
         }
         else
         {
-            int clen = utf8_char_length((unsigned char) cell_str[i]);
-            if (vis_col_ctr >= skip)
-            {
-                ov_buf_append_char(&cell_str[i], clen);
-                if (printed)
-                {
-                    (*printed)++;
-                }
-            }
-            vis_col_ctr++;
+            int clen = utf8_char_length((unsigned char) str[i]);
+            ov_buf_append_char(&str[i], clen);
+            (*printed)++;
             i += clen;
         }
     }
+}
 
-    if (hs_rem && *hs_rem > 0)
+/** ov_state_info - names and theme colour of state @st. */
+OV_STATE_INFO ov_state_info(ov_state_t st)
+{
+    ov_rgb_t fg;
+    switch (st)
     {
-        *hs_rem = (vis_col_ctr < *hs_rem) ? 0 : (*hs_rem - vis_col_ctr);
+    case OV_ST_RUN:
+        fg = OV_FG_ACTIVE;
+        break;
+    case OV_ST_PAUS:
+    case OV_ST_SPIN:
+    case OV_ST_STAL:
+        fg = OV_FG_WARN;
+        break;
+    case OV_ST_STOP:
+        fg = OV_FG_ZOMBIE;
+        break;
+    case OV_ST_ERR:
+    case OV_ST_CRSH:
+        fg = OV_FG_ERROR;
+        break;
+    default:
+        fg = OV_FG_DIM;
+        break;
     }
+    return (OV_STATE_INFO) { ov_state_name(st, 0), ov_state_name(st, 1), fg };
+}
+
+/** ov_proc_state - state of process @p: its loop state, or STAL when an active loop's counter stopped. */
+ov_state_t ov_proc_state(const OV_PROC *p)
+{
+    if (p->loopstat == PROCESSINFO_LOOPSTAT_ACTIVE && p->stale_count >= OV_STALE_SCANS)
+    {
+        return OV_ST_STAL;
+    }
+    return ov_state_of_loopstat(p->loopstat);
+}
+
+/** ov_loop_state - state of loop @lp, worst first: ERR > STAL > PAUS > RUN > IDLE. */
+ov_state_t ov_loop_state(const OV_LOOP *lp)
+{
+    return lp->is_error     ? OV_ST_ERR
+           : lp->is_stale   ? OV_ST_STAL
+           : lp->is_paused  ? OV_ST_PAUS
+           : lp->is_running ? OV_ST_RUN
+                            : OV_ST_IDLE;
+}
+
+/** ov_proc_status - short state label of process @p, and its colour in @fg when not NULL. */
+const char *ov_proc_status(const OV_PROC *p, ov_rgb_t *fg)
+{
+    OV_STATE_INFO si = ov_state_info(ov_proc_state(p));
+    if (fg != NULL)
+    {
+        *fg = si.fg;
+    }
+    return si.sname;
+}
+
+/** ov_loop_status - short state label of loop @lp, and its colour in @fg when not NULL. */
+const char *ov_loop_status(const OV_LOOP *lp, ov_rgb_t *fg)
+{
+    OV_STATE_INFO si = ov_state_info(ov_loop_state(lp));
+    if (fg != NULL)
+    {
+        *fg = si.fg;
+    }
+    return si.sname;
 }

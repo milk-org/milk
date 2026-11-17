@@ -194,8 +194,8 @@ static int ov_fps__render_detail_stream_lineage(OV_LAYOUT      *lay,
                                                 int             row,
                                                 int             max_rows)
 {
-    SG_LINEAGE lin;
-    sg_compute_lineage(m, ssel, (sg_mode_t) lay->lineage_mode, &lin);
+    const SG_LINEAGE *lp  = ov_lineage(m, ssel, (sg_mode_t) lay->lineage_mode);
+    const SG_LINEAGE  lin = *lp; /* the cache slot may be reused by a later call in this frame */
 
     int has_lineage = (lin.nb_ancestors > 0 || lin.nb_descendants > 0);
     if (!has_lineage)
@@ -244,9 +244,7 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
 {
     const OV_STREAM *s = &m->streams[ssel];
 
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_STREAM,
-                       lay->focus == OV_FOCUS_GRAPH);
+    ov_subtab_bar(lay, OV_FG_STREAM);
 
     int ri       = 0;
     int line_idx = 0;
@@ -269,22 +267,27 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         line_idx++;
     }
 
+    /* A file that is not (yet) a usable stream: say why, nothing else to show */
+    if (s->err || s->pending)
+    {
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_ov_theme_fg(s->err ? OV_FG_ERROR : OV_FG_DIM);
+        H_detail_row(ri, line_idx, row, r.col, r.width, " %s  (inode %" PRIu64 ")",
+                     s->err ? ov_stream_err_label(s->err) : "listed, not mapped yet",
+                     (uint64_t) s->inode);
+        return ri;
+    }
+    if (s->is_link)
+    {
+        H_ov_theme_bg(OV_BG_PANEL);
+        H_ov_theme_fg(OV_FG_DIM);
+        H_detail_row(ri, line_idx, row, r.col, r.width, " Link to %s%s", s->link_target,
+                     s->alias ? "  (listed too: not in the graph)" : "");
+    }
+
     /* Type + Size */
     {
-        char szb[48];
-        if (s->naxis == 1)
-        {
-            snprintf(szb, sizeof(szb), "%u", (unsigned) s->size[0]);
-        }
-        else if (s->naxis == 2)
-        {
-            snprintf(szb, sizeof(szb), "%ux%u", (unsigned) s->size[0], (unsigned) s->size[1]);
-        }
-        else
-        {
-            snprintf(szb, sizeof(szb), "%ux%ux%u", (unsigned) s->size[0], (unsigned) s->size[1],
-                     (unsigned) s->size[2]);
-        }
+        const char *szb = s->size_str;
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_DIM);
@@ -311,8 +314,11 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         H_ov_theme_fg(OV_FG_DIM);
         H_ov_buf_printf("  Hz: ");
         H_ov_theme_fg(s->cnt_active ? OV_FG_ACTIVE : OV_FG_DIM);
-        int n = snprintf(NULL, 0, " cnt0: %" PRIu64 "  Hz: %.1f", (uint64_t) s->cnt0, s->update_hz);
+        int n = snprintf(NULL, 0, " cnt0: %" PRIu64 "  Hz: %.1f (now %.1f)", (uint64_t) s->cnt0,
+                         s->update_hz, s->update_hz_inst);
         H_ov_buf_printf("%.1f", s->update_hz);
+        H_ov_theme_fg(OV_FG_DIM);
+        H_ov_buf_printf(" (now %.1f)", s->update_hz_inst);
         H_render_pad_spaces(n, r.width);
         if (!skip_draw)
         {
@@ -364,9 +370,9 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
             int val = s->semval[ii];
             H_ov_theme_fg(val > 0 ? OV_FG_WARN : OV_FG_TEXT);
             char rpid_str[32] = "";
-            if (s->read_pids[ii] > 0)
+            if (s->sem_read_pid[ii] > 0) /* this semaphore's reader, not the compacted list */
             {
-                snprintf(rpid_str, sizeof(rpid_str), "reader:%d", (int) s->read_pids[ii]);
+                snprintf(rpid_str, sizeof(rpid_str), "reader:%d", (int) s->sem_read_pid[ii]);
             }
             int n = snprintf(NULL, 0, "  [%d] val:%d  %s", ii, val, rpid_str);
             H_ov_buf_printf("  [%d] val:%d  %s", ii, val, rpid_str);
@@ -385,8 +391,10 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_TITLE);
         H_ov_buf_bold();
-        int n = snprintf(NULL, 0, " Process trace (%d):", s->nb_proctrace);
-        H_ov_buf_printf(" Process trace (%d):", s->nb_proctrace);
+        char e2e[16], head[64];
+        int n = snprintf(head, sizeof(head), " Process trace (%d):  end to end %s", s->nb_proctrace,
+                         ov_fmt_dt_ns(e2e, sizeof(e2e), ov_trace_end_to_end_ns(m, s)));
+        H_ov_buf_printf("%s", head);
         H_ov_buf_reset_attr();
         H_ov_theme_bg(OV_BG_PANEL);
         H_render_pad_spaces(n, r.width);
@@ -399,22 +407,25 @@ int ov_fps__render_detail_stream(OV_LAYOUT      *lay,
         for (int tt = 0; tt < s->nb_proctrace; tt++)
         {
             /* Find proc name by PID */
-            const char *pname = "???";
-            for (int pp = 0; pp < m->nb_procs; pp++)
-            {
-                if (m->procs[pp].PID == s->proctrace_pid[tt])
-                {
-                    pname = m->procs[pp].name;
-                    break;
-                }
-            } // for procs
+            int         pp    = ov_find_proc_by_pid(m, ov_stream_hops(m, s)[tt].pid);
+            const char *pname = (pp >= 0) ? m->procs[pp].name : "???";
             H_ov_buf_pos(row + ri, r.col + 1);
             H_ov_theme_bg(OV_BG_PANEL);
-            H_ov_theme_fg(ov_pid_color(s->proctrace_pid[tt]));
-            int n2 = snprintf(NULL, 0, "  PID %d (%s)  mode:%s", (int) s->proctrace_pid[tt], pname,
-                              render_trigmode_label(s->proctrace_trigmode[tt]));
-            H_ov_buf_printf("  PID %d (%s)  mode:%s", (int) s->proctrace_pid[tt], pname,
-                            render_trigmode_label(s->proctrace_trigmode[tt]));
+            H_ov_theme_fg(ov_pid_color(ov_stream_hops(m, s)[tt].pid));
+            OV_HOP hop;
+            char   tc[16], th[16], lag[24] = "";
+            ov_trace_hop(m, s, tt, &hop);
+            if (hop.lag >= 0)
+            {
+                snprintf(lag, sizeof(lag), "  lag %lld", (long long) hop.lag);
+            }
+            char line[256];
+            int  n2 = snprintf(line, sizeof(line), "  PID %d (%s)  mode:%s  exec %s  hand-off %s%s",
+                               (int) ov_stream_hops(m, s)[tt].pid, pname,
+                               processinfo_triggermode_name(ov_stream_hops(m, s)[tt].trigmode, 0),
+                               ov_fmt_dt_ns(tc, sizeof(tc), hop.compute_ns),
+                               ov_fmt_dt_ns(th, sizeof(th), hop.handoff_ns), lag);
+            H_ov_buf_printf("%s", line);
             H_render_pad_spaces(n2, r.width);
             if (!skip_draw)
             {

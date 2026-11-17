@@ -51,27 +51,27 @@ int ov_help_section_first_vis_row(const OV_LAYOUT *lay, int sec)
  */
 void ov_help_open(OV_LAYOUT *lay)
 {
-    lay->show_help          = 1;
-    lay->help_expand        = 0;
+    lay->help.show          = 1;
+    lay->help.expand        = 0;
     lay->filter_editing     = 0;
-    lay->help_search[0]     = '\0';
-    lay->help_search_active = 0;
-    lay->help_search_cursor = 0;
-    lay->help_mode          = 0;
-    lay->help_intro_scroll  = 0;
-    lay->help_sel           = 0;
+    lay->help.search[0]     = '\0';
+    lay->help.search_active = 0;
+    lay->help.search_cursor = 0;
+    lay->help.mode          = 0;
+    lay->help.intro_scroll  = 0;
+    lay->help.sel           = 0;
 }
 
 /**
  * ov_help_toggle_at - toggle expansion for section header at visible row.
- * @lay:     layout state (help_expand bitmask modified)
+ * @lay:     layout state (help.expand bitmask modified)
  * @vis_row: 0-based visible row index
  *
  * Return: section index if toggled, or -1 if row is not a section header.
  */
 int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row)
 {
-    if (lay->help_search[0] != '\0')
+    if (lay->help.search[0] != '\0')
     {
         return -1;
     }
@@ -91,13 +91,13 @@ int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row)
     }
 
     int sec = g_help_entries[idx].section;
-    lay->help_expand ^= (1U << sec);
+    lay->help.expand ^= (1U << sec);
     return sec;
 }
 
 /**
  * ov_help_expand_at - expand or collapse section at visible row.
- * @lay:     layout state (help_expand bitmask modified)
+ * @lay:     layout state (help.expand bitmask modified)
  * @vis_row: 0-based visible row index
  * @expand:  1 to expand, 0 to collapse
  *
@@ -105,7 +105,7 @@ int ov_help_toggle_at(OV_LAYOUT *lay, int vis_row)
  */
 int ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand)
 {
-    if (lay->help_search[0] != '\0')
+    if (lay->help.search[0] != '\0')
     {
         return -1;
     }
@@ -127,15 +127,15 @@ int ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand)
         {
             if (!help_is_expanded(lay, sec))
             {
-                lay->help_expand |= (1U << sec);
+                lay->help.expand |= (1U << sec);
                 return sec;
             }
             else
             {
                 int new_nvis = ov_help_visible_count(lay);
-                if (lay->help_sel + 1 < new_nvis)
+                if (lay->help.sel + 1 < new_nvis)
                 {
-                    lay->help_sel++;
+                    lay->help.sel++;
                 }
                 return sec;
             }
@@ -147,15 +147,15 @@ int ov_help_expand_at(OV_LAYOUT *lay, int vis_row, int expand)
         {
             if (help_is_expanded(lay, sec))
             {
-                lay->help_expand &= ~(1U << sec);
+                lay->help.expand &= ~(1U << sec);
                 return sec;
             }
         }
         else
         {
             /* On child item: collapse parent section and land on section header */
-            lay->help_expand &= ~(1U << sec);
-            lay->help_sel = ov_help_section_first_vis_row(lay, sec);
+            lay->help.expand &= ~(1U << sec);
+            lay->help.sel = ov_help_section_first_vis_row(lay, sec);
             return sec;
         }
     }
@@ -210,21 +210,11 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
     /* Click outside popup -> close help overlay */
     if (mr < pr || mr >= pr + ph || mc < pc || mc >= pc + pw)
     {
-        lay->show_help = 0;
+        lay->help.show = 0;
         ov_buf_force_clear();
-        if (mr == lay->r_tabs.row)
+        if (mr == lay->r_tabs.row && ov_tabbar_hit(mc) >= 0)
         {
-            int tx = 1;
-            for (int v = 0; v < OV_VIEW_COUNT; v++)
-            {
-                int tw = (int) strlen(ov_view_label((ov_view_t) v)) + 9;
-                if (mc >= tx && mc < tx + tw)
-                {
-                    lay->view = (ov_view_t) v;
-                    break;
-                }
-                tx += tw;
-            }
+            ov_set_view(lay, (ov_view_t) ov_tabbar_hit(mc));
         }
         return 1;
     }
@@ -232,7 +222,7 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
     /* Click close button area on top border or header row */
     if ((mr == pr && mc >= pc + pw - 6) || (mr == pr + 1 && mc >= pc + pw - 6))
     {
-        lay->show_help = 0;
+        lay->help.show = 0;
         ov_buf_force_clear();
         return 1;
     }
@@ -244,19 +234,19 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
         int tab2_w = (pw >= 100) ? 32 : 20;
         if (mc >= pc + 2 && mc < pc + 2 + tab1_w)
         {
-            lay->help_mode         = 1;
-            lay->help_intro_scroll = 0;
+            lay->help.mode         = 1;
+            lay->help.intro_scroll = 0;
             return 1;
         }
         if (mc >= pc + 2 + tab1_w && mc < pc + 2 + tab1_w + tab2_w)
         {
-            lay->help_mode = 0;
+            lay->help.mode = 0;
             return 1;
         }
     }
 
-    /* If in Intro mode (help_mode == 1), clicks in body do not alter list */
-    if (lay->help_mode == 1)
+    /* If in Intro mode (help.mode == 1), clicks in body do not alter list */
+    if (lay->help.mode == 1)
     {
         return 1;
     }
@@ -264,19 +254,19 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
     /* Click on search bar area on row pr + 2 (in Controls mode) */
     if (mr == pr + 2 && mc >= pc + 1 && mc < pc + pw - 1)
     {
-        if (lay->help_search[0] != '\0' && mc >= pc + pw - 16)
+        if (lay->help.search[0] != '\0' && mc >= pc + pw - 16)
         {
             /* Clicked on [ESC: clear] button */
-            lay->help_search[0]     = '\0';
-            lay->help_search_cursor = 0;
-            lay->help_search_active = 0;
-            lay->help_sel           = 0;
+            lay->help.search[0]     = '\0';
+            lay->help.search_cursor = 0;
+            lay->help.search_active = 0;
+            lay->help.sel           = 0;
         }
         else
         {
             /* Clicked on search input box */
-            lay->help_search_active = 1;
-            lay->help_search_cursor = (int) strlen(lay->help_search);
+            lay->help.search_active = 1;
+            lay->help.search_cursor = (int) strlen(lay->help.search);
         }
         return 1;
     }
@@ -293,7 +283,7 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
         int map[128];
         int nvis = help_visible_rows(lay, map);
 
-        int sel = lay->help_sel;
+        int sel = lay->help.sel;
         if (sel < 0)
         {
             sel = 0;
@@ -314,21 +304,21 @@ int ov_help_handle_click(OV_LAYOUT *lay, int mr, int mc)
         {
             int idx = map[vis_row];
             if (g_help_entries[idx].section == HS_INTRO &&
-                (lay->help_sel == vis_row || mr == list_top))
+                (lay->help.sel == vis_row || mr == list_top))
             {
                 /* Clicking on Introduction entry/header opens full intro guide */
-                lay->help_mode         = 1;
-                lay->help_intro_scroll = 0;
+                lay->help.mode         = 1;
+                lay->help.intro_scroll = 0;
                 return 1;
             }
-            if (lay->help_search[0] == '\0' && lay->help_sel == vis_row)
+            if (lay->help.search[0] == '\0' && lay->help.sel == vis_row)
             {
                 /* Clicking selected header toggles expansion */
                 ov_help_toggle_at(lay, vis_row);
             }
             else
             {
-                lay->help_sel = vis_row;
+                lay->help.sel = vis_row;
             }
             return 1;
         }

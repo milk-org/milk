@@ -86,6 +86,12 @@ typedef struct
     ov_rgb_t grad_hi;
     ov_rgb_t grad_cpu_lo;
     ov_rgb_t grad_cpu_hi;
+
+    /* FPS parameter types, and an accent (help intro, parameter directories) */
+    ov_rgb_t fg_type_int;
+    ov_rgb_t fg_type_float;
+    ov_rgb_t fg_type_str;
+    ov_rgb_t fg_accent;
 } ov_theme_t;
 
 extern const ov_theme_t *ov_active_theme;
@@ -97,8 +103,7 @@ const ov_theme_t *ov_theme_get_active(void);
 int               ov_theme_get_active_index(void);
 int               ov_theme_find_by_id(const char *id);
 void              ov_theme_set(int index);
-void              ov_theme_cycle(void);
-void              ov_theme_init(const char *preferred_theme);
+int               ov_theme_init(const char *preferred_theme);
 
 /* Semantic color palette (maps to active theme) */
 
@@ -161,6 +166,19 @@ void              ov_theme_init(const char *preferred_theme);
 #define OV_GRAD_CPU_LO (ov_active_theme->grad_cpu_lo)
 #define OV_GRAD_CPU_HI (ov_active_theme->grad_cpu_hi)
 
+/* Badge, pill and button fills derived from each theme (may become palette slots later); text on them
+ * uses ov_rgb_on() */
+#define OV_FG_TYPE_INT (ov_active_theme->fg_type_int)
+#define OV_FG_TYPE_FLOAT (ov_active_theme->fg_type_float)
+#define OV_FG_TYPE_STR (ov_active_theme->fg_type_str)
+#define OV_FG_ACCENT (ov_active_theme->fg_accent)
+#define OV_FG_OFF (ov_rgb_lerp(OV_FG_DIM, OV_FG_ERROR, 0.5f))
+
+#define OV_BADGE_OK (ov_rgb_lerp(OV_BG_PANEL, OV_FG_ACTIVE, 0.6f))
+#define OV_BADGE_WARN (OV_FG_WARN)
+#define OV_BADGE_DANGER (ov_rgb_lerp(OV_BG_PANEL, OV_FG_ERROR, 0.85f))
+#define OV_BADGE_INFO (OV_GRAD_LO)
+
 /* Borders & box-drawing */
 
 #define OV_BOX_TL "╭"
@@ -198,10 +216,6 @@ void              ov_theme_init(const char *preferred_theme);
 /* LCARS block elements */
 #define OV_LCARS_LEFT "▌"
 #define OV_LCARS_RIGHT "▐"
-
-/* Sparkline block characters (1/8 to full) */
-static const char *OV_SPARK_CHARS[] = { " ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█" };
-#define OV_SPARK_LEVELS 9
 
 #include "overview_theme_draw.h"
 #include "overview_theme_panel.h"

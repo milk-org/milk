@@ -9,7 +9,7 @@
  * Include this header when you only need the essential
  * FPS operations (connect/disconnect, parameter read/write,
  * entry management) without pulling in the full fps.h
- * umbrella (scan, tmux, lifecycle, logging, V2 framework).
+ * umbrella (scan, lifecycle, logging, V2 framework).
  *
  * This is a subset of fps.h -- anything that includes
  * fps.h already has everything in this file.

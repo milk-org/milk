@@ -123,7 +123,6 @@ class PipelineConfig(BaseModel):
     systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
     hooks: list[HookDecl] = Field(default_factory=list)
     plans: list[str] | None = None  # restricts run_plan to these names
-    teardown_kill_tmux: bool = False
 
     @model_validator(mode="after")
     def _check_extra_keys(self) -> PipelineConfig:

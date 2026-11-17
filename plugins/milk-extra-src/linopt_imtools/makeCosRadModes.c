@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "linopt_imtools.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -23,11 +24,11 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char   *outimname       = NULL;
-static long   *sizeout         = NULL;
-static long   *kmaxval         = NULL;
-static double *radiusval       = NULL;
-static double *radfactorlimval = NULL;
+static char    outimname[FUNCTION_PARAMETER_STRMAXLEN] = "outim";
+static int64_t sizeout                                 = 512;
+static int64_t kmaxval                                 = 100;
+static double  radiusval                               = 160.0;
+static double  radfactorlimval                         = 2.0;
 
 
 /* ================================================================
@@ -35,7 +36,7 @@ static double *radfactorlimval = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X)                                                                 \
-    X(".outim", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")   \
+    X(".outim", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")    \
     X(".size", &sizeout, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "size")               \
     X(".kmax", &kmaxval, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "k max")              \
     X(".radius", &radiusval, FPTYPE_FLOAT64, 1, FPFLAG_DEFAULT_INPUT, "radius [pix]") \
@@ -77,13 +78,22 @@ errno_t linopt_imtools_makeCosRadModes(const char *ID_name,
     }
     fclose(fp);
 
-    for (long ii = 0; ii < size; ii++)
+    float *restrict rptr = dcimg[IDr].array.F;
+    float invrad         = 1.0f / radius;
+    float halfs          = 0.5f * (float) size;
+    int   nth2d          = milk_omp_team_size((uint64_t) size2, 65536);
+
+#pragma omp parallel for num_threads(nth2d) if (nth2d > 1)
+    for (long jj = 0; jj < size; jj++)
     {
-        float x = (1.0f * ii - 0.5f * size) / radius;
-        for (long jj = 0; jj < size; jj++)
+        float y             = ((float) jj - halfs) * invrad;
+        float y2            = y * y;
+        float *restrict row = rptr + jj * size;
+#pragma omp simd
+        for (long ii = 0; ii < size; ii++)
         {
-            float y                            = (1.0f * jj - 0.5f * size) / radius;
-            dcimg[IDr].array.F[jj * size + ii] = sqrtf(x * x + y * y);
+            float x = ((float) ii - halfs) * invrad;
+            row[ii] = sqrtf(x * x + y2);
         }
     }
 
@@ -92,14 +102,20 @@ errno_t linopt_imtools_makeCosRadModes(const char *ID_name,
     imageID IDout;
     FUNC_CHECK_RETURN(create_3Dimage_ID(ID_name, size, size, kmax, &IDout));
 
+    float *restrict outptr = dcimg[IDout].array.F;
+    int nth3d              = milk_omp_team_size((uint64_t) kmax * (uint64_t) size2, 65536);
+
+#pragma omp parallel for num_threads(nth3d) if (nth3d > 1)
     for (long k = 0; k < kmax; k++)
     {
+        float *restrict slice = outptr + k * size2;
+        float freq            = (float) M_PI * (float) k;
         for (long ii = 0; ii < size2; ii++)
         {
-            float r = dcimg[IDr].array.F[ii];
+            float r = rptr[ii];
             if (r < radfactlim)
             {
-                dcimg[IDout].array.F[k * size2 + ii] = cosf(r * (float) M_PI * k);
+                slice[ii] = cosf(r * freq);
             }
         }
     }
@@ -122,8 +138,7 @@ static MILK_HOT errno_t makeCosRadModes_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_imtools_makeCosRadModes(outimname, *sizeout, *kmaxval, *radiusval, *radfactorlimval,
-                                   NULL);
+    linopt_imtools_makeCosRadModes(outimname, sizeout, kmaxval, radiusval, radfactorlimval, NULL);
 
     MILK_PROCINFO_END(self)
 

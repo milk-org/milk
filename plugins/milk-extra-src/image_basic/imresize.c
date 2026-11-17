@@ -17,6 +17,7 @@
 #include "milk_runnable.h"
 #include "imresize.h"
 #include "computeunit.h"
+#include "COREMOD_arith/image_spatial.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -49,43 +50,7 @@ static int64_t imresize_ysize = 64;
 
 static void imresize_step(IMAGE *imgin, IMAGE *imgout)
 {
-    uint32_t nx_in  = imgin->md[0].size[0];
-    uint32_t ny_in  = imgin->md[0].size[1];
-    uint32_t nx_out = imgout->md[0].size[0];
-    uint32_t ny_out = imgout->md[0].size[1];
-
-    if (imgin->md[0].datatype != _DATATYPE_FLOAT)
-    {
-        return;
-    }
-
-    for (uint32_t ii = 0; ii < nx_out; ii++)
-    {
-        for (uint32_t jj = 0; jj < ny_out; jj++)
-        {
-            float xf1 = (float) ii * nx_in / nx_out;
-            float yf1 = (float) jj * ny_in / ny_out;
-            long  ii1 = (long) xf1;
-            long  jj1 = (long) yf1;
-            float uf  = xf1 - (float) ii1;
-            float tf  = yf1 - (float) jj1;
-
-            if ((ii1 >= 0) && (ii1 + 1 < (long) nx_in) && (jj1 >= 0) && (jj1 + 1 < (long) ny_in))
-            {
-                float v00                         = imgin->array.F[jj1 * nx_in + ii1];
-                float v01                         = imgin->array.F[(jj1 + 1) * nx_in + ii1];
-                float v10                         = imgin->array.F[jj1 * nx_in + ii1 + 1];
-                float v11                         = imgin->array.F[(jj1 + 1) * nx_in + ii1 + 1];
-                imgout->array.F[jj * nx_out + ii] = v00 * (1 - uf) * (1 - tf) +
-                                                    v10 * uf * (1 - tf) + v01 * (1 - uf) * tf +
-                                                    v11 * uf * tf;
-            }
-            else
-            {
-                imgout->array.F[jj * nx_out + ii] = 0.0;
-            }
-        }
-    }
+    (void) arith_image_resize2d_im(imgin, imgout);
 }
 
 

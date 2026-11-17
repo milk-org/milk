@@ -15,7 +15,6 @@
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
-#include "CLIcore/cli_calc_parser.h"
 #include <glob.h>
 #include <sys/wait.h>
 #include "COREMOD_memory/COREMOD_memory.h"

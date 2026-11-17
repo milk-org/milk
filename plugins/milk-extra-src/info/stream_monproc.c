@@ -32,7 +32,7 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char     inimname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static uint64_t tbinflag                               = 1;
 static uint32_t cbbuffersize                           = 100;
 

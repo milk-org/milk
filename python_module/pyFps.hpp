@@ -15,7 +15,6 @@ extern "C"
 #include "libcomputeunit/fps_CONFstop.h"
 #include "libcomputeunit/fps_RUNstart.h"
 #include "libcomputeunit/fps_RUNstop.h"
-#include "libcomputeunit/fps_tmux.h"
 #include "processtools.h"
 }
 
@@ -28,15 +27,12 @@ extern "C"
 
 enum FPS_status : uint32_t
 {
-    CONF     = FUNCTION_PARAMETER_STRUCT_STATUS_CONF,
-    RUN      = FUNCTION_PARAMETER_STRUCT_STATUS_RUN,
-    CMDCONF  = FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF,
-    CMDRUN   = FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN,
-    RUNLOOP  = FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP,
-    CHECKOK  = FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK,
-    TMUXCONF = FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF,
-    TMUXRUN  = FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN,
-    TMUXCTRL = FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCTRL
+    CONF    = FUNCTION_PARAMETER_STRUCT_STATUS_CONF,
+    RUN     = FUNCTION_PARAMETER_STRUCT_STATUS_RUN,
+    CMDCONF = FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF,
+    CMDRUN  = FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN,
+    RUNLOOP = FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP,
+    CHECKOK = FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK
 };
 
 enum FPS_type : uint32_t
@@ -340,16 +336,6 @@ class pyFps
     errno_t RUNexit()
     {
         return function_parameter_RUNexit(&fps_);
-    }
-
-    errno_t TMUXstart()
-    {
-        return functionparameter_FPS_tmux_init(&fps_);
-    }
-
-    errno_t TMUXstop()
-    {
-        return functionparameter_FPS_tmux_kill(&fps_);
     }
 };
 

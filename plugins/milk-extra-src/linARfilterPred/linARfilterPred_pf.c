@@ -51,8 +51,7 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
             imgpfm.mdt->size[1]  = sizearray[1];
             imgpfm.mdt->datatype = _DATATYPE_FLOAT;
             imgpfm.mdt->shared   = 1;
-            imgpfm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgpfm);
+            imgid_create_registered(&imgpfm);
             IDPFM = imgpfm.ID;
         }
     }
@@ -297,8 +296,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             imgpfout.mdt->size[1]  = sizearray[1];
             imgpfout.mdt->datatype = _DATATYPE_FLOAT;
             imgpfout.mdt->shared   = 1;
-            imgpfout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-            imgid_mkimage(&imgpfout);
+            imgid_create_registered(&imgpfout);
             IDPFout = imgpfout.ID;
         }
     }

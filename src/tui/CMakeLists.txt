@@ -12,7 +12,7 @@ set(SOURCEFILES_FPSCTRL
     fpsCTRL/fpsCTRL_TUI_process_user_key.c
     fpsCTRL/level0node_summary.c
     fpsCTRL/print_nodeinfo.c
-    fpsCTRL/scheduler_display.c
+    fpsCTRL/fpsCTRL_units.c
     fpsCTRL/fpsCTRL_globals.c)
 
 add_executable(milk-fpsCTRL ${SOURCEFILES_FPSCTRL})
@@ -20,7 +20,7 @@ target_include_directories(
   milk-fpsCTRL PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                        ${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL)
 target_link_libraries(
-  milk-fpsCTRL PUBLIC milkfpsseq milkcomputeunit milkfps milkprocessinfo
+  milk-fpsCTRL PUBLIC milkcomputeunit milkfps milkprocessinfo
                       ImageStreamIO pthread m)
 install(TARGETS milk-fpsCTRL DESTINATION bin)
 

@@ -90,8 +90,7 @@ long load_fitsimages_cube(const char *__restrict strfilter, const char *__restri
 
     IMGID imgout       = imgid_make_from_name_3D(ID_out_name, xsize, ysize, cnt);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
     printf("\n");
     fflush(stdout);
 

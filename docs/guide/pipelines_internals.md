@@ -31,7 +31,7 @@ flowchart TD
     PR -. "never imports" .- OP
 ```
 
-Provisioning is file operations and never touches SHM, FPS, tmux or processes; its only contact
+Provisioning is file operations and never touches SHM, FPS or processes; its only contact
 with the live system is the "is a run process active?" callable that `resync` receives
 ([Drift and resync](pipelines_provision.md#3-resync)). Operating reads only the rootdir.
 
@@ -42,7 +42,7 @@ resolving](pipelines_conf.md#4-resolving-includes-overrides-substitution)). It m
 expands the substitutions and validates, every time it is called, with no side effects. The
 result is a frozen `PipelineConfig` (a pydantic model): `long_name`, `name`, `loop_number`,
 `kind`, `compute_units` (a dict of `ComputeUnitSpec`: `exec`, `fps`), `dataloads`, `hooks`,
-`systemlinkage`, `plans`, `teardown_kill_tmux`. `fps_name(cu)` is the one place where FPS names
+`systemlinkage`, `plans`. `fps_name(cu)` is the one place where FPS names
 are made.
 
 ## 3. Operating: `Pipeline` and `ComputeUnit`
@@ -63,8 +63,8 @@ pp.link("loopback"); pp.linked(); pp.unlink("all")
 A `Pipeline` is a view on one rootdir: it resolves the configuration once, at construction, and
 derives everything else from the live system when asked. `compute_units` builds fresh
 `ComputeUnit` views on each access; a `ComputeUnit` wraps one `fpsexec` executable and its FPS
-(`fpsinit`, `confstart`, `confstop`, `runstart`, `runstop` run the executable's commands, in tmux
-when asked). You seldom call these yourself: tasks do.
+(`fpsinit`, `confstart`, `confstop`, `runstart`, `runstop` run the executable's commands;
+the starts return once the loop runs). You seldom call these yourself: tasks do.
 
 ## 4. State
 
@@ -118,11 +118,11 @@ The no-op on an already reached goal is what makes plans idempotent.
 - **`success()`** checks whether the goal already holds, and must not have side effects.
 - **`can()`** checks the task's preconditions. Before returning `False`, it sets
   `self.failure_reason`.
-- **`forward()`** does the work. For asynchronous effects (tmux, processes), it waits with
+- **`forward()`** does the work. For asynchronous effects (processes), it waits with
   `wait_until(self.success, self.TIMEOUT)` (from `milk.wait`); `TIMEOUT` defaults to 10 s.
 - **`self.compute_units`** is the step's CompU subset, as `{name: ComputeUnit}`.
   `self._existing()` is the part of that subset whose FPS exists, as `(ComputeUnit, FPS)` pairs.
-- Tasks act on the live pipeline (SHM, FPS, tmux, processes) and never modify `rootdir/conf/`.
+- Tasks act on the live pipeline (SHM, FPS, processes) and never modify `rootdir/conf/`.
 
 Direct subclasses of `Task` in `milk/operate/tasks.py` are registered under their class name
 automatically. A task defined anywhere else needs `TASKS.register("MyTask", MyTask)`; it can then
@@ -138,7 +138,7 @@ these words only in these senses. Short definitions for users are in the
 |------|-----------|
 | <a id="term-confdir"></a>**confdir** | `<long>-conf/`. The editable configuration source of a pipeline: TOML files, `scripts/`, conf-hook declarations, and `data/` (conf-hook products plus tagfiles, git-ignored). No rootdir operation ever reads it. |
 | <a id="term-clone"></a>**clone** | A one-time, plain copy of a confdir's TOML files, `scripts/` and hook declarations to a new location. It excludes `data/`, writes a `.gitignore` containing `data/`, runs no conf hooks, makes no git commit, and refuses if the target exists. It leaves no ongoing link to the source. |
-| <a id="term-conf-hook"></a>**conf hook** | A declared, idempotent provisioning action whose product lands in `confdir/data/` with a tagfile, for example fetching large files. Conf hooks never touch SHM, FPS, tmux, processes or machine configuration. |
+| <a id="term-conf-hook"></a>**conf hook** | A declared, idempotent provisioning action whose product lands in `confdir/data/` with a tagfile, for example fetching large files. Conf hooks never touch SHM, FPS, processes or machine configuration. |
 | <a id="term-conf-artifact"></a>**conf artifact** | A file-level unit of configuration whose fingerprint is tracked. There are two types: **conf file artifacts** (each TOML file of the conf set and each file under `scripts/`) and **hook artifacts** (each conf-hook product). Fetching produces hook artifacts; drift is computed per artifact. |
 | <a id="term-fingerprint"></a>**fingerprint** | A small record that identifies an artifact's content and origin without storing the content: `content_hash` (sha256 of the file bytes; for a directory product, a hash over the sorted (relpath, hash) list, with empty directories included as `(relpath/, "")`), `size`, and for hook artifacts also `decl_digest` (a hash of the hook's TOML declaration) plus informational `source` and `time`. Equality is decided **only** by `content_hash` and `decl_digest`. Modes and mtime are ignored. Symlinks inside products are refused. The `.tag` suffix is reserved. |
 | <a id="term-tagfile"></a>**tagfile** | The recorded fingerprint of a hook artifact, stored next to it as `<product>.tag`. |
@@ -153,8 +153,8 @@ these words only in these senses. Short definitions for users are in the
 | <a id="term-rundir"></a>**rundir** | `$MILK_SHM_DIR/pipe_rundirs/<short>/`. Ephemeral. It holds only non-derivable runtime facts: boot_id, the claim (short name, loop_number, **the deployed FPS names**), and the **applied linkage pairs**. `deploy` creates it and `teardown` removes it. Teardown, unlink and the consistency check read what was deployed from here, not from the current config. |
 | <a id="term-cold"></a>**cold** | No rundir and no FPS for this pipeline. `deploy` is the only plan that leaves cold; `teardown`, `state` and `nuke` are always accepted. Other operations raise `ColdSystemError` ("not deployed on this boot; run deploy"). |
 | <a id="term-inconsistent"></a>**inconsistent** | Any mismatch between the rundir and the live FPS set: a stale rundir (boot_id mismatch), a valid rundir with some **recorded** FPS missing (for example after a failed deploy), or pipeline FPS present without a valid rundir. Every operation except `teardown` raises `InconsistentStateError`, with guidance to run teardown. |
-| <a id="term-compute-unit"></a>**compute unit (CompU)** | One running instance of a milk compute unit within a pipeline, identified by (executable, FPS name): its FPS, its conf/run processes and its tmux session. "Session" is **not** used for this concept; it only ever means a tmux session. Code: `ComputeUnit`, `compute_units`, `ComputeUnitSpec`. |
-| <a id="term-task"></a>**task** | A unit of operation on a rootdir's live pipeline with `can()` / `forward()` / `success()`. It is idempotent and may touch SHM, FPS, tmux and processes. It never modifies `rootdir/conf/`. It acts on all CompUs by default, or on an optional CompU subset. |
+| <a id="term-compute-unit"></a>**compute unit (CompU)** | One running instance of a milk compute unit within a pipeline, identified by (executable, FPS name): its FPS and its conf/run processes. "Session" is **not** used for this concept; it only ever means a milk-cli session. Code: `ComputeUnit`, `compute_units`, `ComputeUnitSpec`. |
+| <a id="term-task"></a>**task** | A unit of operation on a rootdir's live pipeline with `can()` / `forward()` / `success()`. It is idempotent and may touch SHM, FPS and processes. It never modifies `rootdir/conf/`. It acts on all CompUs by default, or on an optional CompU subset. |
 | <a id="term-plan"></a>**plan** | Data, not code: a name, an ordered list of steps (task name plus an optional CompU subset), and a failure policy `on_failure: abort \| best_effort`. Defined in the generic registry or by a kind. Plans are what operators invoke. |
 | <a id="term-kind"></a>**kind** | A protocol that a pipeline declares (`kind = "…"`). It contributes required CompUs, live defaults from the installed package, allowed plans, and extra validation. |
 | <a id="term-state"></a>**state** | The lifecycle status of a pipeline (`cold`, `inconsistent`, `deployed`, `configured`, `running`, or mixed), derived from rootdir + rundir + the live system. It is never stored. |

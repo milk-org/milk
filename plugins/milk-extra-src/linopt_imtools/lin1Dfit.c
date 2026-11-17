@@ -24,11 +24,11 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char  infname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static long *NBptval                                = NULL;
-static long *maxorderval                            = NULL;
-static char  outfname[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static long *modeval                                = NULL;
+static char    infname[FUNCTION_PARAMETER_STRMAXLEN]  = "data.txt";
+static int64_t NBptval                                = 1000;
+static int64_t maxorderval                            = 8;
+static char    outfname[FUNCTION_PARAMETER_STRMAXLEN] = "fitsol.txt";
+static int64_t modeval                                = 0;
 
 
 /* ================================================================
@@ -263,7 +263,7 @@ static MILK_HOT errno_t lin1Dfit_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
 
-    linopt_compute_1Dfit(infname, *NBptval, *maxorderval, outfname, *modeval, NULL);
+    linopt_compute_1Dfit(infname, NBptval, maxorderval, outfname, modeval, NULL);
 
     MILK_PROCINFO_END(self)
 

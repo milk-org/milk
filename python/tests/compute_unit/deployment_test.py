@@ -26,7 +26,7 @@ fixt_fpsinit_pinfo = fixt_fpsinit_factory(StreamDelayComputeUnit, pinfo=True)
 # ADD AFTER THIS LINE
 
 
-def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
+def test_fps_lifecycle(fixt_fpsinit_pinfo):
     compu: StreamDelayComputeUnit = fixt_fpsinit_pinfo
     fps = compu.fps
     assert fps
@@ -38,13 +38,13 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
     fps["procinfo.triggertimeout"] = 0.1
     fps["procinfo.triggersname"] = "imin"
 
-    compu.confstart(tmux=tmux)
+    compu.confstart()
     poll_until_or_fail(fps.conf_isrunning, t=5.0, msg="conf not running")
 
     arr = np.random.randn(30, 40)
     in_shm = SHM("imin", arr * 0)
 
-    compu.runstart(tmux=tmux)
+    compu.runstart()
     poll_until_or_fail(fps.run_isrunning, t=5.0, msg="run not running")
 
     out_shm = SHM("imout")
@@ -59,8 +59,7 @@ def test_fps_lifecycle(fixt_fpsinit_pinfo, tmux: bool = False):
 
 
 @pmp("loopmode", [0, 1, 2])
-@pmp("tmux", (False, True))
-def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
+def test_loops(fixt_fpsinit_pinfo, loopmode: int):
     compu: StreamDelayComputeUnit = fixt_fpsinit_pinfo
     assert compu.fps
     compu.fps["naive_mode"] = True
@@ -76,11 +75,11 @@ def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
     in_shm = SHM("imin", arr * 0)
 
     if loopmode == 0:
-        compu.runstart(tmux=tmux)
+        compu.runstart()
     elif loopmode == 1:
-        compu.runstart(tmux=tmux, loops=True)
+        compu.runstart(loops=True)
     elif loopmode == 2:
-        compu.runstart(tmux=tmux, loopd=0.01)
+        compu.runstart(loopd=0.01)
     else:
         raise ValueError(f"loopmode [0,1,2] - got {loopmode}")
 
@@ -142,7 +141,4 @@ def test_str(fixt_fpsinit_pinfo):
     assert "procinfo.cset" in s
 
     # Test confstart, runstart, runstop, confstop
-    # test both in tmux and with subprocesses
-
-    # What are confstop and runstop supposed to do when there's no tmux ?
     ...

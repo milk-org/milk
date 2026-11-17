@@ -44,8 +44,7 @@ MILK_PARAMS_DEFINE(putgaussnoise, FPS_PARAMS);
 static MILK_HOT errno_t putgaussnoise_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    put_gauss_noise(gn_in, gn_out, gn_ampl);
-    return RETURN_SUCCESS;
+    return (put_gauss_noise(gn_in, gn_out, gn_ampl) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 

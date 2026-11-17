@@ -143,88 +143,79 @@ static void ov_loop_names_save_locked(void)
     fclose(fp);
 }
 
-/**
- * @brief Save persistent custom loop names to disk.
- * @param[in] model System model containing detected loops (unused)
- */
-void ov_loop_names_save(const OV_MODEL *model)
+/** saved_find_locked - slot of @hash in the saved-name registry, or -1 (mutex held). */
+static int saved_find_locked(uint64_t hash)
 {
-    (void) model;
-    pthread_mutex_lock(&s_loop_names_mutex);
-    ov_loop_names_save_locked();
-    pthread_mutex_unlock(&s_loop_names_mutex);
+    for (int i = 0; i < s_nb_saved_names; i++)
+    {
+        if (s_saved_names[i].hash == hash)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 /**
- * @brief Set a custom name for a loop and persist it.
- * @param[in,out] model    System model
- * @param[in]     loop_idx Index in model->loops[] (0..nb_loops-1)
- * @param[in]     new_name New human-readable name string
- * @return 0 on success, non-zero on error.
+ * ov_loop_rename - set (or, with "", clear) the custom name of @model's loop @loop_idx and persist it.
+ * Only the saved-name registry changes; ov_loop_name() shows it at once. Return: 0, or -1.
  */
-int ov_loop_rename(OV_MODEL *model, int loop_idx, const char *new_name)
+int ov_loop_rename(const OV_MODEL *model, int loop_idx, const char *new_name)
 {
     if (model == NULL || loop_idx < 0 || loop_idx >= model->nb_loops || new_name == NULL)
     {
         return -1;
     }
+    uint64_t hash = model->loops[loop_idx].signature_hash;
 
     pthread_mutex_lock(&s_loop_names_mutex);
-    OV_LOOP *lp = &model->loops[loop_idx];
-    if (new_name[0] == '\0')
+    int i = saved_find_locked(hash);
+    if (new_name[0] == '\0' && i >= 0)
     {
-        /* Clear custom name, restore auto_name */
-        lp->has_custom_name = 0;
-        lp->custom_name[0]  = '\0';
-        strncpy(lp->name, lp->auto_name, sizeof(lp->name) - 1);
-        lp->name[sizeof(lp->name) - 1] = '\0';
-
-        /* Remove from saved names */
-        for (int i = 0; i < s_nb_saved_names; i++)
+        s_saved_names[i] = s_saved_names[--s_nb_saved_names];
+    }
+    else if (new_name[0] != '\0')
+    {
+        if (i < 0 && s_nb_saved_names < OV_MAX_SAVED_NAMES)
         {
-            if (s_saved_names[i].hash == lp->signature_hash)
-            {
-                for (int j = i; j < s_nb_saved_names - 1; j++)
-                {
-                    s_saved_names[j] = s_saved_names[j + 1];
-                }
-                s_nb_saved_names--;
-                break;
-            }
+            i                     = s_nb_saved_names++;
+            s_saved_names[i].hash = hash;
+        }
+        if (i >= 0)
+        {
+            snprintf(s_saved_names[i].name, OV_LOOP_NAME_LEN, "%s", new_name);
         }
     }
-    else
-    {
-        strncpy(lp->custom_name, new_name, sizeof(lp->custom_name) - 1);
-        lp->custom_name[sizeof(lp->custom_name) - 1] = '\0';
-        lp->has_custom_name                          = 1;
-        strncpy(lp->name, lp->custom_name, sizeof(lp->name) - 1);
-        lp->name[sizeof(lp->name) - 1] = '\0';
-
-        /* Update or add in saved table */
-        int found = 0;
-        for (int i = 0; i < s_nb_saved_names; i++)
-        {
-            if (s_saved_names[i].hash == lp->signature_hash)
-            {
-                strncpy(s_saved_names[i].name, lp->custom_name, OV_LOOP_NAME_LEN - 1);
-                s_saved_names[i].name[OV_LOOP_NAME_LEN - 1] = '\0';
-                found                                       = 1;
-                break;
-            }
-        }
-        if (!found && s_nb_saved_names < OV_MAX_SAVED_NAMES)
-        {
-            s_saved_names[s_nb_saved_names].hash = lp->signature_hash;
-            strncpy(s_saved_names[s_nb_saved_names].name, lp->custom_name, OV_LOOP_NAME_LEN - 1);
-            s_saved_names[s_nb_saved_names].name[OV_LOOP_NAME_LEN - 1] = '\0';
-            s_nb_saved_names++;
-        }
-    }
-
     ov_loop_names_save_locked();
     pthread_mutex_unlock(&s_loop_names_mutex);
     return 0;
+}
+
+/**
+ * ov_loop_name - display name of @lp: its saved custom name, else its auto name. Valid until the
+ * fourth next call (rotating buffers; UI thread).
+ */
+const char *ov_loop_name(const OV_LOOP *lp)
+{
+    static char buf[4][OV_LOOP_NAME_LEN];
+    static int  next;
+    char       *out = buf[next];
+    next            = (next + 1) % 4;
+
+    pthread_mutex_lock(&s_loop_names_mutex);
+    int i = saved_find_locked(lp->signature_hash);
+    snprintf(out, OV_LOOP_NAME_LEN, "%s", (i >= 0) ? s_saved_names[i].name : lp->auto_name);
+    pthread_mutex_unlock(&s_loop_names_mutex);
+    return out;
+}
+
+/** ov_loop_is_custom - 1 if @lp has a saved custom name. */
+int ov_loop_is_custom(const OV_LOOP *lp)
+{
+    pthread_mutex_lock(&s_loop_names_mutex);
+    int i = saved_find_locked(lp->signature_hash);
+    pthread_mutex_unlock(&s_loop_names_mutex);
+    return i >= 0;
 }
 
 /**
@@ -241,32 +232,5 @@ const char *ov_get_loop_name(const OV_MODEL *model, int loop_id)
         return "";
     }
     int idx = loop_id - 1;
-    if (idx >= 0 && idx < model->nb_loops)
-    {
-        return model->loops[idx].name;
-    }
-    return "";
-}
-
-/**
- * ov_find_loop_by_id - Find loop array index from 1-based loop ID.
- * @model:   System model
- * @loop_id: 1-based loop ID
- *
- * Return: Array index in model->loops[], or -1 if not found.
- */
-int ov_find_loop_by_id(const OV_MODEL *model, int loop_id)
-{
-    if (model == NULL || loop_id <= 0)
-    {
-        return -1;
-    }
-    for (int i = 0; i < model->nb_loops; i++)
-    {
-        if (model->loops[i].loop_id == loop_id)
-        {
-            return i;
-        }
-    }
-    return -1;
+    return (idx < model->nb_loops) ? ov_loop_name(&model->loops[idx]) : "";
 }

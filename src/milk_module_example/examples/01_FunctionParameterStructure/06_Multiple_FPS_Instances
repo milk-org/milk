@@ -30,15 +30,11 @@ modex.imsum2 _FPSINIT_ \"05\"
 # Run function with current parameter values
 modex.imsum2 .
 
-# Run function with parameters from FPS 03
-modex.imsum2 _RUNSTART_ \"03\"
-
-# Run function with parameters from FPS 05
-modex.imsum2 _RUNSTART_ \"05\"
-
-# Re-run function with last used parameter values
-modex.imsum2 .
+# The FPS keep their parameter sets. A unit, which runs on its own, is made and started by
+# the function's fpsexec binary, outside milk-cli:
+#   milk-fpsexec-imsum2 -n imsum2-03 fpsinit
+#   milk-fpsexec-imsum2 -n imsum2-03 runstart
 
 # Exit CLI
-exitCLI
+exit
 "

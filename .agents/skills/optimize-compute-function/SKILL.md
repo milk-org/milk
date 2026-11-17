@@ -7,9 +7,10 @@ description: Systematic methodology for optimizing
 # Optimize Compute Functions
 
 This skill provides a step-by-step methodology for
-optimizing `fpsexec()` and other hot-path compute
-functions using the project's performance macros
-and tools.
+optimizing `<stem>_compute()` and other hot-path
+compute functions using the project's performance
+macros and tools. The rules each phase applies are
+in [`performance-practices`](../../rules/performance-practices.md).
 
 ## When to Use
 
@@ -21,12 +22,8 @@ and tools.
 ## Phase 1 — Identify Hot Functions
 
 Before optimizing, confirm which functions are
-actually hot:
-
-```bash
-# Check loop rate via processinfo
-echo "procCTRL" | milk-cli 2>/dev/null
-```
+actually hot: loop rates with `milk-procinfo-list`
+([performance.md §1](../../../docs/operations/performance.md#1-measuring-performance)).
 
 Focus on functions that run at high frame rates
 (>100 Hz) or process large data (>1 MB/frame).
@@ -37,22 +34,16 @@ Add performance macros from `milk_compiler.h`:
 
 ```c
 /**
- * fpsexec - Core computation for XYZ
+ * xyz_compute() - Core computation for XYZ
+ * @self:  Runnable descriptor of the unit
  */
-MILK_HOT
-static errno_t fpsexec(void)
+static MILK_HOT errno_t xyz_compute(const MILK_RUNNABLE *self)
 {
     // ...
 }
 ```
 
-| Macro          | Where to Use                          |
-| -------------- | ------------------------------------- |
-| `MILK_HOT`     | `fpsexec()`, inner-loop helpers       |
-| `MILK_COLD`    | Error handlers, init, cleanup         |
-| `MILK_PURE`    | Side-effect-free query functions      |
-| `MILK_CONST`   | Functions depending only on args      |
-| `MILK_FLATTEN` | Small wrappers dispatching to helpers |
+Which macro goes where: `performance-practices`, *Function Attributes*.
 
 ## Phase 3 — Pointer Qualification
 
@@ -76,12 +67,7 @@ static void process_frame(
 }
 ```
 
-**Checklist:**
-
-- [ ] All non-aliased pixel pointers have `restrict`
-- [ ] Hot-path pointers have `MILK_ASSUME_ALIGNED`
-- [ ] String/path `char*` parameters do NOT have
-      `restrict` (not worth it)
+Checklist: `performance-practices`, *Pointer Qualification & Alignment*.
 
 ## Phase 4 — Fix Float/Double Promotions
 
@@ -97,19 +83,7 @@ float result = x * 0.5f;
 float s = sqrtf(x);
 ```
 
-**Common substitutions:**
-
-| Double Version | Float Version |
-| -------------- | ------------- |
-| `sqrt(x)`      | `sqrtf(x)`    |
-| `pow(x, y)`    | `powf(x, y)`  |
-| `sin(x)`       | `sinf(x)`     |
-| `cos(x)`       | `cosf(x)`     |
-| `exp(x)`       | `expf(x)`     |
-| `fabs(x)`      | `fabsf(x)`    |
-| `floor(x)`     | `floorf(x)`   |
-| `0.5`          | `0.5f`        |
-| `1.0`          | `1.0f`        |
+Substitutions: `performance-practices`, *Float vs Double* and *Math & Transcendentals*.
 
 ## Phase 5 — Vectorization Check
 
@@ -151,12 +125,7 @@ cblas_sgemm(CblasRowMajor, CblasNoTrans,
 
 ## Phase 7 — Memory and I/O Audit
 
-- [ ] No `malloc`/`free` inside per-frame loops
-- [ ] No `printf`/`fprintf` in hot paths
-      (guard with `if (VERBOSE > 0)`)
-- [ ] No `fflush` inside loops
-- [ ] Pre-allocate buffers in init, reuse
-- [ ] Use `calloc()` for zero-initialized state
+Apply `performance-practices`, *Memory Allocation* and *What NOT to Do*.
 
 ## Phase 8 — Verify with Assembly
 
@@ -166,14 +135,4 @@ assembly.
 
 ## Quick Optimization Checklist
 
-- [ ] `MILK_HOT` on compute function
-- [ ] `restrict` on all pixel pointer params
-- [ ] `MILK_ASSUME_ALIGNED` on hot pointers
-- [ ] Float literals use `f` suffix (`0.5f`)
-- [ ] Float math uses `f` variants (`sqrtf`)
-- [ ] No `pow(2, n)` — use `1 << n`
-- [ ] BLAS for matrix operations
-- [ ] No alloc/IO in hot loop
-- [ ] `else if` for datatype dispatch (not `if`)
-- [ ] `MILK_IVDEP` or `#pragma omp for simd`
-      on element-wise loops
+The `performance-practices` rule is the checklist.

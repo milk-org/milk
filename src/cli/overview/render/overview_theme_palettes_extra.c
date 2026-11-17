@@ -60,6 +60,11 @@ const ov_theme_t ov_theme_dracula = {
     .grad_hi     = { 139, 233, 253 },
     .grad_cpu_lo = { 80, 250, 123 },
     .grad_cpu_hi = { 255, 85, 85 },
+
+    .fg_type_int   = { 189, 147, 249 },
+    .fg_type_float = { 80, 250, 123 },
+    .fg_type_str   = { 255, 184, 108 },
+    .fg_accent     = { 241, 250, 140 },
 };
 
 /* 6. Solarized Dark (Precision cyan & amber dark palette) */
@@ -113,6 +118,11 @@ const ov_theme_t ov_theme_solarized_dark = {
     .grad_hi     = { 42, 161, 152 },
     .grad_cpu_lo = { 133, 153, 0 },
     .grad_cpu_hi = { 220, 50, 47 },
+
+    .fg_type_int   = { 38, 139, 210 },
+    .fg_type_float = { 133, 153, 0 },
+    .fg_type_str   = { 203, 75, 22 },
+    .fg_accent     = { 181, 137, 0 },
 };
 
 /* 7. Solarized Light (Warm cream & cyan light palette) */
@@ -166,6 +176,11 @@ const ov_theme_t ov_theme_solarized_light = {
     .grad_hi     = { 42, 161, 152 },
     .grad_cpu_lo = { 133, 153, 0 },
     .grad_cpu_hi = { 220, 50, 47 },
+
+    .fg_type_int   = { 38, 139, 210 },
+    .fg_type_float = { 133, 153, 0 },
+    .fg_type_str   = { 203, 75, 22 },
+    .fg_accent     = { 181, 137, 0 },
 };
 
 /* 8. Monokai Pro (Warm charcoal with radiant neon accents) */
@@ -219,6 +234,11 @@ const ov_theme_t ov_theme_monokai = {
     .grad_hi     = { 171, 157, 242 },
     .grad_cpu_lo = { 169, 220, 103 },
     .grad_cpu_hi = { 255, 97, 136 },
+
+    .fg_type_int   = { 171, 157, 242 },
+    .fg_type_float = { 166, 226, 46 },
+    .fg_type_str   = { 253, 151, 31 },
+    .fg_accent     = { 230, 219, 116 },
 };
 
 /* 9. Matrix Phosphor (Phosphor green on pure black) */
@@ -272,4 +292,9 @@ const ov_theme_t ov_theme_matrix = {
     .grad_hi     = { 0, 255, 102 },
     .grad_cpu_lo = { 0, 255, 65 },
     .grad_cpu_hi = { 255, 70, 70 },
+
+    .fg_type_int   = { 0, 200, 120 },
+    .fg_type_float = { 140, 255, 140 },
+    .fg_type_str   = { 100, 200, 60 },
+    .fg_accent     = { 220, 255, 80 },
 };

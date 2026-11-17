@@ -12,7 +12,6 @@
 long_name = "mlatsim"
 name = "mlatsim"
 loop_number = 7
-teardown_kill_tmux = true
 
 [[hooks]]                     # writes data/dm.fits: 16x16 float32 zeros
 id = "dm"

@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include "milk_runnable.h"
+#include "libmilkcommon/milk_omp_team.h"
 #include "ImageStreamIO/ImageStruct.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -22,18 +23,18 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *incoeffM  = NULL;
-static char    *outcoeffM = NULL;
-static int32_t *axis      = NULL;
+static char    incoeffM[FUNCTION_PARAMETER_STRMAXLEN]  = "inM";
+static char    outcoeffM[FUNCTION_PARAMETER_STRMAXLEN] = "outcA";
+static int32_t axis                                    = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                            \
-    X(".incoeffM", &incoeffM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input coeffs matrix") \
-    X(".outcoeffM", &outcoeffM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs matrix")  \
+#define FPS_PARAMS(X)                                                                           \
+    X(".incoeffM", incoeffM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input coeffs matrix") \
+    X(".outcoeffM", outcoeffM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output coeffs matrix")  \
     X(".axis", &axis, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "axis")
 
 
@@ -111,47 +112,55 @@ errno_t Qexpand(IMGID imgincoeffM, IMGID *imgoutcoeffM, int axis)
     }
 
 
+    const float *restrict inptr = imgincoeffM.im->array.F;
+    float *restrict outptr      = imgoutcoeffM->im->array.F;
+    int nth = milk_omp_team_size((uint64_t) NBvec * (uint64_t) vecdimout, 262144);
+
+#pragma omp parallel for num_threads(nth) if (nth > 1)
     for (uint32_t vec = 0; vec < NBvec; vec++)
     {
-        // copy linear part
         if (axis == 0)
         {
-            imgoutcoeffM->im->array.F[vec * vecdimout] = 1.0;
+            const float *restrict invec = inptr + (uint64_t) vec * vecdim;
+            float *restrict outvec      = outptr + (uint64_t) vec * vecdimout;
+
+            outvec[0] = 1.0f;
+#pragma omp simd
             for (uint32_t ii = 0; ii < vecdim; ii++)
             {
-                imgoutcoeffM->im->array.F[vec * vecdimout + ii + 1] =
-                    imgincoeffM.im->array.F[vec * vecdim + ii];
+                outvec[ii + 1] = invec[ii];
+            }
+
+            uint32_t index = vecdim + 1;
+            for (uint32_t ii = 0; ii < vecdim; ii++)
+            {
+                float valii = invec[ii];
+#pragma omp simd
+                for (uint32_t jj = ii; jj < vecdim; jj++)
+                {
+                    outvec[index + (jj - ii)] = valii * invec[jj];
+                }
+                index += (vecdim - ii);
             }
         }
         else
         {
-            imgoutcoeffM->im->array.F[vec] = 1.0;
+            outptr[vec] = 1.0f;
             for (uint32_t ii = 0; ii < vecdim; ii++)
             {
-                imgoutcoeffM->im->array.F[(ii + 1) * NBvec + vec] =
-                    imgincoeffM.im->array.F[ii * NBvec + vec];
+                outptr[(uint64_t) (ii + 1) * NBvec + vec] = inptr[(uint64_t) ii * NBvec + vec];
             }
-        }
 
-        uint32_t index = vecdim + 1;
-
-        for (uint32_t ii = 0; ii < vecdim; ii++)
-        {
-            for (uint32_t jj = ii; jj < vecdim; jj++)
+            uint32_t index = vecdim + 1;
+            for (uint32_t ii = 0; ii < vecdim; ii++)
             {
-                if (axis == 0)
+                float valii = inptr[(uint64_t) ii * NBvec + vec];
+                for (uint32_t jj = ii; jj < vecdim; jj++)
                 {
-                    float valii = imgincoeffM.im->array.F[vec * vecdim + ii];
-                    float valjj = imgincoeffM.im->array.F[vec * vecdim + jj];
-                    imgoutcoeffM->im->array.F[vec * vecdimout + index] = valii * valjj;
+                    float valjj                            = inptr[(uint64_t) jj * NBvec + vec];
+                    outptr[(uint64_t) index * NBvec + vec] = valii * valjj;
+                    index++;
                 }
-                else
-                {
-                    float valii = imgincoeffM.im->array.F[ii * NBvec + vec];
-                    float valjj = imgincoeffM.im->array.F[jj * NBvec + vec];
-                    imgoutcoeffM->im->array.F[index * NBvec + vec] = valii * valjj;
-                }
-                index++;
             }
         }
     }
@@ -183,7 +192,7 @@ static MILK_HOT errno_t Qexpand_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        Qexpand(imgincoeffM, &imgoutcoeffM, *axis);
+        Qexpand(imgincoeffM, &imgoutcoeffM, axis);
 
         processinfo_update_output_stream(processinfo, imgoutcoeffM.im, NULL);
     }

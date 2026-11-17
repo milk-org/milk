@@ -41,8 +41,8 @@ MILK_PARAMS_DEFINE(ffttranslate, FPS_PARAMS);
 static MILK_HOT errno_t ffttranslate_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    fft_image_translate(p_in, p_out, p_xtransl, p_ytransl);
-    return RETURN_SUCCESS;
+    return (fft_image_translate(p_in, p_out, p_xtransl, p_ytransl) < 0) ? RETURN_FAILURE
+                                                                        : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_fft_ffttranslate = {
@@ -72,7 +72,12 @@ int fft_image_translate(const char *ID_name, const char *ID_out, double xtransl,
     long naxes[2];
     //  int n0,n1;
 
-    ID       = image_ID(ID_name, dcimg, dcnimg);
+    ID = image_ID(ID_name, dcimg, dcnimg);
+    if (ID == -1)
+    {
+        PRINT_ERROR("image \"%s\" not found", ID_name);
+        return -1;
+    }
     naxes[0] = dcimg[ID].md[0].size[0];
     naxes[1] = dcimg[ID].md[0].size[1];
 

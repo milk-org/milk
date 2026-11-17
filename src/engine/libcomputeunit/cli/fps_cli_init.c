@@ -25,7 +25,8 @@
  *
  * Creates each parameter in the FPS using the type,
  * description, and flags specified in the binding
- * array. Called during fpsinit.
+ * array. Called during fpsinit. An ON/OFF parameter
+ * takes its variable's value as default.
  */
 errno_t fps_init_from_bindings(FPS             *fps,
                                const char      *cmdkey,
@@ -40,7 +41,7 @@ errno_t fps_init_from_bindings(FPS             *fps,
 
     for (int bind_idx = 0; bind_idx < nb_b; bind_idx++)
     {
-        long     pindex;
+        long     pindex    = -1;
         uint64_t fpflag    = bindings[bind_idx].fpflag;
         int      cli_index = -1;
 
@@ -102,8 +103,8 @@ void fps_fill_farg_examples(CLICMDARGDEF *farg, FPS_CLI_BINDING *bindings, int n
                      *(double *) bindings[ii].ptr);
             break;
         case FPTYPE_ONOFF:
-            snprintf(farg[ii].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%ld",
-                     *(uint64_t *) bindings[ii].ptr);
+            snprintf(farg[ii].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%d",
+                     *(int32_t *) bindings[ii].ptr ? 1 : 0);
             break;
         case FPTYPE_PID:
             snprintf(farg[ii].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%d",

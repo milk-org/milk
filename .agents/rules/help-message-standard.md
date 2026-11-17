@@ -11,12 +11,9 @@ help levels using the flags defined below.
 
 ## Required Flags
 
-| Flag  | Long form            | Behavior                                                                   |
-| ----- | -------------------- | -------------------------------------------------------------------------- |
-| `-h1` | `--help-oneline`     | Print one line (the `.description` string), exit 0                         |
-| `-h2` | `--help-description` | Print verbose description only (plain text, no color), exit 0              |
-| `-h`  | `--help`             | Full help with ANSI color (auto-suppressed if stdout is not a tty), exit 0 |
-| `-hm` | `--help-mono`        | Full help, forced monochrome (no ANSI escapes), exit 0                     |
+`-h`, `-h1`, `-h2` and `-hm` and their long forms,
+which [FPS §5](../../docs/guide/fps.md#5-standalone-executables-fpsexec)
+describes; each prints and exits with status 0.
 
 ### TTY Auto-Detection
 
@@ -173,4 +170,3 @@ This rule fires when:
 ## Backward Compatibility
 
 The old flags `-hnc` and `-hc` are **removed**.
-Only `-h`, `-h1`, and `-hm` are supported.

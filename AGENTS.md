@@ -39,19 +39,21 @@ designed for Adaptive Optics (AO) and high-performance
 scientific computing. Its defining characteristic is a
 **shared-memory micro-service architecture**: many small
 standalone executables (compute units) communicate via
-zero-copy tensors in `/dev/shm/` and are configured
+zero-copy tensors in `$MILK_SHM_DIR` (default `/milk/shm`) and are configured
 through a shared-memory parameter system.
 
 **Three pillars:**
 
-| Pillar                               | Purpose                                                     | Shared Memory Path  |
-| ------------------------------------ | ----------------------------------------------------------- | ------------------- |
-| **ImageStreamIO** (Streams)          | Zero-copy n-dimensional data passing between processes      | `/dev/shm/*.im.shm` |
-| **FPS** (Function Processing System) | Real-time parameter sync, state control (run/stop/conf)     | `/dev/shm/fps.*`    |
-| **processinfo**                      | Heartbeat telemetry, loop rate profiling, health monitoring | `/dev/shm/proc.*`   |
+| Pillar                               | Purpose                                                     | Files                       |
+| ------------------------------------ | ----------------------------------------------------------- | --------------------------- |
+| **ImageStreamIO** (Streams)          | Zero-copy n-dimensional data passing between processes      | `*.im.shm`                  |
+| **FPS** (Function Processing System) | Real-time parameter sync, state control (run/stop/conf)     | `*.fps.shm`, `*.fps.d/`     |
+| **processinfo**                      | Heartbeat telemetry, loop rate profiling, health monitoring | `proc.*.shm`                |
 
-Compute units run inside **tmux sessions** for fault
-isolation — a crash in one unit never takes down others.
+Compute units run as detached background processes
+(**units**) for fault isolation — a crash in one unit
+never takes down others, and its output stays in
+`NAME.fps.d/run.out` (`milk-fps-log NAME`).
 
 ---
 
@@ -62,9 +64,10 @@ isolation — a crash in one unit never takes down others.
 | 🔴 **1st** | [`docs/arch/programmers_guide.md`](docs/arch/programmers_guide.md) | Architecture overview, `MILK_RUNNABLE` compute units, directory map, CMake conventions, header hierarchy |
 | 🔴 **2nd** | [`docs/arch/dependency_graph.md`](docs/arch/dependency_graph.md)   | Full build-tier diagrams, library link tables, standalone executable cmake patterns                 |
 | 🟠 **3rd** | [`docs/guide/streams.md`](docs/guide/streams.md)                     | `IMGID` C API, stream creation/connection, semaphore model, stream modifiers (`@S:`, `@L:`)         |
-| 🟠 **4th** | [`docs/guide/fps.md`](docs/guide/fps.md)                             | FPS parameter types, tmux dispatch, `milk-fpsCTRL`, `fpslist.txt` workflow                          |
-| 🟡 **5th** | [`docs/developer/code_assist.md`](docs/developer/code_assist.md)             | Index of all agent rules and workflows                                                              |
-| 🟡 **6th** | [`docs/guide/procinfo.md`](docs/guide/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
+| 🟠 **4th** | [`docs/guide/fps.md`](docs/guide/fps.md)                             | FPS parameter types, units (start, stop, states, output), `milk-fpsCTRL`                            |
+| 🟠 **5th** | [`docs/guide/scripting.md`](docs/guide/scripting.md)                 | `.milk` / `milk.bash` scripting summary; links to [`calculator.md`](docs/guide/calculator.md) and [`sessions.md`](docs/guide/sessions.md) |
+| 🟡 **6th** | [`docs/developer/code_assist.md`](docs/developer/code_assist.md)             | Index of all agent rules and workflows                                                              |
+| 🟡 **7th** | [`docs/guide/procinfo.md`](docs/guide/procinfo.md)                   | `PROCESSINFO` C API, loop profiling                                                                 |
 
 ---
 
@@ -73,20 +76,20 @@ isolation — a crash in one unit never takes down others.
 ```
 milk/
 ├── src/
-│   ├── engine/                    ← Core libraries (POSIX only, no CLI)
+│   ├── engine/                    ← Core libraries (Linux, no CLI)
 │   │   ├── ImageStreamIO/         ← Zero-copy shared memory streams
 │   │   ├── libfps/                ← FPS core (parameter management)
-│   │   ├── libcomputeunit/        ← FPS runtime (standalone main, tmux, conf/run)
-│   │   ├── libfpsseq/             ← FPS sequencer library
+│   │   ├── libcomputeunit/        ← FPS runtime (standalone main, units, conf/run)
 │   │   ├── libmilkcommon/         ← Common utilities, debug macros
 │   │   ├── libprocessinfo/        ← Heartbeat + process tracking
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
 │   ├── tui/                       ← Engine-tier TUIs (fpsCTRL, procCTRL)
+│   ├── prop/                      ← Shared-memory entity property library (milkprop)
+│   ├── calc/                      ← Calculator, C extensions & milk.calc unit (milkcalc)
 │   ├── cli/                       ← User-facing tools
 │   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework
-│   │   ├── overview/              ← TUI monitoring tool
-│   │   └── streamCTRL/            ← Stream monitor tool
+│   │   └── overview/              ← milk-CTRL dashboard TUI (milk-streamCTRL: a link that opens it on F3)
 │   ├── coremods/                  ← Core computation modules
 │   │   └── COREMOD_{arith,memory,tools,iofits}/
 │   └── milk_module_example/       ← ★ START HERE for templates
@@ -140,7 +143,7 @@ img.mdt->naxis = 2;
 img.mdt->size[0] = 128;
 img.mdt->size[1] = 128;
 img.mdt->shared = 1;
-imgid_mkimage(&img);
+imgid_create_registered(&img); // which creator when: docs/guide/streams.md §5
 
 // Access pixel data:
 float *data = img.im->array.F;
@@ -198,23 +201,12 @@ trigger conditions and required actions (human-readable overview:
 
 ## 9. Build System Quick Reference
 
-### Build tiers
+### Build tiers and the compile-test cycle
 
-| Tier           | CMake Flags                        | What's built                                                  |
-| -------------- | ---------------------------------- | ------------------------------------------------------------- |
-| Engine         | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkcommon, milkfps, milkdata, milkprocessinfo |
-| Core           | `-DUSE_CLI=OFF`                    | Engine + COREMODs (arith, memory, tools, iofits)              |
-| Core (no FITS) | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF`  | Core without COREMOD_iofits                                   |
-| Full           | _(defaults)_                       | Everything: CLI + all plugins                                 |
-
-### Compile-test cycle
-
-```bash
-$ cd _build
-$ make -j$(nproc)
-$ make install
-$ ctest --output-on-failure
-```
+Tiers and their CMake flags: [build_tiers.md](docs/quickstart/build_tiers.md). Build with
+`cmake --build _build`, install only under a prefix
+([tooling.md §6](docs/developer/tooling.md#6-dev-installs-without-sudo)), and test with pytest
+([tooling.md §4](docs/developer/tooling.md#4-testing-through-a-standard-python-suite-pytest-and-nox)).
 
 ### Module CMakeLists.txt
 

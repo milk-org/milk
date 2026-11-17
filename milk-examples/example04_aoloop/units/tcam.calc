@@ -1,0 +1,2 @@
+# Latency probe, part 1 (trigger wfsim, measurement only): write time of the camera frame
+tcam = 0 * tcam + _ts

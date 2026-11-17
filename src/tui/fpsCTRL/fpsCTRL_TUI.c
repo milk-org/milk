@@ -22,22 +22,30 @@
 #include "milk_config.h"
 
 #include "fpsCTRL_FPSdisplay.h"
-
-#include "scheduler_display.h"
+#include "fpsCTRL_units.h"
 
 static short unsigned int wrow, wcol;
 
 #define DISPLAYMODE_HELP 1
 #define DISPLAYMODE_FPSLOG 2
 #define DISPLAYMODE_FPSCTRL 3
-#define DISPLAYMODE_SEQUENCER 4
 
 
 inline static void fpsCTRLscreen_print_footer_status(FPSCTRL_PROCESS_VARS *fpsCTRLvar, int NBfps)
 {
     DEBUG_TRACE_FSTART();
 
-    int status_row = sc_term_rows;
+    int         status_row = sc_term_rows;
+    int         msg_err    = 0;
+    const char *msg        = fpsctrl_units_message(&msg_err);
+    if (fpsCTRLvar->search_mode == 0 && msg != NULL) // result of the last unit action
+    {
+        SC_APPEND("\033[%d;1H\033[2K", status_row - 1);
+        screenprint_setcolor(msg_err ? 4 : 2);
+        SC_APPEND(" %.*s", (sc_term_cols > 2) ? sc_term_cols - 2 : 0, msg);
+        screenprint_unsetcolor(msg_err ? 4 : 2);
+        screenprint_setnormal();
+    }
     if (fpsCTRLvar->search_mode > 0)
     {
         SC_APPEND("\033[%d;1H", status_row - 1);
@@ -94,9 +102,9 @@ inline static void fpsCTRLscreen_print_footer_status(FPSCTRL_PROCESS_VARS *fpsCT
     {
         SC_APPEND("CTRL] ");
     }
-    else if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
+    else if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_OUTPUT)
     {
-        SC_APPEND("SEQ] ");
+        SC_APPEND("OUTPUT] ");
     }
 
     if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
@@ -111,7 +119,7 @@ inline static void fpsCTRLscreen_print_footer_status(FPSCTRL_PROCESS_VARS *fpsCT
     }
 
     SC_APPEND("[PID %d] [%d FPS] [%s] ", (int) getpid(), NBfps, MILK_GIT_COMMIT);
-    SC_APPEND("| (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search ");
+    SC_APPEND("| (x) Exit  (h) Help  (?) Log  (F2) CTRL  (/) Search ");
 
     if (fpsCTRLvar->fpsCTRL_DisplayVerbose)
     {
@@ -151,7 +159,6 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("  \033[1;38;5;111m============ SCREENS\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "v / V", "Verbose mode ON / OFF");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "F2", "Parameter control (Main Screen)");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "F3", "Scheduler / Sequencer");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "?", "FPS log");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+L/R", "Cycle between tabs");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "h", "Show this help screen");
@@ -167,16 +174,18 @@ inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "/", "Fuzzy search parameter tree");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "S", "Toggle alphabetical sorting");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "]", "Cycle sort: Default -> A-Z -> Status");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "y", "Yank parameter value to tmux buffer");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "y",
+             "Copy parameter and value to the clipboard (OSC 52)");
 
     ADD_BLANK();
     ADD_LINE("  \033[1;38;5;111m============ PROCESS CONTROL\033[0m");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "O / CTRL+o", "Start/stop conf process");
     ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "R / CTRL+r", "Start/stop run process");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "T / CTRL+t", "Initialize/kill tmux session");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+a", "Attach to tmux session");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+e", "Stop conf/run, erase FPS");
-    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "E", "Stop conf/run, erase FPS, kill tmux");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+a",
+             "Follow the run output (Ctrl-C runstop, r restart, Esc back)");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+e / E", "Stop conf/run, erase FPS");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "", "Starts and stops run in the background;");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "", "their result shows above the status bar");
 
     ADD_BLANK();
     ADD_LINE("  \033[1;38;5;111m============ OTHER UTILITIES\033[0m");
@@ -326,10 +335,7 @@ inline static void fpsCTRLscreen_print_FPShelp(KEYWORD_TREE_NODE    *keywnode,
  *
  *
  */
-errno_t functionparameter_CTRLscreen(uint32_t mode,
-                                     char    *fpsnamemask,
-                                     char    *fpsCTRLfifoname,
-                                     double   timeout_sec __attribute__((unused)))
+errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask)
 {
     DEBUG_TRACE_FSTART();
 
@@ -382,8 +388,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     fpsCTRLvar.direction             = 1;
     strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask, sizeof(fpsCTRLvar.fpsnamemask) - 1);
     fpsCTRLvar.fpsnamemask[sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
-    strncpy(fpsCTRLvar.fpsCTRLfifoname, fpsCTRLfifoname, sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
-    fpsCTRLvar.fpsCTRLfifoname[sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1] = '\0';
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
@@ -398,27 +402,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
             keywnode[knode_idx].child[child_idx] = 0;
         }
     }
-
-    fpsCTRLvar.milkseq_state   = NULL;
-    fpsCTRLvar.milkseq_name[0] = '\0';
-
-    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
-    {
-        // Create FIFO if it does not exist
-        if (access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1)
-        {
-            if (mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1)
-            {
-                PRINT_ERROR("mkfifo: %s", strerror(errno));
-            }
-        }
-        fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
-    }
-    else
-    {
-        fpsCTRLvar.fpsCTRLfifofd = -1;
-    }
-    long fifocmdcnt = 0;
 
     for (int level_idx = 0; level_idx < MAXNBLEVELS; level_idx++)
     {
@@ -569,11 +552,13 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
             refresh_screen--; // will wait next time we enter the loop
         }
 
+        fpsctrl_units_poll(); // unit actions that ended: their result goes to the message line
+
         TUI_get_terminal_size(&wrow, &wcol);
 
         DEBUG_TRACEPOINT(" ");
 
-        loopOK = fpsCTRL_TUI_process_user_key(ch, fpsarray, keywnode, NULL, NULL, &fpsCTRLvar);
+        loopOK = fpsCTRL_TUI_process_user_key(ch, fpsarray, keywnode, &fpsCTRLvar);
 
         DEBUG_TRACEPOINT(" ");
 
@@ -593,10 +578,8 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                 TUI_printfw("======== FPSCTRL info  "
                             "(screen refresh cnt %7lld)\n",
                             loopcnt);
-                TUI_printfw("    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
-                            "%ld   NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n",
-                            fpsCTRLvar.fpsCTRLfifoname, fpsCTRLvar.fpsCTRLfifofd, fifocmdcnt,
-                            NBtaskLaunched, NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
+                TUI_printfw("    NBtaskLaunched = %d -> %ld   [NB FPS = %d]\n", NBtaskLaunched,
+                            NBtaskLaunchedcnt, fpsCTRLvar.NBfps);
 
                 DEBUG_TRACEPOINT(" ");
                 char logfname[STRINGMAXLEN_FULLFILENAME];
@@ -634,14 +617,14 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 
             DEBUG_TRACEPOINT(" ");
 
-            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
-            {
-                fpsCTRL_scheduler_display(&fpsCTRLvar, wrow, &fpsCTRLvar.scheduler_wrowstart);
-            }
-
             if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
             {
                 fpsCTRL_FPSlog(keywnode, &fpsCTRLvar);
+            }
+
+            if (fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_OUTPUT)
+            {
+                fpsctrl_output_view();
             }
 
 
@@ -698,14 +681,6 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
     // free(keywnode);
 
     // No longer freeing local task queues
-    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0)
-    {
-        unlink(fpsCTRLvar.fpsCTRLfifoname);
-    }
-
-    // Free persistent scheduler sort buffers
-    free(fpsCTRLvar.sched_sort_eval);
-    free(fpsCTRLvar.sched_sort_index);
 
     functionparameter_outlog("LOGFILECLOSE", "close log file");
 

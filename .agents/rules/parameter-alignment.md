@@ -4,23 +4,18 @@ trigger: always_on
 
 # Function Parameter Alignment
 
-Multi-line function prototypes and definitions must
-use **column-aligned** parameter names for
-readability. Pad each type (including any `*` prefix
-on the name) so that all parameter names start at the
-same column.
+[Coding Standards](../../docs/developer/coding_standards.md#function-signatures)
+asks for one parameter per line, with the names
+column-aligned. How to align them:
 
 ## Rule
 
-1. Each parameter on its own line, indented 4 spaces.
-2. Pad the type with spaces so all parameter names
-   begin at the same column within that prototype.
-3. The alignment column is determined by the longest
+1. The alignment column is determined by the longest
    `type [*]` prefix among all parameters.
-4. Use exactly **one space** between the last type
+2. Use exactly **one space** between the last type
    token and the `*` or name when there is no need
    for padding (i.e., it is already the longest).
-5. Qualifiers like `const` and `restrict` are part
+3. Qualifiers like `const` and `restrict` are part
    of the type for alignment purposes.
 
 ## Examples

@@ -21,8 +21,8 @@
  */
 int ov_input_nav_fps(int key, OV_LAYOUT *lay, const OV_MODEL *m)
 {
-    int fsel       = lay->sel_fps;
-    int has_params = (fsel >= 0 && fsel < m->nb_fps && m->fps[fsel].nb_disp_params > 0);
+    int fsel       = ov_sel_idx(lay, m, OV_FOCUS_FPS);
+    int has_params = (fsel >= 0 && m->fps[fsel].nb_disp_params > 0);
 
     int             nitems = 0;
     fps_tree_item_t items[1024];
@@ -230,12 +230,19 @@ int ov_input_nav_fps(int key, OV_LAYOUT *lay, const OV_MODEL *m)
                         {
                             char kw[FUNCTION_PARAMETER_STRMAXLEN] = { 0 };
                             int  newval                           = 0;
-                            if (ov_fcache_toggle_param(m->fps[fsel].name, pi, kw, sizeof(kw),
-                                                       &newval) == 0)
+                            int  rc = ov_fcache_toggle_param(m->fps[fsel].name, pi, kw, sizeof(kw),
+                                                             &newval);
+                            if (rc == 0)
                             {
                                 ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_INFO,
                                                "Toggled parameter %s to %s", kw,
                                                newval ? "ON" : "OFF");
+                            }
+                            else
+                            {
+                                ov_cmdlog_push(&lay->cmdlog, OV_CMDLOG_FAIL, "Toggle %s: %s",
+                                               params->disp_param_name[pi],
+                                               ov_fps_param_rc_msg(rc));
                             }
                         }
                     }

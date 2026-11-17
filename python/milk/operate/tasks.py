@@ -5,7 +5,6 @@ from __future__ import annotations
 import abc
 import contextlib
 import os
-import subprocess
 from collections.abc import Collection
 from typing import TYPE_CHECKING
 
@@ -166,7 +165,7 @@ class ConfStart(Task):
     def forward(self) -> None:
         for compu, fps in self._existing():
             if not fps.conf_isrunning():
-                compu.confstart(tmux=True)
+                compu.confstart()
         wait_until(self.success, self.TIMEOUT)
 
     def success(self) -> bool:
@@ -176,7 +175,7 @@ class ConfStart(Task):
             if c.fps is None or not c.fps.conf_isrunning()
         ]
         if stuck:
-            self.failure_reason = f"Conf processes not running for {', '.join(stuck)} (tmux session busy?)"
+            self.failure_reason = f"Conf processes not running for {', '.join(stuck)}."
         return not stuck
 
 
@@ -191,7 +190,7 @@ class RunStart(Task):
     def forward(self) -> None:
         for compu, fps in self._existing():
             if not fps.run_isrunning():
-                compu.runstart(tmux=True)
+                compu.runstart()
         if not wait_until(self.success, self.TIMEOUT):
             stuck = [c.fpsname for c, f in self._existing() if not f.run_isrunning()]
             self.failure_reason = f"Run not started for {', '.join(stuck)}."
@@ -257,28 +256,6 @@ class ConfStop(Task):
 
     def success(self) -> bool:
         return not any(fps.conf_isrunning() for _, fps in self._existing())
-
-
-def _tmux_has(session: str) -> bool:
-    argv = ["tmux", "has-session", "-t", session]
-    return not subprocess.run(argv, capture_output=True).returncode
-
-
-class KillTmux(Task):
-    def can(self) -> bool:
-        return True
-
-    def _live(self) -> list[str]:
-        if not self.pipeline.config.teardown_kill_tmux:
-            return []
-        return [c.fpsname for c in self.compute_units.values() if _tmux_has(c.fpsname)]
-
-    def forward(self) -> None:
-        for session in self._live():
-            subprocess.run(["tmux", "kill-session", "-t", session], capture_output=True)
-
-    def success(self) -> bool:
-        return not self._live()
 
 
 class DestroyFPS(Task):

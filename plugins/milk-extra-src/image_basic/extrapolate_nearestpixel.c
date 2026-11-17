@@ -113,8 +113,7 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
 
     IMGID imgout       = imgid_make_from_name_2D(IDout_name, naxes[0], naxes[1]);
     imgout.mdt->shared = 0;
-    imgout.im          = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    imgid_create_registered(&imgout);
     printf("imout = %s\n", IDout_name);
     printf("\n");
 

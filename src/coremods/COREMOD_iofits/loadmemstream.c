@@ -61,6 +61,12 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
         *imLOC = STREAM_LOAD_SOURCE_NULL;
         ID     = -1;
     }
+    else if (strchr(sname, '/') != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid image name \"%s\"\n", sname);
+        *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE;
+        ID     = -1;
+    }
 
     int imLOCALMEM;
     if (*imLOC == STREAM_LOAD_SOURCE_NOTFOUND) // still searching

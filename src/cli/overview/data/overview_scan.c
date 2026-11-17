@@ -109,6 +109,8 @@ int ov_scan_get_event_fd(void)
 }
 
 
+static uint64_t ov_publish_seq; /* scan thread only */
+
 /**
  * ov_scan_thread_func - Background worker thread scanning system and milk state
  * @arg: Unused thread argument
@@ -120,13 +122,27 @@ int ov_scan_get_event_fd(void)
  */
 static void *ov_scan_thread_func(void *arg __attribute__((unused)))
 {
-    memset(ov_model_slots, 0, sizeof(ov_model_slots));
+    /* the slots are static, zero already: no memset, which made all three (9.5 MB) resident */
 
     while (ov_scan_running && !OV_SIG_ANY_SET())
     {
+        /* Paused display: no scans until the UI clears the hint (or stops the thread) */
+        pthread_mutex_lock(&ov_model_mutex);
+        while (ov_scan_running && !OV_SIG_ANY_SET() && (ov_scan_hints() & OV_HINT_PAUSED))
+        {
+            pthread_cond_wait(&ov_scan_cond, &ov_model_mutex);
+        }
+        pthread_mutex_unlock(&ov_model_mutex);
+        if (!ov_scan_running || OV_SIG_ANY_SET())
+        {
+            break;
+        }
+
         /* Scan into our private write slot
          * (no lock needed — display never touches it) */
         ov_model_full_scan(&ov_model_slots[ov_write_idx]);
+        ov_model_slots[ov_write_idx].seq =
+            ++ov_publish_seq; /* scan_count is per slot: not unique */
 
         /* Publish: swap write → ready.
          * The old ready slot becomes our new write slot. */
@@ -155,8 +171,11 @@ static void *ov_scan_thread_func(void *arg __attribute__((unused)))
         {
             struct timespec ts;
             clock_gettime(CLOCK_REALTIME, &ts);
+            /* streams still waiting to be mapped: come back after 50 ms */
+            double wait_s =
+                (ov_model_slots[ov_ready_idx].streams_pending > 0) ? 0.05 : ov_scan_interval_s;
             double sec_part  = 0.0;
-            double frac_part = modf((double) ov_scan_interval_s, &sec_part);
+            double frac_part = modf(wait_s, &sec_part);
             ts.tv_sec += (time_t) sec_part;
             ts.tv_nsec += (long) (frac_part * 1e9);
             if (ts.tv_nsec >= 1000000000L)
@@ -229,15 +248,6 @@ void ov_scan_stop(void)
 }
 
 /**
- * ov_scan_get_model - pick up the latest complete model.
- *
- * Swaps ready → display under lock. The returned pointer
- * remains valid and untouched by the scan thread until
- * the next call to ov_scan_get_model().
- *
- * Return: pointer to the current display model.
- */
-/**
  * ov_scan_drain_event_fd - drain pending wakeups from scan eventfd.
  */
 void ov_scan_drain_event_fd(void)
@@ -250,6 +260,15 @@ void ov_scan_drain_event_fd(void)
     }
 }
 
+/**
+ * ov_scan_get_model - Acquire the latest completed scan model snapshot for display
+ *
+ * Swaps the `ready` and `display` triple-buffer indices under `ov_model_mutex` if
+ * new scan data has been published. The returned pointer remains owned by the
+ * display thread and untouched by the scanner until the next call.
+ *
+ * Return: Pointer to the current display `OV_MODEL` slot.
+ */
 const OV_MODEL *ov_scan_get_model(void)
 {
     /* Pick up the latest ready buffer ONLY if new data
@@ -267,6 +286,18 @@ const OV_MODEL *ov_scan_get_model(void)
     pthread_mutex_unlock(&ov_model_mutex);
 
     return &ov_model_slots[ov_display_idx];
+}
+
+/** ov_scan_set_hints - what the UI shows now (OV_HINT_*); clearing OV_HINT_PAUSED resumes scanning. */
+void ov_scan_set_hints(unsigned hints)
+{
+    unsigned old = ov_scan_hints_swap(hints);
+    if ((old & OV_HINT_PAUSED) && !(hints & OV_HINT_PAUSED))
+    {
+        pthread_mutex_lock(&ov_model_mutex);
+        pthread_cond_broadcast(&ov_scan_cond);
+        pthread_mutex_unlock(&ov_model_mutex);
+    }
 }
 
 /**

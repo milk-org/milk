@@ -37,11 +37,11 @@ errno_t image_keywords_list(IMGID img)
 {
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
-    int NBkw = img.md->NBkw;
     if (img.ID == -1)
     {
         return RETURN_FAILURE;
     }
+    int NBkw  = img.md->NBkw;
     int kwcnt = 0;
     for (int kw = 0; kw < NBkw; kw++)
     {
@@ -91,15 +91,16 @@ MILK_PARAMS_DEFINE(image_keyword_list, FPS_PARAMS);
 
 static MILK_HOT errno_t image_keyword_list_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
 
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    image_keywords_list(imgid_make_from_name(inname));
+    ret = image_keywords_list(imgid_make_from_name(inname));
 
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 

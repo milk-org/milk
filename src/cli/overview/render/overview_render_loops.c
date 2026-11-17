@@ -32,16 +32,8 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         body_h = 4;
     }
 
-    /* Left pane: Loop table (40% width). Right pane: Detail circuit (60% width) */
-    int lw = (int) (W * 0.42f);
-    if (lw < 35)
-    {
-        lw = 35;
-    }
-    if (lw > W - 25)
-    {
-        lw = W - 25;
-    }
+    /* Left pane: loop list. Right pane: circuit of the selected loop */
+    int lw = ov_loops_list_width(lay);
     int rw = W - lw;
 
     /* Draw left panel frame */
@@ -49,7 +41,7 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
 
     /* Draw right panel frame */
     char rtitle[128];
-    int  sel_idx = lay->sel_loop;
+    int  sel_idx = lay->sub[OV_SUB_LOOPS].sel;
     if (sel_idx < 0)
     {
         sel_idx = 0;
@@ -82,10 +74,11 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
     render_pad_spaces(lhlen, lw);
     lrow++;
 
-    int max_lrows = body_h - 3;
+    int max_lrows = ov_loop_list_rows(lay);
     int rendered  = 0;
+    int first     = (lay->sub[OV_SUB_LOOPS].scroll > 0) ? lay->sub[OV_SUB_LOOPS].scroll : 0;
 
-    for (int i = 0; i < m->nb_loops && rendered < max_lrows; i++)
+    for (int i = first; i < m->nb_loops && rendered < max_lrows; i++)
     {
         const OV_LOOP *lp     = &m->loops[i];
         int            is_sel = (i == sel_idx);
@@ -99,11 +92,11 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_theme_fg(OV_FG_LOOP);
         ov_buf_printf("L%02d ", lp->loop_id);
 
-        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (lp->has_custom_name ? OV_FG_TITLE : OV_FG_TEXT));
-        ov_buf_printf("%-16.16s ", lp->name);
+        ov_theme_fg(is_sel ? OV_FG_BRIGHT : (ov_loop_is_custom(lp) ? OV_FG_TITLE : OV_FG_TEXT));
+        ov_buf_printf("%-16.16s ", ov_loop_name(lp));
 
         ov_theme_fg(OV_FG_DIM);
-        ov_buf_printf("%1ds %1dp  ", lp->nb_streams, lp->nb_procs + lp->nb_fps);
+        ov_buf_printf("%1ds %1dp  ", lp->nb_streams, ov_loop_units(lp));
 
         ov_theme_fg(OV_FG_TEXT);
         if (lp->min_hz > 0.0)
@@ -115,27 +108,36 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
             ov_buf_printf("   idle  ");
         }
 
-        if (lp->is_running)
-        {
-            ov_theme_fg(OV_FG_ACTIVE);
-            ov_buf_printf("RUN");
-        }
-        else if (lp->is_paused)
-        {
-            ov_theme_fg(OV_FG_WARN);
-            ov_buf_printf("PAUS");
-        }
-        else
-        {
-            ov_theme_fg(OV_FG_DIM);
-            ov_buf_printf("IDLE");
-        }
+        ov_rgb_t    stc;
+        const char *st = ov_loop_status(lp, &stc);
+        ov_theme_fg(stc);
+        ov_buf_printf("%s", st);
 
         render_pad_to_col(lw);
         lrow++;
         rendered++;
     }
 
+    if (m->nb_loops == 0 && rendered < max_lrows)
+    {
+        ov_buf_pos(lrow, 2);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("  No feedback loops (mode: %s)", sg_mode_label(lay->lineage_mode));
+        render_pad_to_col(lw);
+        lrow++;
+        rendered++;
+    }
+    if (m->loops_truncated && rendered < max_lrows)
+    {
+        ov_buf_pos(lrow, 2);
+        ov_theme_bg(OV_BG_PANEL);
+        ov_theme_fg(OV_FG_DIM);
+        ov_buf_printf("  more loops not shown (search limit)");
+        render_pad_to_col(lw);
+        lrow++;
+        rendered++;
+    }
     for (; rendered < max_lrows; rendered++, lrow++)
     {
         clear_row(lrow, 2, lw - 2, OV_BG_PANEL);
@@ -154,7 +156,7 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         ov_buf_pos(rrow, lw + 2);
         ov_theme_bg(OV_BG_HEADER);
         ov_theme_fg(OV_FG_LOOP);
-        ov_buf_printf(" Loop L%02d: %s", cl->loop_id, cl->name);
+        ov_buf_printf(" Loop L%02d: %s", cl->loop_id, ov_loop_name(cl));
         ov_theme_fg(OV_FG_DIM);
         ov_buf_printf("  |  Bottleneck: %.1f Hz  |  Nodes: %d (%d streams, %d procs)", cl->min_hz,
                       cl->nb_nodes, cl->nb_streams, cl->nb_procs);
@@ -210,9 +212,16 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
         rrow++;
         r_rendered++;
 
-        for (int i = 0; i < cl->nb_streams && r_rendered < max_rrows; i++)
+        /* Streams and processes in cycle order (node_indices); FPS from fps_indices, which also holds the
+         * FPS running a member process */
+        for (int i = 0; i < cl->nb_nodes && r_rendered < max_rrows; i++)
         {
-            int si = cl->stream_indices[i];
+            int ni = cl->node_indices[i];
+            if (ni < 0 || ni >= m->nb_nodes || m->nodes[ni].type != OV_NODE_STREAM)
+            {
+                continue;
+            }
+            int si = m->nodes[ni].index;
             if (si < 0 || si >= m->nb_streams)
             {
                 continue;
@@ -269,9 +278,14 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
             rrow++;
             r_rendered++;
 
-            for (int i = 0; i < cl->nb_procs && r_rendered < max_rrows; i++)
+            for (int i = 0; i < cl->nb_nodes && r_rendered < max_rrows; i++)
             {
-                int pi = cl->proc_indices[i];
+                int ni = cl->node_indices[i];
+                if (ni < 0 || ni >= m->nb_nodes || m->nodes[ni].type != OV_NODE_PROC)
+                {
+                    continue;
+                }
+                int pi = m->nodes[ni].index;
                 if (pi < 0 || pi >= m->nb_procs)
                 {
                     continue;
@@ -286,21 +300,10 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
                 ov_theme_fg(OV_FG_DIM);
                 ov_buf_printf("%-8d ", (int) p->PID);
 
-                if (p->loopstat == 1)
-                {
-                    ov_theme_fg(OV_FG_ACTIVE);
-                    ov_buf_printf("RUN      ");
-                }
-                else if (p->loopstat == 2)
-                {
-                    ov_theme_fg(OV_FG_WARN);
-                    ov_buf_printf("PAUS     ");
-                }
-                else
-                {
-                    ov_theme_fg(OV_FG_DIM);
-                    ov_buf_printf("IDLE     ");
-                }
+                ov_rgb_t    stc;
+                const char *stl = ov_proc_status(p, &stc);
+                ov_theme_fg(stc);
+                ov_buf_printf("%-9s", stl);
 
                 ov_theme_fg(OV_FG_TEXT);
                 ov_buf_printf("%9.1f  ", p->loop_hz);
@@ -320,6 +323,49 @@ void ov_render_loops_view(const OV_LAYOUT *lay, const OV_MODEL *m)
                 rrow++;
                 r_rendered++;
             }
+        }
+
+        /* Member FPS table */
+        if (cl->nb_fps > 0 && r_rendered < max_rrows)
+        {
+            ov_buf_pos(rrow, lw + 2);
+            ov_theme_bg(OV_BG_HEADER);
+            ov_theme_fg(OV_FG_FPS_HDR);
+            ov_buf_printf("  %-16s %-8s %-8s %-10s %s", "FPS", "CONF/RUN", "STATUS", "RATE (Hz)",
+                          "IN THE LOOP");
+            render_pad_to_col(lw + rw);
+            rrow++;
+            r_rendered++;
+        }
+        for (int i = 0; i < cl->nb_fps && r_rendered < max_rrows; i++)
+        {
+            int fi = cl->fps_indices[i];
+            if (fi < 0 || fi >= m->nb_fps)
+            {
+                continue;
+            }
+            const OV_FPS *f   = &m->fps[fi];
+            int           rp  = f->run_alive ? ov_find_proc_by_pid(m, f->runpid) : -1;
+            ov_rgb_t      stc = OV_FG_DIM;
+            const char   *stl =
+                (rp >= 0) ? ov_proc_status(&m->procs[rp], &stc) : (f->run_alive ? "RUN" : "OFF");
+
+            ov_buf_pos(rrow, lw + 2);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_FPS);
+            ov_buf_printf("  %-16.16s ", f->name);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("%-4s/%-3s ", f->conf_alive ? "on" : "off", f->run_alive ? "on" : "off");
+            ov_theme_fg(stc);
+            ov_buf_printf("%-9s", stl);
+            ov_theme_fg(OV_FG_TEXT);
+            ov_buf_printf("%9.1f  ", (rp >= 0) ? m->procs[rp].loop_hz : 0.0);
+            ov_theme_fg(OV_FG_DIM);
+            ov_buf_printf("%s",
+                          (cl->fps_via_run >> i & 1U) ? "runs a member process" : "on the cycle");
+            render_pad_to_col(lw + rw);
+            rrow++;
+            r_rendered++;
         }
     }
 

@@ -100,7 +100,7 @@ do
     echo "readshmim ${streamname}" >> $SF
     echo "rmshmim ${streamname}" >> $SF
 done
-echo "exitCLI" >> $SF
+echo "exit" >> $SF
 
 milk -n ${pname} -f ${fifoname} -s ${SF}
 

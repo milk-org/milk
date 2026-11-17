@@ -22,10 +22,10 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char inamp[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char inpha[FUNCTION_PARAMETER_STRMAXLEN]  = "";
-static char outamp[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char outpha[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char inamp[FUNCTION_PARAMETER_STRMAXLEN]  = "ima";
+static char inpha[FUNCTION_PARAMETER_STRMAXLEN]  = "imp";
+static char outamp[FUNCTION_PARAMETER_STRMAXLEN] = "outa";
+static char outpha[FUNCTION_PARAMETER_STRMAXLEN] = "outp";
 
 
 /* ================================================================

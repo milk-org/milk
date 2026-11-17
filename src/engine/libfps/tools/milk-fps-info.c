@@ -167,7 +167,9 @@ static void print_connections(const char *fpsname)
     "Output columns: parameter key, type, current value, flags.\n"     \
     "With -v, also shows limits, defaults, and FPS header metadata.\n" \
     "With -c, cross-references stream and process connections\n"       \
-    "from the live system graph built by milk-CTRL/overview."
+    "from the live system graph built by milk-CTRL/overview.\n"        \
+    "With --env, prints the environment its unit's processes get\n"    \
+    "instead (captured at fpsinit; the file is the place to edit)."
 
 /**
  * @brief Print help message for milk-fps-info.
@@ -197,6 +199,8 @@ static void print_help(const char *progname, int mh_color)
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-c, --connections", mh_color ? MH_RST : "",
            "Show stream/process graph connections");
 #endif
+    printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "--env", mh_color ? MH_RST : "",
+           "Print the unit's environment snapshot and its path");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
            "Show this help and exit");
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h1, --help-oneline",
@@ -241,13 +245,16 @@ int main(int argc, char *argv[])
     int verbose          = 0;
     int show_info        = 0;
     int show_connections = 0;
+    int show_env         = 0;
     int opt;
 
-    static struct option long_options[] = {
-        { "verbose", no_argument, 0, 'v' },      { "info", no_argument, 0, 'i' },
-        { "connections", no_argument, 0, 'c' },  { "help", no_argument, 0, 'h' },
-        { "help-oneline", no_argument, 0, '1' }, { 0, 0, 0, 0 }
-    };
+    static struct option long_options[] = { { "verbose", no_argument, 0, 'v' },
+                                            { "info", no_argument, 0, 'i' },
+                                            { "connections", no_argument, 0, 'c' },
+                                            { "help", no_argument, 0, 'h' },
+                                            { "help-oneline", no_argument, 0, '1' },
+                                            { "env", no_argument, 0, 'E' },
+                                            { 0, 0, 0, 0 } };
 
     while ((opt = getopt_long(argc, argv, "vich1", long_options, NULL)) != -1)
     {
@@ -261,6 +268,9 @@ int main(int argc, char *argv[])
             break;
         case 'c':
             show_connections = 1;
+            break;
+        case 'E':
+            show_env = 1;
             break;
         case 'h':
         case '1':
@@ -282,6 +292,27 @@ int main(int argc, char *argv[])
 
     const char *fpsname = argv[optind];
 
+    if (show_env)
+    {
+        char  path[PATH_MAX];
+        char  line[4096];
+        FILE *f =
+            (fps_unit_path(fpsname, "env", path, sizeof(path)) == 0) ? fopen(path, "r") : NULL;
+        if (f == NULL)
+        {
+            fprintf(stderr, "%s: no environment snapshot (%s): run fpsinit to capture one\n",
+                    fpsname, path);
+            return 1;
+        }
+        printf("# %s\n", path);
+        while (fgets(line, sizeof(line), f) != NULL)
+        {
+            fputs(line, stdout);
+        }
+        fclose(f);
+        return 0;
+    }
+
     FPS fps;
     fps.SMfd = -1;
 
@@ -292,6 +323,31 @@ int main(int argc, char *argv[])
                 "to FPS '%s'.\n",
                 fpsname);
         return 1;
+    }
+
+    /* the processes of the unit, as fps_unit_status() defines their state */
+    for (int r = FPS_UNIT_RUN; r <= FPS_UNIT_CONF; r++)
+    {
+        FPS_UNIT_STATUS st;
+        fps_unit_status_fps(&fps, (FPS_UNIT_ROLE) r, &st, FPS_UNIT_REPAIR);
+        printf("%-5s %s", fps_unit_role_name((FPS_UNIT_ROLE) r), fps_unit_state_name(st.state));
+        if (fps_unit_state_alive(st.state))
+        {
+            printf(", pid %d, up %.0f s", (int) st.pid, st.uptime);
+        }
+        else if (st.last[0] != '\0')
+        {
+            printf(" (%s)", st.last);
+        }
+        if (st.out_size >= 0)
+        {
+            printf(", output %lld bytes", st.out_size);
+        }
+        if (st.manager[0] != '\0')
+        {
+            printf(", run by %s", st.manager);
+        }
+        printf("\n");
     }
 
     function_parameter_print_info(&fps, verbose, show_info);

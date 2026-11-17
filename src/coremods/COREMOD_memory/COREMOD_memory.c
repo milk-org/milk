@@ -75,6 +75,7 @@
 #include "stream_TCP.h"
 #include "stream_UDP.h"
 #include "stream_ave.h"
+#include "trigmerge.h"
 #include "stream_copy.h"
 #include "stream_delay.h"
 #include "stream_merge.h"
@@ -178,6 +179,7 @@ static const MILK_RUNNABLE *const runnables[] = {
 
     &runnable_COREMOD_memory_streamave,
     &runnable_COREMOD_memory_streammlim,
+    &runnable_COREMOD_memory_trigmerge,
 
     // DATA LOGGING
     &runnable_COREMOD_memory_logshmim,

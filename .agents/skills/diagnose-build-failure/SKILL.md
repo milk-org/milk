@@ -25,9 +25,9 @@ tiered build system.
 ```
 Error message
   ├─ "undefined reference to ..."
-  │    → Missing target_link_libraries (§1)
+  │    → Missing library or dependency tag (§1)
   ├─ "No such file or directory" (header)
-  │    → Missing target_include_directories (§2)
+  │    → Wrong include path or owning lib (§2)
   ├─ "implicit declaration of function"
   │    → Missing #include in source file (§3)
   ├─ "multiple definition of ..."
@@ -35,7 +35,7 @@ Error message
   │      static/inline, or duplicate
   │      definition across .c files (§4)
   ├─ "relocation ... cannot be used"
-  │    → Static lib not built with -fPIC (§5)
+  │    → Target built outside the helpers (§5)
   └─ CMake errors
        → See §6
 ```
@@ -57,8 +57,11 @@ Error message
 
 **Fixes**:
 
-- Add the missing library to
-  `target_link_libraries`:
+- Optional external libraries (BLAS, LAPACKE, CUDA, cfitsio): add the
+  `// MILK_CMAKE_REQUEST_<X>` or `// MILK_CMAKE_MANDATE_<X>` tag in the source
+  ([dependency_system.md](../../../docs/developer/dependency_system.md)), not link rules.
+- The framework libraries are linked by `milk_add_runnable_module()`; link a module-specific
+  library in the template's `# CUSTOM` block:
   ```cmake
   target_link_libraries(mylib PUBLIC missinglib)
   ```
@@ -69,7 +72,8 @@ Error message
 
 | Symbol             | Library                                    |
 | ------------------ | ------------------------------------------ |
-| `imgid_*`, `IMGID` | `milkdata`                                 |
+| `IMGID`, `imgid_make*`, `imgid_connect` | `milkfps` (inline, `libfps/IMGID.h`) |
+| `imgid_create_registered`, `imcreateIMGID`, `resolveIMGID` | `milkCOREMODmemory` |
 | `fps_*`, `FPS_*`   | `milkfps`                                  |
 | `processinfo_*`    | `milkprocessinfo`                          |
 | `RegisterCLIcmd`   | `CLIcore` (never for fpsexecs!)            |
@@ -97,11 +101,10 @@ file or directory`
 
 **Fixes**:
 
-- Add include directory to the target:
-  ```cmake
-  target_include_directories(mylib PUBLIC
-    ${PROJECT_SOURCE_DIR}/..)
-  ```
+- Include the header by its path under `src/` or the plugin directory: the template's
+  `include_directories()` provide both.
+- Optional external libraries: use the `MILK_CMAKE_REQUEST_<X>` / `MANDATE_<X>` tag (§1), not
+  hand-written include rules.
 - Or link against the library that owns the
   header (PUBLIC includes propagate):
   ```cmake
@@ -150,15 +153,13 @@ Common missing includes:
 **Symptom**: `relocation R_X86_64_PC32 against
 symbol ... can not be used; recompile with -fPIC`
 
-**Cause**: a static library was built without
-position-independent code.
+**Cause**: a library or archive built outside `milk_add_runnable_module()`, which compiles the
+module sources once as PIC objects for both the shared library and the `_static` archive
+([programmers_guide.md §3](../../../docs/arch/programmers_guide.md#milk_runnable-units)).
 
-**Fix**: ensure the static library target has:
-
-```cmake
-set_target_properties(mylib_static PROPERTIES
-  POSITION_INDEPENDENT_CODE ON)
-```
+**Fix**: build the module with `milk_add_runnable_module()`. For `cannot find -l<lib>_static`
+after switching `USE_STATIC_LTO` off, see
+[pgo.md §1.6](../../../docs/operations/pgo.md#16-build-modes).
 
 ## §6 — CMake Configuration Errors
 
@@ -173,16 +174,8 @@ set_target_properties(mylib_static PROPERTIES
 
 ## Build Tier Reference
 
-When diagnosing, know what's available at each
-tier:
-
-| Tier       | Available libraries                               |
-| ---------- | ------------------------------------------------- |
-| Engine     | ImageStreamIO, milkfps, milkdata, milkprocessinfo |
-| Core       | Engine + COREMOD\_{arith,memory,tools}            |
-| Core+FITS  | Core + COREMOD_iofits, cfitsio                    |
-| Full       | Everything: CLIcore, all plugins                  |
-| Fpsexec    | Engine + regular COREMOD libs + the module library |
+What is available at each tier:
+[dependency_graph.md §5](../../../docs/arch/dependency_graph.md#5-build-tiers-at-a-glance).
 
 ## fpsexec Checklist
 

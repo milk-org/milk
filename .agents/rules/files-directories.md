@@ -2,6 +2,6 @@
 trigger: always_on
 ---
 
-cacao is a plugin of milk.
-cacao source code is in plugins/cacao-src, which is a symbolic link to ~/src/cacao
-When updating cacao source code, consider this symbolic link directory as part of the current workspace.
+cacao is a plugin of milk: `plugins/cacao-src` links to a cacao checkout
+([programmers_guide.md §4](../../docs/arch/programmers_guide.md#4-directory-map)). When updating
+cacao source code, treat that directory as part of the current workspace.

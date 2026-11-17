@@ -26,7 +26,7 @@ plus live system created by a deploy.
 flowchart LR
     CD["<b>confdir</b><br/>pipelinebasic-conf/<br/>conf.toml, scripts/, data/"]
     RD["<b>rootdir</b><br/>basic-rootdir/<br/>conf/, initdata/, work/, provenance.toml"]
-    RUN["<b>rundir + live system</b><br/>$MILK_SHM_DIR/pipe_rundirs/basic/<br/>FPS basic_delay0, basic_delay1<br/>conf and run processes, tmux"]
+    RUN["<b>rundir + live system</b><br/>$MILK_SHM_DIR/pipe_rundirs/basic/<br/>FPS basic_delay0, basic_delay1<br/>conf and run processes"]
     CD -- "milk-pipeinit init" --> RD
     CD -. "milk-pipeinit resync" .-> RD
     RD -- "milk-pipes deploy" --> RUN
@@ -34,7 +34,7 @@ flowchart LR
 ```
 
 **Pipeline.** A named set of **compute units** (CompUs). Each CompU is one milk `fpsexec`
-executable with its FPS, its conf and run processes and its tmux session. A pipeline has a
+executable with its FPS and its conf and run processes. A pipeline has a
 `long_name` (`pipelinebasic`), a short `name` (`basic`) and a `loop_number`; these three identity
 keys fix every path and FPS name (`<name>_<cu>`, e.g. `basic_delay0`).
 

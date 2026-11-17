@@ -34,14 +34,13 @@ static int32_t dofft_dir = 0;
       "input complex image")                                                    \
     X(".out_name", dofft_outimname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, \
       "output complex image")                                                   \
-    X(".dir", &dofft_dir, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT, "FFT direction")
+    X(".dir", &dofft_dir, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,                \
+      "FFT direction (-1 or 0 forward, 1 inverse)")
 
 // Forward declarations
 imageID do1dfft(const char *in_name, const char *out_name);
 
 imageID do1drfft(const char *in_name, const char *out_name);
-
-imageID do2dfft(const char *in_name, const char *out_name);
 
 
 /* =========================================
@@ -98,7 +97,7 @@ MILK_PARAMS_DEFINE(dofft_1drfft, FPS_PARAMS_1DRFFT);
 static MILK_HOT errno_t dofft_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    do2dfft(dofft_inimname, dofft_outimname);
+    FFT_do2dfft(dofft_inimname, dofft_outimname, (dofft_dir == 1) ? 1 : -1);
     return RETURN_SUCCESS;
 }
 

@@ -12,24 +12,22 @@ patterns to avoid race conditions.
 
 ## Semaphore Protocol
 
-- Use `ImageStreamIO` semaphore functions
-  (`sem_wait`, `sem_post`) for stream
-  synchronization. Do not use raw POSIX
-  semaphores directly.
-- Post to semaphore index `-1` to wake all
-  readers: `ImageStreamIO_sempost(img.im, -1);`
-- Wait on a specific semaphore index assigned
-  to your reader.
+- A unit writes and waits on streams as
+  [procinfo.md §7](../../docs/guide/procinfo.md#7-compute-function-macros) shows:
+  `processinfo_update_output_stream()` posts the semaphores, and the `MILK_PROCINFO_*` loop
+  macros wait on the input.
+- Elsewhere use the ImageStreamIO calls (`ImageStreamIO_semwait()`, `ImageStreamIO_sempost()`),
+  never raw POSIX semaphores: `ImageStreamIO_sempost(img.im, -1)` wakes all readers; a reader waits
+  on the semaphore index assigned to it.
 
 ## FPS Parameter Access
 
 - FPS parameters live in shared memory and can
   be modified by `milk-fpsCTRL` at any time.
-- Use the `FPSPROCSYNC` mechanism to sync parameter
-  values into local variables at well-defined
-  points (start of each iteration).
-- Never cache FPS pointer dereferences across
-  iterations — the value may change.
+- `MILK_PROCINFO_LOOPSTART(self)` copies them into the module variables at the start of each
+  iteration ([programmers_guide.md §3](../../docs/arch/programmers_guide.md#3-writing-a-compute-unit)):
+  never keep a value across iterations; within one, hoist it out of inner loops
+  (`performance-practices.md`).
 
 ## Process Coordination
 
@@ -38,9 +36,8 @@ patterns to avoid race conditions.
 - Do **not** use signals (SIGUSR1, etc.) for
   inter-process coordination — use semaphores
   and shared memory flags instead.
-- Check `processinfo->CTRLval` at the top of
-  each loop iteration for run/stop/pause
-  commands.
+- The `MILK_PROCINFO_*` loop macros handle run, stop and pause requests: do not poll
+  `processinfo->CTRLval` yourself.
 
 ## `volatile` Keyword
 

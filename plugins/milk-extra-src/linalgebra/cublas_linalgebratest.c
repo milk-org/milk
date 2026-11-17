@@ -161,8 +161,7 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
         img_cm.mdt->size[2]  = cmsize[2];
         img_cm.mdt->datatype = _DATATYPE_FLOAT;
         img_cm.mdt->shared   = 1;
-        img_cm.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&img_cm);
+        imgid_create_registered(&img_cm);
         ID_contrM = img_cm.ID;
     }
 
@@ -176,8 +175,7 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
         img_wfs.mdt->size[1]  = wfssize[1];
         img_wfs.mdt->datatype = _DATATYPE_FLOAT;
         img_wfs.mdt->shared   = 1;
-        img_wfs.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&img_wfs);
+        imgid_create_registered(&img_wfs);
         ID_WFS = img_wfs.ID;
     }
 
@@ -191,8 +189,7 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact, long NBmodes, long WFSs
         img_cmd.mdt->size[1]  = cmdmodessize[1];
         img_cmd.mdt->datatype = _DATATYPE_FLOAT;
         img_cmd.mdt->shared   = 1;
-        img_cmd.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(&img_cmd);
+        imgid_create_registered(&img_cmd);
         ID_cmd_modes = img_cmd.ID;
     }
 

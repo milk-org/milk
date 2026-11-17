@@ -7,8 +7,7 @@
  * @brief Shared ANSI frame-buffer TUI rendering primitives
  *
  * Drop-in replacement for ncurses TUItools.h used by all
- * standalone TUI tools (milk-fpsCTRL, milk-procCTRL,
- * milk-streamCTRL).
+ * standalone TUI tools (milk-fpsCTRL, milk-procCTRL).
  *
  * Prerequisites: include your tool-specific *_ansi.h
  * header BEFORE this file. That header must provide:
@@ -616,19 +615,6 @@ static inline void TUI_clearscreen(short unsigned int *wrow, short unsigned int 
     SC_APPEND("\033[H");
     sc_cursor_row = 1;
     sc_cursor_col = 0;
-}
-
-/* ncurses stubs */
-/** @brief No-op ncurses compatibility stub. */
-static inline int TUI_ncurses_refresh(void)
-{
-    return 0;
-}
-
-/** @brief No-op ncurses compatibility stub. */
-static inline int TUI_ncurses_erase(void)
-{
-    return 0;
 }
 
 /** @brief Clear frame buffer and move cursor to home. */

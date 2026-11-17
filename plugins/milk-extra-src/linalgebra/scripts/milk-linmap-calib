@@ -88,11 +88,11 @@ saveFITS imVA "${WORKDIR}/imVA.fits"
 saveFITS SV "${WORKDIR}/SVA.fits"
 
 # compute MCAT
-imvecmult imVA SV MCAT 1
+MCAT = imVA * reshape(SV, 1, s.SV.nelement)
 #saveFITS MCAT "${WORKDIR}/MCAT.fits"
 
 # compute MCAinv
-imvecmult imVA SVinv MCAinv 1
+MCAinv = imVA * reshape(SVinv, 1, s.SVinv.nelement)
 #saveFITS MCAinv "${WORKDIR}/MCAinv.fits"
 
 #linalg.sgemm .GPUdevice 0
@@ -137,11 +137,11 @@ saveFITS imVB "${WORKDIR}/imVB.fits"
 saveFITS SV "${WORKDIR}/SVB.fits"
 
 # compute MCBT
-imvecmult imVB SV MCBT 1
+MCBT = imVB * reshape(SV, 1, s.SV.nelement)
 #saveFITS MCBT "${WORKDIR}/MCBT.fits"
 
 # compute MCBinv
-imvecmult imVB SVinv MCBinv 1
+MCBinv = imVB * reshape(SVinv, 1, s.SVinv.nelement)
 #saveFITS MCBinv "${WORKDIR}/MCBinv.fits"
 
 # Compute modal translation matrix TMABm
@@ -158,7 +158,7 @@ saveFITS TMBAm "${WORKDIR}/mapTMBAm.fits"
 
 listim
 # linalg.Mremap
-exitCLI
+exit
 EOF
 
 fi
@@ -192,7 +192,7 @@ linalg.sgemm imUB imCcoeffB imB
 saveFITS imB "${immB}"
 
 listim
-exitCLI
+exit
 EOF
 
 fi

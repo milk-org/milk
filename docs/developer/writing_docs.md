@@ -160,6 +160,7 @@ Diagrams are Mermaid, in a `mermaid` block.
   `render_macros: true` in their front matter:
 
 {% raw %}
+
 ```markdown
 ---
 render_macros: true
@@ -167,6 +168,7 @@ render_macros: true
 
 [scripts/mkdocs_macros.py]({{ github_blob_url }}/scripts/mkdocs_macros.py)
 ```
+
 {% endraw %}
 
 ## 9. C API reference

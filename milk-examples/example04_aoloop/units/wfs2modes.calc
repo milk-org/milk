@@ -1,0 +1,2 @@
+# WFS to modes (trigger wfss): CM is a (WFSNX, WFSNX, NM) cube, an NWFS x NM matrix
+mval = CM.T @ wfss

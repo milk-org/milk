@@ -1,0 +1,6 @@
+# Focal-plane PSF (trigger wfphase, with --psf): the pupil field of the corrected wavefront, rad
+# radians per phase unit, zero-padded into psfE (n x n pupil pixels in a corner), through an FFT.
+# Scaled so that a flat wavefront peaks at 1: the peak is the Strehl ratio.
+psfE[0:n-1, 0:n-1] = wfspup * expi(rad * wfphase)
+local f = fft(psfE)
+psf = fftshift(real(f * conj(f))) / pow(itot(wfspup), 2)

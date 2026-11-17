@@ -22,22 +22,25 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inmatM    = NULL;
-static char    *inmatV    = NULL;
-static char    *invecS    = NULL;
-static char    *outmatU   = NULL;
-static char    *outmatUS  = NULL;
-static int32_t *GPUdevice = NULL;
+static char    inmatM[FUNCTION_PARAMETER_STRMAXLEN]   = "inM";
+static char    inmatV[FUNCTION_PARAMETER_STRMAXLEN]   = "inV";
+static char    invecS[FUNCTION_PARAMETER_STRMAXLEN]   = "inS";
+static char    outmatU[FUNCTION_PARAMETER_STRMAXLEN]  = "outU";
+static char    outmatUS[FUNCTION_PARAMETER_STRMAXLEN] = "outU";
+static int32_t GPUdevice                              = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                \
-    X(".inM", &inmatM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix M") \
-    X(".inV", &inmatV, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix V") \
-    X(".inS", &invecS, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input singular values vec")
+#define FPS_PARAMS(X)                                                                          \
+    X(".inM", inmatM, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix M")            \
+    X(".inV", inmatV, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix V")            \
+    X(".inS", invecS, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input singular values vec") \
+    X(".outU", outmatU, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output U")                    \
+    X(".outUS", outmatUS, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output US")                 \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -154,7 +157,7 @@ static MILK_HOT errno_t SVDmkU_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        compute_SVDU(imginM, imginV, imginS, &imgoutU, &imgoutUS, *GPUdevice);
+        compute_SVDU(imginM, imginV, imginS, &imgoutU, &imgoutUS, GPUdevice);
         processinfo_update_output_stream(processinfo, imgoutU.im, NULL);
         processinfo_update_output_stream(processinfo, imgoutUS.im, NULL);
     }

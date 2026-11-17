@@ -35,7 +35,7 @@ Determine the scope by answering these questions:
 
 | Question              | Options                                                                   |
 | --------------------- | ------------------------------------------------------------------------- |
-| **Build tier**        | Engine / Core / Full?                                                     |
+| **Build tier**        | Engine / Core / Plugins / Calc & JIT / Full?                              |
 | **New or extension?** | New module, new file in existing module, or modification?                 |
 | **Scope**             | Single module / cross-module / framework-level?                           |
 | **Template**          | MILK_RUNNABLE unit / stream processor / plain function / CLI builtin / none? |
@@ -51,13 +51,12 @@ flag this early — it likely needs phased delivery.
    which libraries and modules are in scope.
 2. Check whether new cross-module dependencies
    are needed. If so, verify they respect the
-   layered build order:
-   ```
-   Engine → Core → Full
-   (no reverse dependencies allowed)
-   ```
-3. List any new `target_link_libraries` entries
-   that will be needed in CMake.
+   layered build order of
+   [dependency_graph.md §5](../../../docs/arch/dependency_graph.md#5-build-tiers-at-a-glance)
+   (no reverse dependencies allowed).
+3. List any new `MODULE_DEPS` entries and
+   `// MILK_CMAKE_REQUEST_<X>` / `MANDATE_<X>` tags
+   ([dependency_system.md](../../../docs/developer/dependency_system.md)).
 
 ### 2.2 Shared Memory Contracts
 
@@ -66,7 +65,7 @@ For each new shared-memory object, document:
 | Object      | Type                        | Name Pattern       | Details                        |
 | ----------- | --------------------------- | ------------------ | ------------------------------ |
 | Stream      | `IMAGE`                     | e.g., `wfs0_raw`   | dtype, dimensions, shared flag |
-| FPS         | `FUNCTION_PARAMETER_STRUCT` | e.g., `fps.myproc` | parameter list with types      |
+| FPS         | `FUNCTION_PARAMETER_STRUCT` | e.g., `myproc`     | parameter list with types      |
 | Processinfo | `PROCESSINFO`               | auto               | loop type (finite/infinite)    |
 
 ### 2.3 CLI Surface
@@ -104,7 +103,8 @@ Check which documentation rules will fire:
 ### 3.3 Test Touchpoints
 
 - Existing tests that may break?
-- New tests needed? (unit, CLI robustness, ctest)
+- New tests needed? (pytest under `python/tests/`:
+  [tooling.md §4.2](../../../docs/developer/tooling.md#42-pytest))
 - Performance benchmarks affected?
 
 ## Phase 4 — Sequence the Work

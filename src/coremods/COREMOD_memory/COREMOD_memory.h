@@ -72,6 +72,7 @@
 #include "COREMOD_memory/stream_poke.h"
 #include "COREMOD_memory/stream_sem.h"
 #include "COREMOD_memory/stream_updateloop.h"
+#include "COREMOD_memory/tlm_timing.h"
 #include "COREMOD_memory/variable_ID.h"
 
 //errno_t rotate_cube(const char *ID_name, const char *ID_out_name,

@@ -27,7 +27,7 @@
  *   -E, --echo       Echo each input line verbatim (colored)
  *   -d N             Set debug level to N
  *   -n NAME          Set process name to NAME
- *   -q, --quiet      Suppress startup banner
+ *   -q, --quiet      Accepted for old shebang lines (no banner is ever printed)
  *
  * ARGUMENTS
  *   SCRIPT_FILE      Path to the script to execute.
@@ -49,92 +49,25 @@
 #include <string.h>
 
 #include "CLIcore_script.h"
+#include "milk_bash.h"
+#include "milk_syscalls.h"
 #include "milkscript.h"
 
 /* milkdata_macros.h provides dcquiet, dcdebug, data, etc. */
 #include "milkdata_macros.h"
 #include "milkdata.h"
 
-/* Exposed from libmilkscript for flag control */
-extern int cli_flag_errexit;
-extern int cli_flag_xtrace;
-
-
 /**
- * milkscript_pre_quiet - early quiet detection constructor
+ * milkscript_pre_quiet - no startup banner
  *
- * Reads /proc/self/cmdline to detect -q/--quiet before any
- * shared-library constructor (COREMOD RegisterModule) runs.
- * Sets milk_data.quiet directly — the same global that dcquiet
- * expands to — so the '.' progress dots and banner messages
- * are suppressed from the very first RegisterModule call.
- *
- * Constructors in the main executable run before those in
- * shared libraries.  Priority 101 ensures this runs after the
- * C runtime (0-100) and before any library constructor.
+ * A script's stdout is its data: milk-script never prints the MILK_SHM_DIR line, the '.' progress
+ * dots or the LOADED lines (milk.bash does the same in libmilkbash). Constructors in the main
+ * executable run before those in shared libraries; priority 101 runs this after the C runtime
+ * (0-100) and before any library constructor.
  */
-__attribute__((constructor(101)))
-/**
- * @brief Set up quiet mode for script execution.
- *
- * Suppresses banner and verbose output.
- */
-static void
-milkscript_pre_quiet(void)
+__attribute__((constructor(101))) static void milkscript_pre_quiet(void)
 {
-    FILE *fp = fopen("/proc/self/cmdline", "r");
-    if (!fp)
-    {
-        return;
-    }
-
-    /* /proc/self/cmdline is NUL-delimited; read up to 4 kB */
-    char   buf[4096];
-    size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
-    fclose(fp);
-    if (n == 0)
-    {
-        return;
-    }
-    buf[n] = '\0';
-
-    /* Walk each NUL-terminated token (skip argv[0]) */
-    size_t i = 0;
-    while (i < n && buf[i] != '\0')
-    {
-        i++;
-    }
-    i++; /* skip argv[0] NUL */
-
-    while (i < n)
-    {
-        const char *tok = buf + i;
-        if (tok[0] == '-' && tok[1] == '\0')
-        {
-            break; /* bare '-' = stdin, stop */
-        }
-        if (tok[0] != '-')
-        {
-            break; /* non-option = script file, stop */
-        }
-
-        if (strcmp(tok, "-q") == 0 || strcmp(tok, "--quiet") == 0)
-        {
-            /* Set both the struct field and the env var so
-             * both runtime paths (dcquiet check and
-             * getenv check) see the quiet flag. */
-            milk_data.quiet = 1;
-            setenv("MILK_QUIET", "1", 0);
-            break;
-        }
-
-        /* advance to next NUL-terminated token */
-        while (i < n && buf[i] != '\0')
-        {
-            i++;
-        }
-        i++;
-    }
+    milk_data.quiet = 1;
 }
 
 
@@ -152,8 +85,7 @@ static void milkscript_main_usage(const char *prog)
     printf("  -x, --xtrace    Print each command before executing (set -x)\n");
     printf("  -E, --echo      Echo each input line verbatim\n");
     printf("  -d N            Set debug level to N\n");
-    printf("  -n NAME         Set process name\n");
-    printf("  -q, --quiet     Suppress startup banner\n\n");
+    printf("  -n NAME         Set process name\n\n");
     printf("Script arguments are available as $1, $2, ... inside the script.\n");
     printf("\nShebang usage:\n");
     printf("  #!/usr/bin/env milk-script\n");
@@ -161,39 +93,16 @@ static void milkscript_main_usage(const char *prog)
 }
 
 /**
- * set_positional_args - expose script arguments as $1..$N
- * @argc:  number of remaining arguments
- * @argv:  array of argument strings
+ * main - Entry point for the `milk-script` standalone script interpreter
+ * @argc: Number of command-line arguments
+ * @argv: Command-line argument vector
  *
- * Sets $0 (script name), $1..$N (arguments), and $# (count).
- * Unsets any leftover positional variables beyond $N.
+ * Parses interpreter options (`-e`, `-x`, `-E`, `-d`, `-n`; `-q` is accepted), initializes
+ * `libmilkscript`, forwards positional arguments into the bash co-process, and executes
+ * the target script file or standard input.
+ *
+ * Return: Exit code of the executed script
  */
-static void set_positional_args(int argc, char **argv)
-{
-    char nbuf[32];
-
-    /* $0 = script name (argv[0] here is the script file or "") */
-    cli_var_set("0", argc > 0 ? argv[0] : "");
-
-    /* $1..$N */
-    for (int i = 1; i < argc; i++)
-    {
-        snprintf(nbuf, sizeof(nbuf), "%d", i);
-        cli_var_set(nbuf, argv[i]);
-    }
-
-    /* Unset any extras from a previous invocation */
-    for (int i = argc; i <= 9; i++)
-    {
-        snprintf(nbuf, sizeof(nbuf), "%d", i);
-        cli_var_unset(nbuf);
-    }
-
-    /* $# = number of script arguments (not counting $0) */
-    snprintf(nbuf, sizeof(nbuf), "%d", argc > 0 ? argc - 1 : 0);
-    cli_var_set("#", nbuf);
-}
-
 int main(int argc, char **argv)
 {
     /* Handle -h1/--help-oneline before getopt so "-h1" is not
@@ -204,32 +113,16 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    setenv("_MILK_FRONTEND", "script", 1); /* this front end: picks the keyword set */
+    milkos_malloc_keep(); /* temporaries freed and allocated again are not faulted in each time */
 
     int         opt_errexit = 0;
     int         opt_xtrace  = 0;
     int         opt_echo    = 0;
-    int         opt_quiet   = 0;
     int         opt_debug   = 0;
     const char *opt_name    = NULL;
 
     {
-        /* Pre-scan for -q/--quiet BEFORE getopt so that MILK_QUIET is set
-         * before any module constructors run (they check getenv("MILK_QUIET"))
-         * and before milkscript_init() prints its startup banner. */
-        for (int i = 1; i < argc; i++)
-        {
-            if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
-            {
-                setenv("MILK_QUIET", "1", 0);
-                break;
-            }
-            /* Stop scanning at first non-option argument */
-            if (argv[i][0] != '-' || argv[i][1] == '\0')
-            {
-                break;
-            }
-        }
-
         static const struct option long_options[] = {
             { "help", no_argument, NULL, 'h' },   { "errexit", no_argument, NULL, 'e' },
             { "xtrace", no_argument, NULL, 'x' }, { "echo", no_argument, NULL, 'E' },
@@ -258,8 +151,7 @@ int main(int argc, char **argv)
                 opt_echo = 1;
                 break;
 
-            case 'q':
-                opt_quiet = 1;
+            case 'q': /* no banner is ever printed: kept for old shebang lines */
                 break;
 
             case 'd':
@@ -275,13 +167,6 @@ int main(int argc, char **argv)
                 return 1;
             }
         } // while options
-    }
-
-    /* Apply quiet flag before milkscript_init so the banner,
-     * SHM dir messages, and module-load lines are suppressed */
-    if (opt_quiet)
-    {
-        dcquiet = 1;
     }
 
     /* Remaining args: optind → script file (optional), then $1.. */
@@ -301,11 +186,7 @@ int main(int argc, char **argv)
     /* Apply flags after init (init resets most globals to defaults) */
     if (opt_errexit)
     {
-        cli_flag_errexit = 1;
-    }
-    if (opt_xtrace)
-    {
-        cli_flag_xtrace = 1;
+        dcerrorexit = 1;
     }
     if (opt_echo)
     {
@@ -317,7 +198,13 @@ int main(int argc, char **argv)
     }
 
     /* Expose script arguments as $0 $1 ... $# */
-    set_positional_args(script_argc, script_argv);
+    int sa = (script_argc > 0); /* the script file (or "-") is $0 */
+    if (milk_bash_set_args(sa ? script_argv[0] : "milk-script", script_argc - sa, script_argv + sa,
+                           opt_xtrace) != 0)
+    {
+        PRINT_ERROR("milk-script: cannot set script arguments");
+        return 1;
+    }
 
     /* Run from file or stdin.
      * A leading "-" as the first non-option argument means stdin

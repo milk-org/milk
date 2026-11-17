@@ -2,29 +2,20 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-#include <stdio.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <unistd.h>
-#include "CLIcore.h"
-
-
 /**
  * @file    CLIcore_UI_builtins_fifo.c
- * @brief   FIFO management and stream/FPS listing
+ * @brief   Dynamic FIFO management command (`cli_fifo()`)
  *
- * Contains:
- *  - cli_fifo()        — dynamic FIFO management
- *  - cli_list_streams()— list shared-memory streams
- *  - cli_list_fps()    — list FPS instances
- *
- * @see CLIcore_UI_builtins.c for other builtins.
+ * @see CLIcore_UI_builtins.c for other interactive CLI builtins.
  */
 
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 
-/* Forward declarations for FIFO helpers
- * defined in CLIcore.c */
+#include "CLIcore.h"
+
+/* Forward declarations for FIFO helpers defined in CLIcore.c */
 extern int  cli_fifo_open(const char *path);
 extern void cli_fifo_close(void);
 
@@ -169,81 +160,4 @@ errno_t cli_fifo(void)
            "|status]\n",
            sub);
     return RETURN_FAILURE;
-}
-
-/*
- * ============================================================
- *  List Streams / FPS Command
- * ============================================================
- */
-
-/**
- * @brief CLI handler: list-streams
- *
- * Prints all available ImageStreamIO streams
- * as a space-separated list.
- */
-errno_t cli_list_streams(void)
-{
-    DIR           *dir;
-    struct dirent *ent;
-    int            first = 1;
-
-    if ((dir = opendir(dcshmdir)) != NULL)
-    {
-        while ((ent = readdir(dir)) != NULL)
-        {
-            char *ext = strstr(ent->d_name, ".im.shm");
-            if (ext != NULL && strcmp(ext, ".im.shm") == 0)
-            {
-                int namelen = ext - ent->d_name;
-                if (!first)
-                {
-                    printf(" ");
-                }
-                printf("%.*s", namelen, ent->d_name);
-                first = 0;
-            }
-        }
-        closedir(dir);
-    }
-    printf("\n");
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief CLI handler: list-fps
- *
- * Prints all available FPS instances as a
- * space-separated list.
- */
-errno_t cli_list_fps(void)
-{
-    DIR           *dir;
-    struct dirent *ent;
-    int            first = 1;
-
-    if ((dir = opendir(dcshmdir)) != NULL)
-    {
-        while ((ent = readdir(dir)) != NULL)
-        {
-            if (strncmp(ent->d_name, "fps.", 4) == 0)
-            {
-                char *ext = strstr(ent->d_name, ".datadir");
-                if (ext != NULL && strcmp(ext, ".datadir") == 0)
-                {
-                    int namelen = ext - (ent->d_name + 4);
-                    if (!first)
-                    {
-                        printf(" ");
-                    }
-                    printf("%.*s", namelen, ent->d_name + 4);
-                    first = 0;
-                }
-            }
-        }
-        closedir(dir);
-    }
-    printf("\n");
-    return RETURN_SUCCESS;
 }

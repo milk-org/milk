@@ -15,7 +15,6 @@ RUN apt-get update && \
         python3-pybind11 \
         libgsl-dev \
         libfftw3-dev \
-        libncurses-dev \
         libreadline-dev \
         gfortran libopenblas-dev liblapacke-dev \
 		pkg-config \

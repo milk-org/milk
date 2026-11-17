@@ -25,19 +25,20 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inmatAB    = NULL;
-static char     *outmatArot = NULL;
-static uint32_t *optmode    = NULL;
+static char     inmatAB[FUNCTION_PARAMETER_STRMAXLEN]    = "matA";
+static char     outmatArot[FUNCTION_PARAMETER_STRMAXLEN] = "matA";
+static uint32_t optmode                                  = 0;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                 \
-    X(".matAB", &inmatAB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, \
-      "input decomposition of modes B in basis A")                    \
-    X(".matArot", &outmatArot, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output rotation matrix")
+#define FPS_PARAMS(X)                                                                           \
+    X(".matAB", inmatAB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                            \
+      "input decomposition of modes B in basis A")                                              \
+    X(".matArot", outmatArot, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output rotation matrix") \
+    X(".optmode", &optmode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT, "optimization mode")
 
 
 /* ================================================================
@@ -602,7 +603,7 @@ static MILK_HOT errno_t basisrotmatch_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        compute_basis_rotate_match(imginAB, &imgoutArot, *optmode);
+        compute_basis_rotate_match(imginAB, &imgoutArot, optmode);
     }
     MILK_PROCINFO_END(self)
 

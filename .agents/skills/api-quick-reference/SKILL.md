@@ -9,34 +9,11 @@ This skill provides a condensed "cheat sheet" of critical APIs used in milk comp
 
 ## 1. IMGID API Reference
 
-`IMGID` is the structure used to represent shared memory image streams.
-Always use `mdt->` (metadata template) when configuring a new stream, never direct struct fields.
-
-```c
-IMGID img = imgid_make_from_name("mystream");
-
-// Configure metadata BEFORE create/connect
-img.mdt->naxis = 2;
-img.mdt->size[0] = 128;
-img.mdt->size[1] = 128;
-img.mdt->datatype = _DATATYPE_FLOAT;
-img.mdt->shared = 1;
-
-// To create a new stream:
-imcreateIMGID(&img);
-
-// OR to resolve (connect to) an existing stream:
-resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-
-// OR to connect with flags (creates if doesn't exist):
-imgid_connect(&img, IMGID_CONNECT_CHECK_CREATE);
-
-// Accessing pixel data (always via im->array):
-float *ptr = img.im->array.F;
-
-// Free the struct at the end
-imgid_free(&img);
-```
+Creating, connecting to and format-checking a stream through `IMGID` is in
+[Shared Memory Streams §5](../../../docs/guide/streams.md#5-c-api-imgid). Configure a new stream
+through `img.mdt->` (the metadata template) before it is created or connected, never through the
+struct fields; `resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg)` resolves a name in the process's
+image table (§4).
 
 ## 2. Datatype Dispatch Table
 
@@ -61,28 +38,9 @@ For untyped generic copies, use `.raw` with `__builtin_memcpy`.
 
 ## 3. processinfo Macro Reference
 
-These macros wrap the compute loop of a runnable (`self` is the `const MILK_RUNNABLE *` argument of its compute function) to provide timing, semaphore triggering, and tmux status.
-
-- `MILK_PROCINFO_INIT(self)`: Initializes the `processinfo` structure based on the FPS settings. Must be called before the loop.
-- `MILK_PROCINFO_LOOPSTART(self)`: Begins the `while(processloopOK)` loop and handles semaphore waiting.
-- `MILK_PROCINFO_END(self)`: Closes the loop and cleans up.
-
-A standard continuous-loop compute unit looks like:
-
-```c
-MILK_PROCINFO_INIT(self)
-
-// (Optional) custom setup here
-
-MILK_PROCINFO_LOOPSTART(self)
-
-// Do computation here...
-
-// (Optional) If you wrote to outimg based on inimg's trigger:
-processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
-
-MILK_PROCINFO_END(self)
-```
+`MILK_PROCINFO_INIT`, `MILK_PROCINFO_LOOPSTART` and `MILK_PROCINFO_END`, which wrap a unit's
+compute loop, are in
+[Process Info §7](../../../docs/guide/procinfo.md#7-compute-function-macros).
 
 ## 4. Magic Context Variables
 
@@ -99,62 +57,18 @@ These global variables are defined by the framework and are always available in 
 
 ## 5. Stream Write Protocol
 
-When writing data to a shared memory stream inside
-a compute unit, follow the pattern used by all
-existing templates and stream processors:
-
-```c
-// 1. Signal write-in-progress
-outimg->md->write = 1;
-
-// 2. Modify pixel data
-for (uint64_t ii = 0; ii < xysize; ii++)
-{
-    outimg->im->array.F[ii] = ...;
-}
-
-// 3. Finalize: updates cnt0, clears write flag,
-//    timestamps, posts all semaphores
-processinfo_update_output_stream(
-    processinfo, outimg.im, inimg.im);
-```
-
-`processinfo_update_output_stream()` internally
-calls `ImageStreamIO_UpdateIm()`, which handles
-`SHMIM_CNT0_INCREMENT`, `SHMIM_WRITE_RELEASE`,
-and `ImageStreamIO_sempost(image, -1)`. Do NOT
-call these low-level macros yourself in a compute
-unit — the framework does it for you.
-
-For generators (self-timed, no input trigger),
-pass `NULL` as the input image:
-
-```c
-processinfo_update_output_stream(
-    processinfo, outimg.im, NULL);
-```
-
-**Ancestry propagation:** This function also
-copies the input stream's `streamproctrace[]`
-ancestry chain into the output stream, shifted
-by one slot. This is automatic — no extra code
-needed. See the `imagestream-internals` skill
-for full details on `STREAM_PROC_TRACE`.
+Writing an output stream is in
+[Process Info — Output Stream Updates](../../../docs/guide/procinfo.md#output-stream-updates), and
+the ancestry it carries over in
+[Shared Memory Streams §6](../../../docs/guide/streams.md#6-stream-process-trace-ancestry) (more
+internals: the `imagestream-internals` skill). In a compute unit, never call
+`ImageStreamIO_UpdateIm()`, `SHMIM_CNT0_INCREMENT`, `SHMIM_WRITE_RELEASE` or
+`ImageStreamIO_sempost()` yourself: `processinfo_update_output_stream()` does it.
 
 ## 6. FPS Parameter Quick-Reference
 
-Common `FPTYPE_*` mapped to C types:
-
-- `FPTYPE_INT32` / `FPTYPE_UINT32` → `int32_t` / `uint32_t`
-- `FPTYPE_INT64` / `FPTYPE_UINT64` → `int64_t` / `uint64_t`
-- `FPTYPE_FLOAT32` / `FPTYPE_FLOAT64` → `float` / `double`
-- `FPTYPE_ONOFF` → `int32_t` (0 = OFF, nonzero = ON)
-- `FPTYPE_STREAMNAME`, `FPTYPE_FILENAME`, `FPTYPE_STRING` → `char[]` buffer
-- `FPTYPE_TIMESPEC` → `struct timespec`
-- `FPTYPE_PID` → `pid_t`
-
-X-Macro Binding Column Order (Strict):
-`X(keyword, pointer, type, is_primary, flags, description)`
+The `FPTYPE_*` types with their C types, the `FPFLAG_*` flags and the X-macro column order are in
+[FPS §4](../../../docs/guide/fps.md#4-parameter-data-types-and-flags).
 
 ## 7. Required Header Includes
 

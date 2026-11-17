@@ -100,6 +100,11 @@ imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, ui
     }
 
     const char *name = sp.name;
+    if (strchr(name, '/') != NULL)
+    {
+        fprintf(stderr, "ERROR: invalid image name \"%s\"\n", name);
+        return -1;
+    }
 
     IMAGE *imarray = milkfps_imarray;
     long   nb_max  = milkfps_nb_max;

@@ -21,7 +21,6 @@
  * supports full procinfo lifecycle management.
  */
 
-#include <pthread.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,9 +31,6 @@
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
-
-static pthread_t *thrarray_semwait;
-static long       NB_thrarray_semwait;
 
 /* forward decls */
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname);
@@ -49,8 +45,6 @@ imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index);
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(imageID ID, long index);
 imageID COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus);
 imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index);
-void   *waitforsemID(void *ID);
-errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray, long NB_ID);
 errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID);
 imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
 
@@ -79,8 +73,7 @@ MILK_PARAMS_DEFINE(imseminfo, FPS_PARAMS_IMSEM_INFO);
 static MILK_HOT errno_t imseminfo_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_seminfo(p_imname);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_seminfo(p_imname) < 0) ? RETURN_FAILURE : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imseminfo = {
@@ -106,8 +99,8 @@ MILK_PARAMS_DEFINE(imsetsempost, FPS_PARAMS_IMSEM);
 static MILK_HOT errno_t imsetsempost_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_sempost(p_imname, p_semindex);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_set_sempost(p_imname, p_semindex) < 0) ? RETURN_FAILURE
+                                                                        : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempost = {
@@ -138,13 +131,17 @@ MILK_PARAMS_DEFINE(imsetsempostl, FPS_PARAMS);
 
 static MILK_HOT errno_t imsetsempostl_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_image_set_sempost_loop(p_imname, p_semindex, p_dtus);
+    if (COREMOD_MEMORY_image_set_sempost_loop(p_imname, p_semindex, p_dtus) < 0)
+    {
+        ret = RETURN_FAILURE;
+    }
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsempostl = {
@@ -170,8 +167,8 @@ MILK_PARAMS_DEFINE(imsetsemwait, FPS_PARAMS_IMSEM);
 static MILK_HOT errno_t imsetsemwait_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_semwait(p_imname, p_semindex);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_set_semwait(p_imname, p_semindex) < 0) ? RETURN_FAILURE
+                                                                        : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemwait = {
@@ -197,8 +194,8 @@ MILK_PARAMS_DEFINE(imsetsemflush, FPS_PARAMS_IMSEM);
 static MILK_HOT errno_t imsetsemflush_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_semflush(p_imname, p_semindex);
-    return RETURN_SUCCESS;
+    return (COREMOD_MEMORY_image_set_semflush(p_imname, p_semindex) < 0) ? RETURN_FAILURE
+                                                                         : RETURN_SUCCESS;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetsemflush = {
@@ -255,9 +252,16 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
                (int) dcimg[ID].semReadPID[s]);
     }
     printf("----------------------------------\n");
-    int semval;
-    sem_getvalue(dcimg[ID].semlog, &semval);
-    printf(" semlog = %3d\n", semval);
+    if (dcimg[ID].semlog != NULL)
+    {
+        int semval = 0;
+        sem_getvalue(dcimg[ID].semlog, &semval);
+        printf(" semlog = %3d\n", semval);
+    }
+    else
+    {
+        printf(" semlog = none\n");
+    }
     printf("----------------------------------\n");
 
     return ID;
@@ -285,6 +289,13 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
     if (ID == -1)
     {
         PRINT_WARNING("image \"%s\" not found", IDname);
+        return -1;
+    }
+
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index < -1 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
         return -1;
     }
 
@@ -356,6 +367,13 @@ imageID COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, lo
         return -1;
     }
 
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index < -1 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
+        return -1;
+    }
+
     ImageStreamIO_sempost_loop(&dcimg[ID], index, dtus);
 
     return ID;
@@ -385,92 +403,18 @@ imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
         return -1;
     }
 
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index < 0 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
+        return -1;
+    }
+
     ImageStreamIO_semwait(&dcimg[ID], index);
 
     return ID;
 }
 
-/**
- * @brief Thread func: wait on sem0, cancel peers
- *
- * Used by semwait_OR_IDarray to implement OR-wait.
- * Each thread waits on one stream's sem0; the first
- * to wake cancels all sibling threads.
- *
- * @param ID  Image slot index (cast from void*)
- * @return NULL (exits via pthread_exit)
- */
-void *waitforsemID(void *ID)
-{
-    pthread_t tid;
-    int       t;
-    //    int semval;
-
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    tid = pthread_self();
-
-    //    semval = ImageStreamIO_semvalue(dcimg+(long) ID, ?sem_index);
-    //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, dcimg[(long) ID].name);
-    //    fflush(stdout);
-    ImageStreamIO_semwait(dcimg + (imageID) ID, 0);
-    //    printf("tid %u sem ID %ld done\n", (unsigned int) tid, (long) ID);
-    //    fflush(stdout);
-
-    for (t = 0; t < NB_thrarray_semwait; t++)
-    {
-        if (tid != thrarray_semwait[t])
-        {
-            //            printf("tid %u cancel thread %d tid %u\n", (unsigned int) tid, t, (unsigned int) (thrarray_semwait[t]));
-            //           fflush(stdout);
-            pthread_cancel(thrarray_semwait[t]);
-        }
-    }
-
-    pthread_exit(NULL);
-}
-
-/**
- * @brief Wait on any of N streams' sem0 (OR logic)
- *
- * Spawns one thread per stream, each waiting on
- * sem0. When any thread returns, it cancels all
- * others — implementing a multi-stream OR-wait.
- *
- * @param IDarray  Array of image IDs to wait on
- * @param NB_ID    Length of IDarray
- * @return RETURN_SUCCESS
- */
-errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray, long NB_ID)
-{
-    //    int semval;
-
-    //   printf("======== ENTER COREMOD_MEMORY_image_set_semwait_OR_IDarray [%ld] =======\n", NB_ID);
-    //   fflush(stdout);
-
-    thrarray_semwait    = (pthread_t *) malloc(sizeof(pthread_t) * NB_ID);
-    NB_thrarray_semwait = NB_ID;
-
-    for (int t = 0; t < NB_ID; t++)
-    {
-        //      printf("thread %d create, ID = %ld\n", t, IDarray[t]);
-        //      fflush(stdout);
-        pthread_create(&thrarray_semwait[t], NULL, waitforsemID, (void *) IDarray[t]);
-    }
-
-    for (int t = 0; t < NB_ID; t++)
-    {
-        //         printf("thread %d tid %u join waiting\n", t, (unsigned int) thrarray_semwait[t]);
-        //fflush(stdout);
-        pthread_join(thrarray_semwait[t], NULL);
-        //    printf("thread %d tid %u joined\n", t, (unsigned int) thrarray_semwait[t]);
-    }
-
-    free(thrarray_semwait);
-    // printf("======== EXIT COREMOD_MEMORY_image_set_semwait_OR_IDarray =======\n");
-    //fflush(stdout);
-
-    return RETURN_SUCCESS;
-}
 
 /**
  * @brief Flush semaphores on multiple images
@@ -528,6 +472,13 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
     if (ID == -1)
     {
         PRINT_WARNING("image \"%s\" not found", IDname);
+        return -1;
+    }
+
+    int nsem = dcimg[ID].md[0].sem;
+    if (nsem <= 0 || index >= nsem)
+    {
+        PRINT_ERROR("semaphore index %ld out of range (NBsem = %d)", index, nsem);
         return -1;
     }
 

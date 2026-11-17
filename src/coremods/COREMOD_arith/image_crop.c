@@ -151,177 +151,83 @@ imageID arith_image_crop(const char *ID_name,
     resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
     int64_t naxis = imgin.md->naxis;
-    if (naxis < 1)
+    if (naxis < 1 || naxis > 3)
     {
-        PRINT_ERROR("naxis < 1");
+        PRINT_ERROR("unsupported naxis = %ld", naxis);
+        return -1;
+    }
+    if (strcmp(ID_out, ID_name) == 0)
+    {
+        PRINT_ERROR("output image must differ from the input image %s", ID_name);
         return -1;
     }
 
-    uint32_t *naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if (naxes == NULL)
+    uint8_t  datatype    = imgin.md->datatype;
+    int      typesize    = ImageStreamIO_typesize(datatype);
+    uint32_t naxes[3]    = { 1, 1, 1 };
+    uint32_t naxesout[3] = { 1, 1, 1 };
+    int64_t  start_c[3]  = { 0, 0, 0 };
+    int64_t  end_c[3]    = { 1, 1, 1 };
+    int64_t  start_o[3]  = { 0, 0, 0 };
+
+    if (typesize <= 0)
     {
-        PRINT_ERROR("malloc() error,"
-                    " naxis = %ld",
-                    naxis);
+        PRINT_ERROR("invalid datatype %d", (int) datatype);
         return -1;
     }
 
-    uint32_t *naxesout = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if (naxesout == NULL)
+    for (int d = 0; d < naxis; d++)
     {
-        PRINT_ERROR("malloc() error");
-        free(naxes);
-        return -1;
+        naxes[d]    = imgin.md->size[d];
+        naxesout[d] = (uint32_t) (end[d] - start[d]);
+        start_o[d]  = start[d];
+        start_c[d]  = (start[d] < 0) ? 0 : start[d];
+        end_c[d]    = (end[d] > (int64_t) naxes[d]) ? (int64_t) naxes[d] : end[d];
     }
 
-    uint8_t datatype = imgin.md->datatype;
-
-    naxes[0]    = 0;
-    naxesout[0] = 0;
-    for (int i = 0; i < naxis; i++)
-    {
-        naxes[i]    = imgin.md->size[i];
-        naxesout[i] = end[i] - start[i];
-    }
-
+    delete_image_ID(ID_out, DELETE_IMAGE_ERRMODE_IGNORE);
     IMGID imgout      = imgid_make_from_name(ID_out);
-    imgout.mdt->naxis = naxis;
-    for (int i = 0; i < naxis; i++)
+    imgout.mdt->naxis = (uint8_t) naxis;
+    for (int d = 0; d < naxis; d++)
     {
-        imgout.mdt->size[i] = naxesout[i];
+        imgout.mdt->size[d] = naxesout[d];
     }
     imgout.mdt->datatype = datatype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
     imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
     imgid_mkimage(&imgout);
+    RegisterIMGID(&imgout, dcimg, dcnimg);
     imageID IDout = imgout.ID;
-
-    int64_t start_c[3] = { 0, 0, 0 };
-    int64_t end_c[3]   = { 0, 0, 0 };
-
-    start_c[0] = start[0];
-    if (start_c[0] < 0)
-    {
-        start_c[0] = 0;
-    }
-    end_c[0] = end[0];
-    if (end_c[0] > naxes[0])
-    {
-        end_c[0] = naxes[0];
-    }
-    if (naxis > 1)
-    {
-        start_c[1] = start[1];
-        if (start_c[1] < 0)
-        {
-            start_c[1] = 0;
-        }
-        end_c[1] = end[1];
-        if (end_c[1] > naxes[1])
-        {
-            end_c[1] = naxes[1];
-        }
-    }
-    if (naxis > 2)
-    {
-        start_c[2] = start[2];
-        if (start_c[2] < 0)
-        {
-            start_c[2] = 0;
-        }
-        end_c[2] = end[2];
-        if (end_c[2] > naxes[2])
-        {
-            end_c[2] = naxes[2];
-        }
-    }
-
-    printf("CROP: \n");
-    for (int i = 0; i < 3; i++)
-    {
-        printf("axis %d: %ld -> %ld\n", i, start_c[i], end_c[i]);
-    }
 
     if (cropdim != naxis)
     {
-        printf("Error (arith_image_crop): cropdim [%ld] and naxis [%ld] are "
-               "different\n",
-               cropdim, naxis);
+        printf("Error (arith_image_crop): cropdim [%ld] and naxis [%ld] are different\n", cropdim,
+               naxis);
     }
 
-    int typesize = ImageStreamIO_typesize(datatype);
-    if (typesize <= 0)
+    size_t  elemsize  = (size_t) typesize;
+    int64_t row_elems = end_c[0] - start_c[0];
+    if (row_elems > 0)
     {
-        PRINT_ERROR("invalid datatype %d", (int) datatype);
-        free(naxesout);
-        free(naxes);
-        return -1;
-    }
-    size_t elemsize = (size_t) typesize;
-
-    if (naxis == 1)
-    {
-        int64_t ncopy = end_c[0] - start_c[0];
-        if (ncopy > 0)
-        {
-            __builtin_memcpy((char *) imgout.im->array.raw + (start_c[0] - start[0]) * elemsize,
-                             (char *) imgin.im->array.raw + start_c[0] * elemsize,
-                             (size_t) ncopy * elemsize);
-        }
-    }
-    else if (naxis == 2)
-    {
-        int64_t row_elems = end_c[0] - start_c[0];
-        if (row_elems > 0)
+        int64_t in_slice  = (int64_t) naxes[0] * (int64_t) naxes[1];
+        int64_t out_slice = (int64_t) naxesout[0] * (int64_t) naxesout[1];
+        for (int64_t kk = start_c[2]; kk < end_c[2]; kk++)
         {
             for (int64_t jj = start_c[1]; jj < end_c[1]; jj++)
             {
                 int64_t dst_off =
-                    ((jj - start[1]) * (int64_t) naxesout[0] + (start_c[0] - start[0])) *
+                    ((kk - start_o[2]) * out_slice + (jj - start_o[1]) * (int64_t) naxesout[0] +
+                     (start_c[0] - start_o[0])) *
                     (int64_t) elemsize;
-                int64_t src_off = (jj * (int64_t) naxes[0] + start_c[0]) * (int64_t) elemsize;
+                int64_t src_off =
+                    (kk * in_slice + jj * (int64_t) naxes[0] + start_c[0]) * (int64_t) elemsize;
                 __builtin_memcpy((char *) imgout.im->array.raw + dst_off,
                                  (char *) imgin.im->array.raw + src_off,
                                  (size_t) row_elems * elemsize);
             }
         }
     }
-    else if (naxis == 3)
-    {
-        int64_t row_elems = end_c[0] - start_c[0];
-        if (row_elems > 0)
-        {
-            int64_t in_slice  = (int64_t) naxes[0] * (int64_t) naxes[1];
-            int64_t out_slice = (int64_t) naxesout[0] * (int64_t) naxesout[1];
-
-            for (int64_t kk = start_c[2]; kk < end_c[2]; kk++)
-            {
-                for (int64_t jj = start_c[1]; jj < end_c[1]; jj++)
-                {
-                    int64_t dst_off =
-                        ((kk - start[2]) * out_slice + (jj - start[1]) * (int64_t) naxesout[0] +
-                         (start_c[0] - start[0])) *
-                        (int64_t) elemsize;
-                    int64_t src_off =
-                        (kk * in_slice + jj * (int64_t) naxes[0] + start_c[0]) * (int64_t) elemsize;
-                    __builtin_memcpy((char *) imgout.im->array.raw + dst_off,
-                                     (char *) imgin.im->array.raw + src_off,
-                                     (size_t) row_elems * elemsize);
-                }
-            }
-        }
-    }
-    else
-    {
-        PRINT_ERROR("unsupported naxis = %ld", naxis);
-        free(naxesout);
-        free(naxes);
-        return -1;
-    }
-
-    free(naxesout);
-    free(naxes);
 
     return IDout;
 }
@@ -343,38 +249,15 @@ imageID arith_image_extract2D(const char *in_name,
     IMGID img = imgid_make_from_name(in_name);
     resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
     int naxis = img.md->naxis;
-
-    int64_t *start = (int64_t *) malloc(sizeof(int64_t) * naxis);
-    if (start == NULL)
+    if (naxis < 2 || naxis > 3)
     {
-        PRINT_ERROR("malloc() error");
         return -1;
     }
 
-    int64_t *end = (int64_t *) malloc(sizeof(int64_t) * naxis);
-    if (end == NULL)
-    {
-        PRINT_ERROR("malloc() error");
-        free(start);
-        return -1;
-    }
-
-    for (uint_fast8_t k = 0; k < naxis; k++)
-    {
-        start[k] = 0;
-        end[k]   = img.md->size[k];
-    }
-
-    start[0]      = xstart;
-    start[1]      = ystart;
-    end[0]        = xstart + size_x;
-    end[1]        = ystart + size_y;
-    imageID IDout = arith_image_crop(in_name, out_name, start, end, naxis);
-
-    free(start);
-    free(end);
-
-    return IDout;
+    int64_t start[3] = { xstart, ystart, 0 };
+    int64_t end[3]   = { xstart + size_x, ystart + size_y,
+                         (naxis > 2) ? (int64_t) img.md->size[2] : 1 };
+    return arith_image_crop(in_name, out_name, start, end, naxis);
 }
 
 imageID arith_image_extract3D(const char *in_name,
@@ -386,35 +269,7 @@ imageID arith_image_extract3D(const char *in_name,
                               int64_t     ystart,
                               int64_t     zstart)
 {
-    int64_t *start = (int64_t *) malloc(sizeof(int64_t) * 3);
-    if (start == NULL)
-    {
-        PRINT_ERROR("malloc() error, params: "
-                    "%s %s %ld %ld %ld %ld %ld %ld",
-                    in_name, out_name, size_x, size_y, size_z, xstart, ystart, zstart);
-        return -1;
-    }
-
-    int64_t *end = (int64_t *) malloc(sizeof(int64_t) * 3);
-    if (end == NULL)
-    {
-        PRINT_ERROR("malloc() error, params: "
-                    "%s %s %ld %ld %ld %ld %ld %ld",
-                    in_name, out_name, size_x, size_y, size_z, xstart, ystart, zstart);
-        free(start);
-        return -1;
-    }
-
-    start[0]      = xstart;
-    start[1]      = ystart;
-    start[2]      = zstart;
-    end[0]        = xstart + size_x;
-    end[1]        = ystart + size_y;
-    end[2]        = zstart + size_z;
-    imageID IDout = arith_image_crop(in_name, out_name, start, end, 3);
-
-    free(start);
-    free(end);
-
-    return IDout;
+    int64_t start[3] = { xstart, ystart, zstart };
+    int64_t end[3]   = { xstart + size_x, ystart + size_y, zstart + size_z };
+    return arith_image_crop(in_name, out_name, start, end, 3);
 }

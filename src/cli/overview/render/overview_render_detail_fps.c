@@ -8,6 +8,8 @@
  */
 
 #include "overview_render_detail_internal.h"
+#include "fps_unit_state.h"
+#include "overview_render_fps_params.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -31,9 +33,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
 {
     const OV_FPS *f = &m->fps[fsel];
 
-    const char *tabs[] = { "CONNECTIONS", "LOOPS", "DETAILS", "RESOURCES" };
-    ov_draw_panel_tabs(r.row, r.col, r.height, r.width, tabs, 4, lay->graph_tab_mode, OV_FG_FPS,
-                       lay->focus == OV_FOCUS_GRAPH);
+    ov_subtab_bar(lay, OV_FG_FPS);
 
     int ri       = 0;
     int line_idx = 0;
@@ -77,14 +77,14 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         H_ov_buf_pos(row + ri, r.col + 1);
         H_ov_theme_bg(OV_BG_PANEL);
         H_ov_theme_fg(OV_FG_DIM);
-        ov_pid_status_t cs = pid_get_status(f->confpid);
-        ov_pid_status_t rs = pid_get_status(f->runpid);
-        const char *cst = (cs == OV_PID_ALIVE) ? "ALIVE" : (cs == OV_PID_ZOMBIE) ? "ZOMB" : "dead";
-        const char *rst = (rs == OV_PID_ALIVE) ? "ALIVE" : (rs == OV_PID_ZOMBIE) ? "ZOMB" : "dead";
-        int n = snprintf(NULL, 0, " Conf: %s (PID %d)  Run: %s (PID %d)", cst, (int) f->confpid,
-                         rst, (int) f->runpid);
-        H_ov_buf_printf(" Conf: %s (PID %d)  Run: %s (PID %d)", cst, (int) f->confpid, rst,
-                        (int) f->runpid);
+        // the unit states (U10); how the last run ended once none runs
+        const char *cst  = fps_unit_state_name((FPS_UNIT_STATE) f->conf_state);
+        const char *rst  = fps_unit_state_name((FPS_UNIT_STATE) f->run_state);
+        const char *last = f->run_alive ? "" : f->run_last;
+        int n = snprintf(NULL, 0, " Conf: %s (PID %d)  Run: %s (PID %d)%s%s", cst, (int) f->confpid,
+                         rst, (int) f->runpid, last[0] ? " " : "", last);
+        H_ov_buf_printf(" Conf: %s (PID %d)  Run: %s (PID %d)%s%s", cst, (int) f->confpid, rst,
+                        (int) f->runpid, last[0] ? " " : "", last);
         H_render_pad_spaces(n, r.width);
         if (!skip_draw)
         {
@@ -106,7 +106,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         H_ov_theme_bg(OV_BG_PANEL);
 
         /* Hint: ↑↓ ENTER (only when graph focused) */
-        if (lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 2)
+        if (lay->focus == OV_FOCUS_GRAPH && lay->subtab == OV_SUB_DETAILS)
         {
             H_ov_theme_fg(OV_FG_DIM);
             int h = snprintf(NULL, 0, "  [↑↓ ENTER]");
@@ -124,9 +124,9 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         line_idx++;
 
         /* Clamp param_sel */
-        if (lay->param_sel >= f->nb_disp_params)
+        if (lay->sub[OV_SUB_DETAILS].sel >= f->nb_disp_params)
         {
-            lay->param_sel = f->nb_disp_params - 1;
+            lay->sub[OV_SUB_DETAILS].sel = f->nb_disp_params - 1;
         }
 
         /* Auto-scroll to keep selection visible */
@@ -136,20 +136,20 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             {
                 vis_rows = 1;
             }
-            if (lay->param_sel >= 0)
+            if (lay->sub[OV_SUB_DETAILS].sel >= 0)
             {
-                if (lay->param_sel < lay->param_scroll)
+                if (lay->sub[OV_SUB_DETAILS].sel < lay->sub[OV_SUB_DETAILS].scroll)
                 {
-                    lay->param_scroll = lay->param_sel;
+                    lay->sub[OV_SUB_DETAILS].scroll = lay->sub[OV_SUB_DETAILS].sel;
                 }
-                if (lay->param_sel >= lay->param_scroll + vis_rows)
+                if (lay->sub[OV_SUB_DETAILS].sel >= lay->sub[OV_SUB_DETAILS].scroll + vis_rows)
                 {
-                    lay->param_scroll = lay->param_sel - vis_rows + 1;
+                    lay->sub[OV_SUB_DETAILS].scroll = lay->sub[OV_SUB_DETAILS].sel - vis_rows + 1;
                 }
             }
-            if (lay->param_scroll < 0)
+            if (lay->sub[OV_SUB_DETAILS].scroll < 0)
             {
-                lay->param_scroll = 0;
+                lay->sub[OV_SUB_DETAILS].scroll = 0;
             }
         }
 
@@ -157,18 +157,18 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
         for (int dp = 0; dp < f->nb_disp_params; dp++)
         {
             /* Skip rows above scroll window */
-            if (dp < lay->param_scroll)
+            if (dp < lay->sub[OV_SUB_DETAILS].scroll)
             {
                 line_idx++;
                 continue;
             }
 
-            int is_sel =
-                (dp == lay->param_sel && lay->focus == OV_FOCUS_GRAPH && lay->graph_tab_mode == 2);
+            int is_sel      = (dp == lay->sub[OV_SUB_DETAILS].sel && lay->focus == OV_FOCUS_GRAPH &&
+                               lay->subtab == OV_SUB_DETAILS);
             int header_rows = 3 + (f->description[0] != '\0' ? 1 : 0);
-            int is_hover    = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
-                               lay->graph_tab_mode == 2 &&
-                               lay->hover_idx == header_rows + (dp - lay->param_scroll));
+            int is_hover = (lay->mouse_hover && lay->hover_view == OV_FOCUS_GRAPH &&
+                            lay->subtab == OV_SUB_DETAILS &&
+                            lay->hover_idx == header_rows + (dp - lay->sub[OV_SUB_DETAILS].scroll));
 
             ov_rgb_t row_bg = is_sel ? OV_BG_SELECTED : (is_hover ? OV_BG_HOVER : OV_BG_PANEL);
 
@@ -189,7 +189,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             if (is_sel)
             {
                 H_ov_theme_fg(writable ? OV_FG_ACTIVE : OV_FG_DIM);
-                H_ov_buf_printf(writable ? " \xe2\x9c\x8e" : " \xf0\x9f\x94\x92");
+                H_ov_buf_printf(writable ? " W" : " R"); /* writable / read-only */
             }
             else
             {
@@ -198,54 +198,44 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
 
             /* Type badge */
             const char *tbadge = "???";
-            ov_rgb_t    tcolor = OV_FG_DIM;
             if (pt == FPTYPE_INT64 || pt == FPTYPE_INT32)
             {
                 tbadge = "INT";
-                tcolor = (ov_rgb_t) { 120, 180, 255 };
             }
             else if (pt == FPTYPE_UINT64 || pt == FPTYPE_UINT32)
             {
                 tbadge = "UINT";
-                tcolor = (ov_rgb_t) { 100, 160, 220 };
             }
             else if (pt == FPTYPE_FLOAT64 || pt == FPTYPE_FLOAT32)
             {
                 tbadge = "FLT";
-                tcolor = (ov_rgb_t) { 180, 200, 100 };
             }
             else if (pt == FPTYPE_ONOFF)
             {
                 tbadge = "ON/OFF";
-                tcolor = (ov_rgb_t) { 220, 180, 60 };
             }
             else if (pt == FPTYPE_STREAMNAME)
             {
                 tbadge = "STRM";
-                tcolor = OV_FG_STREAM;
             }
             else if (pt == FPTYPE_FPSNAME)
             {
                 tbadge = "FPS";
-                tcolor = OV_FG_FPS;
             }
             else if (FPTYPE_IS_STRING(pt))
             {
                 tbadge = "STR";
-                tcolor = (ov_rgb_t) { 200, 160, 120 };
             }
             else if (pt == FPTYPE_PID)
             {
                 tbadge = "PID";
-                tcolor = OV_FG_PROC;
             }
             else if (pt == FPTYPE_TIMESPEC)
             {
                 tbadge = "TIME";
-                tcolor = (ov_rgb_t) { 160, 180, 200 };
             }
 
-            H_ov_theme_fg(tcolor);
+            H_ov_theme_fg(fps_param_type_color(pt));
             H_ov_buf_printf("[%-6s]", tbadge);
 
             /* Parameter name */
@@ -270,7 +260,7 @@ int ov_fps__render_detail_fps(OV_LAYOUT      *lay,
             else if (pt == FPTYPE_ONOFF)
             {
                 int      is_on  = (strcmp(pval, "ON") == 0 || strcmp(pval, "1") == 0);
-                ov_rgb_t vcolor = is_on ? (ov_rgb_t) { 100, 255, 100 } : OV_FG_DIM;
+                ov_rgb_t vcolor = is_on ? OV_FG_ACTIVE : OV_FG_DIM;
                 if (is_sel || is_hover)
                 {
                     H_ov_theme_fg(vcolor);

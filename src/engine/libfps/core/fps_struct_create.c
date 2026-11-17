@@ -14,6 +14,7 @@
 #include "fps.h"
 #include "fps_globals.h"
 #include "milk_config.h"
+#include "milk_syscalls.h"
 
 /**
  * @brief Create an FPS shared memory segment.
@@ -100,18 +101,9 @@ errno_t function_parameter_struct_create(long NBparamMAX, const char *name)
 
     strncpy(fps.md->callfuncname, FPS_callfuncname, FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
+    if (milkos_self_exe(fps.md->execfullpath, sizeof(fps.md->execfullpath)) != 0)
     {
-        char    path[512];
-        ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-        if (len != -1)
-        {
-            path[len] = '\0';
-            strncpy(fps.md->execfullpath, path, 511);
-        }
-        else
-        {
-            strncpy(fps.md->execfullpath, "unknown", 511);
-        }
+        strncpy(fps.md->execfullpath, "unknown", sizeof(fps.md->execfullpath) - 1);
     }
 
     char cwd[FPS_CWD_STRLENMAX];

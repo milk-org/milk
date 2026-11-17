@@ -23,10 +23,11 @@ errno_t COREMOD_MEMORY_image_set_status(const char *IDname, int status)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if (img.ID != -1)
+    if (img.ID == -1)
     {
-        img.im->md[0].status = status;
+        return RETURN_FAILURE;
     }
+    img.im->md[0].status = status;
 
     return RETURN_SUCCESS;
 }
@@ -40,10 +41,11 @@ errno_t COREMOD_MEMORY_image_set_cnt0(const char *IDname, int cnt0)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if (img.ID != -1)
+    if (img.ID == -1)
     {
-        img.im->md[0].cnt0 = cnt0;
+        return RETURN_FAILURE;
     }
+    img.im->md[0].cnt0 = cnt0;
 
     return RETURN_SUCCESS;
 }
@@ -55,10 +57,11 @@ errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1)
 {
     IMGID img = imgid_make_from_name(IDname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
-    if (img.ID != -1)
+    if (img.ID == -1)
     {
-        img.im->md[0].cnt1 = cnt1;
+        return RETURN_FAILURE;
     }
+    img.im->md[0].cnt1 = cnt1;
 
     return RETURN_SUCCESS;
 }
@@ -85,8 +88,7 @@ MILK_PARAMS_DEFINE(status, FPS_PARAMS_IMGINT);
 static MILK_HOT errno_t status_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_status(p_imname, p_value);
-    return RETURN_SUCCESS;
+    return COREMOD_MEMORY_image_set_status(p_imname, p_value);
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetstatus = {
@@ -111,13 +113,14 @@ MILK_PARAMS_DEFINE(cnt0, FPS_PARAMS_IMGINT);
 
 static MILK_HOT errno_t cnt0_compute(const MILK_RUNNABLE *self)
 {
+    errno_t ret = RETURN_SUCCESS;
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_image_set_cnt0(p_imname, p_value);
+    ret = COREMOD_MEMORY_image_set_cnt0(p_imname, p_value);
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetcnt0 = {
@@ -143,8 +146,7 @@ MILK_PARAMS_DEFINE(cnt1, FPS_PARAMS_IMGINT);
 static MILK_HOT errno_t cnt1_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_set_cnt1(p_imname, p_value);
-    return RETURN_SUCCESS;
+    return COREMOD_MEMORY_image_set_cnt1(p_imname, p_value);
 }
 
 const MILK_RUNNABLE runnable_COREMOD_memory_imsetcnt1 = {

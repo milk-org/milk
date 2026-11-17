@@ -47,5 +47,5 @@ modex.streamupdate ?
 modex.streamupdate ims1
 
 # exit milk CLI
-exitCLI
+exit
 "

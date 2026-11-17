@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include "milk_runnable.h"
+#include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
@@ -39,22 +40,25 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inmatA    = NULL;
-static char     *inmatB    = NULL;
-static uint64_t *transpA   = NULL;
-static uint64_t *transpB   = NULL;
-static char     *outM      = NULL;
-static int32_t  *GPUdevice = NULL;
+static char    inmatA[FUNCTION_PARAMETER_STRMAXLEN] = "matA";
+static char    inmatB[FUNCTION_PARAMETER_STRMAXLEN] = "matA";
+static int32_t transpA                              = 0;
+static int32_t transpB                              = 0;
+static char    outM[FUNCTION_PARAMETER_STRMAXLEN]   = "out";
+static int32_t GPUdevice                            = -1;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                 \
-    X(".matA", &inmatA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix A") \
-    X(".matB", &inmatB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix B") \
-    X(".outM", &outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")
+#define FPS_PARAMS(X)                                                                \
+    X(".matA", inmatA, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix A") \
+    X(".matB", inmatB, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input matrix B") \
+    X(".transpA", &transpA, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "transpose A")    \
+    X(".transpB", &transpB, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "transpose B")    \
+    X(".outM", outM, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output matrix")        \
+    X(".GPUdevice", &GPUdevice, FPTYPE_INT32, 0, FPFLAG_DEFAULT_INPUT, "GPU device, 99 for CPU")
 
 
 /* ================================================================
@@ -439,29 +443,13 @@ errno_t computeSGEMM(IMGID  imginA,
 #endif
     }
 
-#ifdef HAVE_BLAS
     if (SGEMMcomputed == 0)
     {
-        //printf("[%d] Running SGEMM on CPU\n", GPUdev);
-        //fflush(stdout);
-
-        CBLAS_TRANSPOSE OPA = CblasNoTrans;
-        if (TranspA == 1)
-        {
-            OPA = CblasTrans;
-        }
-
-        CBLAS_TRANSPOSE OPB = CblasNoTrans;
-        if (TranspB == 1)
-        {
-            OPB = CblasTrans;
-        }
-
-        // TODO why are alpha and beta not used here like in the GPU case ?
-        cblas_sgemm(CblasColMajor, OPA, OPB, Mdim, Ndim, Kdim, 1.0, imarrayA, inA_Mdim, imarrayB,
-                    inB_Mdim, 0.0, outimg->im->array.F, outMdim);
+        arith_matmul_kernel_f(imarrayA, TranspA == 1, imarrayB, TranspB == 1, 1.0f, 0.0f,
+                              outimg->im->array.F, (uint64_t) Mdim, (uint64_t) Kdim,
+                              (uint64_t) Ndim);
+        SGEMMcomputed = 1;
     }
-#endif
 
     printf("Freeing float arrays\n");
     fflush(stdout);
@@ -516,7 +504,7 @@ static MILK_HOT errno_t SGEMM_compute(const MILK_RUNNABLE *self)
 
     MILK_PROCINFO_LOOPSTART(self)
     {
-        computeSGEMM(imginA, imginB, &imgM, *transpA, *transpB, *GPUdevice);
+        computeSGEMM(imginA, imginB, &imgM, transpA, transpB, GPUdevice);
     }
     MILK_PROCINFO_END(self)
 

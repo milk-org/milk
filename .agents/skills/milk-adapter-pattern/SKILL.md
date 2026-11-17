@@ -40,17 +40,9 @@ src/mypkg-fps/
 ## 3. Real-time loop
 
 The compute function runs the canonical semaphore-synchronized loop between
-`MILK_PROCINFO_INIT/LOOPSTART/END(self)`:
-
-```c
-MILK_PROCINFO_INIT(self)
-MILK_PROCINFO_LOOPSTART(self)
-
-mypkg_compute_frame(ctx, raw_pixels, &out_result);
-processinfo_update_output_stream(processinfo, &out_img, &in_img);
-
-MILK_PROCINFO_END(self)
-```
+`MILK_PROCINFO_INIT/LOOPSTART/END(self)`
+([procinfo.md §7](../../../docs/guide/procinfo.md#7-compute-function-macros)): the loop body calls
+`mypkg_compute_frame()`, then `processinfo_update_output_stream()`.
 
 Parameters: use direct variables in the table (`char name[FUNCTION_PARAMETER_STRMAXLEN]`, `int32_t` for
 `FPTYPE_ONOFF`, `double` / `uint32_t` / `int64_t`), and `FPFLAG_DEFAULT_TRIGGER_STREAM` on the stream

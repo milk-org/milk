@@ -98,5 +98,5 @@ fi
 
 milk -n ${pname} << EOF
 shmimpurge "${FILTERSTRING}"
-exitCLI
+exit
 EOF

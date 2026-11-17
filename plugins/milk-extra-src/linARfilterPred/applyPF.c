@@ -20,35 +20,35 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static uint64_t *AOloopindex        = NULL;
-static char     *indata             = NULL;
-static char     *inmask             = NULL;
-static char     *PFmat              = NULL;
-static char     *outdata            = NULL;
-static char     *outmask            = NULL;
-static char     *outPFstat          = NULL;
-static char     *GPUsetstr          = NULL;
-static uint64_t *compOLresidual     = NULL;
-static uint32_t *compOLresidualNBpt = NULL;
+static uint64_t AOloopindex                             = 0;
+static char     indata[FUNCTION_PARAMETER_STRMAXLEN]    = "inim";
+static char     inmask[FUNCTION_PARAMETER_STRMAXLEN]    = "inmask";
+static char     PFmat[FUNCTION_PARAMETER_STRMAXLEN]     = "PFmat";
+static char     outdata[FUNCTION_PARAMETER_STRMAXLEN]   = "outPF";
+static char     outmask[FUNCTION_PARAMETER_STRMAXLEN]   = "outmask";
+static char     outPFstat[FUNCTION_PARAMETER_STRMAXLEN] = "outPFstat";
+static char     GPUsetstr[FUNCTION_PARAMETER_STRMAXLEN] = ":0:";
+static int32_t  compOLresidual                          = 0;
+static uint32_t compOLresidualNBpt                      = 1000;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                            \
-    X(".AOloopindex", &AOloopindex, FPTYPE_UINT64, 1, FPFLAG_DEFAULT_INPUT, "AO loop index")     \
-    X(".indata", &indata, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input data stream")       \
-    X(".inmask", &inmask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input data mask")         \
-    X(".PFmat", &PFmat, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "predictive filter matrix")  \
-    X(".outdata", &outdata, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output data stream")    \
-    X(".outmask", &outmask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output data mask")      \
-    X(".outPFstat", &outPFstat, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output PF stats image") \
-    X(".GPUset", &GPUsetstr, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT,                             \
-      "column-separated list of GPUs")                                                           \
-    X(".comp.residual", &compOLresidual, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                  \
-      "compute residual mismatch")                                                               \
-    X(".comp.OLresidualNBpt", &compOLresidualNBpt, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,       \
+#define FPS_PARAMS(X)                                                                           \
+    X(".AOloopindex", &AOloopindex, FPTYPE_UINT64, 1, FPFLAG_DEFAULT_INPUT, "AO loop index")    \
+    X(".indata", indata, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input data stream")       \
+    X(".inmask", inmask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input data mask")         \
+    X(".PFmat", PFmat, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "predictive filter matrix")  \
+    X(".outdata", outdata, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output data stream")    \
+    X(".outmask", outmask, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output data mask")      \
+    X(".outPFstat", outPFstat, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output PF stats image") \
+    X(".GPUset", GPUsetstr, FPTYPE_STRING, 0, FPFLAG_DEFAULT_INPUT,                             \
+      "column-separated list of GPUs")                                                          \
+    X(".comp.residual", &compOLresidual, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
+      "compute residual mismatch")                                                              \
+    X(".comp.OLresidualNBpt", &compOLresidualNBpt, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,      \
       "sampling size for OL residual")
 
 
@@ -388,7 +388,7 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
             fflush(stdout);
 
             GPU_loop_MultMat_setup(GPUMATMULTCONFindex, imgPFmat.name, imginbuff.name,
-                                   imgoutbuff.name, NBGPU, GPUset, 0, 1, 1, *AOloopindex);
+                                   imgoutbuff.name, NBGPU, GPUset, 0, 1, 1, AOloopindex);
 
             printf("INITIALIZATION DONE\n\n");
             fflush(stdout);
@@ -434,7 +434,7 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
     processinfo_WriteMessage_fmt(processinfo, "%dx%d->%d MVM %.3f us", NBmodeIN, NBPFstep,
                                  NBmodeOUT, t01d * 1e6);
 
-    if (*compOLresidual == 1)
+    if (compOLresidual == 1)
     {
         // Update time buffer output
         // shift down by 1 unit time
@@ -493,7 +493,7 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
         }
 
 
-        if (OLrescnt == *compOLresidualNBpt)
+        if (OLrescnt == compOLresidualNBpt)
         {
             long NBPFstep_display = NBPFstep;
             if (NBPFstep_display > 5)
@@ -505,7 +505,7 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
                 printf("%ld-frame delay  ", tstep);
 
                 // PREDICTION
-                OLRMS2res[tstep] /= (*compOLresidualNBpt);
+                OLRMS2res[tstep] /= (compOLresidualNBpt);
                 printf("   %7.03f", 1000.0 * sqrt(OLRMS2res[tstep]));
                 OLRMS2res[tstep] = 0.0;
 
@@ -517,7 +517,7 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
                 }
                 for (long tave = 1; tave < tavemax_display; tave++)
                 {
-                    OLRMS2avedt[tave * NBPFstep + tstep] /= (*compOLresidualNBpt);
+                    OLRMS2avedt[tave * NBPFstep + tstep] /= (compOLresidualNBpt);
                     printf(" [ ave %ld %7.03f ] ", tave,
                            1000.0 * sqrt(OLRMS2avedt[tave * NBPFstep + tstep]));
                     OLRMS2avedt[tave * NBPFstep + tstep] = 0.0;

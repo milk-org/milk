@@ -47,6 +47,12 @@ int main(int argc, char *argv[])
         {
             help_format_mode = 2;
         }
+        else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        {
+            printf("Usage: milk-cli-help [<topic>] [--json|--porcelain]\n"
+                   "Show the milk-cli help index, or one topic (same topics as @help).\n");
+            return 0;
+        }
         else
         {
             topic = argv[i];

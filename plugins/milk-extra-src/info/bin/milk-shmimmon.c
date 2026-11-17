@@ -6,8 +6,8 @@
  * @file    milk-shmimmon.c
  * @brief   Standalone shared-memory stream monitor
  *
- * Live ncurses TUI for a single ImageStreamIO stream.
- * Links only against ImageStreamIO and ncurses — no
+ * Live terminal display (termios, ANSI) for a single ImageStreamIO stream.
+ * Links only against ImageStreamIO — no
  * CLIcore, no FPS, no milkinfo library required.
  *
  * Usage:
@@ -529,7 +529,7 @@ static void print_help(const char *progname, int mh_color)
            mh_color ? MH_ARG : "", mh_color ? MH_RST : "");
 
     milk_help_section("Description", mh_color);
-    printf("  Monitor the content of a shared-memory image stream in a live ncurses TUI.\n\n");
+    printf("  Monitor the content of a shared-memory image stream in a live terminal display.\n\n");
 
     milk_help_section("Options", mh_color);
     printf("  %s%-25s%s %s\n", mh_color ? MH_OPT : "", "-h, --help", mh_color ? MH_RST : "",
@@ -566,7 +566,7 @@ int main(int argc, char *argv[])
 
     int action = milk_help_init(
         argc, argv, SHMIMMON_DESCRIPTION,
-        "Monitor the content of a shared-memory image stream in a live ncurses TUI.");
+        "Monitor the content of a shared-memory image stream in a live terminal display.");
     if (action == MH_ACTION_H1 || action == MH_ACTION_H2)
     {
         return 0;

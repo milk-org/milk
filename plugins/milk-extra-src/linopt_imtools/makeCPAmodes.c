@@ -28,42 +28,61 @@
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *outimname          = NULL;
-static uint32_t *sizexout           = NULL;
-static uint32_t *sizeyout           = NULL;
-static uint64_t *centered           = NULL;
-static float    *xcent              = NULL;
-static float    *ycent              = NULL;
-static float    *rCPAminval         = NULL;
-static float    *rCPAmaxval         = NULL;
-static float    *CPAmaxval          = NULL;
-static float    *deltaCPAval        = NULL;
-static float    *radiusval          = NULL;
-static float    *radiusfactorlimval = NULL;
-static float    *fpowerlaw          = NULL;
-static float    *fpowerlaw_minf     = NULL;
-static float    *fpowerlaw_maxf     = NULL;
-static uint32_t *writefileval       = NULL;
-static char     *maskim             = NULL;
-static float    *extrfactor         = NULL;
-static float    *extroffset         = NULL;
+static char     outimname[FUNCTION_PARAMETER_STRMAXLEN] = "out1";
+static uint32_t sizexout                                = 512;
+static uint32_t sizeyout                                = 512;
+static int32_t  centered                                = 1;
+static float    xcent                                   = 200;
+static float    ycent                                   = 200;
+static float    rCPAminval                              = -1.0;
+static float    rCPAmaxval                              = 1008.0;
+static float    CPAmaxval                               = 8.0;
+static float    deltaCPAval                             = 0.8;
+static float    radiusval                               = 160.0;
+static float    radiusfactorlimval                      = 1.5;
+static float    fpowerlaw                               = 0;
+static float    fpowerlaw_minf                          = 1.0;
+static float    fpowerlaw_maxf                          = 100.0;
+static uint32_t writefileval                            = 0;
+static char     maskim[FUNCTION_PARAMETER_STRMAXLEN]    = "mask";
+static float    extrfactor                              = 1.0;
+static float    extroffset                              = 0.5;
 
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                     \
-    X(".out_name", &outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")    \
-    X(".sizex", &sizexout, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "sizex")               \
-    X(".sizey", &sizeyout, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "sizey")               \
-    X(".CPAmax", &CPAmaxval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,                     \
-      "maximum cycle per aperture")                                                       \
-    X(".deltaCPA", &deltaCPAval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "CPA interval") \
-    X(".radius", &radiusval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "disk radius")      \
-    X(".radfactlim", &radiusfactorlimval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,        \
-      "radius factor limit")                                                              \
-    X(".writefile", &writefileval, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "write file flag")
+#define FPS_PARAMS(X)                                                                         \
+    X(".out_name", outimname, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "output image")         \
+    X(".sizex", &sizexout, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "sizex")                   \
+    X(".sizey", &sizeyout, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "sizey")                   \
+    X(".align.centered", &centered, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT, "on if centered")  \
+    X(".align.xcenter", &xcent, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT, "x axis center")     \
+    X(".align.ycenter", &ycent, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT, "y axis center")     \
+    X(".rCPAmin", &rCPAminval, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,                       \
+      "minimum radial cycle per aperture")                                                    \
+    X(".rCPAmax", &rCPAmaxval, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,                       \
+      "maximum radial cycle per aperture")                                                    \
+    X(".CPAmax", &CPAmaxval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,                         \
+      "maximum cycle per aperture")                                                           \
+    X(".deltaCPA", &deltaCPAval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "CPA interval")     \
+    X(".radius", &radiusval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT, "disk radius")          \
+    X(".radfactlim", &radiusfactorlimval, FPTYPE_FLOAT32, 1, FPFLAG_DEFAULT_INPUT,            \
+      "radius factor limit")                                                                  \
+    X(".fpowerlaw", &fpowerlaw, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,                      \
+      "frequency power law (amp x f^a)")                                                      \
+    X(".fpowerlaw_minf", &fpowerlaw_minf, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,            \
+      "frequency power law min freq")                                                         \
+    X(".fpowerlaw_maxf", &fpowerlaw_maxf, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,            \
+      "frequency power law max freq")                                                         \
+    X(".writefile", &writefileval, FPTYPE_UINT32, 1, FPFLAG_DEFAULT_INPUT, "write file flag") \
+    X(".maskim", maskim, FPTYPE_STREAMNAME, 0, FPFLAG_DEFAULT_INPUT,                          \
+      "optional mask for extrapolation")                                                      \
+    X(".extrfactor", &extrfactor, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,                    \
+      "extrapolation factor [radian]")                                                        \
+    X(".extroffset", &extroffset, FPTYPE_FLOAT32, 0, FPFLAG_DEFAULT_INPUT,                    \
+      "extrapolation offset [pix]")
 
 
 /* ================================================================
@@ -555,31 +574,31 @@ static MILK_HOT errno_t makeCPAmodes_compute(const MILK_RUNNABLE *self)
     DEBUG_TRACE_FSTART();
 
     printf("outimname                %s\n", outimname);
-    printf("sizeout                  %u %u\n", *sizexout, *sizeyout);
-    printf("rCPAminval               %f\n", *rCPAminval);
-    printf("rCPAmaxval               %f\n", *rCPAmaxval);
-    printf("CPAmaxval                %f\n", *CPAmaxval);
-    printf("deltaCPAval              %f\n", *deltaCPAval);
-    printf("radiusval                %f\n", *radiusval);
-    printf("radiusfactorlimval       %f\n", *radiusfactorlimval);
-    printf("writefileval             %u\n", *writefileval);
+    printf("sizeout                  %u %u\n", sizexout, sizeyout);
+    printf("rCPAminval               %f\n", rCPAminval);
+    printf("rCPAmaxval               %f\n", rCPAmaxval);
+    printf("CPAmaxval                %f\n", CPAmaxval);
+    printf("deltaCPAval              %f\n", deltaCPAval);
+    printf("radiusval                %f\n", radiusval);
+    printf("radiusfactorlimval       %f\n", radiusfactorlimval);
+    printf("writefileval             %u\n", writefileval);
 
 
     float x0 = 0.0;
     float y0 = 0.0;
 
-    printf("centered flag  :   %lu\n", *centered);
-    if (*centered == 1)
+    printf("centered flag  :   %d\n", centered);
+    if (centered == 1)
     {
         printf("CENTERED      ");
-        x0 = 0.5 * *sizexout;
-        y0 = 0.5 * *sizeyout;
+        x0 = 0.5 * sizexout;
+        y0 = 0.5 * sizeyout;
     }
     else
     {
         printf("NOT CENTERED  ");
-        x0 = *xcent;
-        y0 = *ycent;
+        x0 = xcent;
+        y0 = ycent;
     }
     printf(" %8.3f x %8.3f\n", x0, y0);
 
@@ -594,10 +613,10 @@ static MILK_HOT errno_t makeCPAmodes_compute(const MILK_RUNNABLE *self)
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
     {
-        linopt_imtools_makeCPAmodes(
-            &imgoutm, *sizexout, *sizeyout, x0, y0, *rCPAminval, *rCPAmaxval, *CPAmaxval,
-            *deltaCPAval, *radiusval, *radiusfactorlimval, *fpowerlaw, *fpowerlaw_minf,
-            *fpowerlaw_maxf, *writefileval, NULL, imgmask, *extrfactor, *extroffset);
+        linopt_imtools_makeCPAmodes(&imgoutm, sizexout, sizeyout, x0, y0, rCPAminval, rCPAmaxval,
+                                    CPAmaxval, deltaCPAval, radiusval, radiusfactorlimval,
+                                    fpowerlaw, fpowerlaw_minf, fpowerlaw_maxf, writefileval, NULL,
+                                    imgmask, extrfactor, extroffset);
     }
     MILK_PROCINFO_END(self)
 
