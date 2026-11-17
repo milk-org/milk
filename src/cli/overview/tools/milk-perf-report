@@ -631,7 +631,7 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
             color="#dc2626",
             label=f"Modular ({int(m['daemons'])} csim_* daemons)",
         )
-        ax.bar(x + w / 2, fvals, width=w, color="#16a34a", label="Fused (1 htsim CUDA Graph)")
+        ax.bar(x + w / 2, fvals, width=w, color="#16a34a", label="Fused (1 csim_htsim DAG)")
         ax.set_yscale("log")
         ax.set_ylim(0.15, max(mvals + fvals + [100.0]) * 6.5)
         ax.set_xticks(x)
@@ -642,7 +642,7 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
             ax.text(i - w / 2, mv * 1.15, mf, ha="center", va="bottom", fontsize=7.5)
             ax.text(i + w / 2, fv * 1.15, ff, ha="center", va="bottom", fontsize=7.5)
         ax.set_ylabel("Value (log scale)")
-        ax.set_title("D. ao3k_scexao.bench Open-Loop: Modular vs Fused Architecture", loc="left")
+        ax.set_title("D. Modular vs Fused Optical Bench Architecture", loc="left")
         ax.legend(loc="upper left", framealpha=0.92)
         ax.grid(True, axis="y", which="both", alpha=0.28)
     else:
@@ -672,6 +672,117 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
     fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.96])
     fig.savefig(os.path.join(out_dir, "compute_shm_and_calib_2x2.png"), dpi=150)
     plt.close(fig)
+
+
+def infer_master_hz(streams):
+    """Master tick rate: the atmosphere stream rate if present, else the fastest stream."""
+    for s in streams:
+        if s.get("name") == "outarraypha" and s.get("mean_hz", 0.0) > 0.0:
+            return s["mean_hz"]
+    rates = [s.get("mean_hz", 0.0) for s in streams]
+    return max(rates) if rates else 0.0
+
+
+def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa1_pct):
+    """Rank optimization opportunities from measured closed-loop and calibration data."""
+    recs = []
+    period_us = 1.0e6 / master_hz if master_hz > 0.0 else 0.0
+
+    # (a) Serial latency ceiling: slowest per-tick compute unit bounds the lockstep rate
+    timed = [p for p in cl_procs if p.get("timing_valid") and p.get("exec_p50_us", 0) > 0]
+    if timed and period_us > 0.0:
+        slow = max(timed, key=lambda p: p.get("exec_p50_us", 0.0))
+        p50 = slow["exec_p50_us"]
+        p99 = slow.get("exec_p99_us", p50)
+        ceil_hz = 1.0e6 / p50
+        util = 100.0 * p50 / period_us
+        recs.append((
+            util,
+            f"**Rate ceiling set by `{slow['name']}`** (p50/p99 = {p50:.0f}/{p99:.0f} us): "
+            f"the lockstep loop cannot exceed ~{ceil_hz:.0f} Hz wall-clock "
+            f"({util:.0f}% of the {period_us:.0f} us period at {master_hz:.0f} Hz). "
+            "Profile its per-tick stages (Nsight Systems or per-node timers) to raise it.",
+        ))
+
+    # (b) Largest CPU consumers
+    for p in sorted(cl_procs, key=lambda x: x.get("cl_cpu_pct", 0.0), reverse=True)[:3]:
+        pct = p.get("cl_cpu_pct", 0.0)
+        if pct < 10.0:
+            continue
+        sub = classify_process(p["name"], p.get("cmdline", ""))
+        thr = p.get("threads_max", 1)
+        hint = "consider moving its per-frame work onto the GPU or fusing it in-process"
+        if sub == "Telemetry":
+            hint = ("use in-DAG statistics (`csim_htsim.wfstat_enable`) instead of a separate "
+                    "SHM consumer")
+        elif p.get("gpu_vram_peak_mib", 0.0) > 1.0:
+            hint = ("GPU-backed, so this is host-side launch/sync/D2H time; CUDA Graph capture "
+                    "or fewer per-tick host transfers reduce it")
+        elif thr >= 4 and pct > 150.0:
+            hint = "OpenMP team likely spin-waiting; check `.procinfo.OMPwait` / thread count"
+        tlabel = f"{thr} thread" + ("" if thr == 1 else "s")
+        recs.append((
+            pct * 0.5,
+            f"**`{p['name']}` uses {pct:.1f}% CPU** ({sub}, {tlabel}): {hint}.",
+        ))
+
+    # (c) Shared-memory streams written every tick but never read
+    unread = [s for s in streams if s.get("nb_readers", 1) == 0 and s.get("mean_mb_s", 0) > 20]
+    if unread:
+        tot = sum(s["mean_mb_s"] for s in unread)
+        names = ", ".join(f"`{s['name']}`" for s in sorted(
+            unread, key=lambda x: x["mean_mb_s"], reverse=True)[:6])
+        recs.append((
+            tot / 10.0,
+            f"**{len(unread)} SHM streams are written but have no readers** "
+            f"({tot:.0f} MB/s total: {names}). Disable those outputs when not needed.",
+        ))
+
+    # (d) GPU context overhead
+    gpu = [p for p in cl_procs if p.get("gpu_vram_peak_mib", 0.0) > 1.0]
+    if len(gpu) >= 3:
+        vram = sum(p["gpu_vram_peak_mib"] for p in gpu) / 1024.0
+        recs.append((
+            10.0 * len(gpu),
+            f"**{len(gpu)} separate CUDA contexts hold {vram:.2f} GiB VRAM**, mostly per-process "
+            "context overhead; CUDA MPS or merging per-stage MVM units would reclaim most of it.",
+        ))
+
+    # (e) Cross-socket NUMA execution
+    if avg_numa1_pct > 5.0:
+        recs.append((
+            avg_numa1_pct,
+            f"**Compute daemons average {avg_numa1_pct:.0f}% remote-NUMA residency**: pin to "
+            "the GPU-local node (`.procinfo.numanode=-2`).",
+        ))
+
+    # (f) Calibration and long phases
+    calib = {}
+    for st in c_stgs:
+        for k, v in (st or {}).items():
+            if k.endswith("_s") and isinstance(v, (int, float)):
+                calib[k] = calib.get(k, 0.0) + float(v)
+    long_ph = [ph for ph in phases if ph.get("id") not in ("overall",)
+               and ph.get("duration_s", 0.0) > 60.0 and "closed_loop" not in ph.get("id", "")]
+    if calib:
+        top_k, top_v = max(calib.items(), key=lambda kv: kv[1])
+        tot = sum(calib.values())
+        if top_v > 0.3 * tot and top_v > 10.0:
+            recs.append((
+                top_v / 5.0,
+                f"**Calibration is dominated by `{top_k[:-2]}`** ({top_v:.1f} s of {tot:.1f} s "
+                "summed over stages); it scales with the wall-clock rate, so raise the master "
+                "rate or reduce frames/cycles.",
+            ))
+    for ph in long_ph:
+        recs.append((
+            ph["duration_s"] / 5.0,
+            f"**Phase `{ph['id']}` takes {ph['duration_s']:.0f} s** at {master_hz:.0f} Hz; it "
+            "is wall-rate bound and shrinks proportionally at higher pacing.",
+        ))
+
+    recs.sort(key=lambda r: r[0], reverse=True)
+    return [txt for _, txt in recs]
 
 
 def compile_markdown(
@@ -720,6 +831,8 @@ def compile_markdown(
         if numa_procs
         else 0.0
     )
+
+    master_hz = infer_master_hz(streams)
 
     lines = []
     lines.append("# Compute Performance & Optimization Report: Subaru AO3k + SCExAO Simulation")
@@ -890,16 +1003,14 @@ def compile_markdown(
             f"{p.get('numa_remote_pct', 0):.0f}% | {csw} |"
         )
     lines.append("")
+    period_us = 1.0e6 / master_hz if master_hz > 0.0 else 0.0
     lines.append(
-        "- **Pacing note**: At ~160 Hz wall-clock pacing (~6,250 us master period), each CUDA WFS/"
-        "MVM daemon"
+        f"- **Pacing note**: at the measured ~{master_hz:.0f} Hz master rate "
+        f"(~{period_us:,.0f} us period), daemons whose p50 is far below the period sleep on"
     )
     lines.append(
-        "  executes in ~40-200 us (`< 4%` duty cycle) and sleeps waiting on `/dev/shm` semaphores,"
-    )
-    lines.append(
-        f"  which accounts for low time-averaged GPU SM utilization despite {len(gpu_procs)} "
-        f"active GPU contexts (~{gpu_vram_sum_gib:.2f} GiB summed VRAM)."
+        f"  `/dev/shm` semaphores between ticks; {len(gpu_procs)} active GPU contexts hold "
+        f"~{gpu_vram_sum_gib:.2f} GiB summed VRAM."
     )
     lines.append("")
 
@@ -959,11 +1070,11 @@ def compile_markdown(
         f = compare["fused"]
         mv_mib = m.get("gpu_vram_mib", 0.0)
         fv_mib = f.get("gpu_vram_mib", 0.0)
-        lines.append("### Empirical `ao3k_scexao.bench`: Modular vs Fused (`cacaosim.htsim`)")
+        lines.append("### Empirical Modular vs Fused (`cacaosim.htsim`) Comparison")
         lines.append("")
         lines.append(
             f"| Metric | Modular ({int(m['daemons'])} `csim_*` daemons) | "
-            f"Fused (`csim_htsim` CUDA Graph) | Ratio |"
+            f"Fused (`csim_htsim` DAG) | Ratio |"
         )
         lines.append("| :--- | ---: | ---: | ---: |")
         lines.append(
@@ -988,6 +1099,9 @@ def compile_markdown(
             f"{m['wall_s']/max(f['wall_s'],0.01):.2f}x |"
         )
         lines.append("")
+        if compare.get("note"):
+            lines.append(f"*{compare['note']}*")
+            lines.append("")
 
     if ablation:
         lines.append(
@@ -1020,169 +1134,37 @@ def compile_markdown(
             )
         lines.append("")
 
-    # 5. Optimization Recommendations
+    # 5. Optimization Recommendations (generated from the measured data above)
     lines.append("## 5. Ranked Bottlenecks & Code Optimization Recommendations")
     lines.append("")
-    lines.append("### A. Immediate & High-Impact Code Optimizations (from Measured Data)")
-    relays = (
-        "csim_dichroic_stg2",
-        "csim_dichroic_stg1",
-        "csim_vis_pickoff",
-        "csim_mkbeam",
-        "csim_ao3k",
-        "csim_scexao",
-    )
-    relay_pct_sum = sum(p.get("cl_cpu_pct", 0.0) for p in cl_procs if p["name"] in relays)
-    if relay_pct_sum < 500.0 and avg_numa1_pct <= 5.0:
-        b0 = ablation.get("0_baseline", {}) if ablation else {}
-        b3 = ablation.get("3_both", {}) if ablation else {}
-        if b0 and b3:
-            sp = b0["sim_cores_mean"] / max(b3["sim_cores_mean"], 0.01)
-            lines.append(
-                "1. **[APPLIED] OpenMP `libgomp` passive wait & GPU-local NUMA Node 0 "
-                "pinning**:"
-            )
-            lines.append(
-                f"   Enabled natively via `.procinfo.OMPwait`, `.procinfo.numanode`, and "
-                f"`fpspipe.workdir`. Verified {b0['sim_cores_mean']:.2f} -> "
-                f"**{b3['sim_cores_mean']:.2f} cores** ({sp:.1f}x vs `ACTIVE`), and "
-                f"`NUMA1` {b0['avg_numa1_pct']:.1f}% -> **{b3['avg_numa1_pct']:.1f}%**."
-            )
-        else:
-            lines.append(
-                "1. **[APPLIED] OpenMP `libgomp` passive wait & GPU-local NUMA Node 0 "
-                "pinning**:"
-            )
-            lines.append(
-                f"   Active in this run (`relay` total {relay_pct_sum/100.0:.2f} cores, "
-                f"mean `NUMA1` **{avg_numa1_pct:.1f}%** across closed-loop daemons)."
-            )
-    else:
-        lines.append(
-            "1. **Eliminate OpenMP `libgomp` busy-spin (`OMP_WAIT_POLICY=PASSIVE` / "
-            "`GOMP_SPINCOUNT=0`)**:"
-        )
-        lines.append(
-            "   Optical relays compute in 200-800 us/frame yet burn >15 cores spinning "
-            "between ticks; PASSIVE cuts CPU burn by >85%."
-        )
-    lines.append(
-        "2. **Adopt fused `cacaosim.htsim` (`52x` fewer CPU cores, `5.5x` less SHM, `4.0x` "
-        "less VRAM)**:"
-    )
-    lines.append(
-        "   `htsim` already preserves 1:2 `navg=2` WFS cadence and all 6 science PSFs in 1 "
-        "CUDA Graph;"
-    )
-    lines.append(
-        "   adding optional intermediate pupil readout or integrated `wfstat` OPD RMS lets it "
-        "replace modular"
-    )
-    lines.append(
-        "   optical daemons completely."
-    )
-    lines.append(
-        "3. **Replace `cacaocc.generateRMWFS` triple loop with `linalg.sgemm` & accelerate "
-        "`aolHaddec`**:"
-    )
-    lines.append(
-        "   `generateRMWFS.c` took ~90 s CPU vs **~0.005 s** via cuBLAS `linalg.sgemm` "
-        "(`>15,000x`)."
-    )
-    lines.append(
-        "   `aolHaddec` in `computeHadamard.c` executes an $O(H^2 N_{\\text{WFS}})$ OpenMP loop "
-        "(6.08 s Stage-1"
-    )
-    lines.append(
-        "   at 32 threads) with `printf` + `fflush(stdout)` inside `#pragma omp parallel for`; "
-        "switching to"
-    )
-    lines.append(
-        "   FWHT ($O(H \\log_2 H \\cdot N_{\\text{WFS}})$) or `cublasSgemm` removes >99% "
-        "of ops."
-    )
-    lines.append(
-        f"4. **Consolidate CUDA context memory ({len(gpu_procs)} GPU daemons = "
-        f"{gpu_vram_sum_gib:.2f} GiB VRAM)**:"
-    )
-    lines.append(
-        "   Separate `cacaosim` and `MVMextract` OS processes each allocate ~560-820 MiB CUDA "
-        "primary context"
-    )
-    lines.append(
-        "   for `<0.2 GiB` of live arrays. Fusing optics via `htsim` + CUDA MPS cuts VRAM by >75%."
-    )
-    lines.append(
-        f"5. **Pin processes to GPU-local NUMA Node 0 "
-        f"(`{h.get('numa_node0_cpus', '0-127,256-383')}`)**:"
-    )
-    lines.append(
-        f"   Tracked daemons averaged **{avg_numa1_pct:.0f}%** remote NUMA-1 thread residency, "
-        "traversing"
-    )
-    lines.append("   xGMI Infinity Fabric to reach the Node-0 RTX PRO 6000.")
-    lines.append(
-        "6. **Make `mfilt` post-`selfRM` FITS save async & OpenMP-parallelize "
-        "`maskextrapolate.c`**:"
-    )
-    lines.append(
-        "   Synchronous disk FITS writes stall closed-loop ticks at `selfRM` completion; native C"
-    )
-    lines.append(
-        "   `cacaosim.wfstat` already eliminated Python SHM polling."
-    )
+    lines.append("### A. Measured Bottlenecks (ranked by estimated impact)")
     lines.append("")
-    lines.append("### B. Recommended Features & Programs for `milk`, `cacao`, and `cacaosim`")
+    recs = build_recommendations(
+        cl_procs, streams, phases, c_stgs, master_hz, avg_numa1_pct
+    )
+    if recs:
+        for i, r in enumerate(recs, 1):
+            lines.append(f"{i}. {r}")
+    else:
+        lines.append("No significant bottleneck detected in this run.")
+    lines.append("")
+    lines.append("### B. Open Feature Ideas for `milk`, `cacao`, and `cacaosim`")
     lines.append(
-        "- **`milk`**: (1) Provide generic C `milk-fpsexec-mem-streamstat` (zero-copy pupil-"
-        "masked RMS +"
+        "- **`milk`**: generic C stream statistics recorder (`milk-fpsexec-mem-streamstat`); "
+        "`--cuda-host-register`"
     )
     lines.append(
-        "  FITS cube sampler, modeled on `cacaosim.wfstat`); (2) `.procinfo.numanode`, "
-        "`.procinfo.OMPwait`,"
+        "  for pinned H2D/D2H in `ImageStreamIO`/`MVMextract`; Bash >= 5.3 so `@get`/`@set` "
+        "avoid subshell forks."
     )
     lines.append(
-        "  and `OMP_WAIT_POLICY=PASSIVE` defaults added in `libcomputeunit` + `fpspipe`; add "
-        "rootless"
+        "- **`cacao`**: async/skip-disk FITS save in `mfilt` after `selfRM`; native "
+        "`calib_timings.json` export;"
     )
+    lines.append("  optical-gain compensation from measured on-sky `selfRM` diagonals.")
     lines.append(
-        "  core-slice partitioning across workers; (3) add `--cuda-host-register` in "
-        "`ImageStreamIO`"
-    )
-    lines.append(
-        "  + `MVMextract` for pinned H2D/D2H transfers; (4) target Bash >= 5.3 (`${| ...; }`) "
-        "so `@get`/`@set`"
-    )
-    lines.append(
-        "  avoid subshell forks; (5) standardize `milk-sysmon` + `milk-perf-report` in CI/bench "
-        "runs."
-    )
-    lines.append(
-        "- **`cacao`**: (1) Convert `generateRMWFS` and `aolHaddec` C code to `cublasSgemm` / "
-        "FWHT and remove"
-    )
-    lines.append(
-        "  `printf`/`fflush` from OpenMP loops; (2) add async/skip-disk-save option for `mfilt` "
-        "during `selfRM`;"
-    )
-    lines.append(
-        "  (3) export structured `calib_timings.json` natively from `cacaocc` calibration runs."
-    )
-    lines.append(
-        "- **`cacaosim`**: (1) Add optional intermediate pupil-beam SHM export and built-in "
-        "`wfstat` OPD"
-    )
-    lines.append(
-        "  variance accumulators to `cacaosim.htsim` (extending its existing multi-rate `navg` "
-        "CUDA Graph);"
-    )
-    lines.append(
-        "  (2) offload `csim_vis_pickoff`, `csim_dichroic`, and `csim_dm` CPU relays to GPU "
-        "when CUDA-enabled;"
-    )
-    lines.append(
-        "  (3) keep `cacaosim.wfstat` + `cacaosim-ao-report` as standard end-to-end "
-        "verification tools."
+        "- **`cacaosim`**: CUDA Graph capture of the fused `htsim` tick; GPU offload of the "
+        "remaining modular CPU relays."
     )
     lines.append("")
 
