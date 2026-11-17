@@ -724,9 +724,9 @@ static int run_eigh_top_d(int n, int k, double *C, int want_v, double *w_out, do
         return -1;
     }
     mc_linalg_lock();
-    int info = LAPACKE_dsyevr(LAPACK_COL_MAJOR, want_v ? 'V' : 'N', 'I', 'L', n, C, n, 0.0, 0.0,
-                              n - k + 1, n, 0.0, &m_found, w_out, want_v ? V_out : NULL,
-                              want_v ? n : 1, isuppz);
+    int info =
+        LAPACKE_dsyevr(LAPACK_COL_MAJOR, want_v ? 'V' : 'N', 'I', 'L', n, C, n, 0.0, 0.0, n - k + 1,
+                       n, 0.0, &m_found, w_out, want_v ? V_out : NULL, want_v ? n : 1, isuppz);
     mc_linalg_unlock();
     free(isuppz);
     if (info >= 0)
@@ -1306,9 +1306,8 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
         }
         return mc_err(err, errsz, "%s: expected 2D %smatrix", fname, is_eigh ? "square " : "");
     }
-    uint8_t out_dt =
-        (imA->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    uint64_t Q      = (M < N) ? M : N;
+    uint8_t out_dt = (imA->md[0].datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+    uint64_t Q     = (M < N) ? M : N;
     if (is_eigh && rhs->u.call.nargs == 2)
     {
         double kd = 0.0;
@@ -1330,12 +1329,12 @@ int mc_exec_multi_svd_or_eigh(mcalc_prog_t    *prog,
         }
         Q = (uint64_t) kd;
     }
-    double *A_d   = alloc_mat_d(imA, 0, M, N);
-    double *S_d   = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
-    double *Ve_d  = (is_eigh && Q < N) ? calloc((size_t) (N * Q), sizeof(double)) : NULL;
-    double *U_d   = is_eigh ? NULL : calloc((size_t) (M * Q), sizeof(double));
-    double *Vt_d  = is_eigh ? NULL : calloc((size_t) (Q * N), sizeof(double));
-    double *Vout  = (Ve_d != NULL) ? Ve_d : A_d;
+    double *A_d  = alloc_mat_d(imA, 0, M, N);
+    double *S_d  = calloc((size_t) (Q > 0 ? Q : 1), sizeof(double));
+    double *Ve_d = (is_eigh && Q < N) ? calloc((size_t) (N * Q), sizeof(double)) : NULL;
+    double *U_d  = is_eigh ? NULL : calloc((size_t) (M * Q), sizeof(double));
+    double *Vt_d = is_eigh ? NULL : calloc((size_t) (Q * N), sizeof(double));
+    double *Vout = (Ve_d != NULL) ? Ve_d : A_d;
 
     rc = (!A_d || !S_d || (is_eigh && Q < N && !Ve_d) || (!is_eigh && (!U_d || !Vt_d)))
              ? mc_err(err, errsz, "%s: out of memory", fname)

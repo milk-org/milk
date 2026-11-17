@@ -275,30 +275,28 @@ static void *fft_plan(uint8_t        naxis,
     {
         if (axis >= 0)
         {
-            ptrdiff_t    strides[3] = { 1, (ptrdiff_t) sz[0],
-                                        (ptrdiff_t) sz[0] * (ptrdiff_t) sz[1] };
-            fftw_iodim64 dim        = { (ptrdiff_t) sz[axis], strides[axis], strides[axis] };
+            ptrdiff_t strides[3] = { 1, (ptrdiff_t) sz[0], (ptrdiff_t) sz[0] * (ptrdiff_t) sz[1] };
+            fftw_iodim64 dim     = { (ptrdiff_t) sz[axis], strides[axis], strides[axis] };
             fftw_iodim64 hm[2];
             int          hm_rank = 0;
             for (int a = 0; a < (int) naxis; a++)
             {
                 if (a != axis && sz[a] > 1)
                 {
-                    hm[hm_rank++] =
-                        (fftw_iodim64) { (ptrdiff_t) sz[a], strides[a], strides[a] };
+                    hm[hm_rank++] = (fftw_iodim64) { (ptrdiff_t) sz[a], strides[a], strides[a] };
                 }
             }
             if (is_dbl)
             {
-                plan = (void *) fftw_plan_guru64_dft(
-                    1, &dim, hm_rank, hm_rank ? hm : NULL, (fftw_complex *) in,
-                    (fftw_complex *) out, sign, flags);
+                plan = (void *) fftw_plan_guru64_dft(1, &dim, hm_rank, hm_rank ? hm : NULL,
+                                                     (fftw_complex *) in, (fftw_complex *) out,
+                                                     sign, flags);
             }
             else
             {
-                plan = (void *) fftwf_plan_guru64_dft(
-                    1, &dim, hm_rank, hm_rank ? hm : NULL, (fftwf_complex *) in,
-                    (fftwf_complex *) out, sign, flags);
+                plan = (void *) fftwf_plan_guru64_dft(1, &dim, hm_rank, hm_rank ? hm : NULL,
+                                                      (fftwf_complex *) in, (fftwf_complex *) out,
+                                                      sign, flags);
             }
         }
         else if (is_dbl)
@@ -497,13 +495,8 @@ static void fft_load_real_cplx_job(void *ctx, int tid, int nth, uint64_t lo, uin
     }
 }
 
-static void fft_load(const IMAGE *src,
-                     uint8_t      sdt,
-                     void        *buf,
-                     uint64_t     nel,
-                     int          is_dbl,
-                     int          real,
-                     int          nth)
+static void
+fft_load(const IMAGE *src, uint8_t sdt, void *buf, uint64_t nel, int is_dbl, int real, int nth)
 {
     if (real)
     {
@@ -666,7 +659,7 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
         return -1;
     }
     const IMAGE *src   = &milk_data.image[src_id];
-    uint8_t naxis = src->md[0].naxis;
+    uint8_t      naxis = src->md[0].naxis;
     if (naxis < 1 || naxis > 3)
     {
         if (src_tmp)
@@ -735,8 +728,8 @@ static int exec_fft_or_ifft(mc_slot_t      *slot,
     /* Full-image real input: real-to-complex transform of half the spectrum, mirrored into the
      * other half; complex input, ifft, and batched 1-D axis transforms: in-place complex DFT. */
     (void) sign;
-    int      r2c  = (axis < 0) && !is_ifft && sdt != _DATATYPE_COMPLEX_FLOAT &&
-                    sdt != _DATATYPE_COMPLEX_DOUBLE;
+    int r2c =
+        (axis < 0) && !is_ifft && sdt != _DATATYPE_COMPLEX_FLOAT && sdt != _DATATYPE_COMPLEX_DOUBLE;
     size_t   el   = is_dbl ? sizeof(double) : sizeof(float);
     uint64_t nh   = (uint64_t) (sz[0] / 2 + 1) * sz[1] * sz[2];
     size_t   a_in = ((size_t) nel * el * (r2c ? 1 : 2) + 63) & ~(size_t) 63;

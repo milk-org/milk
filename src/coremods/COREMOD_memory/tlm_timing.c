@@ -505,8 +505,8 @@ errno_t milk_tlm_peek_span(const char   *path,
     }
 
     char        tail[TLM_PEEK_CHUNK];
-    const char *tbuf  = head;
-    size_t      tlen  = head_n;
+    const char *tbuf          = head;
+    size_t      tlen          = head_n;
     int         start_midline = 0;
     if (fsize > sizeof(head))
     {
@@ -601,11 +601,11 @@ errno_t milk_tlm_write_file(const char *path, const MILK_TLM_ROW *rows, size_t n
     int64_t t0_ns = (nrows > 0) ? rows[0].t_log_ns : 0;
     for (size_t k = 0; k < nrows; k++)
     {
-        double  dt     = (double) (rows[k].t_log_ns - t0_ns) * 1.0e-9;
-        int64_t lsec   = rows[k].t_log_ns / 1000000000LL;
-        int64_t lrem   = rows[k].t_log_ns % 1000000000LL;
-        int64_t asec   = rows[k].t_acq_ns / 1000000000LL;
-        int64_t arem   = rows[k].t_acq_ns % 1000000000LL;
+        double  dt   = (double) (rows[k].t_log_ns - t0_ns) * 1.0e-9;
+        int64_t lsec = rows[k].t_log_ns / 1000000000LL;
+        int64_t lrem = rows[k].t_log_ns % 1000000000LL;
+        int64_t asec = rows[k].t_acq_ns / 1000000000LL;
+        int64_t arem = rows[k].t_acq_ns % 1000000000LL;
         if (lrem < 0)
         {
             lsec -= 1;
@@ -618,16 +618,14 @@ errno_t milk_tlm_write_file(const char *path, const MILK_TLM_ROW *rows, size_t n
         }
         if (rows[k].t_acq_ns == 0)
         {
-            fprintf(fp,
-                    "%10ld  %10lu  %15.9lf   %10lld.%09lld  %17.6lf   %10lu   %10lu\n",
+            fprintf(fp, "%10ld  %10lu  %15.9lf   %10lld.%09lld  %17.6lf   %10lu   %10lu\n",
                     (long) rows[k].frame_idx, (unsigned long) rows[k].main_idx, dt,
                     (long long) lsec, (long long) lrem, 0.0, (unsigned long) rows[k].cnt0,
                     (unsigned long) rows[k].cnt1);
         }
         else
         {
-            fprintf(fp,
-                    "%10ld  %10lu  %15.9lf   %10lld.%09lld  %10lld.%09lld   %10lu   %10lu\n",
+            fprintf(fp, "%10ld  %10lu  %15.9lf   %10lld.%09lld  %10lld.%09lld   %10lu   %10lu\n",
                     (long) rows[k].frame_idx, (unsigned long) rows[k].main_idx, dt,
                     (long long) lsec, (long long) lrem, (long long) asec, (long long) arem,
                     (unsigned long) rows[k].cnt0, (unsigned long) rows[k].cnt1);

@@ -419,8 +419,7 @@ void mcalc_ext_autoload(void)
         return;
     }
     if (autoload_checked && strcmp(autoload_dir, dir) == 0 &&
-        st.st_mtim.tv_sec == autoload_mtime.tv_sec &&
-        st.st_mtim.tv_nsec == autoload_mtime.tv_nsec)
+        st.st_mtim.tv_sec == autoload_mtime.tv_sec && st.st_mtim.tv_nsec == autoload_mtime.tv_nsec)
     {
         return;
     }
