@@ -68,8 +68,8 @@ Explain a line with a code annotation, `# (1)!`, and the numbered list right aft
 
 ````markdown
 ```bash
-milk-pipes state -p basic          # (1)!
-milk-pipeinit drift basic-rootdir  # (2)!
+moka state -p basic          # (1)!
+mokainit drift basic-rootdir  # (2)!
 ```
 
 1. Prints the state, then a one-line drift summary.
@@ -83,7 +83,7 @@ in its own `text` block titled `Output`, after the command:
 
 ````markdown
 ```bash
-milk-pipeinit drift basic-rootdir
+mokainit drift basic-rootdir
 ```
 
 ```text title="Output"
@@ -108,14 +108,14 @@ pages.
 === "CLI"
 
     ```bash
-    milk-pipes deploy -p basic
+    moka deploy -p basic
     ```
 
 === "Python"
 
     ```python
-    from milk.operate.pipeline import Pipeline
-    from milk.operate.plans import run_plan
+    from moka.operate.pipeline import Pipeline
+    from moka.operate.plans import run_plan
 
     run_plan(Pipeline("basic"), "deploy")
     ```

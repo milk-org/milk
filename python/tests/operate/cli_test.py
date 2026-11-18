@@ -1,4 +1,4 @@
-"""R4b acceptance tests (py): the milk-pipes CLI over the plan registry.
+"""R4b acceptance tests (py): the moka CLI over the plan registry.
 
 See specs/010-r4b-operate-cli/brief.md. FPSs are simulated (`paper`), rundirs live in a self-cleaning
 MILK_SHM_DIR (`shm_dir_cleanafter`), and the boot id is pinned (`boot`); see tests/conftestaux/operate.py.
@@ -10,10 +10,10 @@ import pytest
 from click.testing import CliRunner
 
 
-from milk.errors import BestEffortError
-from milk.operate.cli import milk_pipes
-from milk.operate.plans import PLANS, Plan, Step
-from milk.operate.tasks import ClaimRundir
+from moka.errors import BestEffortError
+from moka.operate.cli import moka
+from moka.operate.plans import PLANS, Plan, Step
+from moka.operate.tasks import ClaimRundir
 
 FPS = ("basic_delay0", "basic_delay1")
 
@@ -38,14 +38,14 @@ def calls(monkeypatch):
     """Record run_plan(pipeline, name) calls made by the CLI instead of running them."""
     seen: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        "milk.operate.plans.run_plan",
+        "moka.operate.plans.run_plan",
         lambda pipeline, name: seen.append((str(pipeline.root_folder), name)),
     )
     return seen
 
 
 def _invoke(*args: str, input: str | None = None):
-    return CliRunner().invoke(milk_pipes, list(args), input=input)
+    return CliRunner().invoke(moka, list(args), input=input)
 
 
 def _text(result) -> str:
@@ -121,7 +121,7 @@ def test_best_effort_failures_are_warnings_and_exit_1(pp, monkeypatch):
     def failing(pipeline, name):
         raise BestEffortError([("RunStop", RuntimeError("boom"))], pipeline="basic")
 
-    monkeypatch.setattr("milk.operate.plans.run_plan", failing)
+    monkeypatch.setattr("moka.operate.plans.run_plan", failing)
     result = _invoke("teardown", "-p", str(pp.root_folder))
     assert result.exit_code == 1
     assert "RunStop" in result.stderr and "boom" in result.stderr
@@ -154,7 +154,7 @@ def test_state_summarises_drift(pp, tmp_path):
     toml.write_text("# edited in the confdir\n" + toml.read_text())
     result = _invoke("state", "-p", str(pp.root_folder))
     assert result.exit_code == 0, _text(result)
-    assert "drift: 1" in result.output and "milk-pipeinit drift" in result.output
+    assert "drift: 1" in result.output and "mokainit drift" in result.output
 
 
 def test_state_without_its_confdir(pp, tmp_path):
@@ -166,10 +166,10 @@ def test_state_without_its_confdir(pp, tmp_path):
     assert "drift: unavailable" in result.output
 
 
-def test_state_reports_milk_version_change(pp):
+def test_state_reports_moka_version_change(pp):
     prov = pp.root_folder / "provenance.toml"
     text = prov.read_text()
-    start = text.index('milk_version = "') + len('milk_version = "')
+    start = text.index('moka_version = "') + len('moka_version = "')
     end = text.index('"', start)
     prov.write_text(text[:start] + "0.0.0-old" + text[end:])
     output = _invoke("state", "-p", str(pp.root_folder)).output
@@ -218,7 +218,7 @@ def test_nuke_deletes_even_when_teardown_fails(pp, monkeypatch):
     def failing(pipeline, name):
         raise BestEffortError([("ConfStop", RuntimeError("stuck"))], pipeline="basic")
 
-    monkeypatch.setattr("milk.operate.pipeline.run_plan", failing)
+    monkeypatch.setattr("moka.operate.pipeline.run_plan", failing)
     result = _invoke("nuke", "-p", str(pp.root_folder), "--yes")
     assert result.exit_code == 1 and "stuck" in result.output
     assert not pp.root_folder.exists()

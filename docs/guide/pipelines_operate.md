@@ -1,6 +1,6 @@
-# Operating a pipeline: `milk-pipes`
+# Operating a pipeline: `moka`
 
-The states of a deployed pipeline, the `milk-pipes` commands that move between them, and what
+The states of a deployed pipeline, the `moka` commands that move between them, and what
 happens when they fail.
 
 **Audience:** Operator · See also: [Tour](pipelines_tour.md) · [Plans and tasks](pipelines_plans.md) ·
@@ -8,7 +8,7 @@ happens when they fail.
 
 ## 1. Lifecycle
 
-The states are those printed by `milk-pipes state`; the arrows are commands and tasks.
+The states are those printed by `moka state`; the arrows are commands and tasks.
 
 ```mermaid
 stateDiagram-v2
@@ -59,17 +59,17 @@ stateDiagram-v2
 ## 2. Commands
 
 ```text
-milk-pipes <plan>  [-p PIPE]          run plan <plan>: deploy, teardown, ...
-milk-pipes state   [-p PIPE]          state, reasons, drift summary, milk version change
-milk-pipes link    [LINKAGE] [-p PIPE]  apply [systemlinkage.<LINKAGE>]; none: list them
-milk-pipes unlink  LINKAGE [-p PIPE]  remove its symlinks; `all`: of every linkage
-milk-pipes nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
+moka <plan>  [-p PIPE]          run plan <plan>: deploy, teardown, ...
+moka state   [-p PIPE]          state, reasons, drift summary, milk version change
+moka link    [LINKAGE] [-p PIPE]  apply [systemlinkage.<LINKAGE>]; none: list them
+moka unlink  LINKAGE [-p PIPE]  remove its symlinks; `all`: of every linkage
+moka nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
 ```
 
 - **`-p/--pipe PIPE`** is a rootdir path, or a short name meaning `<cwd>/<PIPE>-rootdir`.
   Without `-p`, the current directory must be a rootdir. Every command first prints
   `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
-- **Plan commands** are one per registered plan (`milk-pipes --help` lists them). `deploy` is
+- **Plan commands** are one per registered plan (`moka --help` lists them). `deploy` is
   idempotent: run again on a configured pipeline, every step already succeeded. `teardown` is
   best effort and keeps the rootdir and `work/`. Their steps are in
   [Plans and tasks: built-in plans](pipelines_plans.md#1-built-in-plans).
@@ -83,13 +83,13 @@ milk-pipes nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
 the drift summary, then the milk version if it changed since `init`:
 
 ```bash
-milk-pipes state -p basic
+moka state -p basic
 ```
 
 ```text title="Output"
 rootdir: /home/vdeo/pipes/basic-rootdir
 basic: configured
-drift: 1 artifact(s); run `milk-pipeinit drift /home/vdeo/pipes/basic-rootdir`
+drift: 1 artifact(s); run `mokainit drift /home/vdeo/pipes/basic-rootdir`
 ```
 
 The drift line is `drift: none`, `drift: <n> artifact(s); run ...` or
@@ -98,7 +98,7 @@ is in [Drift and resync](pipelines_provision.md#2-drift).
 
 ## 3. Errors
 
-`milk-pipes` and `milk-pipeinit` print any error as `Error: <message>`, without a stack trace,
+`moka` and `mokainit` print any error as `Error: <message>`, without a stack trace,
 and exit 1. A message carries its context lines when it has some:
 
 ```text title="Output"
@@ -107,7 +107,7 @@ Error: Invalid config:
 path: aoloop-conf/conf.toml
 ```
 
-`--errstack`, placed before the command (`milk-pipeinit --errstack resolve aoloop-conf`), lets
+`--errstack`, placed before the command (`mokainit --errstack resolve aoloop-conf`), lets
 the exception propagate with its stack trace. Log records of the package print to stderr as
 `LEVEL: message`.
 
@@ -126,11 +126,11 @@ warning: ConfStop: <error>
 ```
 
 Anything that touches the live system needs `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` in
-the environment. `milk-pipeinit` itself does not, except `resync`, which checks that no run
+the environment. `mokainit` itself does not, except `resync`, which checks that no run
 process is active.
 
-## 4. Displays: `milk-show`
+## 4. Displays: `mokashow`
 
-`milk-show mlat -p PIPE` plots the latency measurement (`hardwlatency.dat`) of a pipeline's `mlat`
+`mokashow mlat -p PIPE` plots the latency measurement (`hardwlatency.dat`) of a pipeline's `mlat`
 CompU from its datadir under `rootdir/work/`; `r` in the window re-reads the file.
-`milk.show.cli.mlat_figure(datadir)` returns the figure for use in a script or a notebook.
+`moka.show.cli.mlat_figure(datadir)` returns the figure for use in a script or a notebook.

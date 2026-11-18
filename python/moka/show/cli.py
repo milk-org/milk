@@ -1,4 +1,4 @@
-"""The ``milk-show`` console script. matplotlib is imported lazily."""
+"""The ``mokashow`` console script. matplotlib is imported lazily."""
 
 from __future__ import annotations
 
@@ -140,11 +140,11 @@ def mlat_figure(datadir: Path | str):
 
 
 @click.group()
-def milk_show() -> None:
+def mokashow() -> None:
     """Display milk results."""
 
 
-@milk_show.command()
+@mokashow.command()
 @_pipe_option
 @click.option(
     "-w",

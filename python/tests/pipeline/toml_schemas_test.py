@@ -7,9 +7,9 @@ import tomli
 import pydantic
 from pydantic import BaseModel
 
-from milk.errors import ConfigError
-from milk.config import model as pconf
-from milk.config.resolve import confresolve
+from moka.errors import ConfigError
+from moka.config import model as pconf
+from moka.config.resolve import confresolve
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 """The only reader of ``MILK_*`` environment variables.
 
-Every function reads the environment when called and caches nothing, so importing ``milk`` needs
+Every function reads the environment when called and caches nothing, so importing ``moka`` needs
 no milk environment and tests can monkeypatch the variables.
 """
 

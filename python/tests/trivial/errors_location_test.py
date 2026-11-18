@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from milk.operate import compute_unit
-from milk.errors import (
+from moka.operate import compute_unit
+from moka.errors import (
     BestEffortError,
     ComputeUnitError,
     MilkError,

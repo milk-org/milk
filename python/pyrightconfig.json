@@ -7,7 +7,7 @@
         "/home/vdeo/src/hardwaresecrets"
     ],
     "include": [
-        "milk/"
+        "moka/"
     ],
     "exclude": [
         "build/",

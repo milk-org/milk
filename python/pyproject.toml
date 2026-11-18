@@ -6,8 +6,8 @@ requires = ["setuptools>=58", "wheel", 'cmake']
 authors = [
   {name = "Vincent Deo", email = "vdeo@naoj.org"},
 ]
-description = "MILK+CACAO python package"
-name = "milk"
+description = "MOKA (Milk OrKestrAtion): MILK+CACAO pipelines python package"
+name = "moka"
 version = "1.0"
 requires-python = ">=3.11"
 dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12", "click>=8.1", "matplotlib", "ipdb"]
@@ -18,23 +18,23 @@ dependencies = ["tomli>=2.4", "tomli_w>=1.2", "pydantic>=2.12", "click>=8.1", "m
 ## ENTRYPOINTS
 
 [project.scripts]
-milk-pipes = "milk.operate.cli:milk_pipes"
-milk-pipeinit = "milk.provision.cli:milk_pipeinit"
-milk-show = "milk.show.cli:milk_show"
+moka = "moka.operate.cli:moka"
+mokainit = "moka.provision.cli:mokainit"
+mokashow = "moka.show.cli:mokashow"
 
 [tool.setuptools.packages.find]
-include=["milk*"]
+include=["moka*"]
 
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = [
     "--import-mode=importlib",
-    "--basetemp=/tmp/milk_pytest",  # static, wiped each run (pytest default: pytest-of-$USER/pytest-N)
+    "--basetemp=/tmp/moka_pytest",  # static, wiped each run (pytest default: pytest-of-$USER/pytest-N)
     "--ignore=tests/mains",
     "--ignore=pyMilk",
     "--ignore=specs",
-    # Unused by milk tests; they add Flask/Jinja2 and IPython-stack imports at startup.
+    # Unused by moka tests; they add Flask/Jinja2 and IPython-stack imports at startup.
     "-p", "no:dash",
     "-p", "no:returns",
     "-p", "no:anyio",
@@ -43,7 +43,7 @@ addopts = [
 [tool.coverage.run]
 command_line = "-m pytest"
 branch = true
-source = ["./milk"]
+source = ["./moka"]
 
 [tool.coverage.report]
 exclude_lines = [

@@ -72,7 +72,7 @@ class Pipeline:
 
     @property
     def compute_units(self) -> dict[str, ComputeUnit]:
-        """Fresh views keyed like config.compute_units. The only ComputeUnit construction in milk/."""
+        """Fresh views keyed like config.compute_units. The only ComputeUnit construction in moka/."""
         return {
             cu: ComputeUnit(spec.exec, self.config.fps_name(cu))
             for cu, spec in self.config.compute_units.items()

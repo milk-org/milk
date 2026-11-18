@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from milk.errors import TaskDidNotSucceedError
-from milk.operate.pipeline import Pipeline
-from milk.provision.rootdir import init
-from milk.operate.tasks import Task
+from moka.errors import TaskDidNotSucceedError
+from moka.operate.pipeline import Pipeline
+from moka.provision.rootdir import init
+from moka.operate.tasks import Task
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ class TestManualPipeline:
     def test_deploy_fps_call_by_class(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.operate.tasks import InitFPS
+        from moka.operate.tasks import InitFPS
 
         pp.task_do(InitFPS)
 
@@ -83,7 +83,7 @@ class TestManualPipeline:
     def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.operate.tasks import ConfStart, InitFPS
+        from moka.operate.tasks import ConfStart, InitFPS
 
         pp.task_do(InitFPS)
         pp.task_do(ConfStart)

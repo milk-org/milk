@@ -7,7 +7,7 @@ import pytest
 import pathlib
 import os
 import subprocess
-from milk.cliwrap import CLI, HAVE_CLI
+from moka.cliwrap import CLI, HAVE_CLI
 
 TIMEOUT = 1
 

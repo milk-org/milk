@@ -68,7 +68,7 @@ output = "source_point"
 
 1. Written to the FPS at deploy.
 2. A [substitution](#43-substitution): the value of another key.
-3. Local stream → remote stream, applied by `milk-pipes link`.
+3. Local stream → remote stream, applied by `moka link`.
 
 ## 3. `conf.toml` keys
 
@@ -82,7 +82,7 @@ which are kept and serve as variables for [substitution](#43-substitution).
 | `loop_number`            | yes      | Identity key. Unique among the deployed pipelines of a machine.                                                                     |
 | `kind`                   | no       | Pipeline kind, default `"generic"`. Other kinds: not yet implemented.                                                               |
 | `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                     |
-| `plans`                  | no       | Restricts the plans that `milk-pipes <plan>` and `run_plan` may run on this pipeline.                                               |
+| `plans`                  | no       | Restricts the plans that `moka <plan>` and `run_plan` may run on this pipeline.                                                     |
 | `teardown_kill_tmux`     | no       | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`.                                                                |
 | `[compute_units.<cu>]`   | no       | One table per compute unit.                                                                                                         |
 | `[[dataloads]]`          | no       | Files to load into streams at deploy.                                                                                               |
@@ -141,7 +141,7 @@ starts, so this is the way to create the input streams of a pipeline.
 ### 3.3. Hooks: fetching and generating files
 
 A hook is a declared, idempotent action that produces one file or folder, its `product`, in
-`data/`. Hooks are run by `milk-pipeinit consolidate`, and by `init`. They only ever touch the
+`data/`. Hooks are run by `mokainit consolidate`, and by `init`. They only ever touch the
 confdir.
 
 ```toml
@@ -177,7 +177,7 @@ output = "source_point"
 ```
 
 A linkage is a named set of symlinks in `$MILK_SHM_DIR`: each local stream file
-`<local>.im.shm` is pointed at `<remote>.im.shm`. `milk-pipes link <mode>` applies one,
+`<local>.im.shm` is pointed at `<remote>.im.shm`. `moka link <mode>` applies one,
 `unlink <mode>` or `unlink all` removes them, and `teardown` removes them all. `all` is thus a
 reserved mode name. When linking is allowed is in [Operating: commands](pipelines_operate.md#2-commands).
 
@@ -189,7 +189,7 @@ actually use.
 === "CLI"
 
     ```bash
-    milk-pipeinit resolve pipelinebasic-conf  # (1)!
+    mokainit resolve pipelinebasic-conf  # (1)!
     ```
 
     1. A confdir or a rootdir; prints the result as TOML.
@@ -197,7 +197,7 @@ actually use.
 === "Python"
 
     ```python
-    from milk.config.resolve import confresolve
+    from moka.config.resolve import confresolve
 
     config = confresolve("pipelinebasic-conf")    # (1)!
     config = confresolve("basic-rootdir")         # (2)!
@@ -236,7 +236,7 @@ to share a stream naming scheme or a procinfo setup between pipelines of the sam
 ### 4.2. Overrides
 
 ```bash
-milk-pipeinit init pipelinebasic-conf --set compute_units.delay0.fps.delaysec=0.02
+mokainit init pipelinebasic-conf --set compute_units.delay0.fps.delaysec=0.02
 ```
 
 `--set` takes a dotted key and a value parsed as TOML (`0.02`, `true`, `[1, 2]`; anything that

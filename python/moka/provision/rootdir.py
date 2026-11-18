@@ -36,7 +36,7 @@ class DriftReport:
     artifacts: list[ArtifactDrift]
     resolved_diff: dict[str, tuple[object, object]]  # (rootdir, confdir)
     structural: list[str]
-    milk_version: tuple[str, str] | None  # (recorded, installed) if they differ
+    moka_version: tuple[str, str] | None  # (recorded, installed) if they differ
 
 
 @dataclass
@@ -121,7 +121,7 @@ def init(
     for sub in ("initdata", "work", "logs"):
         (rootdir / sub).mkdir(parents=True, exist_ok=True)
     prov = Provenance(
-        milk_version=importlib.metadata.version("milk"),
+        moka_version=importlib.metadata.version("moka"),
         source_confdir=str(confdir.resolve()),
         initialized=_now(),
         overrides=dict(overrides or {}),
@@ -159,12 +159,12 @@ def drift(rootdir: Path, confdir: Path | None = None) -> DriftReport:
         )
     here = confresolve(rootdir)
     there = confresolve(confdir, prov.overrides)
-    installed = importlib.metadata.version("milk")
+    installed = importlib.metadata.version("moka")
     return DriftReport(
         rows,
         _diff(here, there),
         _structural(here, there),
-        None if prov.milk_version == installed else (prov.milk_version, installed),
+        None if prov.moka_version == installed else (prov.moka_version, installed),
     )
 
 

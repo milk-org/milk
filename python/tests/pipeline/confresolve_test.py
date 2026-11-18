@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-import milk.config.resolve
-from milk.config.resolve import confresolve
-from milk.errors import ConfigError
-from milk.operate.pipeline import Pipeline
-from milk.provision.rootdir import init
+import moka.config.resolve
+from moka.config.resolve import confresolve
+from moka.errors import ConfigError
+from moka.operate.pipeline import Pipeline
+from moka.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 
@@ -91,7 +91,7 @@ def test_table_arrays_are_replaced_whole(tmp_path):
 
 def test_kind_defaults_are_the_lowest_layer(tmp_path, monkeypatch):
     defaults = {"compute_units": {"cu": {"fps": {"delaysec": 9.0, "timebuff": 7}}}}
-    monkeypatch.setattr(milk.config.resolve, "kind_defaults", lambda kind: defaults)
+    monkeypatch.setattr(moka.config.resolve, "kind_defaults", lambda kind: defaults)
     fps = _fps(confresolve(_confset(tmp_path)))
     assert fps["timebuff"] == 7
     assert fps["delaysec"] == 0.01

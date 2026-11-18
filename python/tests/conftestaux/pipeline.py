@@ -11,10 +11,10 @@ from types import SimpleNamespace
 import libtmux
 import pytest
 
-from milk.operate.plans import run_plan
-from milk.operate.pipeline import Pipeline
-from milk.provision.clone import clone
-from milk.provision.rootdir import init
+from moka.operate.plans import run_plan
+from moka.operate.pipeline import Pipeline
+from moka.provision.clone import clone
+from moka.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 

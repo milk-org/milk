@@ -1,4 +1,4 @@
-"""What the ``milk-pipes`` and ``milk-pipeinit`` console scripts share.
+"""What the ``moka`` and ``mokainit`` console scripts share.
 
 NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 """
@@ -17,7 +17,7 @@ class ErrstackGroup(click.Group):
 
     --pdb opens an ipdb post-mortem session on the error instead.
     BestEffortError prints one warning per failure. Every error exits 1.
-    ``milk`` log records print to stderr.
+    ``moka`` log records print to stderr.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -42,7 +42,7 @@ class ErrstackGroup(click.Group):
 
         from .errors import BestEffortError, MilkError
 
-        log = logging.getLogger("milk")
+        log = logging.getLogger("moka")
         handler = logging.StreamHandler()  # the current sys.stderr
         handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
         log.addHandler(handler)

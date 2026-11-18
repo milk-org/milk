@@ -14,13 +14,13 @@ import pytest
 
 from pyMilk.interfacing.fps import FPS
 
-from milk.errors import InconsistentStateError
-from milk.operate import rundir
-from milk.operate.plans import run_plan
-from milk.operate.state import State, state
-from milk.operate.tasks import ClaimRundir, InitFPS
-from milk.operate.pipeline import Pipeline
-from milk.provision.rootdir import init
+from moka.errors import InconsistentStateError
+from moka.operate import rundir
+from moka.operate.plans import run_plan
+from moka.operate.state import State, state
+from moka.operate.tasks import ClaimRundir, InitFPS
+from moka.operate.pipeline import Pipeline
+from moka.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 NAMES = ("basic_delay0", "basic_delay1")
@@ -102,7 +102,7 @@ def test_inconsistent_then_teardown_then_deploy(live):
 
 def test_teardown_after_reboot(live, monkeypatch):
     run_plan(live, "deploy")
-    monkeypatch.setattr("milk.operate.rundir.current_boot_id", lambda: "another-boot")
+    monkeypatch.setattr("moka.operate.rundir.current_boot_id", lambda: "another-boot")
     assert state(live).state is State.INCONSISTENT
     run_plan(live, "teardown")
     assert state(live).state is State.COLD

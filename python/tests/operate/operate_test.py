@@ -10,7 +10,7 @@ import pytest
 
 import tomli
 
-from milk.errors import (
+from moka.errors import (
     BestEffortError,
     ColdSystemError,
     ConfigError,
@@ -18,17 +18,17 @@ from milk.errors import (
     LinkageError,
     TaskCannotRunError,
 )
-from milk.operate import rundir
-from milk.operate.plans import PLANS, Plan, Step, run_plan
-from milk.operate.state import State, state
-from milk.operate.tasks import (
+from moka.operate import rundir
+from moka.operate.plans import PLANS, Plan, Step, run_plan
+from moka.operate.state import State, state
+from moka.operate.tasks import (
     TASKS,
     ClaimRundir,
     DeapplyAllLinkages,
     ReleaseRundir,
     Task,
 )
-from milk.registry import Registry
+from moka.registry import Registry
 
 FPS = {"basic_delay0", "basic_delay1"}
 
@@ -48,7 +48,7 @@ def _deploy_on_paper(pp, paper, conf=False, run=False):
 
 def _with_conf(pp, replace: tuple[str, str] | None = None, prepend: str = ""):
     """The same rootdir with its conf.toml hand-edited (live), resolved afresh."""
-    from milk.operate.pipeline import Pipeline
+    from moka.operate.pipeline import Pipeline
 
     toml = pp.root_folder / "conf" / "conf.toml"
     text = toml.read_text()
@@ -72,7 +72,7 @@ def test_registry():
 
 
 def test_registries_are_populated():
-    from milk.provision.hooks import HOOK_RUNNERS
+    from moka.provision.hooks import HOOK_RUNNERS
 
     assert {"fetch", "command"} <= set(HOOK_RUNNERS.names())
     assert {"deploy", "teardown"} <= set(PLANS.names())
@@ -253,7 +253,7 @@ def test_runner_gates_on_state(pp, paper, probes, boot):
 
 
 def test_runner_checks_state_once(pp, probes, monkeypatch):
-    import milk.operate.plans as plans_module
+    import moka.operate.plans as plans_module
 
     _, _, plan = probes
     plan("p", Step("ProbeA"), Step("ProbeB"), Step("ProbeA"))
@@ -324,7 +324,7 @@ def test_unknown_plan_refused(pp):
 
 
 def test_teardown_kill_tmux_key():
-    from milk.config.model import PipelineConfig
+    from moka.config.model import PipelineConfig
 
     base = {"long_name": "x", "name": "x", "loop_number": 1}
     assert PipelineConfig.model_validate(base).teardown_kill_tmux is False

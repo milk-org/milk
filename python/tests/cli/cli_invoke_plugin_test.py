@@ -17,7 +17,7 @@ import pytest
 from pyMilk.interfacing.fps import FPS
 from pyMilk.interfacing.shm import SHM
 
-from milk.cliwrap import CLICommands, HAVE_CLI
+from moka.cliwrap import CLICommands, HAVE_CLI
 
 pytestmark = pytest.mark.skipif(
     not HAVE_CLI, reason="MILK compiled without CLI support"

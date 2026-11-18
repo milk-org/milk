@@ -16,8 +16,8 @@ system.
 **Audience:** Operator · See also: [Streams](streams.md) · [FPS](fps.md) ·
 [Programmer's Guide](../arch/programmers_guide.md)
 
-To deploy and operate pipelines of milk compute units from Python (the `milk` package,
-`milk-pipeinit`, `milk-pipes`), see [Pipelines](pipelines.md).
+To deploy and operate pipelines of milk compute units from Python (the `moka` package,
+`mokainit`, `moka`), see [Pipelines](pipelines.md).
 
 ## 1. Installation
 
@@ -41,7 +41,7 @@ milk root). The `PYMILK_ENGINE` environment variable picks where the C engine co
     if the checkout's ImageStreamIO version differs from the installed one. Reinstall pyMilk after
     reinstalling milk. CUDA support follows the installed `libImageStreamIO`.
 
-    Use this mode on any machine that runs milk; the [`milk` package](pipelines.md#4-installing)
+    Use this mode on any machine that runs milk; the [`moka` package](pipelines.md#4-installing)
     warns at import when pyMilk was built otherwise.
 
 === "BUNDLED: without installing milk"

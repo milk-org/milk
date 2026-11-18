@@ -1,7 +1,7 @@
 # Pipelines
 
 Pipelines are sets of milk compute units that are declared, deployed and operated together by the
-`milk` Python package.
+`moka` Python package.
 
 **Audience:** Operator · See also: [Tour](pipelines_tour.md) · [Configuration](pipelines_conf.md) ·
 [Operating](pipelines_operate.md) · [Glossary](pipelines_glossary.md)
@@ -14,9 +14,9 @@ Pipelines are sets of milk compute units that are declared, deployed and operate
 
 ## 1. What the package does
 
-The `milk` package (`python/milk` in the milk repository) starts, connects and stops a pipeline's
+MOKA (Milk OrKestrAtion), the `moka` package (`python/moka` in the milk repository), starts, connects and stops a pipeline's
 compute units together. It replaces the shell-script loop management of milk v1 and cacao. The
-package is the API; the `milk-pipeinit` and `milk-pipes` commands are thin wrappers over it.
+package is the API; the `mokainit` and `moka` commands are thin wrappers over it.
 
 ## 2. Key concepts
 
@@ -28,10 +28,10 @@ flowchart LR
     CD["<b>confdir</b><br/>pipelinebasic-conf/<br/>conf.toml, scripts/, data/"]
     RD["<b>rootdir</b><br/>basic-rootdir/<br/>conf/, initdata/, work/, provenance.toml"]
     RUN["<b>rundir + live system</b><br/>$MILK_SHM_DIR/pipe_rundirs/basic/<br/>FPS basic_delay0, basic_delay1<br/>conf and run processes, tmux"]
-    CD -- "milk-pipeinit init" --> RD
-    CD -. "milk-pipeinit resync" .-> RD
-    RD -- "milk-pipes deploy" --> RUN
-    RUN -- "milk-pipes teardown" --> RD
+    CD -- "mokainit init" --> RD
+    CD -. "mokainit resync" .-> RD
+    RD -- "moka deploy" --> RUN
+    RUN -- "moka teardown" --> RD
 ```
 
 **Pipeline.** A named set of **compute units** (CompUs). Each CompU is one milk `fpsexec`
@@ -100,6 +100,6 @@ pip install -e python/
 
 The package needs [pyMilk](pyMilk.md), built in SYSTEM mode, for SHM and FPS access, and
 `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` set in the environment of anything that touches
-the live system. `import milk` itself works without a milk environment.
+the live system. `import moka` itself works without a milk environment.
 
 For plain stream access from Python (`SHM`, numpy), see [pyMilk](pyMilk.md).

@@ -1,4 +1,4 @@
-"""The ``milk-pipes`` console script.
+"""The ``moka`` console script.
 
 NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 """
@@ -66,9 +66,9 @@ def _signature(ctx: click.Context, cmd: click.Command) -> str:
 
 
 @click.group(cls=_PlansGroup, context_settings={"help_option_names": ["-h", "--help"]})
-def milk_pipes():
+def moka():
     """
-    Operate an initialized milk/cacao pipeline (see `milk-pipeinit init`).
+    Operate an initialized milk/cacao pipeline (see `mokainit init`).
 
     \b
     -p/--pipe PIPE is a rootdir path, or a short name: <cwd>/<PIPE>-rootdir.
@@ -105,9 +105,9 @@ def _plan_command(name: str) -> click.Command:
     return command
 
 
-@milk_pipes.command("state")
+@moka.command("state")
 @_pipe_option
-def milk_pipes_state(pipe: str | None):
+def moka_state(pipe: str | None):
     """
     Show the state of the pipeline, why, and a summary of its drift from its confdir.
     """
@@ -130,19 +130,19 @@ def milk_pipes_state(pipe: str | None):
         for row in report.artifacts
     )
     click.echo(
-        f"drift: {n} artifact(s); run `milk-pipeinit drift {pp.root_folder}`"
+        f"drift: {n} artifact(s); run `mokainit drift {pp.root_folder}`"
         if n
         else "drift: none"
     )
-    if report.milk_version:
-        recorded, installed = report.milk_version
-        click.echo(f"milk: rootdir made with {recorded}, installed {installed}")
+    if report.moka_version:
+        recorded, installed = report.moka_version
+        click.echo(f"moka: rootdir made with {recorded}, installed {installed}")
 
 
-@milk_pipes.command("link")
+@moka.command("link")
 @_pipe_option
 @click.argument("linkage", required=False)
-def milk_pipes_link(pipe: str | None, linkage: str | None):
+def moka_link(pipe: str | None, linkage: str | None):
     """
     Apply the [systemlinkage.<LINKAGE>] symlinks of the pipeline.
 
@@ -156,20 +156,20 @@ def milk_pipes_link(pipe: str | None, linkage: str | None):
     pp.link(linkage)
 
 
-@milk_pipes.command("unlink")
+@moka.command("unlink")
 @_pipe_option
 @click.argument("linkage")
-def milk_pipes_unlink(pipe: str | None, linkage: str):
+def moka_unlink(pipe: str | None, linkage: str):
     """
     Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline; `all`: of every linkage.
     """
     _pipeline(pipe).unlink(linkage)
 
 
-@milk_pipes.command("nuke")
+@moka.command("nuke")
 @_pipe_option
 @click.option("--yes", is_flag=True, help="Do not ask for the short name.")
-def milk_pipes_nuke(pipe: str | None, yes: bool):
+def moka_nuke(pipe: str | None, yes: bool):
     """
     teardown the pipeline, then rm -rf its rootdir, even if teardown fails.
 

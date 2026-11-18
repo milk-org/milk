@@ -15,6 +15,6 @@ def test_a_trivial_thing():
 
 
 def test_milk_python_package():
-    from milk.test import MilkImportedCorrectly
+    from moka.test import MilkImportedCorrectly
 
     MilkImportedCorrectly()

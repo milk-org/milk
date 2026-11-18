@@ -7,9 +7,9 @@ import sys
 
 import pytest
 
-import milk
-from milk import cliwrap, env
-from milk.errors import EnvError
+import moka
+from moka import cliwrap, env
+from moka.errors import EnvError
 
 
 @pytest.fixture
@@ -22,9 +22,9 @@ def no_milk_env(monkeypatch):
 
 
 def test_imports_without_milk_env(no_milk_env, monkeypatch):
-    names = [m.name for m in pkgutil.walk_packages(milk.__path__, "milk.")]
-    assert "milk.env" in names
-    for name in ["milk", *names]:
+    names = [m.name for m in pkgutil.walk_packages(moka.__path__, "moka.")]
+    assert "moka.env" in names
+    for name in ["moka", *names]:
         monkeypatch.delitem(sys.modules, name, raising=False)
         importlib.import_module(name)
     cliwrap.clear_caches()

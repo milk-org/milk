@@ -40,7 +40,7 @@ identity keys
 
 provisioning
 :   The file operations on confdirs and rootdirs: clone, consolidate, confresolve, init, drift,
-    resync. CLI `milk-pipeinit`. [Normative](pipelines_internals.md#term-provisioning)
+    resync. CLI `mokainit`. [Normative](pipelines_internals.md#term-provisioning)
 
 clone
 :   A one-time copy of a confdir's conf files to a new location, without `data/`.
@@ -95,5 +95,5 @@ task
     [Normative](pipelines_internals.md#term-task)
 
 plan
-:   A named, ordered list of tasks with a failure policy, run by `milk-pipes <plan>`.
+:   A named, ordered list of tasks with a failure policy, run by `moka <plan>`.
     [Normative](pipelines_internals.md#term-plan)

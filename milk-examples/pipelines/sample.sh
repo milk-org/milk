@@ -3,31 +3,30 @@
 # Steps: docs/guide/pipelines_tour.md. Linkage: aoloop-conf [systemlinkage.delaysim].
 set -e
 
-EX=${MILK_ROOT}/milk-examples/pipelines
 mkdir -p ${HOME}/AOloop2
 cd ${HOME}/AOloop2
 
 # 1. Clone (conf files + scripts/ only)
-milk-pipeinit clone ${EX}/mlatsim-conf .
-milk-pipeinit clone ${EX}/aoloop-conf .
+mokainit clone --milk mlatsim .
+mokainit clone --milk aoloop .
 
 # 2. Provision: check, then run hooks and build <name>-rootdir/
-milk-pipeinit resolve mlatsim-conf
-milk-pipeinit resolve aoloop-conf
-milk-pipeinit init mlatsim-conf          # hook writes data/dm.fits
-milk-pipeinit init aoloop-conf
+mokainit resolve mlatsim-conf
+mokainit resolve aoloop-conf
+mokainit init mlatsim-conf          # hook writes data/dm.fits
+mokainit init aoloop-conf
 
 # 3. Deploy (FPS init, dataloads, conf processes)
-milk-pipes deploy -p mlatsim             # creates mlatsim_dm, mlatsim_wfs
-milk-pipes deploy -p aoloop
+moka deploy -p mlatsim
+moka deploy -p aoloop
 
 # 4. Link aoloop onto the simulator: aol0_wfsim -> mlatsim_wfs, aol0_dmC -> mlatsim_dm
-milk-pipes link delaysim -p aoloop
+moka link delaysim -p aoloop
 
 # 5. Run: simulator, WFS acquisition, then mlat (Python only, no CLI yet)
 python3 - <<'EOF'
-from milk.operate.pipeline import Pipeline
-from milk.operate.tasks import RunStart, WaitRunEnd
+from moka.operate.pipeline import Pipeline
+from moka.operate.tasks import RunStart, WaitRunEnd
 
 sim = Pipeline("mlatsim")
 sim.task_do(RunStart)                            # dmdelay + wfscam
@@ -39,7 +38,7 @@ ao.task_do(WaitRunEnd(ao, ["mlat"]))             # single pass, up to 120 s
 EOF
 
 # 6. Show the latency measurement
-milk-show mlat -p aoloop
+mokashow mlat -p aoloop
 
 # Back down:
-# milk-pipes teardown -p aoloop ; milk-pipes teardown -p mlatsim
+# moka teardown -p aoloop ; moka teardown -p mlatsim

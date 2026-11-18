@@ -15,7 +15,7 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "CLI"
 
     ```bash
-    milk-pipeinit clone --milk pipelinebasic ~/pipes  # (1)!
+    mokainit clone --milk pipelinebasic ~/pipes  # (1)!
     cd ~/pipes
     ```
 
@@ -24,7 +24,7 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "Python"
 
     ```python
-    from milk.provision.clone import clone
+    from moka.provision.clone import clone
 
     confdir = clone(src_confdir, dest_parent)
     ```
@@ -34,8 +34,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "CLI"
 
     ```bash
-    milk-pipeinit resolve pipelinebasic-conf  # (1)!
-    milk-pipeinit init pipelinebasic-conf     # (2)!
+    mokainit resolve pipelinebasic-conf  # (1)!
+    mokainit init pipelinebasic-conf     # (2)!
     ```
 
     1. Prints the resolved configuration; catches errors early.
@@ -44,8 +44,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "Python"
 
     ```python
-    from milk.config.resolve import confresolve
-    from milk.provision.rootdir import init
+    from moka.config.resolve import confresolve
+    from moka.provision.rootdir import init
 
     config = confresolve("pipelinebasic-conf")
     rootdir = init("pipelinebasic-conf")
@@ -56,9 +56,9 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "CLI"
 
     ```bash
-    milk-pipes state -p basic           # (1)!
-    milk-pipes deploy -p basic          # (2)!
-    milk-pipes link loopback -p basic   # (3)!
+    moka state -p basic           # (1)!
+    moka deploy -p basic          # (2)!
+    moka link loopback -p basic   # (3)!
     ```
 
     1. `cold`: nothing deployed yet. `-p basic` means `<cwd>/basic-rootdir`.
@@ -68,9 +68,9 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 === "Python"
 
     ```python
-    from milk.operate.pipeline import Pipeline
-    from milk.operate.plans import run_plan
-    from milk.operate.state import state
+    from moka.operate.pipeline import Pipeline
+    from moka.operate.plans import run_plan
+    from moka.operate.state import state
 
     pp = Pipeline("basic")      # (1)!
     state(pp)
@@ -85,8 +85,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 Python only: no CLI equivalent yet.
 
 ```python
-from milk.operate.pipeline import Pipeline
-from milk.operate.tasks import RunStart, RunStop
+from moka.operate.pipeline import Pipeline
+from moka.operate.tasks import RunStart, RunStop
 
 pp = Pipeline("basic")
 pp.task_do(RunStart)                    # (1)!
@@ -101,8 +101,8 @@ pp.task_do(RunStop(pp, ["delay1"]))     # (2)!
 === "CLI"
 
     ```bash
-    milk-pipes teardown -p basic  # (1)!
-    milk-pipes nuke -p basic      # (2)!
+    moka teardown -p basic  # (1)!
+    moka nuke -p basic      # (2)!
     ```
 
     1. Back to `cold`; keeps the rootdir and `work/`.

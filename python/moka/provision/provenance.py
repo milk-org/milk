@@ -7,7 +7,7 @@ from pathlib import Path
 
 import tomli
 import tomli_w
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 
 from .artifacts import Fingerprint
 
@@ -26,7 +26,10 @@ class ArtifactRecord(BaseModel):
 
 
 class Provenance(BaseModel):
-    milk_version: str
+    # Rootdirs made before the milk -> moka rename record milk_version.
+    moka_version: str = Field(
+        validation_alias=AliasChoices("moka_version", "milk_version")
+    )
     source_confdir: str
     initialized: datetime
     last_resync: datetime | None = None

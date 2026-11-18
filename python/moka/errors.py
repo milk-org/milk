@@ -1,4 +1,4 @@
-"""The exception hierarchy of the ``milk`` package.
+"""The exception hierarchy of the ``moka`` package (Milk OrKestrAtion).
 
 Every exception class of the package lives here, under :class:`MilkError`. See design-v7 §4.7
 (``specs/pipelines/design-v7.md``) for the contract. pyMilk exceptions are never wrapped.

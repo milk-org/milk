@@ -9,21 +9,21 @@ from __future__ import annotations
 
 import pytest
 
-from milk.operate import tasks as _tasks
+from moka.operate import tasks as _tasks
 
 if not hasattr(
     _tasks, "RunStart"
 ):  # parked until O1 lands: P1 deletes these two statements
     pytest.skip("O1 not implemented yet", allow_module_level=True)
 
-from milk.errors import (
+from moka.errors import (
     ColdSystemError,
     ConfigError,
     TaskCannotRunError,
     TaskDidNotSucceedError,
 )
-from milk.operate.plans import PLANS, Plan, Step, run, run_plan
-from milk.operate.tasks import TASKS, ClaimRundir, RunStart, RunStop, Task, WaitRunEnd
+from moka.operate.plans import PLANS, Plan, Step, run, run_plan
+from moka.operate.tasks import TASKS, ClaimRundir, RunStart, RunStop, Task, WaitRunEnd
 
 FPS = ("basic_delay0", "basic_delay1")
 
@@ -99,7 +99,7 @@ def test_named_plans_still_go_through_run_plan(deployed, log, monkeypatch):
 def test_conf_plans_key_does_not_restrict_run(deployed, log):
     toml = deployed.root_folder / "conf" / "conf.toml"
     toml.write_text('plans = ["deploy", "teardown"]\n' + toml.read_text())
-    from milk.operate.pipeline import Pipeline
+    from moka.operate.pipeline import Pipeline
 
     run(Pipeline(deployed.root_folder), Plan("adhoc", (Step("A"),)))
     assert log == ["A:None"]

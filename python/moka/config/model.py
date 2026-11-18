@@ -149,9 +149,7 @@ class PipelineConfig(BaseModel):
         out: dict[str, dict[str, str]] = {}
         for mode, links in v.items():
             if mode == "all":
-                raise ValueError(
-                    "systemlinkage: 'all' is reserved (milk-pipes unlink all)"
-                )
+                raise ValueError("systemlinkage: 'all' is reserved (moka unlink all)")
             out[mode] = {}
             for local, remote in links.items():
                 # TODO this where to focus if we eventually use various MILK_SHM_DIR

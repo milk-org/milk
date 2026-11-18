@@ -29,7 +29,7 @@ def milk_build_and_test(
 ):
 
     session.install("setuptools", "coverage", "pytest", "pytest-timeout")
-    session.install("-e", ".")  # install milk
+    session.install("-e", ".")  # install moka
 
     milk_build(
         session, PROJECT_ROOT, use_cuda=use_cuda, lto_level=lto_level, use_cli=use_cli

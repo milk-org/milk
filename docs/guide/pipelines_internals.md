@@ -1,6 +1,6 @@
 # Pipelines: internals
 
-How the `milk` package is built: its layout and layering, the objects behind the commands, how
+How the `moka` package is built: its layout and layering, the objects behind the commands, how
 the state is computed, the task contract, the errors, and the normative terms.
 
 **Audience:** Internals · See also: [Pipelines](pipelines.md) · [Plans and tasks](pipelines_plans.md) ·
@@ -13,7 +13,7 @@ milk/
   config/      what a pipeline is: the model, {var} substitution, confresolve. Pure data.
   provision/   confdirs and rootdirs: clone, consolidate, init, drift, resync. Files only.
   operate/     the live pipeline: Pipeline, ComputeUnit, tasks, plans, state, rundir.
-  show/        milk-show: displays (matplotlib) of pipeline results.
+  show/        mokashow: displays (matplotlib) of pipeline results.
   errors.py    every exception of the package
   env.py       the only reader of the MILK_* environment variables
 ```
@@ -23,10 +23,10 @@ and never import each other.
 
 ```mermaid
 flowchart TD
-    PI["milk-pipeinit"] --> PR["milk.provision<br/>files only"]
-    PP["milk-pipes"] --> OP["milk.operate<br/>live system, reads only the rootdir"]
-    MS["milk-show"] --> SH["milk.show"]
-    PR --> CF["milk.config<br/>pure data"]
+    PI["mokainit"] --> PR["moka.provision<br/>files only"]
+    PP["moka"] --> OP["moka.operate<br/>live system, reads only the rootdir"]
+    MS["mokashow"] --> SH["moka.show"]
+    PR --> CF["moka.config<br/>pure data"]
     OP --> CF
     PR -. "never imports" .- OP
 ```
@@ -48,7 +48,7 @@ are made.
 ## 3. Operating: `Pipeline` and `ComputeUnit`
 
 ```python
-from milk.operate.pipeline import Pipeline
+from moka.operate.pipeline import Pipeline
 
 pp = Pipeline("basic")                 # <cwd>/basic-rootdir
 pp = Pipeline("/elsewhere/basic-rootdir")
@@ -69,7 +69,7 @@ when asked). You seldom call these yourself: tasks do.
 ## 4. State
 
 ```python
-from milk.operate.state import state
+from moka.operate.state import state
 
 st = state(pp)            # PipelineState(state=<State.CONFIGURED>, reasons=())
 st.state.value            # 'cold' | 'inconsistent' | 'deployed' | 'configured' | 'running' | 'mixed'
@@ -84,7 +84,7 @@ disagree (a stale rundir from a previous boot, an FPS destroyed by hand, a faile
 
 ## 5. Errors and environment
 
-Every exception of the package lives in `milk.errors`, under `MilkError`: `EnvError`,
+Every exception of the package lives in `moka.errors`, under `MilkError`: `EnvError`,
 `ConfigError`, `ProvisionError`, `TaskError` (`TaskCannotRunError`, `TaskDidNotSucceedError`),
 `ComputeUnitError`, `LinkageError`, `StateError` (`ColdSystemError`, `InconsistentStateError`)
 and `BestEffortError` (the aggregate of a best-effort plan, with `.failures`). An error carries
@@ -92,13 +92,13 @@ context when it has some (`pipeline`, `compu`, `task`, `path`, `cmd`, `stderr`),
 message one per line. Library code never prints or exits; pyMilk exceptions propagate as they
 are. How the CLIs print errors is in [Operating: errors](pipelines_operate.md#3-errors).
 
-`milk.env` reads `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` when a function is called, not
-at import, and raises `EnvError` naming what is missing. `import milk` and `confresolve` work
+`moka.env` reads `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` when a function is called, not
+at import, and raises `EnvError` naming what is missing. `import moka` and `confresolve` work
 without a milk environment; anything that touches SHM or runs an executable needs one.
 
 ## 6. Task contract
 
-A task subclasses `milk.operate.tasks.Task` and implements three methods. `pipeline.task_do`
+A task subclasses `moka.operate.tasks.Task` and implements three methods. `pipeline.task_do`
 calls them in this order:
 
 ```mermaid
@@ -118,7 +118,7 @@ The no-op on an already reached goal is what makes plans idempotent.
 - **`can()`** checks the task's preconditions. Before returning `False`, it sets
   `self.failure_reason`.
 - **`forward()`** does the work. For asynchronous effects (tmux, processes), it waits with
-  `wait_until(self.success, self.TIMEOUT)` (from `milk.wait`); `TIMEOUT` defaults to 10 s.
+  `wait_until(self.success, self.TIMEOUT)` (from `moka.wait`); `TIMEOUT` defaults to 10 s.
 - **`self.compute_units`** is the step's CompU subset, as `{name: ComputeUnit}`.
   `self._existing()` is the part of that subset whose FPS exists, as `(ComputeUnit, FPS)` pairs.
 - Tasks act on the live pipeline (SHM, FPS, tmux, processes) and never modify `rootdir/conf/`.
@@ -148,7 +148,7 @@ these words only in these senses. Short definitions for users are in the
 | <a id="term-rootdir"></a>**rootdir**                   | `<short>-rootdir/`. The authoritative, long-lived home of one pipeline instance after init. Hand edits of `rootdir/conf/` take effect at the next deploy and are reported as drift.                                                                                                                                                                                                                                                                                                                                                                                      |
 | <a id="term-drift"></a>**drift**                       | A change between a conf artifact's recorded fingerprint and its current one, in the confdir or in the rootdir. It is reported **per artifact**, plus a **key-level resolved diff** (a difference in the confresolve output). Artifact drift is reported even when the resolved config is unchanged. Drift is only ever reported; resync is the only way to apply confdir changes to a rootdir.                                                                                                                                                                           |
 | <a id="term-resync"></a>**resync**                     | Explicit propagation of selected drifted conf artifacts from the confdir into an existing rootdir. Records new fingerprints in provenance and returns a `ResyncReport`. Refused while the pipeline is running, refused for identity-key changes, and refuses to overwrite a locally modified rootdir artifact unless `--overwrite-local` is given.                                                                                                                                                                                                                       |
-| <a id="term-provisioning"></a>**provisioning**         | Umbrella term for clone, consolidate, confresolve, init, drift and resync. File operations only; API `milk.provision`, CLI `milk-pipeinit`. The only contact with the live system: resync reads `any_run_active()` (§4.0 rule 5). Provisioning never writes to the rundir.                                                                                                                                                                                                                                                                                               |
+| <a id="term-provisioning"></a>**provisioning**         | Umbrella term for clone, consolidate, confresolve, init, drift and resync. File operations only; API `moka.provision`, CLI `mokainit`. The only contact with the live system: resync reads `any_run_active()` (§4.0 rule 5). Provisioning never writes to the rundir.                                                                                                                                                                                                                                                                                                    |
 | <a id="term-rundir"></a>**rundir**                     | `$MILK_SHM_DIR/pipe_rundirs/<short>/`. Ephemeral. It holds only non-derivable runtime facts: boot_id, the claim (short name, loop_number, **the deployed FPS names**), and the **applied linkage pairs**. `deploy` creates it and `teardown` removes it. Teardown, unlink and the consistency check read what was deployed from here, not from the current config.                                                                                                                                                                                                       |
 | <a id="term-cold"></a>**cold**                         | No rundir and no FPS for this pipeline. `deploy` is the only plan that leaves cold; `teardown`, `state` and `nuke` are always accepted. Other operations raise `ColdSystemError` ("not deployed on this boot; run deploy").                                                                                                                                                                                                                                                                                                                                              |
 | <a id="term-inconsistent"></a>**inconsistent**         | Any mismatch between the rundir and the live FPS set: a stale rundir (boot_id mismatch), a valid rundir with some **recorded** FPS missing (for example after a failed deploy), or pipeline FPS present without a valid rundir. Every operation except `teardown` raises `InconsistentStateError`, with guidance to run teardown.                                                                                                                                                                                                                                        |

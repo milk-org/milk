@@ -14,7 +14,7 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
 A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
 all CompUs, or on a subset given at construction. A **plan** is data: a name, ordered **steps**
 (a task name and an optional CompU subset), a failure policy and the states it accepts to start
-from. Plans and tasks are Python objects in `milk.operate.plans` and `milk.operate.tasks`, each
+from. Plans and tasks are Python objects in `moka.operate.plans` and `moka.operate.tasks`, each
 looked up by name in a registry (`PLANS`, `TASKS`).
 
 ## 1. Built-in plans
@@ -24,19 +24,19 @@ looked up by name in a registry (`PLANS`, `TASKS`).
 | `deploy`   | ClaimRundir → InitFPS → LoadData → ConfStart                                    | `abort`       | `cold_or_consistent` |
 | `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any`                |
 
-Every plan in `PLANS` is a `milk-pipes` subcommand.
+Every plan in `PLANS` is a `moka` subcommand.
 
 === "CLI"
 
     ```bash
-    milk-pipes deploy -p basic
+    moka deploy -p basic
     ```
 
 === "Python"
 
     ```python
-    from milk.operate.pipeline import Pipeline
-    from milk.operate.plans import run_plan
+    from moka.operate.pipeline import Pipeline
+    from moka.operate.plans import run_plan
 
     run_plan(Pipeline("basic"), "deploy")
     ```
@@ -64,8 +64,8 @@ Every plan in `PLANS` is a `milk-pipes` subcommand.
 point and bypasses the state gate.
 
 ```python
-from milk.operate.pipeline import Pipeline
-from milk.operate.tasks import RunStart, RunStop, WaitRunEnd
+from moka.operate.pipeline import Pipeline
+from moka.operate.tasks import RunStart, RunStop, WaitRunEnd
 
 pp = Pipeline("basic")
 pp.task_do(RunStart)                        # (1)!
@@ -84,7 +84,7 @@ re-run.
 ## 4. Custom plans
 
 ```python
-from milk.operate.plans import PLANS, Plan, Step, run
+from moka.operate.plans import PLANS, Plan, Step, run
 
 mlat = Plan("mlat", (
     Step("RunStart", ("dmdelay",)),
@@ -120,7 +120,7 @@ PLANS.register("restart_wfs", Plan(
 | ----------------- | ----------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Step.task`       | `str`                                           | —              | A name in `TASKS`, which is the task's class name                                                                                                                                              |
 | `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None` means all CompUs. Unknown names raise `ConfigError`                                                                                                                   |
-| `Plan.name`       | `str`                                           | —              | The name to register it under, which is also the `milk-pipes` command name                                                                                                                     |
+| `Plan.name`       | `str`                                           | —              | The name to register it under, which is also the `moka` command name                                                                                                                           |
 | `Plan.steps`      | `tuple[Step, ...]`                              | —              | The steps, run in order                                                                                                                                                                        |
 | `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                                         |
 | `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
@@ -128,7 +128,7 @@ PLANS.register("restart_wfs", Plan(
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
 
 If the pipeline's `conf.toml` sets `plans = ["deploy", ...]`, only those plans may run on it
-through `milk-pipes` and `run_plan`; `run` ignores it. The `milk-pipes` commands are still
+through `moka` and `run_plan`; `run` ignores it. The `moka` commands are still
 generated from every registered plan.
 
 A task of your own subclasses `Task` and is named in a `Step` once registered; see
@@ -136,7 +136,7 @@ A task of your own subclasses `Task` and is named in a `Step` once registered; s
 
 ## 5. How a plan runs
 
-`run_plan(pipeline, name)`, `run(pipeline, plan)` and `milk-pipes <name>` run a plan in three
+`run_plan(pipeline, name)`, `run(pipeline, plan)` and `moka <name>` run a plan in three
 phases.
 
 ```mermaid

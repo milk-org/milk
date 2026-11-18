@@ -1,4 +1,4 @@
-"""O1 goal line (milk): run mlat over a milk-pipes pipeline and plot its latency graph.
+"""O1 goal line (milk): run mlat over a moka pipeline and plot its latency graph.
 
 Needs milk and cacao binaries, matplotlib, and the session spoofing of tests/conftestaux/milk.py.
 See specs/011-o1-steps-runstart-mlat/brief.md and tests/resources/mlatsim-conf/.
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from milk.operate import tasks as _tasks
+from moka.operate import tasks as _tasks
 
 if not hasattr(
     _tasks, "RunStart"
@@ -22,11 +22,11 @@ if not hasattr(
 import matplotlib
 from pyMilk.interfacing.fps import FPS
 
-from milk.operate.pipeline import Pipeline
-from milk.operate.plans import Plan, Step, run, run_plan
-from milk.operate.state import State, state
-from milk.provision.rootdir import init
-from milk.show.cli import mlat_figure
+from moka.operate.pipeline import Pipeline
+from moka.operate.plans import Plan, Step, run, run_plan
+from moka.operate.state import State, state
+from moka.provision.rootdir import init
+from moka.show.cli import mlat_figure
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 MEASURE = Plan(

@@ -1,4 +1,4 @@
-"""The ``milk-pipeinit`` console script (design-v7 A.5).
+"""The ``mokainit`` console script (design-v7 A.5).
 
 NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 """
@@ -36,11 +36,11 @@ _set_option = click.option(
 @click.group(
     cls=ErrstackGroup, context_settings={"help_option_names": ["-h", "--help"]}
 )
-def milk_pipeinit():
+def mokainit():
     """Clone, consolidate, resolve and init confdirs; drift and resync rootdirs."""
 
 
-@milk_pipeinit.command("list")
+@mokainit.command("list")
 @click.argument("folder", type=_dir, default=".")
 def pipeinit_list(folder: Path):
     """List the confdirs and rootdirs in FOLDER (default: cwd)."""
@@ -49,7 +49,7 @@ def pipeinit_list(folder: Path):
     click.echo("\n".join(list_pipeline_dirs(folder)))
 
 
-@milk_pipeinit.command("clone")
+@mokainit.command("clone")
 @click.argument("src", type=click.Path(path_type=Path))
 @click.argument("dest_parent", type=click.Path(path_type=Path), default=".")
 @click.option("-u", "--update", is_flag=True, help="Reclone into an existing target.")
@@ -89,7 +89,7 @@ def pipeinit_clone(
     click.echo(f"Cloned {src} to {clone(src, dest_parent, update, override)}")
 
 
-@milk_pipeinit.command("consolidate")
+@mokainit.command("consolidate")
 @click.argument("confdir", type=_dir)
 @click.option("--refetch", multiple=True, help="Rerun hook ID even if resolved.")
 @click.option("--refetch-all", is_flag=True, help="Rerun every hook.")
@@ -101,7 +101,7 @@ def pipeinit_consolidate(confdir: Path, refetch: tuple[str, ...], refetch_all: b
         click.echo(hook_id)
 
 
-@milk_pipeinit.command("resolve")
+@mokainit.command("resolve")
 @click.argument("confdir", type=_dir)
 def pipeinit_resolve(confdir: Path):
     """Print the resolved configuration of CONFDIR (or a rootdir) as TOML."""
@@ -114,7 +114,7 @@ def pipeinit_resolve(confdir: Path):
     )
 
 
-@milk_pipeinit.command("init")
+@mokainit.command("init")
 @click.argument("confdir", type=_dir)
 @click.option(
     "--parent", type=click.Path(path_type=Path), help="Default: CONFDIR's parent."
@@ -134,7 +134,7 @@ def _echo_diff(resolved_diff: dict, structural: list[str]) -> None:
         click.echo(f"STRUCTURAL: {line}")
 
 
-@milk_pipeinit.command("drift")
+@mokainit.command("drift")
 @click.argument("rootdir", type=_dir)
 def pipeinit_drift(rootdir: Path):
     """Print what differs between ROOTDIR, its records and its confdir."""
@@ -144,12 +144,12 @@ def pipeinit_drift(rootdir: Path):
     for row in report.artifacts:
         if (row.source, row.local) != ("unchanged", "unchanged"):
             click.echo(f"{row.key}: source {row.source}, local {row.local}")
-    if report.milk_version:
-        click.echo("milk version: {} -> {}".format(*report.milk_version))
+    if report.moka_version:
+        click.echo("moka version: {} -> {}".format(*report.moka_version))
     _echo_diff(report.resolved_diff, report.structural)
 
 
-@milk_pipeinit.command("resync")
+@mokainit.command("resync")
 @click.argument("rootdir", type=_dir)
 @click.option("--artifact", "artifacts", multiple=True, help="Only this key.")
 @_set_option

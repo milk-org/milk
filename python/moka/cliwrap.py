@@ -67,7 +67,7 @@ _LAZY_ATTRS = {
 
 
 def __getattr__(name: str) -> typ.Any:
-    # Lazy module constants (PEP 562): importing milk must not need a milk install.
+    # Lazy module constants (PEP 562): importing moka must not need a milk install.
     if name in _LAZY_ATTRS:
         return _LAZY_ATTRS[name]()
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
@@ -167,7 +167,7 @@ class CLICommands:
     """Run a batch of commands via ``milk-cli -s <temp_file>``.
 
     Context manager whose ``__enter__`` returns the ``CompletedProcess``
-    (stdout, stderr, returncode). Raises :class:`~milk.errors.MilkError` when the
+    (stdout, stderr, returncode). Raises :class:`~moka.errors.MilkError` when the
     shell is killed by a signal. ``__exit__`` kills the shell if it has
     not already exited.
     """
