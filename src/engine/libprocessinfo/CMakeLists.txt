@@ -52,16 +52,16 @@ if(USE_STATIC_LTO)
   target_include_directories(
     ${LIBNAME}_static
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libmilkcommon>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libmilkdata>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libfps>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/cli/CLIcore>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/cli>
            $<INSTALL_INTERFACE:include>)
   target_link_libraries(${LIBNAME}_static PUBLIC ImageStreamIO_static
-                                                      milkcommon rt pthread m)
+                                                      milkcommon_static rt pthread m)
 endif()
 
 # Add milk-procinfo-help executable
@@ -71,7 +71,7 @@ install(TARGETS milk-procinfo-help DESTINATION bin)
 add_executable(milk-procinfo-rm milk-procinfo-rm.c)
 target_include_directories(
   milk-procinfo-rm
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+  PRIVATE $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-procinfo-rm PUBLIC ${LIBNAME} ImageStreamIO
                                               pthread m)
 install(TARGETS milk-procinfo-rm DESTINATION bin)
@@ -79,7 +79,7 @@ install(TARGETS milk-procinfo-rm DESTINATION bin)
 add_executable(milk-procinfo-list milk-procinfo-list.c)
 target_include_directories(
   milk-procinfo-list
-  PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>)
+  PRIVATE $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libfps>)
 target_link_libraries(milk-procinfo-list PUBLIC ${LIBNAME} ImageStreamIO
                                                 pthread m)
 install(TARGETS milk-procinfo-list DESTINATION bin)

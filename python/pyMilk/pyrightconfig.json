@@ -1,0 +1,23 @@
+{
+    "typeCheckingMode": "basic",
+    "include": [
+        "pyMilk/"
+    ],
+    "exclude": [
+        "build/",
+        "**/__pycache__",
+        "**/.mypy_cache",
+        "**/.pytest_cache",
+        ".eggs",
+        "*ctypes*",
+        "**/node_modules",
+        "**/.*",
+        "tests/",
+        "pyMilk/visual/",
+        "pyMilk/bindings/"
+    ],
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.10",
+    "pythonPlatform": "Linux"
+}

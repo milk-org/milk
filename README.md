@@ -35,8 +35,6 @@ milk-core for **milk** package
 
 [ImageStreamIO core library](https://www.github.com/milk-org/imagestreamio)
 
-[pyMilk bindings](https://www.github.com/milk-org/pymilk)
-
 ## Contents
 
 Module includes key frameworks:
@@ -57,6 +55,18 @@ $ git submodule update --init
 $ mkdir _build && cd _build
 $ cmake .. && make -j$(nproc) && sudo make install
 ```
+
+### Python packages
+
+pyMilk (stream, FPS and processinfo bindings) and `milk` (pipelines) live in `python/`:
+
+```bash
+$ PYMILK_ENGINE=SYSTEM pip install python/pyMilk   # against the milk installed above
+$ pip install -e python/                          # optional: milk pipelines
+```
+
+`PYMILK_ENGINE=BUNDLED` builds pyMilk without a milk install. See
+[pyMilk: Installation](docs/guide/pyMilk.md#1-installation).
 
 ### CMake options
 

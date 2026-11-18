@@ -1,0 +1,27 @@
+# Python
+__pycache__
+
+# Eclipse
+.project
+.pydevproject
+
+# pip install
+/pyMilk.egg-info/
+
+# mypy stuff
+/.mypy_cache/
+
+# Shared objects & setup.py build
+*.so
+build/
+_build/
+.vscode
+
+# Coverage
+.coverage
+gcov_html/
+
+# Eggs
+.eggs/
+
+pyrightconfig.local.json

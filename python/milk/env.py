@@ -7,11 +7,21 @@ no milk environment and tests can monkeypatch the variables.
 from __future__ import annotations
 
 import os
+import warnings
 from pathlib import Path
 
 from pyMilk.interfacing.shm import MILK_SHM_DIR
+from pyMilk.ProcessInfoWrap import PYMILK_ENGINE
 
 from .errors import EnvError
+
+if PYMILK_ENGINE != "SYSTEM":
+    # A BUNDLED pyMilk carries its own engine copy, which may diverge from the installed milk.
+    warnings.warn(
+        f"pyMilk is built with the {PYMILK_ENGINE} engine; milk prefers SYSTEM "
+        "(reinstall pyMilk with PYMILK_ENGINE=SYSTEM)",
+        stacklevel=2,
+    )
 
 
 def _require_dir(var: str) -> Path:

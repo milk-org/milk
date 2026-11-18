@@ -1,14 +1,10 @@
-// SPDX-FileCopyrightText: 2026 Arnaud Sevin et al
-//
-// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #ifndef PYPROCESSINFO_H
 #define PYPROCESSINFO_H
 
 extern "C"
 {
-#include "CLIcore.h"
-#include "CLIcore/CLIcore_datainit.h"
+#include <string.h>
 #include "processinfo.h"
 #include "processtools.h"
 }
@@ -37,7 +33,7 @@ class pyProcessInfo
     *                 - 2: increment single step (will go back to 1)
     *                 - 3: exit loop
     */
-    pyProcessInfo(char *pname, int CTRLval)
+    pyProcessInfo(const char *pname, int CTRLval)
     {
         create(pname, CTRLval);
     }
@@ -46,14 +42,17 @@ class pyProcessInfo
     * @brief Destroy the Process Info object
     *
     */
-    ~pyProcessInfo()
+    int clean_exit()
     {
         if (m_pinfo != nullptr)
         {
-            processinfo_cleanExit(m_pinfo);
+            int ret = processinfo_cleanExit(m_pinfo);
             m_pinfo = nullptr;
+            return ret;
         }
+        return EXIT_FAILURE;
     }
+
 
     PROCESSINFO *operator->()
     {
@@ -74,7 +73,7 @@ class pyProcessInfo
     *                 - 3: exit loop
     * @return int : error code
     */
-    int create(char *pname, int CTRLval)
+    int create(const char *pname, int CTRLval)
     {
         // if (m_pinfo != nullptr) {
         //   processinfo_cleanExit(m_pinfo);
@@ -98,7 +97,7 @@ class pyProcessInfo
     * @param pname : name of the Process Info object (human-readable)
     * @return int : error code
     */
-    int link(char *pname)
+    int link(const char *pname)
     {
         m_pinfo = processinfo_shm_link(pname, &m_fd);
         return EXIT_SUCCESS;
@@ -107,12 +106,12 @@ class pyProcessInfo
     /**
     * @brief Close an existing Process Info object in shared memory
     *
-    * @param pname : name of the Process Info object (human-readable)
     * @return int : error code
     */
-    int close(char *pname)
+    int close()
     {
         processinfo_shm_close(m_pinfo, m_fd);
+        m_pinfo = nullptr;
         return EXIT_SUCCESS;
     }
 
