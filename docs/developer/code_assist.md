@@ -10,7 +10,7 @@ See also: [Programmer's Guide](../arch/programmers_guide.md) ·
 
 The `milk` project includes **agent rules**, **skills** and **workflows** that guide AI coding
 assistants (Gemini, Copilot, etc.) to follow project conventions automatically. They live under
-[`.agents/`]({{ github_blob_url }}/.agents):
+[`.agents/`](<{{ github_blob_url }}/.agents>):
 
 ```text
 .agents/
@@ -44,6 +44,6 @@ A rule then describes its trigger conditions and required actions; a workflow li
 (use `// turbo-all` at the top of the steps if every command should auto-run). Rules and workflows
 point to the human documentation in `docs/` rather than duplicating it.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

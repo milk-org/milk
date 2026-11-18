@@ -144,8 +144,8 @@ by the developer:
 For `MILK_RUNNABLE` compute units, `milk_runnable.h` provides macros that wrap the `processinfo` API
 for a standard compute loop; `self` is the `const MILK_RUNNABLE *` argument of the compute function:
 
-| Macro                          | Purpose                                                  |
-| ------------------------------ | -------------------------------------------------------- |
+| Macro                           | Purpose                                                  |
+| ------------------------------- | -------------------------------------------------------- |
 | `MILK_PROCINFO_INIT(self)`      | Allocate and register PROCESSINFO, set up signal handler |
 | `MILK_PROCINFO_LOOPSTART(self)` | Start the compute loop (opens the loop body), set loopOK |
 | `MILK_PROCINFO_END(self)`       | Per-iteration end (timing, counters), closes the loop    |
@@ -186,6 +186,6 @@ processinfo_waitoninputstream_init(
 processinfo_waitoninputstream(processinfo);
 ```
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

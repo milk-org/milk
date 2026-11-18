@@ -75,19 +75,19 @@ output = "source_point"
 The top-level keys are a closed set. Anything else is refused, except keys starting with `_`,
 which are kept and serve as variables for [substitution](#43-substitution).
 
-| Key | Required | Meaning |
-|---|---|---|
-| `long_name` | yes | Identity key. The confdir is `<long_name>-conf/`. |
-| `name` | yes | Identity key, the short name. The rootdir is `<name>-rootdir/`, the rundir `pipe_rundirs/<name>/`, and FPS names are `<name>_<cu>`. |
-| `loop_number` | yes | Identity key. Unique among the deployed pipelines of a machine. |
-| `kind` | no | Pipeline kind, default `"generic"`. Other kinds: not yet implemented. |
-| `includes` | no | Confdir-relative TOML files merged below `conf.toml`, in order. |
-| `plans` | no | Restricts the plans that `milk-pipes <plan>` and `run_plan` may run on this pipeline. |
-| `teardown_kill_tmux` | no | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`. |
-| `[compute_units.<cu>]` | no | One table per compute unit. |
-| `[[dataloads]]` | no | Files to load into streams at deploy. |
-| `[[hooks]]` | no | Conf hooks, run by consolidate. |
-| `[systemlinkage.<mode>]` | no | Named sets of stream symlinks, applied by `link`. |
+| Key                      | Required | Meaning                                                                                                                             |
+| ------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `long_name`              | yes      | Identity key. The confdir is `<long_name>-conf/`.                                                                                   |
+| `name`                   | yes      | Identity key, the short name. The rootdir is `<name>-rootdir/`, the rundir `pipe_rundirs/<name>/`, and FPS names are `<name>_<cu>`. |
+| `loop_number`            | yes      | Identity key. Unique among the deployed pipelines of a machine.                                                                     |
+| `kind`                   | no       | Pipeline kind, default `"generic"`. Other kinds: not yet implemented.                                                               |
+| `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                     |
+| `plans`                  | no       | Restricts the plans that `milk-pipes <plan>` and `run_plan` may run on this pipeline.                                               |
+| `teardown_kill_tmux`     | no       | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`.                                                                |
+| `[compute_units.<cu>]`   | no       | One table per compute unit.                                                                                                         |
+| `[[dataloads]]`          | no       | Files to load into streams at deploy.                                                                                               |
+| `[[hooks]]`              | no       | Conf hooks, run by consolidate.                                                                                                     |
+| `[systemlinkage.<mode>]` | no       | Named sets of stream symlinks, applied by `link`.                                                                                   |
 
 The identity keys cannot be overridden (`--set`) and `resync` refuses to change them: a change of
 identity is a new pipeline.
@@ -165,7 +165,7 @@ product = "dm.fits"
 `id` and `product` are unique within a pipeline. A product is a plain name (no `/`, not ending in
 `.tag`). Next to each product, `data/<product>.tag` records the hook's declaration digest and the
 product's content hash. A hook is pending, and re-run, when its product is missing, its bytes
-changed, or its declaration changed. Upstream changes at an rsync source are *not* detected: use
+changed, or its declaration changed. Upstream changes at an rsync source are _not_ detected: use
 `consolidate --refetch ID` or `--refetch-all`.
 
 ### 3.4. System linkages

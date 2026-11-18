@@ -16,11 +16,22 @@ repos:
     hooks:
     -   id: cmake-format
         args: ['--enable-markup=False']
-#-   repo: https://github.com/rbubley/mirrors-prettier
-#    rev: v3.9.5
-#    hooks:
-#    -   id: prettier
-#        types_or: [markdown]
+-   repo: https://github.com/executablebooks/mdformat
+    rev: 1.0.0
+    hooks:
+    -   id: mdformat
+        additional_dependencies:
+        -   mdformat-mkdocs==5.3.0
+        -   mdformat-gfm==1.0.0
+        -   mdformat-front-matters==2.0.0
+-   repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.1
+    hooks:
+    -   id: markdownlint-cli2
+        # nodeenv's default "latest" can be a prerelease it fails to parse
+        language_version: lts
+        # same scope as .github/workflows/docs-lint.yml
+        files: ^(docs/.*|README|CONTRIBUTING|plugins/milk-extra-src/[^/]+/README|src/[^/]+/README)\.md$
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v6.0.0
     hooks:

@@ -47,6 +47,6 @@ inline static errno_t example_compute_sum(
   Do **not** implicitly rely on another header to include them (e.g., relying on `CLIcore.h` to
   provide `<math.h>` or `<stdlib.h>`).
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

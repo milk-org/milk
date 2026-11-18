@@ -7,6 +7,7 @@ Pipelines are sets of milk compute units that are declared, deployed and operate
 [Operating](pipelines_operate.md) · [Glossary](pipelines_glossary.md)
 
 !!! note "Status"
+
     The deploy lifecycle (provision, deploy, start, stop, teardown, linkages) is implemented.
     Pipeline kinds other than `generic`, calibration store/load and the port of the cacao `aorun`
     operations are not.
@@ -62,7 +63,7 @@ ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_pla
 
 - **Operate**
 
-    ***
+    ______________________________________________________________________
 
     Deploy, link, run and tear down a pipeline; read its state; handle failures.
 
@@ -70,7 +71,7 @@ ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_pla
 
 - **Integrate**
 
-    ***
+    ______________________________________________________________________
 
     Write a confdir, keep a rootdir in sync, write your own plans.
 
@@ -79,7 +80,7 @@ ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_pla
 
 - **Internals**
 
-    ***
+    ______________________________________________________________________
 
     Package layout, objects, state computation, task contract, normative terms.
 

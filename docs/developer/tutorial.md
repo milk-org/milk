@@ -153,6 +153,6 @@ patterns using our built-in tools:
 - Run the `/add-runnable` workflow to scaffold new compute units.
 - Consult the `api-quick-reference` skill for a cheat sheet on streams and FPS parameters.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

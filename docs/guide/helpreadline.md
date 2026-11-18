@@ -9,7 +9,9 @@ The milk CLI uses the [GNU Readline](https://tiswww.case.edu/php/chet/readline/r
 for line editing. This page lists the most useful keybindings.
 
 <!-- prettier-ignore -->
+
 !!! tip
+
     For the complete reference, see the official
     [Readline User Manual](https://tiswww.case.edu/php/chet/readline/readline.html).
 
@@ -70,6 +72,6 @@ for line editing. This page lists the most useful keybindings.
 | `M-?` | List possible completions          |
 | `M-*` | Insert all completions             |
 
----
+______________________________________________________________________
 
 ← [CLI Overview](../quickstart/CLI_Overview.md) · [Documentation Index](../index.md)

@@ -16,24 +16,24 @@ See also: [Streams](streams.md) · [FPS](fps.md) · [FAQ](../quickstart/faq.md)
 
 Installed from the root `CMakeLists.txt` into `bin/`:
 
-| Script                       | Description                                        |
-| ---------------------------- | -------------------------------------------------- |
-| `milk-check`                 | Verify installation (libraries, paths, SHM)        |
-| `milk-argparse`              | Argument parsing helper for milk scripts           |
-| `milk-script-std-config`     | Standard configuration for milk scripts            |
-| `milk-scriptexample`         | Example/template for writing new scripts           |
-| `milk-script-advanced`       | Advanced template combining bash & native milk-cli |
-| `milk-exec`                  | Execute a milk CLI command non-interactively       |
-| `milk-cli-all`               | Launch milk-cli on all accessible instances        |
-| `milk-commands`              | List all available milk CLI commands               |
-| `milk-completion.sh`         | Bash tab-completion for milk commands              |
-| `milk-fpsinit`               | Initialize FPS instances from configuration        |
-| `milk-fpslist-addentry`      | Add an entry to `fpslist.txt`                      |
-| `milk-fpsmkcmd`              | Generate FPS command scripts                       |
-| `merge3DfitsTelemetry`       | Merge 3D FITS telemetry cubes                      |
-| `tmuxkillall`                | Kill all tmux sessions                             |
-| `tmuxsessionname`            | Print the current tmux session name                |
-| `waitforfile`                | Block until a specified file appears               |
+| Script                   | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `milk-check`             | Verify installation (libraries, paths, SHM)        |
+| `milk-argparse`          | Argument parsing helper for milk scripts           |
+| `milk-script-std-config` | Standard configuration for milk scripts            |
+| `milk-scriptexample`     | Example/template for writing new scripts           |
+| `milk-script-advanced`   | Advanced template combining bash & native milk-cli |
+| `milk-exec`              | Execute a milk CLI command non-interactively       |
+| `milk-cli-all`           | Launch milk-cli on all accessible instances        |
+| `milk-commands`          | List all available milk CLI commands               |
+| `milk-completion.sh`     | Bash tab-completion for milk commands              |
+| `milk-fpsinit`           | Initialize FPS instances from configuration        |
+| `milk-fpslist-addentry`  | Add an entry to `fpslist.txt`                      |
+| `milk-fpsmkcmd`          | Generate FPS command scripts                       |
+| `merge3DfitsTelemetry`   | Merge 3D FITS telemetry cubes                      |
+| `tmuxkillall`            | Kill all tmux sessions                             |
+| `tmuxsessionname`        | Print the current tmux session name                |
+| `waitforfile`            | Block until a specified file appears               |
 
 ## 2. Stream Utilities (`scripts/`)
 
@@ -105,7 +105,7 @@ milk-cli -s $(milk --install-prefix)/share/milk/scripts/makecircleofdisks.milk \
 | `milk-fpslistadd-SCICROPMASK` | Add science crop mask to FPS list |
 | `milk-fpslistadd-WFSCROPMASK` | Add WFS crop mask to FPS list     |
 
----
+______________________________________________________________________
 
 ## 7. Usage Examples
 
@@ -148,6 +148,6 @@ $ milk-cubeslice2shm mycube.fits 0 myslice
 
 Extracts slice 0 from the FITS cube and writes it to the shared memory stream `myslice`.
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

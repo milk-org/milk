@@ -5,7 +5,9 @@ This page explains the preferred tools used to **develop, test and debug** `milk
 Each section explains prerequisites, setup, and usage.
 
 <!-- prettier-ignore -->
+
 !!! warning "Python environment / virtual environments"
+
     Several tools below ship as Python packages. How you manage them is your choice: `conda`/`mamba`
     environments, `uv`, `apt` packages+`pip`, `virtualenv` + `pip`, etc...
 
@@ -13,8 +15,6 @@ Each section explains prerequisites, setup, and usage.
     examples below use.
 
     Adapt as needed !
-
-
 
 ## 1. MILK Documentation
 
@@ -24,18 +24,20 @@ Each section explains prerequisites, setup, and usage.
 The milk v2 documentation is build from markdown files using [mkdocs](https://www.mkdocs.org).
 
 !!! note "Contributing"
+
     See [here] # TODO add link.
 
 ??? tip "Markdown preview in the IDE/editor"
+
     The documentation is all markdown files, so any markdown visualization item (e.g. vscode's markdown preview) would work to view content.
     However, some plugins & customizations are non-standard and will not render. For this to work, you'll need to look at the actual documentation website.
 
 ??? info "Deployment of the documentation"
+
     A Github action generates the website into the `gh-pages` branch upon pushes to the branches listed in `.github/workflows/docs.yml`
     (one version per branch, selectable from the version dropdown; see [PM operations](../maintenance/pm_operations.md#documentation-branch)).
 
     A Github deployment deploys it to https://milk-org.github.io/milk/ automatically.
-
 
 For nontrivial documentation work, it is quite useful to do a full website render
 locally on your development machine. **Here's how:**
@@ -43,6 +45,7 @@ locally on your development machine. **Here's how:**
 ### 1.1 Installing `mkdocs`
 
 !!! question "Prerequisites"
+
     - A Python environment (see above) in which you can install packages. The examples below use a combo of `mamba` and `pip`.
 
     TODO: add an entire page dedicated to that...
@@ -67,7 +70,9 @@ pip install pymdown-extensions \
 ### 1.2 Build and serve the documentation
 
 ??? tip "Test the doc build"
+
     Build in strict mode: useful to __check for stale links__.
+
     ```bash
     mamba run -n mkdocsenv mkdocs build --strict
     #                      ^^^^^^^^^^^^^^^^^^^^^-- only this part if `mamba activate mkdocsenv` is still active
@@ -81,6 +86,7 @@ mamba run -n mkdocsenv mkdocs serve
 ```
 
 !!! success "You now have the local MILK v2 docs in your browser !"
+
     You can leave `mkdocs serve` running in its terminal, and watch the browser.
     The website will update continuously as you modify `md` files in the `docs/` folder.
 
@@ -94,11 +100,15 @@ mamba run -n mkdocsenv mkdocs serve
 The Cacao v1 documentation is build from markdown files using [jekyll](https://jekyllrb.com/docs/).
 
 <!-- prettier-ignore -->
+
 !!! warning "Temporary section"
+
     This section will be removed once the Cacao v2 doc is reorganized and moves to mkdocs.
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - Ruby and Bundler installed (`apt install ruby-full build-essential`, or a version manager).
     - The `cacao` sources, available at `plugins/cacao-src` (a symlink to `~/src/cacao`).
     - The `cacao-docs` sources, on the `gh-pages` branch from `github.com/cacao-org/docs.git`.
@@ -114,6 +124,7 @@ bundle exec jekyll serve
 ```
 
 !!! success "You now have the local Cacao v1 docs in your browser !"
+
     You can leave `jekyll serve` running in its terminal, and watch the render in the browser.
     The website will update as you modify `md` files in the `pages/` folder of the documentation repo
     __and hit refresh in the browser__.
@@ -133,6 +144,8 @@ Formatting is enforced by [pre-commit](https://pre-commit.com) hooks, configured
 | `clang-format`                       | C / C++        |
 | `black`                              | Python         |
 | `cmake-format`                       | CMake          |
+| `mdformat`                           | Markdown       |
+| `markdownlint-cli2`                  | Markdown       |
 | whitespace, end-of-file, yaml, merge | all text files |
 | `check-added-large-files`            | all files      |
 
@@ -140,9 +153,11 @@ Formatting is enforced by [pre-commit](https://pre-commit.com) hooks, configured
 what the formatting hooks outputs is the source of truth.
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - `git` and `pip` available; `pre-commit` itself downloads pinned versions of `clang-format`,
-      `black` and `cmake-format` in its own virtualenv, so none of them needs a system install.
+      `black`, `cmake-format`, `mdformat` and `markdownlint-cli2` in its own virtualenv, so none of them needs a system install.
 
 ### 3.1 Setup
 
@@ -161,7 +176,7 @@ pre-commit install
 
 The typical usage is the one that is forced upon the developer.
 Upon running `git commit`, the hook invokes `pre-commit run`.
-By default this applies the pre-commit hooks on all the __staged files__.
+By default this applies the pre-commit hooks on all the **staged files**.
 
 | Possible outcomes:                     | Then:                                                |
 | -------------------------------------- | ---------------------------------------------------- |
@@ -191,11 +206,13 @@ Hooks that do not auto-fix (e.g. `check-yaml`, `check-merge-conflict`) print the
 line: fix it by hand and commit again.
 
 ??? tip "Formatting and curated commits"
+
     Sometimes we prepare curated commits, where we pick only some files, or only some chunks of the current modifications.
     pre-commit is a little annoying with that; since formatted files are corrected with unstaged modifications,
     we now have to cherry pick all the changes we want to stage, again.
 
     The good workflow here is to format first, cherry-pick the commit contents second:
+
     ```bash
     git add .             # stage everything
     pre-commit run        # run the hooks on everything
@@ -213,7 +230,8 @@ Style rules (for C/C++) and best practices that `clang-format` cannot enforce (c
 minimization) are covered in [Coding standards](coding_standards.md).
 
 Documentation changes are additionally checked in CI (`.github/workflows/docs-lint.yml`) with
-`markdownlint` (`.markdownlint.yml`), a link checker and a typos checker (`_typos.toml`).
+`markdownlint` (`.markdownlint.yml`, also a pre-commit hook on the same files), a link checker
+and a typos checker (`_typos.toml`).
 
 </details>
 
@@ -229,6 +247,7 @@ existing install; `nox` builds and installs `milk` in isolated environments, the
 We're trying to move away from scattered `ctest` and bash testing scripts.
 
 ??? info "Running ctest"
+
     However, if the `ctest` suite is still available (and part of the github CMake action) at the time of reading, here's how you can run them:
 
     === "test of the global build"
@@ -249,15 +268,15 @@ We're trying to move away from scattered `ctest` and bash testing scripts.
     PATH="$PWD/milk-1.03.00/bin:$PATH" ctest
     ```
 
-
-
 The execution versatility provided by `pytest` is convenient for checking regressions, validating new code, debugging one or few tests efficiently, and even deploying temporary, reproducible work sessions.
 
 `nox` takes virtualization a step further: it creates autonomous sessions (a bit like docker but with narrower reach)
 in which we can build milk with different options, then run the tests; or use sessions to run completely different things, e.g. a coverage report, etc. The `nox` sessions are configured to be completely isolated from the production build on the same machine.
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - A Python environment (see the note at the top of this page).
     - `pytest`, `pytest-timeout`, `nox` and `uv` installed (`nox` sessions use the `uv` backend).
     - A built and locally installed `milk`, with `MILK_INSTALLDIR` pointing to it.
@@ -309,6 +328,7 @@ pytest -k
 ```
 
 !!! tip "Fixtures"
+
     `pytest` provides fixtures, a mechanism to setup a testing context, run one or multiple tests, and perform a clean-up.
 
     Highly reusable fixtures are put on their own, typically in `python/tests/conftestaux/`.
@@ -326,6 +346,7 @@ pytest -k
     See also [how to run multiple versions](./multiversion.md).
 
 !!! tip "Using pytest for reproducible testing / development configurations"
+
     The `tests/mains/` folder is meant to contain **pytest-excluded files** (just omit `_test` in their name).
 
     A test can be used to setup a reproducible debug environment, either directly or with a fixture:
@@ -355,16 +376,19 @@ pytest -k
         ```
 
     and run with
+
     ```bash
     pytest -s mains/some_file.py -k test_some_env
     # -s provides stdin/stdout for the test and is needed to hold on at the input() call.
     ```
+
     and you just need to revisit this terminal and hit any key to proceed through `input()` and terminate the test.
 
     This can be useful in many ways: debugging engineering TUIs behavior when underlying data is created or destroyed;
     tracking a bug; deploying a piece of network code on machine A and experimenting with its sibling on machine B...
 
     Any terminal can join the pytest milk environment with, as above:
+
     ```bash
     source $MILK_ROOT/python/tests/env.bash
     ```
@@ -389,7 +413,6 @@ variants are:
 | `build_and_pytest_cli_nolto`   | ON        | OFF              |
 | `build_and_pytest_cli_lto`     | ON        | ON               |
 
-
 ```bash
 cd $MILK_ROOT/python
 
@@ -410,15 +433,19 @@ nox
 These pyMilk sessions also run in CI: `.github/workflows/pymilk-nox.yml`.
 
 !!! tip
+
     The nox session setups try to fetch the required packages from the various archives.
 
     If you're offline, that is bypassed with:
+
     ```bash
     UV_OFFLINE=1 nox ...
     ```
 
 <!-- prettier-ignore -->
+
 !!! warning
+
     A full session rebuilds all of milk, even if nox is configured to reuse sessions and only do incremental builds.
     To force a full session rebuild (sometimes needed to purge stale artifacts):
 
@@ -440,7 +467,9 @@ Coverage tells you which C code the Python test suite did not execute. It is a v
 the tests, not a pass/fail gate.
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - `gcc` with `gcov`, and `gcovr` (`pip install gcovr`).
     - Everything from [section 4](#4-testing-through-a-standard-python-suite-pytest-and-nox).
     - `pyMilk` built with coverage too; otherwise its session-end hook prints
@@ -452,6 +481,7 @@ It is possible to run the coverage build directly in the main shell environment 
 install, run the tests, etc), but inconvenient due to managing the gcc tracking and counter files.
 
 We packaged all of it in a nox session, that produces two html reports, for python and for C/C++.
+
 ```bash
 nox -s tests_run_coverage           # run the coverage session, which is not in the defaults; See #5 below.
 ```
@@ -459,19 +489,25 @@ nox -s tests_run_coverage           # run the coverage session, which is not in 
 ### 5.2 Reading the report
 
 !!! warning
+
     Fix in progress, nox session is broken.
 
 The python coverage report:
-```
+
+```bash
 <browser> $MILK_ROOT/cov_py/index.html
 ```
+
 and the C coverage report:
-```
+
+```bash
 <browser> $MILK_ROOT/cov_c/index.html
 ```
 
 <!-- prettier-ignore -->
+
 !!! warning "TODO"
+
     The `tests_run_coverage` nox session runs the same `gcovr` command, but its CMake configuration
     does not yet pass `-DCMAKE_BUILD_TYPE=Coverage`, so it currently yields empty reports.
 
@@ -486,7 +522,9 @@ Building and testing never requires root: install into a staging directory under
 your environment at it.
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - A configured and built `_build` directory (`./compile.sh`, or `cmake` and `cmake --build`).
     - Do **not** run `make install` or `cmake --install` without `--prefix`: it targets the system
       prefix (`/usr/local`) and would need root.
@@ -507,11 +545,14 @@ milk-check        # verifies MILK_ROOT, MILK_INSTALLDIR, MILK_SHM_DIR and PATH
 To remove it: `rm -rf _build/_install`, and unset the modified variables.
 
 <!-- prettier-ignore -->
+
 !!! note "-DCMAKE_INSTALL_PREFIX"
+
     Alternatively, configure with `-DCMAKE_INSTALL_PREFIX=$PWD/_install`. The libraries' `RPATH` then
     points to the install, at the cost of the layout becoming `_install/milk-<version>/`.
 
 !!! warning "This is global superseding"
+
     This approach is designed to supersede the system-wide installation with a development build.
     This is not the same as running multiple, isolated versions. See [multiple versions here](./multiversion.md)
 
@@ -521,12 +562,15 @@ Follow the process for installing milk system-wide: the default recommendation i
 which is a symbolic link to `/usr/local/milk-<version>`.
 
 By changing ownership of that folder:
+
 ```bash
 sudo chown -R <user>:<user> /usr/local/milk-<version>
 ```
+
 you can now `make install`/`ninja install` milk without sudo permissions. The only bit that is missing and actually requires `sudo` is granting root capability to `milk-makecsetandrt`.
 
 !!! warning
+
     This trick is useful for development when you build, install, and remove the global install very often.
 
     On a security note, it places non-root sanctioned code in `/usr/local`, which is non-critical but also not expected.
@@ -542,7 +586,9 @@ For attaching to running processes, tmux log inspection and core dumps, see
 [Debugging](../operations/debugging.md).
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - `gdb` and `valgrind` installed (`apt install gdb valgrind`).
     - A **Debug** build (`MILK_BUILD_TYPE=Debug ./compile.sh`, or `-DCMAKE_BUILD_TYPE=Debug`): in
       the default `Release` build (`-Ofast`) backtraces are missing frames and variables.
@@ -588,7 +634,9 @@ faulting access, the "Address ... is N bytes after a block of size M alloc'd" st
 buffer came from.
 
 <!-- prettier-ignore -->
+
 !!! warning "TODO"
+
     `milk-debug` passes `--suppressions=$MILK_ROOT/milk-cli.memcheck.supp`, a file that is not in the
     repository. Valgrind may refuse to start; add the file or drop the option.
 
@@ -603,7 +651,9 @@ The project follows the [REUSE](https://reuse.software) specification: every fil
 copyright and license as SPDX tags, and the license texts are in `LICENSES/`.
 
 <!-- prettier-ignore -->
+
 !!! question "Prerequisites"
+
     - `reuse` installed (`pip install reuse`).
     - The license text of every identifier you use must be in `LICENSES/` (currently
       `LGPL-3.0-or-later`, `GPL-3.0-or-later` and `MIT`). Fetch a missing one with
@@ -633,7 +683,9 @@ Run `reuse lint` before opening a PR that adds files. For files that cannot hold
 (binaries, FITS files), declare them in a `REUSE.toml` at the repository root.
 
 <!-- prettier-ignore -->
+
 !!! warning "TODO"
+
     There is no `REUSE.toml` yet, so `reuse lint` will flag such files. Add it, and add `reuse lint`
     to the pre-commit configuration or CI.
 
