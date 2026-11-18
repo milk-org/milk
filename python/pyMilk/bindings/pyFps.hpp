@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>    // std::vector
+#include <stdexcept> // std::invalid_argument
 #include <algorithm> // std::find
 
 extern "C"
@@ -11,6 +12,7 @@ extern "C"
 #include "fps_internal.h"
 #include "fps_connect.h"
 #include "fps_disconnect.h"
+#include "fps_GetParamIndex.h"
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"
 #include "fps_FPCONFexit.h"
@@ -141,16 +143,16 @@ class pyFps
 {
     std::string                     name_;
     FUNCTION_PARAMETER_STRUCT       fps_;
-    std::map<std::string, FPS_type> keys_;
+    std::map<std::string, FPS_type> key2type_cache_;
 
     int read_keys()
     {
         int k = 0;
         while ((k < fps_.md->NBparamMAX) && (fps_.parray[k].keywordfull[0] != '\0'))
         {
-            int   offset = strlen(fps_.parray[k].keyword[0]) + 1;
-            char *key    = fps_.parray[k].keywordfull + offset;
-            keys_[key]   = static_cast<FPS_type>(fps_.parray[k].type);
+            int   offset         = strlen(fps_.parray[k].keyword[0]) + 1;
+            char *key            = fps_.parray[k].keywordfull + offset;
+            key2type_cache_[key] = static_cast<FPS_type>(fps_.parray[k].type);
             k++;
         }
 
@@ -226,11 +228,21 @@ class pyFps
     }
     const std::map<std::string, FPS_type> &keys()
     {
-        return keys_;
+        return key2type_cache_;
     }
     const FPS_type keys(const std::string &key)
     {
-        return keys_[key];
+        return key2type_cache_.at(key);
+    }
+    /// Live flags of a parameter, looked up by name in shared memory.
+    uint64_t get_flags(const std::string &key)
+    {
+        int pindex = functionparameter_GetParamIndex(&fps_, key.c_str());
+        if (pindex < 0)
+        {
+            throw std::invalid_argument("get_flags: key " + key + " not in FPS " + name_);
+        }
+        return fps_.parray[pindex].fpflag;
     }
 
     /**
@@ -282,13 +294,7 @@ class pyFps
      */
     int add_entry(std::string entry_name, std::string entry_desc, FPS_type fptype)
     {
-        keys_[entry_name] = fptype;
-        // We need to prepend a . to entry to abide by FPS conventions
-        // See fps_add_entry.c
-        std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
-                                            static_cast<uint32_t>(fptype), FPFLAG_DEFAULT_INPUT,
-                                            nullptr, nullptr);
+        return add_entry_w_flags(entry_name, entry_desc, fptype, FPS_flags::DEFAULT_INPUT);
     }
 
     /**
@@ -307,11 +313,17 @@ class pyFps
                           FPS_type    fptype,
                           FPS_flags   fpflag)
     {
-        keys_[entry_name]     = fptype;
+        // We need to prepend a . to entry to abide by FPS conventions
+        // See fps_add_entry.c
         std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
-                                            static_cast<uint32_t>(fptype),
-                                            static_cast<uint64_t>(fpflag), nullptr, nullptr);
+        int ret = function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
+                                               static_cast<uint32_t>(fptype),
+                                               static_cast<uint64_t>(fpflag), nullptr, nullptr);
+        if (ret == RETURN_SUCCESS)
+        {
+            key2type_cache_[entry_name] = fptype;
+        }
+        return ret;
     }
 
     /**

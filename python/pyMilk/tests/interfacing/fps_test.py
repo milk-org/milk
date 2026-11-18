@@ -153,6 +153,27 @@ def test_pass_data(fixt_dumb_fps):
     assert b["abc"] == 1
 
 
+def test_flags(fixt_dumb_fps):
+    a = fixt_dumb_fps
+    # Added first: a substring lookup of "trig" would hit "trigx"
+    a.add_param("trigx", "c", fps.FpsType.FLOAT32)
+    a.add_param("trig", "c", fps.FpsType.STREAMNAME, fps.FpsFlag.DEFAULT_TRIGGER_STREAM)
+    a.add_param("gain", "c", fps.FpsType.FLOAT32)
+
+    # Reconnect: index cache built from shm, not from add_param
+    b = fps.FPS(a.name)
+    assert fps.FpsFlag.TRIGGER_STREAM in b.get_flags("trig")
+    assert fps.FpsFlag.TRIGGER_STREAM not in b.get_flags("gain")
+    assert b.get_flags("gain") == fps.FpsFlag.DEFAULT_INPUT
+
+    # Same object that added the params
+    assert fps.FpsFlag.TRIGGER_STREAM in a.get_flags("trig")
+    assert a.get_flags("gain") == fps.FpsFlag.DEFAULT_INPUT
+
+    with pytest.raises(ValueError):
+        a.get_flags("nonexistent")
+
+
 @pytest.fixture
 def fixt_smart_fps_properties():
 

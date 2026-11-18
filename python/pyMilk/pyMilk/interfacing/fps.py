@@ -170,6 +170,13 @@ class FPS:
         self.fps.add_entry(key, comment, datatype, flags)
         self.key_types[key] = datatype
 
+    def get_flags(self, key: str) -> FpsFlag:
+        """Current flags of parameter `key`, read live from shared memory."""
+        if key in self.key_types:
+            return FpsFlag(self.fps.get_flags(key))
+        else:
+            raise ValueError(f"get_flags: key {key} not in FPS {self.name}.")
+
     def set_param(self, key: str, value: FPVal) -> None:
         # TODO: _autorelink implementation !
         if key in self.key_types:

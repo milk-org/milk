@@ -57,7 +57,7 @@ double timespec_to_double(struct timespec tspec)
 }
 
 
-int fps_value_to_key(pyFps &cls, const std::string &key, const FPS_type fps_type, nb::object value)
+int fps_set_value(pyFps &cls, const std::string &key, const FPS_type fps_type, nb::object value)
 {
     FPS_type switch_fps_type = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
 
@@ -95,7 +95,7 @@ int fps_value_to_key(pyFps &cls, const std::string &key, const FPS_type fps_type
     }
 }
 
-nb::object fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
+nb::object fps_get_value(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
     switch (fps_type)
     {
@@ -136,7 +136,7 @@ nb::dict fps_to_dict(pyFps &cls)
     nb::dict fps_dict;
     for (auto &key : cls.keys())
     {
-        fps_dict[nb::str(key.first.c_str())] = fps_value_from_key(cls, key.first, key.second);
+        fps_dict[nb::str(key.first.c_str())] = fps_get_value(cls, key.first, key.second);
     }
     return fps_dict;
 }
@@ -178,7 +178,7 @@ NB_MODULE(FpsWrap, m)
         .value("FPSNAME", FPS_type::FPSNAME)
         .value("STRING_NOT_STREAM", FPS_type::STRING_NOT_STREAM);
 
-    auto fps_flags = nb::enum_<FPS_flags>(m, "FpsFlag");
+    auto fps_flags = nb::enum_<FPS_flags>(m, "FpsFlag", nb::is_flag());
 #define X(name) fps_flags.value(#name, FPS_flags::name);
     FPS_FLAGS_LIST(X)
 #undef X
@@ -214,10 +214,10 @@ Parameters:
         .def("asdict", &fps_to_dict)
 
         .def("__getitem__", [](pyFps &cls, const std::string &key)
-             { return fps_value_from_key(cls, key, cls.keys(key)); })
+             { return fps_get_value(cls, key, cls.keys(key)); })
 
         .def("__setitem__", [](pyFps &cls, const std::string &key, nb::object value)
-             { return fps_value_to_key(cls, key, cls.keys(key), value); })
+             { return fps_set_value(cls, key, cls.keys(key), value); })
 
         .def("md", &pyFps::md, nb::rv_policy::reference)
 
@@ -253,6 +253,10 @@ Parameters:
         .def("get_levelKeys", &pyFps::get_levelKeys)
 
         .def_prop_ro("keys", [](pyFps &cls) { return cls.keys(); })
+        .def("get_flags", &pyFps::get_flags,
+             R"pbdoc(Current flags (int bitmask of FpsFlag values) of parameter `key`
+)pbdoc",
+             nb::arg("key"))
         .def("signal_update", &pyFps::signal_update,
              R"pbdoc(Send update signal to FPS
 )pbdoc")
