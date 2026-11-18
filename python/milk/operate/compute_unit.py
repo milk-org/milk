@@ -137,33 +137,36 @@ class ComputeUnit:
         else:
             self._subprocess_complete("fpsinit")
         self._trylink_fps(raise_on_miss=True)
-        self.autopopulate_trigger_stream()
         # Guarantees FPS exists
 
     def trigger_stream_key(self) -> str | None:
         """Key of the first STREAMNAME parameter flagged FPFLAG_TRIGGER_STREAM, if any."""
         self._trylink_fps(raise_on_miss=True)
         assert self.fps is not None
-        flags = self.fps.fps.flags
         for key, fptype in self.fps.key_types.items():
-            if fptype == FpsType.STREAMNAME and flags[key] & FpsFlag.TRIGGER_STREAM:
+            if (
+                fptype == FpsType.STREAMNAME
+                and FpsFlag.TRIGGER_STREAM in self.fps.get_flags(key)
+            ):
                 return key
         return None
 
     def autopopulate_trigger_stream(self) -> None:
         """Python counterpart of fps_autopopulate_trigger_stream (fps_lifecycle.c).
 
-        If procinfo exists and procinfo.triggersname is empty, set it to the
-        trigger stream's value, with triggermode=SEMAPHORE, loopcntMax=-1, enabled=ON.
+        If procinfo exists and is not enabled, set triggermode=SEMAPHORE,
+        loopcntMax=-1, enabled=ON. procinfo.triggersname is set to the trigger
+        stream's value only if empty; a user-set triggersname is kept.
         """
         key = self.trigger_stream_key()
-        if self.procinfo is None or self.procinfo.triggersname or key is None:
+        if self.procinfo is None or key is None:
             return
         assert self.fps is not None
-        trigger_name = self.fps[key]
-        if not trigger_name:
-            return
-        self.procinfo.triggersname = trigger_name
+        if not self.procinfo.triggersname:
+            trigger_name = self.fps[key]
+            if not trigger_name:
+                return
+            self.procinfo.triggersname = trigger_name
         self.procinfo.triggermode = _TRIGGERMODE_SEMAPHORE
         self.procinfo.loopcntMax = -1
         self.procinfo.enabled = True

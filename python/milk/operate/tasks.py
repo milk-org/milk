@@ -106,6 +106,7 @@ class InitFPS(Task):
                 self.pipeline.config.compute_units[cu].fps
             ).items():
                 compu.fps[key] = value  # type: ignore[index]
+            compu.autopopulate_trigger_stream()
 
     def success(self) -> bool:
         return all(
