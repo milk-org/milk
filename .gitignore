@@ -64,6 +64,7 @@ lex.yy.c
 
 # Diagnostic dumps and execution scripts
 *.txt
+!CMakeLists.txt
 gdb_script.txt
 test_fps_stop.sh
 

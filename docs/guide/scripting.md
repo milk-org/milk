@@ -244,19 +244,28 @@ fpsset myloop loopgain 0.5
 `milk-cli`'s native interpreter includes powerful bash-like variable expansions:
 
 - **Default values**: `${var:-default}` returns `default` if `var` is empty/unset.
+
 - **Assign default**: `${var:=default}` sets `var` to `default` if it was empty/unset.
+
 - **Error if empty**: `${var:?message}` prints an error if `var` is empty/unset.
+
 - **Substring**: `${var:offset:length}` returns a slice of the string. Negative offsets count from
   the end.
+
 - **String length**: `${#var}` returns the number of characters in the variable.
+
 - **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element
   of the respective array.
+
 - **Array splat**: `${myarray[@]}` expands to all elements in the array joined by a space.
+
 - **Array size**: `${#myarray[@]}` returns the number of elements in the array. For mathematical
   expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
 
 - Basic operators: `+  -  *  /  %`
+
 - Bitwise operators: `&  |  ^  <<  >>  ~`
+
 - Comparisons: `==  !=  <  >  <=  >=`
 
 ### Stream & FPS Metadata Expansion
@@ -304,6 +313,7 @@ utilities to form powerful automation scripts.
     ```
 
     **Output:**
+
     ```text
     Processing default...
     Processing test_image...
@@ -657,11 +667,13 @@ the grammar. To highlight them, run the generator script after installing new mi
 ```
 
 <!-- prettier-ignore -->
+
 !!! info "Requirements"
+
     - **Node.js** — for the `tree-sitter-cli` build tool
     - **Neovim ≥ 0.9** — with built-in tree-sitter support
     - **nvim-treesitter** plugin — installed automatically by `nvim-install.sh`
 
----
+______________________________________________________________________
 
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)

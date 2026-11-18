@@ -1,7 +1,9 @@
 # Dependency Graph
 
 <!-- prettier-ignore -->
+
 !!! note
+
     Generated from CMakeLists.txt. See [Build Tiers](../quickstart/build_tiers.md) for cmake
     commands.
 
@@ -19,7 +21,7 @@
 | 🟡 Gold             | Executables                     |
 | `-.->` dashed arrow | Conditional link                |
 
----
+______________________________________________________________________
 
 ## 1. Core Stack
 
@@ -120,7 +122,7 @@ graph TD
     classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
 
----
+______________________________________________________________________
 
 ## 2. Plugins & Cacao
 
@@ -220,7 +222,7 @@ graph TD
     classDef cacao fill:#d35400,stroke:#a00,color:#fff
 ```
 
----
+______________________________________________________________________
 
 ## 3. Standalone Build (USE_CLI=OFF)
 
@@ -307,7 +309,7 @@ graph TD
     classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
 
----
+______________________________________________________________________
 
 ## 4. Build Tiers at a Glance
 
@@ -335,7 +337,7 @@ COREMOD_tools ─┘
 COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 ```
 
----
+______________________________________________________________________
 
 ## 5. Detailed Dependency Tables
 
@@ -357,22 +359,22 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 <details markdown="1">
 <summary><b>Framework Libraries</b></summary>
 
-| Target            | Links to                                                                                                        | Optional                                                   |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| milkscript        | COREMODs, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo                                       | COREMODiofits (USE_CFITSIO)                                |
-| CLIcore           | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo, milkscript, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
+| Target     | Links to                                                                                                                         | Optional                                                   |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| milkscript | COREMODs, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo                                                        | COREMODiofits (USE_CFITSIO)                                |
+| CLIcore    | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkcomputeunit, milkfpsseq, milkdata, milkprocessinfo, milkscript, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
 
 </details>
 
 <details markdown="1">
 <summary><b>Core Tier — COREMOD Libraries</b></summary>
 
-| Target            | Links to         | Conditional                          |
-| ----------------- | ---------------- | ------------------------------------ |
-| milkCOREMODtools  | milkfps, milkcomputeunit |                                      |
-| milkCOREMODmemory | milkfps, milkcomputeunit | cfitsio (USE_CFITSIO)                |
-| milkCOREMODarith  | milkfps, milkcomputeunit | COREMODiofits, cfitsio (USE_CFITSIO) |
-| milkCOREMODiofits | milkfps, milkcomputeunit, cfitsio | _only built with USE_CFITSIO_ |
+| Target            | Links to                          | Conditional                          |
+| ----------------- | --------------------------------- | ------------------------------------ |
+| milkCOREMODtools  | milkfps, milkcomputeunit          |                                      |
+| milkCOREMODmemory | milkfps, milkcomputeunit          | cfitsio (USE_CFITSIO)                |
+| milkCOREMODarith  | milkfps, milkcomputeunit          | COREMODiofits, cfitsio (USE_CFITSIO) |
+| milkCOREMODiofits | milkfps, milkcomputeunit, cfitsio | _only built with USE_CFITSIO_        |
 
 </details>
 
@@ -419,15 +421,15 @@ COREMOD_iofits ── Core (USE_CFITSIO)  ← USE_CFITSIO
 <details markdown="1">
 <summary><b>Executables</b></summary>
 
-| Target                       | Links to                                            |
-| ---------------------------- | --------------------------------------------------- |
-| milk-cli                     | CLIcore + all module libs                           |
+| Target                       | Links to                                                             |
+| ---------------------------- | -------------------------------------------------------------------- |
+| milk-cli                     | CLIcore + all module libs                                            |
 | milk-fpsCTRL                 | milkfpsseq, milkcomputeunit, milkfps, milkprocessinfo, ImageStreamIO |
-| milk-procCTRL                | milkprocessinfo, ImageStreamIO                      |
-| milk-streamCTRL              | ImageStreamIO, milkprocessinfo                      |
-| milk-fps-list/search/info/rm | milkfps                                             |
-| milk-fps-set/track           | milkfps                                             |
-| milk-fps-conf*/run*          | milkcomputeunit                                     |
+| milk-procCTRL                | milkprocessinfo, ImageStreamIO                                       |
+| milk-streamCTRL              | ImageStreamIO, milkprocessinfo                                       |
+| milk-fps-list/search/info/rm | milkfps                                                              |
+| milk-fps-set/track           | milkfps                                                              |
+| milk-fps-conf\*/run\*        | milkcomputeunit                                                      |
 
 </details>
 
@@ -446,6 +448,6 @@ When `USE_STATIC_LTO=ON`, `_static`-suffixed static archives (e.g. `milkCOREMODm
 
 </details>
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

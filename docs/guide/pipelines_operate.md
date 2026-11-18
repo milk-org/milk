@@ -21,14 +21,14 @@ stateDiagram-v2
     cold --> [*] : nuke
 ```
 
-| State | Rundir | FPS | Processes |
-|---|---|---|---|
-| `cold` | absent | none | none |
-| `deployed` | claimed | all | conf stopped |
-| `configured` | claimed | all | conf running |
-| `running` | claimed | all | run running |
-| `mixed` | claimed | all | some CompUs running, others not |
-| `inconsistent` | stale, or claimed with an FPS missing, or absent with FPS present | | |
+| State          | Rundir                                                            | FPS  | Processes                       |
+| -------------- | ----------------------------------------------------------------- | ---- | ------------------------------- |
+| `cold`         | absent                                                            | none | none                            |
+| `deployed`     | claimed                                                           | all  | conf stopped                    |
+| `configured`   | claimed                                                           | all  | conf running                    |
+| `running`      | claimed                                                           | all  | run running                     |
+| `mixed`        | claimed                                                           | all  | some CompUs running, others not |
+| `inconsistent` | stale, or claimed with an FPS missing, or absent with FPS present |      |                                 |
 
 The rundir is the deploy's claim for this boot, `$MILK_SHM_DIR/pipe_rundirs/<name>/`. Only
 `deploy` and `teardown` are plans; running is reached through the Python API

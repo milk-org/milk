@@ -34,13 +34,13 @@ How a confdir is laid out and what `conf.toml` can say.
 
 ### 2.1. Audiences
 
-| Audience | Reads | Example content |
-|---|---|---|
-| Operator | how to run a system | commands, states, failures |
-| Integrator | how to write and tune a configuration | file formats, keys, custom plans |
-| Internals | how the code works | package layout, contracts, C expansions of milk |
-| Developer | how to work on milk itself | build, coding standards, tooling, these rules |
-| Maintainers | governance and maintenance | TBC |
+| Audience    | Reads                                 | Example content                                 |
+| ----------- | ------------------------------------- | ----------------------------------------------- |
+| Operator    | how to run a system                   | commands, states, failures                      |
+| Integrator  | how to write and tune a configuration | file formats, keys, custom plans                |
+| Internals   | how the code works                    | package layout, contracts, C expansions of milk |
+| Developer   | how to work on milk itself            | build, coding standards, tooling, these rules   |
+| Maintainers | governance and maintenance            | TBC                                             |
 
 A page has one audience. Put it in the nav group that matches: user pages under User Guide
 (Internals as a subgroup of the topic), developer pages under Developer Guide, maintainer pages under Maintenance.
@@ -134,12 +134,12 @@ admonition at the top of the page. The body is indented by four spaces:
 Syntax reference:
 [Material admonitions](https://squidfunk.github.io/mkdocs-material/reference/admonitions/).
 
-??? note "`<!-- prettier-ignore -->` comments"
-    Prettier reflows indentation-based Markdown: grid cards, admonitions, content tabs, and any
-    block whose body is indented. Older pages therefore put `<!-- prettier-ignore -->` (or a
-    `prettier-ignore-start`/`-end` pair) before such blocks. The prettier hook is currently
-    disabled in `.pre-commit-config.yaml`, so the comment is not needed until we settle on a
-    better Markdown formatting hook.
+??? note "Markdown formatting: `mdformat`"
+
+    The `mdformat` pre-commit hook (with the `mdformat-mkdocs` plugin, options in
+    `.mdformat.toml`) understands admonitions, content tabs and front matter, and its output
+    passes `.markdownlint.yml`. Nested lists use 4-space indents, as Python-Markdown requires.
+    Older pages still carry `<!-- prettier-ignore -->` comments: they are obsolete.
 
 ## 7. Diagrams
 
@@ -155,11 +155,12 @@ Diagrams are Mermaid, in a `mermaid` block.
 - Between pages: relative links to the `.md` file, `[Drift](pipelines_conf.md#drift)`. Anchors
   are the heading slugs, as shown by the heading permalinks.
 - To repository files outside `docs/`: the `github_blob_url` macro, for example
-  [scripts/mkdocs_macros.py]({{ github_blob_url }}/scripts/mkdocs_macros.py). Relative `../`
+  [scripts/mkdocs_macros.py](<{{ github_blob_url }}/scripts/mkdocs_macros.py>). Relative `../`
   links out of `docs/` break on the published site. Macros are rendered only on pages with
   `render_macros: true` in their front matter:
 
 {% raw %}
+
 ```markdown
 ---
 render_macros: true
@@ -167,6 +168,7 @@ render_macros: true
 
 [scripts/mkdocs_macros.py]({{ github_blob_url }}/scripts/mkdocs_macros.py)
 ```
+
 {% endraw %}
 
 ## 9. C API reference

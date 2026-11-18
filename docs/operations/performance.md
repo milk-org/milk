@@ -13,10 +13,10 @@ process scheduling, memory layout, and GPU acceleration.
 
 See also: [Process Info](../guide/procinfo.md) · [Streams](../guide/streams.md) · [FPS](../guide/fps.md) ·
 [Debugging](debugging.md) · [FAQ](../quickstart/faq.md) ·
-[Code-Level Optimization Rules]({{ github_blob_url }}/.agents/rules/performance-practices.md)
+[Code-Level Optimization Rules](<{{ github_blob_url }}/.agents/rules/performance-practices.md>)
 · [Code Assist Tools](../developer/code_assist.md)
 
----
+______________________________________________________________________
 
 ## 1. Measuring Performance
 
@@ -43,7 +43,7 @@ Typical values on modern hardware:
 
 Use `milk-streamCTRL` to observe per-stream frame rates and detect bottlenecks in the pipeline.
 
----
+______________________________________________________________________
 
 ## 2. CPU Pinning
 
@@ -72,11 +72,13 @@ isolcpus=4,5,6,7
 Then only explicitly pinned processes will run on those cores.
 
 <!-- prettier-ignore -->
+
 !!! important
+
     Isolated cores are invisible to normal scheduling. All system services, interrupts, and other
     processes will be confined to the remaining cores.
 
----
+______________________________________________________________________
 
 ## 3. Real-Time Scheduling
 
@@ -102,7 +104,7 @@ To allow non-root real-time scheduling:
 
 Add users to the `realtime` group.
 
----
+______________________________________________________________________
 
 ## 4. Shared Memory Configuration
 
@@ -137,7 +139,7 @@ $ export MILK_SHM_HUGETLB=1
 When set, `ImageStreamIO_createIm_gpu()` uses `MAP_HUGETLB` for its `mmap()` call. If huge pages are
 unavailable, it falls back to normal pages automatically.
 
----
+______________________________________________________________________
 
 ## 5. GPU Acceleration (CUDA)
 
@@ -162,7 +164,7 @@ Set the GPU device before launching:
 $ CUDA_VISIBLE_DEVICES=1 milk-fpsexec-gpumodule fpsinit
 ```
 
----
+______________________________________________________________________
 
 ## 6. Network Tuning (for Valkey sync)
 
@@ -179,7 +181,7 @@ $ sysctl -w net.core.wmem_max=16777216
 
 See also: [Valkey Integration](../guide/valkey.md)
 
----
+______________________________________________________________________
 
 ## 7. Quick Checklist
 
@@ -198,6 +200,6 @@ See also: [Valkey Integration](../guide/valkey.md)
 | PGO + Static LTO       | `-DUSE_PGO=USE -DUSE_STATIC_LTO=ON`  |
 | Valkey low-latency     | `sysctl -w net.ipv4.tcp_nodelay=1`   |
 
----
+______________________________________________________________________
 
 ← [Documentation Index](../index.md)

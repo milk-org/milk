@@ -62,7 +62,7 @@ frame = shm.get_data(check=True, timeout=None)   # wait forever
 
 `check=True` waits on one of the stream's semaphores, the same mechanism as the C API, with
 microsecond wake-up latency. The semaphore is flushed before waiting, so the frame returned was
-written *after* the call started: this is the way to wait for a fresh frame rather than take the
+written _after_ the call started: this is the way to wait for a fresh frame rather than take the
 latest one.
 
 ### 2.3. Grabbing many frames: `multi_recv_data()`
@@ -168,7 +168,9 @@ while True:
 ```
 
 <!-- prettier-ignore -->
+
 !!! warning
+
     The performance of PyMilk is good, it's generally successful e.g. at polling all frames without miss on 2kHz+ camera streams.
     Numpy operations are also accelerated on multiple CPUs by default.
     However, for true real-time efficiency,
@@ -194,6 +196,7 @@ parameters as attributes. `FPSManager("aol0_*")` finds and caches every FPS matc
 In a pipeline, FPS names are `<name>_<cu>`.
 
 !!! warning "FPS of a pipeline"
+
     Start and stop a pipeline's processes through [tasks](pipelines_plans.md). Calling
     `conf_start()` / `run_start()` directly bypasses them and can leave the pipeline `mixed` or
     `inconsistent`. Use `FPS` only to read or tune parameters.

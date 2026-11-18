@@ -13,8 +13,9 @@ render_macros: true
 A high-performance, free, open-source, community-centric and R&D-oriented RTC suite for adaptive optics systems.<br><br>
 
 <b>MILK - Modular Image Library Toolkit
-[:fontawesome-brands-github: milk-org/milk](https://github.com/milk-org/milk/tree/{{ repo_branch }})</b><br>
+[:fontawesome-brands-github: milk-org/milk](<https://github.com/milk-org/milk/tree/{{ repo_branch }}>)</b><br>
 A core infrastructure for orchestrating real-time pipelines, between zero-copy shared memory tensors and a rich library of data processing units.
+
 </p>
 
 </div>
@@ -23,7 +24,7 @@ A core infrastructure for orchestrating real-time pipelines, between zero-copy s
 tensors, enabling microsecond-latency data pipelines. The three pillars — **ImageStreamIO**,
 **FPS**, and **processinfo** — live entirely in `/dev/shm/`.
 
----
+______________________________________________________________________
 
 <!-- A block comment
 
@@ -41,18 +42,17 @@ Who might you be?
 - A core developer -- Coding standards, internal craziness, library layers, API references
 - A maintainer -- I need to know about the geeky stuff, project management, release cycle, future avenues !
 
-
 -->
-
 
 ## :rocket: Getting Started
 
 <!-- prettier-ignore-start -->
+
 <div class="grid cards" markdown>
 
 - :material-download-circle:{ .lg .middle } **Install**
 
-    ***
+    ______________________________________________________________________
 
     Clone, build, and configure the milk framework.
 
@@ -60,7 +60,7 @@ Who might you be?
 
 - :material-layers-outline:{ .lg .middle } **Build Tiers**
 
-    ***
+    ______________________________________________________________________
 
     Engine → Core → Full: compile only what you need.
 
@@ -68,7 +68,7 @@ Who might you be?
 
 - :material-pipe:{ .lg .middle } **Pipelines**
 
-    ***
+    ______________________________________________________________________
 
     Deploy and operate sets of compute units from one configuration.
 
@@ -76,7 +76,7 @@ Who might you be?
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 
-    ***
+    ______________________________________________________________________
 
     Common issues with builds, SHM, FPS, and CLI.
 
@@ -85,18 +85,20 @@ Who might you be?
 </div>
 
 <!-- prettier-ignore-end -->
+
 <!-- note: prettier comments NEED a blank line just before -->
 
----
+______________________________________________________________________
 
 ## :classical_building: Core Concepts
 
 <!-- prettier-ignore-start -->
+
 <div class="grid cards" markdown>
 
 - :material-memory:{ .lg .middle } **Streams**
 
-    ***
+    ______________________________________________________________________
 
     Zero-copy shared memory tensors (`ImageStreamIO`).
 
@@ -104,7 +106,7 @@ Who might you be?
 
 - :material-tune-variant:{ .lg .middle } **FPS**
 
-    ***
+    ______________________________________________________________________
 
     Live parameter sync, state control, TUI dashboards.
 
@@ -112,7 +114,7 @@ Who might you be?
 
 - :material-heart-pulse:{ .lg .middle } **Process Info**
 
-    ***
+    ______________________________________________________________________
 
     Heartbeat telemetry, loop-rate profiling, health monitoring.
 
@@ -120,7 +122,7 @@ Who might you be?
 
 - :material-sitemap-outline:{ .lg .middle } **Architecture**
 
-    ***
+    ______________________________________________________________________
 
     System overview, layered design, data flow diagrams.
 
@@ -130,16 +132,17 @@ Who might you be?
 
 <!-- prettier-ignore-end -->
 
----
+______________________________________________________________________
 
 ## :hammer_and_wrench: Developer Guides
 
 <!-- prettier-ignore-start -->
+
 <div class="grid cards" markdown>
 
 - :material-school-outline:{ .lg .middle } **Tutorial**
 
-    ***
+    ______________________________________________________________________
 
     Write your first compute module step by step.
 
@@ -147,7 +150,7 @@ Who might you be?
 
 - :material-code-braces:{ .lg .middle } **Coding Standards**
 
-    ***
+    ______________________________________________________________________
 
     C style, line length, includes, Kernel-Doc.
 
@@ -155,7 +158,7 @@ Who might you be?
 
 - :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
 
-    ***
+    ______________________________________________________________________
 
     Build modules that compile alongside the core.
 
@@ -163,7 +166,7 @@ Who might you be?
 
 - :material-file-tree-outline:{ .lg .middle } **Template Code**
 
-    ***
+    ______________________________________________________________________
 
     Walkthrough of the `MILK_RUNNABLE` template in `milk_module_example`.
 
@@ -173,16 +176,17 @@ Who might you be?
 
 <!-- prettier-ignore-end -->
 
----
+______________________________________________________________________
 
 ## :bar_chart: Operations & Reference
 
 <!-- prettier-ignore-start -->
+
 <div class="grid cards" markdown>
 
 - :material-speedometer:{ .lg .middle } **Performance**
 
-    ***
+    ______________________________________________________________________
 
     CPU pinning, RT scheduling, SIMD, BLAS, GPU.
 
@@ -190,7 +194,7 @@ Who might you be?
 
 - :material-chart-line:{ .lg .middle } **PGO & LTO**
 
-    ***
+    ______________________________________________________________________
 
     Profile-guided optimization + static link-time optimization for 15–40 % speedup.
 
@@ -198,7 +202,7 @@ Who might you be?
 
 - :material-bug-outline:{ .lg .middle } **Debugging**
 
-    ***
+    ______________________________________________________________________
 
     GDB, tmux logs, procinfo diagnostics, common failures.
 
@@ -208,7 +212,7 @@ Who might you be?
 
 <!-- prettier-ignore-end -->
 
----
+______________________________________________________________________
 
 ## :link: More Resources
 

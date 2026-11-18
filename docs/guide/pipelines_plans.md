@@ -7,6 +7,7 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
 [Glossary](pipelines_glossary.md)
 
 !!! note "Status"
+
     Custom plans and tasks are registered from Python code, and registration affects the current
     Python process. Carrying custom plans in a confdir is planned.
 
@@ -18,10 +19,10 @@ looked up by name in a registry (`PLANS`, `TASKS`).
 
 ## 1. Built-in plans
 
-| Plan | Steps | `on_failure` | `accepts` |
-|---|---|---|---|
-| `deploy` | ClaimRundir → InitFPS → LoadData → ConfStart | `abort` | `cold_or_consistent` |
-| `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any` |
+| Plan       | Steps                                                                           | `on_failure`  | `accepts`            |
+| ---------- | ------------------------------------------------------------------------------- | ------------- | -------------------- |
+| `deploy`   | ClaimRundir → InitFPS → LoadData → ConfStart                                    | `abort`       | `cold_or_consistent` |
+| `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any`                |
 
 Every plan in `PLANS` is a `milk-pipes` subcommand.
 
@@ -42,20 +43,20 @@ Every plan in `PLANS` is a `milk-pipes` subcommand.
 
 ## 2. Built-in tasks
 
-| Task | Goal (`success()`) |
-|---|---|
-| `ClaimRundir` | The rundir is claimed by this rootdir for the current boot. It refuses if another rootdir holds the name, or another pipeline holds the `loop_number` |
-| `InitFPS` | Every FPS exists and is valid. It runs `fpsinit` in `work/`, then sets the `[compute_units.<cu>.fps]` values |
-| `LoadData` | Every `[[dataloads]]` target stream exists with the source FITS shape and dtype |
-| `ConfStart` | Every conf process is running |
-| `RunStart` | Every run process is running. It requires the conf processes to be running |
-| `RunStop` | No run process is running |
-| `WaitRunEnd` | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything |
-| `DeapplyAllLinkages` | No systemlinkage symlink remains |
-| `ConfStop` | No conf process is running |
-| `KillTmux` | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true` |
-| `DestroyFPS` | No FPS of the subset exists |
-| `ReleaseRundir` | The rundir is gone |
+| Task                 | Goal (`success()`)                                                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ClaimRundir`        | The rundir is claimed by this rootdir for the current boot. It refuses if another rootdir holds the name, or another pipeline holds the `loop_number` |
+| `InitFPS`            | Every FPS exists and is valid. It runs `fpsinit` in `work/`, then sets the `[compute_units.<cu>.fps]` values                                          |
+| `LoadData`           | Every `[[dataloads]]` target stream exists with the source FITS shape and dtype                                                                       |
+| `ConfStart`          | Every conf process is running                                                                                                                         |
+| `RunStart`           | Every run process is running. It requires the conf processes to be running                                                                            |
+| `RunStop`            | No run process is running                                                                                                                             |
+| `WaitRunEnd`         | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything                                            |
+| `DeapplyAllLinkages` | No systemlinkage symlink remains                                                                                                                      |
+| `ConfStop`           | No conf process is running                                                                                                                            |
+| `KillTmux`           | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true`                                                   |
+| `DestroyFPS`         | No FPS of the subset exists                                                                                                                           |
+| `ReleaseRundir`      | The rundir is gone                                                                                                                                    |
 
 ## 3. Running a single task
 
@@ -115,14 +116,14 @@ PLANS.register("restart_wfs", Plan(
 ))
 ```
 
-| Field | Type | Default | Meaning |
-|---|---|---|---|
-| `Step.task` | `str` | — | A name in `TASKS`, which is the task's class name |
-| `Step.compus` | `tuple[str, ...] \| None` | `None` | The CompU subset; `None` means all CompUs. Unknown names raise `ConfigError` |
-| `Plan.name` | `str` | — | The name to register it under, which is also the `milk-pipes` command name |
-| `Plan.steps` | `tuple[Step, ...]` | — | The steps, run in order |
-| `Plan.on_failure` | `"abort" \| "best_effort"` | `"abort"` | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures |
-| `Plan.accepts` | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
+| Field             | Type                                            | Default        | Meaning                                                                                                                                                                                        |
+| ----------------- | ----------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Step.task`       | `str`                                           | —              | A name in `TASKS`, which is the task's class name                                                                                                                                              |
+| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None` means all CompUs. Unknown names raise `ConfigError`                                                                                                                   |
+| `Plan.name`       | `str`                                           | —              | The name to register it under, which is also the `milk-pipes` command name                                                                                                                     |
+| `Plan.steps`      | `tuple[Step, ...]`                              | —              | The steps, run in order                                                                                                                                                                        |
+| `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                                         |
+| `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
 
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
 

@@ -8,6 +8,9 @@
     },
     {
       "pattern": "^\\{\\{"
+    },
+    {
+      "pattern": "^%7B%7B"
     }
   ],
   "timeout": "5s",
