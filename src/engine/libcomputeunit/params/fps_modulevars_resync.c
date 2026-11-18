@@ -40,7 +40,7 @@ void sync_fps_to_local(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     }
     else if (b->type == FPTYPE_ONOFF)
     {
-        *((int32_t *) b->ptr) = (fps->parray[pindex].fpflag & FPFLAG_ONOFF) ? 1 : 0;
+        *((int32_t *) b->ptr) = (fps->parray[pindex].val.i64[0]) ? 1 : 0;
     }
     else if (b->type == FPTYPE_UINT32)
     {
@@ -127,17 +127,9 @@ int sync_local_to_fps(FPS *fps, long pindex, FPS_CLI_BINDING *b)
     else if (b->type == FPTYPE_ONOFF)
     {
         int32_t newval = *((int32_t *) b->ptr) ? 1 : 0;
-        int32_t curval = (fps->parray[pindex].fpflag & FPFLAG_ONOFF) ? 1 : 0;
+        int32_t curval = (fps->parray[pindex].val.i64[0]) ? 1 : 0;
         if (curval != newval)
         {
-            if (newval)
-            {
-                fps->parray[pindex].fpflag |= FPFLAG_ONOFF;
-            }
-            else
-            {
-                fps->parray[pindex].fpflag &= ~FPFLAG_ONOFF;
-            }
             fps->parray[pindex].val.i64[0] = newval;
             changed                        = 1;
         }

@@ -144,7 +144,7 @@ int ov_fcache_toggle_param(const char *fps_name,
         return -1;
     }
 
-    int current = (fp->fpflag & FPFLAG_ONOFF) ? 1 : 0;
+    int current = (fp->val.i64[0]) ? 1 : 0;
     int newval  = current ? 0 : 1;
     functionparameter_SetParamValue_ONOFF(fps, fp->keywordfull, newval);
     fps->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;

@@ -670,15 +670,13 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
                     /* Toggle ON/OFF inline */
                     if (fps[ei].parray[ep].fpflag & FPFLAG_WRITESTATUS)
                     {
-                        if (fps[ei].parray[ep].fpflag & FPFLAG_ONOFF)
+                        if (fps[ei].parray[ep].val.i64[0])
                         {
-                            fps[ei].parray[ep].fpflag &= ~FPFLAG_ONOFF;
-                            fps[ei].parray[ep].val.i32[0] = 0;
+                            fps[ei].parray[ep].val.i64[0] = 0;
                         }
                         else
                         {
-                            fps[ei].parray[ep].fpflag |= FPFLAG_ONOFF;
-                            fps[ei].parray[ep].val.i32[0] = 1;
+                            fps[ei].parray[ep].val.i64[0] = 1;
                         }
                         if (fps[ei].parray[ep].fpflag & FPFLAG_SAVEONCHANGE)
                         {
@@ -705,15 +703,13 @@ int fpsCTRL_TUI_process_user_key(int                   ch,
             {
                 if (fps[fps_idx].parray[p_idx].type == FPTYPE_ONOFF)
                 {
-                    if (fps[fps_idx].parray[p_idx].fpflag & FPFLAG_ONOFF) // ON -> OFF
+                    if (fps[fps_idx].parray[p_idx].val.i64[0]) // ON -> OFF
                     {
-                        fps[fps_idx].parray[p_idx].fpflag &= ~FPFLAG_ONOFF;
-                        fps[fps_idx].parray[p_idx].val.i32[0] = 0;
+                        fps[fps_idx].parray[p_idx].val.i64[0] = 0;
                     }
                     else // OFF -> ON
                     {
-                        fps[fps_idx].parray[p_idx].fpflag |= FPFLAG_ONOFF;
-                        fps[fps_idx].parray[p_idx].val.i32[0] = 1;
+                        fps[fps_idx].parray[p_idx].val.i64[0] = 1;
                     }
 
                     // Save to disk

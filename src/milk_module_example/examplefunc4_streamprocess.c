@@ -50,7 +50,7 @@ static MILK_COLD errno_t streamprocess_confcheck(void)
 
         if (fpi_ex0mode >= 0 && fpi_ex1mode >= 0)
         {
-            if (dcfpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF) // if ex0mode is in ON state
+            if (dcfpsptr->parray[fpi_ex0mode].val.i64[0]) // if ex0mode is in ON state
             {
                 // Then activate ex1mode argument
                 dcfpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
