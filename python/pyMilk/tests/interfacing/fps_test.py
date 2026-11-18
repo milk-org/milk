@@ -89,7 +89,7 @@ def test_smart_fps_instantiation():
     class G(fps.SmartAttributesFPS):
         gain: float
         _DICT_METADATA = {
-            "gain": ("toto", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT)
+            "gain": ("toto", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT)
         }
 
     with pytest.raises(fps.FPSDoesntExistError):
@@ -106,8 +106,8 @@ def test_smart_fps_instantiation():
         _DICT_METADATA = {
             "gain": (
                 "toto",
-                fps.FPS_type.FLOAT32,
-                fps.FPS_flags.DEFAULT_INPUT,
+                fps.FpsType.FLOAT32,
+                fps.FpsFlag.DEFAULT_INPUT,
                 "an_extra_argument",
             )
         }
@@ -121,7 +121,7 @@ def test_smart_fps_find_annotations_cannot_be_overridden():
     class H(fps.SmartAttributesFPS):
         gain: float
         _DICT_METADATA = {
-            "gain": ("gain", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT)
+            "gain": ("gain", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT)
         }
 
         @classmethod
@@ -146,7 +146,7 @@ def fixt_dumb_fps():
 
 def test_pass_data(fixt_dumb_fps):
     a = fixt_dumb_fps
-    a.add_param("abc", "abcComment", fps.FPS_type.INT32, fps.FPS_flags.DEFAULT_INPUT)
+    a.add_param("abc", "abcComment", fps.FpsType.INT32, fps.FpsFlag.DEFAULT_INPUT)
     a["abc"] = 1
 
     b = fps.FPS(a.name)
@@ -166,13 +166,13 @@ def fixt_smart_fps_properties():
         s: str
 
         _DICT_METADATA = {
-            "i4": ("i4", fps.FPS_type.INT32, fps.FPS_flags.DEFAULT_INPUT),
-            "i8": ("i8", fps.FPS_type.INT64, fps.FPS_flags.DEFAULT_INPUT),
-            "u4": ("u4", fps.FPS_type.UINT32, fps.FPS_flags.DEFAULT_INPUT),
-            "u8": ("u8", fps.FPS_type.UINT64, fps.FPS_flags.DEFAULT_INPUT),
-            "f4": ("f4", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT),
-            "f8": ("f8", fps.FPS_type.FLOAT64, fps.FPS_flags.DEFAULT_INPUT),
-            "s": ("s", fps.FPS_type.STRING, fps.FPS_flags.DEFAULT_INPUT),
+            "i4": ("i4", fps.FpsType.INT32, fps.FpsFlag.DEFAULT_INPUT),
+            "i8": ("i8", fps.FpsType.INT64, fps.FpsFlag.DEFAULT_INPUT),
+            "u4": ("u4", fps.FpsType.UINT32, fps.FpsFlag.DEFAULT_INPUT),
+            "u8": ("u8", fps.FpsType.UINT64, fps.FpsFlag.DEFAULT_INPUT),
+            "f4": ("f4", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT),
+            "f8": ("f8", fps.FpsType.FLOAT64, fps.FpsFlag.DEFAULT_INPUT),
+            "s": ("s", fps.FpsType.STRING, fps.FpsFlag.DEFAULT_INPUT),
         }
 
     with pytest.raises(fps.FPSDoesntExistError):
@@ -280,7 +280,7 @@ def test_smart_fps_concurrent_access():
     class TestFPS(fps.SmartAttributesFPS):
         value: float
         _DICT_METADATA = {
-            "value": ("val", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT)
+            "value": ("val", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT)
         }
 
     fps1 = TestFPS.create("fps_test_1")

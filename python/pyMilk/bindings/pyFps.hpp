@@ -66,14 +66,76 @@ enum FPS_type : uint32_t
     STRING_NOT_STREAM = FPTYPE_STRING_NOT_STREAM,
 };
 
-enum FPS_flags : uint64_t
+/// Single list of FPFLAG_* names (see fps_types.h), expanded for both the enum and the Python binding.
+#define FPS_FLAGS_LIST(X)              \
+    X(ACTIVE)                          \
+    X(USED)                            \
+    X(VISIBLE)                         \
+    X(WRITE)                           \
+    X(WRITECONF)                       \
+    X(WRITERUN)                        \
+    X(WRITESTATUS)                     \
+    X(LOG)                             \
+    X(SAVEONCHANGE)                    \
+    X(SAVEONCLOSE)                     \
+    X(IMPORTED)                        \
+    X(FEEDBACK)                        \
+    X(ONOFF)                           \
+    X(CHECKINIT)                       \
+    X(MINLIMIT)                        \
+    X(MAXLIMIT)                        \
+    X(ERROR)                           \
+    X(STREAM_LOAD_FORCE_LOCALMEM)      \
+    X(STREAM_LOAD_FORCE_SHAREMEM)      \
+    X(STREAM_LOAD_FORCE_CONFFITS)      \
+    X(STREAM_LOAD_FORCE_CONFNAME)      \
+    X(STREAM_LOAD_SKIPSEARCH_LOCALMEM) \
+    X(STREAM_LOAD_SKIPSEARCH_SHAREMEM) \
+    X(STREAM_LOAD_SKIPSEARCH_CONFFITS) \
+    X(STREAM_LOAD_SKIPSEARCH_CONFNAME) \
+    X(STREAM_LOAD_UPDATE_SHAREMEM)     \
+    X(STREAM_LOAD_UPDATE_CONFFITS)     \
+    X(FILE_CONF_REQUIRED)              \
+    X(FILE_RUN_REQUIRED)               \
+    X(FPS_CONF_REQUIRED)               \
+    X(FPS_RUN_REQUIRED)                \
+    X(STREAM_CONF_REQUIRED)            \
+    X(STREAM_RUN_REQUIRED)             \
+    X(STREAM_ENFORCE_DATATYPE)         \
+    X(STREAM_TEST_DATATYPE_UINT8)      \
+    X(STREAM_TEST_DATATYPE_INT8)       \
+    X(STREAM_TEST_DATATYPE_UINT16)     \
+    X(STREAM_TEST_DATATYPE_INT16)      \
+    X(STREAM_TEST_DATATYPE_UINT32)     \
+    X(STREAM_TEST_DATATYPE_INT32)      \
+    X(STREAM_TEST_DATATYPE_UINT64)     \
+    X(STREAM_TEST_DATATYPE_INT64)      \
+    X(PRIMARY_CLI_INPUT)               \
+    X(CLI_INPUT)                       \
+    X(STREAM_TEST_DATATYPE_HALF)       \
+    X(STREAM_TEST_DATATYPE_FLOAT)      \
+    X(STREAM_TEST_DATATYPE_DOUBLE)     \
+    X(STREAM_ENFORCE_1D)               \
+    X(STREAM_ENFORCE_2D)               \
+    X(STREAM_ENFORCE_3D)               \
+    X(STREAM_ENFORCE_XSIZE)            \
+    X(STREAM_ENFORCE_YSIZE)            \
+    X(STREAM_ENFORCE_ZSIZE)            \
+    X(CHECKSTREAM)                     \
+    X(STREAM_MEMLOADREPORT)            \
+    X(TRIGGER_STREAM)                  \
+    X(DEFAULT_INPUT)                   \
+    X(DEFAULT_OUTPUT)                  \
+    X(DEFAULT_INPUT_STREAM)            \
+    X(DEFAULT_TRIGGER_STREAM)          \
+    X(DEFAULT_OUTPUT_STREAM)           \
+    X(DEFAULT_STATUS)
+
+enum class FPS_flags : uint64_t
 {
-    // There are many more
-    DEFAULT_INPUT         = FPFLAG_DEFAULT_INPUT,
-    DEFAULT_OUTPUT        = FPFLAG_DEFAULT_OUTPUT,
-    DEFAULT_INPUT_STREAM  = FPFLAG_DEFAULT_INPUT_STREAM,
-    DEFAULT_OUTPUT_STREAM = FPFLAG_DEFAULT_OUTPUT_STREAM,
-    DEFAULT_STATUS        = FPFLAG_DEFAULT_STATUS,
+#define X(name) name = FPFLAG_##name,
+    FPS_FLAGS_LIST(X)
+#undef X
 };
 
 class pyFps

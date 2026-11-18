@@ -145,7 +145,7 @@ NB_MODULE(FpsWrap, m)
 {
     m.doc() = "FpsWrap library module";
 
-    nb::enum_<FPS_status>(m, "FPS_status")
+    nb::enum_<FPS_status>(m, "FpsStatus")
         .value("CONF", FPS_status::CONF)
         .value("RUN", FPS_status::RUN)
         .value("CMDCONF", FPS_status::CMDCONF)
@@ -154,10 +154,9 @@ NB_MODULE(FpsWrap, m)
         .value("CHECKOK", FPS_status::CHECKOK)
         .value("TMUXCONF", FPS_status::TMUXCONF)
         .value("TMUXRUN", FPS_status::TMUXRUN)
-        .value("TMUXCTRL", FPS_status::TMUXCTRL)
-        .export_values();
+        .value("TMUXCTRL", FPS_status::TMUXCTRL);
 
-    nb::enum_<FPS_type>(m, "FPS_type")
+    nb::enum_<FPS_type>(m, "FpsType")
         .value("AUTO", FPS_type::AUTO)
         .value("UNDEF", FPS_type::UNDEF)
         .value("INT32", FPS_type::INT32)
@@ -177,16 +176,12 @@ NB_MODULE(FpsWrap, m)
         .value("ONOFF", FPS_type::ONOFF)
         .value("PROCESS", FPS_type::PROCESS)
         .value("FPSNAME", FPS_type::FPSNAME)
-        .value("STRING_NOT_STREAM", FPS_type::STRING_NOT_STREAM)
-        .export_values();
+        .value("STRING_NOT_STREAM", FPS_type::STRING_NOT_STREAM);
 
-    nb::enum_<FPS_flags>(m, "FPS_flags")
-        .value("DEFAULT_INPUT", FPS_flags::DEFAULT_INPUT)
-        .value("DEFAULT_OUTPUT", FPS_flags::DEFAULT_OUTPUT)
-        .value("DEFAULT_INPUT_STREAM", FPS_flags::DEFAULT_INPUT_STREAM)
-        .value("DEFAULT_OUTPUT_STREAM", FPS_flags::DEFAULT_OUTPUT_STREAM)
-        .value("DEFAULT_STATUS", FPS_flags::DEFAULT_STATUS)
-        .export_values();
+    auto fps_flags = nb::enum_<FPS_flags>(m, "FpsFlag");
+#define X(name) fps_flags.value(#name, FPS_flags::name);
+    FPS_FLAGS_LIST(X)
+#undef X
 
     if (!nb::type<timespec>().is_valid())
     { // Possible multiple registration warning
