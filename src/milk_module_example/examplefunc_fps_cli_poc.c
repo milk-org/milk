@@ -329,7 +329,7 @@ static MILK_COLD errno_t customCONFcheck()
 
         if (idx_onoff >= 0 && idx_f64 >= 0)
         {
-            if (fps->parray[idx_onoff].fpflag & FPFLAG_ONOFF)
+            if (fps->parray[idx_onoff].val.i64[0])
             {
                 /* ON: show p_float64 */
                 fps->parray[idx_f64].fpflag |= FPFLAG_USED;

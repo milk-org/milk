@@ -88,7 +88,7 @@ errno_t fps_add_processinfo_entries(FPS *fps)
     long fp_pinfoenabled = 0;
     function_parameter_add_entry(fps, ".procinfo.enabled", "procinfo mode", FPTYPE_ONOFF, FPFLAG,
                                  NULL, &fp_pinfoenabled);
-    fps->parray[fp_pinfoenabled].fpflag |= FPFLAG_ONOFF;
+    fps->parray[fp_pinfoenabled].val.i64[0] = 1;
 
     // no max limit
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
@@ -131,7 +131,7 @@ errno_t fps_add_processinfo_entries(FPS *fps)
     long fp_measuretiming = 1;
     function_parameter_add_entry(fps, ".procinfo.MeasureTiming", "Measure timing", FPTYPE_ONOFF,
                                  FPFLAG | FPFLAG_WRITERUN, NULL, &fp_measuretiming);
-    fps->parray[fp_measuretiming].fpflag |= FPFLAG_ONOFF;
+    fps->parray[fp_measuretiming].val.i64[0] = 1;
 
     // -1 : auto (recommended)
     long semindexrequested_default[4] = { fps->cmdset.semindexrequested, -1, 10, 0 };

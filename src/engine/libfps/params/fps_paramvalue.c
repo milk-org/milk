@@ -617,7 +617,7 @@ int functionparameter_SetParamValue_STRING(FPS *fps, const char *paramname, cons
 /**
  * @brief Read ONOFF parameter
  *
- * Returns 1 if FPFLAG_ONOFF is set, 0 otherwise.
+ * Returns 1 if val.i64[0] is nonzero, 0 otherwise.
  *
  * @param fps        Connected FPS
  * @param paramname  Parameter keyword
@@ -631,7 +631,7 @@ int functionparameter_GetParamValue_ONOFF(FPS *fps, const char *paramname)
         return 0;
     }
 
-    if (fps->parray[fpsi].fpflag & FPFLAG_ONOFF)
+    if (fps->parray[fpsi].val.i64[0])
     {
         return 1;
     }
@@ -641,8 +641,7 @@ int functionparameter_GetParamValue_ONOFF(FPS *fps, const char *paramname)
 /**
  * @brief Write ONOFF parameter
  *
- * Sets or clears FPFLAG_ONOFF and mirrors the
- * value into val.i64[0] for consistent reads.
+ * Sets val.i64[0] to 1 (ON) or 0 (OFF).
  *
  * @param fps         Connected FPS
  * @param paramname   Parameter keyword
@@ -657,16 +656,7 @@ int functionparameter_SetParamValue_ONOFF(FPS *fps, const char *paramname, int O
         return EXIT_FAILURE;
     }
 
-    if (ONOFFvalue == 1)
-    {
-        fps->parray[fpsi].fpflag |= FPFLAG_ONOFF;
-        fps->parray[fpsi].val.i64[0] = 1;
-    }
-    else
-    {
-        fps->parray[fpsi].fpflag &= ~FPFLAG_ONOFF;
-        fps->parray[fpsi].val.i64[0] = 0;
-    }
+    fps->parray[fpsi].val.i64[0] = (ONOFFvalue == 1) ? 1 : 0;
 
     fps->parray[fpsi].cnt0++;
     fps->parray[fpsi].value_cnt++;

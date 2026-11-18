@@ -80,7 +80,6 @@ enum FPS_type : uint32_t
     X(SAVEONCLOSE)                     \
     X(IMPORTED)                        \
     X(FEEDBACK)                        \
-    X(ONOFF)                           \
     X(CHECKINIT)                       \
     X(MINLIMIT)                        \
     X(MAXLIMIT)                        \

@@ -236,7 +236,6 @@ errno_t function_parameter_add_entry(FPS        *fps,
             break;
 
         case FPTYPE_ONOFF:
-            funcparamarray[pindex].fpflag &= ~FPFLAG_ONOFF; // initialize state to OFF
             funcparamarray[pindex].val.ui64[0] = 0;
             break;
 

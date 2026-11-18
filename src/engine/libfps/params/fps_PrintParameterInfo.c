@@ -137,8 +137,6 @@ errno_t functionparameter_PrintParameterInfo(FPS *fpsentry, int pindex)
 
     PRINT_FPFLAG(FPFLAG_FEEDBACK, "FEEDBACK");
 
-    PRINT_FPFLAG(FPFLAG_ONOFF, "ONOFF");
-
     printf("%*s", flagstringlen, "---");
 
     printf("\n");
@@ -319,7 +317,7 @@ errno_t functionparameter_PrintParameterInfo(FPS *fpsentry, int pindex)
 
     if (fpsentry->parray[pindex].type == FPTYPE_ONOFF)
     {
-        if (fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
+        if (fpsentry->parray[pindex].val.i64[0])
         {
             printf("    ON  [ %s ]\n", fpsentry->parray[pindex].val.string[1]);
         }

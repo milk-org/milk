@@ -94,10 +94,6 @@ int function_parameter_printlist(FPS_PARAM *funcparamarray, long NBparamMAX)
             {
                 printf(" ERROR");
             }
-            if (funcparamarray[pindex].fpflag & FPFLAG_ONOFF)
-            {
-                printf(" ONOFF");
-            }
             printf("\n");
 
             // DATA TYPE

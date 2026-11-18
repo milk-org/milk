@@ -341,7 +341,7 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                         saveON = 0;
                         if (fpi_saveON >= 0)
                         {
-                            dcfpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
+                            dcfpsptr->parray[fpi_saveON].val.i64[0] = 0;
                         }
                     }
 
@@ -497,7 +497,7 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                 nextcube = 0;
                 if (fpi_nextcube >= 0)
                 {
-                    dcfpsptr->parray[fpi_nextcube].fpflag &= ~FPFLAG_ONOFF;
+                    dcfpsptr->parray[fpi_nextcube].val.i64[0] = 0;
                 }
                 SaveCube = 1;
             }
@@ -674,13 +674,13 @@ static MILK_HOT errno_t logshmim_compute(const MILK_RUNNABLE *self)
                     saveON = 0;
                     if (fpi_saveON >= 0)
                     {
-                        dcfpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
+                        dcfpsptr->parray[fpi_saveON].val.i64[0] = 0;
                     }
 
                     lastcubeON = 0;
                     if (fpi_lastcubeON >= 0)
                     {
-                        dcfpsptr->parray[fpi_lastcubeON].fpflag &= ~FPFLAG_ONOFF;
+                        dcfpsptr->parray[fpi_lastcubeON].val.i64[0] = 0;
                     }
                 }
             }
