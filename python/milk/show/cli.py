@@ -9,19 +9,104 @@ import click
 from ..operate.cli import _pipe_option, _pipeline
 
 
+def _mlat_results(datadir: Path) -> tuple[float, float] | None:
+    """(framerate [Hz], latency [frame]) from the ``cacaovars.bash`` mlat writes, or None."""
+    path = datadir / "cacaovars.bash"
+    if not path.is_file():
+        return None
+    env = dict(
+        line.removeprefix("export ").strip().split("=", 1)
+        for line in path.read_text().splitlines()
+        if "=" in line
+    )
+    try:
+        return float(env["CACAO_WFSFRATE"]), float(env["CACAO_LATENCYHARDWFR"])
+    except (KeyError, ValueError):
+        return None
+
+
+def _mlat_kernel(t, knee, width, frame):
+    """1-frame rect window convolved with the derivative of a unit-height sigmoid.
+
+    That is the sigmoid rising at ``knee`` minus the same one falling a frame later.
+    The logistic's slope at its knee matches a linear ramp ``width`` long, so
+    width -> 0 gives a 1-frame rect starting at ``knee``, and width = 1 frame
+    is close to the triangle of base 2 frames peaking at knee + frame/2.
+    """
+    import numpy as np
+
+    def sigmoid(edge):
+        return 0.5 * (1.0 + np.tanh(2.0 * (t - edge) / width))
+
+    return sigmoid(knee) - sigmoid(knee + frame)
+
+
 def mlat_figure(datadir: Path | str):
-    """Figure of ``hardwlatency.dat`` (value against dt [us]); 'r' re-reads the file."""
+    """Figure of ``hardwlatency.dat`` (value against dt [us]); 'r' re-reads the files.
+
+    When mlat's ``cacaovars.bash`` is present, overlays the baseline (median of the
+    dt < 0 points), a triangle one frame wide on each side peaking at the measured
+    latency, a vertical bar halfway up its rising side, and the best-fit kernel
+    (see ``_mlat_kernel``) with the triangle's height.
+    """
+    from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
     import numpy as np
 
-    path = Path(datadir) / "hardwlatency.dat"
+    datadir = Path(datadir)
+    path = datadir / "hardwlatency.dat"
     fig, ax = plt.subplots()
     (line,) = ax.plot([], [], ".")
+    (baseline,) = ax.plot([], [], "-", color="gray", label="baseline")
+    (triangle,) = ax.plot([], [], "-", color="C3", label="latency")
+    (kernel,) = ax.plot([], [], "-", color="C1", label="best kernel")
+    halfway = ax.axvline(np.nan, color="C2", ls="--", label="mid rising edge")
+    text = ax.text(0.98, 0.98, "", transform=ax.transAxes, ha="right", va="top")
     ax.set(xlabel="dt [µs]", ylabel="value", title=str(path))
 
     def redraw() -> None:
         _, dt, value = np.loadtxt(path, comments="#", unpack=True)
         line.set_data(dt, value)
+        res = _mlat_results(datadir)
+        if res is None:
+            for artist in (baseline, triangle, kernel):
+                artist.set_data([], [])
+            halfway.set_xdata([np.nan])
+            text.set_text("")
+        else:
+            fps, lat_fr = res
+            frame = 1e6 / fps  # [us]
+            lat = lat_fr * frame  # [us]
+            base = float(np.median(value[dt < 0]))
+            # Peak height as mlat estimates it: mean of the middle third of the
+            # sorted values within half a frame of the peak.
+            near = np.sort(value[np.abs(dt - lat) <= 0.5 * frame])
+            n = len(near)
+            peak = (
+                float(near[n // 3 : max(2 * n // 3, n // 3 + 1)].mean()) if n else base
+            )
+            baseline.set_data([dt.min(), dt.max()], [base, base])
+            triangle.set_data([lat - frame, lat, lat + frame], [base, peak, base])
+            halfway.set_xdata([lat - 0.5 * frame])
+            height = peak - base
+
+            def model(t, knee, width):
+                return base + height * _mlat_kernel(t, knee, width, frame)
+
+            (knee, width), _ = curve_fit(
+                model,
+                dt,
+                value,
+                p0=(lat - 0.5 * frame, 0.1 * frame),
+                bounds=((-np.inf, 1e-3 * frame), (np.inf, np.inf)),
+            )
+            tk = np.linspace(knee - 1.5 * frame, knee + 2.5 * frame, 400)
+            kernel.set_data(tk, model(tk, knee, width))
+            text.set_text(
+                f"latency = {lat_fr:.3f} frame = {lat:.1f} µs\nframerate = {fps:.1f} Hz"
+                f"\nkernel knee = {knee:.1f} µs, width = {width:.1f} µs"
+            )
+            ax.legend(loc="upper left")
         ax.relim()
         ax.autoscale_view()
         fig.canvas.draw_idle()
