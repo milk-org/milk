@@ -15,7 +15,7 @@ TODO: would be much nice if we had a binding of the enums for CTRLval, etc.
 import os, time
 from enum import IntEnum
 
-from .shm import MILK_SHM_DIR
+from .shm_names import MILK_SHM_DIR
 
 from . import glib_loader_fix
 from .. import ProcessInfoWrap
