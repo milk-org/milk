@@ -17,11 +17,11 @@ Code metrics (dev branch) :
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/1c9a67a8529340359a2047eba5c971bf)](https://www.codacy.com/gh/milk-org/milk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=milk-org/milk&utm_campaign=Badge_Grade)
 [![CodeFactor](https://www.codefactor.io/repository/github/milk-org/milk/badge)](https://www.codefactor.io/repository/github/milk-org/milk)
 
----
+______________________________________________________________________
 
 The development of MILK and CACAO is supported by the National Science Foundation under award 2410616 (CSSI program)
 
----
+______________________________________________________________________
 
 # Milk
 

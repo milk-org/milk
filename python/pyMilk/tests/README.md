@@ -26,6 +26,7 @@ pytest -s
 The main files is the `conftest.py`
 
 It includes auxiliary global files located in the `conftestaux` folder by means of:
+
 ```python
 pytest_plugins = ["tests.conftestaux.milk", "tests.conftestaux.cacao_loop"]
 ```
@@ -35,6 +36,7 @@ pytest_plugins = ["tests.conftestaux.milk", "tests.conftestaux.cacao_loop"]
 Some test environments can be set-up and held alive until user-terminated.
 These environments are located _as tests_ that are normally excluded in the `tests.main` subpackage.
 To the difference of normal tests, the execution flow holds upon an `input` statement, which allows:
+
 - Start the test
 - Test sets up, hangs on `input()`
 - Perform testing in another terminal
@@ -42,9 +44,11 @@ To the difference of normal tests, the execution flow holds upon an `input` stat
 - test teardowns and pytest terminates.
 
 This is how you would run one such test:
+
 ```bash
 pytest -s tests/mains/servers.py
 ```
+
 add an additional `-k` flag if these files end up contaning multiple tests.
 
 ## Python coverage
@@ -61,6 +65,7 @@ coverage report
 With a special build, we can enable coverage in C files while running the test stack purely from pytest.
 
 Compiling/installing with PIP (objects and `.gcda` files land in `build/<wheel_tag>/`):
+
 ```bash
 COVERAGE=ON pip install -e .
 ```
