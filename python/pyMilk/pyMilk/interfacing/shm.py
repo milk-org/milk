@@ -71,12 +71,7 @@ from .. import errors
 import os
 
 
-def MILK_SHM_DIR() -> str:
-    """
-    When testing, we may have to spoof the environment AFTER importing this module.
-    It's important to regenerate MILK_SHM_DIR dynamically for this reason.
-    """
-    return os.environ["MILK_SHM_DIR"]
+from .shm_names import MILK_SHM_DIR, check_SHM_name
 
 
 class SHM:
@@ -895,51 +890,3 @@ def _ensure_native_byteorder(data: xp_ndarray) -> xp_ndarray:
     if not data.dtype.isnative:
         data = data.astype(data.dtype.newbyteorder("="), copy=True)  # type: ignore
     return data
-
-
-def check_SHM_name(fname: str) -> str:
-    """
-    Check if the name provided in the constructor is
-    - a string in ISIO style
-    - a full path + filename + in.shm in xaosim style
-
-    Parameters:
-    - fname: the string to check
-
-    Returns:
-    The cleaned, ISIO formatted file name (no extension)
-
-    Raises:
-    Errors if it's a path-like name that
-    1 / does not fit in $MILK_SHM_DIR
-    2 / does not end with .im.shm
-    """
-    if not "/" in fname:  # filename only
-        if fname.endswith(".im.shm"):
-            return fname[:-7]
-        else:
-            return fname
-
-    # It has slashes
-    pre, end = os.path.split(fname)
-
-    # We use it a lot in here, no need to call the dynamic env func every time.
-    SHM_DIR = MILK_SHM_DIR()
-
-    # Third condition is for future use if we allow subdirs
-    if not pre.startswith(SHM_DIR) or (
-        len(pre) > len(SHM_DIR) and pre[len(SHM_DIR)] != "/"
-    ):
-        raise ValueError(f"Only files in MILK_SHR_DIR ({SHM_DIR}) are supported")
-
-    # Do we need to make folders ? We can't... maybe some day
-    if "/" in pre[len(SHM_DIR) :]:
-        raise ValueError(
-            f"Only files at the root of MILK_SHR_DIR ({SHM_DIR}) are supported"
-        )
-
-    # OK we're good, just filter the extension
-    if end.endswith(".im.shm"):
-        return end[:-7]
-    else:
-        return end

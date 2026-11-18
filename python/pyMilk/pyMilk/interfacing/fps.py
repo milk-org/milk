@@ -33,6 +33,7 @@ from . import glib_loader_fix
 from pyMilk.FpsWrap import fps as CPTFPS, FpsType, FpsFlag
 
 from pyMilk.interfacing.pinfo import ProcessInfo
+from pyMilk.interfacing.shm_names import build_FPS_path, check_FPS_name
 
 os.sched_setaffinity(0, _CORES)
 
@@ -105,7 +106,8 @@ class FPS:
         Create an empty FPS.
         The only attribute set is the name.
         """
-        fps_filepath = os.environ["MILK_SHM_DIR"] + f"/{name}.fps.shm"
+        name = check_FPS_name(name)
+        fps_filepath = build_FPS_path(name)
         if os.path.exists(fps_filepath):
             if force_recreate:
                 os.remove(fps_filepath)
@@ -123,12 +125,12 @@ class FPS:
         return fps
 
     def __init__(self, name: str) -> None:
-        self.name = name
-        fps_filepath = os.environ["MILK_SHM_DIR"] + f"/{name}.fps.shm"
-        if not os.path.isfile(fps_filepath):
-            raise FPSDoesntExistError(fps_filepath)
+        self.name = check_FPS_name(name)
+        self.filepath = build_FPS_path(self.name)
+        if not os.path.isfile(self.filepath):
+            raise FPSDoesntExistError(self.filepath)
         try:
-            self.fps = CPTFPS(name)
+            self.fps = CPTFPS(self.name)
         except RuntimeError as exc:
             raise FPSDoesntExistError from exc
         self.key_types: typ.Dict[str, int] = self.fps.keys
@@ -149,8 +151,7 @@ class FPS:
             )
 
     def is_valid(self) -> bool:
-        fps_filepath = os.environ["MILK_SHM_DIR"] + f"/{self.name}.fps.shm"
-        if not os.path.isfile(fps_filepath):
+        if not os.path.isfile(self.filepath):
             return False
         try:
             _fps = CPTFPS(self.name, True)  # test that no error
@@ -253,8 +254,7 @@ class FPS:
 
     def destroy(self) -> None:
         self.disconnect()
-        fps_filepath = os.environ["MILK_SHM_DIR"] + f"/{self.name}.fps.shm"
-        os.remove(fps_filepath)
+        os.remove(self.filepath)
 
     @property
     def md(self) -> FPS_METADATA:
@@ -304,11 +304,9 @@ class FPSManager(FPSCollection):
         import fnmatch
 
         self.purge_cache()
-        system_fps_files = glob.glob(
-            os.environ["MILK_SHM_DIR"] + f"/{fps_name_glob}.fps.shm"
-        )
+        system_fps_files = glob.glob(build_FPS_path(fps_name_glob))
         for fps_file in system_fps_files:
-            self.find_fps(os.path.basename(fps_file).split(".")[0])
+            self.find_fps(check_FPS_name(fps_file))
 
         non_matching_keys = set()
         for name, fpsobj in self.fps_cache.items():
