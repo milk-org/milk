@@ -14,8 +14,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 import pydantic
 
-# TODO we should be able to import pyMilk validator without hauling ImageStreamIOWrap here.
-from pyMilk.interfacing.shm import check_SHM_name
+from pyMilk.interfacing.shm_names import check_SHM_name
 
 import logging
 
