@@ -8,29 +8,34 @@ from __future__ import annotations
 import click
 
 
-def _set_errstack(ctx: click.Context, param: click.Parameter, value: bool) -> None:
-    ctx.meta["errstack"] = value
+def _set_meta(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+    ctx.meta[param.name] = value
 
 
 class ErrstackGroup(click.Group):
     """A group whose errors print as one message, without stack trace, unless --errstack.
 
+    --pdb opens an ipdb post-mortem session on the error instead.
     BestEffortError prints one warning per failure. Every error exits 1.
     ``milk`` log records print to stderr.
     """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.params.append(
-            click.Option(
-                ["--errstack"],
-                is_flag=True,
-                expose_value=False,
-                is_eager=True,
-                callback=_set_errstack,
-                help="Show the stack trace of errors.",
+        for flag, help in (
+            ("--errstack", "Show the stack trace of errors."),
+            ("--pdb", "Open an ipdb post-mortem session on errors."),
+        ):
+            self.params.append(
+                click.Option(
+                    [flag],
+                    is_flag=True,
+                    expose_value=False,
+                    is_eager=True,
+                    callback=_set_meta,
+                    help=help,
+                )
             )
-        )
 
     def invoke(self, ctx: click.Context):
         import logging
@@ -47,6 +52,11 @@ class ErrstackGroup(click.Group):
         except (click.ClickException, click.exceptions.Exit, click.Abort):
             raise
         except Exception as error:
+            if ctx.meta.get("pdb"):
+                import ipdb
+
+                ipdb.post_mortem(error.__traceback__)
+                raise click.exceptions.Exit(1) from error
             if ctx.meta.get("errstack"):
                 raise
             if isinstance(error, BestEffortError):
