@@ -10,7 +10,7 @@ from ..operate.cli import _pipe_option, _pipeline
 
 
 def _mlat_results(datadir: Path) -> tuple[float, float] | None:
-    """(framerate [Hz], latency [frame]) from the ``cacaovars.bash`` mlat writes, or None."""
+    """(framerate [Hz], latency [frame]) from the ``cacaovars.bash`` mlat writes in its own datadir, or None."""
     path = datadir / "cacaovars.bash"
     if not path.is_file():
         return None
@@ -41,6 +41,17 @@ def _mlat_kernel(t, knee, width, frame):
     return sigmoid(knee) - sigmoid(knee + frame)
 
 
+def _grid_fit(model, t, y, knees, widths):
+    """(knee, width) minimizing sum((y - model(t, knee, width))**2) over the grid."""
+    best_sse, best = float("inf"), None
+    for w in widths:
+        sse = ((y - model(t[None, :], knees[:, None], w)) ** 2).sum(axis=1)
+        i = int(sse.argmin())
+        if sse[i] < best_sse:
+            best_sse, best = sse[i], (float(knees[i]), float(w))
+    return best
+
+
 def mlat_figure(datadir: Path | str):
     """Figure of ``hardwlatency.dat`` (value against dt [us]); 'r' re-reads the files.
 
@@ -49,7 +60,6 @@ def mlat_figure(datadir: Path | str):
     latency, a vertical bar halfway up its rising side, and the best-fit kernel
     (see ``_mlat_kernel``) with the triangle's height.
     """
-    from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -93,12 +103,21 @@ def mlat_figure(datadir: Path | str):
             def model(t, knee, width):
                 return base + height * _mlat_kernel(t, knee, width, frame)
 
-            (knee, width), _ = curve_fit(
+            # scipy.optimize.curve_fit would do better; coarse-then-fine grid
+            # search instead, to avoid the scipy dependency for now.
+            knee, width = _grid_fit(
                 model,
                 dt,
                 value,
-                p0=(lat - 0.5 * frame, 0.1 * frame),
-                bounds=((-np.inf, 1e-3 * frame), (np.inf, np.inf)),
+                np.linspace(lat - frame, lat, 201),
+                np.geomspace(1e-3, 2.0, 60) * frame,
+            )
+            knee, width = _grid_fit(
+                model,
+                dt,
+                value,
+                np.linspace(knee - 0.01 * frame, knee + 0.01 * frame, 101),
+                np.geomspace(width / 1.2, width * 1.2, 41),
             )
             tk = np.linspace(knee - 1.5 * frame, knee + 2.5 * frame, 400)
             kernel.set_data(tk, model(tk, knee, width))
