@@ -372,7 +372,7 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
         ax3.legend(l1 + l2, lb1 + lb2, loc="upper left", ncol=2, framealpha=0.90)
 
         fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.96])
-        fig.savefig(os.path.join(out_dir, "compute_timeline_4x1.png"), dpi=150)
+        fig.savefig(os.path.join(out_dir, "compute_timeline_4x1.png"), dpi=150, pil_kwargs={"compress_level": 1})
         plt.close(fig)
 
     # ------------------------------------------------------------------
@@ -507,7 +507,7 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
     ax.grid(True, axis="x", alpha=0.28)
 
     fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.96])
-    fig.savefig(os.path.join(out_dir, "compute_process_breakdown_2x2.png"), dpi=150)
+    fig.savefig(os.path.join(out_dir, "compute_process_breakdown_2x2.png"), dpi=150, pil_kwargs={"compress_level": 1})
     plt.close(fig)
 
     # ------------------------------------------------------------------
@@ -670,7 +670,7 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
         ax.grid(True, axis="x", which="both", alpha=0.25)
 
     fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.96])
-    fig.savefig(os.path.join(out_dir, "compute_shm_and_calib_2x2.png"), dpi=150)
+    fig.savefig(os.path.join(out_dir, "compute_shm_and_calib_2x2.png"), dpi=150, pil_kwargs={"compress_level": 1})
     plt.close(fig)
 
 
@@ -775,11 +775,21 @@ def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa
                 "rate or reduce frames/cycles.",
             ))
     for ph in long_ph:
-        recs.append((
-            ph["duration_s"] / 5.0,
-            f"**Phase `{ph['id']}` takes {ph['duration_s']:.0f} s** at {master_hz:.0f} Hz; it "
-            "is wall-rate bound and shrinks proportionally at higher pacing.",
-        ))
+        pid = ph.get("id", "")
+        sim_c = ph.get("sim_cpu_mean", 0.0)
+        if pid in ("ao_report", "tlm_analysis") or sim_c < 0.15:
+            recs.append((
+                ph["duration_s"] / 5.0,
+                f"**Offline post-processing phase `{pid}` takes {ph['duration_s']:.0f} s** "
+                f"(mean {ph.get('host_cpu_mean', 0.0):.2f} host cores); parallelize figure/video "
+                "rendering or OpenMP workers.",
+            ))
+        else:
+            recs.append((
+                ph["duration_s"] / 5.0,
+                f"**Phase `{pid}` takes {ph['duration_s']:.0f} s** at {master_hz:.0f} Hz; it "
+                "is wall-rate bound and shrinks proportionally at higher pacing.",
+            ))
 
     recs.sort(key=lambda r: r[0], reverse=True)
     return [txt for _, txt in recs]

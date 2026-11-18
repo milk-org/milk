@@ -304,18 +304,26 @@ static int wait_one_spec(const stream_wait_spec_t *sp,
     memset(&img, 0, sizeof(img));
     for (;;)
     {
+        int stream_initialized = 0;
         if ((!has_path || access(shmpath, F_OK) == 0) &&
             ImageStreamIO_openIm(&img, sp->name) == IMAGESTREAMIO_SUCCESS)
         {
-            if (img.md != NULL && img.md->write == 0 && img.md->naxis > 0)
+            if (img.md != NULL && img.md->naxis > 0)
             {
-                break;
+                if (img.md->write == 0)
+                {
+                    break;
+                }
+                stream_initialized = 1;
             }
             ImageStreamIO_closeIm(&img);
             memset(&img, 0, sizeof(img));
         }
 
-        created = 1;
+        if (!stream_initialized)
+        {
+            created = 1;
+        }
         rc      = check_stop(t_start, timeout_sec, prog, sp->name, quiet);
         if (rc != 0)
         {
