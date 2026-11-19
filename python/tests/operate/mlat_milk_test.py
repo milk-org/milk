@@ -6,10 +6,6 @@ See specs/011-o1-steps-runstart-mlat/brief.md and tests/resources/mlatsim-conf/.
 
 from __future__ import annotations
 
-import shutil
-import subprocess
-from pathlib import Path
-
 import pytest
 
 from moka.operate import tasks as _tasks
@@ -23,12 +19,10 @@ import matplotlib
 from pyMilk.interfacing.fps import FPS
 
 from moka.operate.pipeline import Pipeline
-from moka.operate.plans import Plan, Step, run, run_plan
+from moka.operate.plans import Plan, Step, run
 from moka.operate.state import State, state
-from moka.provision.rootdir import init
 from moka.show.cli import mlat_figure
 
-RESOURCES = Path(__file__).parents[1] / "resources"
 MEASURE = Plan(
     "mlat",
     (
@@ -43,19 +37,8 @@ DELAYSEC = 0.003  # compute_units.dmdelay.fps.delaysec in mlatsim-conf
 
 
 @pytest.fixture
-def mlatsim(tmp_path):
-    """mlatsim initialized and deployed in tmp_path; torn down (tmux included) at the end."""
-    conf = tmp_path / "mlatsim-conf"
-    shutil.copytree(RESOURCES / "mlatsim-conf", conf)
-    pp = Pipeline(init(conf))
-    run_plan(pp, "deploy")
-    yield pp
-    try:
-        run_plan(Pipeline(pp.root_folder), "teardown")
-    finally:
-        for cu in pp.config.compute_units:
-            argv = ["tmux", "kill-session", "-t", pp.config.fps_name(cu)]
-            subprocess.run(argv, capture_output=True)
+def mlatsim(make_mlatsim):
+    return make_mlatsim()
 
 
 def _measure(pp: Pipeline) -> None:

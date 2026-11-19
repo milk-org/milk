@@ -119,12 +119,13 @@ After a partial resync (a refused artifact), `drift` shows the remaining state.
 
 ## 4. Where the files are
 
-|                       | confdir                                | rootdir                                        |
-| --------------------- | -------------------------------------- | ---------------------------------------------- |
-| conf files            | `conf.toml`, `*.toml`, `scripts/`      | `conf/` (same relative paths)                  |
-| hook products         | `data/<product>`, `data/<product>.tag` | `initdata/<product>`, `initdata/<product>.tag` |
-| records               | —                                      | `provenance.toml`                              |
-| FPS work folder, logs | —                                      | `work/`, `logs/`                               |
+|                       | confdir                                | rootdir                                                 |
+| --------------------- | -------------------------------------- | ------------------------------------------------------- |
+| conf files            | `conf.toml`, `*.toml`, `scripts/`      | `conf/` (same relative paths)                           |
+| hook products         | `data/<product>`, `data/<product>.tag` | `initdata/<product>`, `initdata/<product>.tag`          |
+| records               | —                                      | `provenance.toml`                                       |
+| FPS work folder, logs | —                                      | `work/`, `logs/`                                        |
+| calibration files     | —                                      | `calib/` ([plans](pipelines_plans.md#1-built-in-plans)) |
 
 A folder is a confdir when it is named `*-conf` and holds `conf.toml` but no `provenance.toml`; a
 rootdir when it is named `*-rootdir` and holds `provenance.toml` and `conf/conf.toml`.

@@ -50,7 +50,7 @@ class _FPS(dict):
 
 @pytest.fixture
 def lr(make_tmp_pipeline, pp_env, monkeypatch):
-    """pp with: a 5 x (3, 4) poke cube, a (3, 4) streamin, mlat's cacaovars.bash, a paper FPS."""
+    """pp with: 5 pokes of a 4 x 3 DM (numpy (5, 3, 4)), a 4 x 3 streamin, mlat's cacaovars.bash, a paper FPS."""
     pp = make_tmp_pipeline(UNITS)
     pp.fps = _FPS(
         {
@@ -72,7 +72,9 @@ def lr(make_tmp_pipeline, pp_env, monkeypatch):
     pp.calib = pp.root_folder / "calib"
     pp.calib.mkdir()
     fits.writeto(pp.calib / "RMmodesDM.fits", np.zeros((5, 3, 4), np.float32))
-    SHM("lr_dm", np.zeros((3, 4), np.float32), symcode=0).close()
+    SHM(
+        "lr_dm", np.zeros((4, 3), np.float32), symcode=0
+    ).close()  # symcode 0: numpy (x, y)
     pp.datadir = pp.work_folder / "fps.basic_mlat.datadir"
     pp.datadir.mkdir(parents=True)
     (pp.datadir / "cacaovars.bash").write_text(CACAOVARS)
@@ -163,6 +165,14 @@ def test_set_keeps_prev_when_there_is_nothing_to_archive(lr):
     (lr.calib / "RMmodesWFS.prev.fits").write_text("old")
     lr.set()
     assert (lr.calib / "RMmodesWFS.prev.fits").read_text() == "old"
+
+
+def test_a_second_set_archives_again_though_the_fps_is_already_set(lr):
+    lr.set()
+    (lr.calib / "RMmodesWFS.fits").write_text("new")
+    lr.set()
+    assert (lr.calib / "RMmodesWFS.prev.fits").read_text() == "new"
+    assert not (lr.calib / "RMmodesWFS.fits").exists()
 
 
 def _ended(pp, loopcnt: int | None, file: bool = True) -> None:

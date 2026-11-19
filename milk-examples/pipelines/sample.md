@@ -13,10 +13,9 @@ It works in `~/AOloop2` and follows
 5. **Run:** `moka runstart -p mlatsim` starts all of `mlatsim`, then `moka mlat -p aoloop` starts
    `aoloop`'s `acquWFS` and `mlat` and waits for `mlat` to finish.
 6. **Show:** `mokashow mlat -p aoloop`.
-7. **Linear response:** `moka mkpokes -p aoloop zonal` writes the poke cube
+7. **Linear response:** `moka mkpokes -p aoloop` writes the poke cube
    `calib/RMmodesDM.fits`; `moka measlinresp -p aoloop` measures the response to it with mlat's
-   latency and writes `calib/RMmodesWFS.fits`. The simulated WFS is a delayed copy of the DM, so
-   the last command prints a small difference when the latency handed over is right.
+   latency and writes `calib/RMmodesWFS.fits`.
 
 ## Before it can work
 

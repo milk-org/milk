@@ -107,13 +107,12 @@ class Pipeline:
         import numpy as np
 
         hint = self.config.dmhint
-        if hint is None:
-            raise ConfigError("No [dmhint] in conf.toml.", pipeline=self.short_name)
         if hint.beam_rad is None:
             return np.ones((hint.ysize, hint.xsize), bool)
-        y, x = np.ogrid[: hint.ysize, : hint.xsize]
-        r2 = (x - hint.beam_xcent) ** 2 + (y - hint.beam_ycent) ** 2
-        return r2 < hint.beam_rad**2
+        from pycacao.calib.mkmodes import make_disk
+
+        beam = hint.beam_xcent, hint.beam_ycent, hint.beam_rad
+        return make_disk(beam, (hint.xsize, hint.ysize))
 
     def any_run_active(self) -> bool:
         return any(

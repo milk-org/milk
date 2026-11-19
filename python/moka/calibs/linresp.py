@@ -22,16 +22,16 @@ INPROGRESS, PREV = "RMmodesWFS.inprogress.fits", "RMmodesWFS.prev.fits"
 POKE_TYPES = ("hadamard", "zonal")
 
 
+def _calib(task: Task, name: str) -> Path:
+    return task.pipeline.root_folder / "calib" / name
+
+
 class MakePokes(Task):
     """Writes calib/RMmodesDM.fits over the [dmhint] mask; params["type"]."""
 
     @property
     def _type(self) -> str:
         return self.params.get("type", "hadamard")
-
-    @property
-    def _path(self):
-        return self.pipeline.root_folder / "calib" / "RMmodesDM.fits"
 
     def can(self) -> bool:
         if self._type not in POKE_TYPES:
@@ -56,16 +56,16 @@ class MakePokes(Task):
             cube = mkmodes.make_hadamard(mask)[0]
         hdu = fits.PrimaryHDU(cube.astype(np.float32))
         hdu.header["POKETYPE"] = self._type
-        self._path.parent.mkdir(exist_ok=True)
-        hdu.writeto(self._path, overwrite=True)
+        _calib(self, POKES).parent.mkdir(exist_ok=True)
+        hdu.writeto(_calib(self, POKES), overwrite=True)
 
     def success(self) -> bool:
         from astropy.io import fits
 
         hint = self.pipeline.config.dmhint
-        if hint is None or not self._path.is_file():
+        if hint is None or not _calib(self, POKES).is_file():
             return False
-        h = fits.getheader(self._path)
+        h = fits.getheader(_calib(self, POKES))
         return (h.get("POKETYPE"), h["NAXIS1"], h["NAXIS2"]) == (
             self._type,
             hint.xsize,
@@ -75,9 +75,6 @@ class MakePokes(Task):
 
 class SetLinResp(Task):
     """Writes the measlinresp FPS (files, mlat's timing, params["ampl"]) and clears the outputs."""
-
-    def _calib(self, name: str) -> Path:
-        return self.pipeline.root_folder / "calib" / name
 
     def _values(self) -> dict | None:
         """The FPS writes; None without mlat's timing."""
@@ -103,9 +100,9 @@ class SetLinResp(Task):
         if compu.fps is None or not compu.fps.conf_isrunning():
             self.failure_reason = f"{compu.fpsname} is missing or its conf process is not running; run deploy."
             return False
-        if not self._calib(POKES).is_file():
+        if not _calib(self, POKES).is_file():
             self.failure_reason = (
-                f"{self._calib(POKES)} does not exist; run `moka mkpokes`."
+                f"{_calib(self, POKES)} does not exist; run `moka mkpokes`."
             )
             return False
         if self._values() is None:
@@ -115,28 +112,28 @@ class SetLinResp(Task):
         if not (env.shm_dir() / f"{stream}.im.shm").is_file():
             self.failure_reason = f"stream {stream} does not exist."
             return False
-        shm = SHM(stream, symcode=0)  # numpy (y, x), as LoadData
+        shm = SHM(stream, symcode=0)  # numpy (size[0], size[1]) = (x, y)
         shape = tuple(shm.shape)
         shm.close()
-        cube = fits.getheader(self._calib(POKES))
-        if (cube["NAXIS2"], cube["NAXIS1"]) != shape:
-            self.failure_reason = f"{POKES} is {cube['NAXIS1']} x {cube['NAXIS2']}, {stream} is {shape[1]} x {shape[0]}."
+        cube = fits.getheader(_calib(self, POKES))
+        if (cube["NAXIS1"], cube["NAXIS2"]) != shape:
+            self.failure_reason = f"{POKES} is {cube['NAXIS1']} x {cube['NAXIS2']}, {stream} is {shape[0]} x {shape[1]}."
             return False
         return True
 
     def forward(self) -> None:
-        self._calib(INPROGRESS).unlink(missing_ok=True)
-        if self._calib(DONE).exists():
-            os.replace(self._calib(DONE), self._calib(PREV))
+        _calib(self, INPROGRESS).unlink(missing_ok=True)
+        if _calib(self, DONE).exists():
+            os.replace(_calib(self, DONE), _calib(self, PREV))
         fps = next(iter(self.compute_units.values())).fps
         for key, value in (self._values() or {}).items():
             fps[key] = value
 
     def success(self) -> bool:
         fps, values = next(iter(self.compute_units.values())).fps, self._values()
-        if fps is None or values is None or self._calib(DONE).exists():
+        if fps is None or values is None or _calib(self, DONE).exists():
             return False
-        return not self._calib(INPROGRESS).exists() and all(
+        return not _calib(self, INPROGRESS).exists() and all(
             fps[k] == v if isinstance(v, str) else np.float32(fps[k]) == np.float32(v)
             for k, v in values.items()
         )
@@ -146,15 +143,11 @@ class WaitLinResp(WaitRunEnd):
     """WaitRunEnd; then a complete run's in-progress file becomes RMmodesWFS.fits."""
 
     @property
-    def _calib(self) -> Path:
-        return self.pipeline.root_folder / "calib"
-
-    @property
     def TIMEOUT(self) -> float:  # type: ignore[override]
         from astropy.io import fits
 
         fps = next(iter(self.compute_units.values())).fps
-        modes = fits.getheader(self._calib / POKES)["NAXIS3"]
+        modes = fits.getheader(_calib(self, POKES))["NAXIS3"]
         frames = 2 * modes * (fps["timing.NBave"] + fps["timing.NBexcl"])
         return 2 * frames * fps["procinfo.loopcntMax"] / fps["timing.WFSfrequ"] + 10
 
@@ -170,16 +163,16 @@ class WaitLinResp(WaitRunEnd):
         done, total = (pinfo.loopcnt if pinfo else 0), fps["procinfo.loopcntMax"]
         if done < total:
             self.failure_reason = f"measlinresp ended after {done} of {total} cycles; partial result in {INPROGRESS}, last good one in {PREV}."
-        elif not (self._calib / INPROGRESS).is_file():
+        elif not _calib(self, INPROGRESS).is_file():
             self.failure_reason = f"measlinresp completed but wrote no {INPROGRESS}."
         else:
-            os.replace(self._calib / INPROGRESS, self._calib / DONE)
+            os.replace(_calib(self, INPROGRESS), _calib(self, DONE))
 
     def success(self) -> bool:
         return (
             super().success()
-            and (self._calib / DONE).is_file()
-            and not (self._calib / INPROGRESS).exists()
+            and _calib(self, DONE).is_file()
+            and not _calib(self, INPROGRESS).exists()
         )
 
 

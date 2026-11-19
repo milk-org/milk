@@ -1,7 +1,8 @@
 """013-3 e2e (milk): mlat, mkpokes zonal, measlinresp on the mlatsim simulator.
 
 The simulated WFS is a delayed copy of the DM, so RMmodesWFS must equal RMmodesDM. It fails if
-the latency handed over from mlat to measlinresp is wrong. See specs/013-*/brief.md §5.
+the latency handed over from mlat to measlinresp is too short by 0.4 frame or more; too long by
+up to 2 frames still passes (LOOSE_ENDS, "define hardware latency"). See specs/013-*/brief.md §5.
 Needs milk and cacao binaries; about 10 s of measurement (256 modes, 10 cycles at ~1 kHz).
 """
 
@@ -9,20 +10,15 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
-from pathlib import Path
 
 import numpy as np
 import pytest
 from astropy.io import fits
 
-from moka.operate.pipeline import Pipeline
-from moka.operate.plans import Plan, Step, run, run_plan
-from moka.provision.rootdir import init
+from moka.operate.plans import Plan, Step, run
 
 pytestmark = pytest.mark.e2e
 
-RESOURCES = Path(__file__).parents[1] / "resources"
 MEASLINRESP = """
 [dmhint]
 xsize = 16
@@ -65,25 +61,8 @@ def _rt_available() -> bool:
     return st is not None and st.st_uid == 0 and bool(st.st_mode & 0o4000)
 
 
-@pytest.fixture
-def linrespsim(tmp_path):
-    """mlatsim plus a measlinresp unit, deployed in tmp_path; torn down (tmux included) at the end."""
-    conf = tmp_path / "mlatsim-conf"
-    shutil.copytree(RESOURCES / "mlatsim-conf", conf)
-    with (conf / "conf.toml").open("a") as stream:
-        stream.write(MEASLINRESP)
-    pp = Pipeline(init(conf))
-    run_plan(pp, "deploy")
-    yield pp
-    try:
-        run_plan(Pipeline(pp.root_folder), "teardown")
-    finally:
-        for cu in pp.config.compute_units:
-            argv = ["tmux", "kill-session", "-t", pp.config.fps_name(cu)]
-            subprocess.run(argv, capture_output=True)
-
-
-def test_measlinresp_of_a_delayed_copy_is_the_identity(linrespsim):
+def test_measlinresp_of_a_delayed_copy_is_the_identity(make_mlatsim):
+    linrespsim = make_mlatsim(MEASLINRESP)
     run(linrespsim, CALIBRATE, {"type": "zonal"})
     calib = linrespsim.root_folder / "calib"
     pokes = fits.getdata(calib / "RMmodesDM.fits")

@@ -29,13 +29,8 @@ moka mlat -p aoloop
 mokashow mlat -p aoloop
 
 # 7. Poke cube, then the linear response (reads mlat's latency; writes calib/RMmodesWFS.fits).
-#    zonal: the simulated WFS is a delayed copy of the DM, so RMmodesWFS should be ~ RMmodesDM.
-moka mkpokes -p aoloop zonal
+moka mkpokes -p aoloop
 moka measlinresp -p aoloop
-python3 -c "from astropy.io import fits; import numpy as np; \
-d = fits.getdata('aoloop-rootdir/calib/RMmodesDM.fits'); \
-w = fits.getdata('aoloop-rootdir/calib/RMmodesWFS.fits'); \
-print('max |RMmodesWFS - RMmodesDM|:', np.abs(w - d).max())"
 
 # Back down:
 # moka teardown -p aoloop ; moka teardown -p mlatsim

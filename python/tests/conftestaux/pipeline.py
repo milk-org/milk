@@ -1,10 +1,11 @@
-"""Pipeline fixtures: tmp copies of pipelinebasic, a live-deployable clone, fake CompUs."""
+"""Pipeline fixtures: tmp copies of pipelinebasic, a live-deployable clone, mlatsim, fake CompUs."""
 
 from __future__ import annotations
 
 import contextlib
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -65,6 +66,32 @@ def cloned_pipeline():
         if session is not None:
             session.kill()
     shutil.rmtree(conf)
+
+
+@pytest.fixture
+def make_mlatsim(tmp_path):
+    """make(extra_toml) -> resources/mlatsim-conf plus extra_toml, deployed in tmp_path; torn
+    down (tmux included) at the end. Needs milk and cacao binaries."""
+    made: list[Pipeline] = []
+
+    def make(extra_toml: str = "") -> Pipeline:
+        conf = tmp_path / "mlatsim-conf"
+        shutil.copytree(RESOURCES / "mlatsim-conf", conf)
+        with (conf / "conf.toml").open("a") as stream:
+            stream.write(extra_toml)
+        pp = Pipeline(init(conf))
+        made.append(pp)
+        run_plan(pp, "deploy")
+        return pp
+
+    yield make
+    for pp in made:
+        try:
+            run_plan(Pipeline(pp.root_folder), "teardown")
+        finally:
+            for cu in pp.config.compute_units:
+                argv = ["tmux", "kill-session", "-t", pp.config.fps_name(cu)]
+                subprocess.run(argv, capture_output=True)
 
 
 def _fake_compu(fpsname: str) -> SimpleNamespace:

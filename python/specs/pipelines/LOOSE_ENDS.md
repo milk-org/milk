@@ -42,6 +42,9 @@ list at each slice boundary.
   013-3 e2e (`linresp_e2e_test.py`, `NBexcl = 1`): measlinresp's `dtfr = latencyfr − 0.5 + 0.5·NBexcl` equals `latencyfr` there, so the response lands on the measured frame's edge
   (~60 µs margin on mlatsim, about one nanosleep overshoot); ~half the reads show the previous
   mode. The e2e uses `NBexcl = 2` (half a frame of margin) until this is settled.
+  013-review, measured on that e2e: `NBexcl = 1` fails on 256 of 256 modes and passes with the
+  latency raised by 0.5 frame; at `NBexcl = 2` it passes with the latency shifted by −0.2 to +2
+  frames and fails at −0.4. So the e2e only catches a latency that is too short.
 - [future] Pipeline kinds (a `kind` key and a kind-defaults layer under `includes`) were removed
   by the 012 audit as unused; bring them back with the first kind other than generic.
 - [later] The provenance system (`provenance.toml`, tagfiles, `drift`/`resync` records) may be
@@ -94,7 +97,8 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   commands that read `pp.plans` (`plans`, `tasks`, `nuke`): once by the group, once by the command,
   because the failure is not cached.
 - [later] No test runs the built-in `mlat` plan on a pipeline that has `acquWFS` and `mlat` (twice:
-  the second run must skip `RunStart[acquWFS]`); `fake_compus` is hardcoded to delay0/delay1.
+  the second run must skip `RunStart[acquWFS]`); `fake_compus` is hardcoded to delay0/delay1, and
+  `linresp_test.py` has its own fake FPS (`_FPS`, a dict with values and a procinfo) beside it.
 - [later] `Plan.compus_arg` is a special case of `Plan.params` (013-1): `[CU]...` could be a
   variadic `Param`; left as is.
 - [later] `mkpokes hadamard` (013-2) keeps all `next_pow2(Nact)` slices and the first `Nact` columns;
@@ -106,7 +110,8 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [later] `[dmhint]` overlaps the `measlinresp` unit's `streamin` stream shape; nothing checks they
   agree (013-3 `SetLinResp.can()` compares the cube to the stream).
 - [later] Duplicate: `SetLinResp.can()` repeats `RunStart.can()`'s "FPS missing or conf process not
-  running" check and message (013-3).
+  running" check and message, and `LoadData.success()`'s "stream exists, then its `symcode=0`
+  shape" (013-3).
 - [ ] FPS string values hold 63 characters (`FUNCTION_PARAMETER_STRMAXLEN`) and pyMilk truncates
   longer writes silently; measlinresp gets `../calib/...` paths for that (013-3).
 - [ ] The procinfo of a run is gone once it exits: `WaitLinResp` holds a handle from before the
@@ -114,6 +119,15 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [ ] `logshmim_save.c:65` calls `milkrt_RTPrio(writerRTprio)` from the log writer thread, but
   `milkrt_RTPrio` targets `getpid()` (the main thread), not the writer thread. Left in place when RT
   priority was removed from `processinfo_loopstart` and the other coremods.
-- [later] Duplicate: `linresp_e2e_test.py`'s `linrespsim` fixture repeats `mlat_milk_test.py`'s
-  `mlatsim` (copy, init, deploy, teardown, tmux kill) with extra conf appended (013-3).
 - [ ] Decide which existing `*_milk_test.py` files are `e2e` (013-3 added the marker; none re-marked).
+- [ ] `LoadData` creates its streams with `symcode=0`, where numpy is (size[0], size[1]): a FITS
+  with NAXIS1 = X, NAXIS2 = Y becomes a stream of `size[0] = Y`, transposed against milk's own
+  FITS loader on a non-square image (013-review; `SetLinResp.can()` had the same swap, fixed).
+  The fixed check passed a scratch e2e on a 12 × 16 DM; no test of the suite has a non-square DM.
+- [ ] mlat writes `cacaovars.bash` only at the end of a measurement and never removes it
+  (`mlat.c` ~817): the file of an earlier run outlives a failed `moka mlat`, and `SetLinResp.can()`
+  accepts that stale latency (013-review).
+- [later] `moka measlinresp` edge cases, not handled (013-review): a measlinresp run still alive
+  when the plan starts (`SetLinResp` deletes its in-progress file and rewrites its FPS, `RunStart`
+  is skipped); `procinfo.loopcntMax = -1` (a stopped run counts as complete); a run shorter than
+  the `RunStart` to `WaitLinResp` handover is reported as "0 of N cycles".

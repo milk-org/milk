@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from astropy.io import fits
 
-from moka.errors import ConfigError, TaskCannotRunError
+from moka.errors import TaskCannotRunError
 from moka.operate.plans import PLANS, Step
 from moka.operate.tasks import TASKS
 
@@ -49,11 +49,6 @@ def test_dm_mask_is_every_actuator_without_a_beam(pokes):
 def test_dm_mask_is_the_disk_strictly_within_the_beam(pokes):
     mask = pokes(DMHINT + BEAM).dm_mask()
     assert mask.astype(int).tolist() == [[0, 1, 1, 0], [1, 1, 1, 1], [0, 1, 1, 0]]
-
-
-def test_dm_mask_needs_a_dmhint(pokes):
-    with pytest.raises(ConfigError, match="dmhint"):
-        pokes("").dm_mask()
 
 
 def test_a_partial_beam_is_refused_at_config_load(pokes):
@@ -107,6 +102,15 @@ def test_a_repeat_is_a_no_op_and_a_type_change_overwrites(pokes):
     assert pp.path.stat().st_mtime_ns == before
     assert pp.do("hadamard").shape[0] == 16
     assert fits.getheader(pp.path)["POKETYPE"] == "hadamard"
+
+
+def test_a_cube_of_another_dm_size_is_replaced(pokes):
+    pp = pokes()
+    pp.path.parent.mkdir()
+    fits.writeto(
+        pp.path, np.zeros((5, 3, 3), np.float32), fits.Header({"POKETYPE": "zonal"})
+    )
+    assert pp.do("zonal").shape == (12, 3, 4)
 
 
 def test_a_hand_made_cube_is_replaced_by_mkpokes(pokes):
