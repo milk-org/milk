@@ -57,31 +57,12 @@ def _with_conf(pp, prepend: str):
 
 def test_registry():
     reg = Registry[int]("widget")
-    assert reg.register("a", 1) == 1
+    reg.register("a", 1)
     assert reg["a"] == 1 and "a" in reg and reg.names() == ["a"]
     with pytest.raises(ValueError):
         reg.register("a", 2)
     with pytest.raises(ConfigError, match="a"):  # unknown names list the known ones
         reg["b"]
-
-
-def test_registries_are_populated():
-    from moka.provision.hooks import HOOK_RUNNERS
-
-    assert {"fetch", "command"} <= set(HOOK_RUNNERS.names())
-    assert {"deploy", "teardown"} <= set(PLANS.names())
-    assert {
-        "ClaimRundir",
-        "InitFPS",
-        "LoadData",
-        "ConfStart",
-        "RunStop",
-        "DeapplyAllLinkages",
-        "ConfStop",
-        "KillTmux",
-        "DestroyFPS",
-        "ReleaseRundir",
-    } <= set(TASKS.names())
 
 
 def test_generic_plans_shape():
@@ -367,7 +348,7 @@ def test_deapply_removes_configured_links(pp, paper, shm_dir_cleanafter):
     assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
 
 
-# ---- the runstart key (specs/012-moka-plans-cli/brief.md §3) ----
+# ---- the runstart key ----
 # pipelinebasic has two units: with `runstart = ["delay0"]`, delay1 plays the on-demand unit.
 
 
@@ -474,7 +455,7 @@ def test_runstart_refuses_a_cold_pipeline_and_runstop_does_not(pp):
     run_plan(pp, "runstop")
 
 
-# ---- the built-in mlat plan (specs/012-moka-plans-cli/brief.md §7) ----
+# ---- the built-in mlat plan ----
 
 
 def test_mlat_plan_shape():

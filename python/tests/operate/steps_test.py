@@ -93,10 +93,6 @@ def test_named_plans_still_go_through_run_plan(deployed, log, monkeypatch):
 # ---- RunStart / RunStop / WaitRunEnd ----
 
 
-def test_run_tasks_are_registered():
-    assert {"RunStart", "RunStop", "WaitRunEnd"} <= set(TASKS.names())
-
-
 def test_runstart_starts_only_the_named_compu(pp, fake_compus):
     for fake in fake_compus.values():
         fake.conf = True

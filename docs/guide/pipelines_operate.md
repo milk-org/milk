@@ -131,7 +131,8 @@ path: aoloop-conf/conf.toml
 ```
 
 `--errstack`, placed before the command (`mokainit --errstack resolve aoloop-conf`), lets
-the exception propagate with its stack trace. Log records of the package print to stderr as
+the exception propagate with its stack trace; `--pdb` opens an `ipdb` post-mortem session on it
+instead. Log records of the package print to stderr as
 `LEVEL: message`.
 
 A command refused because of the state names the command to run:
@@ -155,5 +156,6 @@ process is active.
 ## 4. Displays: `mokashow`
 
 `mokashow mlat -p PIPE` plots the latency measurement (`hardwlatency.dat`) of a pipeline's `mlat`
-CompU from its datadir under `rootdir/work/`; `r` in the window re-reads the file.
+CompU from its datadir under `rootdir/work/` (`-w/--workdir DIR`: under `DIR` instead); `r` in the
+window re-reads the file.
 `moka.show.cli.mlat_figure(datadir)` returns the figure for use in a script or a notebook.

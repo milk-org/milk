@@ -1,7 +1,7 @@
-"""confresolve: the only way to get a :class:`PipelineConfig` (design-v7 §4.4, D-5).
+"""confresolve: the only way to get a :class:`PipelineConfig`.
 
-Layers, lowest to highest: kind defaults, ``includes``, conf.toml, overrides; then ``{var}``
-substitution and validation. No side effects, no cache.
+Layers, lowest to highest: ``includes``, conf.toml, overrides; then ``{var}`` substitution and
+validation. No side effects but one log line per config with extra keys.
 """
 
 from __future__ import annotations
@@ -22,13 +22,6 @@ _log = logging.getLogger(__name__)
 _MODELS_CACHE: set[int] = set()  # config fingerprints already logged in this process
 
 IDENTITY_KEYS = ("long_name", "name", "loop_number")
-
-
-def kind_defaults(kind: str) -> dict:
-    """The kind-defaults layer: {} for "generic"; ConfigError for anything else. R5 replaces the body."""
-    if kind != "generic":
-        raise ConfigError(f"Unknown kind {kind!r}.")
-    return {}
 
 
 def _merge(low: dict, high: dict) -> dict:
@@ -83,7 +76,6 @@ def confresolve(
             raise ConfigError(f"Include {rel!r} has its own includes.", path=path)
         data = _merge(data, included)
     data = _merge(data, top)
-    data = _merge(kind_defaults(data.get("kind", "generic")), data)
 
     for dotted, value in (overrides or {}).items():
         _set_override(data, dotted, value, toml)

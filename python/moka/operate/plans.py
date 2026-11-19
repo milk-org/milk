@@ -1,4 +1,4 @@
-"""Plans (design-v7 §4.2): named sequences of task steps, and the one runner."""
+"""Plans: named sequences of task steps, and the one runner."""
 
 from __future__ import annotations
 

@@ -9,8 +9,7 @@ Pipelines are sets of milk compute units that are declared, deployed and operate
 !!! note "Status"
 
     The deploy lifecycle (provision, deploy, start, stop, teardown, linkages) is implemented.
-    Pipeline kinds other than `generic`, calibration store/load and the port of the cacao `aorun`
-    operations are not.
+    Calibration store/load and the port of the cacao `aorun` operations are not.
 
 ## 1. What the package does
 

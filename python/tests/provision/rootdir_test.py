@@ -516,9 +516,3 @@ def test_dataloads_read_from_initdata(tmp_path, src_file):
     )
     task = LoadData(Pipeline(init(conf)))
     assert task.can(), task.failure_reason
-
-
-def test_moka_init_is_gone():
-    from moka.operate.cli import moka
-
-    assert CliRunner().invoke(moka, ["init", "-h"]).exit_code != 0

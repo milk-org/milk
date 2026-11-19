@@ -16,7 +16,7 @@ class FPSTestCU(ComputeUnit):
         super().__init__("milk-fpsexec-fpstest-fpssynctest", fpsname)
 
 
-fixt_fpsinit_pinfo_fpstest = fixt_fpsinit_factory(FPSTestCU, pinfo=True)
+fixt_fpsinit_pinfo_fpstest = fixt_fpsinit_factory(FPSTestCU)
 
 # fmt: off
 FPS_TEST_PARAMS = [

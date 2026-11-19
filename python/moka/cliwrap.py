@@ -59,7 +59,6 @@ def clear_caches() -> None:
 
 
 _LAZY_ATTRS = {
-    "MILK_BUILD_TAGS": _find_build_tags,
     "HAVE_CLI": have_cli,
     "HAVE_TREESITTER": have_treesitter,
     "MILK_CLI_EXEC": cli_exec,
@@ -120,7 +119,6 @@ class CLI:
         # rather than line-by-line (which would block forever).
         assert self._proc.stdout is not None
         buf = ""
-        escape = ""
         while not buf.endswith(_PROMPT_SUFFIX):
             char = self._proc.stdout.read(1)
             if char == "":
@@ -157,10 +155,6 @@ class CLI:
             self._proc.terminate()
             self.retcode = self._proc.wait(timeout=self.timeout)
         self.open = False
-
-    def run(self, commands: typ.Sequence[str]) -> list[str]:
-        """Feed a batch of commands to the REPL, returning their outputs."""
-        return [self.send_line(command) for command in commands]
 
 
 class CLICommands:
@@ -202,10 +196,6 @@ class CLICommands:
 
         exe = cli_exec()
         assert exe is not None
-        proc_env = dict(os.environ)
-        # TODO MILK_QUIET is broken and disables stdout/stderr.
-        # if self.quiet:
-        #    proc_env["MILK_QUIET"] = "1"
         import time
 
         self.script_filename = (
@@ -214,12 +204,10 @@ class CLICommands:
         with open(self.script_filename, "w") as f:
             f.writelines([c + "\n" for c in self.commands])
         self._proc = subprocess.Popen(
-            # [MILK_CLI_EXEC, "-c", ";".join(self.commands)],
             [exe, "-s", self.script_filename],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            env=proc_env,
         )
         stdout, stderr = self._proc.communicate()
         if self.strip_ansi:

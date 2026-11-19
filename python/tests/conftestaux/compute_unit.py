@@ -7,21 +7,15 @@ from moka.operate.compute_unit import ComputeUnit
 from tests.conftestaux.polling import poll_until_or_fail
 
 
-def func_fpsinit(compu_cls: type[ComputeUnit], pinfo: bool = True) -> ComputeUnit:
+def func_fpsinit(compu_cls: type[ComputeUnit]) -> ComputeUnit:
     # As fixture
     compu = compu_cls()
     assert compu.fps is None
 
-    compu.fpsinit(pinfo)
+    compu.fpsinit()
     assert compu.fps
-
-    if pinfo:
-        assert compu.procinfo
-        assert "procinfo.enabled" in compu.fps
-        assert compu.fps["procinfo.enabled"]
-    else:
-        assert compu.procinfo is None
-        assert not "procinfo.enabled" in compu.fps
+    assert compu.fps.procinfo
+    assert compu.fps["procinfo.enabled"]
 
     # Configure
     # default imin, imout, delaysec = 0.1 ms, naive = OFF, timebuffsize = 1000
@@ -58,10 +52,10 @@ def func_compute_unit_cleanup(compu: ComputeUnit):
         tp(compu.fps.destroy)
 
 
-def fixt_fpsinit_factory(compu_cls: type[ComputeUnit], pinfo: bool = True):
+def fixt_fpsinit_factory(compu_cls: type[ComputeUnit]):
     @pytest.fixture
     def fixt_fpsinit():
-        s = func_fpsinit(compu_cls, pinfo)
+        s = func_fpsinit(compu_cls)
         yield s
         func_compute_unit_cleanup(s)
 

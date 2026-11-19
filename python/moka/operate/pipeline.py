@@ -4,7 +4,7 @@ from .compute_unit import ComputeUnit
 from ..config.resolve import confresolve
 from ..config.layout import is_rootdir
 from .plans import PLANS, Plan, Step, run_plan
-from .state import State, require
+from .state import State, gate, state
 from .tasks import TASKS, Task
 from ..registry import Registry
 from .. import env
@@ -35,14 +35,7 @@ class Pipeline:
                 )
         self.root_folder = root.absolute()
         self.config = confresolve(self.root_folder)
-
-        self.long_name = self.config.long_name
-        self.dataloads = self.config.dataloads
-        self.systemlinkage = self.config.systemlinkage
-
         self.short_name = self.config.name
-        self.loop_number = self.config.loop_number
-
         self.work_folder = self.root_folder / "work"
 
     @classmethod
@@ -94,7 +87,6 @@ class Pipeline:
             )
         task.forward()
         if not task.success():
-            # TODO if partial success is tolerated ?
             raise TaskDidNotSucceedError(
                 f"Task {name} did not succeed:\n    {task.failure_reason}",
                 task=name,
@@ -111,21 +103,20 @@ class Pipeline:
         }
 
     def any_run_active(self) -> bool:
-        # TODO: check this question has sense: is the pipeline in a correct state?
         return any(
             c.fps is not None and c.fps.run_isrunning()
             for c in self.compute_units.values()
         )
 
     def _linkage_paths(self, linkage_name: str) -> list[tuple[Path, Path]]:
-        if linkage_name not in self.systemlinkage:
+        if linkage_name not in self.config.systemlinkage:
             raise LinkageError(
                 f"Unknown system linkage {linkage_name!r}", pipeline=self.short_name
             )
         shm = env.shm_dir()
         return [
             (shm / f"{local}.im.shm", shm / f"{remote}.im.shm")
-            for local, remote in self.systemlinkage[linkage_name].items()
+            for local, remote in self.config.systemlinkage[linkage_name].items()
         ]
 
     def _linked_paths(self, linkage_name: str) -> list[Path]:
@@ -138,7 +129,8 @@ class Pipeline:
 
     def link(self, name: str) -> None:
         """Point each local stream file of linkage ``name`` at its remote one."""
-        st = require(self, "consistent")
+        st = state(self)
+        gate(self.short_name, st, "consistent")
         if st.state in (State.RUNNING, State.MIXED):
             raise LinkageError(
                 "Pipeline is running; stop it first", pipeline=self.short_name
@@ -149,13 +141,13 @@ class Pipeline:
 
     def unlink(self, name: str) -> None:
         """Remove the linkage's symlinks, leaving any that point elsewhere; ``all``: every linkage."""
-        for linkage in self.systemlinkage if name == "all" else [name]:
+        for linkage in self.config.systemlinkage if name == "all" else [name]:
             for local in self._linked_paths(linkage):
                 local.unlink()
 
     def linked(self) -> list[str]:
         """The configured linkages that have a symlink in place."""
-        return [name for name in self.systemlinkage if self._linked_paths(name)]
+        return [name for name in self.config.systemlinkage if self._linked_paths(name)]
 
     def nuke_unsafe(self) -> None:
         """run_plan("teardown"), then rm -rf the rootdir even if teardown failed. Never prompts."""

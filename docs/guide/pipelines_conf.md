@@ -80,7 +80,6 @@ which are kept and serve as variables for [substitution](#43-substitution).
 | `long_name`              | yes      | Identity key. The confdir is `<long_name>-conf/`.                                                                                   |
 | `name`                   | yes      | Identity key, the short name. The rootdir is `<name>-rootdir/`, the rundir `pipe_rundirs/<name>/`, and FPS names are `<name>_<cu>`. |
 | `loop_number`            | yes      | Identity key. Unique among the deployed pipelines of a machine.                                                                     |
-| `kind`                   | no       | Pipeline kind, default `"generic"`. Other kinds: not yet implemented.                                                               |
 | `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                     |
 | `[plans.<name>]`         | no       | Plans of this pipeline: `steps`, optional `on_failure`, `accepts`. See [Plans and tasks](pipelines_plans.md#4-custom-plans).        |
 | `runstart`               | no       | Ordered CompU names that `runstart` starts and `running` requires. Default: every CompU, in declaration order.                      |
@@ -213,10 +212,9 @@ actually use.
 
 The layers, from the lowest to the highest:
 
-1. the **kind defaults** (empty for `generic`; other kinds not yet implemented);
-2. each file of `includes`, in order;
-3. `conf.toml` itself;
-4. the **overrides**, `--set KEY=VALUE` on `init` and `resync`, or an API argument.
+1. each file of `includes`, in order;
+2. `conf.toml` itself;
+3. the **overrides**, `--set KEY=VALUE` on `init` and `resync`, or an API argument.
 
 Tables merge recursively, so a higher layer can change one key of a CompU. Lists and table arrays
 (`[[dataloads]]`, `[[hooks]]`) are replaced whole. Then the [substitutions](#43-substitution) are

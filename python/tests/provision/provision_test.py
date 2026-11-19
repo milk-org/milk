@@ -314,9 +314,3 @@ def test_cli_resolve(tmp_path):
     assert not isinstance(result.exception, ConfigError)
     result = CliRunner().invoke(mokainit, ["--errstack", "resolve", str(conf)])
     assert isinstance(result.exception, ConfigError)
-
-
-def test_moka_clone_is_gone():
-    from moka.operate.cli import moka
-
-    assert CliRunner().invoke(moka, ["clone", "-h"]).exit_code != 0

@@ -1,4 +1,4 @@
-"""What a folder looks like, without resolving it: confdir or rootdir (design-v7 §0, D2)."""
+"""What a folder looks like, without resolving it: confdir or rootdir."""
 
 from __future__ import annotations
 

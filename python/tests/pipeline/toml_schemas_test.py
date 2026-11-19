@@ -5,7 +5,6 @@ import shutil
 import pytest
 import tomli
 import pydantic
-from pydantic import BaseModel
 
 from moka.errors import ConfigError
 from moka.config import model as pconf
@@ -91,7 +90,6 @@ def test_cu_without_fps_is_valid(load_raw_toml):
     load_raw_toml["compute_units"]["bare"] = {"exec": "milk-fpsexec-mem-streamdelay"}
     conf = pconf.PipelineConfig.model_validate(load_raw_toml)
     assert conf.compute_units["bare"].fps == {}
-    assert conf.compute_units["bare"].procinfo is None
 
 
 def test_cu_named_tasks_is_valid(load_raw_toml):
@@ -159,9 +157,3 @@ def test_loader_refuses_bad_procinfo_shape(tmp_path, value):
     assert "procinfo" in str(err.value)
     assert err.value.path == toml_path
     assert isinstance(err.value.__cause__, pydantic.ValidationError)
-
-
-def test_model_no_longer_has_legacy_names():
-    assert not hasattr(pconf, "PipelineConfigModel")
-    assert not hasattr(pconf, "LOOP_INFO")
-    assert issubclass(pconf.PipelineConfig, BaseModel)

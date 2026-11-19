@@ -1,4 +1,4 @@
-"""provenance.toml (A.3): the only reader and writer, apart from confresolve's [overrides]."""
+"""provenance.toml: the only reader and writer, apart from confresolve's [overrides]."""
 
 from __future__ import annotations
 

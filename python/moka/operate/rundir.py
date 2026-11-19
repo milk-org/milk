@@ -1,4 +1,4 @@
-"""The rundir (design-v7 A.4, simplified): a deploy's claim for this boot, in
+"""The rundir: a deploy's claim for this boot, in
 ``$MILK_SHM_DIR/pipe_rundirs/<name>/``."""
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""clone: copy a confdir's conf files, nothing else (design-v7 §0, D-8)."""
+"""clone: copy a confdir's conf files, nothing else."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from ..errors import ProvisionError
-from .artifacts import conf_files
+from .artifacts import conf_files, remove
 
 
 def clone(
@@ -23,12 +23,8 @@ def clone(
         raise ProvisionError(f"Clone target {dest} already exists.", path=dest)
     if override and dest.exists():
         for entry in dest.iterdir():
-            if entry.name == ".git":
-                continue
-            if entry.is_dir() and not entry.is_symlink():
-                shutil.rmtree(entry)
-            else:
-                entry.unlink()
+            if entry.name != ".git":
+                remove(entry)
     for rel in conf_files(src):
         (dest / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src / rel, dest / rel)

@@ -1,4 +1,4 @@
-"""Conf artifacts: fingerprints, the conf file set, and drift status (design-v7 §0, §4.9)."""
+"""Conf artifacts: fingerprints, the conf file set, and drift status."""
 
 from __future__ import annotations
 

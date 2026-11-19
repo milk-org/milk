@@ -1,4 +1,4 @@
-"""Conf hooks: tagfiles (A.2), the hook runners, and consolidate (design-v7 §0, D-6)."""
+"""Conf hooks: tagfiles, the hook runners, and consolidate."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def _tagfile(product: Path) -> Path:
 
 
 class Tag(BaseModel):
-    """A.2 tagfile, ``data/<product>.tag``. ``source`` and ``time`` are informational."""
+    """The tagfile, ``data/<product>.tag``. ``source`` and ``time`` are informational."""
 
     model_config = {"extra": "forbid", "frozen": True}
 
@@ -54,7 +54,7 @@ def _load_tag(product: Path) -> Tag | None:
 
 
 def read_tag(product: Path) -> dict | None:
-    """The A.2 tag of ``product``, or None when it has none."""
+    """The tag of ``product``, or None when it has none."""
     tag = _load_tag(Path(product))
     return tag and tag.model_dump()
 

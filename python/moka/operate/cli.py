@@ -266,7 +266,7 @@ def moka_link(pipe: str | None, linkage: str | None):
     """
     pp = _pipeline(pipe)
     if linkage is None:
-        for name in pp.systemlinkage:
+        for name in pp.config.systemlinkage:
             click.echo(name)
         return
     pp.link(linkage)

@@ -124,7 +124,7 @@ def test_best_effort_failures_are_warnings_and_exit_1(pp, monkeypatch):
     assert "RunStop" in result.stderr and "boom" in result.stderr
 
 
-# ---- runstart / runstop take compute units (specs/012-moka-plans-cli/brief.md §3) ----
+# ---- runstart / runstop take compute units ----
 
 
 def test_help_shows_the_cu_arguments_of_the_two_plans_only():
@@ -167,7 +167,7 @@ def test_other_plans_refuse_compute_units(pp, plan):
     assert state(pp).state is State.COLD  # nothing ran
 
 
-# ---- pipeline-local plans (specs/012-moka-plans-cli/brief.md §4) ----
+# ---- pipeline-local plans ----
 
 PROBE = '\n[plans.probe]\nsteps = ["ReleaseRundir"]\naccepts = "any"\n'
 BUILTIN = ("deploy", "teardown", "runstart", "runstop", "state", "link", "nuke")
@@ -277,7 +277,7 @@ def test_local_plan_named_like_a_fixed_command_is_refused(make_tmp_pipeline, pp_
         assert "clash" in _text(result)
 
 
-# ---- moka plans (specs/012-moka-plans-cli/brief.md §5) ----
+# ---- moka plans ----
 
 LOCAL = (
     PROBE
@@ -370,7 +370,7 @@ def test_mlat_plan_is_listed_as_not_applicable_without_its_units(pp):
     assert result.exit_code == 1 and "acquWFS" in _text(result)
 
 
-# ---- moka tasks (specs/012-moka-plans-cli/brief.md §6) ----
+# ---- moka tasks ----
 # Rows are whitespace-separated: label, success (yes/no), can (yes/no), then the failure reason
 # when can is no; or label, then "n/a (<reason>)" when the task cannot be built.
 
@@ -553,7 +553,7 @@ def test_unknown_linkage(pp, paper):
 def test_link_without_linkage_lists_them(pp):
     result = _invoke("link", "-p", str(pp.root_folder))
     assert result.exit_code == 0, result.output
-    assert result.output.splitlines()[1:] == list(pp.systemlinkage)
+    assert result.output.splitlines()[1:] == list(pp.config.systemlinkage)
 
 
 # ---- nuke ----

@@ -1,24 +1,11 @@
 from __future__ import annotations
 
-"""
-Define what a pipeline config ought to be?
-
-Use toml
-
-Really it needs what comes from cacaovars.bash
-"""
-
-from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 import pydantic
 
 from pyMilk.interfacing.shm_names import check_SHM_name
-
-import logging
-
-_log = logging.getLogger(__name__)
 
 
 class ProcessInfoData(BaseModel):
@@ -67,12 +54,6 @@ class ComputeUnitSpec(BaseModel):
             except pydantic.ValidationError as err:
                 raise ValueError(f"procinfo: {err}") from err
         return v
-
-    @property
-    def procinfo(self) -> ProcessInfoData | None:
-        if "procinfo" not in self.fps:
-            return None
-        return ProcessInfoData.model_validate(self.fps["procinfo"])
 
 
 class _HookDecl(BaseModel):
@@ -129,7 +110,6 @@ class PipelineConfig(BaseModel):
     long_name: str
     name: str
     loop_number: int
-    kind: str = "generic"
     compute_units: dict[str, ComputeUnitSpec] = Field(default_factory=dict)
     dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
     # mode name -> {local stream owned by this pipeline: remote stream it points to}
@@ -179,7 +159,6 @@ class PipelineConfig(BaseModel):
                 raise ValueError("systemlinkage: 'all' is reserved (moka unlink all)")
             out[mode] = {}
             for local, remote in links.items():
-                # TODO this where to focus if we eventually use various MILK_SHM_DIR
                 local, remote = check_SHM_name(local), check_SHM_name(remote)
                 if not local or not remote or local == remote:
                     raise ValueError(
@@ -189,7 +168,7 @@ class PipelineConfig(BaseModel):
         return out
 
     def fps_name(self, cu: str) -> str:
-        """FPS name of compute unit ``cu``, ``<name>_<cu>`` (design-v7 D-19).
+        """FPS name of compute unit ``cu``, ``<name>_<cu>``.
 
         The only place this expression is written.
         """

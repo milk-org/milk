@@ -1,4 +1,4 @@
-"""The ``mokainit`` console script (design-v7 A.5).
+"""The ``mokainit`` console script.
 
 NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 """

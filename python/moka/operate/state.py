@@ -1,4 +1,4 @@
-"""The derived pipeline state (design-v7 §4.1): rundir and live FPSs, classified."""
+"""The derived pipeline state: rundir and live FPSs, classified."""
 
 from __future__ import annotations
 
@@ -92,9 +92,3 @@ def gate(name: str, st: PipelineState, accepts: Accepts) -> None:
         )
     if st.state is State.COLD and accepts == "consistent":
         raise ColdSystemError(f"Pipeline {name} is cold; run deploy.", pipeline=name)
-
-
-def require(pipeline: Pipeline, accepts: Accepts) -> PipelineState:
-    st = state(pipeline)
-    gate(pipeline.short_name, st, accepts)
-    return st

@@ -1,4 +1,4 @@
-"""init, drift and resync: the rootdir as the authoritative copy of a confdir (design-v7 §0, §4.0).
+"""init, drift and resync: the rootdir as the authoritative copy of a confdir.
 
 Artifact keys: a conf file's relpath, or ``data/<product>`` for a hook product. The source side
 is always ``confdir/<key>``; the rootdir side is ``conf/<key>`` or ``initdata/<product>``.
@@ -132,11 +132,11 @@ def init(
     return rootdir
 
 
-def drift(rootdir: Path, confdir: Path | None = None) -> DriftReport:
+def drift(rootdir: Path) -> DriftReport:
     """What differs between the rootdir, its records and the confdir. Reads only."""
     rootdir = Path(rootdir)
     prov = read_provenance(rootdir)
-    confdir = Path(confdir or prov.source_confdir)
+    confdir = Path(prov.source_confdir)
     decls = {
         f"data/{decl.product}": decl_digest(decl.model_dump(mode="json"))
         for decl in confresolve(confdir).hooks
@@ -175,12 +175,11 @@ def resync(
     artifacts: Collection[str] | None = None,
     overrides: Mapping[str, object] | None = None,
     overwrite_local: bool = False,
-    confdir: Path | None = None,
 ) -> ResyncReport:
     """Bring the drifted confdir artifacts (default: all) into the rootdir; never deploys."""
     rootdir = Path(rootdir)
     prov = read_provenance(rootdir)
-    confdir = Path(confdir or prov.source_confdir)
+    confdir = Path(prov.source_confdir)
     if run_active():
         raise ProvisionError("Cannot resync: run process active.", path=rootdir)
     merged = {**prov.overrides, **(overrides or {})}
@@ -194,7 +193,7 @@ def resync(
     consolidate(confdir)
 
     applied, refused = [], {}
-    for row in drift(rootdir, confdir).artifacts:
+    for row in drift(rootdir).artifacts:
         if row.source == "unchanged" or (
             artifacts is not None and row.key not in artifacts
         ):

@@ -20,13 +20,12 @@ class Registry(Generic[T]):
         self.parent = parent
         self._items: dict[str, T] = {}
 
-    def register(self, name: str, item: T) -> T:
+    def register(self, name: str, item: T) -> None:
         if name in self._items:
             raise ValueError(f"Duplicate {self.what} {name!r}.")
         if self.parent is not None and name in self.parent:
             _log.warning("Local %s %r overrides another one.", self.what, name)
         self._items[name] = item
-        return item
 
     def __getitem__(self, name: str) -> T:
         if name in self._items:

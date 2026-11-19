@@ -1,4 +1,4 @@
-"""Tasks (design-v7 §4.2): the steps of plans, registered in TASKS under their class name."""
+"""Tasks: the steps of plans, registered in TASKS under their class name."""
 
 from __future__ import annotations
 
@@ -65,9 +65,9 @@ class ClaimRundir(Task):
             if claim.name == p.short_name and claim.rootdir != str(p.root_folder):
                 self.failure_reason = f"{p.short_name} is claimed by {claim.rootdir}."
                 return False
-            if claim.name != p.short_name and claim.loop_number == p.loop_number:
+            if claim.name != p.short_name and claim.loop_number == p.config.loop_number:
                 self.failure_reason = (
-                    f"loop_number {p.loop_number} is claimed by {claim.name}."
+                    f"loop_number {p.config.loop_number} is claimed by {claim.name}."
                 )
                 return False
         return True
@@ -75,7 +75,7 @@ class ClaimRundir(Task):
     def forward(self) -> None:
         p = self.pipeline
         rundir.write_claim(
-            rundir.Claim.new(p.short_name, p.loop_number, str(p.root_folder))
+            rundir.Claim.new(p.short_name, p.config.loop_number, str(p.root_folder))
         )
 
     def success(self) -> bool:
@@ -115,7 +115,7 @@ class LoadData(Task):
     """Loads every [dataloads] source file (from rootdir/initdata) into its target SHM stream."""
 
     def can(self) -> bool:
-        for entry in self.pipeline.dataloads:
+        for entry in self.pipeline.config.dataloads:
             source_path = self.pipeline.root_folder / "initdata" / entry.source
             if not os.path.isfile(source_path):
                 self.failure_reason = f"{source_path} does not exist."
@@ -126,7 +126,7 @@ class LoadData(Task):
         from astropy.io import fits
         from pyMilk.interfacing.shm import SHM
 
-        for entry in self.pipeline.dataloads:
+        for entry in self.pipeline.config.dataloads:
             source_path = self.pipeline.root_folder / "initdata" / entry.source
             SHM(entry.target, fits.getdata(str(source_path)), symcode=0).close()
 
@@ -134,7 +134,7 @@ class LoadData(Task):
         from astropy.io import fits
         from pyMilk.interfacing.shm import SHM
 
-        for entry in self.pipeline.dataloads:
+        for entry in self.pipeline.config.dataloads:
             if not (env.shm_dir() / f"{entry.target}.im.shm").is_file():
                 return False
             expected = fits.getdata(

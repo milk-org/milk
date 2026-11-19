@@ -1,4 +1,4 @@
-# mlat over a simulated DM -> WFS path (design-v7 Appendix A.1 shapes).
+# mlat over a simulated DM -> WFS path.
 #
 #   mlatsim_dm --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
 #        ^                                                 |

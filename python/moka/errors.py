@@ -1,7 +1,7 @@
 """The exception hierarchy of the ``moka`` package (Milk OrKestrAtion).
 
-Every exception class of the package lives here, under :class:`MilkError`. See design-v7 §4.7
-(``specs/pipelines/design-v7.md``) for the contract. pyMilk exceptions are never wrapped.
+Every exception class of the package lives here, under :class:`MilkError`. pyMilk exceptions are
+never wrapped.
 """
 
 from __future__ import annotations
@@ -99,12 +99,12 @@ class BestEffortError(MilkError):
     def __init__(
         self,
         failures: list[tuple[str, Exception]],
-        message: str = "Best-effort steps failed",
         *,
         pipeline: str | None = None,
     ) -> None:
         self.failures = failures
         detail = "\n".join(f"  {label}: {error}" for label, error in failures)
+        message = "Best-effort steps failed"
         super().__init__(
             f"{message}:\n{detail}" if detail else message, pipeline=pipeline
         )

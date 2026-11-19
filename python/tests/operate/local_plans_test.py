@@ -1,6 +1,6 @@
-"""012 commit 2 acceptance tests (py): pipeline-local plans and tasks.
+"""Pipeline-local plans and tasks.
 
-See specs/012-moka-plans-cli/brief.md §4. Plans come from `[plans.<name>]` tables of conf.toml and
+Plans come from `[plans.<name>]` tables of conf.toml and
 from `scripts/moka_plans.py` (lists TASKS and PLANS); each Pipeline exposes them, over the built-in
 ones, as `pipeline.plans` and `pipeline.tasks`. The CLI side is in cli_test.py.
 """

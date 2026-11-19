@@ -7,8 +7,6 @@ from moka.errors import (
     BestEffortError,
     ComputeUnitError,
     MilkError,
-    TaskCannotRunError,
-    TaskError,
 )
 
 
@@ -19,11 +17,6 @@ def test_milk_error_context_in_str():
     assert text.startswith("boom")
     assert "pipeline: loop" in text and "stderr: bad" in text
     assert "compu" not in text and "task" not in text
-
-
-def test_hierarchy():
-    assert issubclass(TaskCannotRunError, TaskError)
-    assert issubclass(TaskError, MilkError)
 
 
 def test_best_effort_error_message():

@@ -128,7 +128,7 @@ admonition at the top of the page. The body is indented by four spaces:
 
 ```markdown
 !!! warning "Not yet implemented"
-    Pipeline kinds other than `generic` are planned.
+    Calibration store/load is planned.
 ```
 
 Syntax reference:

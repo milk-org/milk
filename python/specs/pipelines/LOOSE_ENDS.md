@@ -39,6 +39,17 @@ list at each slice boundary.
   of sorted values, times `framerateHz` (`mlat.c` ~717-800). That argmax is ill-defined on a flat
   top. dt is the midpoint of two frames' *read* times minus `dtoffset`, the time just after
   `mlat_setdm` returns. Compare with the best-kernel knee + ½ frame from `mokashow mlat`.
+- [future] Pipeline kinds (a `kind` key and a kind-defaults layer under `includes`) were removed
+  by the 012 audit as unused; bring them back with the first kind other than generic.
+- [later] The provenance system (`provenance.toml`, tagfiles, `drift`/`resync` records) may be
+  removable: decide whether its records are worth their code.
+- [later] `ComputeUnit.confstart` returns no pid and has no completion guarantee or timeout.
+- [later] `Pipeline.task_do`: no partial success; a task that half succeeds raises
+  `TaskDidNotSucceedError`.
+- [later] `Pipeline.any_run_active` reads the live FPSs without checking the state: decide whether
+  it should refuse, or say, an inconsistent pipeline.
+- [later] `systemlinkage` checks names under a single `MILK_SHM_DIR`; revisit if pipelines ever use
+  several.
 - [milk] No Doxyfile at the repo root: Doxygen generation is removed (`writing_docs.md` §9 says it
   may return); restoring it is a build/CI item.
 
@@ -54,14 +65,13 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   only.
 - [ ] Plans are written as `tuple(map(Step, "A B".split()))` with positional `"abort"`/`"any"`;
   use keyword arguments and a list of names.
-- [ ] `Pipeline` mirrors `config.long_name/dataloads/systemlinkage/loop_number`, and `short_name`
-  duplicates `config.name`. Tests pin the mirrors.
+- [x] `Pipeline` mirrors `config.long_name/dataloads/systemlinkage/loop_number` (removed by the
+  012 audit). `short_name` still duplicates `config.name`: kept, 22 readers.
 - [ ] `Task.compus_names` vs `Step.compus`: one concept, two names (`operate_test.py` pins
   `compus_names`).
-- [ ] The milk version change is shown in two formats: `provision/cli.py` (`a -> b`) and
+- [ ] The moka version change is shown in two formats: `provision/cli.py` (`a -> b`) and
   `operate/cli.py` (`rootdir made with a, installed b`).
-- [ ] Dead code: module `fpslist()` and `ComputeUnit.fpslist()`; `ComputeUnit.procinfo` is read
-  only by test fixtures.
+- [x] Dead code: module `fpslist()` and `ComputeUnit.fpslist()`; `ComputeUnit.procinfo` (012 audit).
 - [ ] `_subprocess_start(wrap_in_shell=True)` builds the `bash -c` string with `" ".join(argv)`;
   use `shlex.join`.
 - [ ] Background `confstart`/`runstart` (no tmux) send output to pipes nothing reads; the child
@@ -69,9 +79,8 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [ ] `_subprocess_complete` calls `wait()` and then reads the pipes, which can deadlock on large
   output; use `communicate()`.
 - [ ] `ComputeUnit.runstart` checks its arguments with `assert`, which `-O` strips.
-- [ ] `Pipeline.from_folder` checks `is_rootdir`, then `__init__` checks it again.
-- [ ] `moka nuke` raises `ClickException` inside `_user_errors()`; it passes through only
-  because it is not a `MilkError`.
+- [x] `Pipeline.from_folder` checks `is_rootdir`, then `__init__` checks it again: intended, as
+  `__init__` falls back to `<cwd>-rootdir` (012 audit).
 - [ ] `mokashow mlat`: overlay fits on the figure (e.g. the latency step / per-iteration
   latencies from the `#` lines of `hardwlatency.dat`).
 - [later] A `moka_plans.py` that raises is executed twice per invocation by the fixed

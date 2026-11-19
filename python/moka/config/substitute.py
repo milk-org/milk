@@ -49,8 +49,6 @@ def substitute_toml_variables_in_nested(
     return renest_toml_dicts(denested)
 
 
-from dataclasses import dataclass
-
 # Matches {literal} or {literal:format} blocks, e.g. "{a.b}" or "{a.b:.2f}"
 _SUBST_BLOCK_RE = re.compile(r"\{(?P<literal>[^{}:]+)(?::(?P<format>[^{}]*))?\}")
 
