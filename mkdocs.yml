@@ -125,6 +125,9 @@ nav:
     - PGO & LTO: operations/pgo.md
     - Debugging: operations/debugging.md
   - Maintenance: maintenance/pm_operations.md
+  - Future Work:
+    - Notes for the Future: notes_for_future.md
+    - IMGID and the Image Table: futures/imgid_image_table.md
   - "What's New": whatsnew.md
   #- Tags Index: tags.md
 
