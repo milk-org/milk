@@ -115,7 +115,7 @@ int functionparameter_WriteParameterToDisk(FPS  *fpsentry,
             break;
 
         case FPTYPE_ONOFF:
-            if (fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
+            if (fpsentry->parray[pindex].val.i64[0])
             {
                 fprintf(fp, "1  %10s # %s\n", fpsentry->parray[pindex].val.string[1], timestring);
             }

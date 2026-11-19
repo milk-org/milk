@@ -257,7 +257,7 @@ long fps_connect(const char *name, FPS *fps, int fpsconnectmode)
             {
                 if (fps->parray[pindex].type == FPTYPE_ONOFF)
                 {
-                    if (fps->parray[pindex].fpflag & FPFLAG_ONOFF)
+                    if (fps->parray[pindex].val.i64[0])
                     {
                         fps->cmdset.flags |= CLICMDFLAG_PROCINFO;
                     }
