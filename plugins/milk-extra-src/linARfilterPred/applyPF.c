@@ -27,7 +27,7 @@ static char     PFmat[FUNCTION_PARAMETER_STRMAXLEN]     = "PFmat";
 static char     outdata[FUNCTION_PARAMETER_STRMAXLEN]   = "outPF";
 static char     outmask[FUNCTION_PARAMETER_STRMAXLEN]   = "outmask";
 static char     outPFstat[FUNCTION_PARAMETER_STRMAXLEN] = "outPFstat";
-static char     GPUsetstr[FUNCTION_PARAMETER_STRMAXLEN] = ":0:";
+static char     GPUsetstr[FUNCTION_PARAMETER_STRMAXLEN] = "";
 static int32_t  compOLresidual                          = 0;
 static uint32_t compOLresidualNBpt                      = 1000;
 
@@ -139,9 +139,9 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
 
         inmaskindex = (long *) malloc(sizeof(long) * NBinmaskpix);
 
-        for (uint32_t ii = 0; ii < imginmask.md->size[0] * imginmask.md->size[1]; ii++)
+        for (long ii = 0; ii < NBinmaskpix; ii++)
         {
-            inmaskindex[NBinmaskpix] = ii;
+            inmaskindex[ii] = ii;
         }
     }
     long NBmodeIN = NBinmaskpix;
@@ -276,9 +276,9 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
     if (imgoutmask.ID != -1)
     {
         NBoutmaskpix = 0;
-        for (uint32_t ii = 0; ii < imginmask.md->size[0] * imginmask.md->size[1]; ii++)
+        for (uint32_t ii = 0; ii < imgoutmask.md->size[0] * imgoutmask.md->size[1]; ii++)
         {
-            if (imginmask.im->array.SI8[ii] == 1)
+            if (imgoutmask.im->array.SI8[ii] == 1)
             {
                 NBoutmaskpix++;
             }
@@ -300,7 +300,6 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
                 NBoutmaskpix++;
             }
         }
-        //printf("Number of active input modes  = %ld\n", NBinmaskpix);
     }
     else
     {
@@ -309,9 +308,9 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
 
         outmaskindex = (long *) malloc(sizeof(long) * NBoutmaskpix);
 
-        for (uint32_t ii = 0; ii < imgoutmask.md->size[0] * imgoutmask.md->size[1]; ii++)
+        for (long ii = 0; ii < NBoutmaskpix; ii++)
         {
-            outmaskindex[NBoutmaskpix] = ii;
+            outmaskindex[ii] = ii;
         }
     }
     if (NBmodeOUT != NBoutmaskpix)
@@ -398,29 +397,29 @@ static MILK_HOT errno_t applyPF_compute(const MILK_RUNNABLE *self)
     }
     else // if using CPU
     {
-        // compute output : matrix vector mult with a CPU-based loop
-        imgout.md->write = 1;
+        // compute output into imgoutbuff so block scatter below preserves predicted modes
         for (long mi = 0; mi < NBmodeOUT; mi++)
         {
-            imgout.im->array.F[mi] = 0.0;
-            for (uint32_t ii = 0; ii < NBmodeIN * NBPFstep; ii++)
+            float acc = 0.0f;
+            const float *restrict row = &imgPFmat.im->array.F[mi * NBmodeIN * NBPFstep];
+            const float *restrict xin = imginbuff.im->array.F;
+            for (long ii = 0; ii < NBmodeIN * NBPFstep; ii++)
             {
-                imgout.im->array.F[mi] +=
-                    imginbuff.im->array.F[ii] * imgPFmat.im->array.F[mi * NBmodeIN * NBPFstep + ii];
+                acc += xin[ii] * row[ii];
             }
+            imgoutbuff.im->array.F[mi] = acc;
         }
-        COREMOD_MEMORY_image_set_sempost_byID(imgout.ID, -1);
-        imgout.md->write = 0;
-        imgout.md->cnt0++;
     }
 
 
     // Place output block in main output
     //
+    imgout.md->write       = 1;
+    imgoutPFstat.md->write = 1;
     for (long mi = 0; mi < NBmodeOUT; mi++)
     {
         imgout.im->array.F[outmaskindex[mi]]       = imgoutbuff.im->array.F[mi];
-        imgoutPFstat.im->array.F[outmaskindex[mi]] = 1.0;
+        imgoutPFstat.im->array.F[outmaskindex[mi]] = 1.0f;
     }
     processinfo_update_output_stream(processinfo, imgoutPFstat.im, NULL);
     processinfo_update_output_stream(processinfo, imgout.im, NULL);

@@ -105,7 +105,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
         xsize = imgin.md->size[0];
         ysize = 1;
         // copy of image to avoid input change during computation
-        create_2Dimage_ID("PFin_cp", imgin.md->size[0], imgin.md->size[1], &IDincp);
+        create_2Dimage_ID("PFin_copy", imgin.md->size[0], imgin.md->size[1], &IDincp);
         inNBelem = imgin.md->size[0] * imgin.md->size[1];
         break;
 
@@ -293,7 +293,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
     /// It is optionally implemented by adding extra columns at the end of the data matrix.\n
     long    NBmvec1 = 0;
     imageID IDmatA  = -1;
-    int     REG     = 0;
+    int     REG     = (reglambda > 0.0) ? 1 : 0;
     if (REG == 0) // no regularization
     {
         printf("NBmvec   = %ld  -> %ld \n", NBmvec, NBmvec);
@@ -440,7 +440,8 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
 
     /// *STEP: Fill up data matrix PFmatD from input telemetry*
     ///
-    for (long m = 0; m < NBmvec1; m++)
+    memset(dcimg[IDmatA].array.F, 0, sizeof(float) * (size_t) NBmvec1 * mvecsize);
+    for (long m = 0; m < NBmvec; m++)
     {
         long k0 = m + PForder - 1; // dt=0 index
         for (long pix = 0; pix < NBpixin; pix++)
@@ -672,7 +673,7 @@ static MILK_HOT errno_t build_linPF_compute(const MILK_RUNNABLE *self)
                 float val = dcimg[IDoutPF2Dn]
                                 .array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix]; // New
                 dcimg[IDoutPF2D].array.F[PFpix * (PForder * NBpixin) + dt * NBpixin + pix] =
-                    (1.0 - loopgain) * val0 + loopgain * val;
+                    (1.0f - loopgainval) * val0 + loopgainval * val;
             }
         }
     }
