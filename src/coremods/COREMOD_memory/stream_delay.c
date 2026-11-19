@@ -101,17 +101,16 @@ static errno_t streamdelay(IMGID            inimg,
     static uint64_t bufferindex_input  = 0;
     static uint64_t bufferindex_output = 0;
 
-    struct timespec t_now = inimg.md->writetime;
+    struct timespec t_in = inimg.md->writetime; // stamp of the current input frame
     struct timespec t_new;
 
-    //milk_clock_gettime(&t_now);
     if (naive_mode)
     {
         do
         {
             milk_clock_gettime(&t_new);
             usleep(1);
-        } while ((t_new.tv_sec - t_now.tv_sec) + (t_new.tv_nsec - t_now.tv_nsec) / 1e9 < delaysec);
+        } while ((t_new.tv_sec - t_in.tv_sec) + (t_new.tv_nsec - t_in.tv_nsec) / 1e9 < delaysec);
 
         outimg.md->write = 1;
         memcpy(outimg.im->array.raw, inimg.im->array.raw, inimg.md->imdatamemsize);
@@ -124,8 +123,8 @@ static errno_t streamdelay(IMGID            inimg,
     {
         cnt0prev = inimg.md->cnt0;
 
-        tarray[bufferindex_input].tv_sec  = t_now.tv_sec;
-        tarray[bufferindex_input].tv_nsec = t_now.tv_nsec;
+        tarray[bufferindex_input].tv_sec  = t_in.tv_sec;
+        tarray[bufferindex_input].tv_nsec = t_in.tv_nsec;
 
         char *destptr;
         destptr = (char *) bufferimg.im->array.raw;
@@ -141,6 +140,9 @@ static errno_t streamdelay(IMGID            inimg,
         }
     }
 
+    // Compare with the clock, not the input's writetime: a static input must still come out.
+    struct timespec t_now;
+    milk_clock_gettime(&t_now);
     struct timespec tdiff  = timespec_diff(tarray[bufferindex_output], t_now);
     double          tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
