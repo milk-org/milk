@@ -31,7 +31,6 @@
 #include "stream_sem.h"
 #include "processinfo_setup.h"
 #include "stream_net_common.h"
-#include "milk_rt.h"
 
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW    = 1;
@@ -42,9 +41,7 @@ static int DGRAM_CHUNK_SIZE = 62 * 1024;
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
 
-imageID COREMOD_MEMORY_image_NETUDPreceive(int                         port,
-                                           __attribute__((unused)) int do_counter_sync,
-                                           int                         RT_priority)
+imageID COREMOD_MEMORY_image_NETUDPreceive(int port, __attribute__((unused)) int do_counter_sync)
 {
     char           *buff        = NULL; // socket-side complete buffer
     char           *buff_udp    = (char *) calloc(DGRAM_CHUNK_SIZE + 2, sizeof(char));
@@ -66,7 +63,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(int                         port,
     // CATCH SIGNALS
     stream_net_signal_catch();
 
-    milkrt_RTPrio(RT_priority);
 
     // create UDP socket
     int fds_server = -1;

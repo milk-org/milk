@@ -7,7 +7,6 @@
  * @brief Feed stream of images
  */
 
-#include <sched.h>
 
 #include "milk_runnable.h"
 #include "computeunit.h"
@@ -42,30 +41,16 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
                             const char *__restrict streamname,
                             float frequ)
 {
-    imageID            ID;
-    imageID            IDs;
-    long               xsize, ysize, xysize, zsize;
-    long               k;
-    long               tdelay;
-    int                RT_priority = 95; //any number from 0-99
-    struct sched_param schedpar;
-    int                semval;
-    const char        *ptr0;
-    const char        *ptr1;
-    int                loopOK;
-    long               ii;
-
-    schedpar.sched_priority = RT_priority;
-    if (seteuid(dceuid) != 0) //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0, SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-    if (seteuid(dcruid) != 0)      //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    imageID     ID;
+    imageID     IDs;
+    long        xsize, ysize, xysize, zsize;
+    long        k;
+    long        tdelay;
+    int         semval;
+    const char *ptr0;
+    const char *ptr1;
+    int         loopOK;
+    long        ii;
 
     ID     = image_ID(IDname, dcimg, dcnimg);
     xsize  = dcimg[ID].md[0].size[0];

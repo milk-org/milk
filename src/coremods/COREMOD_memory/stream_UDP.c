@@ -40,10 +40,9 @@ static int DGRAM_CHUNK_SIZE = 62 * 1024;
 imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                                             const char *IPaddr,
                                             int         port,
-                                            int         do_counter_sync,
-                                            int         RT_priority);
+                                            int         do_counter_sync);
 
-imageID COREMOD_MEMORY_image_NETUDPreceive(int port, int do_counter_sync, int RT_priority);
+imageID COREMOD_MEMORY_image_NETUDPreceive(int port, int do_counter_sync);
 
 
 /* ================================================================
@@ -54,7 +53,6 @@ static char      p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static char      p_ipaddr[FUNCTION_PARAMETER_STRMAXLEN] = "127.0.0.1";
 static long long p_port                                 = 8888;
 static long long p_csync                                = 0;
-static long long p_rtprio                               = 80;
 
 
 /* ================================================================
@@ -65,8 +63,7 @@ static long long p_rtprio                               = 80;
     X(".imname", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name") \
     X(".ipaddr", p_ipaddr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "IP address")     \
     X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port")               \
-    X(".csync", &p_csync, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "counter sync")     \
-    X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
+    X(".csync", &p_csync, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "counter sync")
 
 MILK_PARAMS_DEFINE(imudptransmit, FPS_PARAMS);
 
@@ -75,7 +72,7 @@ static MILK_HOT errno_t imudptransmit_compute(const MILK_RUNNABLE *self)
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_image_NETUDPtransmit(p_imname, p_ipaddr, p_port, p_csync, p_rtprio);
+    COREMOD_MEMORY_image_NETUDPtransmit(p_imname, p_ipaddr, p_port, p_csync);
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -100,17 +97,16 @@ const MILK_RUNNABLE runnable_COREMOD_memory_imudptransmit = {
  *  CMD 2: imudpreceive (3 args)
  * ============================================================= */
 
-#define FPS_PARAMS_RX(X)                                                         \
-    X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port")           \
-    X(".csync", &p_csync, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "counter sync") \
-    X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
+#define FPS_PARAMS_RX(X)                                               \
+    X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port") \
+    X(".csync", &p_csync, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "counter sync")
 
 MILK_PARAMS_DEFINE(imudpreceive, FPS_PARAMS_RX);
 
 static MILK_HOT errno_t imudpreceive_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_NETUDPreceive(p_port, p_csync, p_rtprio);
+    COREMOD_MEMORY_image_NETUDPreceive(p_port, p_csync);
     return RETURN_SUCCESS;
 }
 
@@ -135,8 +131,7 @@ const MILK_RUNNABLE runnable_COREMOD_memory_imudpreceive = {
 imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                                             const char *IPaddr,
                                             int         port,
-                                            int         do_counter_sync,
-                                            int         RT_priority)
+                                            int         do_counter_sync)
 {
     imageID ID;
     char   *buff       = NULL; // socket-side buffer (magic and metadata at beginning)
@@ -176,8 +171,6 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
-    processinfo->RT_priority =
-        RT_priority; // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
 
     int loopOK = 1; // Master flag
 

@@ -118,32 +118,13 @@ errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
  * @brief Finalize process initialization and enter active loop state.
  *
  * This function should be called just before entering the main processing loop.
- * It resets the loop counter, sets status to ACTIVE, and attempts to set
- * the process's real-time scheduler priority if configured.
+ * It resets the loop counter and sets status to ACTIVE. The RT priority is applied at process
+ * start (FPS .procinfo.RTprio, or the CLI's ..RTprio), not here.
  */
 errno_t processinfo_loopstart(PROCESSINFO *processinfo)
 {
     processinfo->loopcnt  = 0;
     processinfo->loopstat = 1;
-
-    if (processinfo->RT_priority > -1)
-    {
-        struct sched_param schedpar;
-        schedpar.sched_priority = processinfo->RT_priority;
-
-        if (sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0)
-        {
-            fprintf(stderr,
-                    "WARNING: RT priority %d requested"
-                    " but sched_setscheduler failed:"
-                    " %s\n"
-                    "  Run 'sudo milk-setup-caps' to"
-                    " grant CAP_SYS_NICE.\n",
-                    processinfo->RT_priority, strerror(errno));
-            processinfo_WriteMessage(processinfo, "RT prio failed - "
-                                                  "run milk-setup-caps");
-        }
-    }
 
     return RETURN_SUCCESS;
 }
