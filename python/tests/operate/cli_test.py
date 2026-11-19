@@ -433,6 +433,15 @@ def test_mlat_plan_is_listed_as_not_applicable_without_its_units(pp):
     assert result.exit_code == 1 and "acquWFS" in _text(result)
 
 
+def test_measlinresp_plan_is_listed_as_not_applicable_without_its_units(pp):
+    lines = [line.strip() for line in _invoke("--help").output.splitlines()]
+    assert "measlinresp [-p PIPE] [-a AMPL]" in lines
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert _row(result, "measlinresp").endswith(
+        "  n/a (Unknown compute units ['acquWFS'] for RunStart)"
+    )
+
+
 # ---- moka tasks ----
 # Rows are whitespace-separated: label, success (yes/no), can (yes/no), then the failure reason
 # when can is no; or label, then "n/a (<reason>)" when the task cannot be built.

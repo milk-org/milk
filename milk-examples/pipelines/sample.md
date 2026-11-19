@@ -1,4 +1,4 @@
-# sample.sh: mlatsim + aoloop, up to the mlat display
+# sample.sh: mlatsim + aoloop, up to the linear response
 
 It works in `~/AOloop2` and follows
 [pipelines_tour.md](../../docs/guide/pipelines_tour.md):
@@ -9,10 +9,14 @@ It works in `~/AOloop2` and follows
    `data/dm.fits`.
 3. **Deploy:** `moka deploy -p mlatsim`, then `-p aoloop`.
 4. **Link:** `moka link delaysim -p aoloop` points `aol0_wfsim` at `mlatsim_wfs` and
-   `aol0_dmC` at `mlatsim_dm`.
+   `aol0_dmC` and `aol0_dmRM` at `mlatsim_dm`.
 5. **Run:** `moka runstart -p mlatsim` starts all of `mlatsim`, then `moka mlat -p aoloop` starts
    `aoloop`'s `acquWFS` and `mlat` and waits for `mlat` to finish.
 6. **Show:** `mokashow mlat -p aoloop`.
+7. **Linear response:** `moka mkpokes -p aoloop zonal` writes the poke cube
+   `calib/RMmodesDM.fits`; `moka measlinresp -p aoloop` measures the response to it with mlat's
+   latency and writes `calib/RMmodesWFS.fits`. The simulated WFS is a delayed copy of the DM, so
+   the last command prints a small difference when the latency handed over is right.
 
 ## Before it can work
 
@@ -21,7 +25,7 @@ It works in `~/AOloop2` and follows
   above `[compute_units]`, otherwise none of the FPS defaults load.
 - **Missing streams at deploy:** deploy starts the setup processes of every compute unit.
   `wfs2modes` and `modes2dm` expect `aol0_CMmodesWFS` and `aol0_CMmodesDM`, but nothing creates
-  them, so deploy will probably stop with an error there. `measlinresp` also has no settings.
+  them, so deploy will probably stop with an error there.
   The options are to add `[[dataloads]]` for those streams, or to leave those compute units out
   of this test.
 - **Link order:** if `modes2dm` creates `aol0_dmC` as a real file during deploy, the `delaysim`

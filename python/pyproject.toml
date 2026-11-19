@@ -38,7 +38,9 @@ addopts = [
     "-p", "no:dash",
     "-p", "no:returns",
     "-p", "no:anyio",
+    "-m", "not e2e",  # a -m on the command line replaces this one: `pytest -m e2e`
 ]
+markers = ["e2e: long end-to-end runs; not in the default suite"]
 
 [tool.coverage.run]
 command_line = "-m pytest"

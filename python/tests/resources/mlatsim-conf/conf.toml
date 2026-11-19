@@ -44,6 +44,7 @@ procinfo.enabled = true
 procinfo.loopcntMax = -1
 procinfo.triggermode = 4      # delay: polls the buffer every triggerdelay
 procinfo.triggerdelay = 0.000005
+procinfo.RTprio = 49          # the simulated hardware outranks what measures it
 
 [compute_units.wfscam]        # the camera: one frame every triggerdelay
 exec = "milk-fpsexec-mem-streamcopy"
@@ -55,6 +56,7 @@ procinfo.enabled = true
 procinfo.loopcntMax = -1
 procinfo.triggermode = 4      # delay
 procinfo.triggerdelay = 0.001
+procinfo.RTprio = 49
 
 [compute_units.mlat]          # one measurement per run; the run ends by itself
 exec = "cacao-fpsexec-cacaopt-mlat"

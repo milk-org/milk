@@ -243,13 +243,16 @@ class WaitRunEnd(Task):
     def can(self) -> bool:
         return True
 
+    def _ended(self) -> bool:
+        return not any(fps.run_isrunning() for _, fps in self._existing())
+
     def forward(self) -> None:
-        if not wait_until(self.success, self.TIMEOUT, interval=0.05):
+        if not wait_until(self._ended, self.TIMEOUT, interval=0.05):
             running = [c.fpsname for c, f in self._existing() if f.run_isrunning()]
             self.failure_reason = f"Still running: {', '.join(running)}."
 
     def success(self) -> bool:
-        return not any(fps.run_isrunning() for _, fps in self._existing())
+        return self._ended()
 
 
 class DeapplyAllLinkages(Task):

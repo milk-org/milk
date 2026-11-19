@@ -16,14 +16,15 @@ over these ([§4](#4-custom-plans)).
 
 ## 1. Built-in plans
 
-| Plan       | Steps                                                                           | `on_failure`  | `accepts`            |
-| ---------- | ------------------------------------------------------------------------------- | ------------- | -------------------- |
-| `deploy`   | ClaimRundir → InitFPS → LoadData → ConfStart                                    | `abort`       | `cold_or_consistent` |
-| `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any`                |
-| `runstart` | RunStart                                                                        | `abort`       | `consistent`         |
-| `runstop`  | RunStop                                                                         | `best_effort` | `any`                |
-| `mlat`     | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                           | `abort`       | `consistent`         |
-| `mkpokes`  | MakePokes                                                                       | `abort`       | `consistent`         |
+| Plan          | Steps                                                                                          | `on_failure`  | `accepts`            |
+| ------------- | ---------------------------------------------------------------------------------------------- | ------------- | -------------------- |
+| `deploy`      | ClaimRundir → InitFPS → LoadData → ConfStart                                                   | `abort`       | `cold_or_consistent` |
+| `teardown`    | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir                | `best_effort` | `any`                |
+| `runstart`    | RunStart                                                                                       | `abort`       | `consistent`         |
+| `runstop`     | RunStop                                                                                        | `best_effort` | `any`                |
+| `mlat`        | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                                          | `abort`       | `consistent`         |
+| `mkpokes`     | MakePokes                                                                                      | `abort`       | `consistent`         |
+| `measlinresp` | RunStart[acquWFS] → SetLinResp[measlinresp] → RunStart[measlinresp] → WaitLinResp[measlinresp] | `abort`       | `consistent`         |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
@@ -34,6 +35,22 @@ CompUs are idle); a second run skips that start and starts `mlat` again.
 it needs. `TYPE` is `hadamard` (default: `next_pow2(Nact)` slices) or `zonal` (one actuator per
 slice). A cube already of that type and DM size is left alone; a hand-made one (no `POKETYPE`) is
 replaced. The cube is FITS (NAXIS1, NAXIS2, NAXIS3) = (`xsize`, `ysize`, modes).
+
+`moka measlinresp [-a AMPL]` measures the response to the cube in `calib/RMmodesDM.fits` (made by
+`mkpokes` or dropped there by hand). It needs CompUs `acquWFS`, `mlat` and `measlinresp`, the
+latency of a past `moka mlat` (`work/fps.<mlat FPS>.datadir/cacaovars.bash`, kept by
+`teardown`), and the `streamin` stream, whose shape must match the cube's. Everything else comes
+from the `measlinresp` FPS conf; `-a` sets `ampl` until the next deploy. All files are in
+`<rootdir>/calib/`:
+
+| File                         | Is                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| `RMmodesWFS.inprogress.fits` | what the run writes, rewritten at every cycle                          |
+| `RMmodesWFS.fits`            | a complete run only (`procinfo.loopcntMax` cycles), renamed at its end |
+| `RMmodesWFS.prev.fits`       | the `RMmodesWFS.fits` that was there when the latest run began         |
+
+Every `moka measlinresp` measures again. Nothing checks that other writers leave the DM alone:
+run it before `moka runstart`.
 
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
@@ -57,20 +74,22 @@ on those CompUs. Refusing CompU names for the other plans is a CLI check only: f
 
 ## 2. Built-in tasks
 
-| Task                 | Goal (`success()`)                                                                                                                                    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ClaimRundir`        | The rundir is claimed by this rootdir for the current boot. It refuses if another rootdir holds the name, or another pipeline holds the `loop_number` |
-| `InitFPS`            | Every FPS exists and is valid. It runs `fpsinit` in `work/`, then sets the `[compute_units.<cu>.fps]` values                                          |
-| `LoadData`           | Every `[[dataloads]]` target stream exists with the source FITS shape and dtype                                                                       |
-| `ConfStart`          | Every conf process is running                                                                                                                         |
-| `RunStart`           | Every run process of the subset (default: `runstart`) is running. It starts them one at a time, in order, and requires the conf processes to run      |
-| `RunStop`            | No run process is running                                                                                                                             |
-| `WaitRunEnd`         | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything                                            |
-| `DeapplyAllLinkages` | No systemlinkage symlink remains                                                                                                                      |
-| `ConfStop`           | No conf process is running                                                                                                                            |
-| `KillTmux`           | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true`                                                   |
-| `DestroyFPS`         | No FPS of the subset exists                                                                                                                           |
-| `ReleaseRundir`      | The rundir is gone                                                                                                                                    |
+| Task                 | Goal (`success()`)                                                                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ClaimRundir`        | The rundir is claimed by this rootdir for the current boot. It refuses if another rootdir holds the name, or another pipeline holds the `loop_number`                                                      |
+| `InitFPS`            | Every FPS exists and is valid. It runs `fpsinit` in `work/`, then sets the `[compute_units.<cu>.fps]` values                                                                                               |
+| `LoadData`           | Every `[[dataloads]]` target stream exists with the source FITS shape and dtype                                                                                                                            |
+| `ConfStart`          | Every conf process is running                                                                                                                                                                              |
+| `RunStart`           | Every run process of the subset (default: `runstart`) is running. It starts them one at a time, in order, and requires the conf processes to run                                                           |
+| `RunStop`            | No run process is running                                                                                                                                                                                  |
+| `WaitRunEnd`         | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything                                                                                                 |
+| `SetLinResp`         | The `measlinresp` FPS holds the cube and output paths (relative to `work/`), mlat's frame rate and latency, and `-a`; no `RMmodesWFS.fits` nor in-progress file is left (the first is archived to `.prev`) |
+| `WaitLinResp`        | As `WaitRunEnd`, with a timeout of 2x expected +10 s; then a complete run's in-progress file is renamed `RMmodesWFS.fits`                                                                                  |
+| `DeapplyAllLinkages` | No systemlinkage symlink remains                                                                                                                                                                           |
+| `ConfStop`           | No conf process is running                                                                                                                                                                                 |
+| `KillTmux`           | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true`                                                                                                        |
+| `DestroyFPS`         | No FPS of the subset exists                                                                                                                                                                                |
+| `ReleaseRundir`      | The rundir is gone                                                                                                                                                                                         |
 
 ## 3. Running a single task
 

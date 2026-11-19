@@ -122,17 +122,10 @@ for _plan in (
     ),
     Plan("runstart", (Step("RunStart"),), "abort", "consistent", compus_arg=True),
     Plan("runstop", (Step("RunStop"),), "best_effort", "any", compus_arg=True),
-    Plan(
-        "mlat",
-        (
-            Step("RunStart", ("acquWFS",)),
-            Step("RunStart", ("mlat",)),
-            Step("WaitRunEnd", ("mlat",)),
-        ),
-    ),
 ):
     PLANS.register(_plan.name, _plan)
 
-from ..calibs import (
+from ..calibs import (  # noqa: E402,F401  register their plans and tasks
+    mlat as _mlat,
     linresp as _linresp,
-)  # noqa: E402,F401  registers its plans and tasks
+)

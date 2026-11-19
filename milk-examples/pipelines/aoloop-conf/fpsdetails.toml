@@ -51,3 +51,11 @@ procinfo.loopcntMax = 0       # a single pass (milk counts from 0)
 procinfo.triggermode = 0      # immediate
 
 [compute_units.measlinresp.fps]
+streamin = "aol{_ln}_dmRM"                         # as in cacao
+streamout = "{compute_units.mlat.fps.wfsstream}"   # aol0_imWFS2
+ampl = 0.1
+timing.NBave = 1
+timing.NBexcl = 1
+procinfo.enabled = true
+procinfo.loopcntMax = 10        # cycles
+procinfo.triggermode = 0

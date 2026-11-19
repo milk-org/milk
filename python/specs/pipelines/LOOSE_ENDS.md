@@ -39,6 +39,9 @@ list at each slice boundary.
   of sorted values, times `framerateHz` (`mlat.c` ~717-800). That argmax is ill-defined on a flat
   top. dt is the midpoint of two frames' *read* times minus `dtoffset`, the time just after
   `mlat_setdm` returns. Compare with the best-kernel knee + ½ frame from `mokashow mlat`.
+  013-3 e2e (`linresp_e2e_test.py`, `NBexcl = 1`): measlinresp's `dtfr = latencyfr − 0.5 + 0.5·NBexcl` equals `latencyfr` there, so the response lands on the measured frame's edge
+  (~60 µs margin on mlatsim, about one nanosleep overshoot); ~half the reads show the previous
+  mode. The e2e uses `NBexcl = 2` (half a frame of margin) until this is settled.
 - [future] Pipeline kinds (a `kind` key and a kind-defaults layer under `includes`) were removed
   by the 012 audit as unused; bring them back with the first kind other than generic.
 - [later] The provenance system (`provenance.toml`, tagfiles, `drift`/`resync` records) may be
@@ -102,6 +105,15 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   old cube until `mkpokes` runs with another type, or the file is removed.
 - [later] `[dmhint]` overlaps the `measlinresp` unit's `streamin` stream shape; nothing checks they
   agree (013-3 `SetLinResp.can()` compares the cube to the stream).
+- [later] Duplicate: `SetLinResp.can()` repeats `RunStart.can()`'s "FPS missing or conf process not
+  running" check and message (013-3).
+- [ ] FPS string values hold 63 characters (`FUNCTION_PARAMETER_STRMAXLEN`) and pyMilk truncates
+  longer writes silently; measlinresp gets `../calib/...` paths for that (013-3).
+- [ ] The procinfo of a run is gone once it exits: `WaitLinResp` holds a handle from before the
+  end to read the loop counter (013-3). A generic "run completed" check would need the same.
 - [ ] `logshmim_save.c:65` calls `milkrt_RTPrio(writerRTprio)` from the log writer thread, but
   `milkrt_RTPrio` targets `getpid()` (the main thread), not the writer thread. Left in place when RT
   priority was removed from `processinfo_loopstart` and the other coremods.
+- [later] Duplicate: `linresp_e2e_test.py`'s `linrespsim` fixture repeats `mlat_milk_test.py`'s
+  `mlatsim` (copy, init, deploy, teardown, tmux kill) with extra conf appended (013-3).
+- [ ] Decide which existing `*_milk_test.py` files are `e2e` (013-3 added the marker; none re-marked).

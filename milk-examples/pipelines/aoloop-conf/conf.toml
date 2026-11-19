@@ -27,3 +27,4 @@ measlinresp.exec    = 'cacao-fpsexec-cacaoac-measlinresp'
 [systemlinkage.delaysim]
 aol0_wfsim = 'mlatsim_wfs'
 aol0_dmC = 'mlatsim_dm'
+aol0_dmRM = 'mlatsim_dm'        # same destination as dmC, for now # FIXME

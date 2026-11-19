@@ -6,23 +6,8 @@ from pathlib import Path
 
 import click
 
+from ..calibs.mlat import mlat_results
 from ..operate.cli import _pipe_option, _pipeline
-
-
-def _mlat_results(datadir: Path) -> tuple[float, float] | None:
-    """(framerate [Hz], latency [frame]) from the ``cacaovars.bash`` mlat writes in its own datadir, or None."""
-    path = datadir / "cacaovars.bash"
-    if not path.is_file():
-        return None
-    env = dict(
-        line.removeprefix("export ").strip().split("=", 1)
-        for line in path.read_text().splitlines()
-        if "=" in line
-    )
-    try:
-        return float(env["CACAO_WFSFRATE"]), float(env["CACAO_LATENCYHARDWFR"])
-    except (KeyError, ValueError):
-        return None
 
 
 def _mlat_kernel(t, knee, width, frame):
@@ -77,7 +62,7 @@ def mlat_figure(datadir: Path | str):
     def redraw() -> None:
         _, dt, value = np.loadtxt(path, comments="#", unpack=True)
         line.set_data(dt, value)
-        res = _mlat_results(datadir)
+        res = mlat_results(datadir)
         if res is None:
             for artist in (baseline, triangle, kernel):
                 artist.set_data([], [])
