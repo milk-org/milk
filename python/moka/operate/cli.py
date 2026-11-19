@@ -13,26 +13,52 @@ import click
 from ..cli import ErrstackGroup
 
 if TYPE_CHECKING:
+    from ..registry import Registry
     from .pipeline import Pipeline
+    from .plans import Plan
 
 
 class _PlansGroup(ErrstackGroup):
-    """The fixed commands, plus one command per PLANS name, read at call time."""
+    """The fixed commands, plus one command per plan of the pipeline of -p/--pipe (else cwd)."""
 
-    def _plans(self) -> list[str]:
-        from .plans import PLANS
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        """Peek at -p/--pipe wherever it is, before help or command resolution need the plans."""
+        peek = click.Command(
+            None,
+            params=[click.Option(["-p", "--pipe"])],
+            add_help_option=False,
+            context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
+        )
+        ctx.meta["moka.pipe"] = peek.make_context(
+            "moka", list(args), resilient_parsing=True
+        ).params["pipe"]
+        return super().parse_args(ctx, args)
 
-        clash = [name for name in PLANS.names() if name in self.commands]
+    def _plans(self, ctx: click.Context) -> Registry[Plan]:
+        """The pipeline's plans; the built-in ones if it does not load, so help never fails."""
+        if "moka.plans" not in ctx.meta:  # resolved once per invocation
+            from .plans import PLANS
+
+            try:
+                ctx.meta["moka.plans"] = (_load(ctx).plans, None)
+            except Exception as error:
+                ctx.meta["moka.plans"] = (PLANS, error)
+        plans = ctx.meta["moka.plans"][0]
+        clash = [name for name in plans.names() if name in self.commands]
         if clash:
             raise click.ClickException(f"Plans {clash} clash with fixed commands.")
-        return PLANS.names()
+        return plans
 
     def list_commands(self, ctx: click.Context) -> list[str]:
-        return sorted([*self.commands, *self._plans()])
+        return sorted([*self.commands, *self._plans(ctx).names()])
 
     def get_command(self, ctx: click.Context, name: str) -> click.Command | None:
-        if name in self._plans():
-            return _plan_command(name)
+        plans = self._plans(ctx)
+        if name in plans:
+            return _plan_command(name, plans[name].compus_arg)
+        error = ctx.meta["moka.plans"][1]
+        if name not in self.commands and error is not None:
+            raise error  # rather than "No such command"
         return self.commands.get(name)
 
     def format_commands(
@@ -65,38 +91,55 @@ def _signature(ctx: click.Context, cmd: click.Command) -> str:
     return " ".join(pieces)
 
 
+def _pipe(**kwargs):
+    return click.option(
+        "-p",
+        "--pipe",
+        default=None,
+        metavar="PIPE",
+        help="Rootdir path or short name; default: cwd.",
+        **kwargs,
+    )
+
+
+_pipe_option = _pipe()
+
+
 @click.group(cls=_PlansGroup, context_settings={"help_option_names": ["-h", "--help"]})
+@_pipe(expose_value=False)  # read by _PlansGroup.parse_args
 def moka():
     """
     Operate an initialized milk/cacao pipeline (see `mokainit init`).
 
     \b
     -p/--pipe PIPE is a rootdir path, or a short name: <cwd>/<PIPE>-rootdir.
-    Without -p, cwd must be a rootdir.
+    Without -p, cwd must be a rootdir. The commands include the plans of that pipeline.
     """
 
 
-_pipe_option = click.option(
-    "-p",
-    "--pipe",
-    default=None,
-    metavar="PIPE",
-    help="Rootdir path or short name; default: cwd.",
-)
+def _load(ctx: click.Context) -> Pipeline:
+    """The pipeline of -p/--pipe (else cwd), loaded once per invocation."""
+    meta = ctx.meta
+    if "moka.pipeline" not in meta:
+        from .pipeline import Pipeline
+
+        pipe = meta.get("moka.pipe")
+        meta["moka.pipeline"] = (
+            Pipeline.from_folder(Path.cwd()) if pipe is None else Pipeline(pipe)
+        )
+    return meta["moka.pipeline"]
 
 
 def _pipeline(pipe: str | None) -> Pipeline:
-    """Resolve -p/--pipe to a Pipeline and say which rootdir it is."""
-    from .pipeline import Pipeline
-
-    pp = Pipeline.from_folder(Path.cwd()) if pipe is None else Pipeline(pipe)
+    """The invocation's pipeline, saying which rootdir it is."""
+    ctx = click.get_current_context()
+    ctx.meta.setdefault("moka.pipe", pipe)  # already set under _PlansGroup
+    pp = _load(ctx)
     click.echo(f"rootdir: {pp.root_folder}")
     return pp
 
 
-def _plan_command(name: str) -> click.Command:
-    from .plans import PLANS
-
+def _plan_command(name: str, compus_arg: bool) -> click.Command:
     @click.command(name, help=f"Run the {name} plan.")
     @_pipe_option
     def command(pipe: str | None, compus: tuple[str, ...] = ()):
@@ -104,7 +147,7 @@ def _plan_command(name: str) -> click.Command:
 
         run_plan(_pipeline(pipe), name, compus or None)
 
-    if PLANS[name].compus_arg:
+    if compus_arg:
         command = click.argument("compus", nargs=-1, metavar="[CU]...")(command)
     return command
 

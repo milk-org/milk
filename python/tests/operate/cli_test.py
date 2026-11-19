@@ -20,12 +20,6 @@ FPS = ("basic_delay0", "basic_delay1")
 
 
 @pytest.fixture
-def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
-    """pipelinebasic, initialized from tmp_path/pipelinebasic-conf, cold, simulated FPSs."""
-    return make_tmp_pipeline()
-
-
-@pytest.fixture
 def plans(monkeypatch):
     """Register throwaway plans; the registry is restored after the test."""
     monkeypatch.setattr(PLANS, "_items", dict(PLANS._items))
@@ -171,6 +165,116 @@ def test_other_plans_refuse_compute_units(pp, plan):
     result = _invoke(plan, "-p", str(pp.root_folder), "delay0")
     assert result.exit_code == 2, _text(result)  # click usage error
     assert state(pp).state is State.COLD  # nothing ran
+
+
+# ---- pipeline-local plans (specs/012-moka-plans-cli/brief.md §4) ----
+
+PROBE = '\n[plans.probe]\nsteps = ["ReleaseRundir"]\naccepts = "any"\n'
+BUILTIN = ("deploy", "teardown", "runstart", "runstop", "state", "link", "nuke")
+
+
+def _commands(result) -> list[str]:
+    """The command names of a help output: the first word of its two-space-indented rows."""
+    rows = result.output.split("Commands:")[1].splitlines()
+    return [row.split()[0] for row in rows if row[:2] == "  " and row[2:3].strip()]
+
+
+@pytest.fixture
+def loads(monkeypatch) -> list:
+    """The confresolve calls made by Pipeline(): one per pipeline load."""
+    import moka.operate.pipeline as module
+
+    seen: list = []
+    real = module.confresolve
+    monkeypatch.setattr(
+        module, "confresolve", lambda *args: seen.append(args) or real(*args)
+    )
+    return seen
+
+
+def test_local_plan_is_a_command_with_p(make_tmp_pipeline, pp_env, loads):
+    pp = make_tmp_pipeline(PROBE)
+    del loads[:]
+    for args in (("probe", "-p", str(pp.root_folder)), ("-p", pp.root_folder, "probe")):
+        result = _invoke(*map(str, args))
+        assert result.exit_code == 0, _text(result)
+    assert len(loads) == 2  # the pipeline is loaded once per invocation
+    help = _invoke("-h", "-p", str(pp.root_folder))
+    assert help.exit_code == 0, _text(help)
+    assert "probe" in _commands(help) and set(BUILTIN) <= set(_commands(help))
+
+
+def test_a_pipeline_that_does_not_load_is_tried_once_and_says_why(pp, loads, tmp_path):
+    marker = tmp_path / "imports"
+    scripts = pp.root_folder / "conf" / "scripts"
+    scripts.mkdir()
+    (scripts / "moka_plans.py").write_text(
+        f"open({str(marker)!r}, 'a').write('x')\nraise RuntimeError('boom')\n"
+    )
+    assert _invoke("-h", "-p", str(pp.root_folder)).exit_code == 0
+    assert marker.read_text() == "x"  # one import for the whole help
+    result = _invoke("touch", "-p", str(pp.root_folder))  # not a built-in: say why
+    assert result.exit_code != 0 and "boom" in _text(result)
+    del loads[:]
+    result = _invoke("touch", "-p", "nope")
+    assert result.exit_code != 0 and "rootdir" in _text(result)
+    assert len(loads) == 0  # "nope" is no rootdir: nothing to resolve
+    result = _invoke("nosuchplan", "-p", str(tmp_path))
+    assert result.exit_code != 0 and "rootdir" in _text(result)
+
+
+def test_unknown_command_on_a_good_pipeline(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(PROBE)
+    result = _invoke("nosuchplan", "-p", str(pp.root_folder))
+    assert result.exit_code == 2 and "No such command" in _text(result)
+
+
+def test_local_plan_is_a_command_from_cwd(make_tmp_pipeline, pp_env, monkeypatch):
+    pp = make_tmp_pipeline(PROBE)
+    monkeypatch.chdir(pp.root_folder)
+    assert "probe" in _commands(_invoke("-h"))
+    result = _invoke("probe")
+    assert result.exit_code == 0, _text(result)
+
+
+def test_local_plans_do_not_leak_into_other_invocations(
+    make_tmp_pipeline, pp_env, tmp_path, monkeypatch
+):
+    pp = make_tmp_pipeline(PROBE)
+    assert "probe" in _commands(_invoke("-h", "-p", str(pp.root_folder)))
+    monkeypatch.chdir(tmp_path)  # not a rootdir
+    assert "probe" not in _commands(_invoke("-h"))
+
+
+def test_help_without_a_resolvable_pipeline_lists_the_builtins(
+    pp, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)  # not a rootdir
+    for args in (("-h",), ("-h", "-p", "nope"), ("--help", "--pipe", str(tmp_path))):
+        result = _invoke(*args)
+        assert result.exit_code == 0, _text(result)
+        assert set(BUILTIN) <= set(_commands(result))
+
+
+@pytest.mark.parametrize("breakage", ["conf", "moka_plans"])
+def test_help_with_a_pipeline_that_does_not_load_lists_the_builtins(pp, breakage):
+    if breakage == "conf":
+        (pp.root_folder / "conf" / "conf.toml").write_text("this is not toml")
+    else:
+        scripts = pp.root_folder / "conf" / "scripts"
+        scripts.mkdir()
+        (scripts / "moka_plans.py").write_text("raise RuntimeError('boom')\n")
+    result = _invoke("-h", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert set(BUILTIN) <= set(_commands(result))
+
+
+def test_local_plan_named_like_a_fixed_command_is_refused(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(PROBE.replace("plans.probe", "plans.state"))
+    for args in (("-h",), ("state",)):
+        result = _invoke(*args, "-p", str(pp.root_folder))
+        assert result.exit_code != 0 and "state" in _text(result)
+        assert "clash" in _text(result)
 
 
 # ---- state ----

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
-from ..errors import BestEffortError, ConfigError, MilkError
+from ..errors import BestEffortError, MilkError
 from ..registry import Registry
-from .state import Accepts, gate, state
-from .tasks import TASKS
+from ..config.model import Accepts, OnFailure
+from .state import gate, state
 
 if TYPE_CHECKING:
     from .pipeline import Pipeline
@@ -19,6 +19,12 @@ if TYPE_CHECKING:
 class Step:
     task: str
     compus: tuple[str, ...] | None = None
+
+    @classmethod
+    def parse(cls, label: str) -> Step:
+        """The inverse of label."""
+        task, _, compus = label.partition("[")
+        return cls(task, tuple(compus.rstrip("]").split(",")) if compus else None)
 
     @property
     def label(self) -> str:
@@ -33,7 +39,7 @@ class Step:
 class Plan:
     name: str
     steps: tuple[Step, ...]
-    on_failure: Literal["abort", "best_effort"] = "abort"
+    on_failure: OnFailure = "abort"
     accepts: Accepts = "consistent"
     compus_arg: bool = False  # the CLI takes [CU]...
 
@@ -43,7 +49,7 @@ PLANS: Registry[Plan] = Registry("plan")
 
 def run(pipeline: Pipeline, plan: Plan) -> None:
     """Run any plan: build every task first (so ConfigError precedes side effects), gate, then do."""
-    tasks = [(s.label, TASKS[s.task](pipeline, s.compus)) for s in plan.steps]
+    tasks = [(s.label, pipeline.tasks[s.task](pipeline, s.compus)) for s in plan.steps]
     gate(pipeline.short_name, state(pipeline), plan.accepts)
     failures: list[tuple[str, Exception]] = []
     for label, task in tasks:
@@ -61,19 +67,10 @@ def run_plan(
     pipeline: Pipeline, name: str, compus: Sequence[str] | None = None
 ) -> None:
     """compus: run every step of the plan on these compute units instead."""
-    plan = PLANS[name]
+    plan = pipeline.plans[name]
     if compus is not None:
         steps = tuple(replace(s, compus=tuple(compus)) for s in plan.steps)
         plan = replace(plan, steps=steps)
-    allowed = pipeline.config.plans
-    if allowed is not None:  # TODO entire point of this block ???
-        for listed in allowed:
-            PLANS[listed]
-        if name not in allowed:
-            raise ConfigError(
-                f"Plan {name!r} is not in this pipeline's plans {allowed}.",
-                pipeline=pipeline.short_name,
-            )
     run(pipeline, plan)
 
 

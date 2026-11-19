@@ -123,9 +123,10 @@ The no-op on an already reached goal is what makes plans idempotent.
   `self._existing()` is the part of that subset whose FPS exists, as `(ComputeUnit, FPS)` pairs.
 - Tasks act on the live pipeline (SHM, FPS, tmux, processes) and never modify `rootdir/conf/`.
 
-Direct subclasses of `Task` in `milk/operate/tasks.py` are registered under their class name
-automatically. A task defined anywhere else needs `TASKS.register("MyTask", MyTask)`; it can then
-be named in a `Step` ([Plans and tasks](pipelines_plans.md#4-custom-plans)).
+Direct subclasses of `Task` in `moka/operate/tasks.py` are registered under their class name
+automatically. A task defined anywhere else needs `TASKS.register("MyTask", MyTask)`, or a
+pipeline's `scripts/moka_plans.py`; it can then be named in a `Step`
+([Plans and tasks](pipelines_plans.md#4-custom-plans)).
 
 ## 7. Normative glossary
 

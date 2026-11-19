@@ -13,10 +13,6 @@ list at each slice boundary.
 - [repo merge] `specs/006-r6-pymilk-boundary/draft_pymilk_boundary_test.py` still imports
   `moka.infra.pipeline_models`, moved to `moka.config.model` by R3a step 0.
 - [R4+] No global scan of rundirs to find the configured pipelines (R3b D2).
-- [future, spec only] Pipeline-local plans and tasks: Python files in a dedicated conf-set folder
-  (akin to `scripts/`), copied to the rootdir as conf artifacts, then discovered, checked and
-  registered into TASKS/PLANS at Pipeline load. Open points: load/sandbox policy, per-pipeline
-  scoping of the registries, drift treatment of code. See the project doc `claude/r4-decisions.md`.
 - [milk] `md->signal` is updated with non-atomic read-modify-writes by the conf loop
   (`fps_FPCONFloopstep.c:67,73`, `fps_checkparameter.c:540`) and by `CONFstop`, so a `confstop`
   sent during the first conf iteration can still be lost (~1 in 10 with no pause after deploy).
@@ -25,6 +21,8 @@ list at each slice boundary.
   `--replace`.
 - [future] `RunStartAO`/`RunStopAO`, requiring a state that says the AO calibration is loaded.
   Until then `moka runstart`/`runstop` start/stop run processes without that check.
+- [later] `moka nuke` on a pipeline whose `moka_plans.py` does not load deletes the rootdir
+  without running teardown.
 - [later] `runstart = []` is accepted; `state()` then reports `running` for any deployed pipeline.
 - [future] `milk-demopipeline`: a ready-to-run demo that deploys and runs a small pipeline end to
   end from Python (also in `docs/notes_for_future.md`).
@@ -48,8 +46,6 @@ list at each slice boundary.
 
 Readability nits from the R4b review, logged at `75e5f946c9`.
 
-- [ ] `plans.py` `run_plan`: bare `PLANS[listed]` validates the config `plans` list by side effect
-  only. Make it an explicit check, or drop it.
 - [ ] `Pipeline.compute_units` / `Task.compute_units` map FPSs on read, so a debugger evaluating
   them has side effects (see the `[R4?]` entry above).
 - [ ] `ComputeUnit.__str__` runs a milk binary and can raise; `__repr__` mutates `self.fps`.

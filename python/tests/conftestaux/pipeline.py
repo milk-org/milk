@@ -21,14 +21,18 @@ RESOURCES = Path(__file__).parents[1] / "resources"
 
 @pytest.fixture
 def make_tmp_pipeline(tmp_path):
-    """A pipelinebasic copy in tmp_path, with extra TOML appended to its conf.toml, then init."""
+    """A pipelinebasic copy in tmp_path, with extra TOML appended to its conf.toml and
+    ``moka_plans`` as its scripts/moka_plans.py, then init."""
 
-    def make(extra_toml: str = "") -> Pipeline:
+    def make(extra_toml: str = "", moka_plans: str = "") -> Pipeline:
         conf = tmp_path / "pipelinebasic-conf"
         shutil.copytree(RESOURCES / "pipelinebasic-conf", conf)
         if extra_toml:
             with (conf / "conf.toml").open("a") as stream:
                 stream.write(extra_toml)
+        if moka_plans:
+            (conf / "scripts").mkdir()
+            (conf / "scripts" / "moka_plans.py").write_text(moka_plans)
         return Pipeline(init(conf))
 
     return make

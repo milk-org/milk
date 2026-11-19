@@ -29,12 +29,6 @@ FPS = ("basic_delay0", "basic_delay1")
 
 
 @pytest.fixture
-def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
-    """pipelinebasic, initialized, cold, with a private SHM dir and simulated FPSs."""
-    return make_tmp_pipeline()
-
-
-@pytest.fixture
 def deployed(pp, paper):
     """pp, claimed for real, with every config FPS present and its conf process running."""
     pp.task_do(ClaimRundir)
@@ -93,15 +87,6 @@ def test_run_gates_on_the_plan_state(pp, log):
 def test_named_plans_still_go_through_run_plan(deployed, log, monkeypatch):
     PLANS.register("p", Plan("p", (Step("A"),)))
     run_plan(deployed, "p")
-    assert log == ["A:None"]
-
-
-def test_conf_plans_key_does_not_restrict_run(deployed, log):
-    toml = deployed.root_folder / "conf" / "conf.toml"
-    toml.write_text('plans = ["deploy", "teardown"]\n' + toml.read_text())
-    from moka.operate.pipeline import Pipeline
-
-    run(Pipeline(deployed.root_folder), Plan("adhoc", (Step("A"),)))
     assert log == ["A:None"]
 
 

@@ -36,12 +36,6 @@ from moka.registry import Registry
 FPS = {"basic_delay0", "basic_delay1"}
 
 
-@pytest.fixture
-def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
-    """pipelinebasic, initialized, cold, with a private SHM dir and simulated FPSs."""
-    return make_tmp_pipeline()
-
-
 def _deploy_on_paper(pp, paper, conf=False, run=False):
     """Claim the rundir for real and pretend every config FPS exists (and conf/run as given)."""
     pp.task_do(ClaimRundir)
@@ -49,15 +43,12 @@ def _deploy_on_paper(pp, paper, conf=False, run=False):
         paper[name] = (conf, run)
 
 
-def _with_conf(pp, replace: tuple[str, str] | None = None, prepend: str = ""):
-    """The same rootdir with its conf.toml hand-edited (live), resolved afresh."""
+def _with_conf(pp, prepend: str):
+    """The same rootdir with ``prepend`` hand-added (live) to its conf.toml, resolved afresh."""
     from moka.operate.pipeline import Pipeline
 
     toml = pp.root_folder / "conf" / "conf.toml"
-    text = toml.read_text()
-    if replace:
-        text = text.replace(*replace)
-    toml.write_text(prepend + text)
+    toml.write_text(prepend + toml.read_text())
     return Pipeline(pp.root_folder)
 
 
@@ -308,19 +299,6 @@ def test_unknown_compu_in_subset_refused(pp, probes):
         run_plan(pp, "p")
 
 
-def test_conf_plans_key_restricts(pp, probes):
-    _, _, plan = probes
-    plan("p", Step("ProbeA"))
-    restricted = _with_conf(pp, prepend='plans = ["deploy", "teardown"]\n')
-    with pytest.raises(ConfigError, match="'p'"):
-        run_plan(restricted, "p")
-    bogus = _with_conf(
-        pp, replace=('plans = ["deploy", "teardown"]', 'plans = ["nope"]')
-    )
-    with pytest.raises(ConfigError, match="nope"):
-        run_plan(bogus, "deploy")
-
-
 def test_unknown_plan_refused(pp):
     with pytest.raises(ConfigError, match="nosuchplan"):
         run_plan(pp, "nosuchplan")
@@ -394,7 +372,7 @@ def test_deapply_removes_configured_links(pp, paper, shm_dir_cleanafter):
 
 
 def _listing(pp, units: str):
-    return _with_conf(pp, prepend=f"runstart = {units}\n")
+    return _with_conf(pp, f"runstart = {units}\n")
 
 
 @pytest.mark.parametrize(

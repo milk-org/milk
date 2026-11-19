@@ -49,3 +49,14 @@ def paper(monkeypatch) -> dict[str, tuple[bool, bool]]:
     world: dict[str, tuple[bool, bool]] = {}
     monkeypatch.setattr("moka.operate.state.fps_status", lambda name: world.get(name))
     return world
+
+
+@pytest.fixture
+def pp_env(shm_dir_cleanafter, boot, paper) -> None:
+    """What a py test needs to run plans: a self-cleaning SHM dir, a pinned boot id, paper FPSs."""
+
+
+@pytest.fixture
+def pp(make_tmp_pipeline, pp_env):
+    """pipelinebasic, initialized from tmp_path/pipelinebasic-conf, cold, simulated FPSs."""
+    return make_tmp_pipeline()

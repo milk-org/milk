@@ -4,19 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from pyMilk.interfacing.fps import FPS
 
 from .. import env
+from ..config.model import Accepts
 from ..errors import ColdSystemError, InconsistentStateError
 from . import rundir
 
 if TYPE_CHECKING:
     from .pipeline import Pipeline
-
-
-Accepts = Literal["cold_or_consistent", "consistent", "any"]
 
 
 class State(str, Enum):

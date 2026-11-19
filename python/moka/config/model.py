@@ -105,6 +105,20 @@ class CommandHookDecl(_HookDecl):
 
 HookDecl = Annotated[FetchHookDecl | CommandHookDecl, Field(discriminator="type")]
 
+Accepts = Literal["cold_or_consistent", "consistent", "any"]  # see operate.state
+OnFailure = Literal["abort", "best_effort"]  # see operate.plans
+_STEP = r"^\w+(\[\w+(,\w+)*\])?$"  # "Task" or "Task[cu,cu]", as Step.label
+
+
+class PlanDecl(BaseModel):
+    """One ``[plans.<name>]`` table; unset keys take the defaults of operate.plans.Plan."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    steps: list[Annotated[str, Field(pattern=_STEP)]]
+    on_failure: OnFailure | None = None
+    accepts: Accepts | None = None
+
 
 class PipelineConfig(BaseModel):
     """Validated conf.toml. Top-level keys outside these fields are refused,
@@ -121,7 +135,7 @@ class PipelineConfig(BaseModel):
     # mode name -> {local stream owned by this pipeline: remote stream it points to}
     systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
     hooks: list[HookDecl] = Field(default_factory=list)
-    plans: list[str] | None = None  # restricts run_plan to these names
+    plans: dict[str, PlanDecl] = Field(default_factory=dict)
     # compute units RunStart starts, in order; default: all, in declaration order
     runstart: list[str] = Field(
         default_factory=lambda data: list(data.get("compute_units", ()))

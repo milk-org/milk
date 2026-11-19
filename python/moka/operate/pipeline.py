@@ -3,9 +3,10 @@ from __future__ import annotations
 from .compute_unit import ComputeUnit
 from ..config.resolve import confresolve
 from ..config.layout import is_rootdir
-from .plans import run_plan
+from .plans import PLANS, Plan, Step, run_plan
 from .state import State, require
-from .tasks import Task
+from .tasks import TASKS, Task
+from ..registry import Registry
 from .. import env
 from ..errors import (
     ConfigError,
@@ -14,7 +15,9 @@ from ..errors import (
     TaskDidNotSucceedError,
 )
 
+import functools
 import os
+import runpy
 import shutil
 from pathlib import Path
 
@@ -47,6 +50,35 @@ class Pipeline:
         if not is_rootdir(rootdir):
             raise ConfigError(f"{rootdir} is not a rootdir.", path=Path(rootdir))
         return cls(Path(rootdir).absolute())
+
+    @functools.cached_property
+    def _local(self) -> tuple[Registry[Plan], Registry[type[Task]]]:
+        """Built on first access: the [plans.<name>] tables, then conf/scripts/moka_plans.py."""
+        plans: Registry[Plan] = Registry("plan", parent=PLANS)
+        tasks: Registry[type[Task]] = Registry("task", parent=TASKS)
+        for name, decl in self.config.plans.items():
+            steps = tuple(map(Step.parse, decl.steps))
+            options = decl.model_dump(exclude={"steps"}, exclude_none=True)
+            plans.register(name, Plan(name, steps, **options))
+        path = self.root_folder / "conf" / "scripts" / "moka_plans.py"
+        if path.is_file():  # not sandboxed: trusted like [[hooks]] commands
+            ns = runpy.run_path(str(path))  # no bytecode, nothing left in sys.modules
+            for task in ns.get("TASKS", []):
+                tasks.register(task.__name__, task)
+            plans = Registry("plan", parent=plans)  # so that Python overrides TOML
+            for plan in ns.get("PLANS", []):
+                plans.register(plan.name, plan)
+        return plans, tasks
+
+    @property
+    def plans(self) -> Registry[Plan]:
+        """PLANS, plus and over this pipeline's own plans."""
+        return self._local[0]
+
+    @property
+    def tasks(self) -> Registry[type[Task]]:
+        """TASKS, plus and over this pipeline's own tasks."""
+        return self._local[1]
 
     def task_do(self, task: Task | type[Task]) -> Pipeline:
         if isinstance(task, type):

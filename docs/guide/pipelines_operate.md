@@ -70,14 +70,16 @@ moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
 - **`-p/--pipe PIPE`** is a rootdir path, or a short name meaning `<cwd>/<PIPE>-rootdir`.
   Without `-p`, the current directory must be a rootdir. Every command first prints
   `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
-- **Plan commands** are one per registered plan (`moka --help` lists them). `deploy` is
+- **Plan commands** are one per plan of the pipeline, built-in or
+  [local](pipelines_plans.md#4-custom-plans) (`moka -h -p PIPE` lists them). `deploy` is
   idempotent: run again on a configured pipeline, every step already succeeded. `teardown` is
   best effort and keeps the rootdir and `work/`. `runstart` and `runstop` take CompU names; they
   then act on those CompUs only. The steps of every plan are in
   [Plans and tasks: built-in plans](pipelines_plans.md#1-built-in-plans).
 - **`link`** is allowed only in `deployed` and `configured`. `teardown` removes every linkage.
 - **`nuke`** asks you to type the short name; `--yes` skips that. It deletes the rootdir even if
-  teardown fails.
+  teardown fails. It runs the pipeline's `teardown` plan, a local override included; if the
+  pipeline's local plans do not load, teardown does not run and the rootdir is still deleted.
 
 ### 2.1. `state`
 
