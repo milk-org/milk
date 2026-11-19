@@ -10,9 +10,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from pyMilk.interfacing.fps import FPS
+from pyMilk.interfacing.shm import SHM
 
 from moka.errors import InconsistentStateError
 from moka.operate import rundir
@@ -131,3 +133,19 @@ def test_teardown_kills_tmux_when_asked(live):
     run_plan(live, "deploy")
     run_plan(live, "teardown")
     assert not any(_tmux_has(n) for n in NAMES)
+
+
+RUN_FOREVER = {
+    f"compute_units.{cu}.fps.procinfo.loopcntMax": -1 for cu in ("delay0", "delay1")
+}
+
+
+@pytest.mark.parametrize("live", [RUN_FOREVER], indirect=True)
+def test_runstart_and_runstop_plans(shm_dir_cleanafter, live):
+    """shm_dir_cleanafter comes first so that it removes the streams after live's teardown."""
+    run_plan(live, "deploy")
+    SHM("input", np.zeros((4, 4), dtype=np.float32)).close()  # delay0's trigger stream
+    run_plan(live, "runstart")
+    assert state(live).state is State.RUNNING
+    run_plan(live, "runstop")
+    assert state(live).state is State.CONFIGURED

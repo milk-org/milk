@@ -71,7 +71,7 @@ def state(pipeline: Pipeline) -> PipelineState:
         return PipelineState(State.INCONSISTENT, reasons)
     conf = [s[0] for s in status.values()]
     run = [s[1] for s in status.values()]
-    if all(run):
+    if all(status[config.fps_name(cu)][1] for cu in config.runstart):
         st = State.RUNNING
     elif not any(run) and all(conf):
         st = State.CONFIGURED

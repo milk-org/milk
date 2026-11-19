@@ -83,6 +83,7 @@ which are kept and serve as variables for [substitution](#43-substitution).
 | `kind`                   | no       | Pipeline kind, default `"generic"`. Other kinds: not yet implemented.                                                               |
 | `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                     |
 | `plans`                  | no       | Restricts the plans that `moka <plan>` and `run_plan` may run on this pipeline.                                                     |
+| `runstart`               | no       | Ordered CompU names that `runstart` starts and `running` requires. Default: every CompU, in declaration order.                      |
 | `teardown_kill_tmux`     | no       | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`.                                                                |
 | `[compute_units.<cu>]`   | no       | One table per compute unit.                                                                                                         |
 | `[[dataloads]]`          | no       | Files to load into streams at deploy.                                                                                               |

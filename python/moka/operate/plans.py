@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal
 
 from ..errors import BestEffortError, ConfigError, MilkError
@@ -34,6 +35,7 @@ class Plan:
     steps: tuple[Step, ...]
     on_failure: Literal["abort", "best_effort"] = "abort"
     accepts: Accepts = "consistent"
+    compus_arg: bool = False  # the CLI takes [CU]...
 
 
 PLANS: Registry[Plan] = Registry("plan")
@@ -55,8 +57,14 @@ def run(pipeline: Pipeline, plan: Plan) -> None:
         raise BestEffortError(failures, pipeline=pipeline.short_name)
 
 
-def run_plan(pipeline: Pipeline, name: str) -> None:
+def run_plan(
+    pipeline: Pipeline, name: str, compus: Sequence[str] | None = None
+) -> None:
+    """compus: run every step of the plan on these compute units instead."""
     plan = PLANS[name]
+    if compus is not None:
+        steps = tuple(replace(s, compus=tuple(compus)) for s in plan.steps)
+        plan = replace(plan, steps=steps)
     allowed = pipeline.config.plans
     if allowed is not None:  # TODO entire point of this block ???
         for listed in allowed:
@@ -87,5 +95,7 @@ for _plan in (
         "best_effort",
         "any",
     ),
+    Plan("runstart", (Step("RunStart"),), "abort", "consistent", compus_arg=True),
+    Plan("runstop", (Step("RunStop"),), "best_effort", "any", compus_arg=True),
 ):
     PLANS.register(_plan.name, _plan)

@@ -82,19 +82,23 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
 
 ## 4. Start and stop the run processes
 
-Python only: no CLI equivalent yet.
+=== "CLI"
 
-```python
-from moka.operate.pipeline import Pipeline
-from moka.operate.tasks import RunStart, RunStop
+    ```bash
+    moka runstart -p basic          # (1)!
+    moka runstop -p basic delay1    # (2)!
+    ```
 
-pp = Pipeline("basic")
-pp.task_do(RunStart)                    # (1)!
-pp.task_do(RunStop(pp, ["delay1"]))     # (2)!
-```
+    1. The CompUs of [`runstart`](pipelines_conf.md#3-conftoml-keys) (default: all), one at a
+       time. The state becomes `running`.
+    2. A subset.
 
-1. All CompUs.
-2. A subset.
+=== "Python"
+
+    ```python
+    run_plan(pp, "runstart")
+    run_plan(pp, "runstop", ["delay1"])
+    ```
 
 ## 5. Tear down
 

@@ -14,26 +14,26 @@ The states are those printed by `moka state`; the arrows are commands and tasks.
 stateDiagram-v2
     direction LR
     cold --> configured : deploy
-    configured --> running : RunStart (Python)
-    running --> configured : RunStop (Python)
+    configured --> running : runstart
+    running --> configured : runstop
     configured --> cold : teardown
     running --> cold : teardown
     cold --> [*] : nuke
 ```
 
-| State          | Rundir                                                            | FPS  | Processes                       |
-| -------------- | ----------------------------------------------------------------- | ---- | ------------------------------- |
-| `cold`         | absent                                                            | none | none                            |
-| `deployed`     | claimed                                                           | all  | conf stopped                    |
-| `configured`   | claimed                                                           | all  | conf running                    |
-| `running`      | claimed                                                           | all  | run running                     |
-| `mixed`        | claimed                                                           | all  | some CompUs running, others not |
-| `inconsistent` | stale, or claimed with an FPS missing, or absent with FPS present |      |                                 |
+| State          | Rundir                                                            | FPS  | Processes                      |
+| -------------- | ----------------------------------------------------------------- | ---- | ------------------------------ |
+| `cold`         | absent                                                            | none | none                           |
+| `deployed`     | claimed                                                           | all  | conf stopped                   |
+| `configured`   | claimed                                                           | all  | conf running                   |
+| `running`      | claimed                                                           | all  | every `runstart` CompU running |
+| `mixed`        | claimed                                                           | all  | anything else                  |
+| `inconsistent` | stale, or claimed with an FPS missing, or absent with FPS present |      |                                |
 
-The rundir is the deploy's claim for this boot, `$MILK_SHM_DIR/pipe_rundirs/<name>/`. Only
-`deploy` and `teardown` are plans; running is reached through the Python API
-([Tour: run processes](pipelines_tour.md#4-start-and-stop-the-run-processes)). `nuke` is a
-teardown followed by `rm -rf` of the rootdir.
+The rundir is the deploy's claim for this boot, `$MILK_SHM_DIR/pipe_rundirs/<name>/`.
+`deployed` and `configured` also require that no run process is running. `running` looks only at
+the CompUs listed in [`runstart`](pipelines_conf.md#3-conftoml-keys) (default: all); the others
+may run or not. `nuke` is a teardown followed by `rm -rf` of the rootdir.
 
 ### 1.1. Failures and recovery
 
@@ -59,11 +59,12 @@ stateDiagram-v2
 ## 2. Commands
 
 ```text
-moka <plan>  [-p PIPE]          run plan <plan>: deploy, teardown, ...
-moka state   [-p PIPE]          state, reasons, drift summary, milk version change
-moka link    [LINKAGE] [-p PIPE]  apply [systemlinkage.<LINKAGE>]; none: list them
-moka unlink  LINKAGE [-p PIPE]  remove its symlinks; `all`: of every linkage
-moka nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
+moka <plan>  [-p PIPE]                   run plan <plan>: deploy, teardown, ...
+moka runstart|runstop [-p PIPE] [CU]...  the plan; with CU: on these CompUs only
+moka state   [-p PIPE]                   state, reasons, drift summary, milk version change
+moka link    [LINKAGE] [-p PIPE]         apply [systemlinkage.<LINKAGE>]; none: list them
+moka unlink  LINKAGE [-p PIPE]           remove its symlinks; `all`: of every linkage
+moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
 ```
 
 - **`-p/--pipe PIPE`** is a rootdir path, or a short name meaning `<cwd>/<PIPE>-rootdir`.
@@ -71,7 +72,8 @@ moka nuke    [-p PIPE] [--yes]  teardown, then rm -rf the rootdir
   `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
 - **Plan commands** are one per registered plan (`moka --help` lists them). `deploy` is
   idempotent: run again on a configured pipeline, every step already succeeded. `teardown` is
-  best effort and keeps the rootdir and `work/`. Their steps are in
+  best effort and keeps the rootdir and `work/`. `runstart` and `runstop` take CompU names; they
+  then act on those CompUs only. The steps of every plan are in
   [Plans and tasks: built-in plans](pipelines_plans.md#1-built-in-plans).
 - **`link`** is allowed only in `deployed` and `configured`. `teardown` removes every linkage.
 - **`nuke`** asks you to type the short name; `--yes` skips that. It deletes the rootdir even if

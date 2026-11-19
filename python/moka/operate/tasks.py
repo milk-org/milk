@@ -6,7 +6,7 @@ import abc
 import contextlib
 import os
 import subprocess
-from collections.abc import Collection
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from .. import env
@@ -27,9 +27,7 @@ class Task(abc.ABC):
     TIMEOUT: float = 10.0  # bound for forward()'s wait on success()
     failure_reason: str = "no reason given."
 
-    def __init__(
-        self, pipeline: Pipeline, compus: Collection[str] | None = None
-    ) -> None:
+    def __init__(self, pipeline: Pipeline, compus: Sequence[str] | None = None) -> None:
         unknown = sorted(set(compus or ()) - pipeline.config.compute_units.keys())
         if unknown:
             raise ConfigError(
@@ -41,11 +39,10 @@ class Task(abc.ABC):
 
     @property
     def compute_units(self) -> dict[str, ComputeUnit]:
-        return {
-            cu: c
-            for cu, c in self.pipeline.compute_units.items()
-            if self.compus_names is None or cu in self.compus_names
-        }
+        """The subset's CompUs, in the subset's order; all, in declaration order, without one."""
+        every = self.pipeline.compute_units
+        names = every if self.compus_names is None else self.compus_names
+        return {cu: every[cu] for cu in names}
 
     def _existing(self) -> list[tuple[ComputeUnit, FPS]]:
         """The subset's CompUs whose FPS exists, with that FPS."""
@@ -182,6 +179,13 @@ class ConfStart(Task):
 
 
 class RunStart(Task):
+    """Starts the subset (default: config.runstart) one unit at a time, in order."""
+
+    def __init__(self, pipeline: Pipeline, compus: Sequence[str] | None = None) -> None:
+        super().__init__(
+            pipeline, pipeline.config.runstart if compus is None else compus
+        )
+
     def can(self) -> bool:
         for compu in self.compute_units.values():
             if compu.fps is None or not compu.fps.conf_isrunning():
@@ -193,9 +197,9 @@ class RunStart(Task):
         for compu, fps in self._existing():
             if not fps.run_isrunning():
                 compu.runstart(tmux=True)
-        if not wait_until(self.success, self.TIMEOUT):
-            stuck = [c.fpsname for c, f in self._existing() if not f.run_isrunning()]
-            self.failure_reason = f"Run not started for {', '.join(stuck)}."
+                if not wait_until(fps.run_isrunning, self.TIMEOUT):
+                    self.failure_reason = f"Run not started for {compu.fpsname}."
+                    return
 
     def success(self) -> bool:
         return all(

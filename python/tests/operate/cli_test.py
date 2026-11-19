@@ -13,6 +13,7 @@ from click.testing import CliRunner
 from moka.errors import BestEffortError
 from moka.operate.cli import moka
 from moka.operate.plans import PLANS, Plan, Step
+from moka.operate.state import State, state
 from moka.operate.tasks import ClaimRundir
 
 FPS = ("basic_delay0", "basic_delay1")
@@ -39,7 +40,9 @@ def calls(monkeypatch):
     seen: list[tuple[str, str]] = []
     monkeypatch.setattr(
         "moka.operate.plans.run_plan",
-        lambda pipeline, name: seen.append((str(pipeline.root_folder), name)),
+        lambda pipeline, name, compus=None: seen.append(
+            (str(pipeline.root_folder), name)
+        ),
     )
     return seen
 
@@ -118,13 +121,56 @@ def test_plan_errors_reach_the_user(pp):
 
 
 def test_best_effort_failures_are_warnings_and_exit_1(pp, monkeypatch):
-    def failing(pipeline, name):
+    def failing(pipeline, name, compus=None):
         raise BestEffortError([("RunStop", RuntimeError("boom"))], pipeline="basic")
 
     monkeypatch.setattr("moka.operate.plans.run_plan", failing)
     result = _invoke("teardown", "-p", str(pp.root_folder))
     assert result.exit_code == 1
     assert "RunStop" in result.stderr and "boom" in result.stderr
+
+
+# ---- runstart / runstop take compute units (specs/012-moka-plans-cli/brief.md §3) ----
+
+
+def test_help_shows_the_cu_arguments_of_the_two_plans_only():
+    lines = [line.strip() for line in _invoke("--help").output.splitlines()]
+    assert "runstart [-p PIPE] [CU]..." in lines
+    assert "runstop [-p PIPE] [CU]..." in lines
+    assert "deploy [-p PIPE]" in lines and "teardown [-p PIPE]" in lines
+
+
+def test_runstart_without_cu_runs_the_plan_as_registered(pp, paper, started):
+    _deploy_on_paper(pp, paper)
+    result = _invoke("runstart", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert started == ["delay0", "delay1"]
+
+
+def test_runstart_and_runstop_take_compute_units(pp, paper, started, fake_compus):
+    _deploy_on_paper(pp, paper)
+    result = _invoke("runstart", "-p", str(pp.root_folder), "delay1")
+    assert result.exit_code == 0, _text(result)
+    assert started == ["delay1"]
+    fake_compus["delay0"].run = True
+    result = _invoke("runstop", "-p", str(pp.root_folder), "delay0")
+    assert result.exit_code == 0, _text(result)
+    assert fake_compus["delay0"].calls == ["runstop"]
+    assert fake_compus["delay1"].run  # not named: left running
+
+
+def test_runstart_refuses_an_unknown_unit(pp, paper, started):
+    _deploy_on_paper(pp, paper)
+    result = _invoke("runstart", "-p", str(pp.root_folder), "nope")
+    assert result.exit_code != 0 and "nope" in _text(result)
+    assert started == []
+
+
+@pytest.mark.parametrize("plan", ["deploy", "teardown"])
+def test_other_plans_refuse_compute_units(pp, plan):
+    result = _invoke(plan, "-p", str(pp.root_folder), "delay0")
+    assert result.exit_code == 2, _text(result)  # click usage error
+    assert state(pp).state is State.COLD  # nothing ran
 
 
 # ---- state ----

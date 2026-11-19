@@ -122,7 +122,20 @@ class PipelineConfig(BaseModel):
     systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
     hooks: list[HookDecl] = Field(default_factory=list)
     plans: list[str] | None = None  # restricts run_plan to these names
+    # compute units RunStart starts, in order; default: all, in declaration order
+    runstart: list[str] = Field(
+        default_factory=lambda data: list(data.get("compute_units", ()))
+    )
     teardown_kill_tmux: bool = False
+
+    @model_validator(mode="after")
+    def _check_runstart(self) -> PipelineConfig:
+        unknown = [cu for cu in self.runstart if cu not in self.compute_units]
+        if unknown:
+            raise ValueError(f"runstart: unknown compute units {unknown}")
+        if len(set(self.runstart)) != len(self.runstart):
+            raise ValueError(f"runstart {self.runstart}: duplicate compute units")
+        return self
 
     @model_validator(mode="after")
     def _check_extra_keys(self) -> PipelineConfig:

@@ -95,13 +95,17 @@ def _pipeline(pipe: str | None) -> Pipeline:
 
 
 def _plan_command(name: str) -> click.Command:
+    from .plans import PLANS
+
     @click.command(name, help=f"Run the {name} plan.")
     @_pipe_option
-    def command(pipe: str | None):
+    def command(pipe: str | None, compus: tuple[str, ...] = ()):
         from .plans import run_plan
 
-        run_plan(_pipeline(pipe), name)
+        run_plan(_pipeline(pipe), name, compus or None)
 
+    if PLANS[name].compus_arg:
+        command = click.argument("compus", nargs=-1, metavar="[CU]...")(command)
     return command
 
 

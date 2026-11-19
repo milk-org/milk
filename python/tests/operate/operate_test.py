@@ -17,6 +17,7 @@ from moka.errors import (
     InconsistentStateError,
     LinkageError,
     TaskCannotRunError,
+    TaskDidNotSucceedError,
 )
 from moka.operate import rundir
 from moka.operate.plans import PLANS, Plan, Step, run_plan
@@ -26,6 +27,8 @@ from moka.operate.tasks import (
     ClaimRundir,
     DeapplyAllLinkages,
     ReleaseRundir,
+    RunStart,
+    RunStop,
     Task,
 )
 from moka.registry import Registry
@@ -384,3 +387,110 @@ def test_deapply_removes_configured_links(pp, paper, shm_dir_cleanafter):
     pp.link("shared")
     pp.task_do(DeapplyAllLinkages)
     assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
+
+
+# ---- the runstart key (specs/012-moka-plans-cli/brief.md §3) ----
+# pipelinebasic has two units: with `runstart = ["delay0"]`, delay1 plays the on-demand unit.
+
+
+def _listing(pp, units: str):
+    return _with_conf(pp, prepend=f"runstart = {units}\n")
+
+
+@pytest.mark.parametrize(
+    "units, match",
+    [('["nope"]', "unknown"), ('["delay0", "delay0"]', "duplicate")],
+)
+def test_runstart_key_is_validated(pp, units, match):
+    with pytest.raises(ConfigError, match=match):
+        _listing(pp, units)
+
+
+def test_bad_compute_units_is_still_a_validation_error():
+    import pydantic
+
+    from moka.config.model import PipelineConfig
+
+    bad = {"long_name": "x", "name": "x", "loop_number": 1, "compute_units": 5}
+    with pytest.raises(pydantic.ValidationError, match="compute_units"):
+        PipelineConfig.model_validate(bad)
+
+
+def test_runstart_defaults_to_every_unit_in_declaration_order(pp, started):
+    pp.task_do(RunStart)
+    assert started == ["delay0", "delay1"]
+
+
+def test_runstart_follows_the_list_order(pp, started):
+    _listing(pp, '["delay1", "delay0"]').task_do(RunStart)
+    assert started == ["delay1", "delay0"]
+
+
+def test_runstart_leaves_unlisted_units_alone(pp, started, fake_compus):
+    pp = _listing(pp, '["delay1"]')
+    pp.task_do(RunStart)
+    assert started == ["delay1"]
+    assert RunStart(pp).success() and not fake_compus["delay0"].run
+
+
+def test_runstart_subset_keeps_its_order_and_may_name_unlisted_units(pp, started):
+    pp = _listing(pp, '["delay1"]')
+    pp.task_do(RunStart(pp, ["delay1", "delay0"]))
+    assert started == ["delay1", "delay0"]
+
+
+def test_runstart_waits_for_each_run_before_the_next(
+    pp, started, fake_compus, monkeypatch
+):
+    monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
+    pp = _listing(pp, '["delay1", "delay0"]')
+    fake_compus["delay1"].runstart = lambda tmux=False: started.append("delay1")
+    with pytest.raises(TaskDidNotSucceedError, match="basic_delay1"):
+        pp.task_do(RunStart)
+    assert started == ["delay1"]  # delay0 was never issued
+
+
+def test_runstop_stops_unlisted_units_too(pp, fake_compus):
+    pp = _listing(pp, '["delay1"]')
+    for fake in fake_compus.values():
+        fake.conf = fake.run = True
+    pp.task_do(RunStop)
+    assert [f.calls for f in fake_compus.values()] == [["runstop"], ["runstop"]]
+
+
+IDLE, CONF, RUN = (False, False), (True, False), (True, True)
+
+
+@pytest.mark.parametrize(
+    "delay0, delay1, expected",
+    [
+        (RUN, CONF, State.RUNNING),  # listed units run, the on-demand one is idle
+        (RUN, RUN, State.RUNNING),
+        (CONF, RUN, State.MIXED),  # only the on-demand unit runs
+        (CONF, CONF, State.CONFIGURED),
+        (IDLE, IDLE, State.DEPLOYED),
+        (CONF, IDLE, State.MIXED),
+    ],
+)
+def test_state_uses_the_listed_units(pp, paper, delay0, delay1, expected):
+    pp = _listing(pp, '["delay0"]')
+    _deploy_on_paper(pp, paper)
+    paper["basic_delay0"], paper["basic_delay1"] = delay0, delay1
+    assert state(pp).state is expected
+
+
+def test_runstart_and_runstop_plans_shape():
+    assert PLANS["runstart"] == Plan(
+        "runstart", (Step("RunStart"),), "abort", "consistent", compus_arg=True
+    )
+    # Decision 2026-11-19 (overrules brief §9.5): runstop accepts any state, best effort.
+    assert PLANS["runstop"] == Plan(
+        "runstop", (Step("RunStop"),), "best_effort", "any", compus_arg=True
+    )
+    assert not PLANS["deploy"].compus_arg and not PLANS["teardown"].compus_arg
+
+
+def test_runstart_refuses_a_cold_pipeline_and_runstop_does_not(pp):
+    with pytest.raises(ColdSystemError, match="deploy"):
+        run_plan(pp, "runstart")
+    run_plan(pp, "runstop")

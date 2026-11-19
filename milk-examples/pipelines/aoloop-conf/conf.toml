@@ -2,6 +2,7 @@ long_name = "aoloop"
 name = "aoloop"
 loop_number = 0
 teardown_kill_tmux = true
+runstart = ["acquWFS", "wfs2modes", "mfilt", "modes2dm"]  # mlat, measlinresp: on demand
 _ln = '{loop_number}' # alias
 
 includes = ["fpsdetails.toml"]

@@ -12,7 +12,8 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
     Python process. Carrying custom plans in a confdir is planned.
 
 A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
-all CompUs, or on a subset given at construction. A **plan** is data: a name, ordered **steps**
+all CompUs (`RunStart`: the [`runstart`](pipelines_conf.md#3-conftoml-keys) list), or on a subset
+given at construction. A **plan** is data: a name, ordered **steps**
 (a task name and an optional CompU subset), a failure policy and the states it accepts to start
 from. Plans and tasks are Python objects in `moka.operate.plans` and `moka.operate.tasks`, each
 looked up by name in a registry (`PLANS`, `TASKS`).
@@ -23,8 +24,13 @@ looked up by name in a registry (`PLANS`, `TASKS`).
 | ---------- | ------------------------------------------------------------------------------- | ------------- | -------------------- |
 | `deploy`   | ClaimRundir → InitFPS → LoadData → ConfStart                                    | `abort`       | `cold_or_consistent` |
 | `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any`                |
+| `runstart` | RunStart                                                                        | `abort`       | `consistent`         |
+| `runstop`  | RunStop                                                                         | `best_effort` | `any`                |
 
-Every plan in `PLANS` is a `moka` subcommand.
+Every plan in `PLANS` is a `moka` subcommand. `runstart` and `runstop` also take CompU names
+(`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
+on those CompUs. Refusing CompU names for the other plans is a CLI check only: from Python,
+`run_plan(pipeline, name, compus)` applies the subset to any plan.
 
 === "CLI"
 
@@ -49,7 +55,7 @@ Every plan in `PLANS` is a `moka` subcommand.
 | `InitFPS`            | Every FPS exists and is valid. It runs `fpsinit` in `work/`, then sets the `[compute_units.<cu>.fps]` values                                          |
 | `LoadData`           | Every `[[dataloads]]` target stream exists with the source FITS shape and dtype                                                                       |
 | `ConfStart`          | Every conf process is running                                                                                                                         |
-| `RunStart`           | Every run process is running. It requires the conf processes to be running                                                                            |
+| `RunStart`           | Every run process of the subset (default: `runstart`) is running. It starts them one at a time, in order, and requires the conf processes to run      |
 | `RunStop`            | No run process is running                                                                                                                             |
 | `WaitRunEnd`         | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything                                            |
 | `DeapplyAllLinkages` | No systemlinkage symlink remains                                                                                                                      |
@@ -60,7 +66,7 @@ Every plan in `PLANS` is a `moka` subcommand.
 
 ## 3. Running a single task
 
-`Pipeline.task_do(task)` runs one task, on all CompUs or on a subset. It is the low-level entry
+`Pipeline.task_do(task)` runs one task, on its default CompUs or on a subset. It is the low-level entry
 point and bypasses the state gate.
 
 ```python
@@ -74,7 +80,7 @@ pp.task_do(WaitRunEnd(pp, ["mlat"]))        # (3)!
 pp.task_do(RunStop(pp, ["wfscam", "dmdelay"]))
 ```
 
-1. Every CompU.
+1. The CompUs of `runstart` (default: all); other tasks: every CompU.
 2. One CompU.
 3. Waits (up to 120 s) for a run that ends by itself.
 
@@ -119,11 +125,12 @@ PLANS.register("restart_wfs", Plan(
 | Field             | Type                                            | Default        | Meaning                                                                                                                                                                                        |
 | ----------------- | ----------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Step.task`       | `str`                                           | —              | A name in `TASKS`, which is the task's class name                                                                                                                                              |
-| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None` means all CompUs. Unknown names raise `ConfigError`                                                                                                                   |
+| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None` means all CompUs (`RunStart`: the `runstart` list). Unknown names raise `ConfigError`                                                                                 |
 | `Plan.name`       | `str`                                           | —              | The name to register it under, which is also the `moka` command name                                                                                                                           |
 | `Plan.steps`      | `tuple[Step, ...]`                              | —              | The steps, run in order                                                                                                                                                                        |
 | `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                                         |
 | `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
+| `Plan.compus_arg` | `bool`                                          | `False`        | `True`: its `moka` command takes `[CU]...` and runs every step on those CompUs                                                                                                                 |
 
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
 

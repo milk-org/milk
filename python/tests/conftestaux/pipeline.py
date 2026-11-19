@@ -100,3 +100,16 @@ def fake_compus(monkeypatch):
     fakes = {cu: _fake_compu(f"basic_{cu}") for cu in ("delay0", "delay1")}
     monkeypatch.setattr(Pipeline, "compute_units", property(lambda self: fakes))
     return fakes
+
+
+@pytest.fixture
+def started(fake_compus) -> list[str]:
+    """Every fake has its conf process; the list records the order of the runstart calls."""
+    order: list[str] = []
+    for cu, fake in fake_compus.items():
+        fake.conf = True
+        fake.runstart = lambda tmux=False, cu=cu, fake=fake: (
+            order.append(cu),
+            setattr(fake, "run", True),
+        )
+    return order

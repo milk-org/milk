@@ -42,7 +42,7 @@ resolving](pipelines_conf.md#4-resolving-includes-overrides-substitution)). It m
 expands the substitutions and validates, every time it is called, with no side effects. The
 result is a frozen `PipelineConfig` (a pydantic model): `long_name`, `name`, `loop_number`,
 `kind`, `compute_units` (a dict of `ComputeUnitSpec`: `exec`, `fps`), `dataloads`, `hooks`,
-`systemlinkage`, `plans`, `teardown_kill_tmux`. `fps_name(cu)` is the one place where FPS names
+`systemlinkage`, `plans`, `runstart`, `teardown_kill_tmux`. `fps_name(cu)` is the one place where FPS names
 are made.
 
 ## 3. Operating: `Pipeline` and `ComputeUnit`
