@@ -37,30 +37,44 @@ class Step:
 
 
 @dataclass(frozen=True)
+class Param:
+    """A value its plan's command takes; every task of the plan gets it in ``params[name]``."""
+
+    name: str
+    type: type = str  # str, int or float
+    default: object = None
+    positional: bool = False  # CLI: [NAME]; else -<short>/--<name>
+    short: str | None = None
+
+
+@dataclass(frozen=True)
 class Plan:
     name: str
     steps: tuple[Step, ...]
     on_failure: OnFailure = "abort"
     accepts: Accepts = "consistent"
     compus_arg: bool = False  # the CLI takes [CU]...
+    params: tuple[Param, ...] = ()
 
 
 PLANS: Registry[Plan] = Registry("plan")
 
 
-def build_step(pipeline: Pipeline, step: Step) -> Task:
+def build_step(pipeline: Pipeline, step: Step, params: dict | None = None) -> Task:
     """ConfigError if the task or a unit the step names is missing."""
-    return pipeline.tasks[step.task](pipeline, step.compus)
+    return pipeline.tasks[step.task](pipeline, step.compus, params)
 
 
-def build(pipeline: Pipeline, plan: Plan) -> list[tuple[str, Task]]:
-    """(label, task) of each step; ConfigError if a task or unit it names is missing."""
-    return [(s.label, build_step(pipeline, s)) for s in plan.steps]
+def build(
+    pipeline: Pipeline, plan: Plan, params: dict | None = None
+) -> list[tuple[str, Task]]:
+    """(label, task) of each step, all given the same params; ConfigError if a task or unit it names is missing."""
+    return [(s.label, build_step(pipeline, s, params)) for s in plan.steps]
 
 
-def run(pipeline: Pipeline, plan: Plan) -> None:
+def run(pipeline: Pipeline, plan: Plan, params: dict | None = None) -> None:
     """Run any plan: build every task first (so ConfigError precedes side effects), gate, then do."""
-    tasks = build(pipeline, plan)
+    tasks = build(pipeline, plan, params)
     gate(pipeline.short_name, state(pipeline), plan.accepts)
     failures: list[tuple[str, Exception]] = []
     for label, task in tasks:
@@ -75,14 +89,17 @@ def run(pipeline: Pipeline, plan: Plan) -> None:
 
 
 def run_plan(
-    pipeline: Pipeline, name: str, compus: Sequence[str] | None = None
+    pipeline: Pipeline,
+    name: str,
+    compus: Sequence[str] | None = None,
+    params: dict | None = None,
 ) -> None:
-    """compus: run every step of the plan on these compute units instead."""
+    """compus: run every step of the plan on these compute units instead; params: see Param."""
     plan = pipeline.plans[name]
     if compus is not None:
         steps = tuple(replace(s, compus=tuple(compus)) for s in plan.steps)
         plan = replace(plan, steps=steps)
-    run(pipeline, plan)
+    run(pipeline, plan, params)
 
 
 for _plan in (

@@ -174,8 +174,20 @@ run(pp, Plan(
 | `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                                         |
 | `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
 | `Plan.compus_arg` | `bool`                                          | `False`        | `True`: its `moka` command takes `[CU]...` and runs every step on those CompUs. Not settable in TOML                                                                                           |
+| `Plan.params`     | `tuple[Param, ...]`                             | `()`           | Values its `moka` command takes, handed to every task of the plan (below). Not settable in TOML                                                                                                |
 
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
+
+A `Param(name, type=str, default=None, positional=False, short=None)` adds `[NAME]` (positional)
+or `-<short>/--<name> NAME` to the plan's command; `type` is `str`, `int` or `float`. Every task of
+the plan receives the same dict as `self.params`, without the values left at `None`; a task reads
+only the keys it knows, and must work with an empty dict (`moka plans` and `moka tasks` build it
+so). From Python: `run_plan(pp, "probe", params={"ampl": 0.5})`, or `run(pp, plan, params)`.
+
+```python
+Plan("probe", (Step("Probe"),), params=(Param("kind", positional=True), Param("ampl", float, short="a")))
+# moka probe -p basic hadamard -a 0.5   →   self.params == {"kind": "hadamard", "ampl": 0.5}
+```
 
 A task of your own subclasses `Task`; see
 [Internals: task contract](pipelines_internals.md#6-task-contract).

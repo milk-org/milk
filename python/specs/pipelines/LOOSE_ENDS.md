@@ -88,3 +88,5 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   because the failure is not cached.
 - [later] No test runs the built-in `mlat` plan on a pipeline that has `acquWFS` and `mlat` (twice:
   the second run must skip `RunStart[acquWFS]`); `fake_compus` is hardcoded to delay0/delay1.
+- [later] `Plan.compus_arg` is a special case of `Plan.params` (013-1): `[CU]...` could be a
+  variadic `Param`; left as is.

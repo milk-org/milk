@@ -12,9 +12,9 @@ from click.testing import CliRunner
 
 from moka.errors import BestEffortError
 from moka.operate.cli import moka
-from moka.operate.plans import PLANS, Plan, Step
+from moka.operate.plans import PLANS, Param, Plan, Step
 from moka.operate.state import State, state
-from moka.operate.tasks import ClaimRundir
+from moka.operate.tasks import TASKS, ClaimRundir, Task
 
 FPS = ("basic_delay0", "basic_delay1")
 
@@ -34,7 +34,7 @@ def calls(monkeypatch):
     seen: list[tuple[str, str]] = []
     monkeypatch.setattr(
         "moka.operate.plans.run_plan",
-        lambda pipeline, name, compus=None: seen.append(
+        lambda pipeline, name, compus=None, params=None: seen.append(
             (str(pipeline.root_folder), name)
         ),
     )
@@ -115,7 +115,7 @@ def test_plan_errors_reach_the_user(pp):
 
 
 def test_best_effort_failures_are_warnings_and_exit_1(pp, monkeypatch):
-    def failing(pipeline, name, compus=None):
+    def failing(pipeline, name, compus=None, params=None):
         raise BestEffortError([("RunStop", RuntimeError("boom"))], pipeline="basic")
 
     monkeypatch.setattr("moka.operate.plans.run_plan", failing)
@@ -165,6 +165,69 @@ def test_other_plans_refuse_compute_units(pp, plan):
     result = _invoke(plan, "-p", str(pp.root_folder), "delay0")
     assert result.exit_code == 2, _text(result)  # click usage error
     assert state(pp).state is State.COLD  # nothing ran
+
+
+# ---- plan parameters ----
+
+
+@pytest.fixture
+def recorded(monkeypatch) -> list[dict]:
+    """Plan `probe` [KIND] [-a AMPL], two steps of a task that records the params it runs with."""
+    seen: list[dict] = []
+
+    class Record(Task):
+        done = False
+
+        def can(self):
+            return True
+
+        def forward(self):
+            seen.append(self.params)
+            self.done = True
+
+        def success(self):
+            return self.done
+
+    monkeypatch.setattr(TASKS, "_items", dict(TASKS._items))
+    monkeypatch.setattr(PLANS, "_items", dict(PLANS._items))
+    TASKS.register("Record", Record)
+    params = (Param("ampl", float, short="a"), Param("kind", positional=True))
+    PLANS.register(
+        "probe", Plan("probe", (Step("Record"),) * 2, accepts="any", params=params)
+    )
+    return seen
+
+
+def test_plan_params_reach_every_task(pp, recorded):
+    result = _invoke("probe", "-p", str(pp.root_folder), "hadamard", "-a", "0.5")
+    assert result.exit_code == 0, _text(result)
+    assert recorded == [{"ampl": 0.5, "kind": "hadamard"}] * 2
+    del recorded[:]
+    result = _invoke("probe", "-p", str(pp.root_folder), "--ampl", "2")
+    assert result.exit_code == 0, _text(result)
+    assert recorded == [{"ampl": 2.0}] * 2  # kind absent, not None
+
+
+def test_plan_params_absent_give_an_empty_dict(pp, recorded):
+    result = _invoke("probe", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert recorded == [{}, {}]
+    assert _invoke("probe", "-p", str(pp.root_folder), "-a", "x").exit_code == 2
+
+
+def test_help_shows_the_plan_params(recorded):
+    lines = [line.strip() for line in _invoke("--help").output.splitlines()]
+    assert "probe [-p PIPE] [-a AMPL] [KIND]" in lines
+
+
+def test_plans_and_tasks_on_a_plan_with_params(pp, recorded):
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert _row(result, "probe") == "probe  Record Record  ok"
+    result = _invoke("tasks", "-p", str(pp.root_folder), "probe")
+    assert result.exit_code == 0, _text(result)
+    assert result.output.splitlines()[-2:] == ["Record  no  yes"] * 2
+    assert recorded == []  # nothing ran
 
 
 # ---- pipeline-local plans ----

@@ -27,7 +27,12 @@ class Task(abc.ABC):
     TIMEOUT: float = 10.0  # bound for forward()'s wait on success()
     failure_reason: str = "no reason given."
 
-    def __init__(self, pipeline: Pipeline, compus: Sequence[str] | None = None) -> None:
+    def __init__(
+        self,
+        pipeline: Pipeline,
+        compus: Sequence[str] | None = None,
+        params: dict | None = None,
+    ) -> None:
         unknown = sorted(set(compus or ()) - pipeline.config.compute_units.keys())
         if unknown:
             raise ConfigError(
@@ -36,6 +41,9 @@ class Task(abc.ABC):
             )
         self.pipeline = pipeline
         self.compus_names = compus
+        self.params = (
+            params or {}
+        )  # the plan's Param values; a task reads the keys it knows
 
     @property
     def compute_units(self) -> dict[str, ComputeUnit]:
@@ -181,9 +189,14 @@ class ConfStart(Task):
 class RunStart(Task):
     """Starts the subset (default: config.runstart) one unit at a time, in order."""
 
-    def __init__(self, pipeline: Pipeline, compus: Sequence[str] | None = None) -> None:
+    def __init__(
+        self,
+        pipeline: Pipeline,
+        compus: Sequence[str] | None = None,
+        params: dict | None = None,
+    ) -> None:
         super().__init__(
-            pipeline, pipeline.config.runstart if compus is None else compus
+            pipeline, pipeline.config.runstart if compus is None else compus, params
         )
 
     def can(self) -> bool:

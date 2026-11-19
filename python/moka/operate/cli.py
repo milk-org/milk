@@ -57,7 +57,7 @@ class _PlansGroup(ErrstackGroup):
     def get_command(self, ctx: click.Context, name: str) -> click.Command | None:
         plans = self._plans(ctx)
         if name in plans:
-            return _plan_command(name, plans[name].compus_arg)
+            return _plan_command(plans[name])
         error = ctx.meta["moka.plans"][1]
         if name not in self.commands and error is not None:
             raise error  # rather than "No such command"
@@ -155,16 +155,30 @@ def _na(error: ConfigError) -> str:
     return f"n/a ({error.message.split(';')[0].removesuffix('.')})"
 
 
-def _plan_command(name: str, compus_arg: bool) -> click.Command:
-    @click.command(name, help=f"Run the {name} plan.")
+def _plan_command(plan: Plan) -> click.Command:
+    @click.command(plan.name, help=f"Run the {plan.name} plan.")
     @_pipe_option
-    def command(pipe: str | None, compus: tuple[str, ...] = ()):
+    def command(pipe: str | None, compus: tuple[str, ...] = (), **values):
         from .plans import run_plan
 
-        run_plan(_pipeline(pipe), name, compus or None)
+        params = {k: v for k, v in values.items() if v is not None}
+        run_plan(_pipeline(pipe), plan.name, compus or None, params)
 
-    if compus_arg:
+    if plan.compus_arg:
         command = click.argument("compus", nargs=-1, metavar="[CU]...")(command)
+    for p in plan.params:
+        if p.positional:
+            decl = click.argument(
+                p.name, type=p.type, default=p.default, required=False
+            )
+        else:
+            flags = (
+                [f"--{p.name}"] if p.short is None else [f"-{p.short}", f"--{p.name}"]
+            )
+            decl = click.option(
+                *flags, type=p.type, default=p.default, metavar=p.name.upper()
+            )
+        command = decl(command)
     return command
 
 
