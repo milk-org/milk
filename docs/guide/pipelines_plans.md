@@ -23,10 +23,17 @@ over these ([§4](#4-custom-plans)).
 | `runstart` | RunStart                                                                        | `abort`       | `consistent`         |
 | `runstop`  | RunStop                                                                         | `best_effort` | `any`                |
 | `mlat`     | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                           | `abort`       | `consistent`         |
+| `mkpokes`  | MakePokes                                                                       | `abort`       | `consistent`         |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
 CompUs are idle); a second run skips that start and starts `mlat` again.
+
+`moka mkpokes [TYPE]` writes the poke cube `<rootdir>/calib/RMmodesDM.fits` (float32, header
+`POKETYPE`) over the actuators of the [`[dmhint]`](pipelines_conf.md#3-conftoml-keys) mask, which
+it needs. `TYPE` is `hadamard` (default: `next_pow2(Nact)` slices) or `zonal` (one actuator per
+slice). A cube already of that type and DM size is left alone; a hand-made one (no `POKETYPE`) is
+replaced. The cube is FITS (NAXIS1, NAXIS2, NAXIS3) = (`xsize`, `ysize`, modes).
 
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts

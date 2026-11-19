@@ -132,3 +132,7 @@ for _plan in (
     ),
 ):
     PLANS.register(_plan.name, _plan)
+
+from ..calibs import (
+    linresp as _linresp,
+)  # noqa: E402,F401  registers its plans and tasks

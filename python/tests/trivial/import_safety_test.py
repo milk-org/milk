@@ -25,7 +25,10 @@ def test_imports_without_milk_env(no_milk_env, monkeypatch):
     names = [m.name for m in pkgutil.walk_packages(moka.__path__, "moka.")]
     assert "moka.env" in names
     for name in ["moka", *names]:
-        monkeypatch.delitem(sys.modules, name, raising=False)
+        for loaded in [m for m in sys.modules if m == "moka" or m.startswith("moka.")]:
+            monkeypatch.delitem(
+                sys.modules, loaded
+            )  # registries fill at import: start afresh
         importlib.import_module(name)
     cliwrap.clear_caches()
     assert cliwrap.HAVE_CLI is False

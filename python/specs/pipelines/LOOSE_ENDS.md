@@ -52,6 +52,10 @@ list at each slice boundary.
   several.
 - [milk] No Doxyfile at the repo root: Doxygen generation is removed (`writing_docs.md` §9 says it
   may return); restoring it is a build/CI item.
+- [later] Add a dmcomb to the simulator conf (`mlatsim-conf`, example and test resource), with
+  cacao's channel map (`cacao-setDMnolink`: `aol<N>_dmRM` → `dm<DD>disp02`, `aol<N>_dmC` →
+  `disp03`). Then `aoloop-conf` `[systemlinkage.delaysim]` stops pointing `aol0_dmRM` at the same
+  stream as `aol0_dmC` (013 stopgap), and `measlinresp` can run while `modes2dm` runs.
 
 ## NIT
 
@@ -90,3 +94,11 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   the second run must skip `RunStart[acquWFS]`); `fake_compus` is hardcoded to delay0/delay1.
 - [later] `Plan.compus_arg` is a special case of `Plan.params` (013-1): `[CU]...` could be a
   variadic `Param`; left as is.
+- [later] `mkpokes hadamard` (013-2) keeps all `next_pow2(Nact)` slices and the first `Nact` columns;
+  truncating the mode set to the DM (fewer modes than the power of two) is not done.
+- [x] The loop conf carries hints of the DM resolution and beam: `[dmhint]`, `Pipeline.dm_mask()`
+  (013-2); `mkpokes` no longer reads a stream.
+- [later] `MakePokes.success()` checks type and DM size only: a `[dmhint]` beam change keeps the
+  old cube until `mkpokes` runs with another type, or the file is removed.
+- [later] `[dmhint]` overlaps the `measlinresp` unit's `streamin` stream shape; nothing checks they
+  agree (013-3 `SetLinResp.can()` compares the cube to the stream).

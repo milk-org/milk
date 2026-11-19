@@ -75,19 +75,20 @@ output = "source_point"
 The top-level keys are a closed set. Anything else is refused, except keys starting with `_`,
 which are kept and serve as variables for [substitution](#43-substitution).
 
-| Key                      | Required | Meaning                                                                                                                             |
-| ------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `long_name`              | yes      | Identity key. The confdir is `<long_name>-conf/`.                                                                                   |
-| `name`                   | yes      | Identity key, the short name. The rootdir is `<name>-rootdir/`, the rundir `pipe_rundirs/<name>/`, and FPS names are `<name>_<cu>`. |
-| `loop_number`            | yes      | Identity key. Unique among the deployed pipelines of a machine.                                                                     |
-| `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                     |
-| `[plans.<name>]`         | no       | Plans of this pipeline: `steps`, optional `on_failure`, `accepts`. See [Plans and tasks](pipelines_plans.md#4-custom-plans).        |
-| `runstart`               | no       | Ordered CompU names that `runstart` starts and `running` requires. Default: every CompU, in declaration order.                      |
-| `teardown_kill_tmux`     | no       | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`.                                                                |
-| `[compute_units.<cu>]`   | no       | One table per compute unit.                                                                                                         |
-| `[[dataloads]]`          | no       | Files to load into streams at deploy.                                                                                               |
-| `[[hooks]]`              | no       | Conf hooks, run by consolidate.                                                                                                     |
-| `[systemlinkage.<mode>]` | no       | Named sets of stream symlinks, applied by `link`.                                                                                   |
+| Key                      | Required | Meaning                                                                                                                                                                                                    |
+| ------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `long_name`              | yes      | Identity key. The confdir is `<long_name>-conf/`.                                                                                                                                                          |
+| `name`                   | yes      | Identity key, the short name. The rootdir is `<name>-rootdir/`, the rundir `pipe_rundirs/<name>/`, and FPS names are `<name>_<cu>`.                                                                        |
+| `loop_number`            | yes      | Identity key. Unique among the deployed pipelines of a machine.                                                                                                                                            |
+| `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                                                                                            |
+| `[plans.<name>]`         | no       | Plans of this pipeline: `steps`, optional `on_failure`, `accepts`. See [Plans and tasks](pipelines_plans.md#4-custom-plans).                                                                               |
+| `runstart`               | no       | Ordered CompU names that `runstart` starts and `running` requires. Default: every CompU, in declaration order.                                                                                             |
+| `teardown_kill_tmux`     | no       | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`.                                                                                                                                       |
+| `[dmhint]`               | no       | The DM: `xsize`, `ysize`, optional beam `beam_xcent`, `beam_ycent`, `beam_rad` (all three or none; cacao's `CACAO_DM_*`). Gives `Pipeline.dm_mask()`: actuators strictly within the beam, all without one. |
+| `[compute_units.<cu>]`   | no       | One table per compute unit.                                                                                                                                                                                |
+| `[[dataloads]]`          | no       | Files to load into streams at deploy.                                                                                                                                                                      |
+| `[[hooks]]`              | no       | Conf hooks, run by consolidate.                                                                                                                                                                            |
+| `[systemlinkage.<mode>]` | no       | Named sets of stream symlinks, applied by `link`.                                                                                                                                                          |
 
 The identity keys cannot be overridden (`--set`) and `resync` refuses to change them: a change of
 identity is a new pipeline.

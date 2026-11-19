@@ -101,6 +101,27 @@ class PlanDecl(BaseModel):
     accepts: Accepts | None = None
 
 
+class DMHint(BaseModel):
+    """``[dmhint]``: the DM buffer size and, optionally, the beam on it (cacao's CACAO_DM_*)."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    xsize: int
+    ysize: int
+    beam_xcent: float | None = None
+    beam_ycent: float | None = None
+    beam_rad: float | None = None
+
+    @model_validator(mode="after")
+    def _check_beam(self) -> DMHint:
+        beam = (self.beam_xcent, self.beam_ycent, self.beam_rad)
+        if None in beam and any(v is not None for v in beam):
+            raise ValueError(
+                "dmhint: give all of beam_xcent, beam_ycent, beam_rad, or none"
+            )
+        return self
+
+
 class PipelineConfig(BaseModel):
     """Validated conf.toml. Top-level keys outside these fields are refused,
     except ``_``-prefixed ones (kept in model_extra)."""
@@ -121,6 +142,7 @@ class PipelineConfig(BaseModel):
         default_factory=lambda data: list(data.get("compute_units", ()))
     )
     teardown_kill_tmux: bool = False
+    dmhint: DMHint | None = None
 
     @model_validator(mode="after")
     def _check_runstart(self) -> PipelineConfig:

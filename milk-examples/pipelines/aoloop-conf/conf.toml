@@ -7,6 +7,13 @@ _ln = '{loop_number}' # alias
 
 includes = ["fpsdetails.toml"]
 
+[dmhint]  # mlatsim_dm, until a real DM
+xsize = 16
+ysize = 16
+beam_xcent = 7.5
+beam_ycent = 7.5
+beam_rad = 8.0
+
 [compute_units]
 acquWFS.exec   = 'cacao-fpsexec-cacaoiot-acqWFS'
 wfs2modes.exec = 'milk-fpsexec-linalg-MVMextract'
