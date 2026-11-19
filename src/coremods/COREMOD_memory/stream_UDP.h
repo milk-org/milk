@@ -18,9 +18,8 @@ extern const MILK_RUNNABLE runnable_COREMOD_memory_imudpreceive;
 imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                                             const char *IPaddr,
                                             int         port,
-                                            int         do_counter_sync,
-                                            int         RT_priority);
+                                            int         do_counter_sync);
 
-imageID COREMOD_MEMORY_image_NETUDPreceive(int port, int do_counter_sync, int RT_priority);
+imageID COREMOD_MEMORY_image_NETUDPreceive(int port, int do_counter_sync);
 
 #endif

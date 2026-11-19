@@ -22,7 +22,6 @@
 #include "image_ID.h"
 #include "stream_sem.h"
 #include "processinfo_setup.h"
-#include "milk_rt.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
@@ -185,8 +184,6 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
                                          const char *IDout_name,
                                          long        periodus)
 {
-    milkrt_RTPrio(80);
-
     imageID IDin;
     {
         IMGID img = imgid_make_from_name(IDin_name);
@@ -288,8 +285,6 @@ imageID COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinna
                                               __attribute__((unused)) int timingmode)
 {
     int SyncSlice = 0;
-
-    milkrt_RTPrio(80);
 
     PROCESSINFO *processinfo = NULL;
     if (dcprocinfo == 1)
@@ -573,8 +568,6 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char                
                                                       int                         semtrig,
                                                       __attribute__((unused)) int timingmode)
 {
-    milkrt_RTPrio(80);
-
     printf("Creating / connecting to image stream ...\n");
     fflush(stdout);
 

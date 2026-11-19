@@ -56,8 +56,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname, int semtrig, i
 imageID COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname,
                                              const char *IPaddr,
                                              int         port,
-                                             int         mode,
-                                             int         RT_priority);
+                                             int         mode);
 
 /**
  * @brief Receive a stream over TCP.
@@ -65,7 +64,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname,
  * Listens for frames from a remote sender and
  * writes them to a local shared memory stream.
  */
-imageID COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority);
+imageID COREMOD_MEMORY_image_NETWORKreceive(int port, int mode);
 
 
 /* ================================================================
@@ -76,7 +75,6 @@ static char      p_imname[FUNCTION_PARAMETER_STRMAXLEN] = "im1";
 static char      p_ipaddr[FUNCTION_PARAMETER_STRMAXLEN] = "127.0.0.1";
 static long long p_port                                 = 8888;
 static long long p_mode                                 = 0;
-static long long p_rtprio                               = 80;
 static long long p_semtrig_tcp                          = 1;
 static long long p_testmode                             = 0;
 
@@ -88,8 +86,7 @@ static long long p_testmode                             = 0;
     X(".imname", p_imname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "image name") \
     X(".ipaddr", p_ipaddr, FPTYPE_STRING, 1, FPFLAG_DEFAULT_INPUT, "IP address")     \
     X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port")               \
-    X(".mode", &p_mode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "sync mode")          \
-    X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
+    X(".mode", &p_mode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "sync mode")
 
 MILK_PARAMS_DEFINE(imnetwtransmit, FPS_PARAMS);
 
@@ -98,7 +95,7 @@ static MILK_HOT errno_t imnetwtransmit_compute(const MILK_RUNNABLE *self)
     DEBUG_TRACE_FSTART();
     MILK_PROCINFO_INIT(self)
     MILK_PROCINFO_LOOPSTART(self)
-    COREMOD_MEMORY_image_NETWORKtransmit(p_imname, p_ipaddr, p_port, p_mode, p_rtprio);
+    COREMOD_MEMORY_image_NETWORKtransmit(p_imname, p_ipaddr, p_port, p_mode);
     MILK_PROCINFO_END(self)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -122,17 +119,16 @@ const MILK_RUNNABLE runnable_COREMOD_memory_imnetwtransmit = {
  *  CMD 3: imnetwreceive (3 args)
  * ============================================================= */
 
-#define FPS_PARAMS_RX(X)                                                                \
-    X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port")                  \
-    X(".mode", &p_mode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "mode (1=counter sync)") \
-    X(".rtprio", &p_rtprio, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "RT priority")
+#define FPS_PARAMS_RX(X)                                               \
+    X(".port", &p_port, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "port") \
+    X(".mode", &p_mode, FPTYPE_INT64, 1, FPFLAG_DEFAULT_INPUT, "mode (1=counter sync)")
 
 MILK_PARAMS_DEFINE(imnetwreceive, FPS_PARAMS_RX);
 
 static MILK_HOT errno_t imnetwreceive_compute(const MILK_RUNNABLE *self)
 {
     (void) self;
-    COREMOD_MEMORY_image_NETWORKreceive(p_port, p_mode, p_rtprio);
+    COREMOD_MEMORY_image_NETWORKreceive(p_port, p_mode);
     return RETURN_SUCCESS;
 }
 
@@ -157,8 +153,7 @@ const MILK_RUNNABLE runnable_COREMOD_memory_imnetwreceive = {
 imageID COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname,
                                              const char *IPaddr,
                                              int         port,
-                                             int         mode,
-                                             int         RT_priority)
+                                             int         mode)
 {
     int flag = 1;
 
@@ -195,8 +190,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname,
 
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
-    processinfo->RT_priority =
-        RT_priority; // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
 
     int loopOK = 1;
 

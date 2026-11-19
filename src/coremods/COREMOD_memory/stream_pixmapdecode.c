@@ -147,8 +147,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
     }
     // OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
-    processinfo->RT_priority =
-        20; // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
 
     int loopOK = 1;
 

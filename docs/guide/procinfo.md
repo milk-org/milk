@@ -77,7 +77,6 @@ int functiontemplate_usingprocessinfo() {
 
 	// OPTIONAL SETTINGS
     processinfo->MeasureTiming = 1; // Measure timing
-    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
     processinfo->loopcntMax = 100;  // -1 if infinite loop
 
     // =============================================
@@ -126,18 +125,18 @@ int functiontemplate_usingprocessinfo() {
 Beyond the fields set automatically by the framework, these commonly-used fields can be configured
 by the developer:
 
-| Field               | Type        | Description                              |
-| ------------------- | ----------- | ---------------------------------------- |
-| `name`              | `char[80]`  | Short process name (no spaces, no dots)  |
-| `description`       | `char[200]` | Human-readable description string        |
-| `tmuxname`          | `char[100]` | Name of the tmux session hosting process |
-| `MeasureTiming`     | `int`       | Enable loop timing measurement           |
-| `RT_priority`       | `int`       | RT priority 0–99 (higher = more urgent)  |
-| `loopcntMax`        | `int64_t`   | Max loop iterations (−1 = infinite)      |
-| `CPUmask`           | `cpu_set_t` | CPU affinity mask for core pinning       |
-| `triggermode`       | `int`       | Trigger type (semaphore, cnt, delay)     |
-| `triggerstreamname` | `char[80]`  | Name of input trigger stream             |
-| `triggersem`        | `int`       | Semaphore index for trigger              |
+| Field               | Type        | Description                                                                                                |
+| ------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| `name`              | `char[80]`  | Short process name (no spaces, no dots)                                                                    |
+| `description`       | `char[200]` | Human-readable description string                                                                          |
+| `tmuxname`          | `char[100]` | Name of the tmux session hosting process                                                                   |
+| `MeasureTiming`     | `int`       | Enable loop timing measurement                                                                             |
+| `RT_priority`       | `int`       | RT priority 0–99, display only: applied at process start from `.procinfo.RTprio` (FPS) or `..RTprio` (CLI) |
+| `loopcntMax`        | `int64_t`   | Max loop iterations (−1 = infinite)                                                                        |
+| `CPUmask`           | `cpu_set_t` | CPU affinity mask for core pinning                                                                         |
+| `triggermode`       | `int`       | Trigger type (semaphore, cnt, delay)                                                                       |
+| `triggerstreamname` | `char[80]`  | Name of input trigger stream                                                                               |
+| `triggersem`        | `int`       | Semaphore index for trigger                                                                                |
 
 ## 7. Compute Function Macros
 

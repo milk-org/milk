@@ -102,3 +102,6 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   old cube until `mkpokes` runs with another type, or the file is removed.
 - [later] `[dmhint]` overlaps the `measlinresp` unit's `streamin` stream shape; nothing checks they
   agree (013-3 `SetLinResp.can()` compares the cube to the stream).
+- [ ] `logshmim_save.c:65` calls `milkrt_RTPrio(writerRTprio)` from the log writer thread, but
+  `milkrt_RTPrio` targets `getpid()` (the main thread), not the writer thread. Left in place when RT
+  priority was removed from `processinfo_loopstart` and the other coremods.
