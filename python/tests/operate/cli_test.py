@@ -277,6 +277,87 @@ def test_local_plan_named_like_a_fixed_command_is_refused(make_tmp_pipeline, pp_
         assert "clash" in _text(result)
 
 
+# ---- moka plans (specs/012-moka-plans-cli/brief.md §5) ----
+
+LOCAL = (
+    PROBE
+    + '\n[plans.ghost]\nsteps = ["RunStop[ghost]"]\n'
+    + '\n[plans.notask]\nsteps = ["Nope"]\n'
+    + '\n[plans.teardown]\nsteps = ["RunStop", "ReleaseRundir"]\naccepts = "any"\n'
+)
+
+
+def _row(result, name: str) -> str:
+    """The one output line whose first word is ``name``."""
+    (row,) = [line for line in result.output.splitlines() if line.split()[:1] == [name]]
+    return row
+
+
+def test_plans_is_a_fixed_command():
+    lines = [line.strip() for line in _invoke("--help").output.splitlines()]
+    assert "plans [-p PIPE]" in lines
+
+
+def test_plans_on_a_cold_pipeline(pp):
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert "basic: cold" in result.output.splitlines()
+    deploy = _row(result, "deploy")
+    assert "ClaimRundir InitFPS LoadData ConfStart" in deploy and deploy.endswith("ok")
+    assert _row(result, "teardown").endswith("ok")  # accepts any state
+    assert _row(result, "runstop").endswith("ok")
+    runstart = _row(result, "runstart")
+    assert "RunStart" in runstart and runstart.endswith("no (cold; run deploy)")
+    for name in ("deploy", "teardown", "runstart", "runstop"):
+        assert "local" not in _row(result, name)
+
+
+def test_plans_on_a_configured_pipeline(pp, paper):
+    _deploy_on_paper(pp, paper)
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert "basic: configured" in result.output.splitlines()
+    for name in ("deploy", "teardown", "runstart", "runstop"):
+        assert _row(result, name).endswith("ok")
+
+
+def test_plans_on_an_inconsistent_pipeline(pp, paper):
+    paper["basic_delay0"] = (False, False)  # an FPS without a rundir
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert _row(result, "teardown").endswith("ok")
+    deploy = _row(result, "deploy")
+    assert "no (inconsistent" in deploy and deploy.endswith("run teardown)")
+
+
+def test_plans_shows_local_plans_and_what_cannot_be_built(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(LOCAL)
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    probe = _row(result, "probe")
+    assert "(local)" in probe and "ReleaseRundir" in probe and probe.endswith("ok")
+    teardown = _row(result, "teardown")
+    assert "(local, overrides built-in)" in teardown
+    assert "RunStop ReleaseRundir" in teardown and "DestroyFPS" not in teardown
+    assert _row(result, "ghost") == (
+        "ghost (local)  RunStop[ghost]  n/a (Unknown compute units ['ghost'] for RunStop)"
+    )
+    assert _row(result, "notask") == "notask (local)  Nope  n/a (Unknown task 'Nope')"
+    assert "local" not in _row(result, "deploy")
+
+
+def test_plans_needs_a_pipeline(pp, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # not a rootdir
+    for args in (("plans",), ("plans", "-p", "nope")):
+        result = _invoke(*args)
+        assert result.exit_code == 1 and "rootdir" in _text(result)
+    scripts = pp.root_folder / "conf" / "scripts"
+    scripts.mkdir()
+    (scripts / "moka_plans.py").write_text("raise RuntimeError('boom')\n")
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 1 and "boom" in _text(result)
+
+
 # ---- state ----
 
 

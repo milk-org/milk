@@ -13,6 +13,7 @@ from .state import gate, state
 
 if TYPE_CHECKING:
     from .pipeline import Pipeline
+    from .tasks import Task
 
 
 @dataclass(frozen=True)
@@ -47,9 +48,14 @@ class Plan:
 PLANS: Registry[Plan] = Registry("plan")
 
 
+def build(pipeline: Pipeline, plan: Plan) -> list[tuple[str, Task]]:
+    """(label, task) of each step; ConfigError if a task or unit it names is missing."""
+    return [(s.label, pipeline.tasks[s.task](pipeline, s.compus)) for s in plan.steps]
+
+
 def run(pipeline: Pipeline, plan: Plan) -> None:
     """Run any plan: build every task first (so ConfigError precedes side effects), gate, then do."""
-    tasks = [(s.label, pipeline.tasks[s.task](pipeline, s.compus)) for s in plan.steps]
+    tasks = build(pipeline, plan)
     gate(pipeline.short_name, state(pipeline), plan.accepts)
     failures: list[tuple[str, Exception]] = []
     for label, task in tasks:

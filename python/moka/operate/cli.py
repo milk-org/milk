@@ -186,6 +186,37 @@ def moka_state(pipe: str | None):
         click.echo(f"moka: rootdir made with {recorded}, installed {installed}")
 
 
+@moka.command("plans")
+@_pipe_option
+def moka_plans(pipe: str | None):
+    """
+    List the plans of the pipeline, and whether the current state accepts each.
+    """
+    from ..errors import ConfigError, StateError
+    from .plans import PLANS, build
+    from .state import gate, state
+
+    pp = _pipeline(pipe)
+    st = state(pp)
+    click.echo(f"{pp.short_name}: {st.state.value}")
+    for name in pp.plans.names():
+        plan = pp.plans[name]
+        origin = ""
+        if name not in PLANS or PLANS[name] is not plan:
+            origin = " (local, overrides built-in)" if name in PLANS else " (local)"
+        try:
+            build(pp, plan)
+            gate(pp.short_name, st, plan.accepts)
+            status = "ok"
+        except ConfigError as error:
+            status = f"n/a ({error.message.split(';')[0].removesuffix('.')})"
+        except StateError as error:
+            reason = error.message.split(" is ", 1)[-1].removesuffix(".")
+            status = f"no ({reason})"
+        labels = " ".join(step.label for step in plan.steps)
+        click.echo(f"{name}{origin}  {labels}  {status}")
+
+
 @moka.command("link")
 @_pipe_option
 @click.argument("linkage", required=False)

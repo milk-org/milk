@@ -62,6 +62,7 @@ stateDiagram-v2
 moka <plan>  [-p PIPE]                   run plan <plan>: deploy, teardown, ...
 moka runstart|runstop [-p PIPE] [CU]...  the plan; with CU: on these CompUs only
 moka state   [-p PIPE]                   state, reasons, drift summary, milk version change
+moka plans   [-p PIPE]                   the plans, and which the current state accepts
 moka link    [LINKAGE] [-p PIPE]         apply [systemlinkage.<LINKAGE>]; none: list them
 moka unlink  LINKAGE [-p PIPE]           remove its symlinks; `all`: of every linkage
 moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
@@ -71,7 +72,7 @@ moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
   Without `-p`, the current directory must be a rootdir. Every command first prints
   `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
 - **Plan commands** are one per plan of the pipeline, built-in or
-  [local](pipelines_plans.md#4-custom-plans) (`moka -h -p PIPE` lists them). `deploy` is
+  [local](pipelines_plans.md#4-custom-plans) (`moka -h -p PIPE` lists them; `moka plans` [also says which the state accepts](#22-plans)). `deploy` is
   idempotent: run again on a configured pipeline, every step already succeeded. `teardown` is
   best effort and keeps the rootdir and `work/`. `runstart` and `runstop` take CompU names; they
   then act on those CompUs only. The steps of every plan are in
@@ -99,6 +100,14 @@ drift: 1 artifact(s); run `mokainit drift /home/vdeo/pipes/basic-rootdir`
 The drift line is `drift: none`, `drift: <n> artifact(s); run ...` or
 `drift: unavailable (<why>)`, for example when the source confdir is gone. What the drift means
 is in [Drift and resync](pipelines_provision.md#2-drift).
+
+### 2.2. `plans`
+
+`plans` prints the line `<name>: <state>`, then one line per plan of the pipeline: its name,
+`(local)` or `(local, overrides built-in)` for [local plans](pipelines_plans.md#4-custom-plans),
+its steps, and a status: `ok` (the state passes the plan's `accepts` gate), `no (<reason>)`
+(the gate refuses, e.g. `no (cold; run deploy)`) or `n/a (<reason>)` (a task or unit the plan
+names does not exist). Only the state gate is checked, not what the steps would do.
 
 ## 3. Errors
 
