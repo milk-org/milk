@@ -52,6 +52,24 @@ MILK_PARAMS_DEFINE(loadfits, FPS_PARAMS);
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
 /**
+ * @brief Create imgout (from imgout->mdt) in the dcimg table, so that it can be found by name.
+ *
+ * @return RETURN_SUCCESS, or RETURN_FAILURE if the image could not be created
+ */
+static errno_t loadfits_mkimage(IMGID *imgout)
+{
+    if (create_image_ID_IMGID(imgout) != RETURN_SUCCESS)
+    {
+        PRINT_ERROR("cannot create image %s", imgout->name);
+        return RETURN_FAILURE;
+    }
+    imgout->im        = &dcimg[imgout->ID];
+    imgout->md        = imgout->im->md;
+    imgout->createcnt = imgout->im->createcnt;
+    return RETURN_SUCCESS;
+}
+
+/**
  * @brief Load a FITS file and return an IMGID.
  *
  * Reads a FITS file from disk into the image array
@@ -248,8 +266,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         imgout->mdt->datatype = _DATATYPE_FLOAT;
         imgout->mdt->shared   = dcshareddft;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
-        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (loadfits_mkimage(imgout) != RETURN_SUCCESS)
+        {
+            return RETURN_FAILURE;
+        }
 
         {
             int status = 0;
@@ -270,8 +290,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         imgout->mdt->datatype = _DATATYPE_DOUBLE;
         imgout->mdt->shared   = dcshareddft;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
-        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (loadfits_mkimage(imgout) != RETURN_SUCCESS)
+        {
+            return RETURN_FAILURE;
+        }
 
         {
             int status = 0;
@@ -292,8 +314,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         imgout->mdt->datatype = _DATATYPE_UINT16;
         imgout->mdt->shared   = dcshareddft;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
-        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (loadfits_mkimage(imgout) != RETURN_SUCCESS)
+        {
+            return RETURN_FAILURE;
+        }
 
         {
             int status = 0;
@@ -314,8 +338,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         imgout->mdt->datatype = _DATATYPE_INT32;
         imgout->mdt->shared   = dcshareddft;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
-        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (loadfits_mkimage(imgout) != RETURN_SUCCESS)
+        {
+            return RETURN_FAILURE;
+        }
 
         larray = (long *) malloc(sizeof(long) * nelements);
         if (larray == NULL)
@@ -350,8 +376,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         imgout->mdt->datatype = _DATATYPE_INT64;
         imgout->mdt->shared   = dcshareddft;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
-        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (loadfits_mkimage(imgout) != RETURN_SUCCESS)
+        {
+            return RETURN_FAILURE;
+        }
 
         larray = (long *) malloc(sizeof(long) * nelements);
         if (larray == NULL)
@@ -387,8 +415,10 @@ errno_t load_fits_IMGID(const char *__restrict file_name, IMGID *imgout, int err
         imgout->mdt->datatype = _DATATYPE_FLOAT;
         imgout->mdt->shared   = dcshareddft;
         imgout->mdt->NBkw     = NB_KEYWNODE_MAX;
-        imgout->im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-        imgid_mkimage(imgout);
+        if (loadfits_mkimage(imgout) != RETURN_SUCCESS)
+        {
+            return RETURN_FAILURE;
+        }
 
         barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] * naxes[0]);
         if (barray == NULL)
