@@ -48,9 +48,14 @@ class Plan:
 PLANS: Registry[Plan] = Registry("plan")
 
 
+def build_step(pipeline: Pipeline, step: Step) -> Task:
+    """ConfigError if the task or a unit the step names is missing."""
+    return pipeline.tasks[step.task](pipeline, step.compus)
+
+
 def build(pipeline: Pipeline, plan: Plan) -> list[tuple[str, Task]]:
     """(label, task) of each step; ConfigError if a task or unit it names is missing."""
-    return [(s.label, pipeline.tasks[s.task](pipeline, s.compus)) for s in plan.steps]
+    return [(s.label, build_step(pipeline, s)) for s in plan.steps]
 
 
 def run(pipeline: Pipeline, plan: Plan) -> None:

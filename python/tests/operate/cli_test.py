@@ -358,6 +358,108 @@ def test_plans_needs_a_pipeline(pp, tmp_path, monkeypatch):
     assert result.exit_code == 1 and "boom" in _text(result)
 
 
+# ---- moka tasks (specs/012-moka-plans-cli/brief.md §6) ----
+# Rows are whitespace-separated: label, success (yes/no), can (yes/no), then the failure reason
+# when can is no; or label, then "n/a (<reason>)" when the task cannot be built.
+
+STEPS = (
+    '\n[plans.warm]\nsteps = ["RunStart[delay1]", "WaitRunEnd[delay1]"]\n'
+    + '\n[plans.ghost]\nsteps = ["RunStop[ghost]", "Nope", "RunStop"]\n'
+)
+
+
+def _cells(result, label: str) -> list[str]:
+    """[success, can] of the row of ``label``."""
+    return _row(result, label).split()[1:3]
+
+
+def _labels(result) -> list[str]:
+    """The first word of each row after the `<name>: <state>` line."""
+    lines = result.output.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("basic: "))
+    return [line.split()[0] for line in lines[start + 1 :]]
+
+
+def test_tasks_is_a_fixed_command():
+    lines = [line.strip() for line in _invoke("--help").output.splitlines()]
+    assert "tasks [-p PIPE] [PLAN]" in lines
+
+
+def test_tasks_on_a_cold_pipeline(make_tmp_pipeline, pp_env, touch_source):
+    pp = make_tmp_pipeline(moka_plans=touch_source)
+    result = _invoke("tasks", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert "basic: cold" in result.output.splitlines()
+    assert _labels(result) == pp.tasks.names()  # one row per task, built-in and local
+    assert _row(result, "ClaimRundir") == "ClaimRundir  no  yes"
+    assert _cells(result, "RunStop") == ["yes", "yes"]
+    assert _cells(result, "Touch") == ["no", "yes"]
+    assert _row(result, "ConfStart") == (
+        "ConfStart  no  no  FPS basic_delay0 is missing or invalid."
+    )
+    assert _row(result, "RunStart").endswith("run deploy.")
+    assert not (pp.work_folder / "touched").exists()  # forward() is never called
+    assert state(pp).state is State.COLD
+
+
+def test_tasks_on_a_configured_pipeline(pp, paper, fake_compus):
+    _deploy_on_paper(pp, paper)
+    for fake in fake_compus.values():
+        fake.conf = True
+    result = _invoke("tasks", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert "basic: configured" in result.output.splitlines()
+    for label in ("ClaimRundir", "InitFPS", "ConfStart", "RunStop"):
+        assert _cells(result, label) == ["yes", "yes"]
+    for label in ("RunStart", "ConfStop", "DestroyFPS", "ReleaseRundir"):
+        assert _cells(result, label) == ["no", "yes"]
+    result = _invoke("tasks", "-p", str(pp.root_folder), "deploy")  # the PLAN view
+    assert _labels(result) == ["ClaimRundir", "InitFPS", "LoadData", "ConfStart"]
+    assert all(_cells(result, label) == ["yes", "yes"] for label in _labels(result))
+    assert all(fake.calls == [] for fake in fake_compus.values())
+
+
+def test_tasks_of_a_plan_are_its_steps_in_order(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(STEPS)
+    result = _invoke("tasks", "-p", str(pp.root_folder), "deploy")
+    assert result.exit_code == 0, _text(result)
+    assert _labels(result) == ["ClaimRundir", "InitFPS", "LoadData", "ConfStart"]
+    assert _cells(result, "ClaimRundir") == ["no", "yes"]
+    result = _invoke("tasks", "-p", str(pp.root_folder), "warm")
+    assert result.exit_code == 0, _text(result)
+    assert _labels(result) == ["RunStart[delay1]", "WaitRunEnd[delay1]"]
+    assert _row(result, "RunStart[delay1]").split()[1:3] == ["no", "no"]
+    assert "basic_delay1" in _row(result, "RunStart[delay1]")  # the subset is applied
+    assert state(pp).state is State.COLD  # nothing ran
+
+
+def test_tasks_shows_a_step_that_cannot_be_built(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(STEPS)
+    result = _invoke("tasks", "-p", str(pp.root_folder), "ghost")
+    assert result.exit_code == 0, _text(result)
+    assert _labels(result) == ["RunStop[ghost]", "Nope", "RunStop"]
+    assert _row(result, "RunStop[ghost]") == (
+        "RunStop[ghost]  n/a (Unknown compute units ['ghost'] for RunStop)"
+    )
+    assert _row(result, "Nope") == "Nope  n/a (Unknown task 'Nope')"
+    assert _cells(result, "RunStop") == [
+        "yes",
+        "yes",
+    ]  # the other steps are still shown
+
+
+@pytest.mark.parametrize("plan", ["nosuchplan", ""])
+def test_tasks_of_an_unknown_plan(pp, plan):
+    result = _invoke("tasks", "-p", str(pp.root_folder), plan)
+    assert result.exit_code == 1 and f"Unknown plan {plan!r}" in _text(result)
+
+
+def test_tasks_needs_a_pipeline(pp, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # not a rootdir
+    result = _invoke("tasks")
+    assert result.exit_code == 1 and "rootdir" in _text(result)
+
+
 # ---- state ----
 
 

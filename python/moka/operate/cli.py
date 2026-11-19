@@ -13,9 +13,11 @@ import click
 from ..cli import ErrstackGroup
 
 if TYPE_CHECKING:
+    from ..errors import ConfigError
     from ..registry import Registry
     from .pipeline import Pipeline
     from .plans import Plan
+    from .state import PipelineState
 
 
 class _PlansGroup(ErrstackGroup):
@@ -139,6 +141,20 @@ def _pipeline(pipe: str | None) -> Pipeline:
     return pp
 
 
+def _state(pipe: str | None) -> tuple[Pipeline, PipelineState]:
+    """The invocation's pipeline and its state, printing `<short_name>: <state>`."""
+    from .state import state
+
+    pp = _pipeline(pipe)
+    st = state(pp)
+    click.echo(f"{pp.short_name}: {st.state.value}")
+    return pp, st
+
+
+def _na(error: ConfigError) -> str:
+    return f"n/a ({error.message.split(';')[0].removesuffix('.')})"
+
+
 def _plan_command(name: str, compus_arg: bool) -> click.Command:
     @click.command(name, help=f"Run the {name} plan.")
     @_pipe_option
@@ -160,11 +176,8 @@ def moka_state(pipe: str | None):
     """
     from ..errors import MilkError
     from ..provision.rootdir import drift
-    from .state import state
 
-    pp = _pipeline(pipe)
-    st = state(pp)
-    click.echo(f"{pp.short_name}: {st.state.value}")
+    pp, st = _state(pipe)
     for reason in st.reasons:
         click.echo(f"  reason: {reason}")
     try:
@@ -194,11 +207,9 @@ def moka_plans(pipe: str | None):
     """
     from ..errors import ConfigError, StateError
     from .plans import PLANS, build
-    from .state import gate, state
+    from .state import gate
 
-    pp = _pipeline(pipe)
-    st = state(pp)
-    click.echo(f"{pp.short_name}: {st.state.value}")
+    pp, st = _state(pipe)
     for name in pp.plans.names():
         plan = pp.plans[name]
         origin = ""
@@ -209,12 +220,39 @@ def moka_plans(pipe: str | None):
             gate(pp.short_name, st, plan.accepts)
             status = "ok"
         except ConfigError as error:
-            status = f"n/a ({error.message.split(';')[0].removesuffix('.')})"
+            status = _na(error)
         except StateError as error:
             reason = error.message.split(" is ", 1)[-1].removesuffix(".")
             status = f"no ({reason})"
         labels = " ".join(step.label for step in plan.steps)
         click.echo(f"{name}{origin}  {labels}  {status}")
+
+
+@moka.command("tasks")
+@_pipe_option
+@click.argument("plan", required=False)
+def moka_tasks(pipe: str | None, plan: str | None):
+    """
+    List the tasks (of PLAN, if given) with their success and can; never runs them.
+    """
+    from ..errors import ConfigError
+    from .plans import Step, build_step
+
+    pp, _ = _state(pipe)
+    steps = (
+        pp.plans[plan].steps
+        if plan is not None
+        else [Step(name) for name in pp.tasks.names()]
+    )
+    for step in steps:
+        try:
+            task = build_step(pp, step)
+        except ConfigError as error:
+            click.echo(f"{step.label}  {_na(error)}")
+            continue
+        done, can = task.success(), task.can()
+        row = f"{step.label}  {'yes' if done else 'no'}  {'yes' if can else 'no'}"
+        click.echo(row if can else f"{row}  {task.failure_reason}")
 
 
 @moka.command("link")

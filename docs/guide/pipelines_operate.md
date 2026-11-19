@@ -63,6 +63,7 @@ moka <plan>  [-p PIPE]                   run plan <plan>: deploy, teardown, ...
 moka runstart|runstop [-p PIPE] [CU]...  the plan; with CU: on these CompUs only
 moka state   [-p PIPE]                   state, reasons, drift summary, milk version change
 moka plans   [-p PIPE]                   the plans, and which the current state accepts
+moka tasks   [-p PIPE] [PLAN]            the tasks (or a plan's steps): success, can
 moka link    [LINKAGE] [-p PIPE]         apply [systemlinkage.<LINKAGE>]; none: list them
 moka unlink  LINKAGE [-p PIPE]           remove its symlinks; `all`: of every linkage
 moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
@@ -108,6 +109,15 @@ is in [Drift and resync](pipelines_provision.md#2-drift).
 its steps, and a status: `ok` (the state passes the plan's `accepts` gate), `no (<reason>)`
 (the gate refuses, e.g. `no (cold; run deploy)`) or `n/a (<reason>)` (a task or unit the plan
 names does not exist). Only the state gate is checked, not what the steps would do.
+
+### 2.3. `tasks`
+
+`tasks` prints the line `<name>: <state>`, then one row per task of the pipeline (built-in and
+[local](pipelines_plans.md#4-custom-plans)), built on all CompUs (`RunStart`: on the
+[`runstart`](pipelines_conf.md#3-conftoml-keys) ones), or, with `PLAN`, one row per step of that plan, in
+order, with its label (`RunStart[acquWFS]`). A row is `<label>  <success>  <can>`, each `yes` or
+`no`, followed by the task's reason when `can` is `no`. A task or step that cannot be built is
+`<label>  n/a (<reason>)`. It never runs a task.
 
 ## 3. Errors
 

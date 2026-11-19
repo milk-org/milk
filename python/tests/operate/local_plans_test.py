@@ -21,31 +21,6 @@ from moka.operate.tasks import TASKS
 from moka.provision.rootdir import drift, init
 from moka.registry import Registry
 
-MOKA_PLANS = '''
-from moka.operate.plans import Plan, Step
-from moka.operate.tasks import Task
-
-
-class Touch(Task):
-    """Creates work/touched."""
-
-    def _path(self):
-        return self.pipeline.work_folder / "touched"
-
-    def can(self):
-        return True
-
-    def forward(self):
-        self._path().touch()
-
-    def success(self):
-        return self._path().exists()
-
-
-TASKS = [Touch]
-PLANS = [Plan("touch", (Step("Touch"),), accepts="any")]
-'''
-
 
 def _table(name: str, steps: str, more: str = "") -> str:
     return f"\n[plans.{name}]\nsteps = {steps}\n{more}\n"
@@ -142,8 +117,8 @@ def test_toml_plan_names_are_checked_when_the_plan_is_built(make_tmp_pipeline, p
 # ---- scripts/moka_plans.py ----
 
 
-def test_python_file_declares_tasks_and_plans(make_tmp_pipeline, pp_env):
-    pp = make_tmp_pipeline(moka_plans=MOKA_PLANS)
+def test_python_file_declares_tasks_and_plans(make_tmp_pipeline, touch_source, pp_env):
+    pp = make_tmp_pipeline(moka_plans=touch_source)
     assert (pp.root_folder / "conf" / "scripts" / "moka_plans.py").is_file()
     assert pp.tasks["Touch"].__name__ == "Touch"
     assert pp.plans["touch"] == Plan("touch", (Step("Touch"),), accepts="any")
@@ -161,8 +136,8 @@ def test_python_file_declares_tasks_and_plans(make_tmp_pipeline, pp_env):
     assert touched.exists()
 
 
-def test_toml_plan_may_use_a_python_task(make_tmp_pipeline, pp_env):
-    pp = make_tmp_pipeline(_table("t2", '["Touch"]', 'accepts = "any"'), MOKA_PLANS)
+def test_toml_plan_may_use_a_python_task(make_tmp_pipeline, touch_source, pp_env):
+    pp = make_tmp_pipeline(_table("t2", '["Touch"]', 'accepts = "any"'), touch_source)
     run_plan(pp, "t2")
     assert (pp.work_folder / "touched").exists()
 
@@ -192,15 +167,19 @@ def test_toml_plan_overrides_a_builtin_with_a_warning(
     assert state(pp).state is State.COLD
 
 
-def test_python_plan_overrides_a_toml_plan_with_a_warning(make_tmp_pipeline, caplog):
-    pp = make_tmp_pipeline(_table("touch", '["RunStop"]'), MOKA_PLANS)
+def test_python_plan_overrides_a_toml_plan_with_a_warning(
+    make_tmp_pipeline, touch_source, caplog
+):
+    pp = make_tmp_pipeline(_table("touch", '["RunStop"]'), touch_source)
     with caplog.at_level(logging.WARNING):
         assert pp.plans["touch"].steps == (Step("Touch"),)
     assert "'touch'" in caplog.text
 
 
-def test_python_task_overrides_a_builtin_with_a_warning(make_tmp_pipeline, caplog):
-    source = MOKA_PLANS.replace("Touch", "RunStop")
+def test_python_task_overrides_a_builtin_with_a_warning(
+    make_tmp_pipeline, touch_source, caplog
+):
+    source = touch_source.replace("Touch", "RunStop")
     pp = make_tmp_pipeline(moka_plans=source)
     with caplog.at_level(logging.WARNING):
         assert pp.tasks["RunStop"] is not TASKS["RunStop"]
@@ -210,11 +189,13 @@ def test_python_task_overrides_a_builtin_with_a_warning(make_tmp_pipeline, caplo
 # ---- two pipelines in one process ----
 
 
-def test_local_definitions_do_not_leak_between_pipelines(make_tmp_pipeline, tmp_path):
-    one = make_tmp_pipeline(moka_plans=MOKA_PLANS)
+def test_local_definitions_do_not_leak_between_pipelines(
+    make_tmp_pipeline, touch_source, tmp_path
+):
+    one = make_tmp_pipeline(moka_plans=touch_source)
     conf = tmp_path / "other" / "pipelinebasic-conf"
     shutil.copytree(tmp_path / "pipelinebasic-conf", conf)
-    renamed = MOKA_PLANS.replace("Touch", "Poke").replace("touch", "poke")
+    renamed = touch_source.replace("Touch", "Poke").replace("touch", "poke")
     (conf / "scripts" / "moka_plans.py").write_text(renamed)
     two = Pipeline(init(conf))
 

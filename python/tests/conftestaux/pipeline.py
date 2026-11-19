@@ -117,3 +117,32 @@ def started(fake_compus) -> list[str]:
             setattr(fake, "run", True),
         )
     return order
+
+
+@pytest.fixture
+def touch_source() -> str:
+    """A scripts/moka_plans.py: task Touch (creates work/touched) and plan touch (any state)."""
+    return '''
+from moka.operate.plans import Plan, Step
+from moka.operate.tasks import Task
+
+
+class Touch(Task):
+    """Creates work/touched."""
+
+    def _path(self):
+        return self.pipeline.work_folder / "touched"
+
+    def can(self):
+        return True
+
+    def forward(self):
+        self._path().touch()
+
+    def success(self):
+        return self._path().exists()
+
+
+TASKS = [Touch]
+PLANS = [Plan("touch", (Step("Touch"),), accepts="any")]
+'''

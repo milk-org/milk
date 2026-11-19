@@ -95,7 +95,7 @@ then in `PLANS` and `TASKS`. `run_plan`, `run` and `moka` resolve names through 
 `moka -h -p PIPE` lists the pipeline's plans as commands, and
 [`moka plans`](pipelines_operate.md#22-plans) their status. A local definition that has the name of
 a built-in one (or a Python plan that has the name of a TOML plan) overrides it and logs a
-warning. A plan named like a fixed `moka` command (`state`, `plans`, `link`, `unlink`, `nuke`) is refused
+warning. A plan named like a fixed `moka` command (`state`, `plans`, `tasks`, `link`, `unlink`, `nuke`) is refused
 by the CLI only: every `moka` command on that pipeline then fails with an error; `run_plan` from
 Python is unaffected.
 

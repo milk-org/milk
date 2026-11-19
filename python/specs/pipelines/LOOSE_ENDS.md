@@ -75,5 +75,5 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [ ] `mokashow mlat`: overlay fits on the figure (e.g. the latency step / per-iteration
   latencies from the `#` lines of `hardwlatency.dat`).
 - [later] A `moka_plans.py` that raises is executed twice per invocation by the fixed
-  commands that read `pp.plans` (`plans`, `nuke`): once by the group, once by the command,
+  commands that read `pp.plans` (`plans`, `tasks`, `nuke`): once by the group, once by the command,
   because the failure is not cached.
