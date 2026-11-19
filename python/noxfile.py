@@ -25,6 +25,7 @@ def milk_build_and_test(
     use_cuda: bool = False,
     lto_level: int = 1,
     use_cli: bool = False,
+    run_pyMilk_tests: bool = False,
 ):
 
     session.install("setuptools", "coverage", "pytest", "pytest-timeout")
@@ -36,6 +37,16 @@ def milk_build_and_test(
 
     session.chdir(PROJECT_ROOT / "python")  # otherwise pytest is somewhat upset...
     session.run("pytest", str(PROJECT_ROOT / "python"))
+
+    if run_pyMilk_tests:
+        # Run from outside the source tree with a copy of tests/, as pyMilk's own
+        # non-editable session does.
+        tmp_dir = os.path.abspath(session.create_tmp())
+        pymilk_dir = str(PROJECT_ROOT / "python" / "pyMilk")
+        shutil.copytree(pymilk_dir + "/tests", tmp_dir + "/tests", dirs_exist_ok=True)
+        session.chdir(tmp_dir)
+        session.run("pytest", pymilk_dir)
+        shutil.rmtree(tmp_dir + "/tests")
 
 
 def milk_build(
@@ -56,12 +67,6 @@ def milk_build(
 
     tmp_dir = os.path.abspath(session.create_tmp())
     session.chdir(tmp_dir)
-
-    if not os.path.islink("./pyMilk"):
-        HOME = os.environ["HOME"]
-        PYMILK_ROOT = os.environ.get("PYMILK_ROOT", f"{HOME}/src/pyMilk")
-        session.run("ln", "-sf", PYMILK_ROOT, "./pyMilk", external=True)
-    session.install("./pyMilk")  # install pyMilk
 
     os.makedirs("./build", exist_ok=True)
     session.chdir("build")
@@ -102,6 +107,11 @@ def milk_build(
     )  # type: ignore
     session.env["MILK_INSTALLDIR"] = tmp_dir + "/milk-1.03.00"
 
+    # pyMilk from the source tree, against the milk just installed (SYSTEM engine).
+    session.install(
+        str(PROJECT_ROOT / "python" / "pyMilk"), env={"PYMILK_ENGINE": "SYSTEM"}
+    )
+
 
 @nox.session(default=False)
 def tests_run_coverage_lazybuild(session: nox.Session): ...
@@ -114,7 +124,7 @@ def build_and_pytest_nocli_nolto(session: nox.Session):
 
 @nox.session(venv_backend=VENV_BACKEND)
 def build_and_pytest_nocli_lto(session: nox.Session):
-    milk_build_and_test(session, use_cli=False, lto_level=1)
+    milk_build_and_test(session, use_cli=False, lto_level=1, run_pyMilk_tests=True)
 
 
 @nox.session(venv_backend=VENV_BACKEND)

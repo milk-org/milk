@@ -84,15 +84,9 @@ enable_language(C)
 # =======================================
 # PACKAGE GENERAL CONFIG
 # =======================================
-set(VERSION_MAJOR 1)
-set(VERSION_MINOR 03)
-set(VERSION_PATCH 00)
+include(${PROJECT_SOURCE_DIR}/cmake/milk_version.cmake)
 set(MILK_VERSION_OPTION "")
 set(PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
-
-# Shared-memory structure versions, checked on connect (see milk_config.h)
-set(PROCESSINFO_VERSION "2.00")
-set(FUNCTION_PARAMETER_STRUCT_VERSION "2.00")
 set(PROJECT_DESCRIPTION "Modular Image processing tooLKit")
 
 set(SOURCEDIR "${PROJECT_SOURCE_DIR}")
@@ -172,11 +166,6 @@ endif()
 if(NOT MILK_GIT_COMMIT)
   set(MILK_GIT_COMMIT "unknown")
 endif()
-
-# Configure a header file to pass some of the CMake settings to the source code.
-# USE THE BUILD TREE -- allows to preserve multiple builds with different configs.
-configure_file("${PROJECT_SOURCE_DIR}/src/milk_config.h.in"
-               "${CMAKE_BINARY_DIR}/config/milk_config.h")
 
 # select most recent version available
 set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
@@ -486,7 +475,7 @@ add_link_options(-Wl,--disable-new-dtags) # RPATH instead of RUNPATH -- allows t
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libcomputeunit)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/tui)
-# Generated config.h/milk_config.h live in the build tree; see configure_file() above.
+# Generated config.h/milk_config.h live in the build tree; see src/engine/CMakeLists.txt.
 include_directories(${CMAKE_BINARY_DIR}/config)
 
 # =======================================
@@ -526,17 +515,9 @@ if(USE_COREMODS)
   add_subdirectory(src/perfbench)
 endif()
 
-# add libfps (standalone fps library exploration)
-add_subdirectory(src/engine/libmilkcommon)
-add_subdirectory(src/engine/libfps)
-add_subdirectory(src/engine/libcomputeunit)
-add_subdirectory(src/engine/libfpsseq)
-
-# add libmilkdata (core data layer, no CLI dependency)
-add_subdirectory(src/engine/libmilkdata)
-
-# add libprocessinfo
-add_subdirectory(src/engine/libprocessinfo)
+# Engine libraries (libmilkcommon, libfps, libcomputeunit, libfpsseq, libmilkdata,
+# libprocessinfo); ImageStreamIO is already added through libsrcdir above.
+add_subdirectory(src/engine)
 
 # engine-tier TUIs
 add_subdirectory(src/tui)

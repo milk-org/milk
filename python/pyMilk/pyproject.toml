@@ -1,0 +1,85 @@
+# FUTURE (F-1): de-nest pyMilk. This distribution is temporarily embedded at
+# milk/python/pyMilk/; move it to the top level of milk as a top-level submodule.
+# Keep paths into milk (e.g. ../../src/engine) in one place so the move is trivial.
+
+[build-system]
+build-backend = "scikit_build_core.build"
+requires = ["scikit-build-core>=0.10", "nanobind"]
+
+[project]
+authors = [{ name = "Vincent Deo", email = "vdeo@naoj.org" }]
+description = "Python bindings and utilities to use with MILK and CACAO"
+name = "pyMilk"
+readme = "README.md"
+version = "1.3"
+dependencies = [
+    "docopt",
+    "libtmux",
+    "numpy",
+    # "cupy", # KEEP OPTIONAL
+    "tqdm",
+    "astropy",
+]
+
+[project.urls]
+"Homepage" = "http://www.github.com/milk-org/pyMilk"
+
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+cmake.version = ">=3.17"
+cmake.source-dir = "bindings"
+cmake.build-type = "Release"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["pyMilk"]
+
+[tool.scikit-build.cmake.define]
+PYMILK_ENGINE = { env = "PYMILK_ENGINE", default = "SYSTEM" }
+
+[[tool.scikit-build.overrides]]
+if.env.COVERAGE = "ON"
+cmake.build-type = "Coverage"
+
+[[tool.scikit-build.overrides]]
+# Without CUDA_ROOT, USE_CUDA follows the engine's libImageStreamIO.
+if.env.CUDA_ROOT = true
+cmake.define.USE_CUDA = "ON"
+
+[project.scripts]
+shmPlot = "pyMilk.visual.shmPlot:main"
+shmImshow = "pyMilk.visual.shmImshow:main"
+shmTermshow = "pyMilk.visual.shmTermshow:main"
+zmq_send = "pyMilk.scripts.zmq_send:main"
+zmq_recv = "pyMilk.scripts.zmq_recv:main"
+updatekw = "pyMilk.scripts.updatekw:main"
+creashmim = "pyMilk.scripts.creashmim:main"
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--import-mode=importlib",
+    "--ignore=mains/*",
+    # Unused by pyMilk tests; they add Flask/Jinja2 and IPython-stack imports at startup.
+    "-p", "no:dash",
+    "-p", "no:returns",
+    "-p", "no:anyio",
+]
+
+[tool.coverage.run]
+command_line = "-m pytest"
+branch = true
+source = ["./pyMilk"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    'TYPE_CHECKING:',
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
+ignore_errors = true
+omit = ["tests/*"]

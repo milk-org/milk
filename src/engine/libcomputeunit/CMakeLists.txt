@@ -55,11 +55,11 @@ if(USE_STATIC_LTO)
   target_include_directories(
     ${LIBNAME}_static
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libprocessinfo>
+           $<BUILD_INTERFACE:${MILK_SOURCE_DIR}/src/engine/libmilkdata>
            $<INSTALL_INTERFACE:include>)
   target_link_libraries(${LIBNAME}_static PUBLIC milkfps_static milkdata_static
-                                                 milkcommon)
+                                                 milkcommon_static)
 endif()
 
 # Generic FPS lifecycle command, compiled once per binary name

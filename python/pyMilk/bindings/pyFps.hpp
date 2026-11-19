@@ -1,22 +1,25 @@
-// SPDX-FileCopyrightText: 2026 Arnaud Sevin et al
-//
-// SPDX-License-Identifier: LGPL-3.0-or-later
-
 #ifndef PYFPS_H
 #define PYFPS_H
 
 #include <iostream>
+#include <vector>    // std::vector
+#include <algorithm> // std::find
 
 extern "C"
 {
-#include "CLIcore.h"
-#include "CLIcore/CLIcore_datainit.h"
-#include "libcomputeunit/fps_CONFstart.h"
-#include "libcomputeunit/fps_CONFstop.h"
-#include "libcomputeunit/fps_RUNstart.h"
-#include "libcomputeunit/fps_RUNstop.h"
-#include "libcomputeunit/fps_tmux.h"
-#include "processtools.h"
+#include "fps.h"
+#include "fps_internal.h"
+#include "fps_connect.h"
+#include "fps_disconnect.h"
+#include "fps_CONFstart.h"
+#include "fps_CONFstop.h"
+#include "fps_FPCONFexit.h"
+#include "fps_FPCONFloopstep.h"
+#include "fps_RUNstart.h"
+#include "fps_RUNstop.h"
+#include "fps_RUNexit.h"
+#include "fps_tmux.h"
+#include "processinfo.h"
 }
 
 /**
@@ -41,25 +44,26 @@ enum FPS_status : uint32_t
 
 enum FPS_type : uint32_t
 {
-    AUTO         = 0,
-    UNDEF        = FPTYPE_UNDEF,
-    INT32        = FPTYPE_INT32,
-    UINT32       = FPTYPE_UINT32,
-    INT64        = FPTYPE_INT64,
-    UINT64       = FPTYPE_UINT64,
-    FLOAT32      = FPTYPE_FLOAT32,
-    FLOAT64      = FPTYPE_FLOAT64,
-    PID          = FPTYPE_PID,
-    TIMESPEC     = FPTYPE_TIMESPEC,
-    FILENAME     = FPTYPE_FILENAME,
-    FITSFILENAME = FPTYPE_FITSFILENAME,
-    EXECFILENAME = FPTYPE_EXECFILENAME,
-    DIRNAME      = FPTYPE_DIRNAME,
-    STREAMNAME   = FPTYPE_STREAMNAME,
-    STRING       = FPTYPE_STRING,
-    ONOFF        = FPTYPE_ONOFF,
-    PROCESS      = FPTYPE_PROCESS,
-    FPSNAME      = FPTYPE_FPSNAME,
+    AUTO              = 0,
+    UNDEF             = FPTYPE_UNDEF,
+    INT32             = FPTYPE_INT32,
+    UINT32            = FPTYPE_UINT32,
+    INT64             = FPTYPE_INT64,
+    UINT64            = FPTYPE_UINT64,
+    FLOAT32           = FPTYPE_FLOAT32,
+    FLOAT64           = FPTYPE_FLOAT64,
+    PID               = FPTYPE_PID,
+    TIMESPEC          = FPTYPE_TIMESPEC,
+    FILENAME          = FPTYPE_FILENAME,
+    FITSFILENAME      = FPTYPE_FITSFILENAME,
+    EXECFILENAME      = FPTYPE_EXECFILENAME,
+    DIRNAME           = FPTYPE_DIRNAME,
+    STREAMNAME        = FPTYPE_STREAMNAME,
+    STRING            = FPTYPE_STRING,
+    ONOFF             = FPTYPE_ONOFF,
+    PROCESS           = FPTYPE_PROCESS,
+    FPSNAME           = FPTYPE_FPSNAME,
+    STRING_NOT_STREAM = FPTYPE_STRING_NOT_STREAM,
 };
 
 enum FPS_flags : uint64_t
@@ -143,7 +147,7 @@ class pyFps
     {
         if (fps_.SMfd != -1)
         {
-            function_parameter_struct_disconnect(&fps_);
+            fps_disconnect(&fps_);
         }
     }
 
@@ -179,16 +183,11 @@ class pyFps
         if (connect() == -1)
         {
             std::cout << "Creating FPS...";
-            // OG FPS-STANDALONE-TOBEFIXED
-            //function_parameter_struct_create(NBparamMAX, name_.c_str());
+            function_parameter_struct_create(NBparamMAX, name_.c_str());
             std::cout << "Done" << std::endl;
             connect();
         }
-        else
-        {
-            connect();
-            read_keys();
-        }
+        read_keys();
         return EXIT_SUCCESS;
     }
 
@@ -199,7 +198,7 @@ class pyFps
      */
     int connect()
     {
-        return function_parameter_struct_connect(name_.c_str(), &fps_, FPSCONNECT_SIMPLE);
+        return fps_connect(name_.c_str(), &fps_, FPSCONNECT_SIMPLE);
     };
 
     /**
@@ -207,7 +206,7 @@ class pyFps
      */
     int disconnect()
     {
-        return function_parameter_struct_disconnect(&fps_);
+        return fps_disconnect(&fps_);
     }
 
     /**
@@ -220,14 +219,15 @@ class pyFps
      * @param fptype : entry type ("int","double","float","string")
      * @return int
      */
-    int add_entry(std::string entry_name, std::string entry_desc, uint32_t fptype)
+    int add_entry(std::string entry_name, std::string entry_desc, FPS_type fptype)
     {
-        keys_[entry_name] = static_cast<FPS_type>(fptype);
+        keys_[entry_name] = fptype;
         // We need to prepend a . to entry to abide by FPS conventions
         // See fps_add_entry.c
         std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(), fptype,
-                                            FPFLAG_DEFAULT_INPUT, nullptr, nullptr);
+        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
+                                            static_cast<uint32_t>(fptype), FPFLAG_DEFAULT_INPUT,
+                                            nullptr, nullptr);
     }
 
     /**
@@ -243,13 +243,14 @@ class pyFps
      */
     int add_entry_w_flags(std::string entry_name,
                           std::string entry_desc,
-                          uint32_t    fptype,
-                          uint64_t    fpflag)
+                          FPS_type    fptype,
+                          FPS_flags   fpflag)
     {
-        keys_[entry_name]     = static_cast<FPS_type>(fptype);
+        keys_[entry_name]     = fptype;
         std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(), fptype,
-                                            fpflag, nullptr, nullptr);
+        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
+                                            static_cast<uint32_t>(fptype),
+                                            static_cast<uint64_t>(fpflag), nullptr, nullptr);
     }
 
     /**
