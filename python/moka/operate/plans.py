@@ -105,5 +105,13 @@ for _plan in (
     ),
     Plan("runstart", (Step("RunStart"),), "abort", "consistent", compus_arg=True),
     Plan("runstop", (Step("RunStop"),), "best_effort", "any", compus_arg=True),
+    Plan(
+        "mlat",
+        (
+            Step("RunStart", ("acquWFS",)),
+            Step("RunStart", ("mlat",)),
+            Step("WaitRunEnd", ("mlat",)),
+        ),
+    ),
 ):
     PLANS.register(_plan.name, _plan)

@@ -472,3 +472,15 @@ def test_runstart_refuses_a_cold_pipeline_and_runstop_does_not(pp):
     with pytest.raises(ColdSystemError, match="deploy"):
         run_plan(pp, "runstart")
     run_plan(pp, "runstop")
+
+
+# ---- the built-in mlat plan (specs/012-moka-plans-cli/brief.md §7) ----
+
+
+def test_mlat_plan_shape():
+    steps = (
+        Step("RunStart", ("acquWFS",)),
+        Step("RunStart", ("mlat",)),
+        Step("WaitRunEnd", ("mlat",)),
+    )
+    assert PLANS["mlat"] == Plan("mlat", steps, "abort", "consistent")

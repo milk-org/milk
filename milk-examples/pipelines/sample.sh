@@ -23,19 +23,9 @@ moka deploy -p aoloop
 # 4. Link aoloop onto the simulator: aol0_wfsim -> mlatsim_wfs, aol0_dmC -> mlatsim_dm
 moka link delaysim -p aoloop
 
-# 5. Run: simulator, WFS acquisition, then mlat (Python only, no CLI yet)
-python3 - <<'EOF'
-from moka.operate.pipeline import Pipeline
-from moka.operate.tasks import RunStart, WaitRunEnd
-
-sim = Pipeline("mlatsim")
-sim.task_do(RunStart)                            # dmdelay + wfscam
-
-ao = Pipeline("aoloop")
-ao.task_do(RunStart(ao, ["acquWFS"]))            # aol0_wfsim -> aol0_imWFS2
-ao.task_do(RunStart(ao, ["mlat"]))
-ao.task_do(WaitRunEnd(ao, ["mlat"]))             # single pass, up to 120 s
-EOF
+# 5. Run: the simulator, then aoloop's acquWFS and mlat (waits for mlat to finish)
+moka runstart -p mlatsim
+moka mlat -p aoloop
 
 # 6. Show the latency measurement
 mokashow mlat -p aoloop

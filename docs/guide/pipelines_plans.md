@@ -22,6 +22,11 @@ over these ([§4](#4-custom-plans)).
 | `teardown` | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any`                |
 | `runstart` | RunStart                                                                        | `abort`       | `consistent`         |
 | `runstop`  | RunStop                                                                         | `best_effort` | `any`                |
+| `mlat`     | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                           | `abort`       | `consistent`         |
+
+`mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
+with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
+CompUs are idle); a second run skips that start and starts `mlat` again.
 
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
@@ -106,7 +111,7 @@ process do not see each other's definitions.
 === "conf.toml"
 
     ```toml
-    [plans.mlat]
+    [plans.latency]
     steps = [
         "RunStart[dmdelay]",
         "RunStart[wfscam]",

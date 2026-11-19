@@ -77,3 +77,5 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [later] A `moka_plans.py` that raises is executed twice per invocation by the fixed
   commands that read `pp.plans` (`plans`, `tasks`, `nuke`): once by the group, once by the command,
   because the failure is not cached.
+- [later] No test runs the built-in `mlat` plan on a pipeline that has `acquWFS` and `mlat` (twice:
+  the second run must skip `RunStart[acquWFS]`); `fake_compus` is hardcoded to delay0/delay1.
