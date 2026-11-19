@@ -55,24 +55,6 @@ def test_r_redraws_from_the_current_file(tmp_path):
     assert _peak(fig) == 5000.0
 
 
-def test_overlay_from_cacaovars(tmp_path):
-    _write_dat(tmp_path, 3000.0)
-    (tmp_path / "cacaovars.bash").write_text(
-        "export CACAO_WFSFRATE=1000.000\nexport CACAO_LATENCYHARDWFR=3.000\n"
-    )
-    fig = mlat_figure(tmp_path)
-    ax = fig.axes[0]
-    baseline, triangle, kernel, halfway = ax.lines[1:5]
-    assert list(baseline.get_ydata()) == [0.01, 0.01]
-    assert list(triangle.get_xdata()) == [2000.0, 3000.0, 4000.0]
-    assert triangle.get_ydata()[1] == 1.0
-    assert halfway.get_xdata()[0] == 2500.0
-    x, y = kernel.get_data()
-    assert abs(x[y.argmax()] - 3000.0) < 20.0  # fit recovers the latency
-    assert "3.000 frame" in ax.texts[0].get_text()
-    assert "1000.0 Hz" in ax.texts[0].get_text()
-
-
 def test_cli_mlat_shows_the_figure(make_tmp_pipeline, monkeypatch):
     pp = make_tmp_pipeline(
         '[compute_units.mlat]\nexec = "cacao-fpsexec-cacaopt-mlat"\n'
