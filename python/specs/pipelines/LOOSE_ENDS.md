@@ -158,3 +158,5 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   constant over the illumination (a piston over the DM aperture) give no response.
 - [ ] Duplicate: `pycacao/calib/compute_straight_CM.py` does not run (wrong call signature, no sort,
   no truncation, no 1/σ) and is superseded by `pycacao/calib/mkcm.py` (016-1). Repair or delete.
+- [ ] `moka mkcm tikhonov -r 0` on a rank-deficient RM succeeds and writes gains of `1/σ` for the
+  null modes (about 1e15): `-r 0` is taken as the operator's choice (016 review, A4).

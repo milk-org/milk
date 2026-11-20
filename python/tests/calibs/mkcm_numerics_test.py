@@ -79,7 +79,8 @@ def test_tikhonov_gains_and_cut() -> None:
     np.testing.assert_allclose(
         flat(cm_wfs) @ flat(W).T @ v, np.diag(sv**2 / (sv**2 + lam2)), atol=1e-12
     )
-    cm_wfs, _, _ = cm_tikhonov(D, W, reg, nmodes=4)
+    cm_wfs, cm_dm, _ = cm_tikhonov(D, W, reg, nmodes=4)
+    np.testing.assert_allclose(flat(cm_dm), v[:, :4].T @ flat(D))
     np.testing.assert_allclose(
         flat(cm_wfs) @ flat(W).T @ v[:, :4],
         np.diag(sv[:4] ** 2 / (sv[:4] ** 2 + lam2)),
@@ -116,6 +117,7 @@ def test_shapes_and_sv(call: Callable[[], CM]) -> None:
     cm_wfs, cm_dm, sv = call()
     assert cm_wfs.shape[1:] == (3, 4) and cm_dm.shape[1:] == (2, 3)
     assert sv.shape == (min(N, 12),) and np.all(np.diff(sv) <= 0)
+    np.testing.assert_allclose(sv, svd(W)[1])
 
 
 def test_dtype_follows_input() -> None:
@@ -130,6 +132,7 @@ def test_dtype_follows_input() -> None:
         lambda: cm_tikhonov(D, W, 0.1, nmodes=0),
         lambda: cm_pinv(D, W, nmodes=0),
         lambda: cm_tsvd(D, 0 * W),
+        lambda: cm_tikhonov(D, 0 * W, 0.1),
         lambda: cm_pinv(D, 0 * W),
     ],
 )

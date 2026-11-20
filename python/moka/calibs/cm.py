@@ -62,8 +62,8 @@ class MakeCM(Task):
                 cm_wfs, cm_dm, sv = mkcm.cm_tikhonov(*rm, reg, nmodes)
             else:
                 cm_wfs, cm_dm, sv = getattr(mkcm, f"cm_{flavor}")(*rm, nmodes, reg)
-        except ValueError:
-            self.failure_reason = f"no singular mode kept with -n {nmodes} -r {reg}."
+        except ValueError as error:
+            self.failure_reason = f"{error} with -n {nmodes} -r {reg}."
             return
         kept = (
             len(cm_wfs) if flavor != "pinv" else int((sv[:nmodes] > reg * sv[0]).sum())

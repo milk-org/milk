@@ -93,6 +93,7 @@ def test_rm_files_of_different_mode_counts_are_refused(cm):
         ({"flavor": "tsvd", "nmodes": 4}, 4, 4),
         ({"flavor": "tikhonov", "reg": 0.01, "nmodes": 3}, 3, 3),
         ({"flavor": "pinv", "nmodes": 2}, N, 2),
+        ({"flavor": "pinv", "reg": 0.5}, N, 4),
     ],
 )
 def test_each_flavor_writes_both_files(cm, params, slices, kept):
