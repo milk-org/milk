@@ -156,3 +156,5 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [ ] The illumination of `mlatsim`'s pywfs (`pupmask` hook, radius 7) and the DM aperture of
   `aoloop`'s `[dmhint]` (radius 8) are two things and may differ. Poke modes of `mkpokes` that are
   constant over the illumination (a piston over the DM aperture) give no response.
+- [ ] Duplicate: `pycacao/calib/compute_straight_CM.py` does not run (wrong call signature, no sort,
+  no truncation, no 1/σ) and is superseded by `pycacao/calib/mkcm.py` (016-1). Repair or delete.
