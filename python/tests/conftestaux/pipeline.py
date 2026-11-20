@@ -69,9 +69,10 @@ def cloned_pipeline():
 
 
 @pytest.fixture
-def make_mlatsim(tmp_path):
+def make_mlatsim(tmp_path, shm_dir_cleanafter):
     """make(extra_toml) -> resources/mlatsim-conf plus extra_toml, deployed in tmp_path; torn
-    down (tmux included) at the end. Needs milk and cacao binaries."""
+    down (tmux included) at the end, then its streams removed: acquWFS fills aolN_wfsmask only
+    when it creates it. Needs milk and cacao binaries."""
     made: list[Pipeline] = []
 
     def make(extra_toml: str = "") -> Pipeline:

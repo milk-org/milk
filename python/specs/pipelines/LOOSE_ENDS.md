@@ -134,3 +134,20 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [ ] `linresp_e2e_test.py` is flaky without RT priority since 014-3 (WFScamsim camera): 1 run of 2
   had 23 wrong modes against the 12 allowed; the other passed. Not checked whether 014-2
   (streamcopy camera) was equally flaky. Committed as is (Vincent, 2026-11-20).
+- [ ] The pywfssim mask path (`.pupmask`) is not tested: no conf sets it. The first conf that sets
+  a mask adds the test (015 §6.4).
+- [later] Duplicate: `scripts/mkdm.py` is copied, identical, in `tests/resources/mlatsim-conf` and
+  `milk-examples/pipelines/mlatsim-conf` (015-2 changed both).
+- [later] Duplicate: the test `mlatsim-conf` owns `acquWFS` and `mlat`, and the e2e appends its own
+  `measlinresp`; these belong to `aoloop` (`fpsdetails.toml`). The e2e could deploy `mlatsim` and
+  `aoloop` as `sample.sh` does (015-2).
+- [ ] acqWFS fills `aolN_wfsmask` with ones only when it creates it: a mask left in shm by an
+  earlier, broken build (uninitialized `ii`, first two pixels 0) stays. Not handled in C; the
+  tests remove their streams after each `make_mlatsim` (015-2).
+- [ ] `linresp_e2e_test.py` fails about 1 run in 2 with RT priority on a desktop, on the pywfs
+  simulator (015-2): blocks of consecutive modes read the previous poke. measlinresp flushes the
+  WFS semaphore once per cycle and matches frames to pokes by iteration count, with half a frame
+  of margin; a per-poke flush (tried, not kept) still failed 1 run in 2. Tolerated until a server
+  with isolated cores (Vincent, 2026-11-20).
+- [ ] 015-1's pywfssim adds `.wlum` and scales slopes by `Nx / wlum` (modamp in λ/D), against
+  015 §3 (`u = g / modamp`). The e2e model follows the C (Vincent, 2026-11-20); the brief is stale.
