@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "milkdata.h"
 
@@ -30,11 +31,12 @@ MILK_DATA milk_data;
 
 
 /**
- * @brief Initialize core data arrays
+ * @brief Initialize core data arrays and RNG
  *
  * Allocates image, variable, and FPS arrays in
- * milk_data. Safe to call multiple times (checks
- * if already initialized).
+ * milk_data, seeds srand() and the milk RNG.
+ * Call once per process: arrays are reallocated
+ * on every call.
  */
 errno_t milk_data_init(void)
 {
@@ -120,6 +122,11 @@ errno_t milk_data_init(void)
 
     gettimeofday(&t1, NULL);
     srand(t1.tv_usec * t1.tv_sec);
+
+    /* Microsecond time and pid: distinct seeds for
+     * processes started in the same second */
+    milk_rng_init(((uint64_t) t1.tv_sec * 1000000u + (uint64_t) t1.tv_usec) ^
+                  ((uint64_t) getpid() << 40));
 
     return RETURN_SUCCESS;
 }
