@@ -131,3 +131,6 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   when the plan starts (`SetLinResp` deletes its in-progress file and rewrites its FPS, `RunStart`
   is skipped); `procinfo.loopcntMax = -1` (a stopped run counts as complete); a run shorter than
   the `RunStart` to `WaitLinResp` handover is reported as "0 of N cycles".
+- [ ] `linresp_e2e_test.py` is flaky without RT priority since 014-3 (WFScamsim camera): 1 run of 2
+  had 23 wrong modes against the 12 allowed; the other passed. Not checked whether 014-2
+  (streamcopy camera) was equally flaky. Committed as is (Vincent, 2026-11-20).

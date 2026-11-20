@@ -2,9 +2,9 @@
 #
 #   dm07disp00..11 --[dmcomb]--> dm07disp --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
 #      02 = RM pokes                                                                   |
-#      03 = loop                                     [wfscam: streamcopy, fixed ~1 kHz clock]
+#      03 = loop                                     [wfscam: WFScamsim, fixed ~1 kHz clock]
 #      10 = dmturb (on demand)                                                         v
-#                                                                                mlatsim_wfs
+#                                                                       mlatsim_wfs (uint16)
 #                                                                                      |
 #                                      [acquWFS: as aoloop-conf; mlat and measlinresp read here]
 #                                                                                      v
@@ -24,6 +24,12 @@ id = "dm"
 type = "command"
 command = ["python3", "../scripts/mkdm.py", "dm.fits"]
 product = "dm.fits"
+
+[[hooks]]                     # second product of the same script: 16x16 uint16 zeros
+id = "wfs"
+type = "command"
+command = ["python3", "../scripts/mkdm.py", "wfs.fits", "uint16"]
+product = "wfs.fits"
 
 [[dataloads]]                 # every stream exists before any CompU starts
 source = "dm.fits"
@@ -46,7 +52,7 @@ source = "dm.fits"
 target = "mlatsim_dmdelayed"
 
 [[dataloads]]
-source = "dm.fits"
+source = "wfs.fits"
 target = "mlatsim_wfs"
 
 [compute_units.dmcomb]        # the DM: sums its 12 channels into dm07disp; creates the others
@@ -97,12 +103,18 @@ procinfo.triggermode = 4      # delay: polls the buffer every triggerdelay
 procinfo.triggerdelay = 0.000005
 procinfo.RTprio = 49          # the simulated hardware outranks what measures it
 
-[compute_units.wfscam]        # the camera: one frame every triggerdelay
-exec = "milk-fpsexec-mem-streamcopy"
+[compute_units.wfscam]        # the camera: one uint16 frame every triggerdelay
+exec = "cacao-fpsexec-cacaoiot-wfscamsim"
 
 [compute_units.wfscam.fps]
-in_sname = "{compute_units.dmdelay.fps.out_name}"
-out_sname = "mlatsim_wfs"
+wfssignal = "{compute_units.dmdelay.fps.out_name}"
+wfscamim = "mlatsim_wfs"
+zerolevel = 1.0               # frame at 1000 ADU; a -0.1 poke stays above 0
+fluxtotal = 1000.0            # here a plain multiplier: ADU per signal unit, with camgain 1
+camgain = 1.0
+compphnoise = false
+camRON = 0.0
+compdarkadd = false
 procinfo.enabled = true
 procinfo.loopcntMax = -1
 procinfo.triggermode = 4      # delay
