@@ -5,6 +5,7 @@
 #      03 = loop                                          [pywfs: on each delayed DM write]
 #      10 = dmturb (on demand)                                                         v
 #                                                         mlatsim_wfssignal (float, 32x32, total 1)
+#                                                         lit where mlatsim_pupmask > 0
 #                                                                                      |
 #                                                    [wfscam: WFScamsim, fixed ~1 kHz clock]
 #                                                                                      v
@@ -36,6 +37,12 @@ type = "command"
 command = ["python3", "../scripts/mkdm.py", "wfssignal.fits", "float32", "32"]
 product = "wfssignal.fits"
 
+[[hooks]]                     # the WFS illumination: 156 actuators lit. Not the DM aperture
+id = "pupmask"                # (aoloop's [dmhint]), which is larger
+type = "command"
+command = ["python3", "../scripts/mkpupmask.py", "pupmask.fits", "16", "7.5", "7.5", "7.0"]
+product = "pupmask.fits"
+
 [[dataloads]]                 # every stream exists before any CompU starts
 source = "dm.fits"
 target = "dm07disp"
@@ -63,6 +70,10 @@ target = "mlatsim_wfs"
 [[dataloads]]
 source = "wfssignal.fits"
 target = "mlatsim_wfssignal"
+
+[[dataloads]]
+source = "pupmask.fits"
+target = "mlatsim_pupmask"
 
 [compute_units.dmcomb]        # the DM: sums its 12 channels into dm07disp; creates the others
 exec = "cacao-fpsexec-dmcomb"
@@ -116,7 +127,8 @@ exec = "cacao-fpsexec-cacaoiot-pywfssim"
 [compute_units.pywfs.fps]
 dmstream = "{compute_units.dmdelay.fps.out_name}"
 wfssignal = "mlatsim_wfssignal"
-modamp = 1.0                  # [lambda/D]; with wlum 1 and 16 actuators, a 0.1 poke is u = 1.6
+pupmask = "mlatsim_pupmask"   # no slope and no light outside the illumination
+modamp = 1.0                  # [lambda/D]; with wlum 1 and 16 actuators, a 0.005 poke is u = 0.08
 
 [compute_units.wfscam]        # the camera: one uint16 frame every triggerdelay
 exec = "cacao-fpsexec-cacaoiot-wfscamsim"
@@ -125,7 +137,7 @@ exec = "cacao-fpsexec-cacaoiot-wfscamsim"
 wfssignal = "{compute_units.pywfs.fps.wfssignal}"
 wfscamim = "mlatsim_wfs"
 zerolevel = 0.0               # the pupil images are positive by themselves
-fluxtotal = 10240000.0        # total flux; 10000 ADU per pixel on a flat DM (1024 lit pixels)
+fluxtotal = 6240000.0         # total flux; 10000 ADU per lit pixel on a flat DM (4 x 156)
 camgain = 1.0
 compphnoise = false
 camRON = 0.0

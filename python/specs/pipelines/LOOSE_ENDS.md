@@ -131,9 +131,10 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   when the plan starts (`SetLinResp` deletes its in-progress file and rewrites its FPS, `RunStart`
   is skipped); `procinfo.loopcntMax = -1` (a stopped run counts as complete); a run shorter than
   the `RunStart` to `WaitLinResp` handover is reported as "0 of N cycles".
-- [ ] The pywfssim mask path (`.pupmask`) is not tested: no conf sets it. The first conf that sets
-  a mask adds the test (015 §6.4).
-- [later] Duplicate: `scripts/mkdm.py` is copied, identical, in `tests/resources/mlatsim-conf` and
+- [x] The pywfssim mask path (`.pupmask`) is not tested: no conf sets it. The first conf that sets
+  a mask adds the test (015 §6.4). Both `mlatsim-conf` set an illumination mask and the e2e model
+  takes it (015 review, B2).
+- [later] Duplicate: `scripts/mkdm.py` and `scripts/mkpupmask.py` are copied, identical, in `tests/resources/mlatsim-conf` and
   `milk-examples/pipelines/mlatsim-conf` (015-2 changed both).
 - [later] Duplicate: the test `mlatsim-conf` owns `acquWFS` and `mlat`, and the e2e appends its own
   `measlinresp`; these belong to `aoloop` (`fpsdetails.toml`). The e2e could deploy `mlatsim` and
@@ -149,6 +150,9 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
   isolated cores (Vincent, 2026-11-20).
 - [x] 015-1's pywfssim adds `.wlum` and scales slopes by `Nx / wlum` (modamp in λ/D). The e2e
   model follows the C (Vincent, 2026-11-20); 015 §3 corrected by the review.
-- [ ] With `modamp = 1.0` a 0.1 poke of measlinresp is `u = 1.6`, well into the pywfssim
-  saturation, and mlat's `OPDamp = 1.0` is `u = 16`. Poke amplitudes to be decreased (015 review,
-  row B2, open).
+- [x] With `modamp = 1.0` a 0.1 poke of measlinresp is `u = 1.6`, well into the pywfssim
+  saturation, and mlat's `OPDamp = 1.0` is `u = 16`. Now `ampl = 0.005` (`u = 0.08`) and
+  `OPDamp = 0.05` (015 review, B2).
+- [ ] The illumination of `mlatsim`'s pywfs (`pupmask` hook, radius 7) and the DM aperture of
+  `aoloop`'s `[dmhint]` (radius 8) are two things and may differ. Poke modes of `mkpokes` that are
+  constant over the illumination (a piston over the DM aperture) give no response.

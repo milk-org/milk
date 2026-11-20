@@ -39,7 +39,7 @@ GPUindex = 99
 dmstream = "{compute_units.modes2dm.fps.outcoeff}"
 wfsstream = "{compute_units.wfs2modes.fps.insname}"
 pokemap = "null"
-OPDamp = 1.0
+OPDamp = 0.05                 # on mlatsim's pywfs: u = 0.8, below saturation
 CPA = 2.0
 frameratewait = 0.5
 NBiter = 50
@@ -53,7 +53,7 @@ procinfo.triggermode = 0      # immediate
 [compute_units.measlinresp.fps]
 streamin = "aol{_ln}_dmRM"                         # as in cacao
 streamout = "{compute_units.mlat.fps.wfsstream}"   # aol0_imWFS2
-ampl = 0.1
+ampl = 0.005                    # on mlatsim's pywfs: u = 0.08, linear
 timing.NBave = 1
 timing.NBexcl = 2               # 1 fails on the simulator: LOOSE_ENDS.md, hardware latency
 procinfo.enabled = true
