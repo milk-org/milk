@@ -426,13 +426,7 @@ errno_t CLI_startup()
     // owner=root mode=4755
     getresuid(&dcruid, &dceuid, &dcsuid);
 
-    // Initialize random-number generator
-    // Pure-C xorshift64* (replaces GSL)
-    milk_rng_init((uint64_t) time(NULL));
-
-    // warm up
-    //for(i=0; i<10; i++)
-    //    v1 = gsl_rng_uniform (dcrndgen);
+    // RNG is initialized in milk_data_init() (via CLI_data_init())
 
     dcprogstatus = 0;
 

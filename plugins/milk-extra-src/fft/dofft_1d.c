@@ -84,7 +84,7 @@ imageID FFT_do1dfft(const char *__restrict in_name, const char *__restrict out_n
     fftw_complex  *outptr_double;
 
     IMGID imgin = imgid_make_from_name(in_name);
-    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS)
+    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) == -1)
     {
         return -1;
     }
@@ -109,8 +109,7 @@ imageID FFT_do1dfft(const char *__restrict in_name, const char *__restrict out_n
     imgout.mdt->datatype = datatype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    createimagefromIMGID(&imgout);
 
     if (naxis == 1)
     {
@@ -274,7 +273,7 @@ imageID do1drfft(const char *__restrict in_name, const char *__restrict out_name
     double        *inptr_double;
 
     IMGID imgin = imgid_make_from_name(in_name);
-    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) != RETURN_SUCCESS)
+    if (resolveIMGID(&imgin, ERRMODE_WARN, dcimg, dcnimg) == -1)
     {
         return -1;
     }
@@ -325,8 +324,7 @@ imageID do1drfft(const char *__restrict in_name, const char *__restrict out_name
     imgout.mdt->datatype = outtype;
     imgout.mdt->shared   = dcshareddft;
     imgout.mdt->NBkw     = NB_KEYWNODE_MAX;
-    imgout.im            = (IMAGE *) calloc(1, sizeof(IMAGE));
-    imgid_mkimage(&imgout);
+    createimagefromIMGID(&imgout);
 
     if (naxis == 2)
     {

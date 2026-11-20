@@ -22,21 +22,15 @@
 /*
  * Initialize the "data" structure.
  *
- * Core fields (image, variable, FPS arrays) are
- * allocated by milk_data_init(), then copied into
- * data.core so both DATA.core and milk_data refer
- * to the same storage.
+ * Core fields (image, variable, FPS arrays) are allocated by milk_data_init(), then copied into
+ * data.core so both DATA.core and milk_data refer to the same storage.
  *
- * Calls milk_data_init() to allocate core arrays
- * (images, variables, FPS), then creates built-in
- * mathematical constants (_PI, _e, _c, etc.) and
- * seeds the random number generator.
+ * Calls milk_data_init() to allocate core arrays (images, variables, FPS) and seed the RNG, then
+ * creates built-in mathematical constants (_PI, _e, _c, etc.).
  */
 errno_t CLI_data_init()
 {
     DEBUG_TRACE_FSTART();
-
-    struct timeval t1;
 
     /* Allocate core arrays (image, variable, FPS) */
     milk_data_init();
@@ -53,9 +47,6 @@ errno_t CLI_data_init()
     create_variable_ID("_pc", 3.0856776e16);
     create_variable_ID("_ly", 9.460730472e15);
     create_variable_ID("_AU", 1.4959787066e11);
-
-    gettimeofday(&t1, NULL);
-    srand(t1.tv_usec * t1.tv_sec);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
