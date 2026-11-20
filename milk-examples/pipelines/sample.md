@@ -1,4 +1,4 @@
-# sample.sh: mlatsim + aoloop, up to the linear response
+# sample.sh: mlatsim + aoloop, up to the control matrices
 
 It works in `~/AOloop2` and follows
 [pipelines_tour.md](../../docs/guide/pipelines_tour.md):
@@ -19,6 +19,8 @@ It works in `~/AOloop2` and follows
 7. **Linear response:** `moka mkpokes -p aoloop` writes the poke cube
    `calib/RMmodesDM.fits`; `moka measlinresp -p aoloop` measures the response to it with mlat's
    latency and writes `calib/RMmodesWFS.fits`.
+8. **Control matrices:** `moka mkcm -p aoloop` computes `calib/CMmodesWFS.fits` and
+   `calib/CMmodesDM.fits` from the response pair ([pipelines_plans.md](../../docs/guide/pipelines_plans.md)).
 
 ## Before it can work
 

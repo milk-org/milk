@@ -1,5 +1,5 @@
 #!/bin/bash
-# Synoptic: mlatsim (simulated DM -> WFS) + aoloop, up to the linear response.
+# Synoptic: mlatsim (simulated DM -> WFS) + aoloop, up to the control matrices.
 # Steps: docs/guide/pipelines_tour.md. Linkage: aoloop-conf [systemlinkage.delaysim].
 set -e
 
@@ -29,8 +29,15 @@ moka mlat -p aoloop
 mokashow mlat -p aoloop
 
 # 7. Poke cube, then the linear response (reads mlat's latency; writes calib/RMmodesWFS.fits).
+#    mkpokes [TYPE]: hadamard (default) or zonal.
+#    measlinresp [-a AMPL]: poke amplitude (default: the measlinresp FPS conf).
 moka mkpokes -p aoloop
 moka measlinresp -p aoloop
+
+# 8. Control matrices from the response (writes calib/CMmodesWFS.fits, calib/CMmodesDM.fits).
+#    mkcm [FLAVOR] [-n NMODES] [-r REG]: FLAVOR tsvd (default), tikhonov (needs -r) or pinv
+#    Options: docs/guide/pipelines_plans.md.
+moka mkcm -p aoloop
 
 # Back down:
 # moka teardown -p aoloop ; moka teardown -p mlatsim

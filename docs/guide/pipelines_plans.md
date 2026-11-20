@@ -25,6 +25,7 @@ over these ([§4](#4-custom-plans)).
 | `mlat`        | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                                          | `abort`       | `consistent`         |
 | `mkpokes`     | MakePokes                                                                                      | `abort`       | `consistent`         |
 | `measlinresp` | RunStart[acquWFS] → SetLinResp[measlinresp] → RunStart[measlinresp] → WaitLinResp[measlinresp] | `abort`       | `consistent`         |
+| `mkcm`        | MakeCM                                                                                         | `abort`       | `cold_or_consistent` |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
@@ -51,6 +52,27 @@ from the `measlinresp` FPS conf; `-a` sets `ampl` until the next deploy. All fil
 
 Every `moka measlinresp` measures again. Nothing checks that other writers leave the DM alone:
 run it before `moka runstart`.
+
+`moka mkcm [FLAVOR] [-n NMODES] [-r REG]` computes the control matrix pair from whatever
+response matrix pair is in `<rootdir>/calib/` (`RMmodesDM.fits`, `RMmodesWFS.fits`: measured or
+dropped there by hand) and writes `CMmodesWFS.fits` and `CMmodesDM.fits` there, float32. It
+touches no stream, so it also runs on a pipeline that is not deployed. The loop computes the mode
+coefficients `a = CMmodesWFS · wfs` and the DM command `dm = CMmodesDMᵀ · a`, so both cubes have
+the same number of slices. With the response `W` (one row per poke mode) decomposed as
+`V · diag(σ) · Uᵀ`, σ descending:
+
+- `tsvd` (default): one slice per kept singular mode, `u_k / σ_k` and the DM shape `v_kᵀ · D`.
+- `tikhonov`: the same slices with gain `σ_k / (σ_k² + λ²)`, `λ = REG · σ_0`. It needs `-r`.
+- `pinv`: the pseudo-inverse restricted to the kept modes; the slices are the poke modes
+  themselves (`CMmodesDM` is `RMmodesDM`).
+
+`-n` keeps the singular modes of index below `NMODES` (1 to the number of poke modes); `-r` keeps,
+for `tsvd` and `pinv`, those with `σ_k > REG · σ_0` (default `1e-6`: only null modes go). They
+combine. If no mode is kept, `mkcm` fails and writes nothing. Both headers hold `CMFLAVOR`,
+`CMNCUT` (the `-n` given; absent without `-n`), `CMREG` (the effective `-r`) and `CMNKEPT` (the
+number of singular modes kept); `CMmodesWFS.fits` also has an HDU `SINGVALS` with all singular
+values, to choose `-n` and `-r` from. A pair of the same parameters, newer than both RM files, is
+left alone; a hand-made pair (no `CMFLAVOR`) is replaced.
 
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
