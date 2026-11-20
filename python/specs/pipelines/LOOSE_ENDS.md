@@ -58,7 +58,7 @@ list at each slice boundary.
   several.
 - [milk] No Doxyfile at the repo root: Doxygen generation is removed (`writing_docs.md` §9 says it
   may return); restoring it is a build/CI item.
-- [later] Add a dmcomb to the simulator conf (`mlatsim-conf`, example and test resource), with
+- [x] Add a dmcomb to the simulator conf (`mlatsim-conf`, example and test resource), with
   cacao's channel map (`cacao-setDMnolink`: `aol<N>_dmRM` → `dm<DD>disp02`, `aol<N>_dmC` →
   `disp03`). Then `aoloop-conf` `[systemlinkage.delaysim]` stops pointing `aol0_dmRM` at the same
   stream as `aol0_dmC` (013 stopgap), and `measlinresp` can run while `modes2dm` runs.

@@ -6,11 +6,12 @@ It works in `~/AOloop2` and follows
 1. **Clone:** `mokainit clone` copies `mlatsim-conf` and `aoloop-conf`. This includes
    `scripts/`, which the `mlatsim` setup step needs.
 2. **Provision:** `resolve`, then `init`, for each pipeline. For `mlatsim`, `init` writes
-   `data/dm.fits`.
+   `data/dm.fits`, the 16 × 16 zeros that deploy loads into `dm07disp`, its channels 02, 03 and
+   10, and the delayed DM and WFS streams.
 3. **Deploy:** `moka deploy -p mlatsim`, then `-p aoloop`.
 4. **Link:** `moka link delaysim -p aoloop` points `aol0_wfsim` at `mlatsim_wfs` and
-   `aol0_dmC` and `aol0_dmRM` at `mlatsim_dm`.
-5. **Run:** `moka runstart -p mlatsim` starts all of `mlatsim`, then `moka mlat -p aoloop` starts
+   `aol0_dmC` at `dm07disp03` and `aol0_dmRM` at `dm07disp02`, two channels of `mlatsim`'s DMcomb.
+5. **Run:** `moka runstart -p mlatsim` starts `dmcomb`, `dmdelay` and `wfscam` (`dmturb` is on demand), then `moka mlat -p aoloop` starts
    `aoloop`'s `acquWFS` and `mlat` and waits for `mlat` to finish.
 6. **Show:** `mokashow mlat -p aoloop`.
 7. **Linear response:** `moka mkpokes -p aoloop` writes the poke cube

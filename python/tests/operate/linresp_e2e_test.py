@@ -28,8 +28,8 @@ ysize = 16
 exec = "cacao-fpsexec-cacaoac-measlinresp"
 
 [compute_units.measlinresp.fps]
-streamin = "mlatsim_dm"
-streamout = "mlatsim_wfs"
+streamin = "dm07disp02"
+streamout = "aol7_imWFS2"
 ampl = 0.1
 timing.NBave = 1
 timing.NBexcl = 2
@@ -41,15 +41,14 @@ procinfo.RTprio = 40          # max 49 (fps_processinfo_entries.c); applied by m
 CALIBRATE = Plan(
     "calibrate",
     (
-        Step("RunStart", ("dmdelay",)),
-        Step("RunStart", ("wfscam",)),
+        Step("RunStart"),  # runstart: dmcomb, dmdelay, wfscam, acquWFS
         Step("RunStart", ("mlat",)),
         Step("WaitRunEnd", ("mlat",)),
         Step("MakePokes"),
         Step("SetLinResp", ("measlinresp",)),
         Step("RunStart", ("measlinresp",)),
         Step("WaitLinResp", ("measlinresp",)),
-        Step("RunStop", ("wfscam", "dmdelay")),
+        Step("RunStop"),
     ),
 )
 

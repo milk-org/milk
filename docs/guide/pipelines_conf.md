@@ -129,7 +129,7 @@ Dotted keys are equivalent to nested tables: `procinfo.enabled = true` inside
 ```toml
 [[dataloads]]
 source = "dm.fits"            # (1)!
-target = "mlatsim_dm"         # the stream to create
+target = "dm07disp"           # the stream to create
 ```
 
 1. A file in `rootdir/initdata/`, so: a hook product.

@@ -24,6 +24,9 @@ This workspace is the `python/` folder of the milk repository. Before any task:
 
 Tests: `pytest` from this folder. The **milk**-tagged slices also need `MILK_INSTALLDIR` and a
 milk build (see `tests/conftestaux/milk.py`). The existing suite must stay green.
+While iterating, run only the affected test files. Run the full suite once, before committing,
+with its output saved to a log (`pytest -q -rs > $LOG 2>&1`), and answer follow-up questions
+(skips, failures, whether milk tests ran) by grepping that log instead of rerunning.
 
 **Code rules (important):**
 

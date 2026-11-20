@@ -1,18 +1,23 @@
-# mlat over a simulated DM -> WFS path.
+# mlat and measlinresp over a simulated DM -> WFS path.
 #
-#   mlatsim_dm --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
-#        ^                                                 |
-#        |                    [wfscam: streamcopy, fixed ~1 kHz clock]
-#        |                                                 v
-#        +-------- mlat pokes dm, watches wfs -------- mlatsim_wfs
+#   dm07disp00..11 --[dmcomb]--> dm07disp --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
+#      02 = RM pokes                                                                   |
+#      03 = loop                                     [wfscam: streamcopy, fixed ~1 kHz clock]
+#      10 = dmturb (on demand)                                                         v
+#                                                                                mlatsim_wfs
+#                                                                                      |
+#                                      [acquWFS: as aoloop-conf; mlat and measlinresp read here]
+#                                                                                      v
+#                                                                                aol7_imWFS2
 #
 # The camera samples the delayed DM on its own clock; DM writes never trigger it (optical, not
-# digital, feedback).
-# Session: see specs/011-o1-steps-runstart-mlat/brief.md.
+# digital, feedback). Channel map as cacao-setDMnolink. DMindex 7 is loop_number, written out.
+# Session: see specs/011-o1-steps-runstart-mlat/brief.md, specs/014-sim-dmcomb-turb-camsim/brief.md.
 long_name = "mlatsim"
 name = "mlatsim"
 loop_number = 7
 teardown_kill_tmux = true
+runstart = ["dmcomb", "dmdelay", "wfscam", "acquWFS"]  # dmturb, mlat: on demand
 
 [[hooks]]                     # writes data/dm.fits: 16x16 float32 zeros
 id = "dm"
@@ -22,7 +27,19 @@ product = "dm.fits"
 
 [[dataloads]]                 # every stream exists before any CompU starts
 source = "dm.fits"
-target = "mlatsim_dm"
+target = "dm07disp"
+
+[[dataloads]]
+source = "dm.fits"
+target = "dm07disp02"
+
+[[dataloads]]
+source = "dm.fits"
+target = "dm07disp03"
+
+[[dataloads]]
+source = "dm.fits"
+target = "dm07disp10"
 
 [[dataloads]]
 source = "dm.fits"
@@ -32,11 +49,45 @@ target = "mlatsim_dmdelayed"
 source = "dm.fits"
 target = "mlatsim_wfs"
 
+[compute_units.dmcomb]        # the DM: sums its 12 channels into dm07disp; creates the others
+exec = "cacao-fpsexec-dmcomb"
+
+[compute_units.dmcomb.fps]
+DMindex = 7
+DMxsize = 16
+DMysize = 16
+NBchannel = 12
+DMcombout = "dm07disp"
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 4      # delay: polls the channels' counters
+procinfo.triggerdelay = 0.00001   # cacao's value
+procinfo.RTprio = 49
+
+[compute_units.dmturb]        # turbulence into channel 10; turbON through the FPS
+exec = "cacao-fpsexec-dmturb"
+
+[compute_units.dmturb.fps]
+dmstream = "dm07disp10"       # cacao's turbulence channel
+turbON = false
+DMpixscale = 0.5             # [m/actuator]; dmturb's defaults are all 0 (unusable)
+wspeed = 10.0                 # [m/s]
+wangle = 0.0                  # [rad]
+ampl = 0.1                    # RMS across the DM [um]
+turbseed.size = 512           # seed screen, computed into rootdir/conf/turbseed{0,1}.fits on
+turbseed.pixscale = 0.1       # the first run start [m/pix]
+turbseed.innerscale = 0.01    # [m]
+turbseed.outerscale = 20.0    # [m]
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 4
+procinfo.triggerdelay = 0.001
+
 [compute_units.dmdelay]       # the DM response: copies each DM write, delaysec late
 exec = "milk-fpsexec-mem-streamdelay"
 
 [compute_units.dmdelay.fps]
-in_name = "mlatsim_dm"
+in_name = "dm07disp"
 out_name = "mlatsim_dmdelayed"
 delaysec = 0.003
 naive_mode = false            # time-stamped buffer: every DM write comes out, delaysec late
@@ -58,12 +109,25 @@ procinfo.triggermode = 4      # delay
 procinfo.triggerdelay = 0.001
 procinfo.RTprio = 49
 
+[compute_units.acquWFS]       # as aoloop-conf: mlat and measlinresp read imWFS2, not the camera
+exec = "cacao-fpsexec-cacaoiot-acqWFS"
+
+[compute_units.acquWFS.fps]
+AOloopindex = 7
+insname = "mlatsim_wfs"
+wfszpo = "aol7_wfszpo"
+comp.darksub = false
+comp.WFSnormalize = false
+comp.WFSrefsub = false
+comp.WFSsigav = false
+comp.WFSrefc = false
+
 [compute_units.mlat]          # one measurement per run; the run ends by itself
 exec = "cacao-fpsexec-cacaopt-mlat"
 
 [compute_units.mlat.fps]
-dmstream = "{compute_units.dmdelay.fps.in_name}"
-wfsstream = "{compute_units.wfscam.fps.out_sname}"
+dmstream = "dm07disp03"
+wfsstream = "aol7_imWFS2"
 pokemap = "null"
 OPDamp = 1.0
 CPA = 2.0

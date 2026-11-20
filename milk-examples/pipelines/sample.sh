@@ -19,7 +19,7 @@ mokainit init aoloop-conf
 # 3. Deploy (FPS init, dataloads, conf processes)
 moka deploy -p aoloop
 
-# 4. Link aoloop onto the simulator: aol0_wfsim -> mlatsim_wfs, aol0_dmC and aol0_dmRM -> mlatsim_dm
+# 4. Link aoloop onto the simulator: aol0_wfsim -> mlatsim_wfs, aol0_dmC -> dm07disp03, aol0_dmRM -> dm07disp02
 moka link delaysim -p aoloop
 
 # 5. Run: the simulator, then aoloop's acquWFS and mlat (waits for mlat to finish)

@@ -7,7 +7,7 @@ _ln = '{loop_number}' # alias
 
 includes = ["fpsdetails.toml"]
 
-[dmhint]  # mlatsim_dm, until a real DM
+[dmhint]  # mlatsim's dm07disp, until a real DM
 xsize = 16
 ysize = 16
 beam_xcent = 7.5
@@ -26,5 +26,5 @@ measlinresp.exec    = 'cacao-fpsexec-cacaoac-measlinresp'
 
 [systemlinkage.delaysim]
 aol0_wfsim = 'mlatsim_wfs'
-aol0_dmC = 'mlatsim_dm'
-aol0_dmRM = 'mlatsim_dm'        # same destination as dmC, for now # FIXME
+aol0_dmC = 'dm07disp03'        # cacao-setDMnolink map
+aol0_dmRM = 'dm07disp02'

@@ -26,11 +26,10 @@ from moka.show.cli import mlat_figure
 MEASURE = Plan(
     "mlat",
     (
-        Step("RunStart", ("dmdelay",)),
-        Step("RunStart", ("wfscam",)),
+        Step("RunStart"),  # runstart: dmcomb, dmdelay, wfscam, acquWFS
         Step("RunStart", ("mlat",)),
         Step("WaitRunEnd", ("mlat",)),
-        Step("RunStop", ("wfscam", "dmdelay")),
+        Step("RunStop"),
     ),
 )
 DELAYSEC = 0.003  # compute_units.dmdelay.fps.delaysec in mlatsim-conf
