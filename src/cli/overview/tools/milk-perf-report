@@ -54,15 +54,34 @@ def check_help_early(argv):
 
 def classify_process(name, cmdline=""):
     nl = name.lower()
+    if "cuda-mps" in nl or "cuda-mps" in cmdline.lower():
+        return "GPU MPS"
+    if nl.startswith("tlog_") or "streamfitslog" in cmdline.lower():
+        return "Telemetry"
     if nl.startswith("csim_") or "cacaosim" in cmdline.lower():
         if nl == "csim_wfstat":
             return "Telemetry"
         if nl in ("csim_atmturb",):
             return "Atmosphere"
         return "Optical Bench"
+    if any(k in nl for k in ("mkeofpf", "mkarpf", "mkpf")):
+        return "PF Trainer"
     if nl.startswith("dmch2disp"):
         return "AO Control"
-    if any(k in nl for k in ("acquwfs", "wfs2cmodeval", "mfilt", "mvalc2dm", "mctrlstats")):
+    if any(
+        k in nl
+        for k in (
+            "acquwfs",
+            "wfs2cmodeval",
+            "mfilt",
+            "mvalc2dm",
+            "mctrlstats",
+            "applyeofpf",
+            "applyarpf",
+            "zpo-",
+            "zpo_",
+        )
+    ):
         return "AO Control"
     if any(k in nl for k in ("mlat", "measlinresp", "compstrcm", "cacao")):
         return "Calibration"
@@ -71,6 +90,27 @@ def classify_process(name, cmdline=""):
     if "cacao-cli" in nl or "cacao-cli" in cmdline:
         return "Calibration"
     return "Other"
+
+
+def is_async_daemon(proc, max_cl_loops=0):
+    """Return True for background/async trainers that do not gate the lockstep tick."""
+    nl = proc.get("name", "").lower()
+    if any(k in nl for k in ("mkeofpf", "mkarpf", "mkpf")):
+        return True
+    lc = proc.get("cl_loopcnt", 0)
+    if max_cl_loops >= 200 and 0 < lc < max(50, int(0.05 * max_cl_loops)):
+        return True
+    return False
+
+
+def has_cuda_mps(procs):
+    """Return True if a CUDA MPS server process was observed during the run."""
+    for p in procs:
+        nl = p.get("name", "").lower()
+        cl = p.get("cmdline", "").lower()
+        if "cuda-mps" in nl or "cuda-mps" in cl:
+            return True
+    return False
 
 
 def dedup_processes(procs):
@@ -187,8 +227,10 @@ def gpu_backend_label(proc):
     if proc.get("gpu_vram_peak_mib", 0.0) > 1.0:
         return f"CUDA ({proc['gpu_vram_peak_mib']:.0f} MiB)"
     nl = proc.get("name", "").lower()
-    if any(k in nl for k in ("wfs2cmodeval", "mvalc2dm", "compstrcm", "wfs_", "psf_", "coro")):
-        return "CUDA/cuBLAS"
+    if any(k in nl for k in ("wfs2cmodeval", "mvalc2dm", "zpo-", "zpo_")):
+        return "CPU (BLAS)"
+    if any(k in nl for k in ("compstrcm", "wfs_", "psf_", "coro")):
+        return "CUDA/CPU"
     return "CPU"
 
 
@@ -646,12 +688,15 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
         ax.legend(loc="upper left", framealpha=0.92)
         ax.grid(True, axis="y", which="both", alpha=0.28)
     else:
-        # Show Duty Cycle & Real-Time Ceiling of top AO daemons
+        # Show Duty Cycle & Real-Time Ceiling of top synchronous AO / bench daemons
+        max_lc = max((p.get("cl_loopcnt", 0) for p in cl_procs), default=0)
         ao_t = [
             p
             for p in cl_procs
-            if p.get("timing_valid") and classify_process(p["name"], p.get("cmdline", ""))
-            in ("AO Control", "Optical Bench")
+            if p.get("timing_valid")
+            and not is_async_daemon(p, max_lc)
+            and classify_process(p["name"], p.get("cmdline", ""))
+            in ("AO Control", "Optical Bench", "Atmosphere")
         ]
         ao_t = sorted(ao_t, key=lambda p: p.get("exec_p50_us", 0.0), reverse=True)[:12]
         ao_rev = list(reversed(ao_t))
@@ -675,23 +720,64 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
 
 
 def infer_master_hz(streams):
-    """Master tick rate: the atmosphere stream rate if present, else the fastest stream."""
-    for s in streams:
-        if s.get("name") == "outarraypha" and s.get("mean_hz", 0.0) > 0.0:
-            return s["mean_hz"]
+    """Effective master tick rate: consumed fastest WFS stream if active, else outarraypha."""
+    by_name = {s.get("name", ""): s for s in streams}
+    for cand in ("csim_wfs_vis", "csim_wfs", "outarraypha"):
+        st = by_name.get(cand)
+        if st and st.get("mean_hz", 0.0) > 0.0:
+            return st["mean_hz"]
     rates = [s.get("mean_hz", 0.0) for s in streams]
     return max(rates) if rates else 0.0
 
 
-def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa1_pct):
+def detect_lockstep_slip(streams):
+    """Return (pha_hz, cons_hz, cons_name) if atmosphere produces >10% faster than consumed."""
+    by_name = {s.get("name", ""): s for s in streams}
+    pha = by_name.get("outarraypha")
+    if not pha or pha.get("mean_hz", 0.0) <= 0.0:
+        return None
+    for cand in ("csim_wfs_vis", "csim_wfs"):
+        cons = by_name.get(cand)
+        if cons and cons.get("mean_hz", 0.0) > 0.0:
+            pha_hz = pha["mean_hz"]
+            cons_hz = cons["mean_hz"]
+            if pha_hz > 1.10 * cons_hz:
+                return (pha_hz, cons_hz, cand)
+            return None
+    return None
+
+
+def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa1_pct, all_procs=None):
     """Rank optimization opportunities from measured closed-loop and calibration data."""
     recs = []
     period_us = 1.0e6 / master_hz if master_hz > 0.0 else 0.0
+    procs_for_mps = all_procs if all_procs is not None else cl_procs
+    mps_active = has_cuda_mps(procs_for_mps)
 
-    # (a) Serial latency ceiling: slowest per-tick compute unit bounds the lockstep rate
-    timed = [p for p in cl_procs if p.get("timing_valid") and p.get("exec_p50_us", 0) > 0]
-    if timed and period_us > 0.0:
-        slow = max(timed, key=lambda p: p.get("exec_p50_us", 0.0))
+    # (0) Turbulence lockstep slip check (producer outrunning optical bench consumer)
+    slip = detect_lockstep_slip(streams)
+    if slip:
+        pha_hz, cons_hz, cons_name = slip
+        ratio = pha_hz / max(cons_hz, 0.1)
+        recs.append((
+            120.0 * min(ratio, 4.0),
+            f"**Turbulence lockstep slip (`outarraypha` at {pha_hz:.0f} Hz vs `{cons_name}` at "
+            f"{cons_hz:.0f} Hz, {ratio:.2f}x)**: unconsumed phase screens are being dropped and "
+            "effective wind speed is inflated. Lock `csim_atmturb` (`triggermode=3`) to "
+            f"`{cons_name}` for exact 1:1 lockstep.",
+        ))
+
+    # (a) Serial latency ceiling: slowest synchronous per-tick compute unit bounds lockstep rate
+    max_lc = max((p.get("cl_loopcnt", 0) for p in cl_procs), default=0)
+    timed_sync = [
+        p
+        for p in cl_procs
+        if p.get("timing_valid")
+        and p.get("exec_p50_us", 0) > 0
+        and not is_async_daemon(p, max_lc)
+    ]
+    if timed_sync and period_us > 0.0:
+        slow = max(timed_sync, key=lambda p: p.get("exec_p50_us", 0.0))
         p50 = slow["exec_p50_us"]
         p99 = slow.get("exec_p99_us", p50)
         ceil_hz = 1.0e6 / p50
@@ -702,6 +788,25 @@ def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa
             f"the lockstep loop cannot exceed ~{ceil_hz:.0f} Hz wall-clock "
             f"({util:.0f}% of the {period_us:.0f} us period at {master_hz:.0f} Hz). "
             "Profile its per-tick stages (Nsight Systems or per-node timers) to raise it.",
+        ))
+
+    # Separate diagnostic for heavy async background trainers (never claim they gate lockstep)
+    async_heavy = [
+        p
+        for p in cl_procs
+        if p.get("timing_valid")
+        and is_async_daemon(p, max_lc)
+        and p.get("exec_p50_us", 0.0) > 100000.0
+    ]
+    for p in sorted(async_heavy, key=lambda x: x.get("exec_p50_us", 0.0), reverse=True)[:2]:
+        p50_ms = p["exec_p50_us"] / 1000.0
+        p99_ms = p.get("exec_p99_us", p["exec_p50_us"]) / 1000.0
+        recs.append((
+            min(40.0, p50_ms / 25.0),
+            f"**Async background solver `{p['name']}` update time = {p50_ms:.0f} ms p50 "
+            f"({p99_ms:.0f} ms p99, {p.get('cl_loopcnt', 0)} updates)**: runs asynchronously "
+            "(does not block the lockstep rate); tune `updateperiod`, `blocksize`, or BLAS threads "
+            "if faster filter adaptation is needed.",
         ))
 
     # (b) Largest CPU consumers
@@ -715,6 +820,8 @@ def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa
         if sub == "Telemetry":
             hint = ("use in-DAG statistics (`csim_htsim.wfstat_enable`) instead of a separate "
                     "SHM consumer")
+        elif sub == "PF Trainer":
+            hint = "async background solver; tune `updateperiod` or `PF_MKTHREADS` to reduce CPU"
         elif p.get("gpu_vram_peak_mib", 0.0) > 1.0:
             hint = ("GPU-backed, so this is host-side launch/sync/D2H time; CUDA Graph capture "
                     "or fewer per-tick host transfers reduce it")
@@ -738,14 +845,20 @@ def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa
             f"({tot:.0f} MB/s total: {names}). Disable those outputs when not needed.",
         ))
 
-    # (d) GPU context overhead
-    gpu = [p for p in cl_procs if p.get("gpu_vram_peak_mib", 0.0) > 1.0]
-    if len(gpu) >= 3:
+    # (d) GPU context overhead (skip MPS recommendation when CUDA MPS is already active)
+    gpu = [
+        p
+        for p in cl_procs
+        if p.get("gpu_vram_peak_mib", 0.0) > 1.0
+        and classify_process(p["name"], p.get("cmdline", "")) != "GPU MPS"
+    ]
+    if len(gpu) >= 3 and not mps_active:
         vram = sum(p["gpu_vram_peak_mib"] for p in gpu) / 1024.0
         recs.append((
             10.0 * len(gpu),
             f"**{len(gpu)} separate CUDA contexts hold {vram:.2f} GiB VRAM**, mostly per-process "
-            "context overhead; CUDA MPS or merging per-stage MVM units would reclaim most of it.",
+            "context overhead and GPU time-slicing; enable CUDA MPS (`CACAO_CUDA_MPS=1`) or "
+            "merge per-stage MVM units.",
         ))
 
     # (e) Cross-socket NUMA execution
@@ -776,19 +889,21 @@ def build_recommendations(cl_procs, streams, phases, c_stgs, master_hz, avg_numa
             ))
     for ph in long_ph:
         pid = ph.get("id", "")
-        sim_c = ph.get("sim_cpu_mean", 0.0)
-        if pid in ("ao_report", "tlm_analysis") or sim_c < 0.15:
+        sim_c = ph.get("sim_cores_mean", 0.0)
+        host_c = ph.get("cpu_cores_mean", 0.0)
+        if pid in ("ao_report", "tlm_analysis", "calib_2wfs1dm") or sim_c < 0.15:
             recs.append((
                 ph["duration_s"] / 5.0,
                 f"**Offline post-processing phase `{pid}` takes {ph['duration_s']:.0f} s** "
-                f"(mean {ph.get('host_cpu_mean', 0.0):.2f} host cores); parallelize figure/video "
+                f"(mean {host_c:.2f} host cores, {sim_c:.2f} sim cores); parallelize figure/video "
                 "rendering or OpenMP workers.",
             ))
         else:
             recs.append((
                 ph["duration_s"] / 5.0,
-                f"**Phase `{pid}` takes {ph['duration_s']:.0f} s** at {master_hz:.0f} Hz; it "
-                "is wall-rate bound and shrinks proportionally at higher pacing.",
+                f"**Phase `{pid}` takes {ph['duration_s']:.0f} s** at {master_hz:.0f} Hz "
+                f"(mean {sim_c:.2f} sim cores); it is wall-rate bound and shrinks proportionally "
+                "at higher pacing.",
             ))
 
     recs.sort(key=lambda r: r[0], reverse=True)
@@ -1014,13 +1129,22 @@ def compile_markdown(
         )
     lines.append("")
     period_us = 1.0e6 / master_hz if master_hz > 0.0 else 0.0
+    mps_active = has_cuda_mps(procs)
+    slip = detect_lockstep_slip(streams)
+    mps_note = " (shared via CUDA MPS)" if mps_active else ""
+    slip_note = (
+        f" Warning: `outarraypha` ran at {slip[0]:.0f} Hz vs `{slip[2]}` at {slip[1]:.0f} Hz "
+        f"({slip[0] / max(slip[1], 0.1):.2f}x lockstep slip)."
+        if slip
+        else ""
+    )
     lines.append(
-        f"- **Pacing note**: at the measured ~{master_hz:.0f} Hz master rate "
+        f"- **Pacing note**: at the measured ~{master_hz:.0f} Hz consumed master rate "
         f"(~{period_us:,.0f} us period), daemons whose p50 is far below the period sleep on"
     )
     lines.append(
-        f"  `/dev/shm` semaphores between ticks; {len(gpu_procs)} active GPU contexts hold "
-        f"~{gpu_vram_sum_gib:.2f} GiB summed VRAM."
+        f"  `/dev/shm` semaphores between ticks; {len(gpu_procs)} active GPU processes hold "
+        f"~{gpu_vram_sum_gib:.2f} GiB summed VRAM{mps_note}.{slip_note}"
     )
     lines.append("")
 
@@ -1150,7 +1274,7 @@ def compile_markdown(
     lines.append("### A. Measured Bottlenecks (ranked by estimated impact)")
     lines.append("")
     recs = build_recommendations(
-        cl_procs, streams, phases, c_stgs, master_hz, avg_numa1_pct
+        cl_procs, streams, phases, c_stgs, master_hz, avg_numa1_pct, all_procs=procs
     )
     if recs:
         for i, r in enumerate(recs, 1):
@@ -1161,20 +1285,17 @@ def compile_markdown(
     lines.append("### B. Open Feature Ideas for `milk`, `cacao`, and `cacaosim`")
     lines.append(
         "- **`milk`**: generic C stream statistics recorder (`milk-fpsexec-mem-streamstat`); "
-        "`--cuda-host-register`"
-    )
-    lines.append(
-        "  for pinned H2D/D2H in `ImageStreamIO`/`MVMextract`; Bash >= 5.3 so `@get`/`@set` "
-        "avoid subshell forks."
+        "optional `cudaDeviceScheduleBlockingSync` toggle for low-CPU GPU waits; Bash >= 5.3 "
+        "so `@get`/`@set` avoid subshell forks."
     )
     lines.append(
         "- **`cacao`**: async/skip-disk FITS save in `mfilt` after `selfRM`; native "
-        "`calib_timings.json` export;"
+        "`calib_timings.json` export; optical-gain compensation from measured on-sky `selfRM` "
+        "diagonals."
     )
-    lines.append("  optical-gain compensation from measured on-sky `selfRM` diagonals.")
     lines.append(
-        "- **`cacaosim`**: CUDA Graph capture of the fused `htsim` tick; GPU offload of the "
-        "remaining modular CPU relays."
+        "- **`cacaosim`**: pinned host staging / `cudaHostRegister` for `htsim` SHM transfers; "
+        "CUDA Graph capture of the fused `htsim` tick; throttle `*_long` D2H when `navg=1`."
     )
     lines.append("")
 

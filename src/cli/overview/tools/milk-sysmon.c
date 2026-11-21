@@ -931,6 +931,8 @@ typedef struct
     int      cl_ticks;
     int64_t  last_e2e_ns;
     int      nb_readers;
+    int      cl_nb_readers;
+    int      peak_nb_readers;
     pid_t    write_pid;
 } tracked_stream_t;
 
@@ -1925,7 +1927,8 @@ static void write_json(const char             *json_path,
         fprintf(fp, "      \"peak_hz\": %.2f,\n", safe_d(s->peak_hz));
         fprintf(fp, "      \"mean_mb_s\": %.3f,\n", safe_d(mean_mb));
         fprintf(fp, "      \"peak_mb_s\": %.3f,\n", safe_d(s->peak_mb_s));
-        fprintf(fp, "      \"nb_readers\": %d,\n", s->nb_readers);
+        int rep_readers = (s->cl_ticks > 0) ? s->cl_nb_readers : s->peak_nb_readers;
+        fprintf(fp, "      \"nb_readers\": %d,\n", rep_readers);
         fprintf(fp, "      \"write_pid\": %d,\n", (int) s->write_pid);
         fprintf(fp, "      \"e2e_latency_us\": %.2f\n",
                 (s->last_e2e_ns > 0) ? safe_d((double) s->last_e2e_ns / 1000.0) : -1.0);
@@ -2144,15 +2147,20 @@ int main(int argc, char *argv[])
                 continue;
             }
             tp->has_pinfo   = 1;
-            tp->loopcnt     = op->loopcnt;
-            tp->triggermode = op->triggermode;
-            tp->rt_priority = op->rt_priority;
-            if (op->trigstreamname[0] != '\0')
+            if (op->active && op->loopstat != PROCESSINFO_LOOPSTAT_STOP &&
+                op->loopstat != PROCESSINFO_LOOPSTAT_ERROR &&
+                op->loopstat != PROCESSINFO_LOOPSTAT_CRASHED)
             {
-                snprintf(tp->trigstream, sizeof(tp->trigstream), "%s", op->trigstreamname);
-            }
-            if (op->active)
-            {
+                if (op->loopcnt >= tp->loopcnt)
+                {
+                    tp->loopcnt = op->loopcnt;
+                }
+                tp->triggermode = op->triggermode;
+                tp->rt_priority = op->rt_priority;
+                if (op->trigstreamname[0] != '\0')
+                {
+                    snprintf(tp->trigstream, sizeof(tp->trigstream), "%s", op->trigstreamname);
+                }
                 tp->last_seen_t = t_rel;
                 tp->seen_samples++;
                 act_p++;
@@ -2227,6 +2235,14 @@ int main(int argc, char *argv[])
             }
             st->last_t     = t_rel;
             st->nb_readers = os->nb_read_pids;
+            if (os->nb_read_pids > st->peak_nb_readers)
+            {
+                st->peak_nb_readers = os->nb_read_pids;
+            }
+            if (in_cl_phase && os->nb_read_pids > st->cl_nb_readers)
+            {
+                st->cl_nb_readers = os->nb_read_pids;
+            }
             st->write_pid  = os->write_pid;
             shm_bytes += (double) st->frame_bytes;
             if (st->has_prev && dt_tick > 0.01 && os->cnt0 >= st->prev_cnt0)

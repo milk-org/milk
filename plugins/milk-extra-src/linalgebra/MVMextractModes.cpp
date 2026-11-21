@@ -57,7 +57,7 @@ static int64_t  opt_modenorm                              = 1;
 
 #define FPS_PARAMS(X)                                                                           \
     X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,                            \
-      "GPU index, 99 for CPU [BLAS if avail.], 98 for plain CPU [OMP if avail.]")               \
+      "GPU index (<0: CUDA Graph on GPU -idx-1, 0..N: cuBLAS, 99: CPU BLAS, 98: CPU OMP)")      \
     X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "input stream name")     \
     X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
       "spatial mask stream name")                                                               \
@@ -462,9 +462,10 @@ static MILK_HOT errno_t MVMextract_compute(const MILK_RUNNABLE *self)
     }
 
     processinfo_WriteMessage_fmt(processinfo, "Backend: %s",
-                                 compute_mode == ComputeMode::CUBLAS ? "cuBLAS"
-                                 : compute_mode == ComputeMode::BLAS ? "BLAS"
-                                                                     : "CPU");
+                                 compute_mode == ComputeMode::CUDASTREAM ? "CUDA Graph"
+                                 : compute_mode == ComputeMode::CUBLAS   ? "cuBLAS"
+                                 : compute_mode == ComputeMode::BLAS     ? "BLAS"
+                                                                         : "CPU");
 
 
     printf(">>> START MVM loop\n");

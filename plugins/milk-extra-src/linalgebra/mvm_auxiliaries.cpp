@@ -346,10 +346,10 @@ MVMBackendCUDAGraph::MVMBackendCUDAGraph(const float *inVec,
         exit(EXIT_FAILURE);
     }
 
-    cudaError_t err = cudaStreamCreate(&stream_);
+    cudaError_t err = cudaStreamCreateWithFlags(&stream_, cudaStreamNonBlocking);
     if (err != cudaSuccess)
     {
-        fprintf(stderr, "MVMBackendCUDAGraph: cudaStreamCreate failed (%d)\n", (int) err);
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaStreamCreateWithFlags failed (%d)\n", (int) err);
         exit(EXIT_FAILURE);
     }
 
@@ -465,14 +465,40 @@ void MVMBackendCUDAGraph::load_matrix(const float *matrix,
 
 void MVMBackendCUDAGraph::build_graph_()
 {
-    const float alpha = 1.0f;
-    const float beta  = 0.0f;
+    const float  alpha  = 1.0f;
+    const float  beta   = 0.0f;
+    const size_t sz_in  = sizeof(float) * (size_t) mvm_size_in_;
+    const size_t sz_out = sizeof(float) * (size_t) mvm_size_out_;
 
-    cudaStreamBeginCapture(stream_, cudaStreamCaptureModeGlobal);
+    /* Warm up cuBLAS once outside graph capture so any lazy kernel/workspace
+     * initialization succeeds before cudaStreamBeginCapture. */
+    memset(h_in_pinned_, 0, sz_in);
+    cudaMemcpyAsync(d_in_, h_in_pinned_, sz_in, cudaMemcpyHostToDevice, stream_);
+    if (axmode_ == 0)
+    {
+        cublasSgemv(handle_, CUBLAS_OP_T, (int) mvm_size_in_, (int) mvm_size_out_, &alpha,
+                    d_matrix_, (int) mvm_size_in_, d_in_, 1, &beta, d_out_, 1);
+    }
+    else
+    {
+        cublasSgemv(handle_, CUBLAS_OP_N, (int) mvm_size_out_, (int) mvm_size_in_, &alpha,
+                    d_matrix_, (int) mvm_size_out_, d_in_, 1, &beta, d_out_, 1);
+    }
+    cudaMemcpyAsync(h_out_pinned_, d_out_, sz_out, cudaMemcpyDeviceToHost, stream_);
+    cudaStreamSynchronize(stream_);
+
+    cudaError_t err = cudaStreamBeginCapture(stream_, cudaStreamCaptureModeThreadLocal);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaStreamBeginCapture failed (%s); "
+                        "falling back to async stream\n",
+                cudaGetErrorString(err));
+        graph_valid_ = false;
+        return;
+    }
 
     /* Node 1: H2D — pinned staging → d_in_ */
-    cudaMemcpyAsync(d_in_, h_in_pinned_, sizeof(float) * (size_t) mvm_size_in_,
-                    cudaMemcpyHostToDevice, stream_);
+    cudaMemcpyAsync(d_in_, h_in_pinned_, sz_in, cudaMemcpyHostToDevice, stream_);
 
     /* Node 2: cublasSgemv */
     if (axmode_ == 0)
@@ -491,11 +517,31 @@ void MVMBackendCUDAGraph::build_graph_()
     }
 
     /* Node 3: D2H — d_out_ → pinned staging */
-    cudaMemcpyAsync(h_out_pinned_, d_out_, sizeof(float) * (size_t) mvm_size_out_,
-                    cudaMemcpyDeviceToHost, stream_);
+    cudaMemcpyAsync(h_out_pinned_, d_out_, sz_out, cudaMemcpyDeviceToHost, stream_);
 
-    cudaStreamEndCapture(stream_, &graph_);
-    cudaGraphInstantiate(&graph_exec_, graph_, nullptr, nullptr, 0);
+    err = cudaStreamEndCapture(stream_, &graph_);
+    if (err != cudaSuccess || graph_ == nullptr)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaStreamEndCapture failed (%s); "
+                        "falling back to async stream\n",
+                cudaGetErrorString(err));
+        graph_       = nullptr;
+        graph_valid_ = false;
+        return;
+    }
+
+    err = cudaGraphInstantiate(&graph_exec_, graph_, nullptr, nullptr, 0);
+    if (err != cudaSuccess || graph_exec_ == nullptr)
+    {
+        fprintf(stderr, "MVMBackendCUDAGraph: cudaGraphInstantiate failed (%s); "
+                        "falling back to async stream\n",
+                cudaGetErrorString(err));
+        cudaGraphDestroy(graph_);
+        graph_       = nullptr;
+        graph_exec_  = nullptr;
+        graph_valid_ = false;
+        return;
+    }
     graph_valid_ = true;
 }
 
@@ -535,8 +581,30 @@ void MVMBackendCUDAGraph::matrixMul()
         memcpy(h_in_pinned_, inVec_, sizeof(float) * (size_t) mvm_size_in_);
     }
 
-    /* --- GPU: single graph dispatch (H2D + sgemv + D2H) --- */
-    cudaGraphLaunch(graph_exec_, stream_);
+    /* --- GPU: single graph dispatch (or async pinned fallback) --- */
+    if (graph_valid_)
+    {
+        cudaGraphLaunch(graph_exec_, stream_);
+    }
+    else
+    {
+        const float alpha = 1.0f;
+        const float beta  = 0.0f;
+        cudaMemcpyAsync(d_in_, h_in_pinned_, sizeof(float) * (size_t) mvm_size_in_,
+                        cudaMemcpyHostToDevice, stream_);
+        if (axmode_ == 0)
+        {
+            cublasSgemv(handle_, CUBLAS_OP_T, (int) mvm_size_in_, (int) mvm_size_out_, &alpha,
+                        d_matrix_, (int) mvm_size_in_, d_in_, 1, &beta, d_out_, 1);
+        }
+        else
+        {
+            cublasSgemv(handle_, CUBLAS_OP_N, (int) mvm_size_out_, (int) mvm_size_in_, &alpha,
+                        d_matrix_, (int) mvm_size_out_, d_in_, 1, &beta, d_out_, 1);
+        }
+        cudaMemcpyAsync(h_out_pinned_, d_out_, sizeof(float) * (size_t) mvm_size_out_,
+                        cudaMemcpyDeviceToHost, stream_);
+    }
     cudaStreamSynchronize(stream_);
 
     /* --- CPU scatter: drain h_out_pinned_ into caller's outVec_ --- */
