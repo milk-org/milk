@@ -25,6 +25,14 @@ list at each slice boundary.
   waits for each run flag only: nothing checks that a unit's trigger stream exists before it
   starts. Either bring back `StartLink` (017 brief before 2026-11-24, §4.1), or have `RunStart`
   check every unit's trigger stream before its start.
+- [later, when TAB feels slow] `moka` tab completion starts Python and loads the pipeline at each
+  TAB (pydantic, pyMilk, numpy; about 0.25 s measured without real pyMilk, 2026-11-24). Fast path
+  "C5b" of the project doc `claude/moka-cli-ux-plan.md` (§5): a stdlib-only `moka/complete.py`
+  answering from a per-rootdir JSON dump of the click group in `~/.cache/moka/complete/`, written
+  by normal `moka` runs, stale on any change under `moka/`, `conf/` or `provenance.toml`, falling
+  back to click's completion on any doubt; about +150 lines, with a parity test against click.
+  Time it first: `cd <rootdir> && time _MOKA_COMPLETE=bash_complete COMP_WORDS="moka runstart "
+  COMP_CWORD=2 moka`. Cheaper alternative to weigh then: lazy imports on the pipeline load path.
 - [milk] Stream sizes along the CM chain (`wfs2modes` input at the CM's NAXIS1 × NAXIS2, its
   output and `mfilt`'s at N × 1, `modes2dm` output at the DM size) are checked by nobody. They
   belong in the units' conf checks (`MVMextractModes.cpp`, `modalfilter.c`), not in moka.
