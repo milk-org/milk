@@ -2,9 +2,9 @@
 AOloopindex = '{loop_number}'
 insname = 'aol{_ln}_wfsim'
 wfszpo = 'aol{_ln}_wfszpo'
-comp.darksub = false
-comp.WFSnormalize = false
-comp.WFSrefsub = false
+comp.darksub = true
+comp.WFSnormalize = true
+comp.WFSrefsub = true
 comp.WFSsigav = false
 comp.WFSrefc = false
 
@@ -14,7 +14,7 @@ inmasksname = 'null'                 # optional; unused if absent
 immodes = 'aol{_ln}_CMmodesWFS'
 outcoeff = 'aol{_ln}_modevalWFS'
 axmode = 0                           # extract
-option.MODENORM = false              # true divides each mode by its norm: erases mkcm's 1/sigma
+option.MODENORM = false
 GPUindex = 99                        # CPU (BLAS)
 
 [compute_units.mfilt.fps]           # modal filter (integrator)
