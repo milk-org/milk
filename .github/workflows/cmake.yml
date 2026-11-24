@@ -28,11 +28,11 @@ jobs:
         # We'll use this as our working directory for all subsequent commands
         run: cmake -E make_directory ${{github.workspace}}/build
 
-      - name: Install Dependencies
-        run: sudo apt-get install -qq libcfitsio-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
-
-      - name: Install openblas with lapack
-        run: sudo apt-get install gfortran libopenblas-dev liblapacke-dev
+      - name: Install Dependencies (cached)
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: libcfitsio-dev libreadline-dev libncurses-dev libfftw3-dev flex bison
+          version: 1.0
 
       - name: Configure CMake
         # Use a bash shell so we can use the same syntax for environment variable
