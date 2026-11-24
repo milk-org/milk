@@ -21,6 +21,13 @@ list at each slice boundary.
   `--replace`.
 - [future] `RunStartAO`/`RunStopAO`, requiring a state that says the AO calibration is loaded.
   Until then `moka runstart`/`runstop` start/stop run processes without that check.
+- [later] `moka spool` starts `wfs2modes`, `mfilt`, `modes2dm` with one ordered `RunStart`, which
+  waits for each run flag only: nothing checks that a unit's trigger stream exists before it
+  starts. Either bring back `StartLink` (017 brief before 2026-11-24, §4.1), or have `RunStart`
+  check every unit's trigger stream before its start.
+- [milk] Stream sizes along the CM chain (`wfs2modes` input at the CM's NAXIS1 × NAXIS2, its
+  output and `mfilt`'s at N × 1, `modes2dm` output at the DM size) are checked by nobody. They
+  belong in the units' conf checks (`MVMextractModes.cpp`, `modalfilter.c`), not in moka.
 - [later] `moka nuke` on a pipeline whose `moka_plans.py` does not load deletes the rootdir
   without running teardown.
 - [later] `runstart = []` is accepted; `state()` then reports `running` for any deployed pipeline.
