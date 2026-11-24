@@ -41,12 +41,19 @@ class _PlansGroup(ErrstackGroup):
     def _plans(self, ctx: click.Context) -> Registry[Plan]:
         """The pipeline's plans; the built-in ones if it does not load, so help never fails."""
         if "moka.plans" not in ctx.meta:  # resolved once per invocation
+            import logging
+
             from .plans import PLANS
 
+            log, quiet = logging.getLogger("moka"), logging.NullHandler()
+            if ctx.resilient_parsing:  # shell completion: no log record on the terminal at each TAB
+                log.addHandler(quiet)
             try:
                 ctx.meta["moka.plans"] = (_load(ctx).plans, None)
             except Exception as error:
                 ctx.meta["moka.plans"] = (PLANS, error)
+            finally:
+                log.removeHandler(quiet)
         plans = ctx.meta["moka.plans"][0]
         clash = [name for name in plans.names() if name in self.commands]
         if clash:
@@ -57,6 +64,8 @@ class _PlansGroup(ErrstackGroup):
         return sorted([*self.commands, *self._plans(ctx).names()])
 
     def get_command(self, ctx: click.Context, name: str) -> click.Command | None:
+        if name == "completion":  # needs no pipeline: run from ~/.bashrc in any folder
+            return self.commands[name]
         plans = self._plans(ctx)
         error = ctx.meta["moka.plans"][1]
         if name in plans:
@@ -66,6 +75,8 @@ class _PlansGroup(ErrstackGroup):
                 from .tasks import TASKS as tasks
             return _plan_command(plans[name], tasks)
         if name not in self.commands and error is not None:
+            if ctx.resilient_parsing:  # completing: offer nothing rather than fail
+                return None
             raise error  # rather than "No such command"
         return self.commands.get(name)
 
@@ -105,6 +116,42 @@ def _signature(ctx: click.Context, cmd: click.Command) -> str:
     return " ".join(pieces)
 
 
+def _complete_pipe(ctx: click.Context, param: click.Parameter, incomplete: str):
+    """The short names of the rootdirs of cwd; else, or for a path, let the shell complete a folder."""
+    from click.shell_completion import CompletionItem
+
+    from ..config.layout import is_rootdir
+
+    names = []
+    if "/" not in incomplete:
+        try:
+            rootdirs = (p for p in Path.cwd().glob("*-rootdir") if is_rootdir(p))
+            names = sorted(p.name.removesuffix("-rootdir") for p in rootdirs)
+        except Exception:
+            pass
+    names = [name for name in names if name.startswith(incomplete)]
+    return names or [CompletionItem(incomplete, type="dir")]
+
+
+def _completer(names):
+    """A shell_complete callback: the names(ctx) that start with the incomplete text; none on error."""
+
+    def complete(ctx: click.Context, param: click.Parameter, incomplete: str):
+        try:
+            return [name for name in names(ctx) if name.startswith(incomplete)]
+        except Exception:
+            return []
+
+    return complete
+
+
+_compus = _completer(  # not those already on the command line
+    lambda ctx: sorted(set(_load(ctx).config.compute_units) - set(ctx.params["compus"]))
+)
+_linkages = _completer(lambda ctx: list(_load(ctx).config.systemlinkage))
+_plan_names = _completer(lambda ctx: _load(ctx).plans.names())
+
+
 def _pipe(**kwargs):
     return click.option(
         "-p",
@@ -112,6 +159,7 @@ def _pipe(**kwargs):
         default=None,
         metavar="PIPE",
         help="Rootdir path or short name; default: cwd.",
+        shell_complete=_complete_pipe,
         **kwargs,
     )
 
@@ -224,7 +272,9 @@ def _plan_command(plan: Plan, tasks: Registry[type[Task]]) -> click.Command:
         run_plan(_pipeline(pipe, acting=True), plan.name, compus or None, params)
 
     if plan.compus_arg:
-        command = click.argument("compus", nargs=-1, metavar="[CU]...")(command)
+        command = click.argument(
+            "compus", nargs=-1, metavar="[CU]...", shell_complete=_compus
+        )(command)
     for p in plan.params:
         kind = click.Choice(p.choices) if p.choices else p.type
         if p.positional:
@@ -324,7 +374,7 @@ def moka_plans(pipe: str | None):
 
 @moka.command("tasks")
 @_pipe_option
-@click.argument("plan", required=False)
+@click.argument("plan", required=False, shell_complete=_plan_names)
 def moka_tasks(pipe: str | None, plan: str | None):
     """
     List the tasks (of PLAN, if given) with their success and can; never runs them.
@@ -356,7 +406,7 @@ def moka_tasks(pipe: str | None, plan: str | None):
 
 @moka.command("link")
 @_pipe_option
-@click.argument("linkage", required=False)
+@click.argument("linkage", required=False, shell_complete=_linkages)
 def moka_link(pipe: str | None, linkage: str | None):
     """
     Apply the [systemlinkage.<LINKAGE>] symlinks of the pipeline.
@@ -373,7 +423,9 @@ def moka_link(pipe: str | None, linkage: str | None):
 
 @moka.command("unlink")
 @_pipe_option
-@click.argument("linkage")
+@click.argument(
+    "linkage", shell_complete=_completer(lambda ctx: [*_load(ctx).config.systemlinkage, "all"])
+)
 def moka_unlink(pipe: str | None, linkage: str):
     """
     Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline; `all`: of every linkage.

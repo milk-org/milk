@@ -67,6 +67,7 @@ moka tasks   [-p PIPE] [PLAN]            the tasks (or a plan's steps): success,
 moka link    [LINKAGE] [-p PIPE]         apply [systemlinkage.<LINKAGE>]; none: list them
 moka unlink  LINKAGE [-p PIPE]           remove its symlinks; `all`: of every linkage
 moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
+moka completion bash                     print the tab completion script
 ```
 
 - **`-p/--pipe PIPE`** is a rootdir path, or a short name meaning `<cwd>/<PIPE>-rootdir`.
@@ -157,6 +158,18 @@ aoloop: configured
   [1/1] MakeCM ... [ NO ] refused: /.../calib/RMmodesWFS.fits does not exist; run `moka measlinresp`.
 [FAIL] mkcm: stopped at step 1/1 (MakeCM)
 ```
+
+### 2.5. Tab completion (bash)
+
+In `~/.bashrc`:
+
+```bash
+eval "$(moka completion bash)"
+eval "$(mokainit completion bash)"
+```
+
+Completing inside a rootdir, or after `-p`, loads that pipeline, its `conf/scripts/moka_plans.py`
+included.
 
 ## 3. Errors
 

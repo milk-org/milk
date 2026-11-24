@@ -18,6 +18,24 @@ def _set_color(ctx: click.Context, param: click.Parameter, value: str) -> None:
         ctx.color = value == "always"
 
 
+# shell -> click.shell_completion class. To add zsh or fish, add "zsh": "ZshComplete" or
+# "fish": "FishComplete" (both ship with click); nothing else changes.
+SHELLS = {"bash": "BashComplete"}
+
+
+@click.command("completion")
+@click.argument("shell", type=click.Choice(list(SHELLS)), metavar="SHELL")
+def _completion(shell: str) -> None:
+    """Print this command's tab completion script for SHELL, to eval in ~/.bashrc."""
+    from click import shell_completion
+
+    root = click.get_current_context().find_root()
+    prog = root.info_name  # how main() names it, so the same as its env var below
+    var = f"_{prog}_COMPLETE".replace("-", "_").upper()  # click's own rule, in main()
+    complete = getattr(shell_completion, SHELLS[shell])(root.command, {}, prog, var)
+    click.echo(complete.source())
+
+
 class ErrstackGroup(click.Group):
     """A group whose errors print as one message, without stack trace, unless --errstack.
 
@@ -28,6 +46,7 @@ class ErrstackGroup(click.Group):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.add_command(_completion)
         for flag, help in (
             ("--errstack", "Show the stack trace of errors."),
             ("--pdb", "Open an ipdb post-mortem session on errors."),
