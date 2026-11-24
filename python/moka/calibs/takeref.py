@@ -4,13 +4,15 @@ wfsim (as cacao-aorun-026-takeref and cacao-aorun-005-takedark).
 
 from __future__ import annotations
 
+import time
+
 import numpy as np
 
 from ..operate.plans import PLANS, Param, Plan, Step
 from ..operate.tasks import TASKS, Task, stream_shape
 
-# module, not name: mlat.py imports operate.plans, which imports us
-from . import linresp as _lr, mlat as _mlat
+# module, not name: linresp.py imports operate.plans, which imports us
+from . import linresp as _lr
 
 DEFAULT_SECONDS = 5.0
 FRAME_TIMEOUT = 5.0  # [s] without a new imWFS1 frame, the task fails
@@ -33,15 +35,6 @@ class TakeAverage(Task):
         n = self.pipeline.config.loop_number
         return [f"aol{n}_{name}" for name in (self.SOURCE, *self.TARGETS)]
 
-    def _nframes(self) -> int | None:
-        """-n, else -t (default 5 s) at mlat's framerate; None without mlat's."""
-        if "nframes" in self.params:
-            return self.params["nframes"]
-        timing = _mlat.timing(self.pipeline)
-        if timing is None:
-            return None
-        return max(1, round(self.params.get("seconds", DEFAULT_SECONDS) * timing[0]))
-
     def _refusal(self) -> str | None:
         if "nframes" in self.params and "seconds" in self.params:
             return "-n and -t are mutually exclusive."
@@ -49,8 +42,6 @@ class TakeAverage(Task):
             return f"-n {self.params['nframes']} is below 1."
         if self.params.get("seconds", 1.0) <= 0:
             return f"-t {self.params['seconds']} is not positive."
-        if self._nframes() is None:
-            return "no framerate from mlat; run `moka mlat` or give -n."
         src, *targets = self._streams()
         shape = stream_shape(src)
         if shape is None:
@@ -68,24 +59,44 @@ class TakeAverage(Task):
         from pyMilk.interfacing.shm import SHM
 
         src, *targets = self._streams()
-        n = self._nframes()
-        assert n is not None
+        """
+        -n: that many frames. Else -t (default 5 s): the frames that arrive within that time,
+        at least one; no framerate needed.
+        """
+        n = self.params.get("nframes")
+        end = time.monotonic() + self.params.get("seconds", DEFAULT_SECONDS)
+        k = 0
         with SHM(src, symcode=0) as shm:
             total = np.zeros(shm.shape, np.float64)
-            for k in range(n):
+            while k < n if n else True:
+                timeout = FRAME_TIMEOUT
+                """
+                -t after the first frame: wait no later than the end, and a timeout there is the
+                normal end of acquisition. pyMilk waits forever on a timeout <= 0.
+                """
+                until_end = not n and k
+                if until_end:
+                    timeout = min(FRAME_TIMEOUT, end - time.monotonic())
+                    if timeout <= 0:
+                        break
                 # The first flushes the semaphore: only frames from now on.
                 frame = shm.get_data(
                     check=True,
                     checkSemAndFlush=k == 0,
-                    timeout=FRAME_TIMEOUT,
+                    timeout=timeout,
                     return_none_on_timeout=True,
                 )
                 if frame is None:
+                    if until_end:
+                        break
+                    of = f" of {n}" if n else ""
                     self.failure_reason = (
-                        f"no new {src} frame for {FRAME_TIMEOUT} s, after {k} of {n}."
+                        f"no new {src} frame for {FRAME_TIMEOUT} s, after {k}{of}."
                     )
                     return
                 total += frame
+                k += 1
+        n = k
 
         ref = (total / n).astype(np.float32)
 
@@ -130,7 +141,7 @@ PARAMS = (
         "seconds",
         float,
         short="t",
-        help="Average SECONDS of frames at mlat's framerate (5 s if neither -n nor -t).",
+        help="Average the frames of SECONDS (5 s if neither -n nor -t).",
     ),
 )
 

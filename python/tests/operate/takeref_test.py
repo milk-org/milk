@@ -19,15 +19,10 @@ SHAPE = (4, 3)  # symcode 0: numpy (x, y)
 
 @pytest.fixture
 def tr(make_tmp_pipeline, pp_env):
-    """pp with both streams, mlat's framerate of 100 Hz, and a write(frames) helper."""
+    """pp with both streams (no mlat output) and a write(frames) helper."""
     pp = make_tmp_pipeline()
     for name in ("aol0_imWFS1", "aol0_wfsref", "aol0_wfsrefc"):
         SHM(name, np.zeros(SHAPE, np.float32), symcode=0).close()
-    datadir = pp.work_folder / "fps.basic_mlat.datadir"
-    datadir.mkdir(parents=True)
-    (datadir / "cacaovars.bash").write_text(
-        "export CACAO_WFSFRATE=100.0\nexport CACAO_LATENCYHARDWFR=2.5\n"
-    )
 
     def write(
         frames: int, value=lambda k: k, stream="aol0_imWFS1", dtype=np.float32
@@ -77,10 +72,23 @@ def test_n_averages_that_many_frames_as_float32(tr):
     assert (header["NAXIS1"], header["NAXIS2"], header["NFRAMES"]) == (*SHAPE, 4)
 
 
-def test_t_uses_mlat_framerate(tr):
-    tr.write(30, lambda k: 1.0 if k < 10 else 100.0)
-    tr.do(seconds=0.1)  # 10 frames at 100 Hz
+def test_t_averages_the_frames_within_that_time(tr):
+    # Frames 0..9 come within 0.1 s after the writer's start; 100.0 after a 1 s pause.
+    def run():
+        shm = SHM("aol0_imWFS1", symcode=0)
+        time.sleep(0.2)
+        for _ in range(10):
+            shm.set_data(np.full(SHAPE, 1.0, np.float32))
+            time.sleep(0.002)
+        time.sleep(1.0)
+        shm.set_data(np.full(SHAPE, 100.0, np.float32))
+        shm.close()
+
+    threading.Thread(target=run, daemon=True).start()
+    tr.do(seconds=0.6)
     np.testing.assert_allclose(_ref(), 1.0)
+    nframes = fits.getheader(tr.root_folder / "calib" / "wfsref.fits")["NFRAMES"]
+    assert 1 <= nframes <= 10
 
 
 @pytest.mark.parametrize(
@@ -96,12 +104,10 @@ def test_refusals(tr, params, reason):
         tr.do(**params)
 
 
-def test_t_needs_mlat_but_n_does_not(tr):
-    (tr.work_folder / "fps.basic_mlat.datadir" / "cacaovars.bash").unlink()
-    with pytest.raises(TaskCannotRunError, match="run `moka mlat` or give -n"):
-        tr.do()
-    tr.write(5)
-    tr.do(nframes=2)
+def test_t_no_frame_fails(tr, monkeypatch):
+    monkeypatch.setattr("moka.calibs.takeref.FRAME_TIMEOUT", 0.1)
+    with pytest.raises(TaskDidNotSucceedError, match=r"after 0\.\n"):
+        tr.do(seconds=0.05)
 
 
 def test_no_frame_fails(tr, monkeypatch):

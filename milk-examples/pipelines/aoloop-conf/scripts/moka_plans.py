@@ -111,7 +111,7 @@ PLANS = [
                 "seconds",
                 float,
                 short="t",
-                help="Average SECONDS of frames at mlat's framerate (5 s if neither -n nor -t).",
+                help="Average the frames of SECONDS (5 s if neither -n nor -t).",
             ),
         ),
         help="Average wfsim into the WFS dark wfsdark.",
