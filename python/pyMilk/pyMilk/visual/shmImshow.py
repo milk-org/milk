@@ -87,7 +87,8 @@ class ShmImshowClass:
         self.win.addItem(self.hist)  # add hist in main window
         self.hist.autoHistogramRange()  # inits levels
         self.hist.gradient.loadPreset("thermal")
-        self.hist.setMaximumWidth(200)
+        # The histogram plot has a 45 px minimum that an outer width cap cannot go below
+        self.hist.vb.setFixedWidth(20)
 
         self.hist_autoscale = True
 
