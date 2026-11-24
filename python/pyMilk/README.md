@@ -3,6 +3,7 @@
 __Welcome to pyMilk.__
 
 pyMilk means to provide a user-side interaction channel between your python scripts and the interprocess communication (IPC) shared memory structures used in [MILK](https://github.com/milk-org/milk) and it's AO-centric superset [CACAO](https://git@github.com/cacao-org/cacao):
+
 - __SHM__ Shared memory image, a databuffer with IPC capabilities, as defined in ImageStreamIO (ISIO)
 - __ProcessInfo__ a telemetry structure for monitoring RTC processes, also hosted in IPC-accessible shared memory.
 - __FPS__ Function Parameter Structure, an IPC key-value structure that is usually used to channel information between a real-time runtime program, and a user-facing control environment or automated orchestrator.
@@ -26,6 +27,16 @@ PYMILK_ENGINE=BUNDLED pip install .
 See [pyMilk: Installation](../../docs/guide/pyMilk.md#1-installation) for the details of each mode.
 
 Python 3.9+ is required to be able to use nanobind.
+
+### Visualization tools
+
+To also install the optional visualization dependencies (Qt and PyQtGraph for `shmImshow` and `shmPlot`, matplotlib for `shmTermshow`), use the `vis` extra:
+
+```
+pip install -e ".[vis]"
+```
+
+If you use a conda/mamba environment, you may prefer installing these from conda-forge instead (`mamba install pyqt pyqtgraph matplotlib`) to avoid mixing pip and conda Qt libraries.
 
 ## Usage
 
@@ -77,8 +88,6 @@ creashmim mystream 256 256 --type=f32 --kw=50
 
 ### GPU Capability
 
-
-
 ### FPS — Function Parameter Structures
 
 The `FPS` class interfaces with CACAO parameter structures used to configure and control real-time processes.
@@ -123,7 +132,8 @@ shmTermshow.py camstream --fr=10 -z=2
 All three viewers support interactive keyboard shortcuts (press `H` for help) and live dark-frame subtraction when a `<name>_dark` stream exists.
 
 <!-- TODO: add screenshot -->
-![Viewer screenshot]()
+
+![Viewer screenshot](<>)
 
 ## Technical notes
 
@@ -146,10 +156,10 @@ Contributors are welcome to add python contributions, or if they feel up to it, 
 Useful python contributions to the interface will be ported deeper into the C for speed and reliability.
 
 Please:
+
 - Notify maintainers of any significant workplan through Github issues.
 - Work through a pull-request workflow only, and rebase you branch into a commit line with sufficient separation of intention.
 - Install and use pre-commit locally for all contributions.
-
 
 ### Data ordering
 

@@ -118,12 +118,10 @@ class ShmTermshowClass:
         m, M = np.percentile(image, [0.1, 99.9])
 
         # Sizing - could do better than padding zeros...
-        if image.shape[0] % self.bin_fac != 0:
-            r_add = self.bin_fac - (image.shape[0] % self.bin_fac)
-            image = np.r_[image, np.zeros((r_add, image.shape[1]), dtype=image.dtype)]
-        if image.shape[1] % self.bin_fac != 0:
-            c_add = self.bin_fac - (image.shape[1] % self.bin_fac)
-            image = np.c_[image, np.zeros((c_add, image.shape[0]), dtype=image.dtype)]
+        r_add = -image.shape[0] % self.bin_fac
+        c_add = -image.shape[1] % self.bin_fac
+        if r_add or c_add:
+            image = np.pad(image, ((0, r_add), (0, c_add)))
 
         # Binning
         image = np.mean(
