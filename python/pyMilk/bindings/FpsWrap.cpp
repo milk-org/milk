@@ -5,6 +5,7 @@
 #include <nanobind/stl/pair.h>
 
 #include <fstream>
+#include <typeinfo> // std::bad_cast
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
@@ -57,14 +58,31 @@ double timespec_to_double(struct timespec tspec)
 }
 
 
-int fps_set_value(pyFps &cls, const std::string &key, const FPS_type fps_type, nb::object value)
+bool cast_onoff(nb::handle value)
+{
+    if (PyBool_Check(value.ptr()))
+    {
+        return value.ptr() == Py_True;
+    }
+    if (PyLong_Check(value.ptr()) || PyIndex_Check(value.ptr()))
+    {
+        int64_t as_int = nb::cast<int64_t>(value);
+        return as_int != 0;
+    }
+    return nb::cast<bool>(value); // numpy bool_ etc.; raises std::bad_cast otherwise
+}
+
+int fps_set_value_unchecked(pyFps             &cls,
+                            const std::string &key,
+                            const FPS_type     fps_type,
+                            nb::object         value)
 {
     FPS_type switch_fps_type = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
 
     switch (switch_fps_type)
     {
     case FPS_type::ONOFF:
-        return functionparameter_SetParamValue_ONOFF(cls, key.c_str(), nb::cast<bool>(value));
+        return functionparameter_SetParamValue_ONOFF(cls, key.c_str(), cast_onoff(value));
     case FPS_type::INT32:
     case FPS_type::PID:
     case FPS_type::INT64:
@@ -92,6 +110,25 @@ int fps_set_value(pyFps &cls, const std::string &key, const FPS_type fps_type, n
             cls, key.c_str(), double_to_timespec(nb::cast<double>(value)));
     default:
         return EXIT_FAILURE;
+    }
+}
+
+// Python-facing setter: a failed conversion becomes a TypeError that names the
+// key and expected type instead of an opaque std::bad_cast RuntimeError.
+int fps_set_value(pyFps &cls, const std::string &key, const FPS_type fps_type, nb::object value)
+{
+    try
+    {
+        return fps_set_value_unchecked(cls, key, fps_type, value);
+    }
+    catch (const std::bad_cast &)
+    {
+        FPS_type t = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
+        throw nb::type_error(("FPS key '" + key + "' (type id " +
+                              std::to_string(static_cast<uint32_t>(t)) +
+                              "): cannot convert value of Python type '" +
+                              std::string(nb::type_name(value.type()).c_str()) + "'")
+                                 .c_str());
     }
 }
 
