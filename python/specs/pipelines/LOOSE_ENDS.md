@@ -82,6 +82,16 @@ list at each slice boundary.
   cacao's channel map (`cacao-setDMnolink`: `aol<N>_dmRM` → `dm<DD>disp02`, `aol<N>_dmC` →
   `disp03`). Then `aoloop-conf` `[systemlinkage.delaysim]` stops pointing `aol0_dmRM` at the same
   stream as `aol0_dmC` (013 stopgap), and `measlinresp` can run while `modes2dm` runs.
+- [later] DM and WFS masks from the control matrix. `aoloop-conf/scripts/dm_psf.py` and similar
+  scripts use the hinted DM mask (`[dmhint]`, 208 actuators for the aoloop example) while the WFS
+  sees 156 actuators; the unseen ring dominates the PSF and hides the loop's correction. Both masks
+  can be derived from the control matrix. Interim measure for the moka tutorial
+  (`docs/quickstart/moka_tutorial.md`): the turbulence amplitude of the `mlatsim` example was
+  raised; the tutorial page carries a note that it will be amended once CM-derived masks exist.
+- [future] Plan syntax: a more elaborate plan definition, with chaining in the style of `.then()`,
+  `.ok_then()`, `.ok_or()`, etc. Motivation: a `takedark` that is refused or fails after
+  `RemoveLightSim` leaves the simulated light off, because `on_failure=abort` skips
+  `PutbackLightSim` (seen 2026-11-24); a chaining syntax can express "always put the light back".
 
 ## NIT
 
