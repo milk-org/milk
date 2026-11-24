@@ -31,11 +31,16 @@ list at each slice boundary.
   answering from a per-rootdir JSON dump of the click group in `~/.cache/moka/complete/`, written
   by normal `moka` runs, stale on any change under `moka/`, `conf/` or `provenance.toml`, falling
   back to click's completion on any doubt; about +150 lines, with a parity test against click.
-  Time it first: `cd <rootdir> && time _MOKA_COMPLETE=bash_complete COMP_WORDS="moka runstart "
-  COMP_CWORD=2 moka`. Cheaper alternative to weigh then: lazy imports on the pipeline load path.
+  Time it first: `cd <rootdir> && time _MOKA_COMPLETE=bash_complete COMP_WORDS="moka runstart " COMP_CWORD=2 moka`. Cheaper alternative to weigh then: lazy imports on the pipeline load path.
 - [milk] Stream sizes along the CM chain (`wfs2modes` input at the CM's NAXIS1 × NAXIS2, its
   output and `mfilt`'s at N × 1, `modes2dm` output at the DM size) are checked by nobody. They
   belong in the units' conf checks (`MVMextractModes.cpp`, `modalfilter.c`), not in moka.
+- [later] `moka spool` on a re-run may start `wfs2modes`, `mfilt`, `modes2dm` together (Vincent,
+  2026-11-20; 017 §4.1). Not built.
+- [future] `RunStartAO`: `moka runstart -p aoloop` still starts its four units without loading the
+  CM pair; `moka spool` is the start that loads it (017 §7.6).
+- [next] `docs/guide/pipelines_plans.md` §2 (built-in tasks) has no row for `SetLoopOff` or
+  `LoadCM` (017-1).
 - [later] `moka nuke` on a pipeline whose `moka_plans.py` does not load deletes the rootdir
   without running teardown.
 - [later] `runstart = []` is accepted; `state()` then reports `running` for any deployed pipeline.

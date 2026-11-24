@@ -30,6 +30,7 @@ over these ([§4](#4-custom-plans)).
 | `mkcm`        | MakeCM                                                                          | `abort`       | `cold_or_consistent` |
 | `spool`       | SetLoopOff → RunStop → LoadCM → RunStart[acquWFS] → RunStart → SetLoopOff       | `abort`       | `consistent`         |
 | `takeref`     | RunStart[acquWFS] → TakeRef                                                     | `abort`       | `consistent`         |
+| `takedark`    | TakeDark                                                                        | `abort`       | `consistent`         |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
@@ -100,6 +101,8 @@ three CompUs with the new pair.
 
 `moka takeref [-n NFRAMES | -t SECONDS]` averages the next frames of `aol<loop_number>_imWFS1` into `aol<loop_number>_wfsref`, `aol<loop_number>_wfsrefc` and `calib/wfsref.fits`, as `cacao-aorun-026-takeref` does; acquWFS subtracts `wfsrefc` into `imWFS2` from its next frame.
 
+`moka takedark [-n NFRAMES | -t SECONDS]` averages `aol<loop_number>_wfsim` the same way into `aol<loop_number>_wfsdark` and `calib/wfsdark.fits`, as `cacao-aorun-005-takedark` does. It creates `wfsdark` when the stream is missing; acquWFS connects to it only when it starts, so a first dark needs acquWFS restarted. The plan does not remove the light: a pipeline wraps it with its own tasks for that, as `milk-examples/pipelines/aoloop-conf/scripts/moka_plans.py` does ([§4](#4-custom-plans)).
+
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
 on those CompUs. From Python, `run_plan(pipeline, name, compus)` applies the subset to every step
@@ -134,6 +137,7 @@ of any plan, so a plan with a pipeline-wide task (`deploy`, `teardown`) is then 
 | `SetLinResp`         | The `measlinresp` FPS holds the cube and output paths (relative to `work/`), mlat's frame rate and latency, and `-a`; no `RMmodesWFS.fits` nor in-progress file is left (the first is archived to `.prev`) |
 | `WaitLinResp`        | As `WaitRunEnd`, with a timeout of 2x expected +10 s; then a complete run's in-progress file is renamed `RMmodesWFS.fits`                                                                                  |
 | `TakeRef`            | Never before it runs; then `aol<N>_wfsref`, `aol<N>_wfsrefc` and `calib/wfsref.fits` hold the float32 average of `-n` (or `-t` × mlat's frame rate) new `aol<N>_imWFS1` frames                             |
+| `TakeDark`           | As `TakeRef`, from `aol<N>_wfsim` into `aol<N>_wfsdark` (created when missing) and `calib/wfsdark.fits`                                                                                                    |
 | `DeapplyAllLinkages` | No systemlinkage symlink remains                                                                                                                                                                           |
 | `ConfStop`           | No conf process is running                                                                                                                                                                                 |
 | `KillTmux`           | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true`                                                                                                        |
@@ -218,6 +222,16 @@ process do not see each other's definitions.
     ```
 
     1. Registered under the class name.
+
+    A plan can wrap a built-in one that it overrides:
+
+    ```python
+    from dataclasses import replace
+    from moka.operate.plans import PLANS as BUILTIN, Step
+
+    _takedark = BUILTIN["takedark"]
+    PLANS = [replace(_takedark, steps=(Step("RemoveLight"), *_takedark.steps, Step("PutbackLight")))]
+    ```
 
     Both lists are optional. The file is imported, not sandboxed: it is trusted like a
     [`command` hook](pipelines_conf.md#33-hooks-fetching-and-generating-files). An error in it

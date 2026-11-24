@@ -1,4 +1,4 @@
-"""The takeref plan and the TakeRef task: real aol0_imWFS1 / wfsref / wfsrefc streams, a writer thread."""
+"""The takeref and takedark plans, the TakeRef and TakeDark tasks: real aol0_ streams, a writer thread."""
 
 from __future__ import annotations
 
@@ -29,12 +29,14 @@ def tr(make_tmp_pipeline, pp_env):
         "export CACAO_WFSFRATE=100.0\nexport CACAO_LATENCYHARDWFR=2.5\n"
     )
 
-    def write(frames: int, value=lambda k: k) -> threading.Thread:
+    def write(
+        frames: int, value=lambda k: k, stream="aol0_imWFS1", dtype=np.float32
+    ) -> threading.Thread:
         def run():
-            shm = SHM("aol0_imWFS1", symcode=0)
+            shm = SHM(stream, symcode=0)
             time.sleep(0.2)  # the task flushes the semaphore first
             for k in range(frames):
-                shm.set_data(np.full(SHAPE, value(k), np.float32))
+                shm.set_data(np.full(SHAPE, value(k), dtype))
                 time.sleep(0.002)
             shm.close()
 
@@ -112,3 +114,27 @@ def test_refuses_without_wfsrefc(tr):
     SHM("aol0_wfsrefc", symcode=0).destroy()
     with pytest.raises(TaskCannotRunError, match="stream aol0_wfsrefc does not exist"):
         tr.do(nframes=1)
+
+
+def test_takedark_plan_shares_takeref_params():
+    plan = PLANS["takedark"]
+    assert plan.steps == (Step("TakeDark"),)
+    assert plan.params is PLANS["takeref"].params
+
+
+def test_takedark_averages_wfsim_and_creates_wfsdark(tr):
+    SHM("aol0_wfsim", np.zeros(SHAPE, np.uint16), symcode=0).close()
+    tr.write(10, stream="aol0_wfsim", dtype=np.uint16)
+    tr.task_do(TASKS["TakeDark"](tr, None, {"nframes": 4}))
+    dark = _ref("aol0_wfsdark")
+    assert dark.dtype == np.float32
+    np.testing.assert_allclose(dark, 1.5)
+    path = tr.root_folder / "calib" / "wfsdark.fits"
+    np.testing.assert_array_equal(fits.getdata(path), dark.T)
+
+
+def test_takedark_refuses_a_wfsdark_of_another_shape(tr):
+    SHM("aol0_wfsim", np.zeros(SHAPE, np.uint16), symcode=0).close()
+    SHM("aol0_wfsdark", np.zeros((2, 2), np.float32), symcode=0).close()
+    with pytest.raises(TaskCannotRunError, match=r"aol0_wfsdark is \(2, 2\)"):
+        tr.task_do(TASKS["TakeDark"](tr, None, {"nframes": 1}))
