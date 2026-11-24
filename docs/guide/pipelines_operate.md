@@ -159,3 +159,11 @@ process is active.
 CompU from its datadir under `rootdir/work/` (`-w/--workdir DIR`: under `DIR` instead); `r` in the
 window re-reads the file.
 `moka.show.cli.mlat_figure(datadir)` returns the figure for use in a script or a notebook.
+
+`mokashow rm -p PIPE` and `mokashow cm -p PIPE` browse the mode pairs of `rootdir/calib/`
+(`RMmodes{WFS,DM}.fits`, `CMmodes{WFS,DM}.fits`): one mode per WFS and DM panel, with its RMS, P2V,
+mean and std; a slider picks the mode, Play steps through them at the rate of the fps box. When
+`calib/wfsmask.fits` or `calib/dmmask.fits` exists, its check box (keys `w`, `d`) restricts the
+stats to the mask. `cm` also plots the singular values over the largest one, with the `mkcm`
+flavor, `-r`, `-n` and the kept count. `r` re-reads the files.
+`moka.show.modes.modes_figure(calib, "rm" | "cm")` returns the figure.

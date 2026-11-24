@@ -148,3 +148,30 @@ def mlat(pipe: str | None, workdir: str | None) -> None:
         raise click.ClickException(f"No hardwlatency.dat in {datadir}.")
     mlat_figure(datadir)
     plt.show()
+
+
+def _modes(kind: str, pipe: str | None) -> None:
+    import matplotlib.pyplot as plt
+
+    from .modes import CUBES, modes_figure
+
+    calib = _pipeline(pipe).root_folder / "calib"
+    missing = [n for n in CUBES[kind] if not (calib / n).is_file()]
+    if missing:
+        raise click.ClickException(f"No {', '.join(missing)} in {calib}.")
+    modes_figure(calib, kind)
+    plt.show()
+
+
+@mokashow.command()
+@_pipe_option
+def rm(pipe: str | None) -> None:
+    """Browse calib/RMmodes{WFS,DM}.fits (r: reload, w/d: WFS/DM mask)."""
+    _modes("rm", pipe)
+
+
+@mokashow.command()
+@_pipe_option
+def cm(pipe: str | None) -> None:
+    """Browse calib/CMmodes{WFS,DM}.fits and their singular values (r: reload, w/d: masks)."""
+    _modes("cm", pipe)
