@@ -9,8 +9,8 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
 A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
 the pipeline as a whole, or on a CompU subset given at construction. Without one, the task picks
 its own: all CompUs (`RunStart`: the [`runstart`](pipelines_conf.md#3-conftoml-keys) list;
-`SetLoopOff`: the one `cacao-fpsexec-mfilt` CompU), or it refuses (`LoadCM`, `SetLinResp`,
-`WaitLinResp`). A **plan** is data: a name, ordered **steps**
+`SetLoopOff`: the one `cacao-fpsexec-mfilt` CompU; `SetLinResp`, `WaitLinResp`: `measlinresp`), or
+it refuses (`LoadCM`). A **plan** is data: a name, ordered **steps**
 (a task name and an optional CompU subset), a failure policy and the states it accepts to start
 from. Plans and tasks are Python objects in `moka.operate.plans` and `moka.operate.tasks`, each
 looked up by name in a registry (`PLANS`, `TASKS`). Each pipeline adds its own plans and tasks
@@ -18,16 +18,16 @@ over these ([§4](#4-custom-plans)).
 
 ## 1. Built-in plans
 
-| Plan          | Steps                                                                                          | `on_failure`  | `accepts`            |
-| ------------- | ---------------------------------------------------------------------------------------------- | ------------- | -------------------- |
-| `deploy`      | ClaimRundir → InitFPS → LoadData → ConfStart                                                   | `abort`       | `cold_or_consistent` |
-| `teardown`    | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir                | `best_effort` | `any`                |
-| `runstart`    | RunStart                                                                                       | `abort`       | `consistent`         |
-| `runstop`     | RunStop                                                                                        | `best_effort` | `any`                |
-| `mlat`        | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                                          | `abort`       | `consistent`         |
-| `mkpokes`     | MakePokes                                                                                      | `abort`       | `consistent`         |
-| `measlinresp` | RunStart[acquWFS] → SetLinResp[measlinresp] → RunStart[measlinresp] → WaitLinResp[measlinresp] | `abort`       | `consistent`         |
-| `mkcm`        | MakeCM                                                                                         | `abort`       | `cold_or_consistent` |
+| Plan          | Steps                                                                           | `on_failure`  | `accepts`            |
+| ------------- | ------------------------------------------------------------------------------- | ------------- | -------------------- |
+| `deploy`      | ClaimRundir → InitFPS → LoadData → ConfStart                                    | `abort`       | `cold_or_consistent` |
+| `teardown`    | RunStop → DeapplyAllLinkages → ConfStop → KillTmux → DestroyFPS → ReleaseRundir | `best_effort` | `any`                |
+| `runstart`    | RunStart                                                                        | `abort`       | `consistent`         |
+| `runstop`     | RunStop                                                                         | `best_effort` | `any`                |
+| `mlat`        | RunStart[acquWFS] → RunStart[mlat] → WaitRunEnd[mlat]                           | `abort`       | `consistent`         |
+| `mkpokes`     | MakePokes                                                                       | `abort`       | `consistent`         |
+| `measlinresp` | RunStart[acquWFS] → SetLinResp → RunStart[measlinresp] → WaitLinResp            | `abort`       | `consistent`         |
+| `mkcm`        | MakeCM                                                                          | `abort`       | `cold_or_consistent` |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`

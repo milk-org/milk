@@ -25,6 +25,11 @@ def _calib(task: Task, name: str) -> Path:
     return task.pipeline.root_folder / "calib" / name
 
 
+def _on_measlinresp(task: TaskOnOneCompu) -> None:
+    """locate_defaults() of SetLinResp and WaitLinResp: the CompU named measlinresp."""
+    task.compus_names = ("measlinresp",)
+
+
 class MakePokes(Task):
     """Writes calib/RMmodesDM.fits over the [dmhint] mask; params["type"]."""
 
@@ -70,6 +75,8 @@ class MakePokes(Task):
 
 class SetLinResp(TaskOnOneCompu):
     """Writes the measlinresp FPS (files, mlat's timing, params["ampl"]) and clears the outputs."""
+
+    locate_defaults = _on_measlinresp
 
     def _values(self) -> dict | None:
         """The FPS writes; None without mlat's timing."""
@@ -126,6 +133,8 @@ class SetLinResp(TaskOnOneCompu):
 class WaitLinResp(TaskOnOneCompu, WaitRunEnd):
     """WaitRunEnd; then a complete run's in-progress file becomes RMmodesWFS.fits."""
 
+    locate_defaults = _on_measlinresp
+
     @property
     def TIMEOUT(self) -> float:  # type: ignore[override]
         from astropy.io import fits
@@ -172,9 +181,9 @@ for _plan in (
         "measlinresp",
         (
             Step("RunStart", ("acquWFS",)),
-            Step("SetLinResp", ("measlinresp",)),
+            Step("SetLinResp"),
             Step("RunStart", ("measlinresp",)),
-            Step("WaitLinResp", ("measlinresp",)),
+            Step("WaitLinResp"),
         ),
         params=(Param("ampl", float, short="a"),),
     ),
