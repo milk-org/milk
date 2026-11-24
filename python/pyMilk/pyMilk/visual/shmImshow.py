@@ -92,7 +92,7 @@ class ShmImshowClass:
         self.hist_autoscale = True
 
         # TODO
-        self.titleStr = f"Display of SHM data: {shmname}"
+        self.titleStr = f"{shmname} - press [h] for help"
         self.title = self.win.addLabel(self.titleStr, col=0, row=1, color="w")
 
         # Bind a couple shortcuts
