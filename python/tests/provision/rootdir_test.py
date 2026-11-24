@@ -441,6 +441,8 @@ def test_cli_drift_and_resync_banner(confdir, rootdir):
         and "deploy" in result.output
         and "cu2" in result.output
     )
+    assert "Resynced: teardown, then deploy may be needed." in result.output
+    assert result.output.isascii()
 
     result = runner.invoke(mokainit, ["resync", str(rootdir)])  # nothing left to apply
     assert (

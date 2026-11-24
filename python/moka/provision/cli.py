@@ -174,5 +174,5 @@ def pipeinit_resync(
         click.echo(f"applied {key}")
     for key, reason in report.refused.items():
         click.echo(f"refused {key}: {reason}")
-    click.echo("Resynced: teardown → deploy may be needed.")
+    click.echo("Resynced: teardown, then deploy may be needed.")
     _echo_diff(report.resolved_diff, report.structural)

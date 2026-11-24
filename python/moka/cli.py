@@ -13,6 +13,11 @@ def _set_meta(ctx: click.Context, param: click.Parameter, value: bool) -> None:
     ctx.meta[param.name] = value
 
 
+def _set_color(ctx: click.Context, param: click.Parameter, value: str) -> None:
+    if value != "auto":  # auto: leave what the caller of main() set, usually None
+        ctx.color = value == "always"
+
+
 class ErrstackGroup(click.Group):
     """A group whose errors print as one message, without stack trace, unless --errstack.
 
@@ -37,15 +42,27 @@ class ErrstackGroup(click.Group):
                     help=help,
                 )
             )
+        self.params.append(
+            click.Option(
+                ["--color"],
+                type=click.Choice(["auto", "always", "never"]),
+                default="auto",
+                expose_value=False,
+                is_eager=True,
+                callback=_set_color,
+                help="Colors: auto (a terminal and no NO_COLOR), always or never.",
+            )
+        )
 
     def invoke(self, ctx: click.Context):
         import logging
 
+        from . import ui
         from .errors import BestEffortError, MilkError
 
         log = logging.getLogger("moka")
         handler = logging.StreamHandler()  # the current sys.stderr
-        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        handler.setFormatter(ui.LogFormatter())
         log.addHandler(handler)
         log.setLevel(logging.INFO)
         try:

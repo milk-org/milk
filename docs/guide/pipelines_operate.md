@@ -135,6 +135,9 @@ the exception propagate with its stack trace; `--pdb` opens an `ipdb` post-morte
 instead. Log records of the package print to stderr as
 `LEVEL: message`.
 
+`--color auto|always|never`, also placed before the command, sets the colors; `auto` (default)
+colors a terminal unless `NO_COLOR` is set.
+
 A command refused because of the state names the command to run:
 
 ```text title="Output"
