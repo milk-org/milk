@@ -101,19 +101,30 @@ def _pair(pp, n=5, wfs=(4, 3), dm=(3, 2), seed=0):
     return cubes
 
 
-# Without a subset: the units of the task's executable
+# Without a subset: LoadCM is a config error, SetLoopOff finds the mfilt unit
 
 
-def test_without_a_subset_the_tasks_take_the_units_of_their_executable(lp):
-    assert list(TASKS["SetLoopOff"](lp).compute_units) == ["mfilt"]
-    assert list(TASKS["LoadCM"](lp).compute_units) == ["wfs2modes", "modes2dm"]
+def test_without_a_subset_loadcm_is_a_config_error(lp):
+    with pytest.raises(ConfigError, match="named in the step"):
+        TASKS["LoadCM"](lp)
 
 
-def test_without_a_subset_a_pipeline_without_the_executable_is_a_config_error(
-    make_tmp_pipeline, pp_env
-):
-    pp = make_tmp_pipeline()
-    with pytest.raises(ConfigError, match="No compute unit runs cacao-fpsexec-mfilt"):
+def test_without_a_subset_loopoff_is_the_one_mfilt_unit(lp):
+    assert TASKS["SetLoopOff"](lp).compus_names == ("mfilt",)
+
+
+def test_without_a_subset_loopoff_needs_an_mfilt_unit(make_tmp_pipeline, pp_env):
+    with pytest.raises(ConfigError, match="no cacao-fpsexec-mfilt unit"):
+        TASKS["SetLoopOff"](make_tmp_pipeline())
+
+
+def test_without_a_subset_loopoff_needs_a_single_mfilt_unit(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(
+        UNITS + '[compute_units.mfilt2]\nexec = "cacao-fpsexec-mfilt"\n'
+    )
+    with pytest.raises(
+        ConfigError, match=r"\['mfilt', 'mfilt2'\]; name one in the step"
+    ):
         TASKS["SetLoopOff"](pp)
 
 

@@ -23,7 +23,14 @@ from moka.errors import (
     TaskDidNotSucceedError,
 )
 from moka.operate.plans import PLANS, Plan, Step, run, run_plan
-from moka.operate.tasks import TASKS, ClaimRundir, RunStart, RunStop, Task, WaitRunEnd
+from moka.operate.tasks import (
+    TASKS,
+    ClaimRundir,
+    RunStart,
+    RunStop,
+    TaskOnCompuSet,
+    WaitRunEnd,
+)
 
 FPS = ("basic_delay0", "basic_delay1")
 
@@ -48,7 +55,7 @@ def log(monkeypatch):
             name,
             type(
                 name,
-                (Task,),
+                (TaskOnCompuSet,),
                 {
                     "ran": False,
                     "can": lambda self: True,
@@ -68,7 +75,7 @@ def log(monkeypatch):
 
 def test_run_executes_steps_in_order_with_subsets(deployed, log):
     run(deployed, Plan("adhoc", (Step("A", ("delay1",)), Step("B"))))
-    assert log == ["A:('delay1',)", "B:None"]
+    assert log == ["A:('delay1',)", "B:('delay0', 'delay1')"]
 
 
 @pytest.mark.parametrize("bad", [Step("Nope"), Step("B", ("nope",))])
@@ -87,7 +94,7 @@ def test_run_gates_on_the_plan_state(pp, log):
 def test_named_plans_still_go_through_run_plan(deployed, log, monkeypatch):
     PLANS.register("p", Plan("p", (Step("A"),)))
     run_plan(deployed, "p")
-    assert log == ["A:None"]
+    assert log == ["A:('delay0', 'delay1')"]
 
 
 # ---- RunStart / RunStop / WaitRunEnd ----
@@ -106,6 +113,21 @@ def test_runstart_skips_a_running_compu(pp, fake_compus):
         fake.conf = fake.run = True
     pp.task_do(RunStart(pp, ["delay1"]))
     assert all(f.calls == [] for f in fake_compus.values())
+
+
+def test_a_pipeline_task_takes_no_compute_units(pp):
+    with pytest.raises(ConfigError, match="takes no compute units"):
+        ClaimRundir(pp, ["delay0"])
+
+
+def test_a_one_compu_task_takes_exactly_one(pp):
+    from moka.calibs.linresp import SetLinResp
+
+    assert SetLinResp(pp, ["delay0"]).compu.fpsname == "basic_delay0"
+    with pytest.raises(ConfigError, match="needs its 1 compute unit"):
+        SetLinResp(pp, None)
+    with pytest.raises(ConfigError, match="takes 1 compute unit"):
+        SetLinResp(pp, ["delay0", "delay1"])
 
 
 def test_runstart_needs_the_conf_process(pp, fake_compus):

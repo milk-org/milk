@@ -6,7 +6,7 @@ import abc
 import contextlib
 import os
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 from .. import env
@@ -37,10 +37,10 @@ def stream_shape(name: str) -> tuple[int, ...] | None:
 
 
 class Task(abc.ABC):
+    """A step on a Pipeline: its folders, files, streams, claims. Takes no compute units."""
+
     TIMEOUT: float = 10.0  # bound for forward()'s wait on success()
     failure_reason: str = "no reason given."
-    # without a subset: the units of this executable, at least one
-    EXEC: str | None = None
 
     def __init__(
         self,
@@ -48,44 +48,25 @@ class Task(abc.ABC):
         compus: Sequence[str] | None = None,
         params: dict | None = None,
     ) -> None:
-        if compus is None and self.EXEC is not None:
-            units = pipeline.config.compute_units.items()
-            compus = [cu for cu, spec in units if spec.exec == self.EXEC]
-            if not compus:
-                raise ConfigError(
-                    f"No compute unit runs {self.EXEC} for {type(self).__name__}.",
-                    pipeline=pipeline.short_name,
-                )
-        unknown = sorted(set(compus or ()) - pipeline.config.compute_units.keys())
-        if unknown:
+        if compus is not None:
             raise ConfigError(
-                f"Unknown compute units {unknown} for {type(self).__name__}.",
+                f"{type(self).__name__} takes no compute units.",
                 pipeline=pipeline.short_name,
             )
         self.pipeline = pipeline
-        self.compus_names = compus
-        self.params = (
-            params or {}
-        )  # the plan's Param values; a task reads the keys it knows
+        # the plan's Param values; a task reads the keys it knows
+        self.params = params or {}
 
-    @property
-    def compute_units(self) -> dict[str, ComputeUnit]:
-        """The subset's CompUs, in the subset's order; all, in declaration order, without one."""
-        every = self.pipeline.compute_units
-        names = every if self.compus_names is None else self.compus_names
-        return {cu: every[cu] for cu in names}
+    def _refusal(self) -> str | None:
+        """Why forward() must not run; None when it may."""
+        return None
 
-    @property
-    def compu(self) -> ComputeUnit:
-        """The subset's first CompU, for one-CompU tasks."""
-        return next(iter(self.compute_units.values()))
-
-    def _existing(self) -> list[tuple[ComputeUnit, FPS]]:
-        """The subset's CompUs whose FPS exists, with that FPS."""
-        return [(c, c.fps) for c in self.compute_units.values() if c.fps is not None]
-
-    @abc.abstractmethod
-    def can(self) -> bool: ...
+    def can(self) -> bool:
+        """Whether _refusal() is None; else keeps the reason in failure_reason."""
+        reason = self._refusal()
+        if reason is not None:
+            self.failure_reason = reason
+        return reason is None
 
     @abc.abstractmethod
     def forward(self) -> None: ...
@@ -94,19 +75,91 @@ class Task(abc.ABC):
     def success(self) -> bool: ...
 
 
+class TaskOnCompuSet(Task):
+    """A task on a subset of the pipeline's compute units, in the subset's order."""
+
+    # the subset has exactly this many units, named by the step
+    COUNT: int | None = None
+
+    def __init__(
+        self,
+        pipeline: Pipeline,
+        compus: Sequence[str] | None = None,
+        params: dict | None = None,
+    ) -> None:
+        super().__init__(pipeline, None, params)
+        name = type(self).__name__
+        if compus is None:
+            self.locate_defaults()
+        else:
+            self.compus_names = tuple(compus)
+        unknown = sorted(set(self.compus_names) - pipeline.config.compute_units.keys())
+        if unknown:
+            raise ConfigError(
+                f"Unknown compute units {unknown} for {name}.",
+                pipeline=pipeline.short_name,
+            )
+        if self.COUNT not in (None, len(self.compus_names)):
+            raise ConfigError(
+                f"{name} takes {self.COUNT} compute unit(s), got {list(self.compus_names)}.",
+                pipeline=pipeline.short_name,
+            )
+
+    def locate_defaults(self) -> None:
+        """Sets the subset of a step that names none: every unit; ConfigError if COUNT is set."""
+        if self.COUNT is not None:
+            raise ConfigError(
+                f"{type(self).__name__} needs its {self.COUNT} compute unit(s) named in the step.",
+                pipeline=self.pipeline.short_name,
+            )
+        self.compus_names = tuple(self.pipeline.config.compute_units)
+
+    @property
+    def compute_units(self) -> dict[str, ComputeUnit]:
+        """The subset's CompUs, in the subset's order."""
+        every = self.pipeline.compute_units
+        return {cu: every[cu] for cu in self.compus_names}
+
+    def _existing(self) -> list[tuple[ComputeUnit, FPS]]:
+        """The subset's CompUs whose FPS exists, with that FPS."""
+        return [(c, c.fps) for c in self.compute_units.values() if c.fps is not None]
+
+    def _lacking(self, ok: Callable[[FPS], object]) -> list[str]:
+        """fpsnames of the subset's CompUs whose FPS is missing or fails ok."""
+        units = self.compute_units.values()
+        return [c.fpsname for c in units if c.fps is None or not ok(c.fps)]
+
+    def _undeployed(self) -> str | None:
+        """A _refusal(): an FPS of the subset is missing or its conf process is not running."""
+        lacking = self._lacking(lambda fps: fps.conf_isrunning())
+        if lacking:
+            return f"{lacking[0]} is missing or its conf process is not running; run deploy."
+        return None
+
+
+class TaskOnOneCompu(TaskOnCompuSet):
+    """A task on exactly one compute unit."""
+
+    COUNT = 1
+
+    @property
+    def compu(self) -> ComputeUnit:
+        return self.pipeline.compute_units[self.compus_names[0]]
+
+    @property
+    def fps(self) -> FPS | None:
+        return self.compu.fps
+
+
 class ClaimRundir(Task):
-    def can(self) -> bool:
+    def _refusal(self) -> str | None:
         p = self.pipeline
         for claim in rundir.all_claims():
             if claim.name == p.short_name and claim.rootdir != str(p.root_folder):
-                self.failure_reason = f"{p.short_name} is claimed by {claim.rootdir}."
-                return False
+                return f"{p.short_name} is claimed by {claim.rootdir}."
             if claim.name != p.short_name and claim.loop_number == p.config.loop_number:
-                self.failure_reason = (
-                    f"loop_number {p.config.loop_number} is claimed by {claim.name}."
-                )
-                return False
-        return True
+                return f"loop_number {p.config.loop_number} is claimed by {claim.name}."
+        return None
 
     def forward(self) -> None:
         p = self.pipeline
@@ -124,12 +177,11 @@ class ClaimRundir(Task):
         )
 
 
-class InitFPS(Task):
-    def can(self) -> bool:
+class InitFPS(TaskOnCompuSet):
+    def _refusal(self) -> str | None:
         if not os.path.isdir(self.pipeline.work_folder):
-            self.failure_reason = f"{self.pipeline.work_folder} does not exist."
-            return False
-        return True
+            return f"{self.pipeline.work_folder} does not exist."
+        return None
 
     def forward(self) -> None:
         for cu, compu in self.compute_units.items():
@@ -142,21 +194,18 @@ class InitFPS(Task):
             compu.autopopulate_trigger_stream()
 
     def success(self) -> bool:
-        return all(
-            c.fps is not None and c.fps.is_valid() for c in self.compute_units.values()
-        )
+        return not self._lacking(lambda fps: fps.is_valid())
 
 
 class LoadData(Task):
     """Loads every [dataloads] source file (from rootdir/initdata) into its target SHM stream."""
 
-    def can(self) -> bool:
+    def _refusal(self) -> str | None:
         for entry in self.pipeline.config.dataloads:
             source_path = self.pipeline.root_folder / "initdata" / entry.source
             if not os.path.isfile(source_path):
-                self.failure_reason = f"{source_path} does not exist."
-                return False
-        return True
+                return f"{source_path} does not exist."
+        return None
 
     def forward(self) -> None:
         from astropy.io import fits
@@ -189,13 +238,12 @@ class LoadData(Task):
         return True
 
 
-class ConfStart(Task):
-    def can(self) -> bool:
-        for compu in self.compute_units.values():
-            if compu.fps is None or not compu.fps.is_valid():
-                self.failure_reason = f"FPS {compu.fpsname} is missing or invalid."
-                return False
-        return True
+class ConfStart(TaskOnCompuSet):
+    def _refusal(self) -> str | None:
+        invalid = self._lacking(lambda fps: fps.is_valid())
+        if invalid:
+            return f"FPS {invalid[0]} is missing or invalid."
+        return None
 
     def forward(self) -> None:
         for compu, fps in self._existing():
@@ -204,55 +252,41 @@ class ConfStart(Task):
         wait_until(self.success, self.TIMEOUT)
 
     def success(self) -> bool:
-        stuck = [
-            c.fpsname
-            for c in self.compute_units.values()
-            if c.fps is None or not c.fps.conf_isrunning()
-        ]
+        stuck = self._lacking(lambda fps: fps.conf_isrunning())
         if stuck:
             self.failure_reason = f"Conf processes not running for {', '.join(stuck)} (tmux session busy?)"
         return not stuck
 
 
-class RunStart(Task):
-    """Starts the subset (default: config.runstart) one unit at a time, in order."""
+class RunStart(TaskOnCompuSet):
+    """Starts the subset (default: config.runstart) one unit at a time, in order;
+    all at once when nobody wrote an order (no step units, no runstart key)."""
 
-    def __init__(
-        self,
-        pipeline: Pipeline,
-        compus: Sequence[str] | None = None,
-        params: dict | None = None,
-    ) -> None:
-        super().__init__(
-            pipeline, pipeline.config.runstart if compus is None else compus, params
-        )
+    ordered = True
 
-    def can(self) -> bool:
-        for compu in self.compute_units.values():
-            if compu.fps is None or not compu.fps.conf_isrunning():
-                self.failure_reason = f"{compu.fpsname} is missing or its conf process is not running; run deploy."
-                return False
-        return True
+    def locate_defaults(self) -> None:
+        config = self.pipeline.config
+        self.compus_names = tuple(config.runstart)
+        self.ordered = "runstart" in config.model_fields_set
+
+    _refusal = TaskOnCompuSet._undeployed
 
     def forward(self) -> None:
         for compu, fps in self._existing():
             if not fps.run_isrunning():
                 compu.runstart(tmux=True)
-                if not wait_until(fps.run_isrunning, self.TIMEOUT):
+                if self.ordered and not wait_until(fps.run_isrunning, self.TIMEOUT):
                     self.failure_reason = f"Run not started for {compu.fpsname}."
                     return
+        if not self.ordered and not wait_until(self.success, self.TIMEOUT):
+            down = self._lacking(lambda fps: fps.run_isrunning())
+            self.failure_reason = f"Run not started for {', '.join(down)}."
 
     def success(self) -> bool:
-        return all(
-            c.fps is not None and c.fps.run_isrunning()
-            for c in self.compute_units.values()
-        )
+        return not self._lacking(lambda fps: fps.run_isrunning())
 
 
-class RunStop(Task):
-    def can(self) -> bool:
-        return True
-
+class RunStop(TaskOnCompuSet):
     def forward(self) -> None:
         for compu, fps in self._existing():
             if fps.run_isrunning():
@@ -263,13 +297,10 @@ class RunStop(Task):
         return not any(fps.run_isrunning() for _, fps in self._existing())
 
 
-class WaitRunEnd(Task):
+class WaitRunEnd(TaskOnCompuSet):
     """Waits for the subset's runs to end by themselves; never stops anything."""
 
     TIMEOUT = 120.0
-
-    def can(self) -> bool:
-        return True
 
     def _ended(self) -> bool:
         return not any(fps.run_isrunning() for _, fps in self._existing())
@@ -284,9 +315,6 @@ class WaitRunEnd(Task):
 
 
 class DeapplyAllLinkages(Task):
-    def can(self) -> bool:
-        return True
-
     def forward(self) -> None:
         self.pipeline.unlink("all")
 
@@ -294,10 +322,7 @@ class DeapplyAllLinkages(Task):
         return not self.pipeline.linked()
 
 
-class ConfStop(Task):
-    def can(self) -> bool:
-        return True
-
+class ConfStop(TaskOnCompuSet):
     def forward(self) -> None:
         for compu, fps in self._existing():
             if fps.conf_isrunning():
@@ -313,10 +338,7 @@ def _tmux_has(session: str) -> bool:
     return not subprocess.run(argv, capture_output=True).returncode
 
 
-class KillTmux(Task):
-    def can(self) -> bool:
-        return True
-
+class KillTmux(TaskOnCompuSet):
     def _live(self) -> list[str]:
         if not self.pipeline.config.teardown_kill_tmux:
             return []
@@ -330,10 +352,7 @@ class KillTmux(Task):
         return not self._live()
 
 
-class DestroyFPS(Task):
-    def can(self) -> bool:
-        return True
-
+class DestroyFPS(TaskOnCompuSet):
     def forward(self) -> None:
         for _, fps in self._existing():
             fps.destroy()
@@ -343,9 +362,6 @@ class DestroyFPS(Task):
 
 
 class ReleaseRundir(Task):
-    def can(self) -> bool:
-        return True
-
     def forward(self) -> None:
         rundir.release(self.pipeline.short_name)
 
@@ -354,5 +370,6 @@ class ReleaseRundir(Task):
 
 
 TASKS: Registry[type[Task]] = Registry("task")
-for _task in Task.__subclasses__():
-    TASKS.register(_task.__name__, _task)
+for _task in Task.__subclasses__() + TaskOnCompuSet.__subclasses__():
+    if not _task.__abstractmethods__:
+        TASKS.register(_task.__name__, _task)

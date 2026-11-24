@@ -137,7 +137,7 @@ class PipelineConfig(BaseModel):
     systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
     hooks: list[HookDecl] = Field(default_factory=list)
     plans: dict[str, PlanDecl] = Field(default_factory=dict)
-    # compute units RunStart starts, in order; default: all, in declaration order
+    # compute units RunStart starts, in order; default: all, started at once
     runstart: list[str] = Field(
         default_factory=lambda data: list(data.get("compute_units", ()))
     )

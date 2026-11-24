@@ -98,8 +98,8 @@ without a milk environment; anything that touches SHM or runs an executable need
 
 ## 6. Task contract
 
-A task subclasses `moka.operate.tasks.Task` and implements three methods. `pipeline.task_do`
-calls them in this order:
+A task subclasses `moka.operate.tasks.Task` and implements `forward()` and `success()`, plus
+`_refusal()` when it has preconditions. `pipeline.task_do` calls them in this order:
 
 ```mermaid
 flowchart TD
@@ -115,15 +115,20 @@ flowchart TD
 The no-op on an already reached goal is what makes plans idempotent.
 
 - **`success()`** checks whether the goal already holds, and must not have side effects.
-- **`can()`** checks the task's preconditions. Before returning `False`, it sets
-  `self.failure_reason`.
+- **`can()`** is derived: `False` when `_refusal()` returns a reason, which it stores in
+  `self.failure_reason`. `_refusal()` returns `None` by default.
 - **`forward()`** does the work. For asynchronous effects (tmux, processes), it waits with
   `wait_until(self.success, self.TIMEOUT)` (from `moka.wait`); `TIMEOUT` defaults to 10 s.
-- **`self.compute_units`** is the step's CompU subset, as `{name: ComputeUnit}`.
-  `self._existing()` is the part of that subset whose FPS exists, as `(ComputeUnit, FPS)` pairs.
+- **`Task`** acts on the pipeline as a whole and refuses a step that names CompUs.
+  **`TaskOnCompuSet`** acts on the step's CompU subset: `self.compute_units` is that subset as
+  `{name: ComputeUnit}`, `self._existing()` the part of it whose FPS exists, as
+  `(ComputeUnit, FPS)` pairs. A step that names none gets the subset that `locate_defaults()` sets:
+  every CompU. `COUNT` fixes the subset's size; `locate_defaults()` then requires the step to
+  name it. **`TaskOnOneCompu`** is the `COUNT = 1` case, with `self.compu` and `self.fps`. A
+  wrong subset is a `ConfigError` when the plan is built.
 - Tasks act on the live pipeline (SHM, FPS, tmux, processes) and never modify `rootdir/conf/`.
 
-Direct subclasses of `Task` in `moka/operate/tasks.py` are registered under their class name
+Tasks defined in `moka/operate/tasks.py` are registered under their class name
 automatically. A task defined anywhere else needs `TASKS.register("MyTask", MyTask)`, or a
 pipeline's `scripts/moka_plans.py`; it can then be named in a `Step`
 ([Plans and tasks](pipelines_plans.md#4-custom-plans)).

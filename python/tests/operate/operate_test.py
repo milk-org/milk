@@ -29,7 +29,7 @@ from moka.operate.tasks import (
     ReleaseRundir,
     RunStart,
     RunStop,
-    Task,
+    TaskOnCompuSet,
 )
 from moka.registry import Registry
 
@@ -174,7 +174,7 @@ def test_state_consistent(pp, paper, flags, expected):
 # ---- runner ----
 
 
-class _Probe(Task):
+class _Probe(TaskOnCompuSet):
     """Records what the runner does with it; behaviour set per test through class attributes."""
 
     log: list[str] = []
@@ -263,14 +263,14 @@ def test_runner_best_effort_runs_everything(pp, probes):
     with pytest.raises(BestEffortError) as err:
         run_plan(pp, "p")
     assert [label for label, _ in err.value.failures] == ["ProbeA"]
-    assert _Probe.log == ["ProbeB:None"]
+    assert _Probe.log == ["ProbeB:('delay0', 'delay1')"]
 
 
 def test_runner_passes_compu_subsets(pp, probes):
     _, _, plan = probes
     plan("p", Step("ProbeA", ("delay1",)), Step("ProbeB"))
     run_plan(pp, "p")
-    assert _Probe.log == ["ProbeA:('delay1',)", "ProbeB:None"]
+    assert _Probe.log == ["ProbeA:('delay1',)", "ProbeB:('delay0', 'delay1')"]
 
 
 def test_unknown_compu_in_subset_refused(pp, probes):
@@ -375,9 +375,31 @@ def test_bad_compute_units_is_still_a_validation_error():
         PipelineConfig.model_validate(bad)
 
 
-def test_runstart_defaults_to_every_unit_in_declaration_order(pp, started):
+def test_runstart_defaults_to_every_unit(pp, started):
     pp.task_do(RunStart)
-    assert started == ["delay0", "delay1"]
+    assert sorted(started) == ["delay0", "delay1"]
+
+
+def test_runstart_without_the_key_issues_every_start_then_waits(
+    pp, started, fake_compus, monkeypatch
+):
+    monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
+    for cu in ("delay0", "delay1"):
+        fake_compus[cu].runstart = lambda tmux=False, cu=cu: started.append(cu)
+    with pytest.raises(TaskDidNotSucceedError, match=r"basic_delay\d, basic_delay\d"):
+        pp.task_do(RunStart)
+    # each start issued although none came up
+    assert sorted(started) == ["delay0", "delay1"]
+
+
+def test_runstart_named_units_wait_in_order_without_the_key(
+    pp, started, fake_compus, monkeypatch
+):
+    monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
+    fake_compus["delay1"].runstart = lambda tmux=False: started.append("delay1")
+    with pytest.raises(TaskDidNotSucceedError, match="basic_delay1"):
+        pp.task_do(RunStart(pp, ["delay1", "delay0"]))
+    assert started == ["delay1"]  # delay0 was never issued
 
 
 def test_runstart_follows_the_list_order(pp, started):

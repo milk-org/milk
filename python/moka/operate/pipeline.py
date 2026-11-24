@@ -3,7 +3,7 @@ from __future__ import annotations
 from .compute_unit import ComputeUnit
 from ..config.resolve import confresolve
 from ..config.layout import is_rootdir
-from .plans import PLANS, Plan, Step, run_plan
+from .plans import PLANS, Plan, run_plan, steps_from_list
 from .state import State, gate, state
 from .tasks import TASKS, Task
 from ..registry import Registry
@@ -50,7 +50,7 @@ class Pipeline:
         plans: Registry[Plan] = Registry("plan", parent=PLANS)
         tasks: Registry[type[Task]] = Registry("task", parent=TASKS)
         for name, decl in self.config.plans.items():
-            steps = tuple(map(Step.parse, decl.steps))
+            steps = steps_from_list(decl.steps)
             options = decl.model_dump(exclude={"steps"}, exclude_none=True)
             plans.register(name, Plan(name, steps, **options))
         path = self.root_folder / "conf" / "scripts" / "moka_plans.py"

@@ -8,10 +8,10 @@ from pathlib import Path
 import numpy as np
 
 from ..operate.plans import PLANS, Param, Plan, Step
-from ..operate.tasks import TASKS, Task, WaitRunEnd, stream_shape
-from . import (
-    mlat as _mlat,
-)  # module, not name: mlat.py imports operate.plans, which imports us
+from ..operate.tasks import TASKS, Task, TaskOnOneCompu, WaitRunEnd, stream_shape
+
+# module, not name: mlat.py imports operate.plans, which imports us
+from . import mlat as _mlat
 
 # In rootdir/calib. The FPS gets them relative to the run's cwd, rootdir/work (63 chars max).
 POKES, DONE = "RMmodesDM.fits", "RMmodesWFS.fits"
@@ -32,16 +32,12 @@ class MakePokes(Task):
     def _type(self) -> str:
         return self.params.get("type", "hadamard")
 
-    def can(self) -> bool:
+    def _refusal(self) -> str | None:
         if self._type not in POKE_TYPES:
-            self.failure_reason = (
-                f"unknown poke type {self._type!r}; known: {', '.join(POKE_TYPES)}."
-            )
-            return False
+            return f"unknown poke type {self._type!r}; known: {', '.join(POKE_TYPES)}."
         if self.pipeline.config.dmhint is None:
-            self.failure_reason = "no [dmhint] in conf.toml."
-            return False
-        return True
+            return "no [dmhint] in conf.toml."
+        return None
 
     def forward(self) -> None:
         """Cube numpy (n, y, x) = FITS (NAXIS1, NAXIS2, NAXIS3) = DM (xsize, ysize, n)."""
@@ -72,7 +68,7 @@ class MakePokes(Task):
         )
 
 
-class SetLinResp(Task):
+class SetLinResp(TaskOnOneCompu):
     """Writes the measlinresp FPS (files, mlat's timing, params["ampl"]) and clears the outputs."""
 
     def _values(self) -> dict | None:
@@ -91,42 +87,34 @@ class SetLinResp(Task):
             values["ampl"] = self.params["ampl"]
         return values
 
-    def can(self) -> bool:
+    def _refusal(self) -> str | None:
         from astropy.io import fits
 
-        compu = self.compu
-        if compu.fps is None or not compu.fps.conf_isrunning():
-            self.failure_reason = f"{compu.fpsname} is missing or its conf process is not running; run deploy."
-            return False
+        if reason := self._undeployed():
+            return reason
         if not _calib(self, POKES).is_file():
-            self.failure_reason = (
-                f"{_calib(self, POKES)} does not exist; run `moka mkpokes`."
-            )
-            return False
+            return f"{_calib(self, POKES)} does not exist; run `moka mkpokes`."
         if self._values() is None:
-            self.failure_reason = "no latency from mlat; run `moka mlat`."
-            return False
-        stream = compu.fps["streamin"]
+            return "no latency from mlat; run `moka mlat`."
+        stream = self.fps["streamin"]
         shape = stream_shape(stream)
         if shape is None:
-            self.failure_reason = f"stream {stream} does not exist."
-            return False
+            return f"stream {stream} does not exist."
         cube = fits.getheader(_calib(self, POKES))
         if (cube["NAXIS1"], cube["NAXIS2"]) != shape:
-            self.failure_reason = f"{POKES} is {cube['NAXIS1']} x {cube['NAXIS2']}, {stream} is {shape[0]} x {shape[1]}."
-            return False
-        return True
+            return f"{POKES} is {cube['NAXIS1']} x {cube['NAXIS2']}, {stream} is {shape[0]} x {shape[1]}."
+        return None
 
     def forward(self) -> None:
         _calib(self, INPROGRESS).unlink(missing_ok=True)
         if _calib(self, DONE).exists():
             os.replace(_calib(self, DONE), _calib(self, PREV))
-        fps = self.compu.fps
+        fps = self.fps
         for key, value in (self._values() or {}).items():
             fps[key] = value
 
     def success(self) -> bool:
-        fps, values = self.compu.fps, self._values()
+        fps, values = self.fps, self._values()
         if fps is None or values is None or _calib(self, DONE).exists():
             return False
         return not _calib(self, INPROGRESS).exists() and all(
@@ -135,20 +123,20 @@ class SetLinResp(Task):
         )
 
 
-class WaitLinResp(WaitRunEnd):
+class WaitLinResp(TaskOnOneCompu, WaitRunEnd):
     """WaitRunEnd; then a complete run's in-progress file becomes RMmodesWFS.fits."""
 
     @property
     def TIMEOUT(self) -> float:  # type: ignore[override]
         from astropy.io import fits
 
-        fps = self.compu.fps
+        fps = self.fps
         modes = fits.getheader(_calib(self, POKES))["NAXIS3"]
         frames = 2 * modes * (fps["timing.NBave"] + fps["timing.NBexcl"])
         return 2 * frames * fps["procinfo.loopcntMax"] / fps["timing.WFSfrequ"] + 10
 
     def forward(self) -> None:
-        fps = self.compu.fps
+        fps = self.fps
         try:  # the procinfo file goes when the run exits: hold it from now
             pinfo = fps.pinfo_struct
         except FileNotFoundError:

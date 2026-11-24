@@ -36,6 +36,11 @@ class Step:
         )
 
 
+def steps_from_list(labels: Sequence[str]) -> tuple[Step, ...]:
+    """The steps of these labels (see Step.parse)."""
+    return tuple(map(Step.parse, labels))
+
+
 @dataclass(frozen=True)
 class Param:
     """A value its plan's command takes; every task of the plan gets it in ``params[name]``."""
@@ -105,17 +110,21 @@ def run_plan(
 for _plan in (
     Plan(
         "deploy",
-        tuple(map(Step, "ClaimRundir InitFPS LoadData ConfStart".split())),
+        steps_from_list(["ClaimRundir", "InitFPS", "LoadData", "ConfStart"]),
         "abort",
         "cold_or_consistent",
     ),
     Plan(
         "teardown",
-        tuple(
-            map(
-                Step,
-                "RunStop DeapplyAllLinkages ConfStop KillTmux DestroyFPS ReleaseRundir".split(),
-            )
+        steps_from_list(
+            [
+                "RunStop",
+                "DeapplyAllLinkages",
+                "ConfStop",
+                "KillTmux",
+                "DestroyFPS",
+                "ReleaseRundir",
+            ]
         ),
         "best_effort",
         "any",

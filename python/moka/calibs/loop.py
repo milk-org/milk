@@ -4,32 +4,42 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..operate.tasks import TASKS, RunStart, Task, stream_shape
+from ..errors import ConfigError
+from ..operate.tasks import TASKS, TaskOnCompuSet, TaskOnOneCompu, stream_shape
 from . import cm as _cm, linresp as _lr  # modules: may be mid-import (cycle via plans)
 
 
-class SetLoopOff(Task):
-    """Writes loopON false on the subset (mfilt)."""
+class SetLoopOff(TaskOnOneCompu):
+    """Writes loopON false on the unit (default: the one cacao-fpsexec-mfilt unit)."""
 
-    EXEC = "cacao-fpsexec-mfilt"
+    def locate_defaults(self) -> None:
+        exe = "cacao-fpsexec-mfilt"
+        units = self.pipeline.config.compute_units
+        found = [cu for cu, decl in units.items() if decl.exec == exe]
+        if len(found) != 1:
+            raise ConfigError(
+                (
+                    f"SetLoopOff: no {exe} unit."
+                    if not found
+                    else f"SetLoopOff: {exe} units {found}; name one in the step."
+                ),
+                pipeline=self.pipeline.short_name,
+            )
+        self.compus_names = tuple(found)
 
-    can = RunStart.can  # the FPS exists and its conf process runs
+    _refusal = TaskOnOneCompu._undeployed
 
     def forward(self) -> None:
-        for _, fps in self._existing():
-            fps["loopON"] = False
+        self.fps["loopON"] = False  # type: ignore[index]
 
     def success(self) -> bool:
-        return all(
-            c.fps is not None and not c.fps["loopON"]
-            for c in self.compute_units.values()
-        )
+        return self.fps is not None and not self.fps["loopON"]
 
 
-class LoadCM(Task):
+class LoadCM(TaskOnCompuSet):
     """calib/CMmodes{WFS,DM}.fits into the immodes streams of the subset (wfs2modes, modes2dm)."""
 
-    EXEC = "milk-fpsexec-linalg-MVMextract"  # in declaration order: WFS side first
+    COUNT = 2  # in the step's order: WFS side first
 
     def _files(self):
         return [_lr._calib(self, f) for f in (_cm.CM_WFS, _cm.CM_DM)]
@@ -64,12 +74,6 @@ class LoadCM(Task):
             if compu.fps.run_isrunning():  # it copied its matrix at run start
                 return f"{compu.fpsname} is running; stop it first."
         return None
-
-    def can(self) -> bool:
-        reason = self._refusal()
-        if reason is not None:
-            self.failure_reason = reason
-        return reason is None
 
     def forward(self) -> None:
         from pyMilk.interfacing.shm import SHM

@@ -89,8 +89,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
     moka runstop -p basic delay1    # (2)!
     ```
 
-    1. The CompUs of [`runstart`](pipelines_conf.md#3-conftoml-keys) (default: all), one at a
-       time. The state becomes `running`.
+    1. The CompUs of [`runstart`](pipelines_conf.md#3-conftoml-keys) (default: all, at once), one at a
+       time when listed. The state becomes `running`.
     2. A subset.
 
 === "Python"

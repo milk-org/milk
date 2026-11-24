@@ -6,9 +6,9 @@ import numpy as np
 
 from ..operate.plans import PLANS, Param, Plan, Step
 from ..operate.tasks import TASKS, Task
-from . import (
-    linresp as _lr,
-)  # module, not names: linresp may be mid-import (cycle via plans)
+
+# module, not names: linresp may be mid-import (cycle via plans)
+from . import linresp as _lr
 
 CM_FLAVORS = ("tsvd", "tikhonov", "pinv")
 DEFAULT_RCOND = 1e-6
@@ -44,12 +44,6 @@ class MakeCM(Task):
         if nmodes is not None and not 1 <= nmodes <= n:
             return f"-n {nmodes} is not in 1..{n}."
         return None
-
-    def can(self) -> bool:
-        reason = self._refusal()
-        if reason is not None:
-            self.failure_reason = reason
-        return reason is None
 
     def forward(self) -> None:
         from astropy.io import fits

@@ -7,8 +7,10 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
 [Glossary](pipelines_glossary.md)
 
 A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
-all CompUs (`RunStart`: the [`runstart`](pipelines_conf.md#3-conftoml-keys) list), or on a subset
-given at construction. A **plan** is data: a name, ordered **steps**
+the pipeline as a whole, or on a CompU subset given at construction. Without one, the task picks
+its own: all CompUs (`RunStart`: the [`runstart`](pipelines_conf.md#3-conftoml-keys) list;
+`SetLoopOff`: the one `cacao-fpsexec-mfilt` CompU), or it refuses (`LoadCM`, `SetLinResp`,
+`WaitLinResp`). A **plan** is data: a name, ordered **steps**
 (a task name and an optional CompU subset), a failure policy and the states it accepts to start
 from. Plans and tasks are Python objects in `moka.operate.plans` and `moka.operate.tasks`, each
 looked up by name in a registry (`PLANS`, `TASKS`). Each pipeline adds its own plans and tasks
@@ -102,7 +104,7 @@ on those CompUs. Refusing CompU names for the other plans is a CLI check only: f
 | `InitFPS`            | Every FPS exists and is valid. It runs `fpsinit` in `work/`, then sets the `[compute_units.<cu>.fps]` values                                                                                               |
 | `LoadData`           | Every `[[dataloads]]` target stream exists with the source FITS shape and dtype                                                                                                                            |
 | `ConfStart`          | Every conf process is running                                                                                                                                                                              |
-| `RunStart`           | Every run process of the subset (default: `runstart`) is running. It starts them one at a time, in order, and requires the conf processes to run                                                           |
+| `RunStart`           | Every run process of the subset (default: `runstart`) is running. It starts them one at a time, in order (all at once if neither step nor conf.toml names them), and requires the conf processes to run    |
 | `RunStop`            | No run process is running                                                                                                                                                                                  |
 | `WaitRunEnd`         | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything                                                                                                 |
 | `SetLinResp`         | The `measlinresp` FPS holds the cube and output paths (relative to `work/`), mlat's frame rate and latency, and `-a`; no `RMmodesWFS.fits` nor in-progress file is left (the first is archived to `.prev`) |
@@ -129,7 +131,7 @@ pp.task_do(WaitRunEnd(pp, ["mlat"]))        # (3)!
 pp.task_do(RunStop(pp, ["wfscam", "dmdelay"]))
 ```
 
-1. The CompUs of `runstart` (default: all); other tasks: every CompU.
+1. The CompUs of `runstart` (default: all); `RunStop`, `WaitRunEnd`: every CompU.
 2. One CompU.
 3. Waits (up to 120 s) for a run that ends by itself.
 
@@ -216,7 +218,7 @@ run(pp, Plan(
 | Field             | Type                                            | Default        | Meaning                                                                                                                                                                                        |
 | ----------------- | ----------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Step.task`       | `str`                                           | —              | A task name of the pipeline, which is the task's class name                                                                                                                                    |
-| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None` means all CompUs (`RunStart`: the `runstart` list). Unknown names raise `ConfigError`                                                                                 |
+| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None`: the task's default, all CompUs for most (see the top of this page). Unknown names raise `ConfigError`                                                                |
 | `Plan.name`       | `str`                                           | —              | The plan's name, which is also the `moka` command name. In TOML, the table name                                                                                                                |
 | `Plan.steps`      | `tuple[Step, ...]`                              | —              | The steps, run in order                                                                                                                                                                        |
 | `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                                         |

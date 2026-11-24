@@ -109,9 +109,8 @@ class CLI:
         self._known_prompt = None
         self._read_until_prompt()  # discard startup banner + first prompt
 
-        self._known_prompt = self.send_line(
-            ""
-        )  # initializes the prompt typically "milk-cli >"
+        # initializes the prompt typically "milk-cli >"
+        self._known_prompt = self.send_line("")
         self.timeout = 5
 
     def _read_until_prompt(self) -> str:

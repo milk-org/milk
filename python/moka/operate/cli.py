@@ -250,13 +250,11 @@ def moka_tasks(pipe: str | None, plan: str | None):
     List the tasks (of PLAN, if given) with their success and can; never runs them.
     """
     from ..errors import ConfigError
-    from .plans import Step, build_step
+    from .plans import build_step, steps_from_list
 
     pp, _ = _state(pipe)
     steps = (
-        pp.plans[plan].steps
-        if plan is not None
-        else [Step(name) for name in pp.tasks.names()]
+        pp.plans[plan].steps if plan is not None else steps_from_list(pp.tasks.names())
     )
     for step in steps:
         try:
