@@ -423,6 +423,15 @@ def test_cli_init_set_and_resolve(confdir):
     )  # TOML-typed when parseable, else string
 
 
+def test_cli_init_error_is_one_fail_line(confdir, rootdir):
+    result = CliRunner().invoke(mokainit, ["init", str(confdir)])
+    assert result.exit_code == 1 and result.stdout == ""
+    assert result.stderr.splitlines() == [
+        f"[FAIL] {rootdir} already exists; use resync.",
+        f"path: {rootdir}",
+    ]
+
+
 def test_cli_drift_and_resync_banner(confdir, rootdir):
     runner = CliRunner()
     _edit(

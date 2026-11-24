@@ -290,3 +290,7 @@ flowchart LR
 2. **Gate.** The state is computed once and checked against `accepts`.
 3. **Do.** `pipeline.task_do(task)` runs for each step, in order. `abort` stops at the first
    failure; `best_effort` runs every step, then raises one `BestEffortError`.
+
+The run logs its progress to the `moka.plan` logger at `INFO`: the state, each step's start and
+outcome, a verdict, with the data in the record's `moka` attribute. Without a handler, nothing is
+printed.

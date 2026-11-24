@@ -22,8 +22,8 @@ class ErrstackGroup(click.Group):
     """A group whose errors print as one message, without stack trace, unless --errstack.
 
     --pdb opens an ipdb post-mortem session on the error instead.
-    BestEffortError prints one warning per failure. Every error exits 1.
-    ``moka`` log records print to stderr.
+    A MilkError prints as ``[FAIL] <message>``, unless a plan run already told it. Every error exits 1.
+    ``moka`` log records print to stderr (see ui.PlanHandler).
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -58,11 +58,10 @@ class ErrstackGroup(click.Group):
         import logging
 
         from . import ui
-        from .errors import BestEffortError, MilkError
+        from .errors import BestEffortError, MilkError, TaskError
 
         log = logging.getLogger("moka")
-        handler = logging.StreamHandler()  # the current sys.stderr
-        handler.setFormatter(ui.LogFormatter())
+        handler = ui.PlanHandler()
         log.addHandler(handler)
         log.setLevel(logging.INFO)
         try:
@@ -77,14 +76,18 @@ class ErrstackGroup(click.Group):
                 raise click.exceptions.Exit(1) from error
             if ctx.meta.get("errstack"):
                 raise
-            if isinstance(error, BestEffortError):
-                for label, failure in error.failures:
-                    log.warning("%s: %s", label, failure)
-                raise click.exceptions.Exit(1) from error
-            if isinstance(error, MilkError):
-                raise click.ClickException(str(error)) from error
-            raise click.ClickException(
-                f"{type(error).__name__}: {error}\n(--errstack for the stack trace)"
-            ) from error
+            if not isinstance(error, MilkError):
+                raise click.ClickException(
+                    f"{type(error).__name__}: {error}\n(--errstack for the stack trace)"
+                ) from error
+            # a plan's failure was already told step by step, then by its verdict line
+            if not (handler.failed_plan and isinstance(error, (TaskError, BestEffortError))):
+                color = ui.use_color(handler.stream)
+                first, *context = str(error).split("\n")
+                click.echo(f"{ui.tag(ui.FAILED, color)} {ui.highlight_ticks(first, color)}", err=True)
+                for line in context:
+                    click.echo(ui.style("dim", line, color), err=True)
+            raise click.exceptions.Exit(1) from error
         finally:
             log.removeHandler(handler)
+            handler.close()

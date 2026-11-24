@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import logging
+import time
 from dataclasses import dataclass, field, replace
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ..errors import BestEffortError, MilkError
+from ..errors import (
+    BestEffortError,
+    MilkError,
+    TaskCannotRunError,
+    TaskDidNotSucceedError,
+)
 from ..registry import Registry
 from ..config.model import Accepts, OnFailure
 from .state import gate, state
@@ -66,6 +73,7 @@ class Plan:
 
 
 PLANS: Registry[Plan] = Registry("plan")
+_log = logging.getLogger("moka.plan")
 
 
 def build_step(pipeline: Pipeline, step: Step, params: dict | None = None) -> Task:
@@ -81,19 +89,60 @@ def build(
 
 
 def run(pipeline: Pipeline, plan: Plan, params: dict | None = None) -> None:
-    """Run any plan: build every task first (so ConfigError precedes side effects), gate, then do."""
+    """Run any plan: build every task first (so ConfigError precedes side effects), gate, then do.
+
+    Tells its progress to the ``moka.plan`` logger at INFO, with ``extra={"moka": {...}}``.
+    """
+    start = time.monotonic()
     tasks = build(pipeline, plan, params)
-    gate(pipeline.short_name, state(pipeline), plan.accepts)
+    st = state(pipeline)
+    labels = [label for label, _ in tasks]
+    info = {"plan": plan.name, "pipeline": pipeline.short_name, "n": len(tasks)}
+
+    def log(event: str, text: str, head: str = "", **more) -> None:
+        payload = {**info, **more, "event": event, "text": text}
+        _log.info(head + text, extra={"moka": payload})
+
+    def verdict(text: str, failed: list[str]) -> None:
+        seconds = time.monotonic() - start
+        log("final", text, ok=not failed, failed=failed, seconds=seconds)
+
+    head = f"{plan.name} ({st.state.value}): "
+    log("plan", " -> ".join(labels), head, state=st.state.value, labels=labels)
+    gate(pipeline.short_name, st, plan.accepts)
     failures: list[tuple[str, Exception]] = []
-    for label, task in tasks:
+    for i, (label, task) in enumerate(tasks, 1):
+        head = f"{plan.name} [{i}/{len(tasks)}] {label}: "
+        log("start", "started", head, i=i, label=label)
+        t0, error, reason = time.monotonic(), None, ""
         try:
-            pipeline.task_do(task)
-        except MilkError as error:
-            if plan.on_failure == "abort":
-                raise
+            outcome = "done" if pipeline._do(task) else "already"
+        except Exception as caught:
+            error = caught
+            refused = isinstance(error, TaskCannotRunError)
+            outcome = "refused" if refused else "failed"
+            known = refused or isinstance(error, TaskDidNotSucceedError)
+            reason = task.failure_reason if known else str(error).split("\n")[0]
+        s = time.monotonic() - t0
+        text = {
+            "already": "already done",
+            "done": f"done ({s:.1f} s)",
+            "refused": f"refused: {reason}",
+            "failed": f"failed ({s:.1f} s): {reason}",
+        }[outcome]
+        more = {"outcome": outcome, "reason": reason, "seconds": s}
+        log("end", text, head, i=i, label=label, **more)
+        if isinstance(error, MilkError) and plan.on_failure == "best_effort":
             failures.append((label, error))
-    if failures:
+        elif error is not None:
+            verdict(f"{plan.name}: stopped at step {i}/{len(tasks)} ({label})", [label])
+            raise error
+    failed = [label for label, _ in failures]
+    if failed:
+        n = f"{len(failed)} of {len(tasks)} steps"
+        verdict(f"{plan.name}: {n} failed ({', '.join(failed)})", failed)
         raise BestEffortError(failures, pipeline=pipeline.short_name)
+    verdict(f"{plan.name} done in {time.monotonic() - start:.1f} s", [])
 
 
 def run_plan(

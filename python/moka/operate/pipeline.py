@@ -75,10 +75,15 @@ class Pipeline:
         return self._local[1]
 
     def task_do(self, task: Task | type[Task]) -> Pipeline:
+        self._do(task)
+        return self  # So as to be able to chain
+
+    def _do(self, task: Task | type[Task]) -> bool:
+        """task_do; True when forward() was called."""
         if isinstance(task, type):
             task = task(self)
         if task.success():
-            return self
+            return False
         name = type(task).__name__
         if not task.can():
             raise TaskCannotRunError(
@@ -93,7 +98,7 @@ class Pipeline:
                 task=name,
                 pipeline=self.short_name,
             )
-        return self  # So as to be able to chain
+        return True
 
     @property
     def compute_units(self) -> dict[str, ComputeUnit]:

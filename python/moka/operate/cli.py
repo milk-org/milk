@@ -144,12 +144,17 @@ def _load(ctx: click.Context) -> Pipeline:
     return meta["moka.pipeline"]
 
 
-def _pipeline(pipe: str | None) -> Pipeline:
-    """The invocation's pipeline, saying which rootdir it is."""
+def _pipeline(pipe: str | None, acting: bool = False) -> Pipeline:
+    """The invocation's pipeline, saying which rootdir it is; on stderr after `> moka <cmd>` if acting."""
     ctx = click.get_current_context()
     ctx.meta.setdefault("moka.pipe", pipe)  # already set under _PlansGroup
+    if acting:
+        from .. import ui
+
+        banner = f"> moka {ctx.info_name}"
+        click.echo(ui.style("name", banner, ui.use_color(sys.stderr)), err=True)
     pp = _load(ctx)
-    click.echo(f"rootdir: {pp.root_folder}")
+    click.echo(f"rootdir: {pp.root_folder}", err=acting)
     return pp
 
 
@@ -216,7 +221,7 @@ def _plan_command(plan: Plan, tasks: Registry[type[Task]]) -> click.Command:
         from .plans import run_plan
 
         params = {k: v for k, v in values.items() if v is not None}
-        run_plan(_pipeline(pipe), plan.name, compus or None, params)
+        run_plan(_pipeline(pipe, acting=True), plan.name, compus or None, params)
 
     if plan.compus_arg:
         command = click.argument("compus", nargs=-1, metavar="[CU]...")(command)
@@ -358,7 +363,7 @@ def moka_link(pipe: str | None, linkage: str | None):
 
     Without LINKAGE, list the configured linkages.
     """
-    pp = _pipeline(pipe)
+    pp = _pipeline(pipe, acting=linkage is not None)
     if linkage is None:
         for name in pp.config.systemlinkage:
             click.echo(name)
@@ -373,7 +378,7 @@ def moka_unlink(pipe: str | None, linkage: str):
     """
     Remove the [systemlinkage.<LINKAGE>] symlinks of the pipeline; `all`: of every linkage.
     """
-    _pipeline(pipe).unlink(linkage)
+    _pipeline(pipe, acting=True).unlink(linkage)
 
 
 @moka.command("nuke")
@@ -385,7 +390,7 @@ def moka_nuke(pipe: str | None, yes: bool):
 
     Asks to type the pipeline's short name first, unless --yes.
     """
-    pp = _pipeline(pipe)
+    pp = _pipeline(pipe, acting=True)
     if (
         not yes
         and click.prompt(f"Type {pp.short_name!r} to delete {pp.root_folder}")

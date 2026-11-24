@@ -9,6 +9,8 @@ import logging
 import os
 import re
 import sys
+import threading
+import time
 
 import click
 
@@ -85,3 +87,68 @@ class LogFormatter(logging.Formatter):
         if record.levelno >= logging.ERROR:
             return style("fail", line, color)
         return style("warn", line, color) if record.levelno == logging.WARNING else line
+
+
+class PlanHandler(logging.StreamHandler):
+    """The CLI's stderr: ``moka.plan`` records (see plans.run) as step lines; others by LogFormatter.
+
+    On a terminal, the line of a running step shows its seconds, rewritten every ``tick``.
+    """
+
+    tick = 1.0
+    STEP_TAGS = {"done": OK, "already": DONE, "refused": REFUSED, "failed": FAILED}
+
+    def __init__(self) -> None:
+        super().__init__()  # the current sys.stderr
+        self.setFormatter(LogFormatter())
+        self.width = 0  # of the widest step label of the plan
+        self.failed_plan = False  # a plan verdict said it failed
+        self._open = ""  # the step line being counted, terminal only
+        self._stop = threading.Event()
+
+    def close(self) -> None:
+        self._stop.set()
+        if self._open:  # interrupted mid-step: leave the cursor on a fresh line
+            self.stream.write("\n")
+            self._open = ""
+        super().close()
+
+    def _count(self, stop: threading.Event, start: float) -> None:
+        while not stop.wait(self.tick):
+            with self.lock:  # emit() holds it too
+                if not stop.is_set():
+                    seconds = int(time.monotonic() - start)
+                    self.stream.write(f"\r{self._open} {seconds} s")
+                    self.flush()
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self._stop.set()
+        p = getattr(record, "moka", {"event": None})
+        color = use_color(self.stream)
+        end = "\r\x1b[K" if self._open and p["event"] == "end" else "\n"
+        if self._open:
+            self.stream.write(end)
+            self._open = ""
+        if p["event"] is None:
+            return super().emit(record)
+        line = highlight_ticks(p["text"], color)
+        if p["event"] == "plan":
+            self.width = max(map(len, p["labels"]), default=0)
+            line = f"{p['pipeline']}: {p['state']}"
+        elif p["event"] == "final":
+            self.failed_plan = not p["ok"]
+            line = f"{tag(OK if p['ok'] else FAILED, color)} {line}"
+        else:
+            dots = style("dim", "." * (self.width - len(p["label"]) + 3), color)
+            prefix = f"  [{p['i']:>{len(str(p['n']))}}/{p['n']}] {p['label']} {dots}"
+            if p["event"] == "start":
+                if self.stream.isatty():
+                    self._open, self._stop = prefix, threading.Event()
+                    self.stream.write(prefix)
+                    self.flush()
+                    args = (self._stop, time.monotonic())
+                    threading.Thread(target=self._count, args=args, daemon=True).start()
+                return
+            line = f"{prefix} {tag(self.STEP_TAGS[p['outcome']], color)} {line}"
+        self.stream.write(line + "\n")
+        self.flush()

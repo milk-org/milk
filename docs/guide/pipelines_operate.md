@@ -72,6 +72,8 @@ moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
 - **`-p/--pipe PIPE`** is a rootdir path, or a short name meaning `<cwd>/<PIPE>-rootdir`.
   Without `-p`, the current directory must be a rootdir. Every command first prints
   `rootdir: <path>`, the rootdir it acts on. In Python: `Pipeline(pipe)`.
+- **Output.** Commands that act (plans, `link LINKAGE`, `unlink`, `nuke`) print on stderr only;
+  the others print their data on stdout.
 - **Plan commands** are one per plan of the pipeline, built-in or
   [local](pipelines_plans.md#4-custom-plans) (`moka -h -p PIPE` lists them; `moka plans` [also says which the state accepts](#22-plans)). `deploy` is
   idempotent: run again on a configured pipeline, every step already succeeded. `teardown` is
@@ -136,13 +138,34 @@ ClaimRundir  no    yes
 ConfStart    no    no   FPS aoloop_acquWFS is missing or invalid.
 ```
 
-## 3. Errors
+### 2.4. Plan runs
 
-`moka` and `mokainit` print any error as `Error: <message>`, without a stack trace,
-and exit 1. A message carries its context lines when it has some:
+A plan command exits 1 when a step is refused or fails. On a terminal, the running step shows its
+elapsed seconds.
 
 ```text title="Output"
-Error: Invalid config:
+> moka measlinresp
+rootdir: /home/vdeo/pipes/aoloop-rootdir
+aoloop: configured
+  [1/4] RunStart[acquWFS] ....... [ -- ] already done
+...
+  [4/4] WaitLinResp ............. [ ok ] done (21.3 s)
+[ ok ] measlinresp done in 21.9 s
+```
+
+```text title="Output"
+  [1/1] MakeCM ... [ NO ] refused: /.../calib/RMmodesWFS.fits does not exist; run `moka measlinresp`.
+[FAIL] mkcm: stopped at step 1/1 (MakeCM)
+```
+
+## 3. Errors
+
+`moka` and `mokainit` print an error as `[FAIL] <message>` on stderr (`Error: <type>: <message>`
+when it is not the package's own), without a stack trace, and exit 1. A message carries its
+context lines when it has some:
+
+```text title="Output"
+[FAIL] Invalid config:
   compute_units.delay0.fps.procinfo: procinfo: 1 validation error ...
 path: aoloop-conf/conf.toml
 ```
@@ -158,16 +181,11 @@ colors a terminal unless `NO_COLOR` is set.
 A command refused because of the state names the command to run:
 
 ```text title="Output"
-Error: Pipeline basic is cold; run deploy.
-Error: Pipeline basic is inconsistent (FPS missing: basic_delay1); run teardown.
+[FAIL] Pipeline basic is cold; run deploy.
+pipeline: basic
 ```
 
-A best-effort plan (`teardown`) runs every step, then prints one `warning: <step>: <error>` line
-per failed step and exits 1:
-
-```text title="Output"
-warning: ConfStop: <error>
-```
+A best-effort plan (`teardown`) runs every step, then exits 1 if one failed.
 
 Anything that touches the live system needs `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` in
 the environment. `mokainit` itself does not, except `resync`, which checks that no run
