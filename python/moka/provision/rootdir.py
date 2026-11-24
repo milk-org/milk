@@ -2,6 +2,7 @@
 
 Artifact keys: a conf file's relpath, or ``data/<product>`` for a hook product. The source side
 is always ``confdir/<key>``; the rootdir side is ``conf/<key>`` or ``initdata/<product>``.
+The exception is DMMASK, generated in the rootdir and recorded with the digest of [dmhint].
 """
 
 from __future__ import annotations
@@ -22,6 +23,8 @@ from ..errors import ProvisionError
 from .artifacts import conf_files, decl_digest, fingerprint, remove, status
 from .hooks import _tagfile, consolidate, read_tag
 from .provenance import ArtifactRecord, Provenance, read_provenance, write_provenance
+
+DMMASK = "dmmask_hinted.fits"  # the [dmhint] mask as uint8, in rootdir/conf
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,45 @@ def _put(confdir: Path, rootdir: Path, key: str) -> ArtifactRecord:
     return ArtifactRecord(content_hash=fp.content_hash, size=fp.size)
 
 
+def _dmhint_digest(config: PipelineConfig) -> str | None:
+    return config.dmhint and decl_digest(config.dmhint.model_dump(mode="json"))
+
+
+def _dmmask_status(record: ArtifactRecord | None, digest: str | None) -> str:
+    """Source status of DMMASK: its record against the [dmhint] it would be made from now."""
+    if digest is None:
+        return "removed" if record else "unchanged"
+    if record is None:
+        return "added"
+    return "unchanged" if record.decl_digest == digest else "stale"
+
+
+def _put_dmmask(rootdir: Path) -> ArtifactRecord:
+    """Write DMMASK from the rootdir's [dmhint]: actuators strictly within the beam, all
+    without one. Return its record."""
+    import numpy as np
+    from astropy.io import fits
+
+    config = confresolve(rootdir)
+    hint = config.dmhint
+    if hint.beam_rad is None:
+        mask = np.ones((hint.ysize, hint.xsize), bool)
+    else:
+        from pycacao.calib.mkmodes import make_disk
+
+        beam = hint.beam_xcent, hint.beam_ycent, hint.beam_rad
+        mask = make_disk(beam, (hint.xsize, hint.ysize))
+    path = _local(rootdir, DMMASK)
+    remove(path)
+    fits.writeto(path, mask.astype("uint8"))
+    fp = fingerprint(path)
+    return ArtifactRecord(
+        content_hash=fp.content_hash,
+        size=fp.size,
+        decl_digest=_dmhint_digest(config),
+    )
+
+
 def _diff(a: PipelineConfig, b: PipelineConfig) -> dict[str, tuple[object, object]]:
     fa, fb = (
         denest_toml_dicts(c.model_dump(mode="json", exclude_none=True)) for c in (a, b)
@@ -128,37 +170,44 @@ def init(
         artifacts=records,
     )
     write_provenance(rootdir, prov)
-    confresolve(rootdir)
+    if config.dmhint is not None:
+        prov.artifacts[DMMASK] = _put_dmmask(rootdir)
+        write_provenance(rootdir, prov)
     return rootdir
 
 
 def drift(rootdir: Path) -> DriftReport:
     """What differs between the rootdir, its records and the confdir. Reads only."""
     rootdir = Path(rootdir)
-    prov = read_provenance(rootdir)
+    return _drift(rootdir, read_provenance(rootdir))
+
+
+def _drift(rootdir: Path, prov: Provenance) -> DriftReport:
     confdir = Path(prov.source_confdir)
+    here = confresolve(rootdir)
+    there = confresolve(confdir, prov.overrides)
     decls = {
         f"data/{decl.product}": decl_digest(decl.model_dump(mode="json"))
         for decl in confresolve(confdir).hooks
     }
     sources = {rel.as_posix() for rel in conf_files(confdir)} | decls.keys()
+    if there.dmhint is not None:
+        sources.add(DMMASK)
     locals_ = {rel.as_posix() for rel in conf_files(rootdir / "conf")}
     rows = []
     for key in sorted(prov.artifacts.keys() | sources | locals_):
         record = prov.artifacts.get(key)
         recorded = record and record.fingerprint
-        source = fingerprint(confdir / key) if key in sources else None
         local = _local(rootdir, key)
         local = fingerprint(local) if os.path.lexists(local) else None
-        rows.append(
-            ArtifactDrift(
-                key,
-                status(recorded, source, record and record.decl_digest, decls.get(key)),
-                status(recorded, local),
+        if key == DMMASK:
+            source = _dmmask_status(record, _dmhint_digest(there))
+        else:
+            current = fingerprint(confdir / key) if key in sources else None
+            source = status(
+                recorded, current, record and record.decl_digest, decls.get(key)
             )
-        )
-    here = confresolve(rootdir)
-    there = confresolve(confdir, prov.overrides)
+        rows.append(ArtifactDrift(key, source, status(recorded, local)))
     installed = importlib.metadata.version("moka")
     return DriftReport(
         rows,
@@ -192,8 +241,10 @@ def resync(
         )
     consolidate(confdir)
 
-    applied, refused = [], {}
-    for row in drift(rootdir).artifacts:
+    # The merged overrides count for DMMASK, made from the resolved [dmhint].
+    prov.overrides = merged
+    applied, refused, put_dmmask = [], {}, False
+    for row in _drift(rootdir, prov).artifacts:
         if row.source == "unchanged" or (
             artifacts is not None and row.key not in artifacts
         ):
@@ -205,13 +256,18 @@ def resync(
             for _, dst in _pairs(confdir, rootdir, row.key):
                 remove(dst)
             prov.artifacts.pop(row.key, None)
+        elif row.key == DMMASK:
+            # Made from the resynced conf, once every conf file is in.
+            put_dmmask = True
         else:
             prov.artifacts[row.key] = _put(confdir, rootdir, row.key)
         applied.append(row.key)
 
-    prov.overrides = merged
     prov.last_resync = _now()
     write_provenance(rootdir, prov)
+    if put_dmmask:
+        prov.artifacts[DMMASK] = _put_dmmask(rootdir)
+        write_provenance(rootdir, prov)
     after = confresolve(rootdir)
     return ResyncReport(
         applied, refused, _diff(before, after), _structural(before, after)

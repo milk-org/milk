@@ -74,6 +74,33 @@ def test_init_layout(confdir, rootdir):
     assert not (rootdir / "conf" / "data").exists()
 
 
+def test_hinted_dm_mask_follows_dmhint(confdir):
+    from astropy.io import fits
+
+    mask = "dmmask_hinted.fits"
+    with open(confdir / "inc.toml", "a") as f:
+        f.write("[dmhint]\nxsize = 4\nysize = 3\n")
+    rootdir = init(confdir)
+    assert fits.getdata(rootdir / "conf" / mask).shape == (3, 4)
+    assert _row(drift(rootdir), mask).source == "unchanged"
+
+    _edit(confdir / "inc.toml", "xsize = 4", "xsize = 5")
+    assert _row(drift(rootdir), mask).source == "stale"
+    assert mask in resync(rootdir, run_active=NEVER_RUNNING).applied
+    assert fits.getdata(rootdir / "conf" / mask).shape == (3, 5)
+    assert _row(drift(rootdir), mask).source == "unchanged"
+
+    _edit(confdir / "inc.toml", "[dmhint]", "[_unused]")
+    assert _row(drift(rootdir), mask).source == "removed"
+    resync(rootdir, run_active=NEVER_RUNNING)
+    assert not (rootdir / "conf" / mask).exists()
+
+    _edit(confdir / "inc.toml", "[_unused]", "[dmhint]")
+    assert _row(drift(rootdir), mask).source == "added"
+    resync(rootdir, run_active=NEVER_RUNNING, overrides={"dmhint.ysize": 2})
+    assert fits.getdata(rootdir / "conf" / mask).shape == (2, 5)
+
+
 def test_resync_on_confdir_refused(confdir):
     with pytest.raises(ProvisionError, match="Not a rootdir"):
         resync(confdir, run_active=lambda: False)

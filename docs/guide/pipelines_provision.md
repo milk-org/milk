@@ -131,6 +131,12 @@ A folder is a confdir when it is named `*-conf` and holds `conf.toml` but no `pr
 rootdir when it is named `*-rootdir` and holds `provenance.toml` and `conf/conf.toml`.
 `mokainit list [DIR]` lists both.
 
+With a [`[dmhint]`](pipelines_conf.md#3-conftoml-keys), the rootdir also holds its mask as
+`conf/dmmask_hinted.fits` (uint8), the fallback of `Pipeline.dm_mask()` when there is no
+`calib/dmmask.fits`. With neither, it is `np.True_`, an all-true mask with no shape. It is the artifact `dmmask_hinted.fits`, generated rather than
+copied: its `source` is `stale` when the resolved `[dmhint]` changed (overrides included), and
+resync regenerates it from the resynced conf.
+
 ## 5. `mokainit` commands
 
 From a source confdir to a rootdir, with a `fetch` and a `command` hook; every file shown is a

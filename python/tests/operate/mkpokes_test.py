@@ -51,6 +51,19 @@ def test_dm_mask_is_the_disk_strictly_within_the_beam(pokes):
     assert mask.astype(int).tolist() == [[0, 1, 1, 0], [1, 1, 1, 1], [0, 1, 1, 0]]
 
 
+def test_dm_mask_prefers_calib_dmmask(pokes):
+    pp = pokes()
+    calib = np.zeros((3, 4), np.float32)
+    calib[1, 2] = 1
+    (pp.root_folder / "calib").mkdir(exist_ok=True)
+    fits.writeto(pp.root_folder / "calib" / "dmmask.fits", calib)
+    assert (pp.dm_mask() == calib.astype(bool)).all()
+
+
+def test_dm_mask_without_dmhint_is_scalar_true(pokes):
+    assert pokes("").dm_mask() is np.True_
+
+
 def test_a_partial_beam_is_refused_at_config_load(pokes):
     with pytest.raises(Exception, match="beam_xcent, beam_ycent, beam_rad"):
         pokes(DMHINT + "beam_rad = 1.0\n")

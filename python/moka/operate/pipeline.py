@@ -109,17 +109,21 @@ class Pipeline:
         }
 
     def dm_mask(self):
-        """Bool numpy (y, x) of [dmhint]: actuators strictly within the beam; all without one."""
-        import numpy as np
+        """Bool numpy (y, x): calib/dmmask.fits if present, else the [dmhint] one in conf/, else
+        np.True_ (all true, no shape)."""
+        from astropy.io import fits
 
-        hint = self.config.dmhint
-        assert hint is not None
-        if hint.beam_rad is None:
-            return np.ones((hint.ysize, hint.xsize), bool)
-        from pycacao.calib.mkmodes import make_disk
+        from ..provision.rootdir import DMMASK
 
-        beam = hint.beam_xcent, hint.beam_ycent, hint.beam_rad
-        return make_disk(beam, (hint.xsize, hint.ysize))
+        path = self.root_folder / "calib" / "dmmask.fits"
+        if not path.is_file():
+            if self.config.dmhint is None:
+                import numpy as np
+
+                # No size known: a scalar that broadcasts as an all-true mask.
+                return np.True_
+            path = self.root_folder / "conf" / DMMASK
+        return fits.getdata(path).astype(bool)
 
     def any_run_active(self) -> bool:
         return any(
