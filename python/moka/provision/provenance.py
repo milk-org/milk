@@ -9,6 +9,7 @@ import tomli
 import tomli_w
 from pydantic import AliasChoices, BaseModel, Field
 
+from ..errors import ProvisionError
 from .artifacts import Fingerprint
 
 
@@ -38,7 +39,12 @@ class Provenance(BaseModel):
 
 
 def read_provenance(rootdir: Path) -> Provenance:
-    with open(Path(rootdir) / "provenance.toml", "rb") as f:
+    path = Path(rootdir) / "provenance.toml"
+    if not path.is_file():
+        raise ProvisionError(
+            "Not a rootdir (no provenance.toml); pass the *-rootdir.", path=rootdir
+        )
+    with open(path, "rb") as f:
         return Provenance.model_validate(tomli.load(f))
 
 

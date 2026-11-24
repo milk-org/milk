@@ -74,6 +74,11 @@ def test_init_layout(confdir, rootdir):
     assert not (rootdir / "conf" / "data").exists()
 
 
+def test_resync_on_confdir_refused(confdir):
+    with pytest.raises(ProvisionError, match="Not a rootdir"):
+        resync(confdir, run_active=lambda: False)
+
+
 def test_init_provenance(confdir, rootdir):
     prov = read_provenance(rootdir)
     assert Path(prov.source_confdir) == confdir.resolve()
