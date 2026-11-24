@@ -136,7 +136,28 @@ $ sudo mount /milk/shm
 
 ______________________________________________________________________
 
-## 4. Further reading:
+## 4. Python packages
+
+After milk is installed and the [environment variables](#2-environment-variables) are set:
+
+```bash
+PYMILK_ENGINE=SYSTEM pip install $MILK_ROOT/python/pyMilk  # (1)!
+pip install $MILK_ROOT/plugins/cacao-src                    # (2)!
+pip install $MILK_ROOT/python/                              # (3)!
+```
+
+1. [pyMilk](../guide/pyMilk.md#1-installation): streams, FPS and processinfo from Python.
+   Reinstall it after reinstalling milk.
+2. pycacao, from the cacao plugin: needed by the moka calibration plans and `[dmhint]`.
+3. [moka](../moka/moka.md): `mokainit`, `moka`, `mokashow`.
+
+Add `-e` for a developer (editable) install.
+
+For the pyMilk engine options, requirements and usage, see the full [pyMilk](../guide/pyMilk.md) page.
+
+______________________________________________________________________
+
+## 5. Further reading:
 
 - See [Build Tiers](build_tiers.md)
 - See [Running multiple versions side by side](../developer/multiversion.md).

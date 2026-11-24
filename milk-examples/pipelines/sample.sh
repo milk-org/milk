@@ -1,6 +1,6 @@
 #!/bin/bash
 # Synoptic: mlatsim (simulated DM -> WFS) + aoloop, up to the loop running open.
-# Steps: docs/guide/pipelines_tour.md. Linkage: aoloop-conf [systemlinkage.delaysim].
+# Steps: docs/moka/tour.md. Linkage: aoloop-conf [systemlinkage.delaysim].
 set -e
 
 mkdir -p ${HOME}/AOloop2
@@ -36,7 +36,7 @@ moka measlinresp -p aoloop
 
 # 8. Control matrices from the response (writes calib/CMmodesWFS.fits, calib/CMmodesDM.fits).
 #    mkcm [FLAVOR] [-n NMODES] [-r REG]: FLAVOR tsvd (default), tikhonov (needs -r) or pinv
-#    Options: docs/guide/pipelines_plans.md.
+#    Options: docs/moka/plans.md.
 moka mkcm -p aoloop
 
 # 9. Load the control matrices, start wfs2modes, mfilt, modes2dm with loopON off.

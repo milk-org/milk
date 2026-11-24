@@ -1,10 +1,10 @@
-# Drift, resync and `mokainit`
+# moka: drift, resync and `mokainit`
 
 How confdir changes reach a rootdir, and the `mokainit` commands that build and update
 rootdirs.
 
-**Audience:** Integrator · See also: [Configuration](pipelines_conf.md) ·
-[Operating](pipelines_operate.md) · [Tour](pipelines_tour.md) · [Glossary](pipelines_glossary.md)
+**Audience:** Integrator · See also: [Configuration](conf.md) ·
+[Operating](operate.md) · [Tour](tour.md) · [Glossary](glossary.md)
 
 `mokainit` does file operations on confdirs and rootdirs; it never touches the live system.
 
@@ -23,22 +23,18 @@ Edits can then happen in two places:
 The confdir workflow, after editing the confdir:
 
 ```bash
-moka state -p basic           # (1)!
-mokainit drift basic-rootdir   # (2)!
+moka state -p basic
+mokainit drift basic-rootdir
 moka teardown -p basic
-mokainit resync basic-rootdir  # (3)!
+mokainit resync basic-rootdir  # (1)!
 moka deploy -p basic
 ```
 
-1. The drift line reports `1 artifact(s)`.
-2. What changed, and whether it is structural.
-3. Copies the changes into the rootdir.
-
-Nothing is automatic: `resync` is refused while a run process is active and never deploys.
+1. Refused while a run process is active. Never deploys.
 
 ## 2. Drift
 
-`moka state` says whether anything drifted; `mokainit drift ROOTDIR` says what:
+`moka state` says whether anything drifted; `mokainit drift ROOTDIR` says what.
 
 === "CLI"
 
@@ -63,13 +59,9 @@ data/dm.fits: source stale, local unchanged
 STRUCTURAL: compute unit delay2: added
 ```
 
-Each artifact gets two statuses against its record: `source` (the confdir now) and `local` (the
-rootdir now), each `unchanged`, `modified`, `added` or `removed`; a hook product is `stale` when
-only its declaration changed. Then come the key-level differences between the rootdir's resolved
-config and the confdir's (resolved with the recorded overrides, so overrides never show as
-drift), and the `STRUCTURAL` lines: CompUs added or removed, or whose `exec` changed. A structural
-change means the deployed set of FPSs no longer matches, and the pipeline has to be torn down and
-deployed again. The milk version is also reported when it differs from the one recorded at init.
+`source` is the confdir, `local` the rootdir; `stale`: only the hook declaration changed.
+Overrides never show as drift. A `STRUCTURAL` line (CompU added, removed, or `exec` changed)
+requires teardown and deploy.
 
 ## 3. Resync
 
@@ -92,8 +84,7 @@ Resync copies the drifted artifacts from the confdir into the rootdir and update
     report = resync(rootdir, run_active=lambda: Pipeline(rootdir).any_run_active())  # (1)!
     ```
 
-    1. A `ResyncReport`. The "is a run process active?" check is passed as a callable, so that
-       provisioning stays free of live-system code; the CLI passes this `Pipeline` query.
+    1. A `ResyncReport`. `run_active` is the "is a run process active?" check.
 
 ```text title="Output"
 applied conf.toml
@@ -113,34 +104,31 @@ In order:
    never silently lost, unless `--overwrite-local`. One refusal does not stop the others.
 4. The `--set` overrides are merged into the recorded ones.
 
-Resync never tears down or deploys anything, and the banner is always printed: it is up to you to
-run `moka teardown` and `deploy` when the resolved diff or a structural line calls for it.
-After a partial resync (a refused artifact), `drift` shows the remaining state.
+Resync never tears down or deploys. After a partial resync, `drift` shows what remains.
 
 ## 4. Where the files are
 
-|                       | confdir                                | rootdir                                                 |
-| --------------------- | -------------------------------------- | ------------------------------------------------------- |
-| conf files            | `conf.toml`, `*.toml`, `scripts/`      | `conf/` (same relative paths)                           |
-| hook products         | `data/<product>`, `data/<product>.tag` | `initdata/<product>`, `initdata/<product>.tag`          |
-| records               | —                                      | `provenance.toml`                                       |
-| FPS work folder, logs | —                                      | `work/`, `logs/`                                        |
-| calibration files     | —                                      | `calib/` ([plans](pipelines_plans.md#1-built-in-plans)) |
+|                       | confdir                                | rootdir                                        |
+| --------------------- | -------------------------------------- | ---------------------------------------------- |
+| conf files            | `conf.toml`, `*.toml`, `scripts/`      | `conf/` (same relative paths)                  |
+| hook products         | `data/<product>`, `data/<product>.tag` | `initdata/<product>`, `initdata/<product>.tag` |
+| records               | —                                      | `provenance.toml`                              |
+| FPS work folder, logs | —                                      | `work/`, `logs/`                               |
+| calibration files     | —                                      | `calib/` ([plans](plans.md#1-built-in-plans))  |
 
 A folder is a confdir when it is named `*-conf` and holds `conf.toml` but no `provenance.toml`; a
 rootdir when it is named `*-rootdir` and holds `provenance.toml` and `conf/conf.toml`.
 `mokainit list [DIR]` lists both.
 
-With a [`[dmhint]`](pipelines_conf.md#3-conftoml-keys), the rootdir also holds its mask as
+With a [`[dmhint]`](conf.md#3-conftoml-keys), the rootdir also holds its mask as
 `conf/dmmask_hinted.fits` (uint8), the fallback of `Pipeline.dm_mask()` when there is no
-`calib/dmmask.fits`. With neither, it is `np.True_`, an all-true mask with no shape. It is the artifact `dmmask_hinted.fits`, generated rather than
-copied: its `source` is `stale` when the resolved `[dmhint]` changed (overrides included), and
-resync regenerates it from the resynced conf.
+`calib/dmmask.fits`; with neither, `np.True_`. It is the artifact `dmmask_hinted.fits`,
+generated rather than copied: `stale` when the resolved `[dmhint]` changed, regenerated by
+resync.
 
 ## 5. `mokainit` commands
 
-From a source confdir to a rootdir, with a `fetch` and a `command` hook; every file shown is a
-tracked artifact:
+From a source confdir to a rootdir, with a `fetch` and a `command` hook:
 
 ```mermaid
 flowchart LR
@@ -172,7 +160,7 @@ flowchart LR
 
 `--set` values are parsed as TOML values (`0.5`, `true`, `[1, 2]`); anything else is taken as a
 string. Identity keys (`long_name`, `name`, `loop_number`) cannot be overridden. Errors and the
-environment are described in [Operating: errors](pipelines_operate.md#3-errors).
+environment are described in [Operating: errors](operate.md#3-errors).
 
 The Python functions behind these commands:
 
@@ -190,5 +178,4 @@ rootdir = init(confdir, overrides={"compute_units.delay0.fps.delaysec": 0.02})  
 2. Runs the pending hooks; returns their ids.
 3. Consolidates, copies, writes `provenance.toml` and resolves the new rootdir once to check it.
 
-`drift` and `resync` are shown above. Their reports are plain dataclasses with the same content as
-the CLI output.
+`drift` and `resync`: [§2](#2-drift), [§3](#3-resync).

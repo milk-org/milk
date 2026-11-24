@@ -39,15 +39,15 @@ list at each slice boundary.
   2026-11-20; 017 §4.1). Not built.
 - [future] `RunStartAO`: `moka runstart -p aoloop` still starts its four units without loading the
   CM pair; `moka spool` is the start that loads it (017 §7.6).
-- [next] `docs/guide/pipelines_plans.md` §2 (built-in tasks) has no row for `SetLoopOff` or
+- [next] `docs/moka/plans.md` §2 (built-in tasks) has no row for `SetLoopOff` or
   `LoadCM` (017-1).
 - [later] `moka nuke` on a pipeline whose `moka_plans.py` does not load deletes the rootdir
   without running teardown.
 - [later] `runstart = []` is accepted; `state()` then reports `running` for any deployed pipeline.
 - [future] `milk-demopipeline`: a ready-to-run demo that deploys and runs a small pipeline end to
   end from Python (also in `docs/notes_for_future.md`).
-- [next] Check the code against what the docs now state (pipelines_operate, pipelines_internals
-  glossary): a hand edit in `rootdir/conf/` takes effect at the next deploy; from `cold` only
+- [next] Check the code against what the docs now state (`docs/moka/operate.md`,
+  `docs/moka/internals.md` glossary): a hand edit in `rootdir/conf/` takes effect at the next deploy; from `cold` only
   `deploy` leaves it, `teardown`/`state`/`nuke` always accepted; `mixed` counts as consistent;
   `link` refused unless `deployed` or `configured`. Pin with tests or fix the docs.
 - [next] `milk-examples/pipelines/pipelinebasic-conf/conf.toml` (copy of the test confdir) keeps

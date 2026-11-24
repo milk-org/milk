@@ -1,143 +1,9 @@
-# Pipelines: internals
+# moka: glossary
 
-How the `moka` package is built: its layout and layering, the objects behind the commands, how
-the state is computed, the task contract, the errors, and the normative terms.
+The moka terms. Specs and docs use these words only in these senses.
 
-**Audience:** Internals · See also: [Pipelines](pipelines.md) · [Plans and tasks](pipelines_plans.md) ·
-[Configuration](pipelines_conf.md) · [Glossary](pipelines_glossary.md)
-
-## 1. Package layout and layering
-
-```text
-milk/
-  config/      what a pipeline is: the model, {var} substitution, confresolve. Pure data.
-  provision/   confdirs and rootdirs: clone, consolidate, init, drift, resync. Files only.
-  operate/     the live pipeline: Pipeline, ComputeUnit, tasks, plans, state, rundir.
-  show/        mokashow: displays (matplotlib) of pipeline results.
-  errors.py    every exception of the package
-  env.py       the only reader of the MILK_* environment variables
-```
-
-The CLIs only parse arguments and call the API; `provision` and `operate` both build on `config`
-and never import each other.
-
-```mermaid
-flowchart TD
-    PI["mokainit"] --> PR["moka.provision<br/>files only"]
-    PP["moka"] --> OP["moka.operate<br/>live system, reads only the rootdir"]
-    MS["mokashow"] --> SH["moka.show"]
-    PR --> CF["moka.config<br/>pure data"]
-    OP --> CF
-    PR -. "never imports" .- OP
-```
-
-Provisioning is file operations and never touches SHM, FPS, tmux or processes; its only contact
-with the live system is the "is a run process active?" callable that `resync` receives
-([Drift and resync](pipelines_provision.md#3-resync)). Operating reads only the rootdir.
-
-## 2. Configuration: `PipelineConfig`
-
-`confresolve` is the only way to obtain a configuration ([Configuration:
-resolving](pipelines_conf.md#4-resolving-includes-overrides-substitution)). It merges the layers,
-expands the substitutions and validates, every time it is called, with no side effects. The
-result is a frozen `PipelineConfig` (a pydantic model): `long_name`, `name`, `loop_number`,
-`compute_units` (a dict of `ComputeUnitSpec`: `exec`, `fps`), `dataloads`, `hooks`,
-`systemlinkage`, `plans`, `runstart`, `teardown_kill_tmux`. `fps_name(cu)` is the one place where FPS names
-are made.
-
-## 3. Operating: `Pipeline` and `ComputeUnit`
-
-```python
-from moka.operate.pipeline import Pipeline
-
-pp = Pipeline("basic")                 # <cwd>/basic-rootdir
-pp = Pipeline("/elsewhere/basic-rootdir")
-pp.config                              # the resolved PipelineConfig
-pp.root_folder, pp.work_folder         # the rootdir, and rootdir/work (the FPS work folder)
-pp.compute_units                       # {'delay0': ComputeUnit, 'delay1': ComputeUnit}
-pp.compute_units["delay0"].fps         # the pyMilk FPS, or None while it does not exist
-pp.any_run_active()
-pp.link("loopback"); pp.linked(); pp.unlink("all")
-```
-
-A `Pipeline` is a view on one rootdir: it resolves the configuration once, at construction, and
-derives everything else from the live system when asked. `compute_units` builds fresh
-`ComputeUnit` views on each access; a `ComputeUnit` wraps one `fpsexec` executable and its FPS
-(`fpsinit`, `confstart`, `confstop`, `runstart`, `runstop` run the executable's commands, in tmux
-when asked). You seldom call these yourself: tasks do.
-
-## 4. State
-
-```python
-from moka.operate.state import state
-
-st = state(pp)            # PipelineState(state=<State.CONFIGURED>, reasons=())
-st.state.value            # 'cold' | 'inconsistent' | 'deployed' | 'configured' | 'running' | 'mixed'
-```
-
-The state is never stored. It is computed from the rundir claim (`$MILK_SHM_DIR/pipe_rundirs/ <name>/`: boot id, rootdir, loop number) and from the existence and the conf/run status of each
-CompU's FPS. `cold` means nothing is deployed; `inconsistent` means the rundir and the FPSs
-disagree (a stale rundir from a previous boot, an FPS destroyed by hand, a failed deploy), and only
-`teardown` is accepted from there. Operations that need a given state raise a `StateError`
-(`ColdSystemError`, `InconsistentStateError`) that names the command to run. The diagrams are in
-[Operating: lifecycle](pipelines_operate.md#1-lifecycle).
-
-## 5. Errors and environment
-
-Every exception of the package lives in `moka.errors`, under `MilkError`: `EnvError`,
-`ConfigError`, `ProvisionError`, `TaskError` (`TaskCannotRunError`, `TaskDidNotSucceedError`),
-`ComputeUnitError`, `LinkageError`, `StateError` (`ColdSystemError`, `InconsistentStateError`)
-and `BestEffortError` (the aggregate of a best-effort plan, with `.failures`). An error carries
-context when it has some (`pipeline`, `compu`, `task`, `path`, `cmd`, `stderr`), appended to its
-message one per line. Library code never prints or exits; pyMilk exceptions propagate as they
-are. How the CLIs print errors is in [Operating: errors](pipelines_operate.md#3-errors).
-
-`moka.env` reads `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` when a function is called, not
-at import, and raises `EnvError` naming what is missing. `import moka` and `confresolve` work
-without a milk environment; anything that touches SHM or runs an executable needs one.
-
-## 6. Task contract
-
-A task subclasses `moka.operate.tasks.Task` and implements `forward()` and `success()`, plus
-`_refusal()` when it has preconditions. `pipeline.task_do` calls them in this order:
-
-```mermaid
-flowchart TD
-    S1{"success()"} -- yes --> D1["done: no-op"]
-    S1 -- no --> C{"can()"}
-    C -- no --> E1["TaskCannotRunError(failure_reason)"]
-    C -- yes --> F["forward()"]
-    F --> S2{"success()"}
-    S2 -- no --> E2["TaskDidNotSucceedError(failure_reason)"]
-    S2 -- yes --> D2["done"]
-```
-
-The no-op on an already reached goal is what makes plans idempotent.
-
-- **`success()`** checks whether the goal already holds, and must not have side effects.
-- **`can()`** is derived: `False` when `_refusal()` returns a reason, which it stores in
-  `self.failure_reason`. `_refusal()` returns `None` by default.
-- **`forward()`** does the work. For asynchronous effects (tmux, processes), it waits with
-  `wait_until(self.success, self.TIMEOUT)` (from `moka.wait`); `TIMEOUT` defaults to 10 s.
-- **`Task`** acts on the pipeline as a whole and refuses a step that names CompUs.
-  **`TaskOnCompuSet`** acts on the step's CompU subset: `self.compute_units` is that subset as
-  `{name: ComputeUnit}`, `self._existing()` the part of it whose FPS exists, as
-  `(ComputeUnit, FPS)` pairs. A step that names none gets the subset that `locate_defaults()` sets:
-  every CompU. `COUNT` fixes the subset's size; `locate_defaults()` then requires the step to
-  name it. **`TaskOnOneCompu`** is the `COUNT = 1` case, with `self.compu` and `self.fps`. A
-  wrong subset is a `ConfigError` when the plan is built.
-- Tasks act on the live pipeline (SHM, FPS, tmux, processes) and never modify `rootdir/conf/`.
-
-Tasks defined in `moka/operate/tasks.py` are registered under their class name
-automatically. A task defined anywhere else needs `TASKS.register("MyTask", MyTask)`, or a
-pipeline's `scripts/moka_plans.py`; it can then be named in a `Step`
-([Plans and tasks](pipelines_plans.md#4-custom-plans)).
-
-## 7. Normative glossary
-
-The normative terms of the pipelines design. Specs and docs use
-these words only in these senses. Short definitions for users are in the
-[Glossary](pipelines_glossary.md).
+**Audience:** All · See also: [moka](moka.md) · [Configuration](conf.md) ·
+[Operating](operate.md) · [Internals](internals.md)
 
 | Term                                                   | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -148,13 +14,13 @@ these words only in these senses. Short definitions for users are in the
 | <a id="term-fingerprint"></a>**fingerprint**           | A small record that identifies an artifact's content and origin without storing the content: `content_hash` (sha256 of the file bytes; for a directory product, a hash over the sorted (relpath, hash) list, with empty directories included as `(relpath/, "")`), `size`, and for hook artifacts also `decl_digest` (a hash of the hook's TOML declaration) plus informational `source` and `time`. Equality is decided **only** by `content_hash` and `decl_digest`. Modes and mtime are ignored. Symlinks inside products are refused. The `.tag` suffix is reserved. |
 | <a id="term-tagfile"></a>**tagfile**                   | The recorded fingerprint of a hook artifact, stored next to it as `<product>.tag`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | <a id="term-consolidate"></a>**consolidate**           | Run the pending conf hooks of a confdir. Local to the confdir. It can be re-run at any time without affecting any rootdir.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| <a id="term-confresolve"></a>**confresolve**           | API call: a TOML set (from a confdir or a rootdir) plus overrides → one validated `PipelineConfig`. Layers are merged and substitutions resolved. It always re-resolves (there is no cache this round) and has no side effects.                                                                                                                                                                                                                                                                                                                                          |
+| <a id="term-confresolve"></a>**confresolve**           | API call: a TOML set (from a confdir or a rootdir) plus overrides → one validated `PipelineConfig`. Layers are merged and substitutions resolved. It always re-resolves and has no side effects.                                                                                                                                                                                                                                                                                                                                                                         |
 | <a id="term-identity-keys"></a>**identity keys**       | `long_name`, `name` (the short name) and `loop_number`. Paths, FPS names and the uniqueness rule derive from them. They are never overridable, and resync refuses to change them.                                                                                                                                                                                                                                                                                                                                                                                        |
-| <a id="term-init"></a>**init**                         | Create a rootdir from a confdir: consolidate if needed, copy the conf file artifacts to `rootdir/conf/`, copy data and tagfiles to `rootdir/initdata/`, write `provenance.toml` (including the overrides used), and confresolve successfully. Refuses if the rootdir exists (use resync). Not atomic this round: on failure it reports and leaves what it wrote.                                                                                                                                                                                                         |
+| <a id="term-init"></a>**init**                         | Create a rootdir from a confdir: consolidate if needed, copy the conf file artifacts to `rootdir/conf/`, copy data and tagfiles to `rootdir/initdata/`, write `provenance.toml` (including the overrides used), and confresolve successfully. Refuses if the rootdir exists (use resync). Not atomic: on failure it reports and leaves what it wrote.                                                                                                                                                                                                                    |
 | <a id="term-rootdir"></a>**rootdir**                   | `<short>-rootdir/`. The authoritative, long-lived home of one pipeline instance after init. Hand edits of `rootdir/conf/` take effect at the next deploy and are reported as drift.                                                                                                                                                                                                                                                                                                                                                                                      |
 | <a id="term-drift"></a>**drift**                       | A change between a conf artifact's recorded fingerprint and its current one, in the confdir or in the rootdir. It is reported **per artifact**, plus a **key-level resolved diff** (a difference in the confresolve output). Artifact drift is reported even when the resolved config is unchanged. Drift is only ever reported; resync is the only way to apply confdir changes to a rootdir.                                                                                                                                                                           |
 | <a id="term-resync"></a>**resync**                     | Explicit propagation of selected drifted conf artifacts from the confdir into an existing rootdir. Records new fingerprints in provenance and returns a `ResyncReport`. Refused while the pipeline is running, refused for identity-key changes, and refuses to overwrite a locally modified rootdir artifact unless `--overwrite-local` is given.                                                                                                                                                                                                                       |
-| <a id="term-provisioning"></a>**provisioning**         | Umbrella term for clone, consolidate, confresolve, init, drift and resync. File operations only; API `moka.provision`, CLI `mokainit`. The only contact with the live system: resync reads `any_run_active()` (§4.0 rule 5). Provisioning never writes to the rundir.                                                                                                                                                                                                                                                                                                    |
+| <a id="term-provisioning"></a>**provisioning**         | Umbrella term for clone, consolidate, confresolve, init, drift and resync. File operations only; API `moka.provision`, CLI `mokainit`. The only contact with the live system: resync reads `any_run_active()`. Provisioning never writes to the rundir.                                                                                                                                                                                                                                                                                                                  |
 | <a id="term-rundir"></a>**rundir**                     | `$MILK_SHM_DIR/pipe_rundirs/<short>/`. Ephemeral. It holds only non-derivable runtime facts: boot_id, the claim (short name, loop_number, **the deployed FPS names**), and the **applied linkage pairs**. `deploy` creates it and `teardown` removes it. Teardown, unlink and the consistency check read what was deployed from here, not from the current config.                                                                                                                                                                                                       |
 | <a id="term-cold"></a>**cold**                         | No rundir and no FPS for this pipeline. `deploy` is the only plan that leaves cold; `teardown`, `state` and `nuke` are always accepted. Other operations raise `ColdSystemError` ("not deployed on this boot; run deploy").                                                                                                                                                                                                                                                                                                                                              |
 | <a id="term-inconsistent"></a>**inconsistent**         | Any mismatch between the rundir and the live FPS set: a stale rundir (boot_id mismatch), a valid rundir with some **recorded** FPS missing (for example after a failed deploy), or pipeline FPS present without a valid rundir. Every operation except `teardown` raises `InconsistentStateError`, with guidance to run teardown.                                                                                                                                                                                                                                        |

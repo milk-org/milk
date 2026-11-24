@@ -1,20 +1,19 @@
-# Plans and tasks
+# moka: plans and tasks
 
 The built-in plans and tasks, how a plan runs, and how to write and register your own plans.
 
-**Audience:** Integrator · See also: [Operating](pipelines_operate.md) ·
-[Configuration](pipelines_conf.md) · [Internals: task contract](pipelines_internals.md#6-task-contract) ·
-[Glossary](pipelines_glossary.md)
+**Audience:** Integrator · See also: [Operating](operate.md) ·
+[Configuration](conf.md) · [Internals: task contract](internals.md#6-task-contract) ·
+[Glossary](glossary.md)
 
-A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
-the pipeline as a whole, or on a CompU subset given at construction. Without one, the task picks
-its own: all CompUs (`RunStart`: the [`runstart`](pipelines_conf.md#3-conftoml-keys) list;
-`SetLoopOff`: the one `cacao-fpsexec-mfilt` CompU; `SetLinResp`, `WaitLinResp`: the one
-`cacao-fpsexec-cacaoac-measlinresp` CompU), or it refuses (`LoadCM`). A **plan** is data: a name, ordered **steps**
-(a task name and an optional CompU subset), a failure policy and the states it accepts to start
-from. Plans and tasks are Python objects in `moka.operate.plans` and `moka.operate.tasks`, each
-looked up by name in a registry (`PLANS`, `TASKS`). Each pipeline adds its own plans and tasks
-over these ([§4](#4-custom-plans)).
+A **task** is one idempotent action on the live pipeline, on the whole pipeline or on a CompU
+subset. Without a subset, a task acts on all CompUs, except `RunStart` (the
+[`runstart`](conf.md#3-conftoml-keys) list), `SetLoopOff` (the `cacao-fpsexec-mfilt` CompU),
+`SetLinResp`, `WaitLinResp` (the `cacao-fpsexec-cacaoac-measlinresp` CompU) and `LoadCM`
+(refuses). A **plan** is a name, ordered **steps** (a task name and an optional CompU subset), a
+failure policy and the states it accepts to start from. Registries: `PLANS` in
+`moka.operate.plans`, `TASKS` in `moka.operate.tasks`; a pipeline adds its own
+([§4](#4-custom-plans)).
 
 ## 1. Built-in plans
 
@@ -32,12 +31,10 @@ over these ([§4](#4-custom-plans)).
 | `takeref`     | RunStart[acquWFS] → TakeRef                                                     | `abort`       | `consistent`         |
 | `takedark`    | TakeDark                                                                        | `abort`       | `consistent`         |
 
-`mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
-with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
-CompUs are idle); a second run skips that start and starts `mlat` again.
+`mlat` needs CompUs named `acquWFS` and `mlat`. It leaves `acquWFS` running.
 
 `moka mkpokes [TYPE]` writes the poke cube `<rootdir>/calib/RMmodesDM.fits` (float32, header
-`POKETYPE`) over the actuators of the [`[dmhint]`](pipelines_conf.md#3-conftoml-keys) mask, which
+`POKETYPE`) over the actuators of the [`[dmhint]`](conf.md#3-conftoml-keys) mask, which
 it needs. `TYPE` is `hadamard` (default: `next_pow2(Nact)` slices) or `zonal` (one actuator per
 slice). A cube already of that type and DM size is left alone; a hand-made one (no `POKETYPE`) is
 replaced. The cube is FITS (NAXIS1, NAXIS2, NAXIS3) = (`xsize`, `ysize`, modes).
@@ -88,40 +85,22 @@ parameter. Step by step:
 2. `RunStop[modes2dm,mfilt,wfs2modes]`: they copy the matrix and the mode count at run start.
 3. `LoadCM[wfs2modes,modes2dm]`: each cube into the `immodes` stream of its CompU, as
    (`xsize`, `ysize`, modes). It refuses if the files are missing, their mode counts differ, or
-   `CMmodesDM.fits` is not the [`[dmhint]`](pipelines_conf.md#3-conftoml-keys) size.
+   `CMmodesDM.fits` is not the [`[dmhint]`](conf.md#3-conftoml-keys) size.
 4. `RunStart[acquWFS]`: skipped if it runs.
 5. `RunStart[wfs2modes,mfilt,modes2dm]`: one at a time, in that order. It waits for each run flag
    only; nothing checks that the stream a CompU reads exists or has the size the pair implies.
 6. `SetLoopOff[mfilt]`: checked again once `mfilt` runs.
 
-`spool` never writes to the DM; whatever command it holds stays. Closing the loop is left to the
-operator, in `milk-fpsCTRL` on the `mfilt` FPS: `loopON`, `loopgain`, `loopmult`, `looplimit`, and
-`loopZERO` to zero the command. A second `spool`, for instance after a new `mkcm`, restarts the
-three CompUs with the new pair.
+`spool` never writes to the DM. To close the loop, set `loopON`, `loopgain`, `loopmult`,
+`looplimit` on the `mfilt` FPS in `milk-fpsCTRL`; `loopZERO` zeroes the command. Run `spool`
+again after a new `mkcm`.
 
 `moka takeref [-n NFRAMES | -t SECONDS]` averages the next frames of `aol<loop_number>_imWFS1` into `aol<loop_number>_wfsref`, `aol<loop_number>_wfsrefc` and `calib/wfsref.fits`, as `cacao-aorun-026-takeref` does; acquWFS subtracts `wfsrefc` into `imWFS2` from its next frame.
 
 `moka takedark [-n NFRAMES | -t SECONDS]` averages `aol<loop_number>_wfsim` the same way into `aol<loop_number>_wfsdark` and `calib/wfsdark.fits`, as `cacao-aorun-005-takedark` does. It creates `wfsdark` when the stream is missing; acquWFS connects to it only when it starts, so a first dark needs acquWFS restarted. The plan does not remove the light: a pipeline wraps it with its own tasks for that, as `milk-examples/pipelines/aoloop-conf/scripts/moka_plans.py` does ([§4](#4-custom-plans)).
 
-Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
-(`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
-on those CompUs. From Python, `run_plan(pipeline, name, compus)` applies the subset to every step
-of any plan, so a plan with a pipeline-wide task (`deploy`, `teardown`) is then a `ConfigError`.
-
-=== "CLI"
-
-    ```bash
-    moka deploy -p basic
-    ```
-
-=== "Python"
-
-    ```python
-    from moka.operate.pipeline import Pipeline
-    from moka.operate.plans import run_plan
-
-    run_plan(Pipeline("basic"), "deploy")
-    ```
+`run_plan(pipeline, name, compus)` applies a CompU subset to every step of any plan; a plan with
+a pipeline-wide task (`deploy`, `teardown`) then raises `ConfigError`.
 
 ## 2. Built-in tasks
 
@@ -146,8 +125,8 @@ of any plan, so a plan with a pipeline-wide task (`deploy`, `teardown`) is then 
 
 ## 3. Running a single task
 
-`Pipeline.task_do(task)` runs one task, on its default CompUs or on a subset. It is the low-level entry
-point and bypasses the state gate.
+`Pipeline.task_do(task)` runs one task, on its default CompUs or on a subset, without the state
+gate. It skips the work when `success()` already holds.
 
 ```python
 from moka.operate.pipeline import Pipeline
@@ -164,28 +143,19 @@ pp.task_do(RunStop(pp, ["wfscam", "dmdelay"]))
 2. One CompU.
 3. Waits (up to 120 s) for a run that ends by itself.
 
-`task_do` skips the work when the goal already holds, which is what makes every plan safe to
-re-run.
-
 ## 4. Custom plans
 
 A pipeline carries its own plans and tasks in its confdir, from two optional sources:
 `[plans.<name>]` tables in `conf.toml`, and the file `scripts/moka_plans.py`. Both are
-[conf files](pipelines_conf.md#1-the-confdir), copied to `rootdir/conf/` at init and tracked by
+[conf files](conf.md#1-the-confdir), copied to `rootdir/conf/` at init and tracked by
 drift. They are read from the rootdir.
 
 `Pipeline.plans` and `Pipeline.tasks` look a name up in the pipeline's own definitions first,
-then in `PLANS` and `TASKS`. `run_plan`, `run` and `moka` resolve names through them, so
-`moka -h -p PIPE` lists the pipeline's plans as commands, and
-[`moka plans`](pipelines_operate.md#22-plans) their status. A local definition that has the name of
-a built-in one (or a Python plan that has the name of a TOML plan) overrides it and logs a
-warning. A plan named like a fixed `moka` command (`state`, `plans`, `tasks`, `link`, `unlink`, `nuke`) is refused
-by the CLI only: every `moka` command on that pipeline then fails with an error; `run_plan` from
-Python is unaffected.
-
-The local definitions are loaded on the first access to `plans` or `tasks`, not when the
-`Pipeline` is constructed. They never change `PLANS` and `TASKS`, so two pipelines in one
-process do not see each other's definitions.
+then in `PLANS` and `TASKS`; `run_plan`, `run` and `moka` resolve names through them. A local
+definition with the name of a built-in one (or a Python plan with the name of a TOML plan)
+overrides it, with a warning. A plan named like a fixed `moka` command (`state`, `plans`, `tasks`,
+`link`, `unlink`, `nuke`) makes every `moka` command on that pipeline fail; `run_plan` is
+unaffected. Local definitions never change `PLANS` and `TASKS`.
 
 === "conf.toml"
 
@@ -234,9 +204,7 @@ process do not see each other's definitions.
     ```
 
     Both lists are optional. The file is imported, not sandboxed: it is trusted like a
-    [`command` hook](pipelines_conf.md#33-hooks-fetching-and-generating-files). An error in it
-    surfaces on the first access to `plans` or `tasks`; `moka -h` then lists the built-in plans
-    only.
+    [`command` hook](conf.md#33-hooks-fetching-and-generating-files).
 
 From Python, `run(pipeline, plan)` runs any plan, registered or not, and `PLANS.register(name, plan)` adds a plan for every pipeline of the current process:
 
@@ -255,17 +223,17 @@ run(pp, Plan(
 ))
 ```
 
-| Field             | Type                                            | Default        | Meaning                                                                                                                                                                                        |
-| ----------------- | ----------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Step.task`       | `str`                                           | —              | A task name of the pipeline, which is the task's class name                                                                                                                                    |
-| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None`: the task's default, all CompUs for most (see the top of this page). Unknown names raise `ConfigError`                                                                |
-| `Plan.name`       | `str`                                           | —              | The plan's name, which is also the `moka` command name. In TOML, the table name                                                                                                                |
-| `Plan.steps`      | `tuple[Step, ...]`                              | —              | The steps, run in order                                                                                                                                                                        |
-| `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                                         |
-| `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
-| `Plan.compus_arg` | `bool`                                          | `False`        | `True`: its `moka` command takes `[CU]...` and runs every step on those CompUs. Not settable in TOML                                                                                           |
-| `Plan.params`     | `tuple[Param, ...]`                             | `()`           | Values its `moka` command takes, handed to every task of the plan (below). Not settable in TOML                                                                                                |
-| `Plan.help`       | `str`                                           | `""`           | One line for `moka -h` and `moka <plan> -h`. In TOML: the `help` key                                                                                                                           |
+| Field             | Type                                            | Default        | Meaning                                                                                                                                                                              |
+| ----------------- | ----------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Step.task`       | `str`                                           | —              | A task name of the pipeline, which is the task's class name                                                                                                                          |
+| `Step.compus`     | `tuple[str, ...] \| None`                       | `None`         | The CompU subset; `None`: the task's default, all CompUs for most (see the top of this page). Unknown names raise `ConfigError`                                                      |
+| `Plan.name`       | `str`                                           | —              | The plan's name, which is also the `moka` command name. In TOML, the table name                                                                                                      |
+| `Plan.steps`      | `tuple[Step, ...]`                              | —              | The steps, run in order                                                                                                                                                              |
+| `Plan.on_failure` | `"abort" \| "best_effort"`                      | `"abort"`      | `abort` stops at the first failing step and raises its error. `best_effort` runs every step, then raises one `BestEffortError` that lists the failures                               |
+| `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
+| `Plan.compus_arg` | `bool`                                          | `False`        | `True`: its `moka` command takes `[CU]...` and runs every step on those CompUs. Not settable in TOML                                                                                 |
+| `Plan.params`     | `tuple[Param, ...]`                             | `()`           | Values its `moka` command takes, handed to every task of the plan (below). Not settable in TOML                                                                                      |
+| `Plan.help`       | `str`                                           | `""`           | One line for `moka -h` and `moka <plan> -h`. In TOML: the `help` key                                                                                                                 |
 
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
 
@@ -284,7 +252,7 @@ Plan("probe", (Step("Probe"),), params=(Param("kind", positional=True), Param("a
 anything else is a usage error (exit code 2).
 
 A task of your own subclasses `Task`; see
-[Internals: task contract](pipelines_internals.md#6-task-contract).
+[Internals: task contract](internals.md#6-task-contract).
 
 ## 5. How a plan runs
 
@@ -309,6 +277,5 @@ flowchart LR
 3. **Do.** `pipeline.task_do(task)` runs for each step, in order. `abort` stops at the first
    failure; `best_effort` runs every step, then raises one `BestEffortError`.
 
-The run logs its progress to the `moka.plan` logger at `INFO`: the state, each step's start and
-outcome, a verdict, with the data in the record's `moka` attribute. Without a handler, nothing is
-printed.
+Progress goes to the `moka.plan` logger at `INFO`, with the data in the record's `moka`
+attribute.

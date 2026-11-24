@@ -8,8 +8,8 @@ This workspace is the `python/` folder of the milk repository. Before any task:
 2. Read `../AGENTS.md` for repository context. `../docs/` is the human source of truth. Link to it;
    never duplicate it.
 3. Pipeline work uses the terms of the normative glossary
-   (`../docs/guide/pipelines_internals.md` §7) exactly.
-4. If a brief, plan or task conflicts with `../docs/guide/pipelines_*.md`, stop and ask Vincent.
+   (`../docs/moka/glossary.md`) exactly.
+4. If a brief, plan or task conflicts with `../docs/moka/*.md`, stop and ask Vincent.
    Do not resolve the conflict yourself.
 5. Formatting is delegated to pre-commit. Do not spend effort formatting Python by hand: no manual
    line wrapping, import sorting or style passes, and no formatting-only edits or tasks. At the end

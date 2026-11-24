@@ -94,18 +94,18 @@ nav:
     - Readline Keys: guide/helpreadline.md
     - Scripts: guide/scripts.md
     - pyMilk: guide/pyMilk.md
-    - Pipelines:
-      - Introduction: guide/pipelines.md
-      - Operate:
-        - Tour: guide/pipelines_tour.md
-        - "Operating: moka": guide/pipelines_operate.md
-      - Integrate:
-        - Configuration Files: guide/pipelines_conf.md
-        - "Drift, Resync & mokainit": guide/pipelines_provision.md
-        - Plans & Tasks: guide/pipelines_plans.md
-      - Internals: guide/pipelines_internals.md
-      - Glossary: guide/pipelines_glossary.md
     - Valkey Integration: guide/valkey.md
+  - moka:
+    - Introduction: moka/moka.md
+    - Operate:
+      - Tour: moka/tour.md
+      - Operating: moka/operate.md
+    - Integrate:
+      - Configuration Files: moka/conf.md
+      - "Drift, Resync & mokainit": moka/provision.md
+      - Plans & Tasks: moka/plans.md
+    - Internals: moka/internals.md
+    - Glossary: moka/glossary.md
   - Developer Guide:
     - Tutorial: developer/tutorial.md
     - Coding Standards: developer/coding_standards.md

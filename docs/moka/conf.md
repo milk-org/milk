@@ -1,11 +1,11 @@
-# Pipeline configuration files
+# moka: configuration files
 
 How a confdir is laid out, what `conf.toml` can say, and how the files are resolved into one
 configuration.
 
-**Audience:** Integrator · See also: [Pipelines](pipelines.md) ·
-[Drift and resync](pipelines_provision.md) · [Plans and tasks](pipelines_plans.md) ·
-[Glossary](pipelines_glossary.md)
+**Audience:** Integrator · See also: [moka](moka.md) ·
+[Drift and resync](provision.md) · [Plans and tasks](plans.md) ·
+[Glossary](glossary.md)
 
 ## 1. The confdir
 
@@ -25,7 +25,7 @@ is computed on, file by file. Everything else in the folder is ignored.
 `data/` is filled by **conf hooks** ([below](#33-hooks-fetching-and-generating-files)) when the
 confdir is consolidated, and copied to `rootdir/initdata/` at init.
 
-Custom plans and tasks are described in [Plans and tasks](pipelines_plans.md#4-custom-plans).
+Custom plans and tasks are described in [Plans and tasks](plans.md#4-custom-plans).
 
 ## 2. A minimal `conf.toml`
 
@@ -81,7 +81,7 @@ which are kept and serve as variables for [substitution](#43-substitution).
 | `name`                   | yes      | Identity key, the short name. The rootdir is `<name>-rootdir/`, the rundir `pipe_rundirs/<name>/`, and FPS names are `<name>_<cu>`.                                                                                                                           |
 | `loop_number`            | yes      | Identity key. Unique among the deployed pipelines of a machine.                                                                                                                                                                                               |
 | `includes`               | no       | Confdir-relative TOML files merged below `conf.toml`, in order.                                                                                                                                                                                               |
-| `[plans.<name>]`         | no       | Plans of this pipeline: `steps`, optional `on_failure`, `accepts`, `help`. See [Plans and tasks](pipelines_plans.md#4-custom-plans).                                                                                                                          |
+| `[plans.<name>]`         | no       | Plans of this pipeline: `steps`, optional `on_failure`, `accepts`, `help`. See [Plans and tasks](plans.md#4-custom-plans).                                                                                                                                    |
 | `runstart`               | no       | CompU names that `runstart` starts, one at a time in this order, and `running` requires. Default: every CompU, all at once.                                                                                                                                   |
 | `teardown_kill_tmux`     | no       | `true`: `teardown` kills the CompUs' tmux sessions. Default `false`.                                                                                                                                                                                          |
 | `[dmhint]`               | no       | The DM: `xsize`, `ysize`, optional beam `beam_xcent`, `beam_ycent`, `beam_rad` (all three or none; cacao's `CACAO_DM_*`). Gives the hinted DM mask (`Pipeline.dm_mask()` without a `calib/dmmask.fits`): actuators strictly within the beam, all without one. |
@@ -136,8 +136,7 @@ target = "dm07disp"           # the stream to create
 
 The `LoadData` step of `deploy` creates each `target` stream from the FITS file `source`, with
 the file's shape and dtype, axis for axis (pyMilk `symcode=0`, see
-[pyMilk: data ordering](pyMilk.md#3-data-ordering)). Every stream a CompU triggers on should exist before its conf process
-starts, so this is the way to create the input streams of a pipeline.
+[pyMilk: data ordering](../guide/pyMilk.md#3-data-ordering)). Use it to create the streams a CompU triggers on.
 
 ### 3.3. Hooks: fetching and generating files
 
@@ -180,12 +179,11 @@ output = "source_point"
 A linkage is a named set of symlinks in `$MILK_SHM_DIR`: each local stream file
 `<local>.im.shm` is pointed at `<remote>.im.shm`. `moka link <mode>` applies one,
 `unlink <mode>` or `unlink all` removes them, and `teardown` removes them all. `all` is thus a
-reserved mode name. When linking is allowed is in [Operating: commands](pipelines_operate.md#2-commands).
+reserved mode name. When linking is allowed is in [Operating: commands](operate.md#2-commands).
 
 ## 4. Resolving: includes, overrides, substitution
 
-Resolving reads the files every time and turns them into the configuration the pipeline will
-actually use.
+Resolving merges the files and overrides into one configuration.
 
 === "CLI"
 
@@ -203,9 +201,8 @@ actually use.
     config = confresolve("pipelinebasic-conf")    # (1)!
     config = confresolve("basic-rootdir")         # (2)!
     config = confresolve("pipelinebasic-conf", {"compute_units.delay0.fps.delaysec": 0.02})
-    config.name, config.loop_number, config.fps_name("delay0")  # 'basic', 0, 'basic_delay0'
-    config.compute_units["delay0"].exec           # 'milk-fpsexec-mem-streamdelay'
-    config.compute_units["delay0"].fps["delaysec"]  # 0.02
+    config.fps_name("delay0")
+    config.compute_units["delay0"].fps["delaysec"]
     ```
 
     1. A confdir.
@@ -221,7 +218,7 @@ Tables merge recursively, so a higher layer can change one key of a CompU. Lists
 (`[[dataloads]]`, `[[hooks]]`) are replaced whole. Then the [substitutions](#43-substitution) are
 expanded on the merged result and the whole is validated. Errors come out as one `ConfigError`,
 with one `dotted.key: <why>` line per invalid key. The result object is described in
-[Internals: configuration](pipelines_internals.md#2-configuration-pipelineconfig).
+[Internals: configuration](internals.md#2-configuration-pipelineconfig).
 
 ### 4.1. Includes
 
@@ -230,8 +227,7 @@ includes = ["common/streams.toml", "site.toml"]
 ```
 
 Paths are relative to the confdir and must stay inside it. Included files are merged in order,
-below `conf.toml`, and may not have `includes` of their own (one level only). Includes are a way
-to share a stream naming scheme or a procinfo setup between pipelines of the same family.
+below `conf.toml`, and may not have `includes` of their own (one level only).
 
 ### 4.2. Overrides
 
@@ -241,7 +237,7 @@ mokainit init pipelinebasic-conf --set compute_units.delay0.fps.delaysec=0.02
 
 `--set` takes a dotted key and a value parsed as TOML (`0.02`, `true`, `[1, 2]`; anything that
 does not parse is a string). Overrides are recorded in the rootdir's `provenance.toml` and
-replayed every time the rootdir is resolved, so they survive a resync. `resync --set` adds to
+replayed every time the rootdir is resolved. `resync --set` adds to
 them.
 
 ### 4.3. Substitution

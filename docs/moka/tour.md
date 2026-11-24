@@ -1,14 +1,12 @@
-# Pipelines: tour
+# moka: tour
 
-From an example confdir to a running pipeline and back, with the commands and their Python
-equivalents.
+From an example confdir to a running pipeline and back.
 
-**Audience:** Operator · See also: [Pipelines](pipelines.md) · [Operating](pipelines_operate.md) ·
-[Configuration](pipelines_conf.md) · [Drift and resync](pipelines_provision.md)
+**Audience:** Operator · See also: [moka](moka.md) · [Operating](operate.md) ·
+[Configuration](conf.md) · [Drift and resync](provision.md)
 
-The tour uses `pipelinebasic-conf`, two `milk-fpsexec-mem-streamdelay` CompUs in a row. Example
-confdirs live in `milk-examples/pipelines/` (`aoloop-conf`, `pipelinebasic-conf`); the test
-confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
+The tour uses `pipelinebasic-conf`: two `milk-fpsexec-mem-streamdelay` CompUs in a row. Example
+confdirs: `milk-examples/pipelines/`; test confdirs: `python/tests/resources/`.
 
 ## 1. Get a confdir
 
@@ -38,8 +36,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
     mokainit init pipelinebasic-conf     # (2)!
     ```
 
-    1. Prints the resolved configuration; catches errors early.
-    2. Runs the hooks and builds `~/pipes/basic-rootdir`.
+    1. Checks the configuration.
+    2. Builds `~/pipes/basic-rootdir`.
 
 === "Python"
 
@@ -61,8 +59,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
     moka link loopback -p basic   # (3)!
     ```
 
-    1. `cold`: nothing deployed yet. `-p basic` means `<cwd>/basic-rootdir`.
-    2. Runs the [deploy plan](pipelines_plans.md#1-built-in-plans). The state becomes `configured`.
+    1. `-p basic` means `<cwd>/basic-rootdir`.
+    2. The [deploy plan](plans.md#1-built-in-plans).
     3. Applies `[systemlinkage.loopback]`.
 
 === "Python"
@@ -89,8 +87,7 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
     moka runstop -p basic delay1    # (2)!
     ```
 
-    1. The CompUs of [`runstart`](pipelines_conf.md#3-conftoml-keys) (default: all, at once), one at a
-       time when listed. The state becomes `running`.
+    1. The CompUs of [`runstart`](conf.md#3-conftoml-keys).
     2. A subset.
 
 === "Python"
@@ -109,8 +106,8 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
     moka nuke -p basic      # (2)!
     ```
 
-    1. Back to `cold`; keeps the rootdir and `work/`.
-    2. Teardown, then delete the rootdir. Asks you to type `basic`.
+    1. Keeps the rootdir and `work/`.
+    2. Teardown, then delete the rootdir.
 
 === "Python"
 
@@ -119,4 +116,4 @@ confdirs in `python/tests/resources/` (`pipelinebasic-conf`, `mlatsim-conf`).
     ```
 
 To change the configuration of a deployed pipeline, see
-[Drift and resync](pipelines_provision.md#1-changing-a-deployed-pipeline).
+[Drift and resync](provision.md#1-changing-a-deployed-pipeline).

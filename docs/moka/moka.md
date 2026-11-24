@@ -1,21 +1,25 @@
-# Pipelines
+# moka
 
-Pipelines are sets of milk compute units that are declared, deployed and operated together by the
-`moka` Python package.
+`moka` (Milk OrKestrAtion) declares, deploys and operates **pipelines**: sets of milk compute units
+run together.
 
-**Audience:** Operator · See also: [Tour](pipelines_tour.md) · [Configuration](pipelines_conf.md) ·
-[Operating](pipelines_operate.md) · [Glossary](pipelines_glossary.md)
+**Audience:** Operator · See also: [Tour](tour.md) · [Configuration](conf.md) ·
+[Operating](operate.md) · [Glossary](glossary.md)
 
 !!! note "Status"
 
     The deploy lifecycle (provision, deploy, start, stop, teardown, linkages) is implemented.
     Calibration store/load and the port of the cacao `aorun` operations are not.
 
-## 1. What the package does
+## 1. Commands
 
-MOKA (Milk OrKestrAtion), the `moka` package (`python/moka` in the milk repository), starts, connects and stops a pipeline's
-compute units together. It replaces the shell-script loop management of milk v1 and cacao. The
-package is the API; the `mokainit` and `moka` commands are thin wrappers over it.
+The Python package (`python/moka`) is the API; the commands wrap it:
+
+| Command    | Acts on                                   | Page                                                  |
+| ---------- | ----------------------------------------- | ----------------------------------------------------- |
+| `mokainit` | confdirs and rootdirs (files only)        | [Drift and resync](provision.md)                      |
+| `moka`     | the live pipeline: plans, state, linkages | [Operating](operate.md)                               |
+| `mokashow` | displays of a pipeline's results          | [Operating: displays](operate.md#4-displays-mokashow) |
 
 ## 2. Key concepts
 
@@ -50,11 +54,11 @@ changes reach the rootdir only through an explicit `resync`.
 
 **Rundir** (`$MILK_SHM_DIR/pipe_rundirs/<name>/`). The claim that `deploy` writes for the current
 boot. It is what makes the pipeline **state** computable: `cold`, `deployed`, `configured`,
-`running`, `mixed` or `inconsistent` (see [Operating: lifecycle](pipelines_operate.md#1-lifecycle)).
+`running`, `mixed` or `inconsistent` (see [Operating: lifecycle](operate.md#1-lifecycle)).
 
 **Plans and tasks.** Everything that touches the live system is a **task** (`InitFPS`,
 `ConfStart`, `RunStart`, ...), idempotent and restricted to any subset of CompUs. A **plan** is an
-ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_plans.md)).
+ordered list of tasks with a failure policy (see [Plans and tasks](plans.md)).
 
 ## 3. Where to go
 
@@ -66,7 +70,7 @@ ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_pla
 
     Deploy, link, run and tear down a pipeline; read its state; handle failures.
 
-    [⮕ Tour](pipelines_tour.md) · [⮕ Operating](pipelines_operate.md)
+    [⮕ Tour](tour.md) · [⮕ Operating](operate.md)
 
 - **Integrate**
 
@@ -74,31 +78,20 @@ ordered list of tasks with a failure policy (see [Plans and tasks](pipelines_pla
 
     Write a confdir, keep a rootdir in sync, write your own plans.
 
-    [⮕ Configuration](pipelines_conf.md) · [⮕ Drift and resync](pipelines_provision.md) ·
-    [⮕ Plans and tasks](pipelines_plans.md)
+    [⮕ Configuration](conf.md) · [⮕ Drift and resync](provision.md) ·
+    [⮕ Plans and tasks](plans.md)
 
 - **Internals**
 
     ______________________________________________________________________
 
-    Package layout, objects, state computation, task contract, normative terms.
+    Package layout, objects, state computation, task contract.
 
-    [⮕ Internals](pipelines_internals.md)
+    [⮕ Internals](internals.md)
 
 </div>
 
 ## 4. Installing
 
-```bash
-PYMILK_ENGINE=SYSTEM pip install python/pyMilk  # (1)!
-pip install -e python/
-```
-
-1. Run from the milk repository root, with milk installed and `MILK_INSTALLDIR` set. See
-   [pyMilk: Installation](pyMilk.md#1-installation).
-
-The package needs [pyMilk](pyMilk.md), built in SYSTEM mode, for SHM and FPS access, and
-`MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` set in the environment of anything that touches
-the live system. `import moka` itself works without a milk environment.
-
-For plain stream access from Python (`SHM`, numpy), see [pyMilk](pyMilk.md).
+See [Installation: Python packages](../quickstart/compile.md#4-python-packages). Anything that
+touches the live system needs `MILK_ROOT`, `MILK_INSTALLDIR` and `MILK_SHM_DIR` set.

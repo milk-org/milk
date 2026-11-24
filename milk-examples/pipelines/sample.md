@@ -1,7 +1,7 @@
 # sample.sh: mlatsim + aoloop, up to the loop running open
 
 It works in `~/AOloop2` and follows
-[pipelines_tour.md](../../docs/guide/pipelines_tour.md):
+[tour.md](../../docs/moka/tour.md):
 
 1. **Clone:** `mokainit clone` copies `mlatsim-conf` and `aoloop-conf`. This includes
    `scripts/`, which the `mlatsim` setup step needs.
@@ -20,7 +20,7 @@ It works in `~/AOloop2` and follows
    `calib/RMmodesDM.fits`; `moka measlinresp -p aoloop` measures the response to it with mlat's
    latency and writes `calib/RMmodesWFS.fits`.
 8. **Control matrices:** `moka mkcm -p aoloop` computes `calib/CMmodesWFS.fits` and
-   `calib/CMmodesDM.fits` from the response pair ([pipelines_plans.md](../../docs/guide/pipelines_plans.md)).
+   `calib/CMmodesDM.fits` from the response pair ([plans.md](../../docs/moka/plans.md)).
 9. **Spool:** `moka spool -p aoloop` loads that pair into `aol0_CMmodesWFS` and `aol0_CMmodesDM`
    and starts `wfs2modes`, `mfilt` and `modes2dm` with `loopON` off. Closing the loop is then
    up to the operator, in `milk-fpsCTRL` on the `mfilt` FPS.

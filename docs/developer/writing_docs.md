@@ -29,7 +29,7 @@ Every page starts with:
 
 How a confdir is laid out and what `conf.toml` can say.
 
-**Audience:** Integrator · See also: [Pipelines](pipelines.md) · [Glossary](pipelines_glossary.md)
+**Audience:** Integrator · See also: [moka](moka.md) · [Glossary](glossary.md)
 ```
 
 ### 2.1. Audiences
@@ -42,8 +42,9 @@ How a confdir is laid out and what `conf.toml` can say.
 | Developer   | how to work on milk itself            | build, coding standards, tooling, these rules   |
 | Maintainers | governance and maintenance            | TBC                                             |
 
-A page has one audience. Put it in the nav group that matches: user pages under User Guide
-(Internals as a subgroup of the topic), developer pages under Developer Guide, maintainer pages under Maintenance.
+A page has one audience. Put it in the nav group that matches: user pages under User Guide, or
+under their package's own top-level group and `docs/` folder (`moka/`), with Internals as a
+subgroup of the topic; developer pages under Developer Guide, maintainer pages under Maintenance.
 
 ### 2.2. Headings
 
@@ -152,7 +153,7 @@ Diagrams are Mermaid, in a `mermaid` block.
 
 ## 8. Links
 
-- Between pages: relative links to the `.md` file, `[Drift](pipelines_conf.md#drift)`. Anchors
+- Between pages: relative links to the `.md` file, `[Drift](conf.md#drift)`. Anchors
   are the heading slugs, as shown by the heading permalinks.
 - To repository files outside `docs/`: the `github_blob_url` macro, for example
   [scripts/mkdocs_macros.py](<{{ github_blob_url }}/scripts/mkdocs_macros.py>). Relative `../`
