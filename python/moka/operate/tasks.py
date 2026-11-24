@@ -52,6 +52,11 @@ class Task(abc.ABC):
         names = every if self.compus_names is None else self.compus_names
         return {cu: every[cu] for cu in names}
 
+    @property
+    def compu(self) -> ComputeUnit:
+        """The subset's first CompU, for one-CompU tasks."""
+        return next(iter(self.compute_units.values()))
+
     def _existing(self) -> list[tuple[ComputeUnit, FPS]]:
         """The subset's CompUs whose FPS exists, with that FPS."""
         return [(c, c.fps) for c in self.compute_units.values() if c.fps is not None]

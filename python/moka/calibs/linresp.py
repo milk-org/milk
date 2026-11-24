@@ -96,7 +96,7 @@ class SetLinResp(Task):
         from astropy.io import fits
         from pyMilk.interfacing.shm import SHM
 
-        compu = next(iter(self.compute_units.values()))
+        compu = self.compu
         if compu.fps is None or not compu.fps.conf_isrunning():
             self.failure_reason = f"{compu.fpsname} is missing or its conf process is not running; run deploy."
             return False
@@ -125,12 +125,12 @@ class SetLinResp(Task):
         _calib(self, INPROGRESS).unlink(missing_ok=True)
         if _calib(self, DONE).exists():
             os.replace(_calib(self, DONE), _calib(self, PREV))
-        fps = next(iter(self.compute_units.values())).fps
+        fps = self.compu.fps
         for key, value in (self._values() or {}).items():
             fps[key] = value
 
     def success(self) -> bool:
-        fps, values = next(iter(self.compute_units.values())).fps, self._values()
+        fps, values = self.compu.fps, self._values()
         if fps is None or values is None or _calib(self, DONE).exists():
             return False
         return not _calib(self, INPROGRESS).exists() and all(
@@ -146,13 +146,13 @@ class WaitLinResp(WaitRunEnd):
     def TIMEOUT(self) -> float:  # type: ignore[override]
         from astropy.io import fits
 
-        fps = next(iter(self.compute_units.values())).fps
+        fps = self.compu.fps
         modes = fits.getheader(_calib(self, POKES))["NAXIS3"]
         frames = 2 * modes * (fps["timing.NBave"] + fps["timing.NBexcl"])
         return 2 * frames * fps["procinfo.loopcntMax"] / fps["timing.WFSfrequ"] + 10
 
     def forward(self) -> None:
-        fps = next(iter(self.compute_units.values())).fps
+        fps = self.compu.fps
         try:  # the procinfo file goes when the run exits: hold it from now
             pinfo = fps.pinfo_struct
         except FileNotFoundError:
