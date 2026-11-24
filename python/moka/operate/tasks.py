@@ -23,9 +23,24 @@ if TYPE_CHECKING:
     from .pipeline import Pipeline
 
 
+def stream_shape(name: str) -> tuple[int, ...] | None:
+    """md size of the stream, (x, y[, n]) in milk's order; None if it does not exist."""
+    from pyMilk.interfacing.shm import SHM
+
+    if not (env.shm_dir() / f"{name}.im.shm").is_file():
+        return None
+    shm = SHM(name, symcode=0)
+    md = shm.IMAGE.md
+    shape = tuple(md.size[: md.naxis])
+    shm.close()
+    return shape
+
+
 class Task(abc.ABC):
     TIMEOUT: float = 10.0  # bound for forward()'s wait on success()
     failure_reason: str = "no reason given."
+    # without a subset: the units of this executable, at least one
+    EXEC: str | None = None
 
     def __init__(
         self,
@@ -33,6 +48,14 @@ class Task(abc.ABC):
         compus: Sequence[str] | None = None,
         params: dict | None = None,
     ) -> None:
+        if compus is None and self.EXEC is not None:
+            units = pipeline.config.compute_units.items()
+            compus = [cu for cu, spec in units if spec.exec == self.EXEC]
+            if not compus:
+                raise ConfigError(
+                    f"No compute unit runs {self.EXEC} for {type(self).__name__}.",
+                    pipeline=pipeline.short_name,
+                )
         unknown = sorted(set(compus or ()) - pipeline.config.compute_units.keys())
         if unknown:
             raise ConfigError(

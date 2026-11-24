@@ -110,8 +110,13 @@ Readability nits from the R4b review, logged at `75e5f946c9`.
 - [later] `[dmhint]` overlaps the `measlinresp` unit's `streamin` stream shape; nothing checks they
   agree (013-3 `SetLinResp.can()` compares the cube to the stream).
 - [later] Duplicate: `SetLinResp.can()` repeats `RunStart.can()`'s "FPS missing or conf process not
-  running" check and message, and `LoadData.success()`'s "stream exists, then its `symcode=0`
-  shape" (013-3).
+  running" check and message (013-3; `SetLoopOff` reuses `RunStart.can`, 017-1).
+  `LoadData.success()` keeps its own "stream exists, then its shape" beside `stream_shape()`: it
+  also checks the dtype (017-1).
+- [ ] 017-1 machine check not done: a `loopON = false` written through pyMilk to a deployed, idle
+  mfilt is still false once its run has started (Vincent, on a live `aoloop`).
+- [later] `LoadCM` without a subset takes the `MVMextract` units in declaration order, WFS side
+  first; a conf declaring `modes2dm` first swaps the two cubes (`axmode` would tell them apart).
 - [ ] FPS string values hold 63 characters (`FUNCTION_PARAMETER_STRMAXLEN`) and pyMilk truncates
   longer writes silently; measlinresp gets `../calib/...` paths for that (013-3).
 - [ ] The procinfo of a run is gone once it exits: `WaitLinResp` holds a handle from before the

@@ -129,4 +129,5 @@ from ..calibs import (  # noqa: E402,F401  register their plans and tasks
     mlat as _mlat,
     linresp as _linresp,
     cm as _cm,
+    loop as _loop,
 )

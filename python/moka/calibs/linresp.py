@@ -7,9 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
-from .. import env
 from ..operate.plans import PLANS, Param, Plan, Step
-from ..operate.tasks import TASKS, Task, WaitRunEnd
+from ..operate.tasks import TASKS, Task, WaitRunEnd, stream_shape
 from . import (
     mlat as _mlat,
 )  # module, not name: mlat.py imports operate.plans, which imports us
@@ -94,7 +93,6 @@ class SetLinResp(Task):
 
     def can(self) -> bool:
         from astropy.io import fits
-        from pyMilk.interfacing.shm import SHM
 
         compu = self.compu
         if compu.fps is None or not compu.fps.conf_isrunning():
@@ -109,12 +107,10 @@ class SetLinResp(Task):
             self.failure_reason = "no latency from mlat; run `moka mlat`."
             return False
         stream = compu.fps["streamin"]
-        if not (env.shm_dir() / f"{stream}.im.shm").is_file():
+        shape = stream_shape(stream)
+        if shape is None:
             self.failure_reason = f"stream {stream} does not exist."
             return False
-        shm = SHM(stream, symcode=0)  # numpy (size[0], size[1]) = (x, y)
-        shape = tuple(shm.shape)
-        shm.close()
         cube = fits.getheader(_calib(self, POKES))
         if (cube["NAXIS1"], cube["NAXIS2"]) != shape:
             self.failure_reason = f"{POKES} is {cube['NAXIS1']} x {cube['NAXIS2']}, {stream} is {shape[0]} x {shape[1]}."
