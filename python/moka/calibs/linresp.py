@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -12,6 +13,9 @@ from ..operate.tasks import TASKS, Task, TaskOnOneCompu, WaitRunEnd, stream_shap
 
 # module, not name: mlat.py imports operate.plans, which imports us
 from . import mlat as _mlat
+
+if TYPE_CHECKING:
+    from pyMilk.interfacing.fps import FPS
 
 # In rootdir/calib. The FPS gets them relative to the run's cwd, rootdir/work (63 chars max).
 POKES, DONE = "RMmodesDM.fits", "RMmodesWFS.fits"
@@ -23,11 +27,6 @@ POKE_TYPES = ("hadamard", "zonal")
 
 def _calib(task: Task, name: str) -> Path:
     return task.pipeline.root_folder / "calib" / name
-
-
-def _on_measlinresp(task: TaskOnOneCompu) -> None:
-    """locate_defaults() of SetLinResp and WaitLinResp: the CompU named measlinresp."""
-    task.compus_names = ("measlinresp",)
 
 
 class MakePokes(Task):
@@ -76,7 +75,8 @@ class MakePokes(Task):
 class SetLinResp(TaskOnOneCompu):
     """Writes the measlinresp FPS (files, mlat's timing, params["ampl"]) and clears the outputs."""
 
-    locate_defaults = _on_measlinresp
+    def locate_defaults(self) -> None:
+        self.compus_names = ("measlinresp",)
 
     def _values(self) -> dict | None:
         """The FPS writes; None without mlat's timing."""
@@ -103,7 +103,9 @@ class SetLinResp(TaskOnOneCompu):
             return f"{_calib(self, POKES)} does not exist; run `moka mkpokes`."
         if self._values() is None:
             return "no latency from mlat; run `moka mlat`."
-        stream = self.fps["streamin"]
+
+        fps: FPS = self.fps  # type: ignore[assignment]
+        stream = str(fps["streamin"])
         shape = stream_shape(stream)
         if shape is None:
             return f"stream {stream} does not exist."
@@ -116,7 +118,7 @@ class SetLinResp(TaskOnOneCompu):
         _calib(self, INPROGRESS).unlink(missing_ok=True)
         if _calib(self, DONE).exists():
             os.replace(_calib(self, DONE), _calib(self, PREV))
-        fps = self.fps
+        fps: FPS = self.fps  # type: ignore[assignment]
         for key, value in (self._values() or {}).items():
             fps[key] = value
 
@@ -133,19 +135,26 @@ class SetLinResp(TaskOnOneCompu):
 class WaitLinResp(TaskOnOneCompu, WaitRunEnd):
     """WaitRunEnd; then a complete run's in-progress file becomes RMmodesWFS.fits."""
 
-    locate_defaults = _on_measlinresp
+    def locate_defaults(self) -> None:
+        self.compus_names = ("measlinresp",)
 
     @property
     def TIMEOUT(self) -> float:  # type: ignore[override]
         from astropy.io import fits
 
-        fps = self.fps
+        fps: FPS = self.fps  # type: ignore[assignment]
         modes = fits.getheader(_calib(self, POKES))["NAXIS3"]
-        frames = 2 * modes * (fps["timing.NBave"] + fps["timing.NBexcl"])
-        return 2 * frames * fps["procinfo.loopcntMax"] / fps["timing.WFSfrequ"] + 10
+        frames = 2 * modes * (float(fps["timing.NBave"]) + float(fps["timing.NBexcl"]))
+        return (
+            2
+            * frames
+            * float(fps["procinfo.loopcntMax"])
+            / float(fps["timing.WFSfrequ"])
+            + 10
+        )
 
     def forward(self) -> None:
-        fps = self.fps
+        fps: FPS = self.fps  # type: ignore[assignment]
         try:  # the procinfo file goes when the run exits: hold it from now
             pinfo = fps.pinfo_struct
         except FileNotFoundError:
@@ -153,7 +162,7 @@ class WaitLinResp(TaskOnOneCompu, WaitRunEnd):
         super().forward()
         if not self._ended():
             return
-        done, total = (pinfo.loopcnt if pinfo else 0), fps["procinfo.loopcntMax"]
+        done, total = (pinfo.loopcnt if pinfo else 0), int(fps["procinfo.loopcntMax"])
         if done < total:
             self.failure_reason = f"measlinresp ended after {done} of {total} cycles; partial result in {INPROGRESS}, last good one in {PREV}."
         elif not _calib(self, INPROGRESS).is_file():

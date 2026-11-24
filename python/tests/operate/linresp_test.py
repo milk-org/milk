@@ -78,10 +78,8 @@ def lr(make_tmp_pipeline, pp_env, monkeypatch):
     pp.datadir = pp.work_folder / "fps.basic_mlat.datadir"
     pp.datadir.mkdir(parents=True)
     (pp.datadir / "cacaovars.bash").write_text(CACAOVARS)
-    pp.set = lambda params=None: pp.task_do(
-        TASKS["SetLinResp"](pp, ("measlinresp",), params)
-    )
-    pp.wait = lambda: pp.task_do(TASKS["WaitLinResp"](pp, ("measlinresp",)))
+    pp.set = lambda params=None: pp.task_do(TASKS["SetLinResp"](pp, None, params))
+    pp.wait = lambda: pp.task_do(TASKS["WaitLinResp"](pp))
     return pp
 
 
@@ -89,9 +87,9 @@ def test_plan_steps_and_its_ampl_option():
     plan = PLANS["measlinresp"]
     assert plan.steps == (
         Step("RunStart", ("acquWFS",)),
-        Step("SetLinResp", ("measlinresp",)),
+        Step("SetLinResp"),
         Step("RunStart", ("measlinresp",)),
-        Step("WaitLinResp", ("measlinresp",)),
+        Step("WaitLinResp"),
     )
     (param,) = plan.params
     assert (param.name, param.type, param.short) == ("ampl", float, "a")
@@ -212,6 +210,6 @@ def test_wait_fails_without_renaming(lr, loopcnt, file, reason):
 
 def test_wait_timeout_is_twice_the_expected_duration_plus_10s(lr):
     lr.fps["timing.WFSfrequ"] = 1000.0
-    task = TASKS["WaitLinResp"](lr, ("measlinresp",))
+    task = TASKS["WaitLinResp"](lr)
     # 2 (pos, neg) x 5 modes x (1 + 1) frames x 3 cycles / 1000 Hz = 0.06 s
     assert task.TIMEOUT == pytest.approx(2 * 0.06 + 10)

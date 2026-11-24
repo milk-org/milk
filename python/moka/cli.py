@@ -9,6 +9,7 @@ import click
 
 
 def _set_meta(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+    assert param.name is not None
     ctx.meta[param.name] = value
 
 

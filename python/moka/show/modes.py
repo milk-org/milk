@@ -92,12 +92,12 @@ def modes_figure(calib: Path | str, kind: str):
 
     def load() -> None:
         """Read every file first, so a failed read changes nothing."""
-        cubes = [fits.getdata(calib / name) for name in names]
-        masks = [None, None]
+        cubes = [np.asarray(fits.getdata(calib / name)) for name in names]
+        masks: list[np.ndarray | None] = [None, None]
         for i, name in enumerate(MASKS):
             path = calib / name
             if path.is_file():
-                m = fits.getdata(path)
+                m = np.asarray(fits.getdata(path))
                 if m.shape == cubes[i].shape[1:]:
                     masks[i] = m
                 else:
@@ -106,8 +106,8 @@ def modes_figure(calib: Path | str, kind: str):
                     )
         if kind == "cm":
             with fits.open(calib / CM_WFS) as hdus:
-                header = hdus[0].header
-                sv = hdus["SINGVALS"].data if "SINGVALS" in hdus else np.array([])
+                header = hdus[0].header  # type: ignore[union-attr]
+                sv = hdus["SINGVALS"].data if "SINGVALS" in hdus else np.array([])  # type: ignore[union-attr]
             sv_line.set_data(np.arange(len(sv)), sv / sv[0] if len(sv) else sv)
             reg = header.get("CMREG")
             sv_reg.set_ydata([reg if reg and len(sv) else np.nan] * 2)
@@ -181,7 +181,7 @@ def modes_figure(calib: Path | str, kind: str):
     fig.canvas.mpl_connect("key_press_event", on_key)
     load()
     # The widgets must outlive this call; tests drive them through it too.
-    fig.moka = SimpleNamespace(
+    fig.moka = SimpleNamespace(  # type: ignore[attr-defined]
         slider=slider, play=play, fps=fps, check=check, timer=timer, tick=tick
     )
     return fig

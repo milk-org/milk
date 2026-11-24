@@ -72,6 +72,7 @@ class _PlansGroup(ErrstackGroup):
         rows = []
         for name in names:
             cmd = self.get_command(ctx, name)
+            assert cmd is not None
             rows += [
                 (name, cmd.get_short_help_str(limit)),
                 ("", f"     {_signature(ctx, cmd)}"),
@@ -82,11 +83,12 @@ class _PlansGroup(ErrstackGroup):
 
 def _signature(ctx: click.Context, cmd: click.Command) -> str:
     """``name ARG [-o METAVAR] [--flag]``, from the command's own parameters."""
+    assert cmd.name is not None
     pieces = [cmd.name]
     for param in cmd.params:
         if isinstance(param, click.Argument):
             pieces.append(param.make_metavar(ctx))
-        elif param.is_flag:
+        elif isinstance(param, click.Option) and param.is_flag:
             pieces.append(f"[{param.opts[0]}]")
         else:
             pieces.append(f"[{param.opts[0]} {param.make_metavar(ctx)}]")

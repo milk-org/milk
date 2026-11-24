@@ -49,9 +49,9 @@ CALIBRATE = Plan(
         Step("RunStart", ("mlat",)),
         Step("WaitRunEnd", ("mlat",)),
         Step("MakePokes"),
-        Step("SetLinResp", ("measlinresp",)),
+        Step("SetLinResp"),
         Step("RunStart", ("measlinresp",)),
-        Step("WaitLinResp", ("measlinresp",)),
+        Step("WaitLinResp"),
         Step("RunStop"),
     ),
 )

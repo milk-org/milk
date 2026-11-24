@@ -48,10 +48,12 @@ class LoadCM(TaskOnCompuSet):
         """(stream, cube); FITS (NAXIS1, NAXIS2, NAXIS3) = numpy (n, y, x) -> stream (x, y, n)."""
         from astropy.io import fits
 
-        return [
-            (c.fps["immodes"], fits.getdata(f).astype(np.float32).transpose(2, 1, 0))
-            for c, f in zip(self.compute_units.values(), self._files(), strict=True)
-        ]
+        targets = []
+        for c, f in zip(self.compute_units.values(), self._files(), strict=True):
+            assert c.fps is not None
+            cube = np.asarray(fits.getdata(f), np.float32)
+            targets.append((str(c.fps["immodes"]), cube.transpose(2, 1, 0)))
+        return targets
 
     def _refusal(self) -> str | None:
         from astropy.io import fits

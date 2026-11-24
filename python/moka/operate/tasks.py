@@ -216,14 +216,15 @@ class LoadData(Task):
             SHM(entry.target, fits.getdata(str(source_path)), symcode=0).close()
 
     def success(self) -> bool:
+        import numpy as np
         from astropy.io import fits
         from pyMilk.interfacing.shm import SHM
 
         for entry in self.pipeline.config.dataloads:
             if not (env.shm_dir() / f"{entry.target}.im.shm").is_file():
                 return False
-            expected = fits.getdata(
-                str(self.pipeline.root_folder / "initdata" / entry.source)
+            expected = np.asarray(
+                fits.getdata(str(self.pipeline.root_folder / "initdata" / entry.source))
             )
             shm = SHM(entry.target, symcode=0)  # same axis order as forward()
             try:

@@ -122,10 +122,11 @@ def test_a_pipeline_task_takes_no_compute_units(pp):
 
 def test_a_one_compu_task_takes_exactly_one(pp):
     from moka.calibs.linresp import SetLinResp
+    from moka.calibs.loop import LoadCM
 
     assert SetLinResp(pp, ["delay0"]).compu.fpsname == "basic_delay0"
-    with pytest.raises(ConfigError, match="needs its 1 compute unit"):
-        SetLinResp(pp, None)
+    with pytest.raises(ConfigError, match="needs its 2 compute unit"):
+        LoadCM(pp, None)
     with pytest.raises(ConfigError, match="takes 1 compute unit"):
         SetLinResp(pp, ["delay0", "delay1"])
 

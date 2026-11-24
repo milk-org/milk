@@ -137,7 +137,7 @@ class ComputeUnit:
             trigger_name = self.fps[key]
             if not trigger_name:
                 return
-            procinfo.triggersname = trigger_name
+            procinfo.triggersname = str(trigger_name)
         procinfo.triggermode = _TRIGGERMODE_SEMAPHORE
         procinfo.loopcntMax = -1
         procinfo.enabled = True

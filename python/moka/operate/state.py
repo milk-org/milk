@@ -67,9 +67,10 @@ def state(pipeline: Pipeline) -> PipelineState:
     if missing:
         reasons += (f"FPS missing: {', '.join(missing)}",)
         return PipelineState(State.INCONSISTENT, reasons)
-    conf = [s[0] for s in status.values()]
-    run = [s[1] for s in status.values()]
-    if all(status[config.fps_name(cu)][1] for cu in config.runstart):
+    present_status = {n: s for n, s in status.items() if s is not None}
+    conf = [s[0] for s in present_status.values()]
+    run = [s[1] for s in present_status.values()]
+    if all(present_status[config.fps_name(cu)][1] for cu in config.runstart):
         st = State.RUNNING
     elif not any(run) and all(conf):
         st = State.CONFIGURED

@@ -34,6 +34,7 @@ def _grid_fit(model, t, y, knees, widths):
         i = int(sse.argmin())
         if sse[i] < best_sse:
             best_sse, best = sse[i], (float(knees[i]), float(w))
+    assert best is not None  # widths is not empty
     return best
 
 

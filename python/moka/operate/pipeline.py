@@ -40,9 +40,10 @@ class Pipeline:
 
     @classmethod
     def from_folder(cls, rootdir: str | Path) -> Pipeline:
+        rootdir = Path(rootdir)
         if not is_rootdir(rootdir):
-            raise ConfigError(f"{rootdir} is not a rootdir.", path=Path(rootdir))
-        return cls(Path(rootdir).absolute())
+            raise ConfigError(f"{rootdir} is not a rootdir.", path=rootdir)
+        return cls(rootdir.absolute())
 
     @functools.cached_property
     def _local(self) -> tuple[Registry[Plan], Registry[type[Task]]]:
@@ -107,6 +108,7 @@ class Pipeline:
         import numpy as np
 
         hint = self.config.dmhint
+        assert hint is not None
         if hint.beam_rad is None:
             return np.ones((hint.ysize, hint.xsize), bool)
         from pycacao.calib.mkmodes import make_disk
