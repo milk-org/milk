@@ -66,7 +66,7 @@ def test_help_lists_plans_and_fixed_commands():
         assert name in result.output
     assert "deploy [-p PIPE]" in result.output
     assert "unlink [-p PIPE] LINKAGE" in result.output
-    for gone in ("spool", "sys"):
+    for gone in ("sys",):
         assert _invoke(gone, "-h").exit_code != 0
 
 
@@ -439,6 +439,15 @@ def test_measlinresp_plan_is_listed_as_not_applicable_without_its_units(pp):
     result = _invoke("plans", "-p", str(pp.root_folder))
     assert _row(result, "measlinresp").endswith(
         "  n/a (Unknown compute units ['acquWFS'] for RunStart)"
+    )
+
+
+def test_spool_plan_is_listed_as_not_applicable_without_its_units(pp):
+    lines = [line.strip() for line in _invoke("--help").output.splitlines()]
+    assert "spool [-p PIPE]" in lines
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert _row(result, "spool").endswith(
+        "  n/a (Unknown compute units ['mfilt'] for SetLoopOff)"
     )
 
 

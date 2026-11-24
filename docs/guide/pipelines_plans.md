@@ -28,6 +28,7 @@ over these ([§4](#4-custom-plans)).
 | `mkpokes`     | MakePokes                                                                       | `abort`       | `consistent`         |
 | `measlinresp` | RunStart[acquWFS] → SetLinResp → RunStart[measlinresp] → WaitLinResp            | `abort`       | `consistent`         |
 | `mkcm`        | MakeCM                                                                          | `abort`       | `cold_or_consistent` |
+| `spool`       | SetLoopOff → RunStop → LoadCM → RunStart[acquWFS] → RunStart → SetLoopOff       | `abort`       | `consistent`         |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
@@ -75,6 +76,26 @@ combine. If no mode is kept, `mkcm` fails and writes nothing. Both headers hold 
 number of singular modes kept); `CMmodesWFS.fits` also has an HDU `SINGVALS` with all singular
 values, to choose `-n` and `-r` from. A pair of the same parameters, newer than both RM files, is
 left alone; a hand-made pair (no `CMFLAVOR`) is replaced.
+
+`moka spool` loads the control matrix pair in `<rootdir>/calib/` (`CMmodesWFS.fits`,
+`CMmodesDM.fits`: made by `mkcm` or dropped there by hand) and starts the loop with the
+integrator off. It needs CompUs `acquWFS`, `wfs2modes`, `mfilt` and `modes2dm`, and takes no
+parameter. Step by step:
+
+1. `SetLoopOff[mfilt]`: `loopON` false, before anything runs.
+2. `RunStop[modes2dm,mfilt,wfs2modes]`: they copy the matrix and the mode count at run start.
+3. `LoadCM[wfs2modes,modes2dm]`: each cube into the `immodes` stream of its CompU, as
+   (`xsize`, `ysize`, modes). It refuses if the files are missing, their mode counts differ, or
+   `CMmodesDM.fits` is not the [`[dmhint]`](pipelines_conf.md#3-conftoml-keys) size.
+4. `RunStart[acquWFS]`: skipped if it runs.
+5. `RunStart[wfs2modes,mfilt,modes2dm]`: one at a time, in that order. It waits for each run flag
+   only; nothing checks that the stream a CompU reads exists or has the size the pair implies.
+6. `SetLoopOff[mfilt]`: checked again once `mfilt` runs.
+
+`spool` never writes to the DM; whatever command it holds stays. Closing the loop is left to the
+operator, in `milk-fpsCTRL` on the `mfilt` FPS: `loopON`, `loopgain`, `loopmult`, `looplimit`, and
+`loopZERO` to zero the command. A second `spool`, for instance after a new `mkcm`, restarts the
+three CompUs with the new pair.
 
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts

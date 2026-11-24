@@ -1,4 +1,5 @@
-"""017-1: the SetLoopOff and LoadCM tasks, on paper (see specs/017-*/brief.md §3).
+"""017-1, 017-2: the SetLoopOff and LoadCM tasks, on paper, and the spool plan (see
+specs/017-*/brief.md §3, §4).
 The FPSs are dicts; the CM files are real; streams are an in-memory dict.
 """
 
@@ -14,6 +15,7 @@ from astropy.io import fits
 from moka.calibs import loop
 from moka.errors import ConfigError, TaskCannotRunError
 from moka.operate.pipeline import Pipeline
+from moka.operate.plans import PLANS, Step
 from moka.operate.tasks import TASKS
 
 UNITS = """
@@ -244,3 +246,19 @@ def test_load_replaces_the_streams_with_another_mode_count(lp):
     lp.load()
     assert lp.streams["t_cmwfs"].shape == (4, 3, 7)
     assert lp.streams["t_cmdm"].shape == (3, 2, 7)
+
+
+# The spool plan
+
+
+def test_spool_plan_has_its_six_steps():
+    plan = PLANS["spool"]
+    assert plan.steps == (
+        Step("SetLoopOff", ("mfilt",)),
+        Step("RunStop", ("modes2dm", "mfilt", "wfs2modes")),
+        Step("LoadCM", ("wfs2modes", "modes2dm")),
+        Step("RunStart", ("acquWFS",)),
+        Step("RunStart", ("wfs2modes", "mfilt", "modes2dm")),
+        Step("SetLoopOff", ("mfilt",)),
+    )
+    assert (plan.on_failure, plan.accepts, plan.params) == ("abort", "consistent", ())

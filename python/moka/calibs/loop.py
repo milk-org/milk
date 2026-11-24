@@ -1,10 +1,11 @@
-"""The loop's tasks: SetLoopOff, LoadCM (the spool plan, 017)."""
+"""The loop's tasks SetLoopOff, LoadCM and the spool plan (017)."""
 
 from __future__ import annotations
 
 import numpy as np
 
 from ..errors import ConfigError
+from ..operate.plans import PLANS, Plan, Step
 from ..operate.tasks import TASKS, TaskOnCompuSet, TaskOnOneCompu, stream_shape
 from . import cm as _cm, linresp as _lr  # modules: may be mid-import (cycle via plans)
 
@@ -104,3 +105,20 @@ class LoadCM(TaskOnCompuSet):
 
 for _task in (SetLoopOff, LoadCM):
     TASKS.register(_task.__name__, _task)
+
+PLANS.register(
+    "spool",
+    Plan(
+        "spool",
+        (
+            Step("SetLoopOff", ("mfilt",)),  # before anything runs
+            # They copy matrix and mode count at run start.
+            Step("RunStop", ("modes2dm", "mfilt", "wfs2modes")),
+            Step("LoadCM", ("wfs2modes", "modes2dm")),
+            Step("RunStart", ("acquWFS",)),  # skipped if it runs, as in mlat
+            # Ordered, one at a time, since the step names its units.
+            Step("RunStart", ("wfs2modes", "mfilt", "modes2dm")),
+            Step("SetLoopOff", ("mfilt",)),  # checked again once mfilt runs
+        ),
+    ),
+)

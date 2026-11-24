@@ -1,4 +1,4 @@
-# sample.sh: mlatsim + aoloop, up to the control matrices
+# sample.sh: mlatsim + aoloop, up to the loop running open
 
 It works in `~/AOloop2` and follows
 [pipelines_tour.md](../../docs/guide/pipelines_tour.md):
@@ -21,6 +21,9 @@ It works in `~/AOloop2` and follows
    latency and writes `calib/RMmodesWFS.fits`.
 8. **Control matrices:** `moka mkcm -p aoloop` computes `calib/CMmodesWFS.fits` and
    `calib/CMmodesDM.fits` from the response pair ([pipelines_plans.md](../../docs/guide/pipelines_plans.md)).
+9. **Spool:** `moka spool -p aoloop` loads that pair into `aol0_CMmodesWFS` and `aol0_CMmodesDM`
+   and starts `wfs2modes`, `mfilt` and `modes2dm` with `loopON` off. Closing the loop is then
+   up to the operator, in `milk-fpsCTRL` on the `mfilt` FPS.
 
 ## Before it can work
 

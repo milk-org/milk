@@ -14,7 +14,7 @@ inmasksname = 'null'                 # optional; unused if absent
 immodes = 'aol{_ln}_CMmodesWFS'
 outcoeff = 'aol{_ln}_modevalWFS'
 axmode = 0                           # extract
-option.MODENORM = true
+option.MODENORM = false              # true divides each mode by its norm: erases mkcm's 1/sigma
 GPUindex = 99                        # CPU (BLAS)
 
 [compute_units.mfilt.fps]           # modal filter (integrator)
@@ -25,6 +25,7 @@ loopgain = 0.2
 loopmult = 0.99
 looplimit = 1.0
 loopON = false
+loopNBstep = -1                      # no step limit; 0 turns loopON back off after one step
 
 [compute_units.modes2dm.fps]        # mode values -> DM command
 insname = 'aol{_ln}_modevalDM'
