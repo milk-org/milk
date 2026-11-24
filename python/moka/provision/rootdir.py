@@ -259,16 +259,20 @@ def resync(
         elif row.key == DMMASK:
             # Made from the resynced conf, once every conf file is in.
             put_dmmask = True
+            continue
         else:
             prov.artifacts[row.key] = _put(confdir, rootdir, row.key)
         applied.append(row.key)
 
     prov.last_resync = _now()
     write_provenance(rootdir, prov)
-    if put_dmmask:
+    after = confresolve(rootdir)
+    if put_dmmask and _dmhint_digest(after) != _dmhint_digest(target):
+        refused[DMMASK] = "rootdir [dmhint] differs from the confdir; resync conf first"
+    elif put_dmmask:
         prov.artifacts[DMMASK] = _put_dmmask(rootdir)
         write_provenance(rootdir, prov)
-    after = confresolve(rootdir)
+        applied.append(DMMASK)
     return ResyncReport(
         applied, refused, _diff(before, after), _structural(before, after)
     )

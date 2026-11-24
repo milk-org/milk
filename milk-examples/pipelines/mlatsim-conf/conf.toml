@@ -137,7 +137,7 @@ exec = "cacao-fpsexec-cacaoiot-wfscamsim"
 wfssignal = "{compute_units.pywfs.fps.wfssignal}"
 wfscamim = "mlatsim_wfs"
 zerolevel = 0.0               # the pupil images are positive by themselves
-fluxtotal = 6000.0         # total flux; 10000 ADU per lit pixel on a flat DM (4 x 156)
+fluxtotal = 6000.0            # total flux; / camgain = 60000 ADU, 96 per lit pixel on a flat DM (4 x 156)
 camgain = 0.1
 compphnoise = false
 camRON = 1.0

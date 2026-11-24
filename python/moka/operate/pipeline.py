@@ -123,6 +123,10 @@ class Pipeline:
                 # No size known: a scalar that broadcasts as an all-true mask.
                 return np.True_
             path = self.root_folder / "conf" / DMMASK
+            if not path.is_file():
+                raise ConfigError(
+                    f"No {DMMASK} for [dmhint]; run mokainit resync.", path=path
+                )
         return fits.getdata(path).astype(bool)
 
     def any_run_active(self) -> bool:
