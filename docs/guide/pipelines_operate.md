@@ -76,7 +76,7 @@ moka nuke    [-p PIPE] [--yes]           teardown, then rm -rf the rootdir
   [local](pipelines_plans.md#4-custom-plans) (`moka -h -p PIPE` lists them; `moka plans` [also says which the state accepts](#22-plans)). `deploy` is
   idempotent: run again on a configured pipeline, every step already succeeded. `teardown` is
   best effort and keeps the rootdir and `work/`. `runstart` and `runstop` take CompU names; they
-  then act on those CompUs only. The steps of every plan are in
+  then act on those CompUs only. `moka <plan> -h` describes a plan. The steps of every plan are in
   [Plans and tasks: built-in plans](pipelines_plans.md#1-built-in-plans).
 - **`link`** is allowed only in `deployed` and `configured`. `teardown` removes every linkage.
 - **`nuke`** asks you to type the short name; `--yes` skips that. It deletes the rootdir even if

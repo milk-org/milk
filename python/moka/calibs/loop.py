@@ -107,5 +107,6 @@ PLANS.register(
             Step("RunStart", ("wfs2modes", "mfilt", "modes2dm")),
             Step("SetLoopOff", ("mfilt",)),  # checked again once mfilt runs
         ),
+        help="Load the control matrices and start the loop units, loop open.",
     ),
 )

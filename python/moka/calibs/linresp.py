@@ -184,7 +184,10 @@ for _plan in (
     Plan(
         "mkpokes",
         (Step("MakePokes"),),
-        params=(Param("type", default="hadamard", positional=True),),
+        params=(
+            Param("type", default="hadamard", positional=True, choices=POKE_TYPES),
+        ),
+        help="Write the poke cube calib/RMmodesDM.fits.",
     ),
     Plan(
         "measlinresp",
@@ -194,7 +197,15 @@ for _plan in (
             Step("RunStart", ("measlinresp",)),
             Step("WaitLinResp"),
         ),
-        params=(Param("ampl", float, short="a"),),
+        params=(
+            Param(
+                "ampl",
+                float,
+                short="a",
+                help="Poke amplitude, written to the FPS (the FPS's own if not given).",
+            ),
+        ),
+        help="Measure the response matrix calib/RMmodesWFS.fits.",
     ),
 ):
     PLANS.register(_plan.name, _plan)

@@ -32,5 +32,6 @@ PLANS.register(
             Step("RunStart", ("mlat",)),
             Step("WaitRunEnd", ("mlat",)),
         ),
+        help="Measure the hardware latency.",
     ),
 )

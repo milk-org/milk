@@ -192,6 +192,7 @@ process do not see each other's definitions.
     ]
     # on_failure = "abort"
     # accepts = "consistent"
+    # help = "One line, for moka -h."
     ```
 
     A step is `Task` or `Task[cu1,cu2]`. Only the syntax is checked at load; task and CompU names
@@ -246,10 +247,11 @@ run(pp, Plan(
 | `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
 | `Plan.compus_arg` | `bool`                                          | `False`        | `True`: its `moka` command takes `[CU]...` and runs every step on those CompUs. Not settable in TOML                                                                                           |
 | `Plan.params`     | `tuple[Param, ...]`                             | `()`           | Values its `moka` command takes, handed to every task of the plan (below). Not settable in TOML                                                                                                |
+| `Plan.help`       | `str`                                           | `""`           | One line for `moka -h` and `moka <plan> -h`. In TOML: the `help` key |
 
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
 
-A `Param(name, type=str, default=None, positional=False, short=None)` adds `[NAME]` (positional)
+A `Param(name, type=str, default=None, positional=False, short=None, help="", choices=None)` adds `[NAME]` (positional)
 or `-<short>/--<name> NAME` to the plan's command; `type` is `str`, `int` or `float`. Every task of
 the plan receives the same dict as `self.params`, without the values left at `None`; a task reads
 only the keys it knows, and must work with an empty dict (`moka plans` and `moka tasks` build it
@@ -259,6 +261,9 @@ so). From Python: `run_plan(pp, "probe", params={"ampl": 0.5})`, or `run(pp, pla
 Plan("probe", (Step("Probe"),), params=(Param("kind", positional=True), Param("ampl", float, short="a")))
 # moka probe -p basic hadamard -a 0.5   →   self.params == {"kind": "hadamard", "ampl": 0.5}
 ```
+
+`help` is the option's help in `moka <plan> -h`. `choices`, a tuple of strings, restricts the value:
+anything else is a usage error (exit code 2).
 
 A task of your own subclasses `Task`; see
 [Internals: task contract](pipelines_internals.md#6-task-contract).

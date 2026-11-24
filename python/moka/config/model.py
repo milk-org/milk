@@ -99,6 +99,7 @@ class PlanDecl(BaseModel):
     steps: list[Annotated[str, Field(pattern=_STEP)]]
     on_failure: OnFailure | None = None
     accepts: Accepts | None = None
+    help: str | None = None
 
 
 class DMHint(BaseModel):

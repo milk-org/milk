@@ -168,6 +168,8 @@ class TaskOnOneCompu(TaskOnCompuSet):
 
 
 class ClaimRundir(Task):
+    """Writes this pipeline's claim of its rundir and loop_number."""
+
     def _refusal(self) -> str | None:
         p = self.pipeline
         for claim in rundir.all_claims():
@@ -194,6 +196,8 @@ class ClaimRundir(Task):
 
 
 class InitFPS(TaskOnCompuSet):
+    """Creates the FPS of each unit of the subset and writes its [compute_units.*.fps] values."""
+
     def _refusal(self) -> str | None:
         if not os.path.isdir(self.pipeline.work_folder):
             return f"{self.pipeline.work_folder} does not exist."
@@ -256,6 +260,8 @@ class LoadData(Task):
 
 
 class ConfStart(TaskOnCompuSet):
+    """Starts the conf process of each unit of the subset."""
+
     def _refusal(self) -> str | None:
         invalid = self._lacking(lambda fps: fps.is_valid())
         if invalid:
@@ -304,6 +310,8 @@ class RunStart(TaskOnCompuSet):
 
 
 class RunStop(TaskOnCompuSet):
+    """Stops the run process of each unit of the subset (default: every unit)."""
+
     def forward(self) -> None:
         for compu, fps in self._existing():
             if fps.run_isrunning():
@@ -332,6 +340,8 @@ class WaitRunEnd(TaskOnCompuSet):
 
 
 class DeapplyAllLinkages(Task):
+    """Removes the symlinks of every [systemlinkage.*]."""
+
     def forward(self) -> None:
         self.pipeline.unlink("all")
 
@@ -340,6 +350,8 @@ class DeapplyAllLinkages(Task):
 
 
 class ConfStop(TaskOnCompuSet):
+    """Stops the conf process of each unit of the subset."""
+
     def forward(self) -> None:
         for compu, fps in self._existing():
             if fps.conf_isrunning():
@@ -356,6 +368,8 @@ def _tmux_has(session: str) -> bool:
 
 
 class KillTmux(TaskOnCompuSet):
+    """Kills the tmux session of each unit of the subset, if teardown_kill_tmux is set."""
+
     def _live(self) -> list[str]:
         if not self.pipeline.config.teardown_kill_tmux:
             return []
@@ -370,6 +384,8 @@ class KillTmux(TaskOnCompuSet):
 
 
 class DestroyFPS(TaskOnCompuSet):
+    """Destroys the FPS of each unit of the subset."""
+
     def forward(self) -> None:
         for _, fps in self._existing():
             fps.destroy()
@@ -379,6 +395,8 @@ class DestroyFPS(TaskOnCompuSet):
 
 
 class ReleaseRundir(Task):
+    """Removes this pipeline's claim of its rundir."""
+
     def forward(self) -> None:
         rundir.release(self.pipeline.short_name)
 

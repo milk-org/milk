@@ -102,9 +102,15 @@ PLANS.register(
         (Step("MakeCM"),),
         accepts="cold_or_consistent",  # brief §1: mkcm works on a pipeline not deployed
         params=(
-            Param("flavor", default="tsvd", positional=True),
-            Param("nmodes", int, short="n"),
-            Param("reg", float, short="r"),
+            Param("flavor", default="tsvd", positional=True, choices=CM_FLAVORS),
+            Param("nmodes", int, short="n", help="Keep at most NMODES modes."),
+            Param(
+                "reg",
+                float,
+                short="r",
+                help="Truncation or regularisation threshold (1e-6 if not given; required for tikhonov).",
+            ),
         ),
+        help="Compute the control matrix pair from the response matrix pair.",
     ),
 )

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -50,6 +50,8 @@ class Param:
     default: object = None
     positional: bool = False  # CLI: [NAME]; else -<short>/--<name>
     short: str | None = None
+    help: str = ""  # CLI: the option's help; a positional is described in the epilog
+    choices: tuple[str, ...] | None = None  # CLI: the only values it accepts
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,7 @@ class Plan:
     accepts: Accepts = "consistent"
     compus_arg: bool = False  # the CLI takes [CU]...
     params: tuple[Param, ...] = ()
+    help: str = field(default="", compare=False)  # CLI: one line; `moka -h` shows the first
 
 
 PLANS: Registry[Plan] = Registry("plan")
@@ -113,6 +116,7 @@ for _plan in (
         steps_from_list(["ClaimRundir", "InitFPS", "LoadData", "ConfStart"]),
         "abort",
         "cold_or_consistent",
+        help="Claim the rundir, create the FPSs, load the data, start the conf processes.",
     ),
     Plan(
         "teardown",
@@ -128,9 +132,24 @@ for _plan in (
         ),
         "best_effort",
         "any",
+        help="Stop everything and release the rundir; the rootdir is kept.",
     ),
-    Plan("runstart", (Step("RunStart"),), "abort", "consistent", compus_arg=True),
-    Plan("runstop", (Step("RunStop"),), "best_effort", "any", compus_arg=True),
+    Plan(
+        "runstart",
+        (Step("RunStart"),),
+        "abort",
+        "consistent",
+        compus_arg=True,
+        help="Start the run processes (of [CU]..., default: the runstart list).",
+    ),
+    Plan(
+        "runstop",
+        (Step("RunStop"),),
+        "best_effort",
+        "any",
+        compus_arg=True,
+        help="Stop the run processes (of [CU]..., default: all).",
+    ),
 ):
     PLANS.register(_plan.name, _plan)
 

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .pipeline import Pipeline
     from .plans import Plan
     from .state import PipelineState
+    from .tasks import Task
 
 
 class _PlansGroup(ErrstackGroup):
@@ -56,9 +57,13 @@ class _PlansGroup(ErrstackGroup):
 
     def get_command(self, ctx: click.Context, name: str) -> click.Command | None:
         plans = self._plans(ctx)
-        if name in plans:
-            return _plan_command(plans[name])
         error = ctx.meta["moka.plans"][1]
+        if name in plans:
+            if error is None:
+                tasks = _load(ctx).tasks
+            else:
+                from .tasks import TASKS as tasks
+            return _plan_command(plans[name], tasks)
         if name not in self.commands and error is not None:
             raise error  # rather than "No such command"
         return self.commands.get(name)
@@ -157,8 +162,39 @@ def _na(error: ConfigError) -> str:
     return f"n/a ({error.message.split(';')[0].removesuffix('.')})"
 
 
-def _plan_command(plan: Plan) -> click.Command:
-    @click.command(plan.name, help=f"Run the {plan.name} plan.")
+_ACCEPTS = {
+    "any": "Runs in any state.",
+    "consistent": "Needs a deployed pipeline.",
+    "cold_or_consistent": "Runs on a cold or a deployed pipeline.",
+}
+_ON_FAILURE = {
+    "abort": "Stops at the first failure.",
+    "best_effort": "Runs every step, then reports the failures.",
+}
+
+
+def _epilog(plan: Plan, tasks: Registry[type[Task]]) -> str:
+    """What the usage line cannot say: the positional params, the steps, the gate; no rewrap."""
+    blocks = []
+    for p in (p for p in plan.params if p.positional):
+        name = p.name.upper()
+        line = f"{name} is one of {', '.join(p.choices)}" if p.choices else f"{name}: {p.help}"
+        blocks.append(line + (f" (default: {p.default})." if p.default is not None else "."))
+    steps = ["Steps:"]
+    for i, step in enumerate(plan.steps, 1):
+        cls = tasks[step.task] if step.task in tasks else None
+        doc = (cls.__dict__.get("__doc__") or "").strip().split("\n")[0] if cls else ""
+        steps.append(f"  {i}. {step.label}  {doc}".rstrip())
+    sentence = f"{_ACCEPTS[plan.accepts]} {_ON_FAILURE[plan.on_failure]}"
+    return "\n\n".join(f"\b\n{b}" for b in ["\n".join(blocks), "\n".join(steps), sentence] if b)
+
+
+def _plan_command(plan: Plan, tasks: Registry[type[Task]]) -> click.Command:
+    @click.command(
+        plan.name,
+        help=plan.help or f"Run the {plan.name} plan.",
+        epilog=_epilog(plan, tasks),
+    )
     @_pipe_option
     def command(pipe: str | None, compus: tuple[str, ...] = (), **values):
         from .plans import run_plan
@@ -169,16 +205,25 @@ def _plan_command(plan: Plan) -> click.Command:
     if plan.compus_arg:
         command = click.argument("compus", nargs=-1, metavar="[CU]...")(command)
     for p in plan.params:
+        kind = click.Choice(p.choices) if p.choices else p.type
         if p.positional:
             decl = click.argument(
-                p.name, type=p.type, default=p.default, required=False
+                p.name,
+                type=kind,
+                default=p.default,
+                required=False,
+                metavar=f"[{p.name.upper()}]",  # not Choice's [a|b]
             )
         else:
             flags = (
                 [f"--{p.name}"] if p.short is None else [f"-{p.short}", f"--{p.name}"]
             )
             decl = click.option(
-                *flags, type=p.type, default=p.default, metavar=p.name.upper()
+                *flags,
+                type=kind,
+                default=p.default,
+                metavar=p.name.upper(),
+                help=p.help,
             )
         command = decl(command)
     return command
