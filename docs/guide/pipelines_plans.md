@@ -29,6 +29,7 @@ over these ([§4](#4-custom-plans)).
 | `measlinresp` | RunStart[acquWFS] → SetLinResp → RunStart[measlinresp] → WaitLinResp            | `abort`       | `consistent`         |
 | `mkcm`        | MakeCM                                                                          | `abort`       | `cold_or_consistent` |
 | `spool`       | SetLoopOff → RunStop → LoadCM → RunStart[acquWFS] → RunStart → SetLoopOff       | `abort`       | `consistent`         |
+| `takeref`     | RunStart[acquWFS] → TakeRef                                                     | `abort`       | `consistent`         |
 
 `mlat` needs CompUs named `acquWFS` and `mlat` (otherwise it is `n/a` in `moka plans` and fails
 with a `ConfigError`). It leaves `acquWFS` running (the state is then `mixed` when other `runstart`
@@ -97,6 +98,8 @@ operator, in `milk-fpsCTRL` on the `mfilt` FPS: `loopON`, `loopgain`, `loopmult`
 `loopZERO` to zero the command. A second `spool`, for instance after a new `mkcm`, restarts the
 three CompUs with the new pair.
 
+`moka takeref [-n NFRAMES | -t SECONDS]` averages the next frames of `aol<loop_number>_imWFS1` into `aol<loop_number>_wfsref`, `aol<loop_number>_wfsrefc` and `calib/wfsref.fits`, as `cacao-aorun-026-takeref` does; acquWFS subtracts `wfsrefc` into `imWFS2` from its next frame.
+
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
 on those CompUs. From Python, `run_plan(pipeline, name, compus)` applies the subset to every step
@@ -130,6 +133,7 @@ of any plan, so a plan with a pipeline-wide task (`deploy`, `teardown`) is then 
 | `WaitRunEnd`         | No run process is running. It waits up to 120 s for the runs to end by themselves and never stops anything                                                                                                 |
 | `SetLinResp`         | The `measlinresp` FPS holds the cube and output paths (relative to `work/`), mlat's frame rate and latency, and `-a`; no `RMmodesWFS.fits` nor in-progress file is left (the first is archived to `.prev`) |
 | `WaitLinResp`        | As `WaitRunEnd`, with a timeout of 2x expected +10 s; then a complete run's in-progress file is renamed `RMmodesWFS.fits`                                                                                  |
+| `TakeRef`            | Never before it runs; then `aol<N>_wfsref`, `aol<N>_wfsrefc` and `calib/wfsref.fits` hold the float32 average of `-n` (or `-t` × mlat's frame rate) new `aol<N>_imWFS1` frames                             |
 | `DeapplyAllLinkages` | No systemlinkage symlink remains                                                                                                                                                                           |
 | `ConfStop`           | No conf process is running                                                                                                                                                                                 |
 | `KillTmux`           | No tmux session with a CompU's FPS name is left. It does nothing unless `teardown_kill_tmux = true`                                                                                                        |
@@ -247,7 +251,7 @@ run(pp, Plan(
 | `Plan.accepts`    | `"consistent" \| "cold_or_consistent" \| "any"` | `"consistent"` | The [states](pipelines_operate.md#1-lifecycle) the plan may start from. `consistent` refuses `cold` and `inconsistent`, `cold_or_consistent` refuses `inconsistent`, and `any` refuses nothing |
 | `Plan.compus_arg` | `bool`                                          | `False`        | `True`: its `moka` command takes `[CU]...` and runs every step on those CompUs. Not settable in TOML                                                                                           |
 | `Plan.params`     | `tuple[Param, ...]`                             | `()`           | Values its `moka` command takes, handed to every task of the plan (below). Not settable in TOML                                                                                                |
-| `Plan.help`       | `str`                                           | `""`           | One line for `moka -h` and `moka <plan> -h`. In TOML: the `help` key |
+| `Plan.help`       | `str`                                           | `""`           | One line for `moka -h` and `moka <plan> -h`. In TOML: the `help` key                                                                                                                           |
 
 A step with a CompU subset appears in messages as `Task[cu1,cu2]`.
 

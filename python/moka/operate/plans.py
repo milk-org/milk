@@ -69,7 +69,8 @@ class Plan:
     accepts: Accepts = "consistent"
     compus_arg: bool = False  # the CLI takes [CU]...
     params: tuple[Param, ...] = ()
-    help: str = field(default="", compare=False)  # CLI: one line; `moka -h` shows the first
+    # CLI: one line; `moka -h` shows the first
+    help: str = field(default="", compare=False)
 
 
 PLANS: Registry[Plan] = Registry("plan")
@@ -207,4 +208,5 @@ from ..calibs import (  # noqa: E402,F401  register their plans and tasks
     linresp as _linresp,
     cm as _cm,
     loop as _loop,
+    takeref as _takeref,
 )

@@ -80,8 +80,7 @@ class SetLinResp(TaskOnOneCompu):
 
     def _values(self) -> dict | None:
         """The FPS writes; None without mlat's timing."""
-        mlat = self.pipeline.config.fps_name("mlat")
-        timing = _mlat.mlat_results(self.pipeline.work_folder / f"fps.{mlat}.datadir")
+        timing = _mlat.timing(self.pipeline)
         if timing is None:
             return None
         values = {

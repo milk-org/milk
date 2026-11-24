@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..operate.plans import PLANS, Plan, Step
+
+if TYPE_CHECKING:
+    from ..operate.pipeline import Pipeline
 
 
 def mlat_results(datadir: Path) -> tuple[float, float] | None:
@@ -21,6 +25,12 @@ def mlat_results(datadir: Path) -> tuple[float, float] | None:
         return float(env["CACAO_WFSFRATE"]), float(env["CACAO_LATENCYHARDWFR"])
     except (KeyError, ValueError):
         return None
+
+
+def timing(pipeline: Pipeline) -> tuple[float, float] | None:
+    """mlat_results of the pipeline's mlat FPS."""
+    mlat = pipeline.config.fps_name("mlat")
+    return mlat_results(pipeline.work_folder / f"fps.{mlat}.datadir")
 
 
 PLANS.register(
