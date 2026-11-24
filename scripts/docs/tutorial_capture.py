@@ -25,12 +25,12 @@ Modes:
     - Needs MILK_ROOT set, with $MILK_ROOT/milk-examples/pipelines; the script does not
       set it.
     - Everything it launches (shell, TUI panes, figures, pyMilk blocks) sees MILK_SHM_DIR
-      set to a private folder, /milk/shm/tutorial_capture.
+      and MILK_PROC_DIR set to a private folder, /milk/shm/tutorial_capture.
     - Refuses to start if ~/AOloop2 or the private folder exists.
     - Gives everything it launches a private tmux socket folder (TMUX_TMPDIR, TMUX
       unset): moka's compute units start their sessions with a plain
       `tmux new-session`, which takes the server's environment, so the server must be
-      one this run started, with MILK_SHM_DIR set.
+      one this run started, with MILK_SHM_DIR and MILK_PROC_DIR set.
     - Creates ~/AOloop2 (through the page), the private folder and the tmux folder; at
       the end, also after a failure, tears down both pipelines, stops the private tmux
       servers and removes all three.
@@ -38,7 +38,8 @@ Modes:
       (both must exist, e.g. kept from a hand run), with no start refusals and the
       caller's tmux, and leaves both in place.
     - Captured text is normalized, in this order: the private folder to /milk/shm,
-      the value of $MILK_ROOT to ~/src/milk, $HOME to ~.
+      the value of $MILK_ROOT to ~/src/milk, $HOME to ~. Text outputs also lose
+      terminal escapes and trailing spaces; figure titles are normalized too.
     - Outputs and images are written at the end, all or none.
 
 Python 3.10+, stdlib only for --check; --run also needs moka (pyMilk, matplotlib) and
@@ -78,6 +79,9 @@ TUI_WAIT = 3.0
 TUI_KEYS_WAIT = 1.5
 # The confdir edit of the "Change the configuration" stage (tut:manual id=edit-loopgain).
 LOOPGAIN_EDIT = "0.3"
+# Mode shown by a modes figure (mokashow's slider); mode 0 of rm is piston, which the WFS
+# does not see.
+FIGURE_MODE = {"rm": 5, "cm": 0}
 
 KINDS = {"run", "out", "py", "tui", "fig", "manual"}
 ATTRS = {
@@ -283,6 +287,17 @@ def normalize(text: str, home: Path, shm: Path, milk_root: str) -> str:
     text = text.replace(str(shm), SHM_SHOWN)
     text = text.replace(str(Path(milk_root)), MILK_ROOT_SHOWN)
     return text.replace(str(home), "~")
+
+
+def plain(text: str) -> str:
+    """``text`` without terminal escapes, and without trailing spaces on each line.
+
+    milk's C code colours its warnings whatever NO_COLOR says. The trailing-whitespace
+    hook would strip the spaces left after the escapes, and the next run would put them
+    back.
+    """
+    text = _SGR_RE.sub("", text)
+    return "\n".join(ln.rstrip() for ln in text.split("\n"))
 
 
 def rewrite(text: str, outputs: dict) -> str:
@@ -514,14 +529,19 @@ class Shell:
 def tui_capture(cmd: str, cols: int, rows: int, keys: list, env: dict) -> str:
     """ANSI text of ``cmd`` drawn in a detached tmux pane of ``cols`` x ``rows``.
 
-    ``keys`` (tmux key names) are sent after the first wait. MILK_SHM_DIR is passed with
-    ``-e``: a milk_tut server left running would otherwise give the pane its own.
+    ``keys`` (tmux key names) are sent after the first wait. MILK_SHM_DIR and
+    MILK_PROC_DIR are passed with ``-e``: a milk_tut server left running would otherwise
+    give the pane its own.
     """
     name = f"tut_{uuid.uuid4().hex[:8]}"
-    shm_env = f"MILK_SHM_DIR={env['MILK_SHM_DIR']}"
+    shm_env = [
+        arg
+        for var in ("MILK_SHM_DIR", "MILK_PROC_DIR")
+        for arg in ("-e", f"{var}={env[var]}")
+    ]
     subprocess.run(
         [*TMUX, "new-session", "-d", "-s", name, "-x", str(cols), "-y", str(rows),
-         "-e", shm_env, cmd, ";", "set-option", "-t", name, "status", "off"],
+         *shm_env, cmd, ";", "set-option", "-t", name, "status", "off"],
         check=True,
         env=env,
     )  # fmt: skip
@@ -542,8 +562,11 @@ def tui_capture(cmd: str, cols: int, rows: int, keys: list, env: dict) -> str:
         subprocess.run([*TMUX, "kill-session", "-t", name], check=False, env=env)
 
 
-def save_figure(fig_id: str, workdir: Path, dest: Path) -> None:
-    """mokashow's figure ``fig_id`` (mlat, rm, cm) of the aoloop pipeline, headless."""
+def save_figure(fig_id: str, workdir: Path, dest: Path, norm) -> None:
+    """mokashow's figure ``fig_id`` (mlat, rm, cm) of the aoloop pipeline, headless.
+
+    ``norm`` is applied to the axes titles (mlat's title is the absolute data path).
+    """
     import matplotlib
 
     matplotlib.use("Agg")
@@ -556,6 +579,9 @@ def save_figure(fig_id: str, workdir: Path, dest: Path) -> None:
         from moka.show.modes import modes_figure
 
         fig = modes_figure(rootdir / "calib", fig_id)
+        fig.moka.slider.set_val(FIGURE_MODE[fig_id])
+    for ax in fig.axes:
+        ax.set_title(norm(ax.get_title()))
     fig.savefig(dest, dpi=100)
 
 
@@ -563,7 +589,11 @@ def edit_loopgain(workdir: Path) -> None:
     """The confdir edit of the "Change the configuration" stage."""
     path = workdir / "aoloop-conf" / "fpsdetails.toml"
     text, n = re.subn(
-        r"^loopgain = .*$", f"loopgain = {LOOPGAIN_EDIT}", path.read_text(), 1, re.M
+        r"^loopgain = .*$",
+        f"loopgain = {LOOPGAIN_EDIT}",
+        path.read_text(),
+        count=1,
+        flags=re.M,
     )
     if n != 1:
         raise CaptureError(f"no loopgain line in {path}")
@@ -581,6 +611,7 @@ class LiveSystem:
         self.env = env
         # The figure code runs in this process.
         os.environ["MILK_SHM_DIR"] = env["MILK_SHM_DIR"]
+        os.environ["MILK_PROC_DIR"] = env["MILK_PROC_DIR"]
         self.shell = Shell(cwd, env)
 
     def bash(self, code: str) -> tuple[int, str]:
@@ -593,7 +624,13 @@ class LiveSystem:
         return tui_capture(cmd, cols, rows, keys, self.env)
 
     def figure(self, fig_id: str, dest: Path) -> None:
-        save_figure(fig_id, self.workdir, dest)
+        shm, root = Path(self.env["MILK_SHM_DIR"]), self.env["MILK_ROOT"]
+        save_figure(
+            fig_id,
+            self.workdir,
+            dest,
+            lambda s: normalize(s, self.workdir.parent, shm, root),
+        )
 
     def manual(self, action_id: str) -> None:
         MANUAL_ACTIONS[action_id](self.workdir)
@@ -667,69 +704,73 @@ def run(
     def norm(out: str) -> str:
         return normalize(out, home, shm, milk_root)
 
-    env = dict(os.environ, MILK_SHM_DIR=str(shm))
+    env = dict(os.environ, MILK_SHM_DIR=str(shm), MILK_PROC_DIR=str(shm))
     outputs, images = {}, {}
     staging = Path(tempfile.mkdtemp(prefix="tut_images_"))
-    if start is None:
-        shm.mkdir()
-        tmux_dir = Path(tempfile.mkdtemp(prefix="tut_tmux_"))
-        env["TMUX_TMPDIR"] = str(tmux_dir)
-        env.pop("TMUX", None)
     try:
-        system = system_factory(cwd, workdir, env)
-        try:
-            started = start is None
-            for mk in page.markers:
-                if not started:
-                    started = mk.id == start and mk.kind in ("run", "py", "tui", "fig")
-                    if not started:
-                        continue
-                if mk.kind == "run":
-                    rc, out = system.bash(block_code(page, mk))
-                    want = int(mk.attrs.get("expect", "0"))
-                    if rc != want:
-                        raise CaptureError(
-                            f"{mk.id}: exit code {rc}, expected {want}\n{out}"
-                        )
-                    outputs[mk.id] = norm(out)
-                elif mk.kind == "py":
-                    rc = system.python(block_code(page, mk))
-                    if rc != 0:
-                        raise CaptureError(f"{mk.id}: exit code {rc}")
-                elif mk.kind == "tui":
-                    cols, rows = (int(v) for v in mk.attrs["size"].split("x"))
-                    keys = mk.attrs.get("keys", "").split()
-                    ansi = norm(system.tui(mk.attrs["cmd"], cols, rows, keys))
-                    dest = staging / f"{mk.id}.svg"
-                    dest.write_text(ansi_to_svg(ansi, cols, rows))
-                    images[mk.image] = dest
-                elif mk.kind == "fig":
-                    dest = staging / f"{mk.id}.png"
-                    system.figure(mk.id, dest)
-                    images[mk.image] = dest
-                elif mk.kind == "manual" and mk.id in MANUAL_ACTIONS:
-                    system.manual(mk.id)
-        finally:
-            system.close()
-    except BaseException:
-        shutil.rmtree(staging, ignore_errors=True)
-        raise
-    finally:
         if start is None:
+            shm.mkdir()
+            tmux_dir = Path(tempfile.mkdtemp(prefix="tut_tmux_"))
+            env["TMUX_TMPDIR"] = str(tmux_dir)
+            env.pop("TMUX", None)
+        try:
+            system = system_factory(cwd, workdir, env)
             try:
-                tmux_stopper(env)
+                started = start is None
+                for mk in page.markers:
+                    if not started:
+                        started = mk.id == start and mk.kind in (
+                            "run",
+                            "py",
+                            "tui",
+                            "fig",
+                        )
+                        if not started:
+                            continue
+                    if mk.kind == "run":
+                        rc, out = system.bash(block_code(page, mk))
+                        want = int(mk.attrs.get("expect", "0"))
+                        if rc != want:
+                            raise CaptureError(
+                                f"{mk.id}: exit code {rc}, expected {want}\n{out}"
+                            )
+                        outputs[mk.id] = plain(norm(out))
+                    elif mk.kind == "py":
+                        rc = system.python(block_code(page, mk))
+                        if rc != 0:
+                            raise CaptureError(f"{mk.id}: exit code {rc}")
+                    elif mk.kind == "tui":
+                        cols, rows = (int(v) for v in mk.attrs["size"].split("x"))
+                        keys = mk.attrs.get("keys", "").split()
+                        ansi = norm(system.tui(mk.attrs["cmd"], cols, rows, keys))
+                        dest = staging / f"{mk.id}.svg"
+                        dest.write_text(ansi_to_svg(ansi, cols, rows))
+                        images[mk.image] = dest
+                    elif mk.kind == "fig":
+                        dest = staging / f"{mk.id}.png"
+                        system.figure(mk.id, dest)
+                        images[mk.image] = dest
+                    elif mk.kind == "manual" and mk.id in MANUAL_ACTIONS:
+                        system.manual(mk.id)
             finally:
-                shutil.rmtree(tmux_dir, ignore_errors=True)
-                shutil.rmtree(shm, ignore_errors=True)
-                if workdir.exists():
-                    shutil.rmtree(workdir)
+                system.close()
+        finally:
+            if start is None:
+                try:
+                    tmux_stopper(env)
+                finally:
+                    shutil.rmtree(tmux_dir, ignore_errors=True)
+                    shutil.rmtree(shm, ignore_errors=True)
+                    if workdir.exists():
+                        shutil.rmtree(workdir)
 
-    for rel, src in images.items():
-        dest = page_path.parent / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(src, dest)
-    shutil.rmtree(staging, ignore_errors=True)
-    page_path.write_text(rewrite(text, outputs))
+        for rel, src in images.items():
+            dest = page_path.parent / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(src, dest)
+        page_path.write_text(rewrite(text, outputs))
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 # ---------------------------------------------------------------- --callouts

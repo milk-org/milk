@@ -245,6 +245,21 @@ def test_normalize_order():
     )
 
 
+def test_plain_drops_escapes_and_trailing_spaces():
+    text = (
+        "\x1b[1;35mWARNING   \x1b[0;m\n"
+        '\x1b[1;35m (PID 12) Cannot open shm file "/milk/shm/x.im.shm"\n'
+        "  \x1b[0;m\n"
+        "  [1/4] ClaimRundir ... [ ok ] done (0.0 s)\n"
+    )
+    assert tc.plain(text) == (
+        "WARNING\n"
+        ' (PID 12) Cannot open shm file "/milk/shm/x.im.shm"\n'
+        "\n"
+        "  [1/4] ClaimRundir ... [ ok ] done (0.0 s)\n"
+    )
+
+
 def test_milk_root_refusal(tmp_path):
     assert "not set" in tc.milk_root_refusal(None)
     assert "not set" in tc.milk_root_refusal("")
@@ -459,8 +474,10 @@ def test_run_cleans_up_when_system_fails(setup, where):
     assert page.read_text() == GOOD
 
 
-def test_run_workdir_removal_failure_keeps_other_removals(setup, monkeypatch):
+def test_run_workdir_removal_failure_keeps_other_removals(setup, monkeypatch, tmp_path):
     page, home, _, _ = setup
+    # The image staging folder lands here, so its removal can be checked.
+    monkeypatch.setattr(tc.tempfile, "tempdir", str(tmp_path))
     fake = FakeSystem()
     rmtree = tc.shutil.rmtree
 
@@ -473,6 +490,7 @@ def test_run_workdir_removal_failure_keeps_other_removals(setup, monkeypatch):
     with pytest.raises(PermissionError):
         run(setup, fake)
     assert not fake.shm.exists() and not Path(fake.env["TMUX_TMPDIR"]).exists()
+    assert not list(tmp_path.glob("tut_images_*"))
     assert page.read_text() == GOOD
 
 
@@ -495,6 +513,7 @@ def test_run_from(setup):
     run(setup, fake, start="close-loop", tmux_stopper=tmux)
     assert fake.cwd == home / "AOloop2"
     assert fake.env["MILK_SHM_DIR"] == str(shm / "tutorial_capture")
+    assert fake.env["MILK_PROC_DIR"] == fake.env["MILK_SHM_DIR"]
     # The caller's tmux: no private socket folder, nothing stopped.
     assert fake.env.get("TMUX_TMPDIR") == os.environ.get("TMUX_TMPDIR")
     assert tmux.env is None
