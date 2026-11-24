@@ -104,20 +104,37 @@ is in [Drift and resync](pipelines_provision.md#2-drift).
 
 ### 2.2. `plans`
 
-`plans` prints the line `<name>: <state>`, then one line per plan of the pipeline: its name,
-`(local)` or `(local, overrides built-in)` for [local plans](pipelines_plans.md#4-custom-plans),
-its steps, and a status: `ok` (the state passes the plan's `accepts` gate), `no (<reason>)`
-(the gate refuses, e.g. `no (cold; run deploy)`) or `n/a (<reason>)` (a task or unit the plan
-names does not exist). Only the state gate is checked, not what the steps would do.
+`NOW` checks the plan's `accepts` gate against the current state, not what its steps would do;
+`n/a`: a task or unit the plan names does not exist.
+
+```text title="Output"
+rootdir: /home/vdeo/pipes/aoloop-rootdir
+aoloop: cold
+USAGE                                         NOW
+deploy [-p PIPE]                              ok
+  ClaimRundir -> InitFPS -> LoadData -> ConfStart
+...
+runstart [-p PIPE] [CU]...                    no (cold; run deploy)
+  RunStart
+...
+teardown [-p PIPE]                            ok
+  RunStop -> DeapplyAllLinkages -> ConfStop -> KillTmux -> DestroyFPS -> ReleaseRundir
+```
 
 ### 2.3. `tasks`
 
-`tasks` prints the line `<name>: <state>`, then one row per task of the pipeline (built-in and
-[local](pipelines_plans.md#4-custom-plans)), built on all CompUs (`RunStart`: on the
-[`runstart`](pipelines_conf.md#3-conftoml-keys) ones), or, with `PLAN`, one row per step of that plan, in
-order, with its label (`RunStart[acquWFS]`). A row is `<label>  <success>  <can>`, each `yes` or
-`no`, followed by the task's reason when `can` is `no`. A task or step that cannot be built is
-`<label>  n/a (<reason>)`. It never runs a task.
+`tasks` gives `success()` and `can()` of each task of the pipeline, built on all CompUs (`RunStart`:
+on the [`runstart`](pipelines_conf.md#3-conftoml-keys) ones), or with `PLAN`, of each step of that
+plan. It never runs a task.
+
+```text title="Output"
+rootdir: /home/vdeo/pipes/aoloop-rootdir
+aoloop: cold
+TASK         DONE  CAN  REASON
+ClaimRundir  no    yes
+...
+ConfStart    no    no   FPS aoloop_acquWFS is missing or invalid.
+```
 
 ## 3. Errors
 

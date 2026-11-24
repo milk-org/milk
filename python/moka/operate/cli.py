@@ -5,6 +5,7 @@ NB: Prefer lazy imports, this file is a net cost on the CLI startup time.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -72,15 +73,19 @@ class _PlansGroup(ErrstackGroup):
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
         """Each command's short help, then its signature on a second line."""
+        from .. import ui
+
+        color = ui.use_color(sys.stdout)
         names = self.list_commands(ctx)
         limit = formatter.width - 6 - max(map(len, names))
         rows = []
         for name in names:
             cmd = self.get_command(ctx, name)
             assert cmd is not None
+            signature = ui.style("dim", _signature(ctx, cmd), color)
             rows += [
                 (name, cmd.get_short_help_str(limit)),
-                ("", f"     {_signature(ctx, cmd)}"),
+                ("", f"     {signature}"),
             ]
         with formatter.section("Commands"):
             formatter.write_dl(rows)
@@ -156,6 +161,17 @@ def _state(pipe: str | None) -> tuple[Pipeline, PipelineState]:
     st = state(pp)
     click.echo(f"{pp.short_name}: {st.state.value}")
     return pp, st
+
+
+def _echo_table(rows: list) -> None:
+    """Print aligned rows, cut to the terminal width only when stdout is one."""
+    import shutil
+
+    from .. import ui
+
+    width = shutil.get_terminal_size().columns if sys.stdout.isatty() else None
+    for line in ui.table(rows, max_width=width):
+        click.echo(line)
 
 
 def _na(error: ConfigError) -> str:
@@ -266,27 +282,39 @@ def moka_plans(pipe: str | None):
     """
     List the plans of the pipeline, and whether the current state accepts each.
     """
+    from .. import ui
     from ..errors import ConfigError, StateError
     from .plans import PLANS, build
     from .state import gate
 
     pp, st = _state(pipe)
+    ctx = click.get_current_context()
+    color = ui.use_color(sys.stdout)
+    rows = [[ui.style("dim", "USAGE", color), ui.style("dim", "NOW", color)]]
     for name in pp.plans.names():
         plan = pp.plans[name]
         origin = ""
         if name not in PLANS or PLANS[name] is not plan:
-            origin = " (local, overrides built-in)" if name in PLANS else " (local)"
+            origin = "  (local, overrides built-in)" if name in PLANS else "  (local)"
         try:
             build(pp, plan)
             gate(pp.short_name, st, plan.accepts)
-            status = "ok"
+            status, role = "ok", "ok"
         except ConfigError as error:
-            status = _na(error)
+            status, role = _na(error), "dim"
         except StateError as error:
             reason = error.message.split(" is ", 1)[-1].removesuffix(".")
-            status = f"no ({reason})"
-        labels = " ".join(step.label for step in plan.steps)
-        click.echo(f"{name}{origin}  {labels}  {status}")
+            status, role = f"no ({reason})", "warn"
+        usage = _signature(ctx, _plan_command(plan, pp.tasks))
+        labels = " -> ".join(step.label for step in plan.steps)
+        rows += [
+            [
+                ui.style("name", name, color) + usage[len(name) :] + origin,
+                ui.style(role, status, color),
+            ],
+            [ui.style("dim", f"  {labels}", color)],
+        ]
+    _echo_table(rows)
 
 
 @moka.command("tasks")
@@ -296,6 +324,7 @@ def moka_tasks(pipe: str | None, plan: str | None):
     """
     List the tasks (of PLAN, if given) with their success and can; never runs them.
     """
+    from .. import ui
     from ..errors import ConfigError
     from .plans import build_step, steps_from_list
 
@@ -303,15 +332,21 @@ def moka_tasks(pipe: str | None, plan: str | None):
     steps = (
         pp.plans[plan].steps if plan is not None else steps_from_list(pp.tasks.names())
     )
+    color = ui.use_color(sys.stdout)
+    rows = [[ui.style("dim", h, color) for h in ("TASK", "DONE", "CAN", "REASON")]]
     for step in steps:
+        label = ui.style("name", step.label, color)
         try:
             task = build_step(pp, step)
         except ConfigError as error:
-            click.echo(f"{step.label}  {_na(error)}")
+            rows.append([label, ui.style("dim", _na(error), color)])
             continue
         done, can = task.success(), task.can()
-        row = f"{step.label}  {'yes' if done else 'no'}  {'yes' if can else 'no'}"
-        click.echo(row if can else f"{row}  {task.failure_reason}")
+        row = [label]
+        for flag in (done, can):
+            row.append(ui.style("ok" if flag else "warn", "yes" if flag else "no", color))
+        rows.append(row if can else [*row, task.failure_reason])
+    _echo_table(rows)
 
 
 @moka.command("link")

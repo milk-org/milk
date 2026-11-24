@@ -49,14 +49,22 @@ def highlight_ticks(msg: str, color: bool) -> str:
 
 
 def table(rows: list, max_width: int | None = None) -> list[str]:
-    """Aligned lines (two spaces between columns, last one unpadded), cut with ``...``."""
-    widths = [max(len(click.unstyle(c)) for c in col) for col in zip(*rows)]
+    """Aligned lines (two spaces between columns), cut with ``...``.
+
+    The last cell of each row is unpadded and does not set a column width, so rows may differ in length.
+    """
+    widths: list[int] = []
+    for row in rows:
+        for i, cell in enumerate(row[:-1]):
+            if i == len(widths):
+                widths.append(0)
+            widths[i] = max(widths[i], len(click.unstyle(cell)))
     lines = []
     for row in rows:
         line = "  ".join(
             c + " " * (w - len(click.unstyle(c))) for c, w in zip(row[:-1], widths)
         )
-        line += ("  " if len(row) > 1 else "") + row[-1]
+        line = (line + ("  " if len(row) > 1 else "") + row[-1]).rstrip()
         if max_width is not None and len(click.unstyle(line)) > max_width:
             plain = click.unstyle(line)  # loses the colors of the cut line
             line = plain[: max_width - 3] + "..."

@@ -6,6 +6,8 @@ MILK_SHM_DIR (`shm_dir_cleanafter`), and the boot id is pinned (`boot`); see tes
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from click.testing import CliRunner
 
@@ -223,10 +225,13 @@ def test_help_shows_the_plan_params(recorded):
 def test_plans_and_tasks_on_a_plan_with_params(pp, recorded):
     result = _invoke("plans", "-p", str(pp.root_folder))
     assert result.exit_code == 0, _text(result)
-    assert _row(result, "probe") == "probe  Record Record  ok"
+    assert _row(result, "probe") == "probe [-p PIPE] [-a AMPL] [KIND]  ok"
+    assert _steps(result, "probe") == "  Record -> Record"
     result = _invoke("tasks", "-p", str(pp.root_folder), "probe")
     assert result.exit_code == 0, _text(result)
-    assert result.output.splitlines()[-2:] == ["Record  no  yes"] * 2
+    assert [_squeeze(line) for line in result.output.splitlines()[-2:]] == [
+        "Record  no  yes"
+    ] * 2
     assert recorded == []  # nothing ran
 
 
@@ -350,10 +355,21 @@ LOCAL = (
 )
 
 
+def _squeeze(line: str) -> str:
+    """Columns are padded: compare with exactly two spaces between them."""
+    return re.sub(r" {2,}", "  ", line)
+
+
 def _row(result, name: str) -> str:
     """The one output line whose first word is ``name``."""
     (row,) = [line for line in result.output.splitlines() if line.split()[:1] == [name]]
-    return row
+    return _squeeze(row)
+
+
+def _steps(result, name: str) -> str:
+    """The steps line of plan ``name``: the line after its row."""
+    lines = result.output.splitlines()
+    return lines[next(i for i, line in enumerate(lines) if line.split()[:1] == [name]) + 1]
 
 
 def test_plans_is_a_fixed_command():
@@ -366,11 +382,13 @@ def test_plans_on_a_cold_pipeline(pp):
     assert result.exit_code == 0, _text(result)
     assert "basic: cold" in result.output.splitlines()
     deploy = _row(result, "deploy")
-    assert "ClaimRundir InitFPS LoadData ConfStart" in deploy and deploy.endswith("ok")
+    assert deploy.endswith("ok")
+    assert _steps(result, "deploy") == "  ClaimRundir -> InitFPS -> LoadData -> ConfStart"
     assert _row(result, "teardown").endswith("ok")  # accepts any state
     assert _row(result, "runstop").endswith("ok")
     runstart = _row(result, "runstart")
-    assert "RunStart" in runstart and runstart.endswith("no (cold; run deploy)")
+    assert _steps(result, "runstart") == "  RunStart"
+    assert runstart.endswith("no (cold; run deploy)")
     for name in ("deploy", "teardown", "runstart", "runstop"):
         assert "local" not in _row(result, name)
 
@@ -398,14 +416,19 @@ def test_plans_shows_local_plans_and_what_cannot_be_built(make_tmp_pipeline, pp_
     result = _invoke("plans", "-p", str(pp.root_folder))
     assert result.exit_code == 0, _text(result)
     probe = _row(result, "probe")
-    assert "(local)" in probe and "ReleaseRundir" in probe and probe.endswith("ok")
+    assert probe == "probe [-p PIPE]  (local)  ok"
+    assert _steps(result, "probe") == "  ReleaseRundir"
     teardown = _row(result, "teardown")
     assert "(local, overrides built-in)" in teardown
-    assert "RunStop ReleaseRundir" in teardown and "DestroyFPS" not in teardown
+    assert _steps(result, "teardown") == "  RunStop -> ReleaseRundir"
     assert _row(result, "ghost") == (
-        "ghost (local)  RunStop[ghost]  n/a (Unknown compute units ['ghost'] for RunStop)"
+        "ghost [-p PIPE]  (local)  n/a (Unknown compute units ['ghost'] for RunStop)"
     )
-    assert _row(result, "notask") == "notask (local)  Nope  n/a (Unknown task 'Nope')"
+    assert _steps(result, "ghost") == "  RunStop[ghost]"
+    assert _row(result, "notask") == (
+        "notask [-p PIPE]  (local)  n/a (Unknown task 'Nope')"
+    )
+    assert _steps(result, "notask") == "  Nope"
     assert "local" not in _row(result, "deploy")
 
 
@@ -426,8 +449,10 @@ def test_mlat_plan_is_listed_as_not_applicable_without_its_units(pp):
     assert "mlat [-p PIPE]" in lines
     result = _invoke("plans", "-p", str(pp.root_folder))
     assert _row(result, "mlat") == (
-        "mlat  RunStart[acquWFS] RunStart[mlat] WaitRunEnd[mlat]"
-        "  n/a (Unknown compute units ['acquWFS'] for RunStart)"
+        "mlat [-p PIPE]  n/a (Unknown compute units ['acquWFS'] for RunStart)"
+    )
+    assert _steps(result, "mlat") == (
+        "  RunStart[acquWFS] -> RunStart[mlat] -> WaitRunEnd[mlat]"
     )
     result = _invoke("mlat", "-p", str(pp.root_folder))
     assert result.exit_code == 1 and "acquWFS" in _text(result)
@@ -470,7 +495,7 @@ def _labels(result) -> list[str]:
     """The first word of each row after the `<name>: <state>` line."""
     lines = result.output.splitlines()
     start = next(i for i, line in enumerate(lines) if line.startswith("basic: "))
-    return [line.split()[0] for line in lines[start + 1 :]]
+    return [line.split()[0] for line in lines[start + 2 :]]  # skips the TASK header row
 
 
 def test_tasks_is_a_fixed_command():
@@ -551,6 +576,121 @@ def test_tasks_needs_a_pipeline(pp, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # not a rootdir
     result = _invoke("tasks")
     assert result.exit_code == 1 and "rootdir" in _text(result)
+
+
+# ---- listing layout: columns, colors, width ----
+
+
+def test_plans_now_column_is_aligned_and_steps_follow(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(LOCAL)
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    lines = result.output.splitlines()
+    lines = lines[next(i for i, line in enumerate(lines) if line.startswith("rootdir:")) :]
+    assert lines[:2] == [f"rootdir: {pp.root_folder}", "basic: cold"]
+    header = lines[2]
+    assert header.startswith("USAGE  ") and header.endswith("  NOW")
+    rows = [line for line in lines[3:] if line[:2] != "  "]
+    assert len(rows) == len(lines[3:]) // 2 and len({len(r.split("  ")[0]) for r in rows}) > 1
+    found = set()
+    for row in rows:
+        match = re.search(r"  (ok|no \(.*|n/a \(.*)$", row)
+        assert match and match.start(1) == header.index("NOW")
+        found.add(match[1].split()[0])
+    assert found == {"ok", "no", "n/a"}
+    for i, line in enumerate(lines[3:]):  # every plan row is followed by its steps line
+        assert (line[:2] == "  ") == (i % 2 == 1)
+    assert _steps(result, "teardown") == "  RunStop -> ReleaseRundir"
+    assert _steps(result, "deploy").count(" -> ") == 3
+
+
+def test_plans_usage_is_the_signature_of_moka_help(recorded, pp):
+    help_lines = [line.strip() for line in _invoke("-h", "-p", str(pp.root_folder)).output.splitlines()]
+    result = _invoke("plans", "-p", str(pp.root_folder))
+    for name in ("deploy", "runstart", "probe"):
+        usage = _row(result, name).rsplit("  ", 1)[0]
+        assert usage in help_lines and usage.split()[0] == name
+    assert "probe [-p PIPE] [-a AMPL] [KIND]" in help_lines
+
+
+def test_tasks_done_and_can_columns_are_aligned(make_tmp_pipeline, pp_env):
+    pp = make_tmp_pipeline(STEPS)
+    result = _invoke("tasks", "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    lines = result.output.splitlines()
+    header = lines[lines.index("basic: cold") + 1]
+    assert header.split() == ["TASK", "DONE", "CAN", "REASON"]
+    done, can = header.index("DONE"), header.index("CAN")
+    assert can == done + len("DONE") + 2  # no n/a row widened DONE
+    assert len({line.split()[0] for line in lines[3:]}) == len(lines[3:])
+    assert len({len(line.split()[0]) for line in lines[3:]}) > 1
+    for line in lines[3:]:
+        if "n/a" in line:
+            assert line[done:].startswith("n/a (") and len(line.split()[0]) < done
+        else:
+            assert line[done : done + 4].strip() in ("yes", "no")
+            assert line[can : can + 3].strip() in ("yes", "no")
+            assert line[done - 2 : done] == line[can - 2 : can] == "  "
+
+
+@pytest.mark.parametrize("args", [("plans",), ("tasks",), ("tasks", "ghost"), ("-h",)])
+def test_listings_have_no_trailing_space_and_are_ascii_and_uncolored(
+    make_tmp_pipeline, pp_env, args
+):
+    pp = make_tmp_pipeline(LOCAL)
+    result = _invoke(*args, "-p", str(pp.root_folder))
+    assert result.exit_code == 0, _text(result)
+    assert result.output.isascii() and "\x1b" not in result.output
+    if args != ("-h",):
+        assert all(line == line.rstrip() for line in result.output.splitlines())
+
+
+def test_listings_are_not_cut_when_not_a_terminal(make_tmp_pipeline, pp_env, monkeypatch):
+    import shutil
+
+    monkeypatch.setattr(shutil, "get_terminal_size", lambda *a: shutil.os.terminal_size((20, 24)))
+    pp = make_tmp_pipeline(LOCAL)
+    for args in (("plans",), ("tasks", "ghost")):
+        result = _invoke(*args, "-p", str(pp.root_folder))
+        assert "Unknown compute units ['ghost'] for RunStop)" in result.output
+        assert max(map(len, result.output.splitlines())) > 60
+
+
+def test_listings_are_cut_to_a_terminal(monkeypatch):
+    import io
+    import shutil
+    import sys
+
+    from moka.operate.cli import _echo_table
+
+    class Terminal(io.StringIO):
+        def isatty(self) -> bool:
+            return True
+
+    monkeypatch.setattr(
+        shutil, "get_terminal_size", lambda *a: shutil.os.terminal_size((40, 24))
+    )
+    rows = [["USAGE", "NOW"], ["deploy [-p PIPE]", "n/a (" + "x" * 60 + ")"], ["  A -> B"]]
+    for stream, cut in ((Terminal(), True), (io.StringIO(), False)):
+        monkeypatch.setattr(sys, "stdout", stream)
+        _echo_table(rows)
+        body = stream.getvalue().splitlines()
+        assert (max(map(len, body)) == 40) is cut
+        assert any(line.endswith("...") for line in body) is cut
+
+
+@pytest.mark.parametrize("args", [("plans",), ("tasks", "ghost"), ("-h",)])
+def test_color_always_styles_and_unstyle_gives_the_plain_output(
+    make_tmp_pipeline, pp_env, args
+):
+    import click
+
+    pp = make_tmp_pipeline(LOCAL)
+    plain = _invoke(*args, "-p", str(pp.root_folder))
+    colored = _invoke("--color=always", *args, "-p", str(pp.root_folder))
+    assert colored.exit_code == 0, _text(colored)
+    assert "\x1b[" in colored.output
+    assert click.unstyle(colored.output) == plain.output
 
 
 # ---- state ----

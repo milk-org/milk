@@ -90,6 +90,15 @@ def test_table_cut_and_last_column_unpadded():
     assert ui.table(rows)[1] == "n     short"
 
 
+def test_table_rows_of_different_length_and_no_trailing_space():
+    rows = [["h", "DONE", "CAN", "WHY"], ["x", "a very long last cell"], ["y", "no", "yes", ""]]
+    assert ui.table(rows) == [
+        "h  DONE  CAN  WHY",
+        "x  a very long last cell",  # the last cell of a row does not widen its column
+        "y  no    yes",
+    ]
+
+
 def test_highlight_ticks():
     assert ui.highlight_ticks("run `deploy` now", False) == "run `deploy` now"
     styled = ui.highlight_ticks("run `deploy` now", True)
