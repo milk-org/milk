@@ -25,6 +25,7 @@ measlinresp.exec    = 'cacao-fpsexec-cacaoac-measlinresp'
 
 
 [systemlinkage.delaysim]
+# TODO dmXX should be a variable, when switching between sim and non-sim
 aol0_wfsim = 'mlatsim_wfs'
 aol0_dmC = 'dm07disp03'        # cacao-setDMnolink map
 aol0_dmRM = 'dm07disp02'
