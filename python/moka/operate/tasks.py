@@ -142,6 +142,22 @@ class TaskOnOneCompu(TaskOnCompuSet):
 
     COUNT = 1
 
+    def _locate_exec(self, exe: str) -> None:
+        """A locate_defaults(): the conf's one unit running exe."""
+        name = type(self).__name__
+        units = self.pipeline.config.compute_units
+        found = [cu for cu, decl in units.items() if decl.exec == exe]
+        if len(found) != 1:
+            raise ConfigError(
+                (
+                    f"{name}: no {exe} unit."
+                    if not found
+                    else f"{name}: {exe} units {found}; name one in the step."
+                ),
+                pipeline=self.pipeline.short_name,
+            )
+        self.compus_names = tuple(found)
+
     @property
     def compu(self) -> ComputeUnit:
         return self.pipeline.compute_units[self.compus_names[0]]

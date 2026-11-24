@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..errors import ConfigError
 from ..operate.plans import PLANS, Plan, Step
 from ..operate.tasks import TASKS, TaskOnCompuSet, TaskOnOneCompu, stream_shape
 from . import cm as _cm, linresp as _lr  # modules: may be mid-import (cycle via plans)
@@ -14,19 +13,7 @@ class SetLoopOff(TaskOnOneCompu):
     """Writes loopON false on the unit (default: the one cacao-fpsexec-mfilt unit)."""
 
     def locate_defaults(self) -> None:
-        exe = "cacao-fpsexec-mfilt"
-        units = self.pipeline.config.compute_units
-        found = [cu for cu, decl in units.items() if decl.exec == exe]
-        if len(found) != 1:
-            raise ConfigError(
-                (
-                    f"SetLoopOff: no {exe} unit."
-                    if not found
-                    else f"SetLoopOff: {exe} units {found}; name one in the step."
-                ),
-                pipeline=self.pipeline.short_name,
-            )
-        self.compus_names = tuple(found)
+        self._locate_exec("cacao-fpsexec-mfilt")
 
     _refusal = TaskOnOneCompu._undeployed
 

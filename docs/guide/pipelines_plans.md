@@ -9,8 +9,8 @@ The built-in plans and tasks, how a plan runs, and how to write and register you
 A **task** is one idempotent action on the live pipeline (SHM, FPS, tmux, processes). It acts on
 the pipeline as a whole, or on a CompU subset given at construction. Without one, the task picks
 its own: all CompUs (`RunStart`: the [`runstart`](pipelines_conf.md#3-conftoml-keys) list;
-`SetLoopOff`: the one `cacao-fpsexec-mfilt` CompU; `SetLinResp`, `WaitLinResp`: `measlinresp`), or
-it refuses (`LoadCM`). A **plan** is data: a name, ordered **steps**
+`SetLoopOff`: the one `cacao-fpsexec-mfilt` CompU; `SetLinResp`, `WaitLinResp`: the one
+`cacao-fpsexec-cacaoac-measlinresp` CompU), or it refuses (`LoadCM`). A **plan** is data: a name, ordered **steps**
 (a task name and an optional CompU subset), a failure policy and the states it accepts to start
 from. Plans and tasks are Python objects in `moka.operate.plans` and `moka.operate.tasks`, each
 looked up by name in a registry (`PLANS`, `TASKS`). Each pipeline adds its own plans and tasks
@@ -99,8 +99,8 @@ three CompUs with the new pair.
 
 Every plan of the pipeline, built-in or [local](#4-custom-plans), is a `moka` subcommand. `runstart` and `runstop` also take CompU names
 (`moka runstart -p basic delay1`, `run_plan(pp, "runstart", ["delay1"])`): every step then acts
-on those CompUs. Refusing CompU names for the other plans is a CLI check only: from Python,
-`run_plan(pipeline, name, compus)` applies the subset to any plan.
+on those CompUs. From Python, `run_plan(pipeline, name, compus)` applies the subset to every step
+of any plan, so a plan with a pipeline-wide task (`deploy`, `teardown`) is then a `ConfigError`.
 
 === "CLI"
 

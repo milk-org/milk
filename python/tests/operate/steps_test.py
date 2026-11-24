@@ -129,6 +129,8 @@ def test_a_one_compu_task_takes_exactly_one(pp):
         LoadCM(pp, None)
     with pytest.raises(ConfigError, match="takes 1 compute unit"):
         SetLinResp(pp, ["delay0", "delay1"])
+    with pytest.raises(ConfigError, match="no cacao-fpsexec-cacaoac-measlinresp unit"):
+        SetLinResp(pp)
 
 
 def test_runstart_needs_the_conf_process(pp, fake_compus):

@@ -76,7 +76,7 @@ class SetLinResp(TaskOnOneCompu):
     """Writes the measlinresp FPS (files, mlat's timing, params["ampl"]) and clears the outputs."""
 
     def locate_defaults(self) -> None:
-        self.compus_names = ("measlinresp",)
+        self._locate_exec("cacao-fpsexec-cacaoac-measlinresp")
 
     def _values(self) -> dict | None:
         """The FPS writes; None without mlat's timing."""
@@ -136,7 +136,7 @@ class WaitLinResp(TaskOnOneCompu, WaitRunEnd):
     """WaitRunEnd; then a complete run's in-progress file becomes RMmodesWFS.fits."""
 
     def locate_defaults(self) -> None:
-        self.compus_names = ("measlinresp",)
+        self._locate_exec("cacao-fpsexec-cacaoac-measlinresp")
 
     @property
     def TIMEOUT(self) -> float:  # type: ignore[override]
