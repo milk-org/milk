@@ -24,6 +24,13 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph import QtGui as QtG, QtCore as QtC, QtWidgets as QtW
 
+import warnings
+
+# pyqtgraph compares its default +-1e307 view limits to float32 ranges (numpy 2 promotion)
+warnings.filterwarnings(
+    "ignore", "overflow encountered in cast", RuntimeWarning, "pyqtgraph"
+)
+
 from pyMilk.interfacing.shm import SHM
 
 try:  # moved depending on Qt version
