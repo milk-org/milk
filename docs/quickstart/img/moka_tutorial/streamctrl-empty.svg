@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1276" height="696" viewBox="0 0 1276 696" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="14" xml:space="preserve" shape-rendering="crispEdges">
 <rect width="100%" height="100%" fill="#1c1c1c"/>
 <rect x="100.4" y="25.0" width="100.8" height="17.0" fill="#00c8dc"/>
-<text x="8.0" y="21.3" fill="#64ff64" font-weight="bold" textLength="1243.2">[40 x 150] [PID 2640022] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP----------------------------------------------------------------------------</text>
+<text x="8.0" y="21.3" fill="#64ff64" font-weight="bold" textLength="1243.2">[40 x 150] [PID 226994] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP-----------------------------------------------------------------------------</text>
 <text x="8.0" y="38.3" fill="#00c8dc" textLength="67.2">[h] Help</text>
 <text x="100.4" y="38.3" fill="#1c1c1c" textLength="100.8">[F2] summary</text>
 <text x="226.4" y="38.3" fill="#00c8dc" textLength="126.0">[F3] write PIDs</text>
 <text x="377.6" y="38.3" fill="#00c8dc" textLength="117.6">[F4] read PIDs</text>
 <text x="520.4" y="38.3" fill="#00c8dc" textLength="159.6">[F5] process traces</text>
 <text x="705.2" y="38.3" fill="#00c8dc" textLength="92.4">[F6] access</text>
-<text x="8.0" y="55.3" fill="#d0d0d0" textLength="697.2">PIDmax = 4194304    Update frequ = 10 Hz  fscan= 9.98 Hz ( 10.00 Hz  0.20 % busy ) </text>
+<text x="8.0" y="55.3" fill="#d0d0d0" textLength="697.2">PIDmax = 4194304    Update frequ = 10 Hz  fscan= 9.98 Hz ( 10.00 Hz  0.21 % busy ) </text>
 <text x="705.2" y="55.3" fill="#d0d0d0" font-weight="bold" textLength="8.4">]</text>
 <text x="713.6" y="55.3" fill="#d0d0d0" textLength="100.8"> cycle col  </text>
 <text x="814.4" y="55.3" fill="#d0d0d0" font-weight="bold" textLength="8.4">[</text>

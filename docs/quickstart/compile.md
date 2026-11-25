@@ -85,7 +85,11 @@ ______________________________________________________________________
 ```bash
 git clone --recursive https://github.com/milk-org/milk.git
 cd milk
+./fetch_cacao_dev.sh  # (1)!
 ```
+
+1. Clones the cacao plugin into `plugins/cacao-src`, so that the build below includes it. moka
+   and the [moka Tutorial](moka_tutorial.md) need cacao.
 
 **Build:**
 
@@ -95,6 +99,20 @@ cmake ..
 make -j$(nproc)
 sudo make install # The default install path is /usr/local/milk-<version>
 ```
+
+!!! note "Installing elsewhere"
+
+    CMake appends `milk-<version>` to `CMAKE_INSTALL_PREFIX` (unless the prefix already ends with
+    it) and does not read `MILK_INSTALLDIR`. Set both:
+
+    ```bash
+    cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/local  # (1)!
+    export MILK_INSTALLDIR=$HOME/local/milk-<version>
+    ```
+
+    1. Installs to `$HOME/local/milk-<version>`.
+
+    Several versions side by side: [Multiversion](../developer/multiversion.md).
 
 For minimal or partial builds (engine-only, core without cfitsio, etc.), see
 [Build Tiers](build_tiers.md).
@@ -107,11 +125,25 @@ ______________________________________________________________________
 
 Set in `.bashrc` or equivalent:
 
-| Variable          | Example               | Purpose                 |
-| ----------------- | --------------------- | ----------------------- |
-| `MILK_ROOT`       | `/home/user/src/milk` | Source code directory   |
-| `MILK_INSTALLDIR` | `/usr/local/milk`     | Installation directory  |
-| `MILK_SHM_DIR`    | `/milk/shm`           | Shared memory directory |
+| Variable          | Purpose                                   |
+| ----------------- | ----------------------------------------- |
+| `MILK_ROOT`       | Source code directory                     |
+| `MILK_INSTALLDIR` | Installation directory                    |
+| `PATH`            | milk and cacao executables                |
+| `MILK_SHM_DIR`    | Shared memory directory (streams and FPS) |
+| `MILK_PROC_DIR`   | Process info directory: must be set       |
+
+```bash title="~/.bashrc"
+export MILK_ROOT=$HOME/src/milk
+export MILK_INSTALLDIR=/usr/local/milk
+export PATH=$MILK_INSTALLDIR/bin:$PATH
+export MILK_SHM_DIR=/milk/shm
+export MILK_PROC_DIR=$MILK_SHM_DIR
+```
+
+`MILK_PROC_DIR` does not default to `MILK_SHM_DIR`: when it is unset, processinfo uses the
+compiled-in `/milk/shm`, whatever `MILK_SHM_DIR` is. With a non-default `MILK_SHM_DIR`, processes
+and TUIs then no longer see each other.
 
 !!! warning "MILK_INSTALLDIR"
 
@@ -121,6 +153,9 @@ Set in `.bashrc` or equivalent:
     ```bash
     sudo ln -sfn "/usr/local/milk-<version>" /usr/local/milk
     ```
+
+    For a non-default install location, see the note _Installing elsewhere_ in
+    [§1](#1-download-and-install-milk).
 
 ______________________________________________________________________
 
@@ -141,13 +176,13 @@ ______________________________________________________________________
 After milk is installed and the [environment variables](#2-environment-variables) are set:
 
 ```bash
-PYMILK_ENGINE=SYSTEM pip install $MILK_ROOT/python/pyMilk  # (1)!
-pip install $MILK_ROOT/plugins/cacao-src                    # (2)!
-pip install $MILK_ROOT/python/                              # (3)!
+PYMILK_ENGINE=SYSTEM pip install "$MILK_ROOT/python/pyMilk[vis]"  # (1)!
+pip install $MILK_ROOT/plugins/cacao-src                           # (2)!
+pip install $MILK_ROOT/python/                                     # (3)!
 ```
 
 1. [pyMilk](../guide/pyMilk.md#1-installation): streams, FPS and processinfo from Python.
-   Reinstall it after reinstalling milk.
+   Reinstall it after reinstalling milk. The `[vis]` extra brings the viewers (`shmImshow`).
 2. pycacao, from the cacao plugin: needed by the moka calibration plans and `[dmhint]`.
 3. [moka](../moka/moka.md): `mokainit`, `moka`, `mokashow`.
 

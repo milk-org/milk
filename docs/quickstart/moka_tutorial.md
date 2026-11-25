@@ -56,32 +56,36 @@ Check that milk, cacao, moka and tmux are installed and that the environment is 
 
 ```bash
 moka -h | head -3
-echo MILK_ROOT=$MILK_ROOT; echo MILK_INSTALLDIR=$MILK_INSTALLDIR; echo MILK_SHM_DIR=$MILK_SHM_DIR
+echo MILK_ROOT=$MILK_ROOT; echo MILK_INSTALLDIR=$MILK_INSTALLDIR; echo MILK_SHM_DIR=$MILK_SHM_DIR; echo MILK_PROC_DIR=$MILK_PROC_DIR
 ls -d "$MILK_ROOT"/milk-examples/pipelines/{mlatsim,aoloop}-conf
-which cacao-fpsexec-mfilt milk-fpsexec-linalg-MVMextract milk-fpsCTRL milk-streamCTRL shmImshow
+which cacao-fpsexec-mfilt milk-fpsexec-linalg-MVMextract milk-fpsCTRL milk-streamCTRL milk-termview shmImshow
 tmux -V
 python -c 'import moka, pyMilk, matplotlib, numpy; print("ok")'
 ```
 
-<!-- tut:out id=checks -->
+??? note "Output"
 
-```text title="Output"
-Usage: moka [OPTIONS] COMMAND [ARGS]...
+    <!-- tut:out id=checks -->
 
-  Operate an initialized milk/cacao pipeline (see `mokainit init`).
-MILK_ROOT=~/src/milk
-MILK_INSTALLDIR=/usr/local/milk
-MILK_SHM_DIR=/milk/shm
-~/src/milk/milk-examples/pipelines/aoloop-conf
-~/src/milk/milk-examples/pipelines/mlatsim-conf
-/usr/local/milk/bin/cacao-fpsexec-mfilt
-/usr/local/milk/bin/milk-fpsexec-linalg-MVMextract
-/usr/local/milk/bin/milk-fpsCTRL
-/usr/local/milk/bin/milk-streamCTRL
-~/mambaforge/bin/shmImshow
-tmux 3.3a
-ok
-```
+    ```text
+    Usage: moka [OPTIONS] COMMAND [ARGS]...
+
+      Operate an initialized milk/cacao pipeline (see `mokainit init`).
+    MILK_ROOT=~/src/milk
+    MILK_INSTALLDIR=/usr/local/milk
+    MILK_SHM_DIR=/milk/shm
+    MILK_PROC_DIR=/milk/shm
+    ~/src/milk/milk-examples/pipelines/aoloop-conf
+    ~/src/milk/milk-examples/pipelines/mlatsim-conf
+    /usr/local/milk/bin/cacao-fpsexec-mfilt
+    /usr/local/milk/bin/milk-fpsexec-linalg-MVMextract
+    /usr/local/milk/bin/milk-fpsCTRL
+    /usr/local/milk/bin/milk-streamCTRL
+    /usr/local/milk/bin/milk-termview
+    ~/mambaforge/bin/shmImshow
+    tmux 3.3a
+    ok
+    ```
 
 !!! note "When a check fails"
 
@@ -145,25 +149,27 @@ mokainit clone --milk aoloop .
 find mlatsim-conf aoloop-conf | sort
 ```
 
-<!-- tut:out id=clone -->
+??? note "Output"
 
-```text title="Output"
-Cloned ~/src/milk/milk-examples/pipelines/mlatsim-conf to mlatsim-conf
-Cloned ~/src/milk/milk-examples/pipelines/aoloop-conf to aoloop-conf
-aoloop-conf
-aoloop-conf/conf.toml
-aoloop-conf/fpsdetails.toml
-aoloop-conf/.gitignore
-aoloop-conf/scripts
-aoloop-conf/scripts/dm_psf.py
-aoloop-conf/scripts/moka_plans.py
-mlatsim-conf
-mlatsim-conf/conf.toml
-mlatsim-conf/.gitignore
-mlatsim-conf/scripts
-mlatsim-conf/scripts/mkdm.py
-mlatsim-conf/scripts/mkpupmask.py
-```
+    <!-- tut:out id=clone -->
+
+    ```text
+    Cloned ~/src/milk/milk-examples/pipelines/mlatsim-conf to mlatsim-conf
+    Cloned ~/src/milk/milk-examples/pipelines/aoloop-conf to aoloop-conf
+    aoloop-conf
+    aoloop-conf/conf.toml
+    aoloop-conf/fpsdetails.toml
+    aoloop-conf/.gitignore
+    aoloop-conf/scripts
+    aoloop-conf/scripts/dm_psf.py
+    aoloop-conf/scripts/moka_plans.py
+    mlatsim-conf
+    mlatsim-conf/conf.toml
+    mlatsim-conf/.gitignore
+    mlatsim-conf/scripts
+    mlatsim-conf/scripts/mkdm.py
+    mlatsim-conf/scripts/mkpupmask.py
+    ```
 
 !!! tip "Look around"
 
@@ -199,38 +205,40 @@ find mlatsim-rootdir | sort
 moka state -p aoloop
 ```
 
-<!-- tut:out id=init -->
+??? note "Output"
 
-```text title="Output"
-Initialized mlatsim-rootdir
-INFO: aoloop-conf/conf.toml: extra keys ['_ln']
-INFO: aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-Initialized aoloop-rootdir
-mlatsim-rootdir
-mlatsim-rootdir/conf
-mlatsim-rootdir/conf/conf.toml
-mlatsim-rootdir/conf/scripts
-mlatsim-rootdir/conf/scripts/mkdm.py
-mlatsim-rootdir/conf/scripts/mkpupmask.py
-mlatsim-rootdir/initdata
-mlatsim-rootdir/initdata/dm.fits
-mlatsim-rootdir/initdata/dm.fits.tag
-mlatsim-rootdir/initdata/pupmask.fits
-mlatsim-rootdir/initdata/pupmask.fits.tag
-mlatsim-rootdir/initdata/wfs.fits
-mlatsim-rootdir/initdata/wfs.fits.tag
-mlatsim-rootdir/initdata/wfssignal.fits
-mlatsim-rootdir/initdata/wfssignal.fits.tag
-mlatsim-rootdir/logs
-mlatsim-rootdir/provenance.toml
-mlatsim-rootdir/work
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: cold
-INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
-drift: none
-```
+    <!-- tut:out id=init -->
+
+    ```text
+    Initialized mlatsim-rootdir
+    INFO: aoloop-conf/conf.toml: extra keys ['_ln']
+    INFO: aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    Initialized aoloop-rootdir
+    mlatsim-rootdir
+    mlatsim-rootdir/conf
+    mlatsim-rootdir/conf/conf.toml
+    mlatsim-rootdir/conf/scripts
+    mlatsim-rootdir/conf/scripts/mkdm.py
+    mlatsim-rootdir/conf/scripts/mkpupmask.py
+    mlatsim-rootdir/initdata
+    mlatsim-rootdir/initdata/dm.fits
+    mlatsim-rootdir/initdata/dm.fits.tag
+    mlatsim-rootdir/initdata/pupmask.fits
+    mlatsim-rootdir/initdata/pupmask.fits.tag
+    mlatsim-rootdir/initdata/wfs.fits
+    mlatsim-rootdir/initdata/wfs.fits.tag
+    mlatsim-rootdir/initdata/wfssignal.fits
+    mlatsim-rootdir/initdata/wfssignal.fits.tag
+    mlatsim-rootdir/logs
+    mlatsim-rootdir/provenance.toml
+    mlatsim-rootdir/work
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: cold
+    INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
+    drift: none
+    ```
 
 !!! note "What moka did"
 
@@ -265,55 +273,57 @@ moka deploy -p mlatsim
 moka runstart -p mlatsim
 ```
 
-<!-- tut:out id=deploy-mlatsim -->
+??? note "Output"
 
-```text title="Output"
-> moka deploy
-rootdir: ~/AOloop2/mlatsim-rootdir
-mlatsim: cold
-  [1/4] ClaimRundir ... [ ok ] done (0.0 s)
-  [2/4] InitFPS ....... [ ok ] done (0.0 s)
-WARNING
- (PID n) Cannot open shm file "/milk/shm/dm07disp.im.shm"
+    <!-- tut:out id=deploy-mlatsim -->
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/dm07disp02.im.shm"
+    ```text
+    > moka deploy
+    rootdir: ~/AOloop2/mlatsim-rootdir
+    mlatsim: cold
+      [1/4] ClaimRundir ... [ ok ] done (0.0 s)
+      [2/4] InitFPS ....... [ ok ] done (0.0 s)
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/dm07disp.im.shm"
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/dm07disp03.im.shm"
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/dm07disp02.im.shm"
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/dm07disp10.im.shm"
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/dm07disp03.im.shm"
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/mlatsim_dmdelayed.im.shm"
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/dm07disp10.im.shm"
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/mlatsim_wfs.im.shm"
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/mlatsim_dmdelayed.im.shm"
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/mlatsim_wfssignal.im.shm"
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/mlatsim_wfs.im.shm"
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/mlatsim_pupmask.im.shm"
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/mlatsim_wfssignal.im.shm"
 
-  [3/4] LoadData ...... [ ok ] done (0.2 s)
-  [4/4] ConfStart ..... [ ok ] done (0.2 s)
-[ ok ] deploy done in 0.4 s
-dm07disp.im.shm will be created
-dm07disp02.im.shm will be created
-dm07disp03.im.shm will be created
-dm07disp10.im.shm will be created
-mlatsim_dmdelayed.im.shm will be created
-mlatsim_wfs.im.shm will be created
-mlatsim_wfssignal.im.shm will be created
-mlatsim_pupmask.im.shm will be created
-> moka runstart
-rootdir: ~/AOloop2/mlatsim-rootdir
-mlatsim: configured
-  [1/1] RunStart ... [ ok ] done (0.7 s)
-[ ok ] runstart done in 0.7 s
-```
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/mlatsim_pupmask.im.shm"
+
+      [3/4] LoadData ...... [ ok ] done (0.2 s)
+      [4/4] ConfStart ..... [ ok ] done (0.2 s)
+    [ ok ] deploy done in 0.4 s
+    dm07disp.im.shm will be created
+    dm07disp02.im.shm will be created
+    dm07disp03.im.shm will be created
+    dm07disp10.im.shm will be created
+    mlatsim_dmdelayed.im.shm will be created
+    mlatsim_wfs.im.shm will be created
+    mlatsim_wfssignal.im.shm will be created
+    mlatsim_pupmask.im.shm will be created
+    > moka runstart
+    rootdir: ~/AOloop2/mlatsim-rootdir
+    mlatsim: configured
+      [1/1] RunStart ... [ ok ] done (0.7 s)
+    [ ok ] runstart done in 0.7 s
+    ```
 
 !!! note "What moka did"
 
@@ -364,28 +374,30 @@ moka link delaysim -p aoloop  # (2)!
 1. Without a name: lists the linkages of the pipeline, applies nothing.
 2. Applies `[systemlinkage.delaysim]`. It prints no step line.
 
-<!-- tut:out id=deploy-aoloop -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka deploy
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: cold
-  [1/4] ClaimRundir ... [ ok ] done (0.0 s)
-  [2/4] InitFPS ....... [ ok ] done (0.1 s)
-  [3/4] LoadData ...... [ -- ] already done
-  [4/4] ConfStart ..... [ ok ] done (0.3 s)
-[ ok ] deploy done in 0.6 s
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-rootdir: ~/AOloop2/aoloop-rootdir
-delaysim
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka link
-rootdir: ~/AOloop2/aoloop-rootdir
-```
+    <!-- tut:out id=deploy-aoloop -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka deploy
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: cold
+      [1/4] ClaimRundir ... [ ok ] done (0.0 s)
+      [2/4] InitFPS ....... [ ok ] done (0.2 s)
+      [3/4] LoadData ...... [ -- ] already done
+      [4/4] ConfStart ..... [ ok ] done (0.4 s)
+    [ ok ] deploy done in 0.8 s
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    rootdir: ~/AOloop2/aoloop-rootdir
+    delaysim
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka link
+    rootdir: ~/AOloop2/aoloop-rootdir
+    ```
 
 The linkage is three symlinks, which streamCTRL shows (names truncated): `aol0_wfsim` to
 `mlatsim_wfs`, `aol0_dmC` to `dm07disp03`, `aol0_dmRM` to `dm07disp02`.
@@ -423,31 +435,33 @@ moka takedark -p aoloop
 moka takeref -p aoloop
 ```
 
-<!-- tut:out id=dark-ref -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka takedark
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: configured
-  [1/3] RemoveLightSim .... [ ok ] done (1.0 s)
-WARNING
- (PID n) Cannot open shm file "/milk/shm/aol0_wfsdark.im.shm"
+    <!-- tut:out id=dark-ref -->
 
-  [2/3] TakeDark .......... [ ok ] done (5.2 s)
-  [3/3] PutbackLightSim ... [ ok ] done (1.0 s)
-[ ok ] takedark done in 7.2 s
-aol0_wfsdark.im.shm will be created
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka takeref
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: configured
-  [1/2] RunStart[acquWFS] ... [ ok ] done (0.0 s)
-  [2/2] TakeRef ............. [ ok ] done (5.2 s)
-[ ok ] takeref done in 5.2 s
-```
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka takedark
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: configured
+      [1/3] RemoveLightSim .... [ ok ] done (1.0 s)
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/aol0_wfsdark.im.shm"
+
+      [2/3] TakeDark .......... [ ok ] done (5.2 s)
+      [3/3] PutbackLightSim ... [ ok ] done (1.0 s)
+    [ ok ] takedark done in 7.2 s
+    aol0_wfsdark.im.shm will be created
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka takeref
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: configured
+      [1/2] RunStart[acquWFS] ... [ ok ] done (0.0 s)
+      [2/2] TakeRef ............. [ ok ] done (5.2 s)
+    [ ok ] takeref done in 5.2 s
+    ```
 
 !!! note "What moka did"
 
@@ -457,7 +471,9 @@ aoloop: configured
     the linkage that gives `aol0_wfsim` its data. `takeref` starts `acquWFS`, then averages its
     `aol0_imWFS1` frames into the reference.
 
-In the fourth terminal, open the WFS frames as `acquWFS` reads them, and as the loop uses them:
+In the fourth terminal, open the WFS frames as `acquWFS` reads them, and as the loop uses them.
+Two viewers show a stream: `shmImshow` opens a window, `milk-termview` draws in the terminal
+itself. Use either; the stream images below are `milk-termview` captures.
 
 <!-- tut:manual -->
 
@@ -466,14 +482,24 @@ shmImshow aol0_imWFS0 &
 shmImshow aol0_imWFS2 &
 ```
 
+Or, one stream per terminal:
+
+<!-- tut:manual -->
+
+```bash
+milk-termview aol0_imWFS0  # (1)!
+```
+
+1. `q` quits, `c` cycles the colormaps, `-h` lists the keys.
+
 <!-- tut:tui id=imwfs0 cmd="milk-termview aol0_imWFS0" size=80x40 -->
 
-![aol0_imWFS0: the four pupil images of the pyramid WFS](img/moka_tutorial/imwfs0.svg)
+![aol0_imWFS0: the four pupil images of the pyramid WFS](img/moka_tutorial/imwfs0.svg){ width="50%" }
 _`aol0_imWFS0`: the camera frame, four pupil images._
 
 <!-- tut:tui id=imwfs2 cmd="milk-termview aol0_imWFS2" size=80x40 -->
 
-![aol0_imWFS2: noise around zero](img/moka_tutorial/imwfs2.svg)
+![aol0_imWFS2: noise around zero](img/moka_tutorial/imwfs2.svg){ width="50%" }
 _`aol0_imWFS2`: with the DM flat, the frame minus the reference is noise around zero._
 
 !!! tip "Look around"
@@ -498,19 +524,21 @@ Method: [Plans and tasks §1](../moka/plans.md#1-built-in-plans).
 moka mlat -p aoloop
 ```
 
-<!-- tut:out id=measure-mlat -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka mlat
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: mixed
-  [1/3] RunStart[acquWFS] ... [ -- ] already done
-  [2/3] RunStart[mlat] ...... [ ok ] done (0.2 s)
-  [3/3] WaitRunEnd[mlat] .... [ ok ] done (2.0 s)
-[ ok ] mlat done in 2.1 s
-```
+    <!-- tut:out id=measure-mlat -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka mlat
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: mixed
+      [1/3] RunStart[acquWFS] ... [ -- ] already done
+      [2/3] RunStart[mlat] ...... [ ok ] done (0.2 s)
+      [3/3] WaitRunEnd[mlat] .... [ ok ] done (1.8 s)
+    [ ok ] mlat done in 2.0 s
+    ```
 
 <!-- tut:manual -->
 
@@ -548,20 +576,22 @@ First, on purpose, ask for the control matrix before there is anything to comput
 <!-- tut:run id=mkcm-refused expect=1 -->
 
 ```bash
-moka mkcm -p aoloop -n 156
+moka mkcm -p aoloop -n 155 -r 1e-3
 ```
 
-<!-- tut:out id=mkcm-refused -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka mkcm
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: mixed
-  [1/1] MakeCM ... [ NO ] refused: ~/AOloop2/aoloop-rootdir/calib/RMmodesDM.fits does not exist; run `moka mkpokes`.
-[FAIL] mkcm: stopped at step 1/1 (MakeCM)
-```
+    <!-- tut:out id=mkcm-refused -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka mkcm
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: mixed
+      [1/1] MakeCM ... [ NO ] refused: ~/AOloop2/aoloop-rootdir/calib/RMmodesDM.fits does not exist; run `moka mkpokes`.
+    [FAIL] mkcm: stopped at step 1/1 (MakeCM)
+    ```
 
 A refusal names the fix: here, `moka mkpokes`. Make the poke cube, then measure (about 20 s):
 
@@ -572,27 +602,29 @@ moka mkpokes -p aoloop
 moka measlinresp -p aoloop
 ```
 
-<!-- tut:out id=measure-rm -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka mkpokes
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: mixed
-  [1/1] MakePokes ... [ ok ] done (0.3 s)
-[ ok ] mkpokes done in 0.3 s
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka measlinresp
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: mixed
-  [1/4] RunStart[acquWFS] ....... [ -- ] already done
-  [2/4] SetLinResp .............. [ ok ] done (0.2 s)
-  [3/4] RunStart[measlinresp] ... [ ok ] done (0.1 s)
-  [4/4] WaitLinResp ............. [ ok ] done (19.1 s)
-[ ok ] measlinresp done in 19.3 s
-```
+    <!-- tut:out id=measure-rm -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka mkpokes
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: mixed
+      [1/1] MakePokes ... [ ok ] done (0.4 s)
+    [ ok ] mkpokes done in 0.4 s
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka measlinresp
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: mixed
+      [1/4] RunStart[acquWFS] ....... [ -- ] already done
+      [2/4] SetLinResp .............. [ ok ] done (0.2 s)
+      [3/4] RunStart[measlinresp] ... [ ok ] done (0.1 s)
+      [4/4] WaitLinResp ............. [ ok ] done (18.0 s)
+    [ ok ] measlinresp done in 18.3 s
+    ```
 
 <!-- tut:manual -->
 
@@ -620,29 +652,32 @@ _The response matrix: a poke mode on the DM and the WFS response it gave._
 ## 10. Compute the control matrix
 
 Invert the response into the matrices that turn WFS frames into mode values and mode values into
-DM commands, keeping the first 156 modes.
+DM commands, keeping at most the first 155 modes.
 
 <!-- tut:run id=mkcm -->
 
 ```bash
-moka mkcm -p aoloop -n 156  # (1)!
+moka mkcm -p aoloop -n 155 -r 1e-3  # (1)!
 ```
 
-1. `-n 156` keeps the 156 strongest singular modes of the response: the WFS sees only the 156
-   actuators lit by the pupil of `mlatsim` (`mlatsim_pupmask`), out of the 208 of the DM mask. The
+1. `-n 155` keeps at most the 155 strongest singular modes of the response: the WFS sees only
+   the 156 actuators lit by the pupil of `mlatsim` (`mlatsim_pupmask`), out of the 208 of the DM
+   mask, and piston, which the WFS cannot measure, is dropped. `-r 1e-3` also drops the modes whose singular value is below 1e-3 of the strongest. The
    other modes are noise to the WFS; without the cut, the loop is unstable and corrects badly.
 
-<!-- tut:out id=mkcm -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka mkcm
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: mixed
-  [1/1] MakeCM ... [ ok ] done (0.2 s)
-[ ok ] mkcm done in 0.2 s
-```
+    <!-- tut:out id=mkcm -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka mkcm
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: mixed
+      [1/1] MakeCM ... [ ok ] done (0.3 s)
+    [ ok ] mkcm done in 0.3 s
+    ```
 
 <!-- tut:manual -->
 
@@ -655,7 +690,7 @@ mokashow cm -p aoloop
 ![mokashow cm: one control mode on the DM and the WFS, and the singular values](img/moka_tutorial/cm.png)
 _The control matrix: a control mode, and the singular values of the response with the `-n` cut._
 
-The singular values drop after mode 156, where `-n 156` cuts.
+The singular values drop past mode 155, where `-n 155` cuts.
 
 !!! tip "Look around"
 
@@ -676,30 +711,32 @@ Load the control matrix and start the loop's compute units, with the integrator 
 moka spool -p aoloop
 ```
 
-<!-- tut:out id=spool -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka spool
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: mixed
-  [1/6] SetLoopOff[mfilt] .................... [ -- ] already done
-  [2/6] RunStop[modes2dm,mfilt,wfs2modes] .... [ -- ] already done
-WARNING
- (PID n) Cannot open shm file "/milk/shm/aol0_CMmodesWFS.im.shm"
+    <!-- tut:out id=spool -->
 
-WARNING
- (PID n) Cannot open shm file "/milk/shm/aol0_CMmodesDM.im.shm"
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka spool
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: mixed
+      [1/6] SetLoopOff[mfilt] .................... [ -- ] already done
+      [2/6] RunStop[modes2dm,mfilt,wfs2modes] .... [ -- ] already done
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/aol0_CMmodesWFS.im.shm"
 
-  [3/6] LoadCM[wfs2modes,modes2dm] ........... [ ok ] done (0.2 s)
-  [4/6] RunStart[acquWFS] .................... [ -- ] already done
-  [5/6] RunStart[wfs2modes,mfilt,modes2dm] ... [ ok ] done (0.4 s)
-  [6/6] SetLoopOff[mfilt] .................... [ -- ] already done
-[ ok ] spool done in 0.6 s
-aol0_CMmodesWFS.im.shm will be created
-aol0_CMmodesDM.im.shm will be created
-```
+    WARNING
+     (PID n) Cannot open shm file "/milk/shm/aol0_CMmodesDM.im.shm"
+
+      [3/6] LoadCM[wfs2modes,modes2dm] ........... [ ok ] done (0.2 s)
+      [4/6] RunStart[acquWFS] .................... [ -- ] already done
+      [5/6] RunStart[wfs2modes,mfilt,modes2dm] ... [ ok ] done (0.4 s)
+      [6/6] SetLoopOff[mfilt] .................... [ -- ] already done
+    [ ok ] spool done in 0.6 s
+    aol0_CMmodesWFS.im.shm will be created
+    aol0_CMmodesDM.im.shm will be created
+    ```
 
 In fpsCTRL, the `aoloop_mfilt` FPS holds the loop parameters. `loopON` is `OFF`:
 
@@ -762,7 +799,7 @@ shmImshow dm07disp03 &
 
 <!-- tut:tui id=dm07disp03 cmd="milk-termview dm07disp03" size=80x40 -->
 
-![dm07disp03: the loop output with no turbulence, small values around zero](img/moka_tutorial/dm07disp03.svg)
+![dm07disp03: the loop output with no turbulence, small values around zero](img/moka_tutorial/dm07disp03.svg){ width="50%" }
 _`dm07disp03`, the loop closed with no turbulence: small values around zero._
 
 !!! tip "Look around"
@@ -780,15 +817,17 @@ Start the turbulence generator of `mlatsim` and turn it on, then compute the PSF
 moka runstart -p mlatsim dmturb
 ```
 
-<!-- tut:out id=dmturb -->
+??? note "Output"
 
-```text title="Output"
-> moka runstart
-rootdir: ~/AOloop2/mlatsim-rootdir
-mlatsim: running
-  [1/1] RunStart[dmturb] ... [ ok ] done (0.2 s)
-[ ok ] runstart done in 0.2 s
-```
+    <!-- tut:out id=dmturb -->
+
+    ```text
+    > moka runstart
+    rootdir: ~/AOloop2/mlatsim-rootdir
+    mlatsim: running
+      [1/1] RunStart[dmturb] ... [ ok ] done (0.2 s)
+    [ ok ] runstart done in 0.2 s
+    ```
 
 === "fpsCTRL"
 
@@ -833,7 +872,7 @@ shmImshow dm07disp &
 
 <!-- tut:tui id=dm07disp10 cmd="milk-termview dm07disp10" size=80x40 -->
 
-![dm07disp10: the turbulence on the DM](img/moka_tutorial/dm07disp10.svg)
+![dm07disp10: the turbulence on the DM](img/moka_tutorial/dm07disp10.svg){ width="50%" }
 _`dm07disp10`: the turbulence written by `mlatsim_dmturb`._
 
 With the loop closed, `dm07disp03` cancels `dm07disp10` inside the pupil: there `dm07disp`, their
@@ -841,12 +880,12 @@ sum, is flat. The PSF is sharper than with the loop open, shown next.
 
 <!-- tut:tui id=dm07disp-closed cmd="milk-termview dm07disp" size=80x40 -->
 
-![dm07disp with the loop closed: flat inside the pupil](img/moka_tutorial/dm07disp-closed.svg)
+![dm07disp with the loop closed: flat inside the pupil](img/moka_tutorial/dm07disp-closed.svg){ width="50%" }
 _`dm07disp`, the loop closed: flat inside the pupil, the turbulence left outside it._
 
 <!-- tut:tui id=psf-closed cmd="milk-termview aol0_psf" size=80x40 -->
 
-![aol0_psf with the loop closed: a compact core](img/moka_tutorial/psf-closed.svg)
+![aol0_psf with the loop closed: a compact core](img/moka_tutorial/psf-closed.svg){ width="50%" }
 _`aol0_psf`, the loop closed._
 
 To see the open loop, set `loopON` to `OFF`, then `loopZERO`:
@@ -866,12 +905,12 @@ mfilt["loopZERO"] = True
 
 <!-- tut:tui id=dm07disp-open cmd="milk-termview dm07disp" size=80x40 -->
 
-![dm07disp with the loop open: the turbulence everywhere](img/moka_tutorial/dm07disp-open.svg)
+![dm07disp with the loop open: the turbulence everywhere](img/moka_tutorial/dm07disp-open.svg){ width="50%" }
 _`dm07disp`, the loop open: the turbulence alone._
 
 <!-- tut:tui id=psf-open cmd="milk-termview aol0_psf" size=80x40 -->
 
-![aol0_psf with the loop open: a spread-out PSF](img/moka_tutorial/psf-open.svg)
+![aol0_psf with the loop open: a spread-out PSF](img/moka_tutorial/psf-open.svg){ width="50%" }
 _`aol0_psf`, the loop open._
 
 Close it again with `loopON`:
@@ -943,20 +982,22 @@ mokainit drift aoloop-rootdir
 moka state -p aoloop
 ```
 
-<!-- tut:out id=drift -->
+??? note "Output"
 
-```text title="Output"
-INFO: aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
-fpsdetails.toml: source modified, local unchanged
-  compute_units.mfilt.fps.loopgain: 0.2 -> 0.3
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: running
-INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
-drift: 1 artifact(s); run `mokainit drift ~/AOloop2/aoloop-rootdir`
-```
+    <!-- tut:out id=drift -->
+
+    ```text
+    INFO: aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
+    fpsdetails.toml: source modified, local unchanged
+      compute_units.mfilt.fps.loopgain: 0.2 -> 0.3
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: running
+    INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
+    drift: 1 artifact(s); run `mokainit drift ~/AOloop2/aoloop-rootdir`
+    ```
 
 `resync` refuses while a run process is active: tear `aoloop` down first, then resync, deploy and
 link again (teardown removes the links).
@@ -970,42 +1011,44 @@ moka deploy -p aoloop
 moka link delaysim -p aoloop
 ```
 
-<!-- tut:out id=resync -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka teardown
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: running
-  [1/6] RunStop .............. [ ok ] done (0.1 s)
-  [2/6] DeapplyAllLinkages ... [ ok ] done (0.0 s)
-  [3/6] ConfStop ............. [ ok ] done (0.1 s)
-  [4/6] KillTmux ............. [ ok ] done (0.1 s)
-  [5/6] DestroyFPS ........... [ ok ] done (0.0 s)
-  [6/6] ReleaseRundir ........ [ ok ] done (0.0 s)
-[ ok ] teardown done in 0.3 s
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
-INFO: aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-applied fpsdetails.toml
-Resynced: teardown, then deploy may be needed.
-  compute_units.mfilt.fps.loopgain: 0.2 -> 0.3
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka deploy
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: cold
-  [1/4] ClaimRundir ... [ ok ] done (0.0 s)
-  [2/4] InitFPS ....... [ ok ] done (0.1 s)
-  [3/4] LoadData ...... [ -- ] already done
-  [4/4] ConfStart ..... [ ok ] done (0.3 s)
-[ ok ] deploy done in 0.6 s
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka link
-rootdir: ~/AOloop2/aoloop-rootdir
-```
+    <!-- tut:out id=resync -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka teardown
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: running
+      [1/6] RunStop .............. [ ok ] done (0.1 s)
+      [2/6] DeapplyAllLinkages ... [ ok ] done (0.0 s)
+      [3/6] ConfStop ............. [ ok ] done (0.1 s)
+      [4/6] KillTmux ............. [ ok ] done (0.1 s)
+      [5/6] DestroyFPS ........... [ ok ] done (0.0 s)
+      [6/6] ReleaseRundir ........ [ ok ] done (0.0 s)
+    [ ok ] teardown done in 0.3 s
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
+    INFO: aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    applied fpsdetails.toml
+    Resynced: teardown, then deploy may be needed.
+      compute_units.mfilt.fps.loopgain: 0.2 -> 0.3
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka deploy
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: cold
+      [1/4] ClaimRundir ... [ ok ] done (0.0 s)
+      [2/4] InitFPS ....... [ ok ] done (0.1 s)
+      [3/4] LoadData ...... [ -- ] already done
+      [4/4] ConfStart ..... [ ok ] done (0.3 s)
+    [ ok ] deploy done in 0.7 s
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka link
+    rootdir: ~/AOloop2/aoloop-rootdir
+    ```
 
 !!! tip "Look around"
 
@@ -1034,41 +1077,43 @@ moka state -p aoloop
 moka state -p mlatsim
 ```
 
-<!-- tut:out id=teardown -->
+??? note "Output"
 
-```text title="Output"
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-> moka teardown
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: configured
-  [1/6] RunStop .............. [ -- ] already done
-  [2/6] DeapplyAllLinkages ... [ ok ] done (0.0 s)
-  [3/6] ConfStop ............. [ ok ] done (0.1 s)
-  [4/6] KillTmux ............. [ ok ] done (0.1 s)
-  [5/6] DestroyFPS ........... [ ok ] done (0.0 s)
-  [6/6] ReleaseRundir ........ [ ok ] done (0.0 s)
-[ ok ] teardown done in 0.2 s
-> moka teardown
-rootdir: ~/AOloop2/mlatsim-rootdir
-mlatsim: running
-  [1/6] RunStop .............. [ ok ] done (0.1 s)
-  [2/6] DeapplyAllLinkages ... [ -- ] already done
-  [3/6] ConfStop ............. [ ok ] done (0.1 s)
-  [4/6] KillTmux ............. [ ok ] done (0.1 s)
-  [5/6] DestroyFPS ........... [ ok ] done (0.0 s)
-  [6/6] ReleaseRundir ........ [ ok ] done (0.0 s)
-[ ok ] teardown done in 0.3 s
-INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
-WARNING: Local plan 'takedark' overrides another one.
-rootdir: ~/AOloop2/aoloop-rootdir
-aoloop: cold
-INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
-drift: none
-rootdir: ~/AOloop2/mlatsim-rootdir
-mlatsim: cold
-drift: none
-```
+    <!-- tut:out id=teardown -->
+
+    ```text
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    > moka teardown
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: configured
+      [1/6] RunStop .............. [ -- ] already done
+      [2/6] DeapplyAllLinkages ... [ ok ] done (0.0 s)
+      [3/6] ConfStop ............. [ ok ] done (0.1 s)
+      [4/6] KillTmux ............. [ ok ] done (0.1 s)
+      [5/6] DestroyFPS ........... [ ok ] done (0.0 s)
+      [6/6] ReleaseRundir ........ [ ok ] done (0.0 s)
+    [ ok ] teardown done in 0.2 s
+    > moka teardown
+    rootdir: ~/AOloop2/mlatsim-rootdir
+    mlatsim: running
+      [1/6] RunStop .............. [ ok ] done (0.1 s)
+      [2/6] DeapplyAllLinkages ... [ -- ] already done
+      [3/6] ConfStop ............. [ ok ] done (0.1 s)
+      [4/6] KillTmux ............. [ ok ] done (0.1 s)
+      [5/6] DestroyFPS ........... [ ok ] done (0.0 s)
+      [6/6] ReleaseRundir ........ [ ok ] done (0.0 s)
+    [ ok ] teardown done in 0.3 s
+    INFO: ~/AOloop2/aoloop-rootdir/conf/conf.toml: extra keys ['_ln']
+    WARNING: Local plan 'takedark' overrides another one.
+    rootdir: ~/AOloop2/aoloop-rootdir
+    aoloop: cold
+    INFO: ~/AOloop2/aoloop-conf/conf.toml: extra keys ['_ln']
+    drift: none
+    rootdir: ~/AOloop2/mlatsim-rootdir
+    mlatsim: cold
+    drift: none
+    ```
 
 fpsCTRL is empty again. What survives:
 

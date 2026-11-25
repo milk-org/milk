@@ -20,10 +20,10 @@
 <rect x="335.6" y="229.0" width="8.4" height="17.0" fill="#d0d0d0"/>
 <rect x="344.0" y="229.0" width="16.8" height="17.0" fill="#00cdcd"/>
 <rect x="335.6" y="246.0" width="8.4" height="17.0" fill="#d0d0d0"/>
-<rect x="8.0" y="501.0" width="1066.8" height="17.0" fill="#3c3c50"/>
-<text x="8.0" y="38.3" fill="#d0d0d0" font-weight="bold" textLength="478.8">  [mlatsim_dmturb] DM turbulence simulation  [fc6206977a]</text>
+<rect x="8.0" y="501.0" width="1058.4" height="17.0" fill="#3c3c50"/>
+<text x="8.0" y="38.3" fill="#d0d0d0" font-weight="bold" textLength="478.8">  [mlatsim_dmturb] DM turbulence simulation  [50de4b3f4d]</text>
 <text x="8.0" y="55.3" fill="#50dc50" font-weight="bold" textLength="226.8">  PATH: / mlatsim_dmturb / </text>
-<text x="8.0" y="89.3" fill="#50dc50" textLength="168.0">2640289 [00]2642643 </text>
+<text x="8.0" y="89.3" fill="#50dc50" textLength="168.0">0227261 [00]0229890 </text>
 <text x="176.0" y="89.3" fill="#1c1c1c" textLength="142.8">  mlatsim_dmturb </text>
 <text x="344.0" y="89.3" fill="#c850dc" textLength="100.8">- conf      </text>
 <text x="444.8" y="89.3" fill="#d0d0d0" textLength="8.4">&gt;</text>
@@ -64,5 +64,5 @@
 <text x="579.2" y="242.3" fill="#d0d0d0" textLength="285.6">    amplitude across aperture [um]</text>
 <text x="344.0" y="259.3" fill="#c850dc" textLength="100.8">- turbseed  </text>
 <text x="8.0" y="293.3" fill="#50dc50" textLength="361.2">[0] PARAMETERS OK - RUN function good to go</text>
-<text x="8.0" y="514.3" fill="#ffffff" textLength="1066.8"> [MODE: CTRL] [SORT: Default] [PID 2642654] [1 FPS] [fc6206977a] | (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search</text>
+<text x="8.0" y="514.3" fill="#ffffff" textLength="1058.4"> [MODE: CTRL] [SORT: Default] [PID 229908] [1 FPS] [50de4b3f4d] | (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search</text>
 </svg>
