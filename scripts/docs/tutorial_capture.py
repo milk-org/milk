@@ -4,7 +4,8 @@
 The page (``docs/quickstart/moka_tutorial.md``) is the source of the commands: an HTML
 comment before a fenced block or an image link says what to do with it. The block or link
 follows the marker directly or after one blank line (the mdformat hook inserts it); two
-or more blank lines, or other content in between, is an error.
+or more blank lines, or other content in between, is an error. A marker and its block may
+sit indented inside an admonition (the page's collapsed ``??? note "Output"`` boxes).
 
     <!-- tut:run id=ID [expect=N] -->   bash block: run it, exit code must be N (default 0)
     <!-- tut:out id=ID -->              text block: receives the output of tut:run ID

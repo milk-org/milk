@@ -234,6 +234,14 @@ def test_rewrite_keeps_indent_and_other_bytes():
     assert tc.rewrite(new, {"x": "one\n\ntwo"}) == new
 
 
+def test_rewrite_in_collapsed_output_box():
+    text = '??? note "Output"\n\n    <!-- tut:out id=x -->\n\n    ```text\n    old\n    ```\n'
+    mk = tc.parse(text).markers[0]
+    assert mk.fence is not None and mk.fence.lang == "text"
+    new = tc.rewrite(text, {"x": "new"})
+    assert new == text.replace("    old\n", "    new\n")
+
+
 def test_rewrite_blank_line_form():
     text = blank_form(GOOD)
     new = tc.rewrite(text, {"mk": "hello\nworld\n"})

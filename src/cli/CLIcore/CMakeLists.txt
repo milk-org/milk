@@ -124,7 +124,7 @@ target_link_libraries(
          dl
          rt
          ${CMAKE_THREAD_LIBS_INIT}
-         $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>
+         "$<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>"
          milkcommon
          milkCOREMODarith
          $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>
@@ -149,11 +149,11 @@ target_include_directories(
 target_compile_options(CLIcore PUBLIC)
 
 target_link_directories(CLIcore PUBLIC
-                        $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARY_DIRS}>)
+                        "$<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARY_DIRS}>")
 
 target_link_libraries(
   CLIcore PUBLIC ${CMAKE_THREAD_LIBS_INIT}
-                 $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>)
+                 "$<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>")
 
 if(${python_module})
   add_subdirectory(python_module)
