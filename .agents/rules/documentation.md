@@ -17,6 +17,8 @@ rewrite or restructure a page, use the `docs-writer` skill.
 2. Add it to `nav:` in `mkdocs.yml`. Entry-point pages also get a card in `docs/index.md`.
 3. Start it with the header line (writing_docs §2).
 4. Check that no other page already covers the topic; link to it instead of repeating it.
+5. A Tutorial (one runnable path for a newcomer, with output after each stage) follows the
+   Tutorial rules (writing_docs §10), not the walkthrough rules.
 
 ## Module READMEs
 

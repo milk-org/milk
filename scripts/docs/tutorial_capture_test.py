@@ -1,0 +1,377 @@
+"""Tests of tutorial_capture.py: no milk, tmux or live system needed.
+
+python -m pytest -p no:cacheprovider scripts/docs
+"""
+
+import importlib.util
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import pytest
+
+_spec = importlib.util.spec_from_file_location(
+    "tutorial_capture", Path(__file__).with_name("tutorial_capture.py")
+)
+tc = importlib.util.module_from_spec(_spec)
+sys.modules["tutorial_capture"] = tc
+_spec.loader.exec_module(tc)
+
+GOOD = """\
+# Page
+
+<!-- tut:run id=mk -->
+```bash
+mkdir -p ~/AOloop2 && cd ~/AOloop2
+echo hello
+```
+
+<!-- tut:out id=mk -->
+```text title="Output"
+old output
+```
+
+<!-- tut:run id=refused expect=1 -->
+```bash
+moka mkcm -p aoloop
+```
+
+!!! tip "Look around"
+
+    <!-- tut:py id=close-loop -->
+    ```python
+    print("x")
+    ```
+
+<!-- tut:tui id=fpsctrl cmd="milk-fpsCTRL -m aoloop_mfilt" size=150x16 -->
+![fpsCTRL](img/moka_tutorial/fpsctrl.svg)
+
+<!-- tut:fig id=mlat -->
+![mlat](img/moka_tutorial/mlat.png)
+
+<!-- tut:manual id=edit-loopgain -->
+```bash
+vi aoloop-conf/fpsdetails.toml
+```
+
+<!-- tut:manual -->
+```python
+viewer()
+```
+
+Trailing text.
+"""
+
+
+def write_page(tmp_path, text, images=("fpsctrl.svg", "mlat.png")):
+    page = tmp_path / "moka_tutorial.md"
+    page.write_text(text)
+    img = tmp_path / "img/moka_tutorial"
+    img.mkdir(parents=True, exist_ok=True)
+    for name in images:
+        (img / name).write_bytes(b"x")
+    return page
+
+
+# ---------------------------------------------------------------- parser
+
+
+def test_parser_six_kinds():
+    page = tc.parse(GOOD)
+    assert page.errors == []
+    kinds = [(m.kind, m.id) for m in page.markers]
+    assert kinds == [
+        ("run", "mk"),
+        ("out", "mk"),
+        ("run", "refused"),
+        ("py", "close-loop"),
+        ("tui", "fpsctrl"),
+        ("fig", "mlat"),
+        ("manual", "edit-loopgain"),
+        ("manual", None),
+    ]
+    by_id = {m.id: m for m in page.markers if m.kind != "out"}
+    assert by_id["refused"].attrs["expect"] == "1"
+    assert by_id["fpsctrl"].attrs["cmd"] == "milk-fpsCTRL -m aoloop_mfilt"
+    assert by_id["fpsctrl"].attrs["size"] == "150x16"
+    assert by_id["fpsctrl"].image == "img/moka_tutorial/fpsctrl.svg"
+    assert by_id["close-loop"].fence.lang == "python"
+    assert by_id["close-loop"].fence.indent == "    "
+    assert tc.block_code(page, by_id["close-loop"]) == 'print("x")\n'
+
+
+def blank_form(text):
+    """GOOD with one blank line (container-indented in the admonition) after each marker."""
+    out = []
+    for ln in text.splitlines(keepends=True):
+        out.append(ln)
+        if ln.lstrip().startswith("<!-- tut:"):
+            out.append("    \n" if ln.startswith("    ") else "\n")
+    return "".join(out)
+
+
+def test_parser_blank_line_form():
+    text = blank_form(GOOD)
+    page = tc.parse(text)
+    assert page.errors == []
+    ref = tc.parse(GOOD)
+    assert [(m.kind, m.id) for m in page.markers] == [
+        (m.kind, m.id) for m in ref.markers
+    ]
+    assert all(m.fence or m.image for m in page.markers)
+    by_id = {m.id: m for m in page.markers if m.kind != "out"}
+    assert by_id["close-loop"].fence.indent == "    "
+    assert by_id["fpsctrl"].image == "img/moka_tutorial/fpsctrl.svg"
+    assert tc.block_code(page, by_id["close-loop"]) == 'print("x")\n'
+
+
+def test_check_blank_line_form(tmp_path):
+    page = write_page(tmp_path, blank_form(GOOD))
+    assert tc.check_page(page.read_text(), tmp_path) == []
+
+
+def test_check_two_blank_lines_or_content_is_error(tmp_path):
+    for gap in ("\n\n", "\ntext\n"):
+        text = "<!-- tut:py id=p -->\n" + gap + "```python\nx\n```\n"
+        errors = tc.check_page(text, tmp_path)
+        assert any("not followed by a python block" in e for e in errors)
+
+
+def test_parser_syntax_errors():
+    text = (
+        "<!-- tut:bogus id=a -->\n<!-- tut:run id=a color=red -->\n<!-- tut:run -->\n"
+    )
+    errors = tc.parse(text).errors
+    assert any("unknown marker tut:bogus" in e for e in errors)
+    assert any("does not take 'color=red'" in e for e in errors)
+    assert any("has no id" in e for e in errors)
+
+
+def test_markers_inside_fences_are_ignored():
+    text = "```text\n<!-- tut:run id=x -->\n```\n"
+    assert tc.parse(text).markers == []
+
+
+# ---------------------------------------------------------------- --check
+
+
+def test_check_good_page(tmp_path):
+    page = write_page(tmp_path, GOOD)
+    assert tc.check_page(page.read_text(), tmp_path) == []
+
+
+def test_check_block_without_marker(tmp_path):
+    text = GOOD + "\n```bash\nls\n```\n"
+    page = write_page(tmp_path, text)
+    errors = tc.check_page(page.read_text(), tmp_path)
+    assert errors == [f"line {GOOD.count(chr(10)) + 2}: bash block without marker"]
+
+
+def test_check_duplicate_id(tmp_path):
+    text = GOOD + "\n<!-- tut:run id=mk -->\n```bash\nls\n```\n"
+    errors = tc.check_page(write_page(tmp_path, text).read_text(), tmp_path)
+    assert len(errors) == 1 and "duplicate id mk" in errors[0]
+
+
+def test_check_out_without_run(tmp_path):
+    text = GOOD + "\n<!-- tut:out id=nope -->\n```text\n```\n"
+    errors = tc.check_page(write_page(tmp_path, text).read_text(), tmp_path)
+    assert len(errors) == 1 and "tut:out id=nope has no tut:run" in errors[0]
+
+
+def test_check_missing_image(tmp_path):
+    page = write_page(tmp_path, GOOD, images=("fpsctrl.svg",))
+    errors = tc.check_page(page.read_text(), tmp_path)
+    assert len(errors) == 1 and "missing image img/moka_tutorial/mlat.png" in errors[0]
+
+
+def test_check_wrong_target(tmp_path):
+    text = GOOD + "\n<!-- tut:py id=p2 -->\n```bash\nls\n```\n"
+    errors = tc.check_page(write_page(tmp_path, text).read_text(), tmp_path)
+    assert len(errors) == 1 and "not followed by a python block" in errors[0]
+
+
+def test_check_cli(tmp_path, monkeypatch, capsys):
+    page = write_page(tmp_path, GOOD + "\n```python\nx\n```\n")
+    monkeypatch.setattr(tc, "PAGE", page)
+    monkeypatch.setattr(tc, "REPO", tmp_path)
+    assert tc.main(["--check"]) == 1
+    assert "python block without marker" in capsys.readouterr().err
+    page.write_text(GOOD)
+    assert tc.main(["--check"]) == 0
+
+
+# ---------------------------------------------------------------- pure helpers
+
+
+def test_rewrite_in_place():
+    new = tc.rewrite(GOOD, {"mk": "hello\nworld\n"})
+    assert new == GOOD.replace("old output\n", "hello\nworld\n")
+    assert tc.rewrite(new, {"mk": "hello\nworld\n"}) == new
+
+
+def test_rewrite_keeps_indent_and_other_bytes():
+    text = "a\r\n\n    <!-- tut:out id=x -->\n    ```text\n    old\n    ```\nb  \n"
+    new = tc.rewrite(text, {"x": "one\n\ntwo"})
+    assert (
+        new
+        == "a\r\n\n    <!-- tut:out id=x -->\n    ```text\n    one\n\n    two\n    ```\nb  \n"
+    )
+    assert tc.rewrite(new, {"x": "one\n\ntwo"}) == new
+
+
+def test_rewrite_blank_line_form():
+    text = blank_form(GOOD)
+    new = tc.rewrite(text, {"mk": "hello\nworld\n"})
+    assert new == text.replace("old output\n", "hello\nworld\n")
+    assert tc.rewrite(new, {"mk": "hello\nworld\n"}) == new
+
+
+def test_normalize_home():
+    home = Path("/home/someone")
+    text = "wrote /home/someone/AOloop2/x.fits (0.8 s)\n"
+    assert tc.normalize(text, home) == "wrote ~/AOloop2/x.fits (0.8 s)\n"
+
+
+def test_start_refusals(tmp_path):
+    home, shm = tmp_path / "home", tmp_path / "shm"
+    home.mkdir()
+    shm.mkdir()
+    (shm / "other.fps.shm").touch()
+    assert tc.start_refusals(home, shm) == []
+    (home / "AOloop2").mkdir()
+    (shm / "aoloop_mfilt.fps.shm").touch()
+    (shm / "mlatsim_wfs.fps.shm").touch()
+    (shm / "dm07disp03.im.shm").touch()
+    reasons = tc.start_refusals(home, shm)
+    assert len(reasons) == 4
+    assert all(r.endswith("exists") for r in reasons)
+
+
+# ---------------------------------------------------------------- ANSI to SVG
+
+ANSI = (
+    "\x1b[1m\x1b[7m fpsCTRL \x1b[0m <a&b>\n"
+    "\x1b[31mred\x1b[39m \x1b[92mbright\x1b[0m\n"
+    "\x1b[38;5;208morange\x1b[48;5;240mgray-bg\x1b[0m\n"
+    "\x1b[38;2;10;200;30mtrue\x1b[48;2;1;2;3mcolor\x1b[m \x1b[?25l\x1b(B\x07end\n"
+)
+
+
+def test_ansi_to_svg_parses():
+    svg = tc.ansi_to_svg(ANSI, 40, 4)
+    root = ET.fromstring(svg)
+    ns = "{http://www.w3.org/2000/svg}"
+    texts = [t.text for t in root.iter(f"{ns}text")]
+    assert " fpsCTRL " in texts and " <a&b>" in texts and "end" in texts
+    fills = {t.text: t.get("fill") for t in root.iter(f"{ns}text")}
+    assert fills["red"] == "#cd0000"
+    assert fills["bright"] == "#00ff00"
+    assert fills["orange"] == "#ff8700"
+    assert fills["true"] == "#0ac81e"
+    bold = [t for t in root.iter(f"{ns}text") if t.text == " fpsCTRL "][0]
+    assert bold.get("font-weight") == "bold"
+    rect_fills = {r.get("fill") for r in root.iter(f"{ns}rect")}
+    # Reverse video: the default foreground becomes the background.
+    assert {tc._FG, "#585858", "#010203"} <= rect_fills
+
+
+# ---------------------------------------------------------------- --run, faked
+
+
+class FakeSystem:
+    def __init__(self, fail=None):
+        self.fail = fail
+        self.calls = []
+        self.closed = False
+
+    def __call__(self, cwd, workdir):
+        self.cwd, self.workdir = cwd, workdir
+        return self
+
+    def bash(self, code):
+        self.calls.append(("bash", code))
+        self.workdir.mkdir(exist_ok=True)
+        if "mkcm" in code:
+            return 1, "[ NO ] refused\n"
+        if self.fail and self.fail in code:
+            return 2, "boom\n"
+        return 0, f"{self.workdir}/done\n"
+
+    def python(self, code):
+        self.calls.append(("python", code))
+        return 0
+
+    def tui(self, cmd, cols, rows):
+        self.calls.append(("tui", cmd))
+        return "\x1b[32mok\x1b[0m\n"
+
+    def figure(self, fig_id, dest):
+        self.calls.append(("figure", fig_id))
+        dest.write_bytes(b"png")
+
+    def manual(self, action_id):
+        self.calls.append(("manual", action_id))
+
+    def close(self):
+        self.closed = True
+
+
+@pytest.fixture
+def setup(tmp_path):
+    home, shm = tmp_path / "home", tmp_path / "shm"
+    home.mkdir()
+    shm.mkdir()
+    (tmp_path / "docs").mkdir()
+    return write_page(tmp_path / "docs", GOOD), home, shm
+
+
+def test_run_writes_all(setup):
+    page, home, shm = setup
+    fake = FakeSystem()
+    tc.run(page, home, shm, system_factory=fake)
+    assert fake.closed and not (home / "AOloop2").exists()
+    assert [c[0] for c in fake.calls] == [
+        "bash",
+        "bash",
+        "python",
+        "tui",
+        "figure",
+        "manual",
+    ]
+    text = page.read_text()
+    assert text == GOOD.replace("old output\n", "~/AOloop2/done\n")
+    svg = (page.parent / "img/moka_tutorial/fpsctrl.svg").read_text()
+    ET.fromstring(svg)
+    assert (page.parent / "img/moka_tutorial/mlat.png").read_bytes() == b"png"
+
+
+def test_run_all_or_none(setup):
+    page, home, shm = setup
+    fake = FakeSystem(fail="echo hello")
+    with pytest.raises(tc.CaptureError, match="exit code 2"):
+        tc.run(page, home, shm, system_factory=fake)
+    assert fake.closed and not (home / "AOloop2").exists()
+    assert page.read_text() == GOOD
+    assert (page.parent / "img/moka_tutorial/fpsctrl.svg").read_bytes() == b"x"
+
+
+def test_run_refuses_to_start(setup):
+    page, home, shm = setup
+    (shm / "dm07disp.im.shm").touch()
+    fake = FakeSystem()
+    with pytest.raises(tc.CaptureError, match="refusing to start"):
+        tc.run(page, home, shm, system_factory=fake)
+    assert fake.calls == [] and page.read_text() == GOOD
+
+
+def test_run_from(setup):
+    page, home, shm = setup
+    (home / "AOloop2").mkdir()
+    fake = FakeSystem()
+    tc.run(page, home, shm, start="close-loop", system_factory=fake)
+    assert fake.cwd == home / "AOloop2"
+    assert [c[0] for c in fake.calls] == ["python", "tui", "figure", "manual"]
+    # Not created by this run: left in place.
+    assert (home / "AOloop2").is_dir()
+    assert page.read_text() == GOOD

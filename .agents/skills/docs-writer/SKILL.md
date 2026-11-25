@@ -1,7 +1,6 @@
 ---
 name: docs-writer
-description: Rewrite, split or restructure a page under docs/ to follow
-  docs/developer/writing_docs.md
+description: Rewrite, split or restructure a page under docs/ to follow docs/developer/writing_docs.md
 ---
 
 # Docs Writer
@@ -26,7 +25,8 @@ in which order to apply them. When the two disagree, writing_docs.md wins.
    without the user's agreement; do not add behaviour the old text does not state.
 5. **Header line and headings** per writing_docs §2.
 6. **Code blocks** per §4: remove prompts, turn explanations into annotations, keep output only
-   where its format is the subject. **CLI/Python tabs** per §5 where both exist.
+   where its format is the subject (a Tutorial shows it after every stage, §10). **CLI/Python
+   tabs** per §5 where both exist.
 7. **Admonitions** per §6: implementation status in one admonition at the top.
 8. **Diagrams** per §7: check each against the rules; split or simplify.
 9. **Links** per §8; update every inbound link and anchor to moved sections (grep `docs/`,
@@ -34,4 +34,4 @@ in which order to apply them. When the two disagree, writing_docs.md wins.
 10. **Nav and index:** update `mkdocs.yml` (and `docs/index.md` for entry-point pages).
 11. **Build** with `mkdocs build --strict` and fix every warning caused by the change.
 12. **Report** questions found in passing: contradictions between pages, unclear behaviour,
-    audience judgment calls, each with a suggested default.
+   audience judgment calls, each with a suggested default.
