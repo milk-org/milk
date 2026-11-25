@@ -5,6 +5,30 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ---------- Image lightbox (glightbox) ---------- */
+/* mkdocs-glightbox sets html.glightbox-open{overflow:initial}, so the
+   body's overflow:hidden drives the viewport while the lightbox is open;
+   Firefox then resets the page to the top on close. Locking scroll on
+   the root instead keeps the position. :root outranks the plugin rule. */
+:root.glightbox-open {
+  overflow: hidden;
+}
+
+/* Put the image on its own line, so the italic caption written on the
+   next source line (writing_docs.md figure convention) goes below it. */
+.md-typeset a.glightbox {
+  display: block;
+  width: fit-content;
+}
+
+/* Open/close animations 3x faster than glightbox's 0.5s default. */
+:root .gzoomIn,
+:root .gzoomOut,
+:root .gfadeIn,
+:root .gfadeOut {
+  animation-duration: 0.17s;
+}
+
 /* ---------- Layout ---------- */
 .md-grid {
   max-width: 1440px;

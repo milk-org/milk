@@ -89,38 +89,6 @@
          <lastmod>2026-11-25</lastmod>
     </url>
     <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_conf/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_glossary/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_internals/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_operate/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_plans/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_provision/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://milk-org.github.io/milk/framework-dev/guide/pipelines_tour/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
          <loc>https://milk-org.github.io/milk/framework-dev/guide/procinfo/</loc>
          <lastmod>2026-11-25</lastmod>
     </url>
@@ -161,6 +129,34 @@
          <lastmod>2026-11-25</lastmod>
     </url>
     <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/conf/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/glossary/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/internals/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/moka/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/operate/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/plans/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/moka/provision/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
          <loc>https://milk-org.github.io/milk/framework-dev/operations/debugging/</loc>
          <lastmod>2026-11-25</lastmod>
     </url>
@@ -186,6 +182,10 @@
     </url>
     <url>
          <loc>https://milk-org.github.io/milk/framework-dev/quickstart/faq/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://milk-org.github.io/milk/framework-dev/quickstart/moka_tutorial/</loc>
          <lastmod>2026-11-25</lastmod>
     </url>
 </urlset>

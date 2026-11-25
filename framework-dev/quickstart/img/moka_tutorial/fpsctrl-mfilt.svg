@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1276" height="526" viewBox="0 0 1276 526" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="14" xml:space="preserve" shape-rendering="crispEdges">
+<rect width="100%" height="100%" fill="#1c1c1c"/>
+<rect x="176.0" y="76.0" width="126.0" height="17.0" fill="#c850dc"/>
+<rect x="302.0" y="76.0" width="25.2" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="76.0" width="109.2" height="17.0" fill="#4682b4"/>
+<rect x="318.8" y="93.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="110.0" width="16.8" height="17.0" fill="#143232"/>
+<rect x="344.0" y="110.0" width="16.8" height="17.0" fill="#143232"/>
+<rect x="360.8" y="110.0" width="92.4" height="17.0" fill="#143232"/>
+<rect x="453.2" y="110.0" width="33.6" height="17.0" fill="#143232"/>
+<rect x="486.8" y="110.0" width="126.0" height="17.0" fill="#143232"/>
+<rect x="612.8" y="110.0" width="252.0" height="17.0" fill="#143232"/>
+<rect x="318.8" y="127.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="144.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="144.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="318.8" y="161.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="161.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="318.8" y="178.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="178.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="318.8" y="195.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="195.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="318.8" y="212.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="229.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="229.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="318.8" y="246.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="327.2" y="246.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="318.8" y="263.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="280.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="297.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="314.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="331.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="348.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="365.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="318.8" y="382.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="8.0" y="501.0" width="1058.4" height="17.0" fill="#3c3c50"/>
+<text x="8.0" y="38.3" fill="#d0d0d0" font-weight="bold" textLength="504.0">  [aoloop_mfilt] Modal Filtering AO processing  [50de4b3f4d]</text>
+<text x="8.0" y="55.3" fill="#50dc50" font-weight="bold" textLength="210.0">  PATH: / aoloop_mfilt / </text>
+<text x="8.0" y="89.3" fill="#50dc50" textLength="168.0">0227700 [00]0229376 </text>
+<text x="176.0" y="89.3" fill="#1c1c1c" textLength="126.0">  aoloop_mfilt </text>
+<text x="327.2" y="89.3" fill="#c850dc" textLength="109.2">- conf       </text>
+<text x="436.4" y="89.3" fill="#d0d0d0" textLength="8.4">&gt;</text>
+<text x="327.2" y="106.3" fill="#c850dc" textLength="109.2">- procinfo   </text>
+<text x="327.2" y="123.3" fill="#f03c3c" textLength="16.8">NW</text>
+<text x="344.0" y="123.3" fill="#50dc50" textLength="16.8">- </text>
+<text x="360.8" y="123.3" fill="#50dc50" font-weight="bold" textLength="92.4">inmval     </text>
+<text x="453.2" y="123.3" fill="#d0d0d0" textLength="33.6">  : </text>
+<text x="486.8" y="123.3" fill="#50dc50" textLength="126.0">aol0_modevalWFS</text>
+<text x="612.8" y="123.3" fill="#d0d0d0" textLength="252.0">    input mode values from WFS</text>
+<text x="327.2" y="140.3" fill="#f03c3c" textLength="16.8">NW</text>
+<text x="344.0" y="140.3" fill="#d0d0d0" textLength="16.8">- </text>
+<text x="360.8" y="140.3" fill="#d0d0d0" font-weight="bold" textLength="92.4">outmval    </text>
+<text x="453.2" y="140.3" fill="#d0d0d0" textLength="33.6">  : </text>
+<text x="486.8" y="140.3" fill="#50dc50" textLength="126.0">aol0_modevalDM </text>
+<text x="612.8" y="140.3" fill="#d0d0d0" textLength="235.2">    output mode values to DM</text>
+<text x="327.2" y="157.3" fill="#000000" textLength="16.8">W </text>
+<text x="344.0" y="157.3" fill="#d0d0d0" textLength="142.8">- loopgain     : </text>
+<text x="486.8" y="157.3" fill="#ffdc32" textLength="126.0">0.200000       </text>
+<text x="612.8" y="157.3" fill="#d0d0d0" textLength="109.2">    loop gain</text>
+<text x="327.2" y="174.3" fill="#000000" textLength="16.8">W </text>
+<text x="344.0" y="174.3" fill="#d0d0d0" textLength="142.8">- loopmult     : </text>
+<text x="486.8" y="174.3" fill="#ffdc32" textLength="126.0">0.990000       </text>
+<text x="612.8" y="174.3" fill="#d0d0d0" textLength="109.2">    loop mult</text>
+<text x="327.2" y="191.3" fill="#000000" textLength="16.8">W </text>
+<text x="344.0" y="191.3" fill="#d0d0d0" textLength="142.8">- looplimit    : </text>
+<text x="486.8" y="191.3" fill="#ffdc32" textLength="126.0">1.000000       </text>
+<text x="612.8" y="191.3" fill="#d0d0d0" textLength="117.6">    loop limit</text>
+<text x="327.2" y="208.3" fill="#000000" textLength="16.8">W </text>
+<text x="344.0" y="208.3" fill="#d0d0d0" textLength="142.8">- loopZERO     : </text>
+<text x="486.8" y="208.3" fill="#ffffff" textLength="126.0">OFF            </text>
+<text x="612.8" y="208.3" fill="#d0d0d0" textLength="109.2">    loop zero</text>
+<text x="327.2" y="225.3" fill="#f03c3c" textLength="16.8">NW</text>
+<text x="344.0" y="225.3" fill="#d0d0d0" textLength="16.8">- </text>
+<text x="360.8" y="225.3" fill="#d0d0d0" font-weight="bold" textLength="92.4">AOloopindex</text>
+<text x="453.2" y="225.3" fill="#d0d0d0" textLength="302.4">  : 0                  AO loop index</text>
+<text x="327.2" y="242.3" fill="#000000" textLength="16.8">W </text>
+<text x="344.0" y="242.3" fill="#d0d0d0" textLength="142.8">- loopON       : </text>
+<text x="486.8" y="242.3" fill="#ffffff" textLength="126.0">OFF            </text>
+<text x="612.8" y="242.3" fill="#d0d0d0" textLength="235.2">    loop on/off (off=freeze)</text>
+<text x="327.2" y="259.3" fill="#000000" textLength="16.8">W </text>
+<text x="344.0" y="259.3" fill="#d0d0d0" textLength="142.8">- loopNBstep   : </text>
+<text x="486.8" y="259.3" fill="#ffdc32" textLength="126.0">-1             </text>
+<text x="612.8" y="259.3" fill="#d0d0d0" textLength="235.2">    loop nb steps (-1 = inf)</text>
+<text x="327.2" y="276.3" fill="#c850dc" textLength="109.2">- comp       </text>
+<text x="327.2" y="293.3" fill="#c850dc" textLength="109.2">- auxDMmval  </text>
+<text x="327.2" y="310.3" fill="#c850dc" textLength="109.2">- PF         </text>
+<text x="327.2" y="327.3" fill="#c850dc" textLength="109.2">- autoloop   </text>
+<text x="327.2" y="344.3" fill="#c850dc" textLength="109.2">- selfRM     </text>
+<text x="327.2" y="361.3" fill="#c850dc" textLength="109.2">- testOL     </text>
+<text x="327.2" y="378.3" fill="#c850dc" textLength="109.2">- offload    </text>
+<text x="327.2" y="395.3" fill="#c850dc" textLength="109.2">- rec        </text>
+<text x="8.0" y="429.3" fill="#50dc50" textLength="361.2">[0] PARAMETERS OK - RUN function good to go</text>
+<text x="8.0" y="514.3" fill="#ffffff" textLength="1058.4"> [MODE: CTRL] [SORT: Default] [PID 229436] [1 FPS] [50de4b3f4d] | (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search</text>
+</svg>
