@@ -42,6 +42,7 @@ repos:
     -   id: check-yaml
         exclude: mkdocs\.yml$
     -   id: debug-statements
+        exclude: ^python/moka/cli\.py$
     -   id: requirements-txt-fixer
     -   id: check-added-large-files
     -   id: check-ast

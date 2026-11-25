@@ -281,9 +281,9 @@ def test_smart_fps_type_validation(fixt_smart_fps_properties):
     fps = fixt_smart_fps_properties
 
     # Test invalid type assignments
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
         fps.i4 = "not integer-able"
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
         fps.f4 = "not float-able"
     """ That worked with pybind, it had more
     autocasting...
@@ -291,7 +291,7 @@ def test_smart_fps_type_validation(fixt_smart_fps_properties):
     assert fps.s == '42'  # 'Dis JS or what?
     """
     # Nanobind is less friendly:
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
         fps.s = 42
 
 
