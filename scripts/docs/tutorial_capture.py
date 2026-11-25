@@ -9,8 +9,9 @@ or more blank lines, or other content in between, is an error.
     <!-- tut:run id=ID [expect=N] -->   bash block: run it, exit code must be N (default 0)
     <!-- tut:out id=ID -->              text block: receives the output of tut:run ID
     <!-- tut:py id=ID -->               python block: run it, no output kept
-    <!-- tut:tui id=ID cmd="..." size=COLSxROWS -->
-                                        image link: capture cmd in a tmux pane, as SVG
+    <!-- tut:tui id=ID cmd="..." size=COLSxROWS [keys="K1 K2"] -->
+                                        image link: capture cmd in a tmux pane, as SVG;
+                                        keys (tmux key names) are sent before the capture
     <!-- tut:fig id=ID -->              image link: mlat, rm or cm figure, as PNG
     <!-- tut:manual [id=ID] -->         any block: not run (ID may name an action below)
 
@@ -19,6 +20,26 @@ Modes:
     --run [--from ID]
                     the full capture (milk, cacao, tmux, moka); see the docs-writer skill
     --callouts IMG  draws the numbered discs of the opening image onto IMG, saves desktop.png
+
+--run rules:
+    - Needs MILK_ROOT set, with $MILK_ROOT/milk-examples/pipelines; the script does not
+      set it.
+    - Everything it launches (shell, TUI panes, figures, pyMilk blocks) sees MILK_SHM_DIR
+      set to a private folder, /milk/shm/tutorial_capture.
+    - Refuses to start if ~/AOloop2 or the private folder exists.
+    - Gives everything it launches a private tmux socket folder (TMUX_TMPDIR, TMUX
+      unset): moka's compute units start their sessions with a plain
+      `tmux new-session`, which takes the server's environment, so the server must be
+      one this run started, with MILK_SHM_DIR set.
+    - Creates ~/AOloop2 (through the page), the private folder and the tmux folder; at
+      the end, also after a failure, tears down both pipelines, stops the private tmux
+      servers and removes all three.
+    - --from ID runs from that marker on, in the existing ~/AOloop2 and private folder
+      (both must exist, e.g. kept from a hand run), with no start refusals and the
+      caller's tmux, and leaves both in place.
+    - Captured text is normalized, in this order: the private folder to /milk/shm,
+      the value of $MILK_ROOT to ~/src/milk, $HOME to ~.
+    - Outputs and images are written at the end, all or none.
 
 Python 3.10+, stdlib only for --check; --run also needs moka (pyMilk, matplotlib) and
 --callouts needs Pillow.
@@ -46,8 +67,15 @@ IMG_REL = "img/moka_tutorial"
 WORKDIR_NAME = "AOloop2"
 PIPELINES = ("aoloop", "mlatsim")
 TMUX = ("tmux", "-L", "milk_tut", "-f", "/dev/null")
-# Seconds a TUI is given to draw before its pane is captured.
+# Private MILK_SHM_DIR of --run: a folder of this name in the tmpfs.
+SHM_PARENT = Path("/milk/shm")
+SHM_NAME = "tutorial_capture"
+# What the page shows for the private folder and for $MILK_ROOT.
+SHM_SHOWN = "/milk/shm"
+MILK_ROOT_SHOWN = "~/src/milk"
+# Seconds a TUI is given to draw before its pane is captured, and after keys are sent.
 TUI_WAIT = 3.0
+TUI_KEYS_WAIT = 1.5
 # The confdir edit of the "Change the configuration" stage (tut:manual id=edit-loopgain).
 LOOPGAIN_EDIT = "0.3"
 
@@ -56,7 +84,7 @@ ATTRS = {
     "run": {"id", "expect"},
     "out": {"id"},
     "py": {"id"},
-    "tui": {"id", "cmd", "size"},
+    "tui": {"id", "cmd", "size", "keys"},
     "fig": {"id"},
     "manual": {"id"},
 }
@@ -247,8 +275,13 @@ def check_page(text: str, page_dir: Path) -> list[str]:
 # ---------------------------------------------------------------- pure helpers
 
 
-def normalize(text: str, home: Path) -> str:
-    """$HOME to ~; nothing else."""
+def normalize(text: str, home: Path, shm: Path, milk_root: str) -> str:
+    """The private shm folder to /milk/shm, $MILK_ROOT to ~/src/milk, $HOME to ~.
+
+    In this order: the first two are usually under $HOME.
+    """
+    text = text.replace(str(shm), SHM_SHOWN)
+    text = text.replace(str(Path(milk_root)), MILK_ROOT_SHOWN)
     return text.replace(str(home), "~")
 
 
@@ -273,14 +306,23 @@ def rewrite(text: str, outputs: dict) -> str:
     return "".join(lines)
 
 
-def start_refusals(home: Path, shm_dir: Path) -> list[str]:
-    """Why ``--run`` must not start: an existing workdir, FPS or stream."""
+def milk_root_refusal(milk_root: str | None) -> str | None:
+    """Why ``--run`` cannot use ``milk_root`` (the value of $MILK_ROOT), or None."""
+    if not milk_root:
+        return "MILK_ROOT is not set (the tree that holds milk-examples/)"
+    pipelines = Path(milk_root) / "milk-examples" / "pipelines"
+    if not pipelines.is_dir():
+        return f"{pipelines} does not exist (MILK_ROOT={milk_root})"
+    return None
+
+
+def start_refusals(home: Path, shm: Path) -> list[str]:
+    """Why a fresh ``--run`` must not start."""
     reasons = []
     if (home / WORKDIR_NAME).exists():
         reasons.append(f"{home / WORKDIR_NAME} exists")
-    for pattern in ("mlatsim_*.fps.shm", "aoloop_*.fps.shm", "dm07disp*.im.shm"):
-        for p in sorted(shm_dir.glob(pattern)):
-            reasons.append(f"{p} exists")
+    if shm.exists():
+        reasons.append(f"{shm} exists")
     return reasons
 
 
@@ -406,15 +448,22 @@ is a small function so it can be adjusted after the verification run on the mach
 """
 
 
-def shm_dir() -> Path:
-    return Path(os.environ.get("MILK_SHM_DIR", "/milk/shm"))
+def stop_tmux(env: dict) -> None:
+    """Stop the tmux servers of ``env``'s TMUX_TMPDIR (plain and TUI); errors ignored."""
+    for socket in ((), TMUX[1:3]):
+        try:
+            subprocess.run(
+                ["tmux", *socket, "kill-server"], env=env, capture_output=True
+            )
+        except OSError:
+            pass
 
 
 class Shell:
     """One bash process for all blocks, so ``cd`` and variables carry over."""
 
-    def __init__(self, cwd: Path):
-        env = dict(os.environ, NO_COLOR="1")
+    def __init__(self, cwd: Path, env: dict):
+        env = dict(env, NO_COLOR="1")
         self.tmp = Path(tempfile.mkdtemp(prefix="tut_capture_"))
         self.proc = subprocess.Popen(
             ["bash", "--noprofile", "--norc"],
@@ -462,25 +511,35 @@ class Shell:
         shutil.rmtree(self.tmp, ignore_errors=True)
 
 
-def tui_capture(cmd: str, cols: int, rows: int) -> str:
-    """ANSI text of ``cmd`` drawn in a detached tmux pane of ``cols`` x ``rows``."""
+def tui_capture(cmd: str, cols: int, rows: int, keys: list, env: dict) -> str:
+    """ANSI text of ``cmd`` drawn in a detached tmux pane of ``cols`` x ``rows``.
+
+    ``keys`` (tmux key names) are sent after the first wait. MILK_SHM_DIR is passed with
+    ``-e``: a milk_tut server left running would otherwise give the pane its own.
+    """
     name = f"tut_{uuid.uuid4().hex[:8]}"
+    shm_env = f"MILK_SHM_DIR={env['MILK_SHM_DIR']}"
     subprocess.run(
-        [*TMUX, "new-session", "-d", "-s", name, "-x", str(cols), "-y", str(rows), cmd,
-         ";", "set-option", "-t", name, "status", "off"],
+        [*TMUX, "new-session", "-d", "-s", name, "-x", str(cols), "-y", str(rows),
+         "-e", shm_env, cmd, ";", "set-option", "-t", name, "status", "off"],
         check=True,
+        env=env,
     )  # fmt: skip
     try:
         time.sleep(TUI_WAIT)
+        if keys:
+            subprocess.run([*TMUX, "send-keys", "-t", name, *keys], check=True, env=env)
+            time.sleep(TUI_KEYS_WAIT)
         res = subprocess.run(
             [*TMUX, "capture-pane", "-p", "-e", "-t", name],
             check=True,
             capture_output=True,
             text=True,
+            env=env,
         )
         return res.stdout
     finally:
-        subprocess.run([*TMUX, "kill-session", "-t", name], check=False)
+        subprocess.run([*TMUX, "kill-session", "-t", name], check=False, env=env)
 
 
 def save_figure(fig_id: str, workdir: Path, dest: Path) -> None:
@@ -517,9 +576,12 @@ MANUAL_ACTIONS = {"edit-loopgain": edit_loopgain}
 class LiveSystem:
     """What ``run`` needs from the machine; tests pass a fake with the same methods."""
 
-    def __init__(self, cwd: Path, workdir: Path):
+    def __init__(self, cwd: Path, workdir: Path, env: dict):
         self.workdir = workdir
-        self.shell = Shell(cwd)
+        self.env = env
+        # The figure code runs in this process.
+        os.environ["MILK_SHM_DIR"] = env["MILK_SHM_DIR"]
+        self.shell = Shell(cwd, env)
 
     def bash(self, code: str) -> tuple[int, str]:
         return self.shell.run(code)
@@ -527,8 +589,8 @@ class LiveSystem:
     def python(self, code: str) -> int:
         return self.shell.python(code)
 
-    def tui(self, cmd: str, cols: int, rows: int) -> str:
-        return tui_capture(cmd, cols, rows)
+    def tui(self, cmd: str, cols: int, rows: int, keys: list) -> str:
+        return tui_capture(cmd, cols, rows, keys, self.env)
 
     def figure(self, fig_id: str, dest: Path) -> None:
         save_figure(fig_id, self.workdir, dest)
@@ -538,10 +600,14 @@ class LiveSystem:
 
     def close(self) -> None:
         """Tear down both pipelines (errors ignored), then stop the shell."""
-        self.shell.close()
-        if self.workdir.is_dir():
-            for pipe in PIPELINES:
-                subprocess.run(["moka", "teardown", "-p", pipe], cwd=self.workdir)
+        try:
+            if self.workdir.is_dir():
+                for pipe in PIPELINES:
+                    subprocess.run(
+                        ["moka", "teardown", "-p", pipe], cwd=self.workdir, env=self.env
+                    )
+        finally:
+            self.shell.close()
 
 
 # ---------------------------------------------------------------- --run
@@ -559,22 +625,31 @@ def block_code(page: Page, mk: Marker) -> str:
 def run(
     page_path: Path,
     home: Path,
-    shm: Path,
+    shm_parent: Path,
+    milk_root: str | None,
     start: str | None = None,
     system_factory=LiveSystem,
+    tmux_stopper=stop_tmux,
 ) -> None:
     """Run the page's blocks in order; write outputs and images at the end, all or none.
 
-    Without ``start``: refuses an existing workdir, FPS or stream, and removes the
-    workdir at the end. With ``start``: runs from that id on, in the existing workdir,
-    and leaves it in place. Both pipelines are torn down at the end, also on failure.
+    Without ``start``: refuses per ``start_refusals``, creates the private shm folder
+    ``shm_parent/SHM_NAME`` and a private TMUX_TMPDIR, and at the end stops that tmux
+    (``tmux_stopper``) and removes both folders and the workdir. With ``start``: runs
+    from that id on, in the existing workdir and private folder, with the caller's tmux,
+    and leaves both in place. Both pipelines are torn down at the end, also on failure.
     """
     text = page_path.read_text()
     errors = check_page(text, page_path.parent)
     if errors:
         raise CaptureError("page check failed:\n" + "\n".join(errors))
+    refusal = milk_root_refusal(milk_root)
+    if refusal:
+        raise CaptureError(refusal)
+    assert milk_root is not None
     page = parse(text)
     workdir = home / WORKDIR_NAME
+    shm = shm_parent / SHM_NAME
     runnable = [mk for mk in page.markers if mk.kind in ("run", "py", "tui", "fig")]
     if start is None:
         refusals = start_refusals(home, shm)
@@ -584,51 +659,70 @@ def run(
     else:
         if start not in {mk.id for mk in runnable}:
             raise CaptureError(f"no run, py, tui or fig marker with id {start}")
-        if not workdir.is_dir():
-            raise CaptureError(f"--from needs {workdir}")
+        for needed in (workdir, shm):
+            if not needed.is_dir():
+                raise CaptureError(f"--from needs {needed}")
         cwd = workdir
 
+    def norm(out: str) -> str:
+        return normalize(out, home, shm, milk_root)
+
+    env = dict(os.environ, MILK_SHM_DIR=str(shm))
     outputs, images = {}, {}
     staging = Path(tempfile.mkdtemp(prefix="tut_images_"))
-    system = system_factory(cwd, workdir)
+    if start is None:
+        shm.mkdir()
+        tmux_dir = Path(tempfile.mkdtemp(prefix="tut_tmux_"))
+        env["TMUX_TMPDIR"] = str(tmux_dir)
+        env.pop("TMUX", None)
     try:
-        started = start is None
-        for mk in page.markers:
-            if not started:
-                started = mk.id == start and mk.kind in ("run", "py", "tui", "fig")
+        system = system_factory(cwd, workdir, env)
+        try:
+            started = start is None
+            for mk in page.markers:
                 if not started:
-                    continue
-            if mk.kind == "run":
-                rc, out = system.bash(block_code(page, mk))
-                want = int(mk.attrs.get("expect", "0"))
-                if rc != want:
-                    raise CaptureError(
-                        f"{mk.id}: exit code {rc}, expected {want}\n{out}"
-                    )
-                outputs[mk.id] = normalize(out, home)
-            elif mk.kind == "py":
-                rc = system.python(block_code(page, mk))
-                if rc != 0:
-                    raise CaptureError(f"{mk.id}: exit code {rc}")
-            elif mk.kind == "tui":
-                cols, rows = (int(v) for v in mk.attrs["size"].split("x"))
-                ansi = normalize(system.tui(mk.attrs["cmd"], cols, rows), home)
-                dest = staging / f"{mk.id}.svg"
-                dest.write_text(ansi_to_svg(ansi, cols, rows))
-                images[mk.image] = dest
-            elif mk.kind == "fig":
-                dest = staging / f"{mk.id}.png"
-                system.figure(mk.id, dest)
-                images[mk.image] = dest
-            elif mk.kind == "manual" and mk.id in MANUAL_ACTIONS:
-                system.manual(mk.id)
+                    started = mk.id == start and mk.kind in ("run", "py", "tui", "fig")
+                    if not started:
+                        continue
+                if mk.kind == "run":
+                    rc, out = system.bash(block_code(page, mk))
+                    want = int(mk.attrs.get("expect", "0"))
+                    if rc != want:
+                        raise CaptureError(
+                            f"{mk.id}: exit code {rc}, expected {want}\n{out}"
+                        )
+                    outputs[mk.id] = norm(out)
+                elif mk.kind == "py":
+                    rc = system.python(block_code(page, mk))
+                    if rc != 0:
+                        raise CaptureError(f"{mk.id}: exit code {rc}")
+                elif mk.kind == "tui":
+                    cols, rows = (int(v) for v in mk.attrs["size"].split("x"))
+                    keys = mk.attrs.get("keys", "").split()
+                    ansi = norm(system.tui(mk.attrs["cmd"], cols, rows, keys))
+                    dest = staging / f"{mk.id}.svg"
+                    dest.write_text(ansi_to_svg(ansi, cols, rows))
+                    images[mk.image] = dest
+                elif mk.kind == "fig":
+                    dest = staging / f"{mk.id}.png"
+                    system.figure(mk.id, dest)
+                    images[mk.image] = dest
+                elif mk.kind == "manual" and mk.id in MANUAL_ACTIONS:
+                    system.manual(mk.id)
+        finally:
+            system.close()
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
     finally:
-        system.close()
-        if start is None and workdir.exists():
-            shutil.rmtree(workdir)
+        if start is None:
+            try:
+                tmux_stopper(env)
+            finally:
+                shutil.rmtree(tmux_dir, ignore_errors=True)
+                shutil.rmtree(shm, ignore_errors=True)
+                if workdir.exists():
+                    shutil.rmtree(workdir)
 
     for rel, src in images.items():
         dest = page_path.parent / rel
@@ -678,7 +772,7 @@ def main(argv: list | None = None) -> int:
                 print(f"{PAGE.relative_to(REPO)}: {e}", file=sys.stderr)
             return 1 if errors else 0
         if args.run:
-            run(PAGE, Path.home(), shm_dir(), args.start)
+            run(PAGE, Path.home(), SHM_PARENT, os.environ.get("MILK_ROOT"), args.start)
         else:
             callouts(args.callouts, PAGE.parent / IMG_REL / "desktop.png")
     except (CaptureError, OSError) as e:

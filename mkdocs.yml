@@ -78,6 +78,7 @@ nav:
   - Home: index.md
   - Getting Started:
     - Installation: quickstart/compile.md
+    - moka Tutorial: quickstart/moka_tutorial.md
     - Build Tiers: quickstart/build_tiers.md
     - CLI Overview: quickstart/CLI_Overview.md
     - FAQ & Troubleshooting: quickstart/faq.md

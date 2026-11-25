@@ -72,7 +72,7 @@ Who might you be?
 
     Deploy and operate sets of compute units from one configuration.
 
-    [⮕ moka](moka/moka.md)
+    [⮕ moka](moka/moka.md) · [⮕ moka Tutorial](quickstart/moka_tutorial.md)
 
 - :material-help-circle-outline:{ .lg .middle } **FAQ**
 

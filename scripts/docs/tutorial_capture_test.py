@@ -4,6 +4,7 @@ python -m pytest -p no:cacheprovider scripts/docs
 """
 
 import importlib.util
+import os
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -43,7 +44,7 @@ moka mkcm -p aoloop
     print("x")
     ```
 
-<!-- tut:tui id=fpsctrl cmd="milk-fpsCTRL -m aoloop_mfilt" size=150x16 -->
+<!-- tut:tui id=fpsctrl cmd="milk-fpsCTRL -n aoloop_mfilt" size=150x16 keys="Right Down" -->
 ![fpsCTRL](img/moka_tutorial/fpsctrl.svg)
 
 <!-- tut:fig id=mlat -->
@@ -92,8 +93,9 @@ def test_parser_six_kinds():
     ]
     by_id = {m.id: m for m in page.markers if m.kind != "out"}
     assert by_id["refused"].attrs["expect"] == "1"
-    assert by_id["fpsctrl"].attrs["cmd"] == "milk-fpsCTRL -m aoloop_mfilt"
+    assert by_id["fpsctrl"].attrs["cmd"] == "milk-fpsCTRL -n aoloop_mfilt"
     assert by_id["fpsctrl"].attrs["size"] == "150x16"
+    assert by_id["fpsctrl"].attrs["keys"] == "Right Down"
     assert by_id["fpsctrl"].image == "img/moka_tutorial/fpsctrl.svg"
     assert by_id["close-loop"].fence.lang == "python"
     assert by_id["close-loop"].fence.indent == "    "
@@ -227,25 +229,40 @@ def test_rewrite_blank_line_form():
     assert tc.rewrite(new, {"mk": "hello\nworld\n"}) == new
 
 
-def test_normalize_home():
+def test_normalize_order():
     home = Path("/home/someone")
-    text = "wrote /home/someone/AOloop2/x.fits (0.8 s)\n"
-    assert tc.normalize(text, home) == "wrote ~/AOloop2/x.fits (0.8 s)\n"
+    shm = Path("/home/someone/shm/tutorial_capture")
+    root = "/home/someone/src/milk-standalone/"
+    text = (
+        "wrote /home/someone/AOloop2/x.fits (0.8 s)\n"
+        'Cannot open shm file "/home/someone/shm/tutorial_capture/dm07disp.im.shm"\n'
+        "clone /home/someone/src/milk-standalone/milk-examples/pipelines\n"
+    )
+    assert tc.normalize(text, home, shm, root) == (
+        "wrote ~/AOloop2/x.fits (0.8 s)\n"
+        'Cannot open shm file "/milk/shm/dm07disp.im.shm"\n'
+        "clone ~/src/milk/milk-examples/pipelines\n"
+    )
+
+
+def test_milk_root_refusal(tmp_path):
+    assert "not set" in tc.milk_root_refusal(None)
+    assert "not set" in tc.milk_root_refusal("")
+    assert "does not exist" in tc.milk_root_refusal(str(tmp_path))
+    (tmp_path / "milk-examples/pipelines").mkdir(parents=True)
+    assert tc.milk_root_refusal(str(tmp_path)) is None
 
 
 def test_start_refusals(tmp_path):
-    home, shm = tmp_path / "home", tmp_path / "shm"
+    home, shm = tmp_path / "home", tmp_path / "shm" / "tutorial_capture"
     home.mkdir()
-    shm.mkdir()
-    (shm / "other.fps.shm").touch()
     assert tc.start_refusals(home, shm) == []
     (home / "AOloop2").mkdir()
-    (shm / "aoloop_mfilt.fps.shm").touch()
-    (shm / "mlatsim_wfs.fps.shm").touch()
-    (shm / "dm07disp03.im.shm").touch()
-    reasons = tc.start_refusals(home, shm)
-    assert len(reasons) == 4
-    assert all(r.endswith("exists") for r in reasons)
+    shm.mkdir(parents=True)
+    assert tc.start_refusals(home, shm) == [
+        f"{home / 'AOloop2'} exists",
+        f"{shm} exists",
+    ]
 
 
 # ---------------------------------------------------------------- ANSI to SVG
@@ -276,17 +293,47 @@ def test_ansi_to_svg_parses():
     assert {tc._FG, "#585858", "#010203"} <= rect_fills
 
 
+# ---------------------------------------------------------------- Shell (plain bash)
+
+
+def test_shell_carries_cd_and_first_failure(tmp_path):
+    shell = tc.Shell(tmp_path, dict(os.environ))
+    try:
+        assert shell.run(f"cd {tmp_path}/..")[0] == 0
+        assert shell.run("pwd") == (0, f"{tmp_path.parent}\n")
+        assert shell.run("false; true")[0] == 1
+        assert shell.run("echo ok") == (0, "ok\n")
+    finally:
+        shell.close()
+
+
+def test_shell_exit_raises(tmp_path):
+    shell = tc.Shell(tmp_path, dict(os.environ))
+    try:
+        with pytest.raises(tc.CaptureError, match="the shell exited"):
+            shell.run("echo bye\nexit 1")
+    finally:
+        shell.close()
+
+
 # ---------------------------------------------------------------- --run, faked
 
 
 class FakeSystem:
-    def __init__(self, fail=None):
+    def __init__(self, fail=None, fail_start=False, fail_close=False):
         self.fail = fail
+        self.fail_start, self.fail_close = fail_start, fail_close
         self.calls = []
         self.closed = False
 
-    def __call__(self, cwd, workdir):
-        self.cwd, self.workdir = cwd, workdir
+    def __call__(self, cwd, workdir, env):
+        self.cwd, self.workdir, self.env = cwd, workdir, env
+        self.shm = Path(env["MILK_SHM_DIR"])
+        # The private folder exists while the system runs.
+        self.shm_existed = self.shm.is_dir()
+        if self.fail_start:
+            workdir.mkdir()
+            raise RuntimeError("start failed")
         return self
 
     def bash(self, code):
@@ -296,14 +343,14 @@ class FakeSystem:
             return 1, "[ NO ] refused\n"
         if self.fail and self.fail in code:
             return 2, "boom\n"
-        return 0, f"{self.workdir}/done\n"
+        return 0, f"{self.workdir}/done {self.shm}/s.im.shm\n"
 
     def python(self, code):
         self.calls.append(("python", code))
         return 0
 
-    def tui(self, cmd, cols, rows):
-        self.calls.append(("tui", cmd))
+    def tui(self, cmd, cols, rows, keys):
+        self.calls.append(("tui", cmd, keys))
         return "\x1b[32mok\x1b[0m\n"
 
     def figure(self, fig_id, dest):
@@ -314,23 +361,55 @@ class FakeSystem:
         self.calls.append(("manual", action_id))
 
     def close(self):
+        # Teardown runs while the private folder still exists.
+        assert self.shm.is_dir()
         self.closed = True
+        if self.fail_close:
+            raise RuntimeError("close failed")
+
+
+class FakeTmux:
+    """Records the env it stops; checks it runs after close, before the removals."""
+
+    def __init__(self, fake):
+        self.fake = fake
+        self.env = None
+
+    def __call__(self, env):
+        assert self.fake.closed or self.fake.fail_start
+        assert Path(env["TMUX_TMPDIR"]).is_dir() and self.fake.shm.is_dir()
+        self.env = env
 
 
 @pytest.fixture
 def setup(tmp_path):
     home, shm = tmp_path / "home", tmp_path / "shm"
+    root = tmp_path / "milk"
     home.mkdir()
     shm.mkdir()
+    (root / "milk-examples/pipelines").mkdir(parents=True)
     (tmp_path / "docs").mkdir()
-    return write_page(tmp_path / "docs", GOOD), home, shm
+    return write_page(tmp_path / "docs", GOOD), home, shm, str(root)
 
 
-def test_run_writes_all(setup):
-    page, home, shm = setup
+def run(setup, fake, **kw):
+    page, home, shm, root = setup
+    kw.setdefault("tmux_stopper", FakeTmux(fake))
+    tc.run(page, home, shm, root, system_factory=fake, **kw)
+
+
+def test_run_writes_all(setup, monkeypatch):
+    page, home, shm, _ = setup
+    monkeypatch.setenv("TMUX", "/tmp/tmux-1000/default,1,0")
     fake = FakeSystem()
-    tc.run(page, home, shm, system_factory=fake)
+    tmux = FakeTmux(fake)
+    run(setup, fake, tmux_stopper=tmux)
     assert fake.closed and not (home / "AOloop2").exists()
+    assert fake.shm == shm / "tutorial_capture" and fake.shm_existed
+    assert not fake.shm.exists()
+    # A private tmux socket folder, stopped and removed at the end.
+    assert "TMUX" not in fake.env and tmux.env is fake.env
+    assert not Path(fake.env["TMUX_TMPDIR"]).exists()
     assert [c[0] for c in fake.calls] == [
         "bash",
         "bash",
@@ -339,39 +418,87 @@ def test_run_writes_all(setup):
         "figure",
         "manual",
     ]
+    assert ("tui", "milk-fpsCTRL -n aoloop_mfilt", ["Right", "Down"]) in fake.calls
     text = page.read_text()
-    assert text == GOOD.replace("old output\n", "~/AOloop2/done\n")
+    assert text == GOOD.replace("old output\n", "~/AOloop2/done /milk/shm/s.im.shm\n")
     svg = (page.parent / "img/moka_tutorial/fpsctrl.svg").read_text()
     ET.fromstring(svg)
     assert (page.parent / "img/moka_tutorial/mlat.png").read_bytes() == b"png"
 
 
 def test_run_all_or_none(setup):
-    page, home, shm = setup
+    page, home, shm, _ = setup
     fake = FakeSystem(fail="echo hello")
     with pytest.raises(tc.CaptureError, match="exit code 2"):
-        tc.run(page, home, shm, system_factory=fake)
+        run(setup, fake)
     assert fake.closed and not (home / "AOloop2").exists()
+    assert fake.shm_existed and not fake.shm.exists()
     assert page.read_text() == GOOD
     assert (page.parent / "img/moka_tutorial/fpsctrl.svg").read_bytes() == b"x"
 
 
 def test_run_refuses_to_start(setup):
-    page, home, shm = setup
-    (shm / "dm07disp.im.shm").touch()
+    page, home, shm, _ = setup
+    (shm / "tutorial_capture").mkdir()
     fake = FakeSystem()
     with pytest.raises(tc.CaptureError, match="refusing to start"):
-        tc.run(page, home, shm, system_factory=fake)
+        run(setup, fake)
     assert fake.calls == [] and page.read_text() == GOOD
+    # Not created by this run: left in place.
+    assert (shm / "tutorial_capture").is_dir()
+
+
+@pytest.mark.parametrize("where", ["fail_start", "fail_close"])
+def test_run_cleans_up_when_system_fails(setup, where):
+    page, home, _, _ = setup
+    fake = FakeSystem(**{where: True})
+    with pytest.raises(RuntimeError, match="failed"):
+        run(setup, fake)
+    assert not fake.shm.exists() and not (home / "AOloop2").exists()
+    assert not Path(fake.env["TMUX_TMPDIR"]).exists()
+    assert page.read_text() == GOOD
+
+
+def test_run_workdir_removal_failure_keeps_other_removals(setup, monkeypatch):
+    page, home, _, _ = setup
+    fake = FakeSystem()
+    rmtree = tc.shutil.rmtree
+
+    def failing_rmtree(path, *a, **kw):
+        if Path(path) == home / "AOloop2":
+            raise PermissionError("read-only")
+        rmtree(path, *a, **kw)
+
+    monkeypatch.setattr(tc.shutil, "rmtree", failing_rmtree)
+    with pytest.raises(PermissionError):
+        run(setup, fake)
+    assert not fake.shm.exists() and not Path(fake.env["TMUX_TMPDIR"]).exists()
+    assert page.read_text() == GOOD
+
+
+def test_run_needs_milk_root(setup, tmp_path):
+    page, home, shm, _ = setup
+    for root in (None, str(tmp_path / "nowhere")):
+        with pytest.raises(tc.CaptureError, match="MILK_ROOT|does not exist"):
+            tc.run(page, home, shm, root, system_factory=FakeSystem())
+    assert not (shm / "tutorial_capture").exists()
 
 
 def test_run_from(setup):
-    page, home, shm = setup
+    page, home, shm, _ = setup
     (home / "AOloop2").mkdir()
     fake = FakeSystem()
-    tc.run(page, home, shm, start="close-loop", system_factory=fake)
+    with pytest.raises(tc.CaptureError, match="--from needs .*tutorial_capture"):
+        run(setup, fake, start="close-loop")
+    (shm / "tutorial_capture").mkdir()
+    tmux = FakeTmux(fake)
+    run(setup, fake, start="close-loop", tmux_stopper=tmux)
     assert fake.cwd == home / "AOloop2"
+    assert fake.env["MILK_SHM_DIR"] == str(shm / "tutorial_capture")
+    # The caller's tmux: no private socket folder, nothing stopped.
+    assert fake.env.get("TMUX_TMPDIR") == os.environ.get("TMUX_TMPDIR")
+    assert tmux.env is None
     assert [c[0] for c in fake.calls] == ["python", "tui", "figure", "manual"]
     # Not created by this run: left in place.
-    assert (home / "AOloop2").is_dir()
+    assert (home / "AOloop2").is_dir() and (shm / "tutorial_capture").is_dir()
     assert page.read_text() == GOOD
