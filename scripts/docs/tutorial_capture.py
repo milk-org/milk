@@ -32,14 +32,19 @@ Modes:
       `tmux new-session`, which takes the server's environment, so the server must be
       one this run started, with MILK_SHM_DIR and MILK_PROC_DIR set.
     - Creates ~/AOloop2 (through the page), the private folder and the tmux folder; at
-      the end, also after a failure, tears down both pipelines, stops the private tmux
-      servers and removes all three.
+      the end, also after a failure, kills the page's dm_psf tmux session, tears down
+      both pipelines, stops the private tmux servers and removes all three.
     - --from ID runs from that marker on, in the existing ~/AOloop2 and private folder
       (both must exist, e.g. kept from a hand run), with no start refusals and the
       caller's tmux, and leaves both in place.
     - Captured text is normalized, in this order: the private folder to /milk/shm,
       the value of $MILK_ROOT to ~/src/milk, $HOME to ~. Text outputs also lose
-      terminal escapes and trailing spaces; figure titles are normalized too.
+      terminal escapes and trailing spaces, and their `(PID 12345)` becomes `(PID n)`;
+      figure titles are normalized too.
+    - After the tut:run blocks named in CALIBRATION_CHECKS, the run fails when the
+      calibration is bad (simulated light off, mlat latency out of range), although
+      every moka step reported ok; see calibration_refusal. --check fails when a key
+      of CALIBRATION_CHECKS is not a tut:run id.
     - Outputs and images are written at the end, all or none.
 
 Python 3.10+, stdlib only for --check; --run also needs moka (pyMilk, matplotlib) and
@@ -82,6 +87,16 @@ LOOPGAIN_EDIT = "0.3"
 # Mode shown by a modes figure (mokashow's slider); mode 0 of rm is piston, which the WFS
 # does not see.
 FIGURE_MODE = {"rm": 5, "cm": 0}
+"""
+Calibration checks, after the tut:run of these ids; True: mlat has run, its latency is
+checked too. A lost write of the light back on by takedark (about 1 run in 10) leaves
+every step ok and the calibration measured on noise.
+"""
+CALIBRATION_CHECKS = {"dark-ref": False, "measure-mlat": True}
+# Sum of one aol0_imWFS0 frame: about 5.7e4 with the light on, a few hundred without.
+MIN_WFS_SUM = 1e4
+# Sane mlat latency, in frames: about 2.7 with the example confdirs.
+LATENCY_RANGE = (1.5, 4.5)
 
 KINDS = {"run", "out", "py", "tui", "fig", "manual"}
 ATTRS = {
@@ -114,6 +129,7 @@ CALLOUTS = [
 MARKER_RE = re.compile(r"^\s*<!--\s*tut:(\S+)(.*?)\s*-->\s*$")
 FENCE_RE = re.compile(r"^(\s*)(`{3,}|~{3,})\s*([^\s`]*)(.*)$")
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\(\s*<?([^)\s>]+)")
+_PID_RE = re.compile(r"\(PID \d+\)")
 
 
 class CaptureError(Exception):
@@ -267,6 +283,9 @@ def check_page(text: str, page_dir: Path) -> list[str]:
     for oid, ln in outs.items():
         if oid not in run_ids:
             errors.append(f"line {ln + 1}: tut:out id={oid} has no tut:run")
+    for cid in CALIBRATION_CHECKS:
+        if cid not in run_ids:
+            errors.append(f"no tut:run id={cid} (a key of CALIBRATION_CHECKS)")
 
     for ln, path in page.images:
         if "://" in path or path.startswith("/"):
@@ -298,6 +317,34 @@ def plain(text: str) -> str:
     """
     text = _SGR_RE.sub("", text)
     return "\n".join(ln.rstrip() for ln in text.split("\n"))
+
+
+def mask_pids(text: str) -> str:
+    """``(PID 12345)`` of milk's C warnings as ``(PID n)``: a rebuild changes no PID."""
+    return _PID_RE.sub("(PID n)", text)
+
+
+def calibration_refusal(
+    wfs_sum: float, latency: float | None, check_latency: bool
+) -> str | None:
+    """Why the calibration is bad, or None.
+
+    ``wfs_sum``: sum of one aol0_imWFS0 frame; ``latency``: mlat's latency in frames, None
+    when mlat wrote no result. The latency is checked only with ``check_latency``.
+    """
+    if wfs_sum < MIN_WFS_SUM:
+        return (
+            f"aol0_imWFS0 sums to {wfs_sum:.3g} (< {MIN_WFS_SUM:g}): the simulated "
+            "light is off (mlatsim_wfscam.fluxtotal 0?)"
+        )
+    if not check_latency:
+        return None
+    lo, hi = LATENCY_RANGE
+    if latency is None:
+        return "mlat wrote no result"
+    if not lo <= latency <= hi:
+        return f"mlat latency {latency:.2f} frames, outside {lo} to {hi}"
+    return None
 
 
 def rewrite(text: str, outputs: dict) -> str:
@@ -349,6 +396,9 @@ _BASE16 = [
 ]  # fmt: skip
 _FG, _BG = "#d0d0d0", "#1c1c1c"
 _SGR_RE = re.compile(r"\x1b\[([0-9;:]*)([A-Za-z])|\x1b[()][A-Za-z0-9]|\x1b.")
+# Full, upper and lower half block: top and height of the foreground part, in lines.
+_BLOCKS = {"█": (0.0, 1.0), "▀": (0.0, 0.5), "▄": (0.5, 0.5)}
+_BLOCK_RE = re.compile("█+|▀+|▄+")
 
 
 def _xterm256(n: int) -> str:
@@ -404,6 +454,7 @@ def ansi_to_svg(ansi: str, cols: int, rows: int) -> str:
     """SVG of a ``tmux capture-pane -e`` text: one monospace cell per character.
 
     Handles SGR 16/256/truecolor, bold, reverse and reset; other escapes are dropped.
+    Full and half blocks (milk-termview's pixels) become rectangles.
     A single replaceable function: the rest of the script only calls it.
     """
     cw, lh, fs, pad = 8.4, 17.0, 14, 8
@@ -434,6 +485,15 @@ def ansi_to_svg(ansi: str, cols: int, rows: int) -> str:
                     f'<rect x="{px:.1f}" y="{ty:.1f}" width="{len(chunk) * cw:.1f}" '
                     f'height="{lh:.1f}" fill="{bg}"/>'
                 )
+            # Block elements (milk-termview's pixels) are drawn, not left to the font.
+            for b in _BLOCK_RE.finditer(chunk):
+                top, height = _BLOCKS[b.group()[0]]
+                bgs.append(
+                    f'<rect x="{px + b.start() * cw:.1f}" y="{ty + top * lh:.1f}" '
+                    f'width="{len(b.group()) * cw:.1f}" height="{height * lh:.1f}" '
+                    f'fill="{fg}"/>'
+                )
+            chunk = _BLOCK_RE.sub(lambda b: " " * len(b.group()), chunk)
             if chunk.strip():
                 weight = ' font-weight="bold"' if bold else ""
                 texts.append(
@@ -446,7 +506,7 @@ def ansi_to_svg(ansi: str, cols: int, rows: int) -> str:
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" '
             f'height="{height:.0f}" viewBox="0 0 {width:.0f} {height:.0f}" '
             f'font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" '
-            f'font-size="{fs}" xml:space="preserve">',
+            f'font-size="{fs}" xml:space="preserve" shape-rendering="crispEdges">',
             f'<rect width="100%" height="100%" fill="{_BG}"/>',
             *bgs,
             *texts,
@@ -635,9 +695,26 @@ class LiveSystem:
     def manual(self, action_id: str) -> None:
         MANUAL_ACTIONS[action_id](self.workdir)
 
+    def calibration(self) -> tuple[float, float | None]:
+        """Sum of one aol0_imWFS0 frame, and mlat's latency in frames (None: no result)."""
+        from moka.show.cli import mlat_results
+        from pyMilk.interfacing.shm import SHM
+
+        wfs_sum = float(SHM("aol0_imWFS0").get_data().sum())
+        res = mlat_results(self.workdir / "aoloop-rootdir/work/fps.aoloop_mlat.datadir")
+        return wfs_sum, None if res is None else res[1]
+
     def close(self) -> None:
-        """Tear down both pipelines (errors ignored), then stop the shell."""
+        """Stop the page's dm_psf session and tear down both pipelines (errors
+        ignored), then stop the shell."""
         try:
+            # moka teardown does not own it; with --from it runs in the caller's tmux.
+            subprocess.run(
+                ["tmux", "kill-session", "-t", "dm_psf"],
+                env=self.env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             if self.workdir.is_dir():
                 for pipe in PIPELINES:
                     subprocess.run(
@@ -734,7 +811,15 @@ def run(
                             raise CaptureError(
                                 f"{mk.id}: exit code {rc}, expected {want}\n{out}"
                             )
-                        outputs[mk.id] = plain(norm(out))
+                        outputs[mk.id] = mask_pids(plain(norm(out)))
+                        if mk.id in CALIBRATION_CHECKS:
+                            refusal = calibration_refusal(
+                                *system.calibration(), CALIBRATION_CHECKS[mk.id]
+                            )
+                            if refusal:
+                                raise CaptureError(
+                                    f"{mk.id}: bad calibration: {refusal}"
+                                )
                     elif mk.kind == "py":
                         rc = system.python(block_code(page, mk))
                         if rc != 0:

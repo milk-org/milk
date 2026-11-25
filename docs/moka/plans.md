@@ -97,7 +97,7 @@ again after a new `mkcm`.
 
 `moka takeref [-n NFRAMES | -t SECONDS]` averages the next frames of `aol<loop_number>_imWFS1` into `aol<loop_number>_wfsref`, `aol<loop_number>_wfsrefc` and `calib/wfsref.fits`, as `cacao-aorun-026-takeref` does; acquWFS subtracts `wfsrefc` into `imWFS2` from its next frame.
 
-`moka takedark [-n NFRAMES | -t SECONDS]` averages `aol<loop_number>_wfsim` the same way into `aol<loop_number>_wfsdark` and `calib/wfsdark.fits`, as `cacao-aorun-005-takedark` does. It creates `wfsdark` when the stream is missing; acquWFS connects to it only when it starts, so a first dark needs acquWFS restarted. The plan does not remove the light: a pipeline wraps it with its own tasks for that, as `milk-examples/pipelines/aoloop-conf/scripts/moka_plans.py` does ([§4](#4-custom-plans)).
+`moka takedark [-n NFRAMES | -t SECONDS]` averages `aol<loop_number>_wfsim` the same way into `aol<loop_number>_wfsdark` and `calib/wfsdark.fits`, as `cacao-aorun-005-takedark` does. It creates `wfsdark` when the stream is missing. The dark needs only the linkage that gives `aol<loop_number>_wfsim` its data source. The plan does not remove the light: a pipeline wraps it with its own tasks for that, as `milk-examples/pipelines/aoloop-conf/scripts/moka_plans.py` does ([§4](#4-custom-plans)).
 
 `run_plan(pipeline, name, compus)` applies a CompU subset to every step of any plan; a plan with
 a pipeline-wide task (`deploy`, `teardown`) then raises `ConfigError`.

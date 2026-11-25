@@ -4,7 +4,7 @@ How confdir changes reach a rootdir, and the `mokainit` commands that build and 
 rootdirs.
 
 **Audience:** Integrator · See also: [Configuration](conf.md) ·
-[Operating](operate.md) · [Tour](tour.md) · [Glossary](glossary.md)
+[Operating](operate.md) · [Tutorial](../quickstart/moka_tutorial.md) · [Glossary](glossary.md)
 
 `mokainit` does file operations on confdirs and rootdirs; it never touches the live system.
 

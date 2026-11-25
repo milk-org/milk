@@ -1,1 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1276" height="696" viewBox="0 0 1276 696" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="14" xml:space="preserve" shape-rendering="crispEdges">
+<rect width="100%" height="100%" fill="#1c1c1c"/>
+<rect x="176.0" y="76.0" width="142.8" height="17.0" fill="#4682b4"/>
+<rect x="8.0" y="671.0" width="1066.8" height="17.0" fill="#3c3c50"/>
+<text x="8.0" y="38.3" fill="#d0d0d0" font-weight="bold" textLength="436.8">  [mlatsim_wfscam] simulate WFS camera  [fc6206977a]</text>
+<text x="8.0" y="55.3" fill="#50dc50" font-weight="bold" textLength="84.0">  PATH: / </text>
+<text x="8.0" y="89.3" fill="#50dc50" textLength="168.0">2640354 [00]2640422 </text>
+<text x="176.0" y="89.3" fill="#c850dc" textLength="142.8">- mlatsim_wfscam </text>
+<text x="318.8" y="89.3" fill="#d0d0d0" textLength="8.4">&gt;</text>
+<text x="8.0" y="106.3" fill="#50dc50" textLength="168.0">2640347 [00]2640411 </text>
+<text x="176.0" y="106.3" fill="#c850dc" textLength="142.8">- mlatsim_pywfs  </text>
+<text x="8.0" y="123.3" fill="#50dc50" textLength="168.0">2640316 [00]2640400 </text>
+<text x="176.0" y="123.3" fill="#c850dc" textLength="142.8">- mlatsim_dmdelay</text>
+<text x="8.0" y="140.3" fill="#50dc50" textLength="100.8">2640289 [00]</text>
+<text x="108.8" y="140.3" fill="#d0d0d0" textLength="67.2">0000000 </text>
+<text x="176.0" y="140.3" fill="#c850dc" textLength="142.8">- mlatsim_dmturb </text>
+<text x="8.0" y="157.3" fill="#50dc50" textLength="168.0">2640263 [00]2640361 </text>
+<text x="176.0" y="157.3" fill="#c850dc" textLength="142.8">- mlatsim_dmcomb </text>
+<text x="8.0" y="191.3" fill="#50dc50" textLength="361.2">[0] PARAMETERS OK - RUN function good to go</text>
+<text x="8.0" y="684.3" fill="#ffffff" textLength="1066.8"> [MODE: CTRL] [SORT: Default] [PID 2640431] [5 FPS] [fc6206977a] | (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search</text>
+</svg>

@@ -64,6 +64,12 @@ Trailing text.
 """
 
 
+@pytest.fixture(autouse=True)
+def no_calibration_checks(monkeypatch):
+    """GOOD has none of the real page's calibration ids."""
+    monkeypatch.setattr(tc, "CALIBRATION_CHECKS", {})
+
+
 def write_page(tmp_path, text, images=("fpsctrl.svg", "mlat.png")):
     page = tmp_path / "moka_tutorial.md"
     page.write_text(text)
@@ -181,6 +187,12 @@ def test_check_out_without_run(tmp_path):
     assert len(errors) == 1 and "tut:out id=nope has no tut:run" in errors[0]
 
 
+def test_check_calibration_id_without_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(tc, "CALIBRATION_CHECKS", {"mk": False, "gone": True})
+    errors = tc.check_page(write_page(tmp_path, GOOD).read_text(), tmp_path)
+    assert errors == ["no tut:run id=gone (a key of CALIBRATION_CHECKS)"]
+
+
 def test_check_missing_image(tmp_path):
     page = write_page(tmp_path, GOOD, images=("fpsctrl.svg",))
     errors = tc.check_page(page.read_text(), tmp_path)
@@ -260,6 +272,23 @@ def test_plain_drops_escapes_and_trailing_spaces():
     )
 
 
+def test_mask_pids():
+    text = ' (PID 2541931) Cannot open shm file "/milk/shm/x.im.shm"\nPID 12 (PID x)\n'
+    assert tc.mask_pids(text) == (
+        ' (PID n) Cannot open shm file "/milk/shm/x.im.shm"\nPID 12 (PID x)\n'
+    )
+
+
+def test_calibration_refusal():
+    assert tc.calibration_refusal(5.7e4, None, False) is None
+    assert tc.calibration_refusal(5.7e4, 2.7, True) is None
+    assert "light is off" in tc.calibration_refusal(-300.0, 2.9, True)
+    assert "light is off" in tc.calibration_refusal(300.0, None, False)
+    assert "no result" in tc.calibration_refusal(5.7e4, None, True)
+    for bad in (-2.34, 6.13):
+        assert "outside 1.5 to 4.5" in tc.calibration_refusal(5.7e4, bad, True)
+
+
 def test_milk_root_refusal(tmp_path):
     assert "not set" in tc.milk_root_refusal(None)
     assert "not set" in tc.milk_root_refusal("")
@@ -308,6 +337,37 @@ def test_ansi_to_svg_parses():
     assert {tc._FG, "#585858", "#010203"} <= rect_fills
 
 
+def test_ansi_to_svg_blocks_from_milk_termview():
+    # Two image rows and the status lines of a real milk-termview capture.
+    ansi = Path(__file__).with_name("tutorial_capture_termview.ansi").read_text()
+    root = ET.fromstring(tc.ansi_to_svg(ansi, 80, 5))
+    ns = "{http://www.w3.org/2000/svg}"
+    texts = "".join(t.text for t in root.iter(f"{ns}text"))
+    assert not set("\u2580\u2584\u2588") & set(texts)
+    assert "Image: " in texts and "tvtest" in texts and "Val: [0 : 1]" in texts
+    rects = list(root.iter(f"{ns}rect"))
+    # Lower halves: 8.5 high, at mid-line of rows 0 and 1, in the 24-bit colours.
+    lower = [r for r in rects if r.get("height") == "8.5"]
+    assert {r.get("y") for r in lower} == {"16.5", "33.5"}
+    assert len({r.get("fill") for r in lower}) > 10
+    assert "#ffffff" in {r.get("fill") for r in rects if r.get("height") == "17.0"}
+
+
+def test_ansi_to_svg_merges_block_runs():
+    svg = tc.ansi_to_svg(
+        "\x1b[38;2;1;2;3m\x1b[48;2;4;5;6m\u2584\u2584\u2584\u2580\n", 4, 1
+    )
+    rects = [
+        (r.get("y"), r.get("width"), r.get("height"), r.get("fill"))
+        for r in ET.fromstring(svg).iter("{http://www.w3.org/2000/svg}rect")
+    ]
+    assert rects[1:] == [
+        ("8.0", "33.6", "17.0", "#040506"),
+        ("16.5", "25.2", "8.5", "#010203"),
+        ("8.0", "8.4", "8.5", "#010203"),
+    ]
+
+
 # ---------------------------------------------------------------- Shell (plain bash)
 
 
@@ -335,8 +395,9 @@ def test_shell_exit_raises(tmp_path):
 
 
 class FakeSystem:
-    def __init__(self, fail=None, fail_start=False, fail_close=False):
+    def __init__(self, fail=None, fail_start=False, fail_close=False, wfs_sum=5.7e4):
         self.fail = fail
+        self.wfs_sum = wfs_sum
         self.fail_start, self.fail_close = fail_start, fail_close
         self.calls = []
         self.closed = False
@@ -374,6 +435,10 @@ class FakeSystem:
 
     def manual(self, action_id):
         self.calls.append(("manual", action_id))
+
+    def calibration(self):
+        self.calls.append(("calibration",))
+        return self.wfs_sum, 2.7
 
     def close(self):
         # Teardown runs while the private folder still exists.
@@ -450,6 +515,25 @@ def test_run_all_or_none(setup):
     assert fake.shm_existed and not fake.shm.exists()
     assert page.read_text() == GOOD
     assert (page.parent / "img/moka_tutorial/fpsctrl.svg").read_bytes() == b"x"
+
+
+@pytest.mark.parametrize("wfs_sum", [5.7e4, 300.0])
+def test_run_calibration_check(setup, wfs_sum, monkeypatch):
+    monkeypatch.setattr(tc, "CALIBRATION_CHECKS", {"measure-mlat": True})
+    page = setup[0]
+    text = GOOD.replace("tut:run id=mk ", "tut:run id=measure-mlat ").replace(
+        "tut:out id=mk ", "tut:out id=measure-mlat "
+    )
+    page.write_text(text)
+    fake = FakeSystem(wfs_sum=wfs_sum)
+    if wfs_sum < tc.MIN_WFS_SUM:
+        with pytest.raises(tc.CaptureError, match="measure-mlat: bad calibration"):
+            run(setup, fake)
+        assert page.read_text() == text
+    else:
+        run(setup, fake)
+        assert "done" in page.read_text()
+    assert [c[0] for c in fake.calls][:2] == ["bash", "calibration"]
 
 
 def test_run_refuses_to_start(setup):

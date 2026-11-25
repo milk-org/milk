@@ -98,9 +98,7 @@ nav:
     - Valkey Integration: guide/valkey.md
   - moka:
     - Introduction: moka/moka.md
-    - Operate:
-      - Tour: moka/tour.md
-      - Operating: moka/operate.md
+    - Operating: moka/operate.md
     - Integrate:
       - Configuration Files: moka/conf.md
       - "Drift, Resync & mokainit": moka/provision.md

@@ -3,7 +3,7 @@
 `moka` (Milk OrKestrAtion) declares, deploys and operates **pipelines**: sets of milk compute units
 run together.
 
-**Audience:** Operator · See also: [Tour](tour.md) · [Configuration](conf.md) ·
+**Audience:** Operator · See also: [Tutorial](../quickstart/moka_tutorial.md) · [Configuration](conf.md) ·
 [Operating](operate.md) · [Glossary](glossary.md)
 
 !!! note "Status"
@@ -70,7 +70,7 @@ ordered list of tasks with a failure policy (see [Plans and tasks](plans.md)).
 
     Deploy, link, run and tear down a pipeline; read its state; handle failures.
 
-    [⮕ Tour](tour.md) · [⮕ Operating](operate.md)
+    [⮕ Tutorial](../quickstart/moka_tutorial.md) · [⮕ Operating](operate.md)
 
 - **Integrate**
 

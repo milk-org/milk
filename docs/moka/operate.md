@@ -2,7 +2,7 @@
 
 The states of a deployed pipeline, the `moka` commands that move between them, and their errors.
 
-**Audience:** Operator · See also: [Tour](tour.md) · [Plans and tasks](plans.md) ·
+**Audience:** Operator · See also: [Tutorial](../quickstart/moka_tutorial.md) · [Plans and tasks](plans.md) ·
 [Drift and resync](provision.md) · [Glossary](glossary.md)
 
 ## 1. Lifecycle
@@ -85,9 +85,22 @@ moka completion bash                     print the tab completion script
 Never fails because of the pipeline's state. Drift: see
 [Drift and resync](provision.md#2-drift).
 
-```bash
-moka state -p basic
-```
+=== "CLI"
+
+    ```bash
+    moka state -p basic
+    ```
+
+=== "Python"
+
+    ```python
+    from moka.operate.pipeline import Pipeline
+    from moka.operate.state import state
+
+    # <cwd>/basic-rootdir, or a rootdir path
+    pp = Pipeline("basic")
+    state(pp)
+    ```
 
 ```text title="Output"
 rootdir: /home/vdeo/pipes/basic-rootdir
@@ -139,9 +152,20 @@ ConfStart    no    no   FPS aoloop_acquWFS is missing or invalid.
 
 A plan command exits 1 when a step is refused or fails.
 
-```bash
-moka measlinresp
-```
+=== "CLI"
+
+    ```bash
+    moka measlinresp -p aoloop
+    ```
+
+=== "Python"
+
+    ```python
+    from moka.operate.pipeline import Pipeline
+    from moka.operate.plans import run_plan
+
+    run_plan(Pipeline("aoloop"), "measlinresp")
+    ```
 
 ```text title="Output"
 rootdir: /home/vdeo/pipes/aoloop-rootdir
