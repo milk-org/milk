@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>    // std::vector
+#include <stdexcept> // std::invalid_argument
 #include <algorithm> // std::find
 
 extern "C"
@@ -11,6 +12,7 @@ extern "C"
 #include "fps_internal.h"
 #include "fps_connect.h"
 #include "fps_disconnect.h"
+#include "fps_GetParamIndex.h"
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"
 #include "fps_FPCONFexit.h"
@@ -66,30 +68,91 @@ enum FPS_type : uint32_t
     STRING_NOT_STREAM = FPTYPE_STRING_NOT_STREAM,
 };
 
-enum FPS_flags : uint64_t
+/// Single list of FPFLAG_* names (see fps_types.h), expanded for both the enum and the Python binding.
+#define FPS_FLAGS_LIST(X)              \
+    X(ACTIVE)                          \
+    X(USED)                            \
+    X(VISIBLE)                         \
+    X(WRITE)                           \
+    X(WRITECONF)                       \
+    X(WRITERUN)                        \
+    X(WRITESTATUS)                     \
+    X(LOG)                             \
+    X(SAVEONCHANGE)                    \
+    X(SAVEONCLOSE)                     \
+    X(IMPORTED)                        \
+    X(FEEDBACK)                        \
+    X(CHECKINIT)                       \
+    X(MINLIMIT)                        \
+    X(MAXLIMIT)                        \
+    X(ERROR)                           \
+    X(STREAM_LOAD_FORCE_LOCALMEM)      \
+    X(STREAM_LOAD_FORCE_SHAREMEM)      \
+    X(STREAM_LOAD_FORCE_CONFFITS)      \
+    X(STREAM_LOAD_FORCE_CONFNAME)      \
+    X(STREAM_LOAD_SKIPSEARCH_LOCALMEM) \
+    X(STREAM_LOAD_SKIPSEARCH_SHAREMEM) \
+    X(STREAM_LOAD_SKIPSEARCH_CONFFITS) \
+    X(STREAM_LOAD_SKIPSEARCH_CONFNAME) \
+    X(STREAM_LOAD_UPDATE_SHAREMEM)     \
+    X(STREAM_LOAD_UPDATE_CONFFITS)     \
+    X(FILE_CONF_REQUIRED)              \
+    X(FILE_RUN_REQUIRED)               \
+    X(FPS_CONF_REQUIRED)               \
+    X(FPS_RUN_REQUIRED)                \
+    X(STREAM_CONF_REQUIRED)            \
+    X(STREAM_RUN_REQUIRED)             \
+    X(STREAM_ENFORCE_DATATYPE)         \
+    X(STREAM_TEST_DATATYPE_UINT8)      \
+    X(STREAM_TEST_DATATYPE_INT8)       \
+    X(STREAM_TEST_DATATYPE_UINT16)     \
+    X(STREAM_TEST_DATATYPE_INT16)      \
+    X(STREAM_TEST_DATATYPE_UINT32)     \
+    X(STREAM_TEST_DATATYPE_INT32)      \
+    X(STREAM_TEST_DATATYPE_UINT64)     \
+    X(STREAM_TEST_DATATYPE_INT64)      \
+    X(PRIMARY_CLI_INPUT)               \
+    X(CLI_INPUT)                       \
+    X(STREAM_TEST_DATATYPE_HALF)       \
+    X(STREAM_TEST_DATATYPE_FLOAT)      \
+    X(STREAM_TEST_DATATYPE_DOUBLE)     \
+    X(STREAM_ENFORCE_1D)               \
+    X(STREAM_ENFORCE_2D)               \
+    X(STREAM_ENFORCE_3D)               \
+    X(STREAM_ENFORCE_XSIZE)            \
+    X(STREAM_ENFORCE_YSIZE)            \
+    X(STREAM_ENFORCE_ZSIZE)            \
+    X(CHECKSTREAM)                     \
+    X(STREAM_MEMLOADREPORT)            \
+    X(TRIGGER_STREAM)                  \
+    X(DEFAULT_INPUT)                   \
+    X(DEFAULT_OUTPUT)                  \
+    X(DEFAULT_INPUT_STREAM)            \
+    X(DEFAULT_TRIGGER_STREAM)          \
+    X(DEFAULT_OUTPUT_STREAM)           \
+    X(DEFAULT_STATUS)
+
+enum class FPS_flags : uint64_t
 {
-    // There are many more
-    DEFAULT_INPUT         = FPFLAG_DEFAULT_INPUT,
-    DEFAULT_OUTPUT        = FPFLAG_DEFAULT_OUTPUT,
-    DEFAULT_INPUT_STREAM  = FPFLAG_DEFAULT_INPUT_STREAM,
-    DEFAULT_OUTPUT_STREAM = FPFLAG_DEFAULT_OUTPUT_STREAM,
-    DEFAULT_STATUS        = FPFLAG_DEFAULT_STATUS,
+#define X(name) name = FPFLAG_##name,
+    FPS_FLAGS_LIST(X)
+#undef X
 };
 
 class pyFps
 {
     std::string                     name_;
     FUNCTION_PARAMETER_STRUCT       fps_;
-    std::map<std::string, FPS_type> keys_;
+    std::map<std::string, FPS_type> key2type_cache_;
 
     int read_keys()
     {
         int k = 0;
         while ((k < fps_.md->NBparamMAX) && (fps_.parray[k].keywordfull[0] != '\0'))
         {
-            int   offset = strlen(fps_.parray[k].keyword[0]) + 1;
-            char *key    = fps_.parray[k].keywordfull + offset;
-            keys_[key]   = static_cast<FPS_type>(fps_.parray[k].type);
+            int   offset         = strlen(fps_.parray[k].keyword[0]) + 1;
+            char *key            = fps_.parray[k].keywordfull + offset;
+            key2type_cache_[key] = static_cast<FPS_type>(fps_.parray[k].type);
             k++;
         }
 
@@ -165,11 +228,21 @@ class pyFps
     }
     const std::map<std::string, FPS_type> &keys()
     {
-        return keys_;
+        return key2type_cache_;
     }
     const FPS_type keys(const std::string &key)
     {
-        return keys_[key];
+        return key2type_cache_.at(key);
+    }
+    /// Live flags of a parameter, looked up by name in shared memory.
+    uint64_t get_flags(const std::string &key)
+    {
+        int pindex = functionparameter_GetParamIndex(&fps_, key.c_str());
+        if (pindex < 0)
+        {
+            throw std::invalid_argument("get_flags: key " + key + " not in FPS " + name_);
+        }
+        return fps_.parray[pindex].fpflag;
     }
 
     /**
@@ -221,13 +294,7 @@ class pyFps
      */
     int add_entry(std::string entry_name, std::string entry_desc, FPS_type fptype)
     {
-        keys_[entry_name] = fptype;
-        // We need to prepend a . to entry to abide by FPS conventions
-        // See fps_add_entry.c
-        std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
-                                            static_cast<uint32_t>(fptype), FPFLAG_DEFAULT_INPUT,
-                                            nullptr, nullptr);
+        return add_entry_w_flags(entry_name, entry_desc, fptype, FPS_flags::DEFAULT_INPUT);
     }
 
     /**
@@ -246,11 +313,17 @@ class pyFps
                           FPS_type    fptype,
                           FPS_flags   fpflag)
     {
-        keys_[entry_name]     = fptype;
+        // We need to prepend a . to entry to abide by FPS conventions
+        // See fps_add_entry.c
         std::string prepended = "." + entry_name;
-        return function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
-                                            static_cast<uint32_t>(fptype),
-                                            static_cast<uint64_t>(fpflag), nullptr, nullptr);
+        int ret = function_parameter_add_entry(&fps_, prepended.c_str(), entry_desc.c_str(),
+                                               static_cast<uint32_t>(fptype),
+                                               static_cast<uint64_t>(fpflag), nullptr, nullptr);
+        if (ret == RETURN_SUCCESS)
+        {
+            key2type_cache_[entry_name] = fptype;
+        }
+        return ret;
     }
 
     /**

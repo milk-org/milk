@@ -6,11 +6,10 @@ from pathlib import Path
 
 import pytest
 
-import milk.config.resolve
-from milk.config.resolve import confresolve
-from milk.errors import ConfigError
-from milk.operate.pipeline import Pipeline
-from milk.provision.rootdir import init
+from moka.config.resolve import confresolve
+from moka.errors import ConfigError
+from moka.operate.pipeline import Pipeline
+from moka.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 
@@ -45,7 +44,7 @@ def _fps(conf) -> dict:
 
 def test_resolves_pipelinebasic():
     conf = confresolve(RESOURCES / "pipelinebasic-conf")
-    assert conf.name == "basic" and conf.kind == "generic"
+    assert conf.name == "basic"
     assert conf.compute_units["delay1"].fps["in_name"] == "middle"
 
 
@@ -87,19 +86,6 @@ def test_table_arrays_are_replaced_whole(tmp_path):
         **{"inc.toml": inc},
     )
     assert [d.target for d in confresolve(conf).dataloads] == ["c"]
-
-
-def test_kind_defaults_are_the_lowest_layer(tmp_path, monkeypatch):
-    defaults = {"compute_units": {"cu": {"fps": {"delaysec": 9.0, "timebuff": 7}}}}
-    monkeypatch.setattr(milk.config.resolve, "kind_defaults", lambda kind: defaults)
-    fps = _fps(confresolve(_confset(tmp_path)))
-    assert fps["timebuff"] == 7
-    assert fps["delaysec"] == 0.01
-
-
-def test_unknown_kind_refused(tmp_path):
-    with pytest.raises(ConfigError, match="nope"):
-        confresolve(_confset(tmp_path, head='kind = "nope"'))
 
 
 def test_overrides_are_the_top_layer_and_feed_substitution(tmp_path):

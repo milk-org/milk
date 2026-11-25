@@ -1,34 +1,39 @@
-"""Pipeline fixtures: tmp copies of pipelinebasic, a live-deployable clone, fake CompUs."""
+"""Pipeline fixtures: tmp copies of pipelinebasic, a live-deployable clone, mlatsim, fake CompUs."""
 
 from __future__ import annotations
 
 import contextlib
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
 import libtmux
 import pytest
 
-from milk.operate.plans import run_plan
-from milk.operate.pipeline import Pipeline
-from milk.provision.clone import clone
-from milk.provision.rootdir import init
+from moka.operate.plans import run_plan
+from moka.operate.pipeline import Pipeline
+from moka.provision.clone import clone
+from moka.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 
 
 @pytest.fixture
 def make_tmp_pipeline(tmp_path):
-    """A pipelinebasic copy in tmp_path, with extra TOML appended to its conf.toml, then init."""
+    """A pipelinebasic copy in tmp_path, with extra TOML appended to its conf.toml and
+    ``moka_plans`` as its scripts/moka_plans.py, then init."""
 
-    def make(extra_toml: str = "") -> Pipeline:
+    def make(extra_toml: str = "", moka_plans: str = "") -> Pipeline:
         conf = tmp_path / "pipelinebasic-conf"
         shutil.copytree(RESOURCES / "pipelinebasic-conf", conf)
         if extra_toml:
             with (conf / "conf.toml").open("a") as stream:
                 stream.write(extra_toml)
+        if moka_plans:
+            (conf / "scripts").mkdir()
+            (conf / "scripts" / "moka_plans.py").write_text(moka_plans)
         return Pipeline(init(conf))
 
     return make
@@ -61,6 +66,33 @@ def cloned_pipeline():
         if session is not None:
             session.kill()
     shutil.rmtree(conf)
+
+
+@pytest.fixture
+def make_mlatsim(tmp_path, shm_dir_cleanafter):
+    """make(extra_toml) -> resources/mlatsim-conf plus extra_toml, deployed in tmp_path; torn
+    down (tmux included) at the end, then its streams removed. Needs milk and cacao binaries.
+    """
+    made: list[Pipeline] = []
+
+    def make(extra_toml: str = "") -> Pipeline:
+        conf = tmp_path / "mlatsim-conf"
+        shutil.copytree(RESOURCES / "mlatsim-conf", conf)
+        with (conf / "conf.toml").open("a") as stream:
+            stream.write(extra_toml)
+        pp = Pipeline(init(conf))
+        made.append(pp)
+        run_plan(pp, "deploy")
+        return pp
+
+    yield make
+    for pp in made:
+        try:
+            run_plan(Pipeline(pp.root_folder), "teardown")
+        finally:
+            for cu in pp.config.compute_units:
+                argv = ["tmux", "kill-session", "-t", pp.config.fps_name(cu)]
+                subprocess.run(argv, capture_output=True)
 
 
 def _fake_compu(fpsname: str) -> SimpleNamespace:
@@ -100,3 +132,45 @@ def fake_compus(monkeypatch):
     fakes = {cu: _fake_compu(f"basic_{cu}") for cu in ("delay0", "delay1")}
     monkeypatch.setattr(Pipeline, "compute_units", property(lambda self: fakes))
     return fakes
+
+
+@pytest.fixture
+def started(fake_compus) -> list[str]:
+    """Every fake has its conf process; the list records the order of the runstart calls."""
+    order: list[str] = []
+    for cu, fake in fake_compus.items():
+        fake.conf = True
+        fake.runstart = lambda tmux=False, cu=cu, fake=fake: (
+            order.append(cu),
+            setattr(fake, "run", True),
+        )
+    return order
+
+
+@pytest.fixture
+def touch_source() -> str:
+    """A scripts/moka_plans.py: task Touch (creates work/touched) and plan touch (any state)."""
+    return '''
+from moka.operate.plans import Plan, Step
+from moka.operate.tasks import Task
+
+
+class Touch(Task):
+    """Creates work/touched."""
+
+    def _path(self):
+        return self.pipeline.work_folder / "touched"
+
+    def can(self):
+        return True
+
+    def forward(self):
+        self._path().touch()
+
+    def success(self):
+        return self._path().exists()
+
+
+TASKS = [Touch]
+PLANS = [Plan("touch", (Step("Touch"),), accepts="any")]
+'''

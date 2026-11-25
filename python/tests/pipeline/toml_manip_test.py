@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from milk.config.substitute import (
+from moka.config.substitute import (
     denest_toml_dicts,
     renest_toml_dicts,
     substitute_toml_variables_in_nested,

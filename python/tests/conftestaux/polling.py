@@ -5,7 +5,7 @@ from typing import Callable
 
 import pytest
 
-from milk.wait import wait_until
+from moka.wait import wait_until
 
 
 def poll_until_or_fail(

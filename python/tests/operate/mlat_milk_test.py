@@ -1,4 +1,4 @@
-"""O1 goal line (milk): run mlat over a milk-pipes pipeline and plot its latency graph.
+"""O1 goal line (milk): run mlat over a moka pipeline and plot its latency graph.
 
 Needs milk and cacao binaries, matplotlib, and the session spoofing of tests/conftestaux/milk.py.
 See specs/011-o1-steps-runstart-mlat/brief.md and tests/resources/mlatsim-conf/.
@@ -6,13 +6,9 @@ See specs/011-o1-steps-runstart-mlat/brief.md and tests/resources/mlatsim-conf/.
 
 from __future__ import annotations
 
-import shutil
-import subprocess
-from pathlib import Path
-
 import pytest
 
-from milk.operate import tasks as _tasks
+from moka.operate import tasks as _tasks
 
 if not hasattr(
     _tasks, "RunStart"
@@ -22,40 +18,26 @@ if not hasattr(
 import matplotlib
 from pyMilk.interfacing.fps import FPS
 
-from milk.operate.pipeline import Pipeline
-from milk.operate.plans import Plan, Step, run, run_plan
-from milk.operate.state import State, state
-from milk.provision.rootdir import init
-from milk.show.cli import mlat_figure
+from moka.operate.pipeline import Pipeline
+from moka.operate.plans import Plan, Step, run
+from moka.operate.state import State, state
+from moka.show.cli import mlat_figure
 
-RESOURCES = Path(__file__).parents[1] / "resources"
 MEASURE = Plan(
     "mlat",
     (
-        Step("RunStart", ("dmdelay",)),
-        Step("RunStart", ("wfscam",)),
+        Step("RunStart"),  # runstart: dmcomb, dmdelay, wfscam, acquWFS
         Step("RunStart", ("mlat",)),
         Step("WaitRunEnd", ("mlat",)),
-        Step("RunStop", ("wfscam", "dmdelay")),
+        Step("RunStop"),
     ),
 )
 DELAYSEC = 0.003  # compute_units.dmdelay.fps.delaysec in mlatsim-conf
 
 
 @pytest.fixture
-def mlatsim(tmp_path):
-    """mlatsim initialized and deployed in tmp_path; torn down (tmux included) at the end."""
-    conf = tmp_path / "mlatsim-conf"
-    shutil.copytree(RESOURCES / "mlatsim-conf", conf)
-    pp = Pipeline(init(conf))
-    run_plan(pp, "deploy")
-    yield pp
-    try:
-        run_plan(Pipeline(pp.root_folder), "teardown")
-    finally:
-        for cu in pp.config.compute_units:
-            argv = ["tmux", "kill-session", "-t", pp.config.fps_name(cu)]
-            subprocess.run(argv, capture_output=True)
+def mlatsim(make_mlatsim):
+    return make_mlatsim()
 
 
 def _measure(pp: Pipeline) -> None:

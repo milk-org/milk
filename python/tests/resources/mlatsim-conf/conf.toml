@@ -1,18 +1,30 @@
-# mlat over a simulated DM -> WFS path (design-v7 Appendix A.1 shapes).
+# mlat and measlinresp over a simulated DM -> PyWFS path.
 #
-#   mlatsim_dm --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
-#        ^                                                 |
-#        |                    [wfscam: streamcopy, fixed ~1 kHz clock]
-#        |                                                 v
-#        +-------- mlat pokes dm, watches wfs -------- mlatsim_wfs
+#   dm07disp00..11 --[dmcomb]--> dm07disp --[dmdelay: streamdelay, +delaysec]--> mlatsim_dmdelayed
+#      02 = RM pokes                                                                   |
+#      03 = loop                                          [pywfs: on each delayed DM write]
+#      10 = dmturb (on demand)                                                         v
+#                                                         mlatsim_wfssignal (float, 32x32, total 1)
+#                                                         lit where mlatsim_pupmask > 0
+#                                                                                      |
+#                                                    [wfscam: WFScamsim, fixed ~1 kHz clock]
+#                                                                                      v
+#                                                                    mlatsim_wfs (uint16, 32x32)
+#                                                                                      |
+#                                      [acquWFS: as aoloop-conf; mlat and measlinresp read here]
+#                                                                                      v
+#                                                                                aol7_imWFS2
 #
-# The camera samples the delayed DM on its own clock; DM writes never trigger it (optical, not
-# digital, feedback).
-# Session: see specs/011-o1-steps-runstart-mlat/brief.md.
+# The camera samples the pupil images on its own clock; DM writes trigger pywfs, never the
+# camera (optical, not digital, feedback). Channel map as cacao-setDMnolink. DMindex 7 is
+# loop_number, written out.
+# Session: see specs/011-o1-steps-runstart-mlat/brief.md, specs/014-sim-dmcomb-turb-camsim/brief.md,
+# specs/015-sim-pywfs/brief.md.
 long_name = "mlatsim"
 name = "mlatsim"
 loop_number = 7
 teardown_kill_tmux = true
+runstart = ["dmcomb", "dmdelay", "pywfs", "wfscam", "acquWFS"]  # dmturb, mlat: on demand
 
 [[hooks]]                     # writes data/dm.fits: 16x16 float32 zeros
 id = "dm"
@@ -20,50 +32,153 @@ type = "command"
 command = ["python3", "../scripts/mkdm.py", "dm.fits"]
 product = "dm.fits"
 
+[[hooks]]                     # 32x32 uint16 zeros
+id = "wfs"
+type = "command"
+command = ["python3", "../scripts/mkdm.py", "wfs.fits", "uint16", "32"]
+product = "wfs.fits"
+
+[[hooks]]                     # 32x32 float32 zeros
+id = "wfssignal"
+type = "command"
+command = ["python3", "../scripts/mkdm.py", "wfssignal.fits", "float32", "32"]
+product = "wfssignal.fits"
+
+[[hooks]]                     # the WFS illumination: 156 actuators lit. Not the DM aperture
+id = "pupmask"                # (aoloop's [dmhint]), which is larger
+type = "command"
+command = ["python3", "../scripts/mkpupmask.py", "pupmask.fits", "16", "7.5", "7.5", "7.0"]
+product = "pupmask.fits"
+
 [[dataloads]]                 # every stream exists before any CompU starts
 source = "dm.fits"
-target = "mlatsim_dm"
+target = "dm07disp"
+
+[[dataloads]]
+source = "dm.fits"
+target = "dm07disp02"
+
+[[dataloads]]
+source = "dm.fits"
+target = "dm07disp03"
+
+[[dataloads]]
+source = "dm.fits"
+target = "dm07disp10"
 
 [[dataloads]]
 source = "dm.fits"
 target = "mlatsim_dmdelayed"
 
 [[dataloads]]
-source = "dm.fits"
+source = "wfs.fits"
 target = "mlatsim_wfs"
+
+[[dataloads]]
+source = "wfssignal.fits"
+target = "mlatsim_wfssignal"
+
+[[dataloads]]
+source = "pupmask.fits"
+target = "mlatsim_pupmask"
+
+[compute_units.dmcomb]        # the DM: sums its 12 channels into dm07disp; creates the others
+exec = "cacao-fpsexec-dmcomb"
+
+[compute_units.dmcomb.fps]
+DMindex = 7
+DMxsize = 16
+DMysize = 16
+NBchannel = 12
+DMcombout = "dm07disp"
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 4      # delay: polls the channels' counters
+procinfo.triggerdelay = 0.00001   # cacao's value
+procinfo.RTprio = 49
+
+[compute_units.dmturb]        # turbulence into channel 10; turbON through the FPS
+exec = "cacao-fpsexec-dmturb"
+
+[compute_units.dmturb.fps]
+dmstream = "dm07disp10"       # cacao's turbulence channel
+turbON = false
+DMpixscale = 0.5             # [m/actuator]; dmturb's defaults are all 0 (unusable)
+wspeed = 10.0                 # [m/s]
+wangle = 0.0                  # [rad]
+ampl = 0.1                    # RMS across the DM [um]
+turbseed.size = 512           # seed screen, computed into rootdir/conf/turbseed{0,1}.fits on
+turbseed.pixscale = 0.1       # the first run start [m/pix]
+turbseed.innerscale = 0.01    # [m]
+turbseed.outerscale = 20.0    # [m]
+procinfo.enabled = true
+procinfo.loopcntMax = -1
+procinfo.triggermode = 4
+procinfo.triggerdelay = 0.001
 
 [compute_units.dmdelay]       # the DM response: copies each DM write, delaysec late
 exec = "milk-fpsexec-mem-streamdelay"
 
 [compute_units.dmdelay.fps]
-in_name = "mlatsim_dm"
+in_name = "dm07disp"
 out_name = "mlatsim_dmdelayed"
 delaysec = 0.003
-naive_mode = true
+naive_mode = false            # time-stamped buffer: every DM write comes out, delaysec late
 procinfo.enabled = true
 procinfo.loopcntMax = -1
-procinfo.triggermode = 3      # semaphore on the DM
-procinfo.triggersname = "{compute_units.dmdelay.fps.in_name}"
+procinfo.triggermode = 4      # delay: polls the buffer every triggerdelay
+procinfo.triggerdelay = 0.000005
+procinfo.RTprio = 49          # the simulated hardware outranks what measures it
 
-[compute_units.wfscam]        # the camera: one frame every triggerdelay
-exec = "milk-fpsexec-mem-streamcopy"
+[compute_units.pywfs]         # slopes of the delayed DM -> four pupil images, total 1
+exec = "cacao-fpsexec-cacaoiot-pywfssim"
+
+[compute_units.pywfs.fps]
+dmstream = "{compute_units.dmdelay.fps.out_name}"
+wfssignal = "mlatsim_wfssignal"
+pupmask = "mlatsim_pupmask"   # no slope and no light outside the illumination
+modamp = 1.0                  # [lambda/D]; with wlum 1 and 16 actuators, a 0.005 poke is u = 0.08
+procinfo.RTprio = 49
+
+[compute_units.wfscam]        # the camera: one uint16 frame every triggerdelay
+exec = "cacao-fpsexec-cacaoiot-wfscamsim"
 
 [compute_units.wfscam.fps]
-in_sname = "{compute_units.dmdelay.fps.out_name}"
-out_sname = "mlatsim_wfs"
+wfssignal = "{compute_units.pywfs.fps.wfssignal}"
+wfscamim = "mlatsim_wfs"
+zerolevel = 0.0               # the pupil images are positive by themselves
+fluxtotal = 6240000.0         # total flux; 10000 ADU per lit pixel on a flat DM (4 x 156)
+camgain = 1.0
+compphnoise = false
+camRON = 0.0
+compdarkadd = false
 procinfo.enabled = true
 procinfo.loopcntMax = -1
 procinfo.triggermode = 4      # delay
 procinfo.triggerdelay = 0.001
+procinfo.RTprio = 49
+
+[compute_units.acquWFS]       # as aoloop-conf: mlat and measlinresp read imWFS2, not the camera
+exec = "cacao-fpsexec-cacaoiot-acqWFS"
+
+[compute_units.acquWFS.fps]
+AOloopindex = 7
+insname = "mlatsim_wfs"
+wfszpo = "aol7_wfszpo"
+comp.darksub = false
+comp.WFSnormalize = false
+comp.WFSrefsub = false
+comp.WFSsigav = false
+comp.WFSrefc = false
 
 [compute_units.mlat]          # one measurement per run; the run ends by itself
 exec = "cacao-fpsexec-cacaopt-mlat"
 
 [compute_units.mlat.fps]
-dmstream = "{compute_units.dmdelay.fps.in_name}"
-wfsstream = "{compute_units.wfscam.fps.out_sname}"
+dmstream = "dm07disp03"
+wfsstream = "aol7_imWFS2"
 pokemap = "null"
-OPDamp = 1.0
+OPDamp = 0.05                 # a step of 0.05 between actuators is u = 0.8 in pywfs
 CPA = 2.0
 frameratewait = 0.5
 NBiter = 50

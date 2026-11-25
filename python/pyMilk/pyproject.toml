@@ -21,6 +21,14 @@ dependencies = [
     "astropy",
 ]
 
+[project.optional-dependencies]
+# Visualization tools (shmImshow, shmPlot, shmTermshow): pip install -e ".[vis]"
+vis = [
+    "PyQt5>=5.15",
+    "pyqtgraph>=0.12",
+    "matplotlib>=3.5",
+]
+
 [project.urls]
 "Homepage" = "http://www.github.com/milk-org/pyMilk"
 

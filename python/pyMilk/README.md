@@ -28,6 +28,16 @@ See [pyMilk: Installation](../../docs/guide/pyMilk.md#1-installation) for the de
 
 Python 3.9+ is required to be able to use nanobind.
 
+### Visualization tools
+
+To also install the optional visualization dependencies (Qt and PyQtGraph for `shmImshow` and `shmPlot`, matplotlib for `shmTermshow`), use the `vis` extra:
+
+```
+pip install -e ".[vis]"
+```
+
+If you use a conda/mamba environment, you may prefer installing these from conda-forge instead (`mamba install pyqt pyqtgraph matplotlib`) to avoid mixing pip and conda Qt libraries.
+
 ## Usage
 
 ### SHM — Shared Memory Streams

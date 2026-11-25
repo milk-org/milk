@@ -1,5 +1,5 @@
 """
-milk setup.py
+moka setup.py
 """
 
 from setuptools import setup

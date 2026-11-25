@@ -16,8 +16,8 @@ system.
 **Audience:** Operator · See also: [Streams](streams.md) · [FPS](fps.md) ·
 [Programmer's Guide](../arch/programmers_guide.md)
 
-To deploy and operate pipelines of milk compute units from Python (the `milk` package,
-`milk-pipeinit`, `milk-pipes`), see [Pipelines](pipelines.md).
+To deploy and operate pipelines of milk compute units from Python (the `moka` package,
+`mokainit`, `moka`), see [moka](../moka/moka.md).
 
 ## 1. Installation
 
@@ -41,7 +41,7 @@ milk root). The `PYMILK_ENGINE` environment variable picks where the C engine co
     if the checkout's ImageStreamIO version differs from the installed one. Reinstall pyMilk after
     reinstalling milk. CUDA support follows the installed `libImageStreamIO`.
 
-    Use this mode on any machine that runs milk; the [`milk` package](pipelines.md#4-installing)
+    Use this mode on any machine that runs milk; the [`moka` package](../moka/moka.md#4-installing)
     warns at import when pyMilk was built otherwise.
 
 === "BUNDLED: without installing milk"
@@ -172,7 +172,7 @@ selects the transposed / flipped representation you get on the Python side; the 
 applied on write. `triDim` chooses how a 3D stream is ordered, and `autoSqueeze` removes
 singleton dimensions. Use the same values on both sides of a Python-to-Python exchange, and
 `symcode=0` when a stream must match a FITS file axis for axis, as the pipeline
-[data loads](pipelines_conf.md#32-data-loads) do.
+[data loads](../moka/conf.md#32-data-loads) do.
 
 ## 4. Real-time loop example
 
@@ -220,7 +220,7 @@ In a pipeline, FPS names are `<name>_<cu>`.
 
 !!! warning "FPS of a pipeline"
 
-    Start and stop a pipeline's processes through [tasks](pipelines_plans.md). Calling
+    Start and stop a pipeline's processes through [tasks](../moka/plans.md). Calling
     `conf_start()` / `run_start()` directly bypasses them and can leave the pipeline `mixed` or
     `inconsistent`. Use `FPS` only to read or tune parameters.
 

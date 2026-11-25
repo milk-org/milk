@@ -16,7 +16,7 @@ import re
 
 import pytest
 
-from milk.cliwrap import CLICommands, HAVE_CLI
+from moka.cliwrap import CLICommands, HAVE_CLI
 
 # "pytestmark" applies to all tests in this file
 pytestmark = pytest.mark.skipif(

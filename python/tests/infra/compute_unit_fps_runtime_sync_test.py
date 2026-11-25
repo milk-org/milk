@@ -5,7 +5,7 @@ import pytest
 from pyMilk.interfacing.fps import FPS
 from pyMilk.interfacing.pinfo import ProcessInfo
 
-from milk.operate.compute_unit import ComputeUnit
+from moka.operate.compute_unit import ComputeUnit
 from tests.conftestaux.polling import poll_until_or_fail
 from tests.conftestaux.compute_unit import fixt_fpsinit_factory
 
@@ -16,7 +16,7 @@ class FPSTestCU(ComputeUnit):
         super().__init__("milk-fpsexec-fpstest-fpssynctest", fpsname)
 
 
-fixt_fpsinit_pinfo_fpstest = fixt_fpsinit_factory(FPSTestCU, pinfo=True)
+fixt_fpsinit_pinfo_fpstest = fixt_fpsinit_factory(FPSTestCU)
 
 # fmt: off
 FPS_TEST_PARAMS = [

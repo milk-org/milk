@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1276" height="526" viewBox="0 0 1276 526" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="14" xml:space="preserve" shape-rendering="crispEdges">
+<rect width="100%" height="100%" fill="#1c1c1c"/>
+<rect x="176.0" y="76.0" width="142.8" height="17.0" fill="#c850dc"/>
+<rect x="318.8" y="76.0" width="25.2" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="76.0" width="100.8" height="17.0" fill="#4682b4"/>
+<rect x="335.6" y="93.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="335.6" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="110.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="495.2" y="110.0" width="84.0" height="17.0" fill="#4682b4"/>
+<rect x="335.6" y="127.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="127.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="335.6" y="144.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="144.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="335.6" y="161.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="335.6" y="178.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="335.6" y="195.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="195.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="335.6" y="212.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="212.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="335.6" y="229.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="344.0" y="229.0" width="16.8" height="17.0" fill="#00cdcd"/>
+<rect x="335.6" y="246.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="8.0" y="501.0" width="1058.4" height="17.0" fill="#3c3c50"/>
+<text x="8.0" y="38.3" fill="#d0d0d0" font-weight="bold" textLength="478.8">  [mlatsim_dmturb] DM turbulence simulation  [50de4b3f4d]</text>
+<text x="8.0" y="55.3" fill="#50dc50" font-weight="bold" textLength="226.8">  PATH: / mlatsim_dmturb / </text>
+<text x="8.0" y="89.3" fill="#50dc50" textLength="168.0">0227261 [00]0229890 </text>
+<text x="176.0" y="89.3" fill="#1c1c1c" textLength="142.8">  mlatsim_dmturb </text>
+<text x="344.0" y="89.3" fill="#c850dc" textLength="100.8">- conf      </text>
+<text x="444.8" y="89.3" fill="#d0d0d0" textLength="8.4">&gt;</text>
+<text x="344.0" y="106.3" fill="#c850dc" textLength="100.8">- procinfo  </text>
+<text x="344.0" y="123.3" fill="#000000" textLength="16.8">W </text>
+<text x="360.8" y="123.3" fill="#d0d0d0" textLength="134.4">- turbON      : </text>
+<text x="495.2" y="123.3" fill="#ffffff" font-weight="bold" textLength="84.0">ON        </text>
+<text x="579.2" y="123.3" fill="#d0d0d0" textLength="285.6">    turbulence on/off (off=freeze)</text>
+<text x="344.0" y="140.3" fill="#000000" textLength="16.8">W </text>
+<text x="360.8" y="140.3" fill="#d0d0d0" textLength="134.4">- turbZERO    : </text>
+<text x="495.2" y="140.3" fill="#ffffff" textLength="84.0">OFF       </text>
+<text x="579.2" y="140.3" fill="#d0d0d0" textLength="159.6">    turbulence zero</text>
+<text x="344.0" y="157.3" fill="#000000" textLength="16.8">W </text>
+<text x="360.8" y="157.3" fill="#d0d0d0" textLength="134.4">- seedZERO    : </text>
+<text x="495.2" y="157.3" fill="#ffffff" textLength="84.0">OFF       </text>
+<text x="579.2" y="157.3" fill="#d0d0d0" textLength="201.6">    set seed pos to zero</text>
+<text x="344.0" y="174.3" fill="#f03c3c" textLength="16.8">NW</text>
+<text x="360.8" y="174.3" fill="#50dc50" textLength="16.8">- </text>
+<text x="377.6" y="174.3" fill="#50dc50" font-weight="bold" textLength="84.0">dmstream  </text>
+<text x="461.6" y="174.3" fill="#d0d0d0" textLength="33.6">  : </text>
+<text x="495.2" y="174.3" fill="#50dc50" textLength="84.0">dm07disp10</text>
+<text x="579.2" y="174.3" fill="#d0d0d0" textLength="260.4">    output DM turbulence stream</text>
+<text x="344.0" y="191.3" fill="#f03c3c" textLength="16.8">NW</text>
+<text x="360.8" y="191.3" fill="#d0d0d0" textLength="134.4">- DMpixscale  : </text>
+<text x="495.2" y="191.3" fill="#ffdc32" textLength="84.0">0.500000  </text>
+<text x="579.2" y="191.3" fill="#d0d0d0" textLength="218.4">    DM pixel scale [m/pix]</text>
+<text x="344.0" y="208.3" fill="#000000" textLength="16.8">W </text>
+<text x="360.8" y="208.3" fill="#d0d0d0" textLength="134.4">- wspeed      : </text>
+<text x="495.2" y="208.3" fill="#ffdc32" textLength="84.0">10.000000 </text>
+<text x="579.2" y="208.3" fill="#d0d0d0" textLength="168.0">    wind speed [m/s]</text>
+<text x="344.0" y="225.3" fill="#000000" textLength="16.8">W </text>
+<text x="360.8" y="225.3" fill="#d0d0d0" textLength="134.4">- wangle      : </text>
+<text x="495.2" y="225.3" fill="#ffdc32" textLength="84.0">0.000000  </text>
+<text x="579.2" y="225.3" fill="#d0d0d0" textLength="168.0">    wind angle [rad]</text>
+<text x="344.0" y="242.3" fill="#000000" textLength="16.8">W </text>
+<text x="360.8" y="242.3" fill="#d0d0d0" textLength="134.4">- ampl        : </text>
+<text x="495.2" y="242.3" fill="#ffdc32" textLength="84.0">0.400000  </text>
+<text x="579.2" y="242.3" fill="#d0d0d0" textLength="285.6">    amplitude across aperture [um]</text>
+<text x="344.0" y="259.3" fill="#c850dc" textLength="100.8">- turbseed  </text>
+<text x="8.0" y="293.3" fill="#50dc50" textLength="361.2">[0] PARAMETERS OK - RUN function good to go</text>
+<text x="8.0" y="514.3" fill="#ffffff" textLength="1058.4"> [MODE: CTRL] [SORT: Default] [PID 229908] [1 FPS] [50de4b3f4d] | (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search</text>
+</svg>

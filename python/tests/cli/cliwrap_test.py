@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from milk.cliwrap import CLI, CLICommands, HAVE_CLI
+from moka.cliwrap import CLI, CLICommands, HAVE_CLI
 
 # "pytestmark" applies to all tests in this file
 pytestmark = pytest.mark.skipif(

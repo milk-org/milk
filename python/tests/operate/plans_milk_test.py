@@ -10,17 +10,19 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from pyMilk.interfacing.fps import FPS
+from pyMilk.interfacing.shm import SHM
 
-from milk.errors import InconsistentStateError
-from milk.operate import rundir
-from milk.operate.plans import run_plan
-from milk.operate.state import State, state
-from milk.operate.tasks import ClaimRundir, InitFPS
-from milk.operate.pipeline import Pipeline
-from milk.provision.rootdir import init
+from moka.errors import InconsistentStateError
+from moka.operate import rundir
+from moka.operate.plans import run_plan
+from moka.operate.state import State, state
+from moka.operate.tasks import ClaimRundir, InitFPS
+from moka.operate.pipeline import Pipeline
+from moka.provision.rootdir import init
 
 RESOURCES = Path(__file__).parents[1] / "resources"
 NAMES = ("basic_delay0", "basic_delay1")
@@ -102,7 +104,7 @@ def test_inconsistent_then_teardown_then_deploy(live):
 
 def test_teardown_after_reboot(live, monkeypatch):
     run_plan(live, "deploy")
-    monkeypatch.setattr("milk.operate.rundir.current_boot_id", lambda: "another-boot")
+    monkeypatch.setattr("moka.operate.rundir.current_boot_id", lambda: "another-boot")
     assert state(live).state is State.INCONSISTENT
     run_plan(live, "teardown")
     assert state(live).state is State.COLD
@@ -131,3 +133,19 @@ def test_teardown_kills_tmux_when_asked(live):
     run_plan(live, "deploy")
     run_plan(live, "teardown")
     assert not any(_tmux_has(n) for n in NAMES)
+
+
+RUN_FOREVER = {
+    f"compute_units.{cu}.fps.procinfo.loopcntMax": -1 for cu in ("delay0", "delay1")
+}
+
+
+@pytest.mark.parametrize("live", [RUN_FOREVER], indirect=True)
+def test_runstart_and_runstop_plans(shm_dir_cleanafter, live):
+    """shm_dir_cleanafter comes first so that it removes the streams after live's teardown."""
+    run_plan(live, "deploy")
+    SHM("input", np.zeros((4, 4), dtype=np.float32)).close()  # delay0's trigger stream
+    run_plan(live, "runstart")
+    assert state(live).state is State.RUNNING
+    run_plan(live, "runstop")
+    assert state(live).state is State.CONFIGURED

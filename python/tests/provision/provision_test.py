@@ -1,4 +1,4 @@
-"""R3a acceptance tests: fingerprints, conf files, conf hooks, consolidate, clone, milk-pipeinit.
+"""R3a acceptance tests: fingerprints, conf files, conf hooks, consolidate, clone, mokainit.
 
 See specs/007-r3a-artifacts-consolidate/brief.md. Pure Python (rsync and sh must be on PATH).
 """
@@ -12,18 +12,18 @@ import pytest
 import tomli
 from click.testing import CliRunner
 
-from milk.errors import ConfigError, ProvisionError
-from milk.provision.artifacts import (
+from moka.errors import ConfigError, ProvisionError
+from moka.provision.artifacts import (
     Fingerprint,
     conf_files,
     decl_digest,
     fingerprint,
     status,
 )
-from milk.provision.clone import clone
-from milk.provision.hooks import consolidate, read_tag
-from milk.provision.cli import milk_pipeinit
-from milk.provision.rootdir import init
+from moka.provision.clone import clone
+from moka.provision.hooks import consolidate, read_tag
+from moka.provision.cli import mokainit
+from moka.provision.rootdir import init
 from tests.conftestaux.provision import fetch_hook, make_confdir
 
 TAG_KEYS = {"hook_id", "decl_digest", "content_hash", "size", "source", "time"}
@@ -268,14 +268,14 @@ def test_clone_update_and_override(tmp_path):
     assert (dest / ".git" / "HEAD").read_text() == "ref"
 
 
-# ---- milk-pipeinit ----
+# ---- mokainit ----
 
 
 def test_cli_list(tmp_path):
     make_confdir(tmp_path, name="one")
     init(make_confdir(tmp_path / "src", name="two"), parent=tmp_path)
     (tmp_path / "junk-conf").mkdir()  # no conf.toml: not a confdir
-    result = CliRunner().invoke(milk_pipeinit, ["list", str(tmp_path)])
+    result = CliRunner().invoke(mokainit, ["list", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert "one-conf" in result.output and "two-rootdir" in result.output
     assert "junk-conf" not in result.output
@@ -284,10 +284,10 @@ def test_cli_list(tmp_path):
 def test_cli_clone_and_consolidate(tmp_path, src_file):
     src = make_confdir(tmp_path / "a", fetch_hook(src_file))
     runner = CliRunner()
-    result = runner.invoke(milk_pipeinit, ["clone", str(src), str(tmp_path / "b")])
+    result = runner.invoke(mokainit, ["clone", str(src), str(tmp_path / "b")])
     assert result.exit_code == 0, result.output
     dest = tmp_path / "b" / "mini-conf"
-    result = runner.invoke(milk_pipeinit, ["consolidate", str(dest)])
+    result = runner.invoke(mokainit, ["consolidate", str(dest)])
     assert result.exit_code == 0, result.output
     assert "flat" in result.output
     assert (dest / "data" / "flat.bin").exists()
@@ -295,7 +295,7 @@ def test_cli_clone_and_consolidate(tmp_path, src_file):
 
 def test_cli_resolve(tmp_path):
     conf = make_confdir(tmp_path)
-    result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
+    result = CliRunner().invoke(mokainit, ["resolve", str(conf)])
     assert result.exit_code == 0, result.output
     assert (
         tomli.loads(result.output)["compute_units"]["cu"]["fps"]["out_name"] == "in_out"
@@ -303,20 +303,14 @@ def test_cli_resolve(tmp_path):
 
     text = (conf / "conf.toml").read_text()
     (conf / "conf.toml").write_text("_bogus = 1\n" + text)
-    result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
+    result = CliRunner().invoke(mokainit, ["resolve", str(conf)])
     assert result.exit_code == 0, result.output
     assert tomli.loads(result.stdout)["_bogus"] == 1
     assert "_bogus" in result.stderr
 
     (conf / "conf.toml").write_text("bogus = 1\n")
-    result = CliRunner().invoke(milk_pipeinit, ["resolve", str(conf)])
+    result = CliRunner().invoke(mokainit, ["resolve", str(conf)])
     assert result.exit_code == 1 and "name: Field required" in result.output
     assert not isinstance(result.exception, ConfigError)
-    result = CliRunner().invoke(milk_pipeinit, ["--errstack", "resolve", str(conf)])
+    result = CliRunner().invoke(mokainit, ["--errstack", "resolve", str(conf)])
     assert isinstance(result.exception, ConfigError)
-
-
-def test_milk_pipes_clone_is_gone():
-    from milk.operate.cli import milk_pipes
-
-    assert CliRunner().invoke(milk_pipes, ["clone", "-h"]).exit_code != 0

@@ -1,0 +1,198 @@
+from __future__ import annotations
+
+from typing import Annotated, Any, Literal
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+import pydantic
+
+from pyMilk.interfacing.shm_names import check_SHM_name
+
+
+class ProcessInfoData(BaseModel):
+
+    model_config = {"extra": "forbid"}
+
+    # fmt: off
+    RTprio            : int | None   = None  # >= 0, < 90
+    cset              : str | None   = None
+    taskset           : str | None   = None
+    NBthread          : int | None   = None
+    enabled           : bool | None  = None
+    loopcntMax        : int | None   = None  # >= -1
+    triggermode       : int | None   = None
+    triggersname      : str | None   = None
+    MeasureTiming     : bool | None  = None
+    semindexrequested : int | None   = None
+    triggerdelay      : float | None = None
+    triggertimeout    : float | None = None
+    # fmt: on
+
+
+class DataLoadEntryModel(BaseModel):
+    """A single dataloads entry: file to load and target stream name."""
+
+    model_config = {"extra": "forbid"}
+
+    source: str
+    target: str
+
+
+class ComputeUnitSpec(BaseModel):
+    """One ``[compute_units.<cu>]`` table: its executable and its FPS parameters."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    exec: str
+    fps: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("fps")
+    @classmethod
+    def _check_procinfo(cls, v: dict[str, Any]) -> dict[str, Any]:
+        if "procinfo" in v:
+            try:
+                ProcessInfoData.model_validate(v["procinfo"])
+            except pydantic.ValidationError as err:
+                raise ValueError(f"procinfo: {err}") from err
+        return v
+
+
+class _HookDecl(BaseModel):
+    """One ``[[hooks]]`` entry; its product is a plain name under ``data/``."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    id: str
+    product: str
+
+    @field_validator("product")
+    @classmethod
+    def _check_product(cls, v: str) -> str:
+        if v in ("", ".", "..") or "/" in v or v.endswith(".tag"):
+            raise ValueError(
+                f"hook product {v!r} must be a plain name not ending in .tag"
+            )
+        return v
+
+
+class FetchHookDecl(_HookDecl):
+    type: Literal["fetch"]
+    source: str
+
+
+class CommandHookDecl(_HookDecl):
+    type: Literal["command"]
+    command: list[str]
+
+
+HookDecl = Annotated[FetchHookDecl | CommandHookDecl, Field(discriminator="type")]
+
+Accepts = Literal["cold_or_consistent", "consistent", "any"]  # see operate.state
+OnFailure = Literal["abort", "best_effort"]  # see operate.plans
+_STEP = r"^\w+(\[\w+(,\w+)*\])?$"  # "Task" or "Task[cu,cu]", as Step.label
+
+
+class PlanDecl(BaseModel):
+    """One ``[plans.<name>]`` table; unset keys take the defaults of operate.plans.Plan."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    steps: list[Annotated[str, Field(pattern=_STEP)]]
+    on_failure: OnFailure | None = None
+    accepts: Accepts | None = None
+    help: str | None = None
+
+
+class DMHint(BaseModel):
+    """``[dmhint]``: the DM buffer size and, optionally, the beam on it (cacao's CACAO_DM_*)."""
+
+    model_config = {"extra": "forbid", "frozen": True}
+
+    xsize: int
+    ysize: int
+    beam_xcent: float | None = None
+    beam_ycent: float | None = None
+    beam_rad: float | None = None
+
+    @model_validator(mode="after")
+    def _check_beam(self) -> DMHint:
+        beam = (self.beam_xcent, self.beam_ycent, self.beam_rad)
+        if None in beam and any(v is not None for v in beam):
+            raise ValueError(
+                "dmhint: give all of beam_xcent, beam_ycent, beam_rad, or none"
+            )
+        return self
+
+
+class PipelineConfig(BaseModel):
+    """Validated conf.toml. Top-level keys outside these fields are refused,
+    except ``_``-prefixed ones (kept in model_extra)."""
+
+    model_config = {"extra": "allow", "frozen": True}
+
+    long_name: str
+    name: str
+    loop_number: int
+    compute_units: dict[str, ComputeUnitSpec] = Field(default_factory=dict)
+    dataloads: list[DataLoadEntryModel] = Field(default_factory=list)
+    # mode name -> {local stream owned by this pipeline: remote stream it points to}
+    systemlinkage: dict[str, dict[str, str]] = Field(default_factory=dict)
+    hooks: list[HookDecl] = Field(default_factory=list)
+    plans: dict[str, PlanDecl] = Field(default_factory=dict)
+    # compute units RunStart starts, in order; default: all, started at once
+    runstart: list[str] = Field(
+        default_factory=lambda data: list(data.get("compute_units", ()))
+    )
+    teardown_kill_tmux: bool = False
+    dmhint: DMHint | None = None
+
+    @model_validator(mode="after")
+    def _check_runstart(self) -> PipelineConfig:
+        unknown = [cu for cu in self.runstart if cu not in self.compute_units]
+        if unknown:
+            raise ValueError(f"runstart: unknown compute units {unknown}")
+        if len(set(self.runstart)) != len(self.runstart):
+            raise ValueError(f"runstart {self.runstart}: duplicate compute units")
+        return self
+
+    @model_validator(mode="after")
+    def _check_extra_keys(self) -> PipelineConfig:
+        unknown = sorted(k for k in self.model_extra or {} if not k.startswith("_"))
+        if unknown:
+            raise ValueError(
+                f"unknown top-level keys {unknown} (only _-prefixed extras are allowed)"
+            )
+
+        return self
+
+    @field_validator("hooks")
+    @classmethod
+    def _check_hooks_unique(cls, v: list[HookDecl]) -> list[HookDecl]:
+        for key in ("id", "product"):
+            values = [getattr(hook, key) for hook in v]
+            if len(set(values)) != len(values):
+                raise ValueError(f"hooks: duplicate {key} in {values}")
+        return v
+
+    @field_validator("systemlinkage")
+    @classmethod
+    def _check_systemlinkage(cls, v: dict[str, dict[str, str]]):
+        out: dict[str, dict[str, str]] = {}
+        for mode, links in v.items():
+            if mode == "all":
+                raise ValueError("systemlinkage: 'all' is reserved (moka unlink all)")
+            out[mode] = {}
+            for local, remote in links.items():
+                local, remote = check_SHM_name(local), check_SHM_name(remote)
+                if not local or not remote or local == remote:
+                    raise ValueError(
+                        f"systemlinkage.{mode}: invalid link {local!r} -> {remote!r}"
+                    )
+                out[mode][local] = remote
+        return out
+
+    def fps_name(self, cu: str) -> str:
+        """FPS name of compute unit ``cu``, ``<name>_<cu>``.
+
+        The only place this expression is written.
+        """
+        return f"{self.name}_{cu}"

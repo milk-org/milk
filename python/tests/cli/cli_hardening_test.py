@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from milk.cliwrap import HAVE_CLI, HAVE_TREESITTER, MILK_CLI_EXEC
+from moka.cliwrap import HAVE_CLI, HAVE_TREESITTER, MILK_CLI_EXEC
 
 pytestmark = [
     pytest.mark.skipif(not HAVE_CLI, reason="MILK compiled without CLI support"),

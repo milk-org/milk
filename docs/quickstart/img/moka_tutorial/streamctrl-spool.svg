@@ -1,0 +1,822 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1276" height="696" viewBox="0 0 1276 696" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="14" xml:space="preserve" shape-rendering="crispEdges">
+<rect width="100%" height="100%" fill="#1c1c1c"/>
+<rect x="100.4" y="25.0" width="100.8" height="17.0" fill="#00c8dc"/>
+<rect x="92.0" y="110.0" width="201.6" height="17.0" fill="#d0d0d0"/>
+<rect x="293.6" y="110.0" width="361.2" height="17.0" fill="#d0d0d0"/>
+<rect x="654.8" y="110.0" width="67.2" height="17.0" fill="#50dc50"/>
+<rect x="722.0" y="110.0" width="184.8" height="17.0" fill="#d0d0d0"/>
+<rect x="906.8" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="923.6" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="932.0" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="948.8" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="957.2" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="974.0" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="982.4" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="999.2" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="1007.6" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="1024.4" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="1032.8" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="1049.6" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="1058.0" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="1074.8" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="1083.2" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="1100.0" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="1108.4" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="1125.2" y="110.0" width="8.4" height="17.0" fill="#d0d0d0"/>
+<rect x="1133.6" y="110.0" width="16.8" height="17.0" fill="#966400"/>
+<rect x="503.6" y="314.0" width="151.2" height="17.0" fill="#00321e"/>
+<rect x="806.0" y="314.0" width="92.4" height="17.0" fill="#07833a"/>
+<rect x="503.6" y="399.0" width="151.2" height="17.0" fill="#00321e"/>
+<rect x="806.0" y="399.0" width="92.4" height="17.0" fill="#07833a"/>
+<text x="8.0" y="21.3" fill="#64ff64" font-weight="bold" textLength="1243.2">[40 x 150] [PID 229571] STREAM MONITOR: PRESS (x) TO STOP, (h) FOR HELP-----------------------------------------------------------------------------</text>
+<text x="8.0" y="38.3" fill="#00c8dc" textLength="67.2">[h] Help</text>
+<text x="100.4" y="38.3" fill="#1c1c1c" textLength="100.8">[F2] summary</text>
+<text x="226.4" y="38.3" fill="#00c8dc" textLength="126.0">[F3] write PIDs</text>
+<text x="377.6" y="38.3" fill="#00c8dc" textLength="117.6">[F4] read PIDs</text>
+<text x="520.4" y="38.3" fill="#00c8dc" textLength="159.6">[F5] process traces</text>
+<text x="705.2" y="38.3" fill="#00c8dc" textLength="92.4">[F6] access</text>
+<text x="8.0" y="55.3" fill="#d0d0d0" textLength="697.2">PIDmax = 4194304    Update frequ = 10 Hz  fscan= 9.80 Hz ( 10.00 Hz  2.04 % busy ) </text>
+<text x="705.2" y="55.3" fill="#50dc50" textLength="134.4">[SORT: mode 2]  </text>
+<text x="839.6" y="55.3" fill="#d0d0d0" font-weight="bold" textLength="8.4">]</text>
+<text x="848.0" y="55.3" fill="#d0d0d0" textLength="100.8"> cycle col  </text>
+<text x="948.8" y="55.3" fill="#d0d0d0" font-weight="bold" textLength="8.4">[</text>
+<text x="957.2" y="55.3" fill="#d0d0d0" textLength="75.6"> flip dir</text>
+<text x="8.0" y="72.3" fill="#d0d0d0" textLength="688.8">  61 streams    Currently displaying    0-  10   Selected 0  ID = 12  inode = 2501</text>
+<text x="8.0" y="89.3" fill="#d0d0d0" textLength="1100.4">    inode  name                      type                              cnt0    creaPID   ownPID    frequ      Semaphore values ....</text>
+<text x="8.0" y="106.3" fill="#d0d0d0" textLength="823.2">          NAME                    TYP SIZE                CNT0              CPID     OPID     FREQ</text>
+<text x="8.0" y="123.3" fill="#d0d0d0" textLength="84.0">     2501 </text>
+<text x="92.0" y="123.3" fill="#1c1c1c" font-weight="bold" textLength="201.6">aol0_mmultfact          </text>
+<text x="293.6" y="123.3" fill="#1c1c1c" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="123.3" fill="#1c1c1c" textLength="67.2">  229376</text>
+<text x="722.0" y="123.3" fill="#1c1c1c" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="923.6" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="932.0" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="948.8" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="957.2" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="974.0" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="982.4" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="999.2" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="1007.6" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="1024.4" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="1032.8" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="1049.6" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="1058.0" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="1074.8" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="1083.2" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="1100.0" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="1108.4" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="1125.2" y="123.3" fill="#1c1c1c" textLength="8.4">:</text>
+<text x="1133.6" y="123.3" fill="#1c1c1c" textLength="16.8">01</text>
+<text x="8.0" y="140.3" fill="#d0d0d0" textLength="84.0">     2499 </text>
+<text x="92.0" y="140.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_mgainfact          </text>
+<text x="293.6" y="140.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="140.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="140.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="140.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="140.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="157.3" fill="#d0d0d0" textLength="84.0">     2495 </text>
+<text x="92.0" y="157.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_mPFmixfact         </text>
+<text x="293.6" y="157.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="157.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="157.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="157.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="157.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="174.3" fill="#d0d0d0" textLength="84.0">     2504 </text>
+<text x="92.0" y="174.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_mlimitfact         </text>
+<text x="293.6" y="174.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="174.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="174.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="174.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="174.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="191.3" fill="#d0d0d0" textLength="84.0">     2510 </text>
+<text x="92.0" y="191.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_offloadmlimitfact  </text>
+<text x="293.6" y="191.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="191.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="191.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="191.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="191.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="208.3" fill="#d0d0d0" textLength="84.0">     2508 </text>
+<text x="92.0" y="208.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_offloadmmultfact   </text>
+<text x="293.6" y="208.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="208.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="208.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="208.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="208.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="225.3" fill="#d0d0d0" textLength="84.0">     2506 </text>
+<text x="92.0" y="225.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_offloadmgainfact   </text>
+<text x="293.6" y="225.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           1 </text>
+<text x="654.8" y="225.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="225.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="225.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="225.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="242.3" fill="#d0d0d0" textLength="84.0">     2478 </text>
+<text x="92.0" y="242.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_wfszpo             </text>
+<text x="293.6" y="242.3" fill="#d0d0d0" textLength="361.2"> FLT [ 32x 32]                           0 </text>
+<text x="654.8" y="242.3" fill="#50dc50" textLength="67.2">  228168</text>
+<text x="722.0" y="242.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="242.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="242.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="259.3" fill="#d0d0d0" textLength="84.0">     2477 </text>
+<text x="92.0" y="259.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_wfsmask            </text>
+<text x="293.6" y="259.3" fill="#d0d0d0" textLength="361.2"> FLT [ 32x 32]                           0 </text>
+<text x="654.8" y="259.3" fill="#50dc50" textLength="67.2">  228168</text>
+<text x="722.0" y="259.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="259.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="259.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="276.3" fill="#d0d0d0" textLength="84.0">     2481 </text>
+<text x="92.0" y="276.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">CMmodesWFS              </text>
+<text x="293.6" y="276.3" fill="#d0d0d0" textLength="613.2"> FLT [ 32x 32x 20]                       0   228532        0      --- Hz </text>
+<text x="906.8" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="276.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="276.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="293.3" fill="#d0d0d0" textLength="84.0">     2480 </text>
+<text x="92.0" y="293.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">_testwfsc               </text>
+<text x="293.6" y="293.3" fill="#d0d0d0" textLength="613.2"> FLT [ 32x 32x 10]                       0   228532        0      --- Hz </text>
+<text x="906.8" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="293.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="293.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="310.3" fill="#d0d0d0" textLength="84.0">     2474 </text>
+<text x="92.0" y="310.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_imWFS3             </text>
+<text x="293.6" y="310.3" fill="#d0d0d0" textLength="361.2"> FLT [ 32x 32]                           0 </text>
+<text x="654.8" y="310.3" fill="#50dc50" textLength="67.2">  228168</text>
+<text x="722.0" y="310.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="310.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="310.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="327.3" fill="#d0d0d0" textLength="84.0">     2473 </text>
+<text x="92.0" y="327.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_imWFS2             </text>
+<text x="293.6" y="327.3" fill="#d0d0d0" textLength="210.0"> FLT [ 32x 32]           </text>
+<text x="503.6" y="327.3" fill="#50dc50" textLength="151.2">            39282 </text>
+<text x="654.8" y="327.3" fill="#50dc50" textLength="67.2">  228168</text>
+<text x="722.0" y="327.3" fill="#d0d0d0" textLength="84.0">        0 </text>
+<text x="806.0" y="327.3" fill="#d0d0d0" textLength="92.4">  841.33 Hz</text>
+<text x="906.8" y="327.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="948.8" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="974.0" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="999.2" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1024.4" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1049.6" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1074.8" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1100.0" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1125.2" y="327.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="327.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="8.0" y="344.3" fill="#d0d0d0" textLength="84.0">     2476 </text>
+<text x="92.0" y="344.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_wfsrefc            </text>
+<text x="293.6" y="344.3" fill="#d0d0d0" textLength="361.2"> FLT [ 32x 32]                           1 </text>
+<text x="654.8" y="344.3" fill="#50dc50" textLength="67.2">  228168</text>
+<text x="722.0" y="344.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="344.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="344.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="361.3" fill="#d0d0d0" textLength="84.0">     2475 </text>
+<text x="92.0" y="361.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_wfsref             </text>
+<text x="293.6" y="361.3" fill="#d0d0d0" textLength="361.2"> FLT [ 32x 32]                           1 </text>
+<text x="654.8" y="361.3" fill="#50dc50" textLength="67.2">  228168</text>
+<text x="722.0" y="361.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="361.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="361.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="378.3" fill="#d0d0d0" textLength="84.0">     2483 </text>
+<text x="92.0" y="378.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">pokemodeC2              </text>
+<text x="293.6" y="378.3" fill="#d0d0d0" textLength="613.2"> FLT [ 16x 16x512]                       0   228687        0      --- Hz </text>
+<text x="906.8" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="378.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="378.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="395.3" fill="#d0d0d0" textLength="84.0">     2491 </text>
+<text x="92.0" y="395.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_modevalDM          </text>
+<text x="293.6" y="395.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           0 </text>
+<text x="654.8" y="395.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="395.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="395.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="395.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="412.3" fill="#d0d0d0" textLength="84.0">     2489 </text>
+<text x="92.0" y="412.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_modevalWFS         </text>
+<text x="293.6" y="412.3" fill="#d0d0d0" textLength="210.0"> FLT [155x  1]           </text>
+<text x="503.6" y="412.3" fill="#50dc50" textLength="151.2">             6511 </text>
+<text x="654.8" y="412.3" fill="#50dc50" textLength="67.2">  229365</text>
+<text x="722.0" y="412.3" fill="#d0d0d0" textLength="84.0">        0 </text>
+<text x="806.0" y="412.3" fill="#d0d0d0" textLength="92.4">  841.33 Hz</text>
+<text x="906.8" y="412.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="948.8" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="974.0" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="999.2" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1024.4" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1049.6" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1074.8" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1100.0" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1125.2" y="412.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="412.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="8.0" y="429.3" fill="#d0d0d0" textLength="84.0">     2493 </text>
+<text x="92.0" y="429.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_modevalauxDM       </text>
+<text x="293.6" y="429.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           0 </text>
+<text x="654.8" y="429.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="429.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="429.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="429.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="446.3" fill="#d0d0d0" textLength="84.0">     2492 </text>
+<text x="92.0" y="446.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_modevalOL          </text>
+<text x="293.6" y="446.3" fill="#d0d0d0" textLength="361.2"> FLT [155x  1]                           0 </text>
+<text x="654.8" y="446.3" fill="#50dc50" textLength="67.2">  229376</text>
+<text x="722.0" y="446.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="446.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="446.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="463.3" fill="#d0d0d0" textLength="84.0">     2486 </text>
+<text x="92.0" y="463.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">moderespC               </text>
+<text x="293.6" y="463.3" fill="#d0d0d0" textLength="613.2"> FLT [ 32x 32x256]                       0   228687        0      --- Hz </text>
+<text x="906.8" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="463.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="463.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="480.3" fill="#d0d0d0" textLength="84.0">     2485 </text>
+<text x="92.0" y="480.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">tmpmoderespraw          </text>
+<text x="293.6" y="480.3" fill="#d0d0d0" textLength="613.2"> FLT [ 32x 32x512]                       0   228687        0      --- Hz </text>
+<text x="906.8" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="480.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="480.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="497.3" fill="#d0d0d0" textLength="84.0">     2488 </text>
+<text x="92.0" y="497.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_CMmodesDM          </text>
+<text x="293.6" y="497.3" fill="#d0d0d0" textLength="613.2"> FLT [ 16x 16x155]                       1   229345        0      --- Hz </text>
+<text x="906.8" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="497.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="497.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="514.3" fill="#d0d0d0" textLength="84.0">     2487 </text>
+<text x="92.0" y="514.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">aol0_CMmodesWFS         </text>
+<text x="293.6" y="514.3" fill="#d0d0d0" textLength="613.2"> FLT [ 32x 32x155]                       1   229345        0      --- Hz </text>
+<text x="906.8" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="514.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="514.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="531.3" fill="#d0d0d0" textLength="84.0">     2440 </text>
+<text x="92.0" y="531.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp00              </text>
+<text x="293.6" y="531.3" fill="#d0d0d0" textLength="361.2"> FLT [ 16x 16]                           0 </text>
+<text x="654.8" y="531.3" fill="#50dc50" textLength="67.2">  227375</text>
+<text x="722.0" y="531.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="531.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="531.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="548.3" fill="#d0d0d0" textLength="84.0">     2439 </text>
+<text x="92.0" y="548.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">mlatsim_pupmask         </text>
+<text x="293.6" y="548.3" fill="#d0d0d0" textLength="613.2"> FLT [ 16x 16]                           1   227189        0      --- Hz </text>
+<text x="906.8" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="923.6" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="948.8" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="974.0" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="999.2" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="1024.4" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="1049.6" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="1074.8" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="1100.0" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="1125.2" y="548.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="548.3" fill="#966400" textLength="16.8">01</text>
+<text x="8.0" y="565.3" fill="#d0d0d0" textLength="84.0">     2438 </text>
+<text x="92.0" y="565.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">mlatsim_wfssignal       </text>
+<text x="293.6" y="565.3" fill="#d0d0d0" textLength="613.2"> FLT [ 32x 32]                       15538   227189        0      --- Hz </text>
+<text x="906.8" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="923.6" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="948.8" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="974.0" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="999.2" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1024.4" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1049.6" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1074.8" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1100.0" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1125.2" y="565.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="565.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="8.0" y="582.3" fill="#d0d0d0" textLength="84.0">     2443 </text>
+<text x="92.0" y="582.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp05              </text>
+<text x="293.6" y="582.3" fill="#d0d0d0" textLength="361.2"> FLT [ 16x 16]                           0 </text>
+<text x="654.8" y="582.3" fill="#50dc50" textLength="67.2">  227375</text>
+<text x="722.0" y="582.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="582.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="582.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="599.3" fill="#d0d0d0" textLength="84.0">     2442 </text>
+<text x="92.0" y="599.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp04              </text>
+<text x="293.6" y="599.3" fill="#d0d0d0" textLength="361.2"> FLT [ 16x 16]                           0 </text>
+<text x="654.8" y="599.3" fill="#50dc50" textLength="67.2">  227375</text>
+<text x="722.0" y="599.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="599.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="599.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="616.3" fill="#d0d0d0" textLength="84.0">     2441 </text>
+<text x="92.0" y="616.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp01              </text>
+<text x="293.6" y="616.3" fill="#d0d0d0" textLength="361.2"> FLT [ 16x 16]                           0 </text>
+<text x="654.8" y="616.3" fill="#50dc50" textLength="67.2">  227375</text>
+<text x="722.0" y="616.3" fill="#d0d0d0" textLength="184.8">        0      --- Hz </text>
+<text x="906.8" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="923.6" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="948.8" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="974.0" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="999.2" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1024.4" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1049.6" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1074.8" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1100.0" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="1125.2" y="616.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="616.3" fill="#50dc50" textLength="16.8">00</text>
+<text x="8.0" y="633.3" fill="#d0d0d0" textLength="84.0">     2434 </text>
+<text x="92.0" y="633.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp03              </text>
+<text x="293.6" y="633.3" fill="#d0d0d0" textLength="613.2"> FLT [ 16x 16]                         152   227189        0      --- Hz </text>
+<text x="906.8" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="923.6" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="948.8" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="974.0" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="999.2" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1024.4" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1049.6" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1074.8" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1100.0" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1125.2" y="633.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="633.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="8.0" y="650.3" fill="#d0d0d0" textLength="84.0">     2433 </text>
+<text x="92.0" y="650.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp02              </text>
+<text x="293.6" y="650.3" fill="#d0d0d0" textLength="613.2"> FLT [ 16x 16]                       15411   227189        0      --- Hz </text>
+<text x="906.8" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="923.6" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="948.8" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="974.0" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="999.2" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1024.4" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1049.6" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1074.8" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1100.0" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1125.2" y="650.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="650.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="8.0" y="667.3" fill="#d0d0d0" textLength="84.0">     2432 </text>
+<text x="92.0" y="667.3" fill="#d0d0d0" font-weight="bold" textLength="201.6">dm07disp                </text>
+<text x="293.6" y="667.3" fill="#d0d0d0" textLength="613.2"> FLT [ 16x 16]                       15552   227189        0      --- Hz </text>
+<text x="906.8" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="923.6" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="932.0" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="948.8" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="957.2" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="974.0" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="982.4" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="999.2" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1007.6" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1024.4" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1032.8" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1049.6" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1058.0" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1074.8" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1083.2" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1100.0" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1108.4" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="1125.2" y="667.3" fill="#d0d0d0" textLength="8.4">:</text>
+<text x="1133.6" y="667.3" fill="#f03c3c" textLength="16.8">10</text>
+<text x="8.0" y="684.3" fill="#d0d0d0" textLength="100.8"> -- top -- |</text>
+<text x="117.2" y="684.3" fill="#dcc800" font-weight="bold" textLength="8.4">↓</text>
+<text x="125.6" y="684.3" fill="#dcc800" textLength="75.6"> 28 below</text>
+</svg>

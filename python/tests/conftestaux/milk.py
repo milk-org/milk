@@ -41,10 +41,6 @@ def ctfixt_change_tmux_server():
         os.environ["TMUX"] = saved_tmux
 
 
-def test_check_if_executed():  # it's not!!!! Cuz of the filename.
-    return 1 / 0
-
-
 @pytest.fixture(scope="session", autouse=True)
 def ctfixt_test_tmux_server_chage(
     ctfixt_change_tmux_server: str, ctfixt_change_MILK_SHM_DIR: str

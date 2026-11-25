@@ -164,6 +164,10 @@ typedef struct
             const char *_piname = (dcfpsname[0] != '\0') ? dcfpsname : dcfpsptr->md->name;         \
             processinfo = processinfo_setup((char *) _piname, pinfodescr, "startup", __FUNCTION__, \
                                             __FILE__, __LINE__);                                   \
+            if (processinfo == NULL)                                                               \
+            {                                                                                      \
+                return RETURN_FAILURE;                                                             \
+            }                                                                                      \
             fps_to_processinfo(dcfpsptr, processinfo);                                             \
             /* Sync CLIcmddata.cmdsettings from processinfo to keep them in sync */                \
             CLIcmddata.cmdsettings->procinfo_loopcntMax    = processinfo->loopcntMax;              \
@@ -177,6 +181,10 @@ typedef struct
         {                                                                                          \
             processinfo = processinfo_setup(CLIcmddata.key, pinfodescr, "startup", __FUNCTION__,   \
                                             __FILE__, __LINE__);                                   \
+            if (processinfo == NULL)                                                               \
+            {                                                                                      \
+                return RETURN_FAILURE;                                                             \
+            }                                                                                      \
         }                                                                                          \
         processinfo->loopcntMax      = CLIcmddata.cmdsettings->procinfo_loopcntMax;                \
         processinfo->triggerstreamID = -2;                                                         \

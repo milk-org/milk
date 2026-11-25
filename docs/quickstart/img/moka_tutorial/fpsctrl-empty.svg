@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1276" height="696" viewBox="0 0 1276 696" font-family="DejaVu Sans Mono, Menlo, Consolas, monospace" font-size="14" xml:space="preserve" shape-rendering="crispEdges">
+<rect width="100%" height="100%" fill="#1c1c1c"/>
+<rect x="8.0" y="671.0" width="1058.4" height="17.0" fill="#3c3c50"/>
+<text x="8.0" y="55.3" fill="#d0d0d0" font-weight="bold" textLength="126.0">  NO FPS LOADED</text>
+<text x="8.0" y="89.3" fill="#d0d0d0" textLength="462.0">  Waiting for FPS shared memory files ...  [50de4b3f4d]</text>
+<text x="8.0" y="106.3" fill="#d0d0d0" textLength="285.6">  Press [s] to rescan, [x] to exit</text>
+<text x="8.0" y="684.3" fill="#ffffff" textLength="1058.4"> [MODE: CTRL] [SORT: Default] [PID 226927] [0 FPS] [50de4b3f4d] | (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search</text>
+</svg>

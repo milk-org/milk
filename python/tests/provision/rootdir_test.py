@@ -1,4 +1,4 @@
-"""R3b acceptance tests: init, rootdir resolve, drift, resync, milk-pipeinit, operate on the new layout.
+"""R3b acceptance tests: init, rootdir resolve, drift, resync, mokainit, operate on the new layout.
 
 See specs/008-r3b-init-drift-resync/brief.md. Pure Python (rsync and sh must be on PATH).
 """
@@ -13,13 +13,13 @@ import tomli
 from click.testing import CliRunner
 
 
-from milk.config.resolve import confresolve
-from milk.errors import ConfigError, ProvisionError
-from milk.provision.artifacts import fingerprint, status
-from milk.provision.hooks import consolidate
-from milk.provision.cli import milk_pipeinit
-from milk.provision.provenance import read_provenance
-from milk.provision.rootdir import drift, init, resync
+from moka.config.resolve import confresolve
+from moka.errors import ConfigError, ProvisionError
+from moka.provision.artifacts import fingerprint, status
+from moka.provision.hooks import consolidate
+from moka.provision.cli import mokainit
+from moka.provision.provenance import read_provenance
+from moka.provision.rootdir import drift, init, resync
 from tests.conftestaux.provision import fetch_hook, make_confdir
 
 NEVER_RUNNING = lambda: False  # noqa: E731
@@ -74,10 +74,42 @@ def test_init_layout(confdir, rootdir):
     assert not (rootdir / "conf" / "data").exists()
 
 
+def test_hinted_dm_mask_follows_dmhint(confdir):
+    from astropy.io import fits
+
+    mask = "dmmask_hinted.fits"
+    with open(confdir / "inc.toml", "a") as f:
+        f.write("[dmhint]\nxsize = 4\nysize = 3\n")
+    rootdir = init(confdir)
+    assert fits.getdata(rootdir / "conf" / mask).shape == (3, 4)
+    assert _row(drift(rootdir), mask).source == "unchanged"
+
+    _edit(confdir / "inc.toml", "xsize = 4", "xsize = 5")
+    assert _row(drift(rootdir), mask).source == "stale"
+    assert mask in resync(rootdir, run_active=NEVER_RUNNING).applied
+    assert fits.getdata(rootdir / "conf" / mask).shape == (3, 5)
+    assert _row(drift(rootdir), mask).source == "unchanged"
+
+    _edit(confdir / "inc.toml", "[dmhint]", "[_unused]")
+    assert _row(drift(rootdir), mask).source == "removed"
+    resync(rootdir, run_active=NEVER_RUNNING)
+    assert not (rootdir / "conf" / mask).exists()
+
+    _edit(confdir / "inc.toml", "[_unused]", "[dmhint]")
+    assert _row(drift(rootdir), mask).source == "added"
+    resync(rootdir, run_active=NEVER_RUNNING, overrides={"dmhint.ysize": 2})
+    assert fits.getdata(rootdir / "conf" / mask).shape == (2, 5)
+
+
+def test_resync_on_confdir_refused(confdir):
+    with pytest.raises(ProvisionError, match="Not a rootdir"):
+        resync(confdir, run_active=lambda: False)
+
+
 def test_init_provenance(confdir, rootdir):
     prov = read_provenance(rootdir)
     assert Path(prov.source_confdir) == confdir.resolve()
-    assert prov.milk_version and prov.last_resync is None and prov.overrides == {}
+    assert prov.moka_version and prov.last_resync is None and prov.overrides == {}
     assert set(prov.artifacts) == {
         "conf.toml",
         "inc.toml",
@@ -149,7 +181,7 @@ def test_drift_clean_after_init(rootdir):
     assert (
         report.resolved_diff == {}
         and report.structural == []
-        and report.milk_version is None
+        and report.moka_version is None
     )
 
 
@@ -232,11 +264,16 @@ def test_drift_structural(confdir, rootdir, edit, expected):
 
 def test_drift_reports_package_version_change(rootdir):
     _edit(
-        rootdir / "provenance.toml", read_provenance(rootdir).milk_version, "0.0.0-old"
+        rootdir / "provenance.toml", read_provenance(rootdir).moka_version, "0.0.0-old"
     )
     report = drift(rootdir)
-    assert report.milk_version is not None and report.milk_version[0] == "0.0.0-old"
+    assert report.moka_version is not None and report.moka_version[0] == "0.0.0-old"
     assert {a.local for a in report.artifacts} == {"unchanged"}  # not artifact drift
+
+
+def test_provenance_reads_legacy_milk_version(rootdir):
+    _edit(rootdir / "provenance.toml", "moka_version", "milk_version")
+    assert read_provenance(rootdir).moka_version
 
 
 def test_status_absent_on_both_sides_is_unchanged():
@@ -258,15 +295,11 @@ def test_refetch_all_and_unknown_id(confdir, src_file):
 
 def test_cli_consolidate_refetch(confdir, src_file):
     runner = CliRunner()
-    assert runner.invoke(milk_pipeinit, ["consolidate", str(confdir)]).exit_code == 0
+    assert runner.invoke(mokainit, ["consolidate", str(confdir)]).exit_code == 0
     src_file.write_bytes(b"v2")
-    result = runner.invoke(
-        milk_pipeinit, ["consolidate", str(confdir), "--refetch", "flat"]
-    )
+    result = runner.invoke(mokainit, ["consolidate", str(confdir), "--refetch", "flat"])
     assert result.exit_code == 0 and "flat" in result.output
-    result = runner.invoke(
-        milk_pipeinit, ["consolidate", str(confdir), "--refetch-all"]
-    )
+    result = runner.invoke(mokainit, ["consolidate", str(confdir), "--refetch-all"])
     assert result.exit_code == 0 and "flat" in result.output
 
 
@@ -274,7 +307,7 @@ def test_cli_consolidate_refetch(confdir, src_file):
 
 
 def test_sniff_and_list(confdir, rootdir, tmp_path):
-    from milk.config.layout import is_confdir, is_rootdir, list_pipeline_dirs
+    from moka.config.layout import is_confdir, is_rootdir, list_pipeline_dirs
 
     assert is_confdir(confdir) and not is_rootdir(confdir)
     assert is_rootdir(rootdir) and not is_confdir(rootdir)
@@ -396,13 +429,13 @@ def test_resync_overrides_recorded_and_replayed(rootdir):
         resync(rootdir, run_active=NEVER_RUNNING, overrides={"loop_number": 9})
 
 
-# ---- milk-pipeinit ----
+# ---- mokainit ----
 
 
 def test_cli_init_set_and_resolve(confdir):
     runner = CliRunner()
     result = runner.invoke(
-        milk_pipeinit,
+        mokainit,
         [
             "init",
             str(confdir),
@@ -414,12 +447,21 @@ def test_cli_init_set_and_resolve(confdir):
     )
     assert result.exit_code == 0, result.output
     rootdir = confdir.parent / "mini-rootdir"
-    result = runner.invoke(milk_pipeinit, ["resolve", str(rootdir)])
+    result = runner.invoke(mokainit, ["resolve", str(rootdir)])
     assert result.exit_code == 0, result.output
     fps = tomli.loads(result.output)["compute_units"]["cu"]["fps"]
     assert (
         fps["delaysec"] == 0.5 and fps["in_name"] == "wfs"
     )  # TOML-typed when parseable, else string
+
+
+def test_cli_init_error_is_one_fail_line(confdir, rootdir):
+    result = CliRunner().invoke(mokainit, ["init", str(confdir)])
+    assert result.exit_code == 1 and result.stdout == ""
+    assert result.stderr.splitlines() == [
+        f"[FAIL] {rootdir} already exists; use resync.",
+        f"path: {rootdir}",
+    ]
 
 
 def test_cli_drift_and_resync_banner(confdir, rootdir):
@@ -429,21 +471,21 @@ def test_cli_drift_and_resync_banner(confdir, rootdir):
         "[compute_units.cu]",
         '[compute_units.cu2]\nexec = "milk-fpsexec-mem-streamdelay"\n[compute_units.cu]',
     )
-    result = runner.invoke(milk_pipeinit, ["drift", str(rootdir)])
+    result = runner.invoke(mokainit, ["drift", str(rootdir)])
     assert result.exit_code == 0, result.output
     assert "conf.toml" in result.output and "modified" in result.output
 
-    result = runner.invoke(milk_pipeinit, ["resync", str(rootdir)])
+    result = runner.invoke(mokainit, ["resync", str(rootdir)])
     assert result.exit_code == 0, result.output
     assert (
         "teardown" in result.output
         and "deploy" in result.output
         and "cu2" in result.output
     )
+    assert "Resynced: teardown, then deploy may be needed." in result.output
+    assert result.output.isascii()
 
-    result = runner.invoke(
-        milk_pipeinit, ["resync", str(rootdir)]
-    )  # nothing left to apply
+    result = runner.invoke(mokainit, ["resync", str(rootdir)])  # nothing left to apply
     assert (
         result.exit_code == 0 and "teardown" in result.output
     )  # the banner is always printed
@@ -453,7 +495,7 @@ def test_cli_drift_and_resync_banner(confdir, rootdir):
 
 
 def test_pipeline_reads_the_rootdir_only(confdir, rootdir):
-    from milk.operate.pipeline import Pipeline
+    from moka.operate.pipeline import Pipeline
 
     shutil.rmtree(confdir)
     pp = Pipeline(rootdir)
@@ -462,7 +504,7 @@ def test_pipeline_reads_the_rootdir_only(confdir, rootdir):
 
 
 def test_pipeline_targets(rootdir, monkeypatch, tmp_path):
-    from milk.operate.pipeline import Pipeline
+    from moka.operate.pipeline import Pipeline
 
     assert Pipeline.from_folder(rootdir).root_folder == rootdir
     monkeypatch.chdir(rootdir.parent)
@@ -476,8 +518,8 @@ def test_pipeline_targets(rootdir, monkeypatch, tmp_path):
 
 
 def test_teardown_keeps_the_rootdir(rootdir, shm_dir_cleanafter):
-    from milk.operate.plans import run_plan
-    from milk.operate.pipeline import Pipeline
+    from moka.operate.plans import run_plan
+    from moka.operate.pipeline import Pipeline
 
     (rootdir / "work" / "fps.cu.datadir").mkdir()
     run_plan(Pipeline(rootdir), "teardown")  # on a cold pipeline
@@ -487,29 +529,29 @@ def test_teardown_keeps_the_rootdir(rootdir, shm_dir_cleanafter):
 
 
 def test_cli_nuke_asks_for_the_short_name(rootdir, shm_dir_cleanafter):
-    from milk.operate.cli import milk_pipes
+    from moka.operate.cli import moka
 
     runner = CliRunner()
-    result = runner.invoke(milk_pipes, ["nuke", "-p", str(rootdir)], input="wrong\n")
+    result = runner.invoke(moka, ["nuke", "-p", str(rootdir)], input="wrong\n")
     assert result.exit_code != 0 and rootdir.is_dir()
-    result = runner.invoke(milk_pipes, ["nuke", "-p", str(rootdir)], input="mini\n")
+    result = runner.invoke(moka, ["nuke", "-p", str(rootdir)], input="mini\n")
     assert result.exit_code == 0, result.output
     assert not rootdir.exists()
 
 
 def test_cli_nuke_yes_and_short_name(confdir, shm_dir_cleanafter, monkeypatch):
-    from milk.operate.cli import milk_pipes
+    from moka.operate.cli import moka
 
     rootdir = init(confdir)
     monkeypatch.chdir(rootdir.parent)
-    result = CliRunner().invoke(milk_pipes, ["nuke", "-p", "mini", "--yes"])
+    result = CliRunner().invoke(moka, ["nuke", "-p", "mini", "--yes"])
     assert result.exit_code == 0, result.output
     assert not rootdir.exists()
 
 
 def test_dataloads_read_from_initdata(tmp_path, src_file):
-    from milk.operate.tasks import LoadData
-    from milk.operate.pipeline import Pipeline
+    from moka.operate.tasks import LoadData
+    from moka.operate.pipeline import Pipeline
 
     conf = make_confdir(
         tmp_path,
@@ -517,9 +559,3 @@ def test_dataloads_read_from_initdata(tmp_path, src_file):
     )
     task = LoadData(Pipeline(init(conf)))
     assert task.can(), task.failure_reason
-
-
-def test_milk_pipes_init_is_gone():
-    from milk.operate.cli import milk_pipes
-
-    assert CliRunner().invoke(milk_pipes, ["init", "-h"]).exit_code != 0

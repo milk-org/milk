@@ -5,6 +5,7 @@
 #include <nanobind/stl/pair.h>
 
 #include <fstream>
+#include <typeinfo> // std::bad_cast
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
@@ -57,14 +58,31 @@ double timespec_to_double(struct timespec tspec)
 }
 
 
-int fps_value_to_key(pyFps &cls, const std::string &key, const FPS_type fps_type, nb::object value)
+bool cast_onoff(nb::handle value)
+{
+    if (PyBool_Check(value.ptr()))
+    {
+        return value.ptr() == Py_True;
+    }
+    if (PyLong_Check(value.ptr()) || PyIndex_Check(value.ptr()))
+    {
+        int64_t as_int = nb::cast<int64_t>(value);
+        return as_int != 0;
+    }
+    return nb::cast<bool>(value); // numpy bool_ etc.; raises std::bad_cast otherwise
+}
+
+int fps_set_value_unchecked(pyFps             &cls,
+                            const std::string &key,
+                            const FPS_type     fps_type,
+                            nb::object         value)
 {
     FPS_type switch_fps_type = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
 
     switch (switch_fps_type)
     {
     case FPS_type::ONOFF:
-        return functionparameter_SetParamValue_ONOFF(cls, key.c_str(), nb::cast<bool>(value));
+        return functionparameter_SetParamValue_ONOFF(cls, key.c_str(), cast_onoff(value));
     case FPS_type::INT32:
     case FPS_type::PID:
     case FPS_type::INT64:
@@ -95,7 +113,26 @@ int fps_value_to_key(pyFps &cls, const std::string &key, const FPS_type fps_type
     }
 }
 
-nb::object fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
+// Python-facing setter: a failed conversion becomes a TypeError that names the
+// key and expected type instead of an opaque std::bad_cast RuntimeError.
+int fps_set_value(pyFps &cls, const std::string &key, const FPS_type fps_type, nb::object value)
+{
+    try
+    {
+        return fps_set_value_unchecked(cls, key, fps_type, value);
+    }
+    catch (const std::bad_cast &)
+    {
+        FPS_type t = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
+        throw nb::type_error(("FPS key '" + key + "' (type id " +
+                              std::to_string(static_cast<uint32_t>(t)) +
+                              "): cannot convert value of Python type '" +
+                              std::string(nb::type_name(value.type()).c_str()) + "'")
+                                 .c_str());
+    }
+}
+
+nb::object fps_get_value(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
     switch (fps_type)
     {
@@ -136,7 +173,7 @@ nb::dict fps_to_dict(pyFps &cls)
     nb::dict fps_dict;
     for (auto &key : cls.keys())
     {
-        fps_dict[nb::str(key.first.c_str())] = fps_value_from_key(cls, key.first, key.second);
+        fps_dict[nb::str(key.first.c_str())] = fps_get_value(cls, key.first, key.second);
     }
     return fps_dict;
 }
@@ -145,7 +182,7 @@ NB_MODULE(FpsWrap, m)
 {
     m.doc() = "FpsWrap library module";
 
-    nb::enum_<FPS_status>(m, "FPS_status")
+    nb::enum_<FPS_status>(m, "FpsStatus")
         .value("CONF", FPS_status::CONF)
         .value("RUN", FPS_status::RUN)
         .value("CMDCONF", FPS_status::CMDCONF)
@@ -154,10 +191,9 @@ NB_MODULE(FpsWrap, m)
         .value("CHECKOK", FPS_status::CHECKOK)
         .value("TMUXCONF", FPS_status::TMUXCONF)
         .value("TMUXRUN", FPS_status::TMUXRUN)
-        .value("TMUXCTRL", FPS_status::TMUXCTRL)
-        .export_values();
+        .value("TMUXCTRL", FPS_status::TMUXCTRL);
 
-    nb::enum_<FPS_type>(m, "FPS_type")
+    nb::enum_<FPS_type>(m, "FpsType")
         .value("AUTO", FPS_type::AUTO)
         .value("UNDEF", FPS_type::UNDEF)
         .value("INT32", FPS_type::INT32)
@@ -177,16 +213,12 @@ NB_MODULE(FpsWrap, m)
         .value("ONOFF", FPS_type::ONOFF)
         .value("PROCESS", FPS_type::PROCESS)
         .value("FPSNAME", FPS_type::FPSNAME)
-        .value("STRING_NOT_STREAM", FPS_type::STRING_NOT_STREAM)
-        .export_values();
+        .value("STRING_NOT_STREAM", FPS_type::STRING_NOT_STREAM);
 
-    nb::enum_<FPS_flags>(m, "FPS_flags")
-        .value("DEFAULT_INPUT", FPS_flags::DEFAULT_INPUT)
-        .value("DEFAULT_OUTPUT", FPS_flags::DEFAULT_OUTPUT)
-        .value("DEFAULT_INPUT_STREAM", FPS_flags::DEFAULT_INPUT_STREAM)
-        .value("DEFAULT_OUTPUT_STREAM", FPS_flags::DEFAULT_OUTPUT_STREAM)
-        .value("DEFAULT_STATUS", FPS_flags::DEFAULT_STATUS)
-        .export_values();
+    auto fps_flags = nb::enum_<FPS_flags>(m, "FpsFlag", nb::is_flag());
+#define X(name) fps_flags.value(#name, FPS_flags::name);
+    FPS_FLAGS_LIST(X)
+#undef X
 
     if (!nb::type<timespec>().is_valid())
     { // Possible multiple registration warning
@@ -219,10 +251,10 @@ Parameters:
         .def("asdict", &fps_to_dict)
 
         .def("__getitem__", [](pyFps &cls, const std::string &key)
-             { return fps_value_from_key(cls, key, cls.keys(key)); })
+             { return fps_get_value(cls, key, cls.keys(key)); })
 
         .def("__setitem__", [](pyFps &cls, const std::string &key, nb::object value)
-             { return fps_value_to_key(cls, key, cls.keys(key), value); })
+             { return fps_set_value(cls, key, cls.keys(key), value); })
 
         .def("md", &pyFps::md, nb::rv_policy::reference)
 
@@ -258,6 +290,10 @@ Parameters:
         .def("get_levelKeys", &pyFps::get_levelKeys)
 
         .def_prop_ro("keys", [](pyFps &cls) { return cls.keys(); })
+        .def("get_flags", &pyFps::get_flags,
+             R"pbdoc(Current flags (int bitmask of FpsFlag values) of parameter `key`
+)pbdoc",
+             nb::arg("key"))
         .def("signal_update", &pyFps::signal_update,
              R"pbdoc(Send update signal to FPS
 )pbdoc")

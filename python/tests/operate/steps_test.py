@@ -9,29 +9,30 @@ from __future__ import annotations
 
 import pytest
 
-from milk.operate import tasks as _tasks
+from moka.operate import tasks as _tasks
 
 if not hasattr(
     _tasks, "RunStart"
 ):  # parked until O1 lands: P1 deletes these two statements
     pytest.skip("O1 not implemented yet", allow_module_level=True)
 
-from milk.errors import (
+from moka.errors import (
     ColdSystemError,
     ConfigError,
     TaskCannotRunError,
     TaskDidNotSucceedError,
 )
-from milk.operate.plans import PLANS, Plan, Step, run, run_plan
-from milk.operate.tasks import TASKS, ClaimRundir, RunStart, RunStop, Task, WaitRunEnd
+from moka.operate.plans import PLANS, Plan, Step, run, run_plan
+from moka.operate.tasks import (
+    TASKS,
+    ClaimRundir,
+    RunStart,
+    RunStop,
+    TaskOnCompuSet,
+    WaitRunEnd,
+)
 
 FPS = ("basic_delay0", "basic_delay1")
-
-
-@pytest.fixture
-def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
-    """pipelinebasic, initialized, cold, with a private SHM dir and simulated FPSs."""
-    return make_tmp_pipeline()
 
 
 @pytest.fixture
@@ -54,7 +55,7 @@ def log(monkeypatch):
             name,
             type(
                 name,
-                (Task,),
+                (TaskOnCompuSet,),
                 {
                     "ran": False,
                     "can": lambda self: True,
@@ -74,7 +75,7 @@ def log(monkeypatch):
 
 def test_run_executes_steps_in_order_with_subsets(deployed, log):
     run(deployed, Plan("adhoc", (Step("A", ("delay1",)), Step("B"))))
-    assert log == ["A:('delay1',)", "B:None"]
+    assert log == ["A:('delay1',)", "B:('delay0', 'delay1')"]
 
 
 @pytest.mark.parametrize("bad", [Step("Nope"), Step("B", ("nope",))])
@@ -93,23 +94,10 @@ def test_run_gates_on_the_plan_state(pp, log):
 def test_named_plans_still_go_through_run_plan(deployed, log, monkeypatch):
     PLANS.register("p", Plan("p", (Step("A"),)))
     run_plan(deployed, "p")
-    assert log == ["A:None"]
-
-
-def test_conf_plans_key_does_not_restrict_run(deployed, log):
-    toml = deployed.root_folder / "conf" / "conf.toml"
-    toml.write_text('plans = ["deploy", "teardown"]\n' + toml.read_text())
-    from milk.operate.pipeline import Pipeline
-
-    run(Pipeline(deployed.root_folder), Plan("adhoc", (Step("A"),)))
-    assert log == ["A:None"]
+    assert log == ["A:('delay0', 'delay1')"]
 
 
 # ---- RunStart / RunStop / WaitRunEnd ----
-
-
-def test_run_tasks_are_registered():
-    assert {"RunStart", "RunStop", "WaitRunEnd"} <= set(TASKS.names())
 
 
 def test_runstart_starts_only_the_named_compu(pp, fake_compus):
@@ -125,6 +113,24 @@ def test_runstart_skips_a_running_compu(pp, fake_compus):
         fake.conf = fake.run = True
     pp.task_do(RunStart(pp, ["delay1"]))
     assert all(f.calls == [] for f in fake_compus.values())
+
+
+def test_a_pipeline_task_takes_no_compute_units(pp):
+    with pytest.raises(ConfigError, match="takes no compute units"):
+        ClaimRundir(pp, ["delay0"])
+
+
+def test_a_one_compu_task_takes_exactly_one(pp):
+    from moka.calibs.linresp import SetLinResp
+    from moka.calibs.loop import LoadCM
+
+    assert SetLinResp(pp, ["delay0"]).compu.fpsname == "basic_delay0"
+    with pytest.raises(ConfigError, match="needs its 2 compute unit"):
+        LoadCM(pp, None)
+    with pytest.raises(ConfigError, match="takes 1 compute unit"):
+        SetLinResp(pp, ["delay0", "delay1"])
+    with pytest.raises(ConfigError, match="no cacao-fpsexec-cacaoac-measlinresp unit"):
+        SetLinResp(pp)
 
 
 def test_runstart_needs_the_conf_process(pp, fake_compus):

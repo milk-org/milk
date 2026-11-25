@@ -30,7 +30,7 @@ import weakref
 
 _CORES = os.sched_getaffinity(0)
 from . import glib_loader_fix
-from pyMilk.FpsWrap import fps as CPTFPS, FPS_type, FPS_flags
+from pyMilk.FpsWrap import fps as CPTFPS, FpsType, FpsFlag
 
 from pyMilk.interfacing.pinfo import ProcessInfo
 from pyMilk.interfacing.shm_names import build_FPS_path, check_FPS_name
@@ -118,7 +118,7 @@ class FPS:
 
         fps = cls(name)
         fps.add_param(
-            "Name", "NameComment", FPS_type.STRING, FPS_flags.DEFAULT_STATUS
+            "Name", "NameComment", FpsType.STRING, FpsFlag.DEFAULT_STATUS
         )  # 0x5 = VISIBLE | ACTIVE
         fps["Name"] = name
 
@@ -165,11 +165,18 @@ class FPS:
         key: str,
         comment: str,
         datatype: int,
-        flags: int = FPS_flags.DEFAULT_INPUT,
+        flags: int = FpsFlag.DEFAULT_INPUT,
     ) -> None:
         # TODO: _autorelink implementation !
         self.fps.add_entry(key, comment, datatype, flags)
         self.key_types[key] = datatype
+
+    def get_flags(self, key: str) -> FpsFlag:
+        """Current flags of parameter `key`, read live from shared memory."""
+        if key in self.key_types:
+            return FpsFlag(self.fps.get_flags(key))
+        else:
+            raise ValueError(f"get_flags: key {key} not in FPS {self.name}.")
 
     def set_param(self, key: str, value: FPVal) -> None:
         # TODO: _autorelink implementation !
@@ -367,15 +374,15 @@ class SmartAttributesFPS(FPS):
     Remains the question of the initializer...
 
     e.g. we would love to pass something like:
-    gain: ('Averaging gain', FPS_type.FLOAT64, FPS_flags.DEFAULT_INPUT)
+    gain: ('Averaging gain', FpsType.FLOAT64, FpsFlag.DEFAULT_INPUT)
 
     Am I reinventing named tuples / named dicts?
 
     # TODO: make a subclass wherein _DICT_METADATA just maps all typical types to FPS types.
-    # TODO: and just puts FPS_flags to RW at runtime at all time.
+    # TODO: and just puts FpsFlag to RW at runtime at all time.
     """
 
-    _DICT_METADATA: dict[str, tuple[str, FPS_type, FPS_flags]]
+    _DICT_METADATA: dict[str, tuple[str, FpsType, FpsFlag]]
 
     _T_Subclass = typ.TypeVar(
         "_T_Subclass", bound="SmartAttributesFPS"
@@ -422,8 +429,8 @@ class SmartAttributesFPS(FPS):
             comment, tipe, flag = value_tuple
             if not (
                 isinstance(comment, str)
-                and isinstance(tipe, FPS_type)
-                and isinstance(flag, FPS_flags)
+                and isinstance(tipe, FpsType)
+                and isinstance(flag, FpsFlag)
             ):
                 raise SmartFPSInitError(
                     f"_DICT_METADATA tuple type not OK for {param} -"
@@ -564,10 +571,10 @@ class SmartAttributesFPSAutoMetadata(SmartAttributesFPS):
 
     _cls_metadata_is_init: typ.ClassVar[bool] = False
     _ANNOTATION_TYPE_MAPPER: typ.ClassVar = {
-        bool: FPS_type.ONOFF,
-        int: FPS_type.INT64,
-        float: FPS_type.FLOAT64,
-        str: FPS_type.STRING,
+        bool: FpsType.ONOFF,
+        int: FpsType.INT64,
+        float: FpsType.FLOAT64,
+        str: FpsType.STRING,
     }
 
     _T_Subclass = typ.TypeVar(
@@ -598,7 +605,7 @@ class SmartAttributesFPSAutoMetadata(SmartAttributesFPS):
             cls._DICT_METADATA[attr_name] = (
                 f"{attr_name}:{annotation_type}",
                 cls._ANNOTATION_TYPE_MAPPER[annotation_type],
-                FPS_flags.DEFAULT_INPUT,
+                FpsFlag.DEFAULT_INPUT,
             )
 
     @classmethod

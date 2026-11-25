@@ -24,6 +24,13 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph import QtGui as QtG, QtCore as QtC, QtWidgets as QtW
 
+import warnings
+
+# pyqtgraph compares its default +-1e307 view limits to float32 ranges (numpy 2 promotion)
+warnings.filterwarnings(
+    "ignore", "overflow encountered in cast", RuntimeWarning, "pyqtgraph"
+)
+
 from pyMilk.interfacing.shm import SHM
 
 try:  # moved depending on Qt version
@@ -80,12 +87,13 @@ class ShmImshowClass:
         self.win.addItem(self.hist)  # add hist in main window
         self.hist.autoHistogramRange()  # inits levels
         self.hist.gradient.loadPreset("thermal")
-        self.hist.setMaximumWidth(200)
+        # The histogram plot has a 45 px minimum that an outer width cap cannot go below
+        self.hist.vb.setFixedWidth(20)
 
         self.hist_autoscale = True
 
         # TODO
-        self.titleStr = f"Display of SHM data: {shmname}"
+        self.titleStr = f"{shmname} - press [h] for help"
         self.title = self.win.addLabel(self.titleStr, col=0, row=1, color="w")
 
         # Bind a couple shortcuts

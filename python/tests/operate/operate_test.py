@@ -10,33 +10,30 @@ import pytest
 
 import tomli
 
-from milk.errors import (
+from moka.errors import (
     BestEffortError,
     ColdSystemError,
     ConfigError,
     InconsistentStateError,
     LinkageError,
     TaskCannotRunError,
+    TaskDidNotSucceedError,
 )
-from milk.operate import rundir
-from milk.operate.plans import PLANS, Plan, Step, run_plan
-from milk.operate.state import State, state
-from milk.operate.tasks import (
+from moka.operate import rundir
+from moka.operate.plans import PLANS, Plan, Step, run_plan
+from moka.operate.state import State, state
+from moka.operate.tasks import (
     TASKS,
     ClaimRundir,
     DeapplyAllLinkages,
     ReleaseRundir,
-    Task,
+    RunStart,
+    RunStop,
+    TaskOnCompuSet,
 )
-from milk.registry import Registry
+from moka.registry import Registry
 
 FPS = {"basic_delay0", "basic_delay1"}
-
-
-@pytest.fixture
-def pp(make_tmp_pipeline, shm_dir_cleanafter, boot, paper):
-    """pipelinebasic, initialized, cold, with a private SHM dir and simulated FPSs."""
-    return make_tmp_pipeline()
 
 
 def _deploy_on_paper(pp, paper, conf=False, run=False):
@@ -46,15 +43,12 @@ def _deploy_on_paper(pp, paper, conf=False, run=False):
         paper[name] = (conf, run)
 
 
-def _with_conf(pp, replace: tuple[str, str] | None = None, prepend: str = ""):
-    """The same rootdir with its conf.toml hand-edited (live), resolved afresh."""
-    from milk.operate.pipeline import Pipeline
+def _with_conf(pp, prepend: str):
+    """The same rootdir with ``prepend`` hand-added (live) to its conf.toml, resolved afresh."""
+    from moka.operate.pipeline import Pipeline
 
     toml = pp.root_folder / "conf" / "conf.toml"
-    text = toml.read_text()
-    if replace:
-        text = text.replace(*replace)
-    toml.write_text(prepend + text)
+    toml.write_text(prepend + toml.read_text())
     return Pipeline(pp.root_folder)
 
 
@@ -63,31 +57,12 @@ def _with_conf(pp, replace: tuple[str, str] | None = None, prepend: str = ""):
 
 def test_registry():
     reg = Registry[int]("widget")
-    assert reg.register("a", 1) == 1
+    reg.register("a", 1)
     assert reg["a"] == 1 and "a" in reg and reg.names() == ["a"]
     with pytest.raises(ValueError):
         reg.register("a", 2)
     with pytest.raises(ConfigError, match="a"):  # unknown names list the known ones
         reg["b"]
-
-
-def test_registries_are_populated():
-    from milk.provision.hooks import HOOK_RUNNERS
-
-    assert {"fetch", "command"} <= set(HOOK_RUNNERS.names())
-    assert {"deploy", "teardown"} <= set(PLANS.names())
-    assert {
-        "ClaimRundir",
-        "InitFPS",
-        "LoadData",
-        "ConfStart",
-        "RunStop",
-        "DeapplyAllLinkages",
-        "ConfStop",
-        "KillTmux",
-        "DestroyFPS",
-        "ReleaseRundir",
-    } <= set(TASKS.names())
 
 
 def test_generic_plans_shape():
@@ -199,7 +174,7 @@ def test_state_consistent(pp, paper, flags, expected):
 # ---- runner ----
 
 
-class _Probe(Task):
+class _Probe(TaskOnCompuSet):
     """Records what the runner does with it; behaviour set per test through class attributes."""
 
     log: list[str] = []
@@ -253,7 +228,7 @@ def test_runner_gates_on_state(pp, paper, probes, boot):
 
 
 def test_runner_checks_state_once(pp, probes, monkeypatch):
-    import milk.operate.plans as plans_module
+    import moka.operate.plans as plans_module
 
     _, _, plan = probes
     plan("p", Step("ProbeA"), Step("ProbeB"), Step("ProbeA"))
@@ -288,14 +263,14 @@ def test_runner_best_effort_runs_everything(pp, probes):
     with pytest.raises(BestEffortError) as err:
         run_plan(pp, "p")
     assert [label for label, _ in err.value.failures] == ["ProbeA"]
-    assert _Probe.log == ["ProbeB:None"]
+    assert _Probe.log == ["ProbeB:('delay0', 'delay1')"]
 
 
 def test_runner_passes_compu_subsets(pp, probes):
     _, _, plan = probes
     plan("p", Step("ProbeA", ("delay1",)), Step("ProbeB"))
     run_plan(pp, "p")
-    assert _Probe.log == ["ProbeA:('delay1',)", "ProbeB:None"]
+    assert _Probe.log == ["ProbeA:('delay1',)", "ProbeB:('delay0', 'delay1')"]
 
 
 def test_unknown_compu_in_subset_refused(pp, probes):
@@ -305,26 +280,13 @@ def test_unknown_compu_in_subset_refused(pp, probes):
         run_plan(pp, "p")
 
 
-def test_conf_plans_key_restricts(pp, probes):
-    _, _, plan = probes
-    plan("p", Step("ProbeA"))
-    restricted = _with_conf(pp, prepend='plans = ["deploy", "teardown"]\n')
-    with pytest.raises(ConfigError, match="'p'"):
-        run_plan(restricted, "p")
-    bogus = _with_conf(
-        pp, replace=('plans = ["deploy", "teardown"]', 'plans = ["nope"]')
-    )
-    with pytest.raises(ConfigError, match="nope"):
-        run_plan(bogus, "deploy")
-
-
 def test_unknown_plan_refused(pp):
     with pytest.raises(ConfigError, match="nosuchplan"):
         run_plan(pp, "nosuchplan")
 
 
 def test_teardown_kill_tmux_key():
-    from milk.config.model import PipelineConfig
+    from moka.config.model import PipelineConfig
 
     base = {"long_name": "x", "name": "x", "loop_number": 1}
     assert PipelineConfig.model_validate(base).teardown_kill_tmux is False
@@ -384,3 +346,144 @@ def test_deapply_removes_configured_links(pp, paper, shm_dir_cleanafter):
     pp.link("shared")
     pp.task_do(DeapplyAllLinkages)
     assert not (shm_dir_cleanafter / "input.im.shm").is_symlink()
+
+
+# ---- the runstart key ----
+# pipelinebasic has two units: with `runstart = ["delay0"]`, delay1 plays the on-demand unit.
+
+
+def _listing(pp, units: str):
+    return _with_conf(pp, f"runstart = {units}\n")
+
+
+@pytest.mark.parametrize(
+    "units, match",
+    [('["nope"]', "unknown"), ('["delay0", "delay0"]', "duplicate")],
+)
+def test_runstart_key_is_validated(pp, units, match):
+    with pytest.raises(ConfigError, match=match):
+        _listing(pp, units)
+
+
+def test_bad_compute_units_is_still_a_validation_error():
+    import pydantic
+
+    from moka.config.model import PipelineConfig
+
+    bad = {"long_name": "x", "name": "x", "loop_number": 1, "compute_units": 5}
+    with pytest.raises(pydantic.ValidationError, match="compute_units"):
+        PipelineConfig.model_validate(bad)
+
+
+def test_runstart_defaults_to_every_unit(pp, started):
+    pp.task_do(RunStart)
+    assert sorted(started) == ["delay0", "delay1"]
+
+
+def test_runstart_without_the_key_issues_every_start_then_waits(
+    pp, started, fake_compus, monkeypatch
+):
+    monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
+    for cu in ("delay0", "delay1"):
+        fake_compus[cu].runstart = lambda tmux=False, cu=cu: started.append(cu)
+    with pytest.raises(TaskDidNotSucceedError, match=r"basic_delay\d, basic_delay\d"):
+        pp.task_do(RunStart)
+    # each start issued although none came up
+    assert sorted(started) == ["delay0", "delay1"]
+
+
+def test_runstart_named_units_wait_in_order_without_the_key(
+    pp, started, fake_compus, monkeypatch
+):
+    monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
+    fake_compus["delay1"].runstart = lambda tmux=False: started.append("delay1")
+    with pytest.raises(TaskDidNotSucceedError, match="basic_delay1"):
+        pp.task_do(RunStart(pp, ["delay1", "delay0"]))
+    assert started == ["delay1"]  # delay0 was never issued
+
+
+def test_runstart_follows_the_list_order(pp, started):
+    _listing(pp, '["delay1", "delay0"]').task_do(RunStart)
+    assert started == ["delay1", "delay0"]
+
+
+def test_runstart_leaves_unlisted_units_alone(pp, started, fake_compus):
+    pp = _listing(pp, '["delay1"]')
+    pp.task_do(RunStart)
+    assert started == ["delay1"]
+    assert RunStart(pp).success() and not fake_compus["delay0"].run
+
+
+def test_runstart_subset_keeps_its_order_and_may_name_unlisted_units(pp, started):
+    pp = _listing(pp, '["delay1"]')
+    pp.task_do(RunStart(pp, ["delay1", "delay0"]))
+    assert started == ["delay1", "delay0"]
+
+
+def test_runstart_waits_for_each_run_before_the_next(
+    pp, started, fake_compus, monkeypatch
+):
+    monkeypatch.setattr(RunStart, "TIMEOUT", 0.05)
+    pp = _listing(pp, '["delay1", "delay0"]')
+    fake_compus["delay1"].runstart = lambda tmux=False: started.append("delay1")
+    with pytest.raises(TaskDidNotSucceedError, match="basic_delay1"):
+        pp.task_do(RunStart)
+    assert started == ["delay1"]  # delay0 was never issued
+
+
+def test_runstop_stops_unlisted_units_too(pp, fake_compus):
+    pp = _listing(pp, '["delay1"]')
+    for fake in fake_compus.values():
+        fake.conf = fake.run = True
+    pp.task_do(RunStop)
+    assert [f.calls for f in fake_compus.values()] == [["runstop"], ["runstop"]]
+
+
+IDLE, CONF, RUN = (False, False), (True, False), (True, True)
+
+
+@pytest.mark.parametrize(
+    "delay0, delay1, expected",
+    [
+        (RUN, CONF, State.RUNNING),  # listed units run, the on-demand one is idle
+        (RUN, RUN, State.RUNNING),
+        (CONF, RUN, State.MIXED),  # only the on-demand unit runs
+        (CONF, CONF, State.CONFIGURED),
+        (IDLE, IDLE, State.DEPLOYED),
+        (CONF, IDLE, State.MIXED),
+    ],
+)
+def test_state_uses_the_listed_units(pp, paper, delay0, delay1, expected):
+    pp = _listing(pp, '["delay0"]')
+    _deploy_on_paper(pp, paper)
+    paper["basic_delay0"], paper["basic_delay1"] = delay0, delay1
+    assert state(pp).state is expected
+
+
+def test_runstart_and_runstop_plans_shape():
+    assert PLANS["runstart"] == Plan(
+        "runstart", (Step("RunStart"),), "abort", "consistent", compus_arg=True
+    )
+    # Decision 2026-11-19 (overrules brief §9.5): runstop accepts any state, best effort.
+    assert PLANS["runstop"] == Plan(
+        "runstop", (Step("RunStop"),), "best_effort", "any", compus_arg=True
+    )
+    assert not PLANS["deploy"].compus_arg and not PLANS["teardown"].compus_arg
+
+
+def test_runstart_refuses_a_cold_pipeline_and_runstop_does_not(pp):
+    with pytest.raises(ColdSystemError, match="deploy"):
+        run_plan(pp, "runstart")
+    run_plan(pp, "runstop")
+
+
+# ---- the built-in mlat plan ----
+
+
+def test_mlat_plan_shape():
+    steps = (
+        Step("RunStart", ("acquWFS",)),
+        Step("RunStart", ("mlat",)),
+        Step("WaitRunEnd", ("mlat",)),
+    )
+    assert PLANS["mlat"] == Plan("mlat", steps, "abort", "consistent")

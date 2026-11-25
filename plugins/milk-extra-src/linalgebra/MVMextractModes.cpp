@@ -54,18 +54,18 @@ static int64_t  opt_modenorm                              = 1;
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
-#define FPS_PARAMS(X)                                                                           \
-    X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,                            \
-      "GPU index, 99 for CPU [BLAS if avail.], 98 for plain CPU [OMP if avail.]")               \
-    X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_TRIGGER_STREAM,                 \
-      "input stream name")                                                                      \
-    X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                  \
-      "spatial mask stream name")                                                               \
-    X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "modes stream name")     \
-    X(".outcoeff", outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients") \
-    X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                            \
-      "axis mode: 0=extract, 1=expand")                                                         \
-    X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                 \
+#define FPS_PARAMS(X)                                                                              \
+    X(".GPUindex", &GPUindex, FPTYPE_INT32, 1, FPFLAG_DEFAULT_INPUT,                               \
+      "GPU index, 99 for CPU [BLAS if avail.], 98 for plain CPU [OMP if avail.]")                  \
+    X(".insname", insname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_TRIGGER_STREAM,                    \
+      "input stream name")                                                                         \
+    X(".inmasksname", inmasksname, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT,                     \
+      "spatial mask stream name")                                                                  \
+    X(".immodes", immodes, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT_STREAM, "modes stream name") \
+    X(".outcoeff", outcoeff, FPTYPE_STREAMNAME, 1, FPFLAG_DEFAULT_INPUT, "output coefficients")    \
+    X(".axmode", &axis_mode, FPTYPE_UINT32, 0, FPFLAG_DEFAULT_INPUT,                               \
+      "axis mode: 0=extract, 1=expand")                                                            \
+    X(".option.MODENORM", &opt_modenorm, FPTYPE_ONOFF, 0, FPFLAG_DEFAULT_INPUT,                    \
       "normalize modes to unit 2-norm")
 
 

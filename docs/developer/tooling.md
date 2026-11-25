@@ -280,7 +280,7 @@ in which we can build milk with different options, then run the tests; or use se
     - A Python environment (see the note at the top of this page).
     - `pytest`, `pytest-timeout`, `nox` and `uv` installed (`nox` sessions use the `uv` backend).
     - A built and locally installed `milk`, with `MILK_INSTALLDIR` pointing to it.
-    - The `pyMilk` and `milk` Python packages, installed from `python/` (see 4.1).
+    - The `pyMilk` and `moka` Python packages, installed from `python/` (see 4.1).
       Some tests use pyMilk to interact with shared memory structures.
     - `tmux` and a writable `/tmp`: the tests spawn private tmux servers and shared-memory
       directories.
@@ -292,7 +292,7 @@ export MILK_INSTALLDIR=<path to your milk install>
 
 cd $MILK_ROOT/python
 PYMILK_ENGINE=SYSTEM pip install -e pyMilk # pyMilk, built against the milk in MILK_INSTALLDIR
-pip install -e .                           # the milk package
+pip install -e .                           # the moka package
 pip install pytest pytest-timeout nox
 ```
 

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from milk.errors import TaskDidNotSucceedError
-from milk.operate.pipeline import Pipeline
-from milk.provision.rootdir import init
-from milk.operate.tasks import Task
+from moka.errors import TaskDidNotSucceedError
+from moka.operate.pipeline import Pipeline
+from moka.provision.rootdir import init
+from moka.operate.tasks import Task
 
 
 @pytest.fixture
@@ -21,13 +21,13 @@ class TestManualPipeline:
         Test that we can instantiate the pipeline directly in the source test folder
         """
         pp: Pipeline = pipeline
-        assert pp.loop_number == 0
-        assert pp.long_name == "pipelinebasic"
+        assert pp.config.loop_number == 0
+        assert pp.config.long_name == "pipelinebasic"
 
     def test_pipeline_var_substitution(self, pipeline):
         pp: Pipeline = pipeline
-        assert pp.loop_number == 0
-        assert pp.long_name == "pipelinebasic"
+        assert pp.config.loop_number == 0
+        assert pp.config.long_name == "pipelinebasic"
 
         cus = pp.config.compute_units
         assert (
@@ -45,13 +45,13 @@ class TestManualPipeline:
         Clone the pipeline to a working folder
         """
         pp: Pipeline = cloned_pipeline
-        assert pp.loop_number == 0
-        assert pp.long_name == "pipelinebasic"
+        assert pp.config.loop_number == 0
+        assert pp.config.long_name == "pipelinebasic"
 
     def test_deploy_fps_call_by_class(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.operate.tasks import InitFPS
+        from moka.operate.tasks import InitFPS
 
         pp.task_do(InitFPS)
 
@@ -83,7 +83,7 @@ class TestManualPipeline:
     def test_deploy_fps_call_by_instance(self, cloned_pipeline: Pipeline):
         pp = cloned_pipeline
 
-        from milk.operate.tasks import ConfStart, InitFPS
+        from moka.operate.tasks import ConfStart, InitFPS
 
         pp.task_do(InitFPS)
         pp.task_do(ConfStart)

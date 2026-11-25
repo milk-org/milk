@@ -59,4 +59,4 @@ ______________________________________________________________________
 ## A running demo pipeline in Python
 
 To do: a `milk-demopipeline` that deploys and runs a small pipeline end to end from Python
-(`milk` package), as a ready-to-run demo. See [Pipelines](guide/pipelines.md).
+(`moka` package), as a ready-to-run demo. See [moka](moka/moka.md).

@@ -8,7 +8,7 @@ from pyMilk.interfacing.fps import FPS, FPSDoesntExistError
 from pyMilk.interfacing.shm import SHM
 import numpy as np
 
-from milk.operate.compute_unit import ComputeUnit
+from moka.operate.compute_unit import ComputeUnit
 
 from tests.conftestaux.compute_unit import fixt_fpsinit_factory
 from tests.conftestaux.polling import poll_until_or_fail
@@ -20,7 +20,7 @@ class StreamDelayComputeUnit(ComputeUnit):
         super().__init__("milk-fpsexec-mem-streamdelay", fpsname)
 
 
-fixt_fpsinit_pinfo = fixt_fpsinit_factory(StreamDelayComputeUnit, pinfo=True)
+fixt_fpsinit_pinfo = fixt_fpsinit_factory(StreamDelayComputeUnit)
 
 
 # ADD AFTER THIS LINE
@@ -118,9 +118,6 @@ def test_loops(fixt_fpsinit_pinfo, loopmode: int, tmux: bool):
         assert compu.fps["procinfo.loopcntMax"] == -1
 
     out_shm.destroy()
-
-
-def test_loopd(): ...
 
 
 def test_raises_on_missing_fps(fixt_fpsinit_pinfo):

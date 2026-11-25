@@ -225,8 +225,8 @@ __milk_env_switch_fdev() {
         echo -e "\033[0;33m[NOTICE] Framework-dev install dir '$_FDEV_INSTALLDIR' does not contain binaries yet.\033[0m"
         echo -e "\033[0;33mTo build and install locally to this directory, run:\033[0m"
         echo -e "  cd \"$MILK_ROOT\" && mkdir -p _build && cd _build"
-        echo -e "  cmake .. -DCMAKE_INSTALL_PREFIX=\"$MILK_INSTALLDIR\" -DCMAKE_BUILD_TYPE=Release"
-        echo -e "  make -j\$(nproc) && make install"
+        echo -e "  cmake .. -DCMAKE_BUILD_TYPE=Release"
+        echo -e "  make -j\$(nproc) && cmake --install . --prefix \"$MILK_INSTALLDIR\""
     fi
 
     # 3. Command visibility: milk-cli is active; block legacy 'milk'
@@ -244,6 +244,7 @@ __milk_env_switch_fdev() {
 
     echo -e "\033[1;32mSwitched to \033[1;31mframework-dev\033[1;32m environment.\033[0m"
     echo -e "  MILK_SHM_DIR:    $MILK_SHM_DIR"
+    echo -e "  MILK_PROC_DIR:   $MILK_PROC_DIR"
     echo -e "  MILK_INSTALLDIR: $MILK_INSTALLDIR"
     echo -e "  MILK_ROOT:       $MILK_ROOT"
     echo -e "  TMUX_TMPDIR:     $TMUX_TMPDIR (fenced)"

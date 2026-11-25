@@ -10,7 +10,7 @@ import os
 
 
 def test_milk_shm_dir_fixture():
-    # Fixture from milk.py -- which is scope='session', autouse=True
+    # Fixture from moka.py -- which is scope='session', autouse=True
     MILK_SHM_DIR_SPOOF = "/tmp/milk_shm_dir_pytest"
 
     assert os.path.isdir(MILK_SHM_DIR_SPOOF)

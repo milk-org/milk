@@ -54,7 +54,7 @@ class ShmPlotClass:
         self.plot = pg.PlotWidget()
         self.plot.show()
 
-        self.title = f"Display of SHM data: {shmname}"
+        self.title = f"{shmname} - press [h] for help"
         self.plot.setTitle(self.title)
         self.plot.setLabel("bottom", "Column index", units="")
         self.plot.setLabel("left", "Amplitude", units=f"{self.data.dtype}")

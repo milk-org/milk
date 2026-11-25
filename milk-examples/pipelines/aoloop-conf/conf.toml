@@ -2,7 +2,17 @@ long_name = "aoloop"
 name = "aoloop"
 loop_number = 0
 teardown_kill_tmux = true
+runstart = ["acquWFS", "wfs2modes", "mfilt", "modes2dm"]  # mlat, measlinresp: on demand
 _ln = '{loop_number}' # alias
+
+includes = ["fpsdetails.toml"]
+
+[dmhint]  # mlatsim's dm07disp, until a real DM
+xsize = 16
+ysize = 16
+beam_xcent = 7.5
+beam_ycent = 7.5
+beam_rad = 8.0
 
 [compute_units]
 acquWFS.exec   = 'cacao-fpsexec-cacaoiot-acqWFS'
@@ -13,6 +23,9 @@ modes2dm.exec  = 'milk-fpsexec-linalg-MVMextract'
 mlat.exec      = 'cacao-fpsexec-cacaopt-mlat'
 measlinresp.exec    = 'cacao-fpsexec-cacaoac-measlinresp'
 
-#include fps_details.toml
 
-[systemlinkage.minipyrsim]
+[systemlinkage.delaysim]
+# TODO dmXX should be a variable, when switching between sim and non-sim
+aol0_wfsim = 'mlatsim_wfs'
+aol0_dmC = 'dm07disp03'        # cacao-setDMnolink map
+aol0_dmRM = 'dm07disp02'

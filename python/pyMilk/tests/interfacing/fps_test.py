@@ -89,7 +89,7 @@ def test_smart_fps_instantiation():
     class G(fps.SmartAttributesFPS):
         gain: float
         _DICT_METADATA = {
-            "gain": ("toto", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT)
+            "gain": ("toto", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT)
         }
 
     with pytest.raises(fps.FPSDoesntExistError):
@@ -106,8 +106,8 @@ def test_smart_fps_instantiation():
         _DICT_METADATA = {
             "gain": (
                 "toto",
-                fps.FPS_type.FLOAT32,
-                fps.FPS_flags.DEFAULT_INPUT,
+                fps.FpsType.FLOAT32,
+                fps.FpsFlag.DEFAULT_INPUT,
                 "an_extra_argument",
             )
         }
@@ -121,7 +121,7 @@ def test_smart_fps_find_annotations_cannot_be_overridden():
     class H(fps.SmartAttributesFPS):
         gain: float
         _DICT_METADATA = {
-            "gain": ("gain", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT)
+            "gain": ("gain", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT)
         }
 
         @classmethod
@@ -146,11 +146,32 @@ def fixt_dumb_fps():
 
 def test_pass_data(fixt_dumb_fps):
     a = fixt_dumb_fps
-    a.add_param("abc", "abcComment", fps.FPS_type.INT32, fps.FPS_flags.DEFAULT_INPUT)
+    a.add_param("abc", "abcComment", fps.FpsType.INT32, fps.FpsFlag.DEFAULT_INPUT)
     a["abc"] = 1
 
     b = fps.FPS(a.name)
     assert b["abc"] == 1
+
+
+def test_flags(fixt_dumb_fps):
+    a = fixt_dumb_fps
+    # Added first: a substring lookup of "trig" would hit "trigx"
+    a.add_param("trigx", "c", fps.FpsType.FLOAT32)
+    a.add_param("trig", "c", fps.FpsType.STREAMNAME, fps.FpsFlag.DEFAULT_TRIGGER_STREAM)
+    a.add_param("gain", "c", fps.FpsType.FLOAT32)
+
+    # Reconnect: index cache built from shm, not from add_param
+    b = fps.FPS(a.name)
+    assert fps.FpsFlag.TRIGGER_STREAM in b.get_flags("trig")
+    assert fps.FpsFlag.TRIGGER_STREAM not in b.get_flags("gain")
+    assert b.get_flags("gain") == fps.FpsFlag.DEFAULT_INPUT
+
+    # Same object that added the params
+    assert fps.FpsFlag.TRIGGER_STREAM in a.get_flags("trig")
+    assert a.get_flags("gain") == fps.FpsFlag.DEFAULT_INPUT
+
+    with pytest.raises(ValueError):
+        a.get_flags("nonexistent")
 
 
 @pytest.fixture
@@ -166,13 +187,13 @@ def fixt_smart_fps_properties():
         s: str
 
         _DICT_METADATA = {
-            "i4": ("i4", fps.FPS_type.INT32, fps.FPS_flags.DEFAULT_INPUT),
-            "i8": ("i8", fps.FPS_type.INT64, fps.FPS_flags.DEFAULT_INPUT),
-            "u4": ("u4", fps.FPS_type.UINT32, fps.FPS_flags.DEFAULT_INPUT),
-            "u8": ("u8", fps.FPS_type.UINT64, fps.FPS_flags.DEFAULT_INPUT),
-            "f4": ("f4", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT),
-            "f8": ("f8", fps.FPS_type.FLOAT64, fps.FPS_flags.DEFAULT_INPUT),
-            "s": ("s", fps.FPS_type.STRING, fps.FPS_flags.DEFAULT_INPUT),
+            "i4": ("i4", fps.FpsType.INT32, fps.FpsFlag.DEFAULT_INPUT),
+            "i8": ("i8", fps.FpsType.INT64, fps.FpsFlag.DEFAULT_INPUT),
+            "u4": ("u4", fps.FpsType.UINT32, fps.FpsFlag.DEFAULT_INPUT),
+            "u8": ("u8", fps.FpsType.UINT64, fps.FpsFlag.DEFAULT_INPUT),
+            "f4": ("f4", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT),
+            "f8": ("f8", fps.FpsType.FLOAT64, fps.FpsFlag.DEFAULT_INPUT),
+            "s": ("s", fps.FpsType.STRING, fps.FpsFlag.DEFAULT_INPUT),
         }
 
     with pytest.raises(fps.FPSDoesntExistError):
@@ -260,9 +281,9 @@ def test_smart_fps_type_validation(fixt_smart_fps_properties):
     fps = fixt_smart_fps_properties
 
     # Test invalid type assignments
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
         fps.i4 = "not integer-able"
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
         fps.f4 = "not float-able"
     """ That worked with pybind, it had more
     autocasting...
@@ -270,7 +291,7 @@ def test_smart_fps_type_validation(fixt_smart_fps_properties):
     assert fps.s == '42'  # 'Dis JS or what?
     """
     # Nanobind is less friendly:
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TypeError):
         fps.s = 42
 
 
@@ -280,7 +301,7 @@ def test_smart_fps_concurrent_access():
     class TestFPS(fps.SmartAttributesFPS):
         value: float
         _DICT_METADATA = {
-            "value": ("val", fps.FPS_type.FLOAT32, fps.FPS_flags.DEFAULT_INPUT)
+            "value": ("val", fps.FpsType.FLOAT32, fps.FpsFlag.DEFAULT_INPUT)
         }
 
     fps1 = TestFPS.create("fps_test_1")
