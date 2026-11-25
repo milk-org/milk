@@ -369,7 +369,9 @@ def _row(result, name: str) -> str:
 def _steps(result, name: str) -> str:
     """The steps line of plan ``name``: the line after its row."""
     lines = result.output.splitlines()
-    return lines[next(i for i, line in enumerate(lines) if line.split()[:1] == [name]) + 1]
+    return lines[
+        next(i for i, line in enumerate(lines) if line.split()[:1] == [name]) + 1
+    ]
 
 
 def test_plans_is_a_fixed_command():
@@ -383,7 +385,9 @@ def test_plans_on_a_cold_pipeline(pp):
     assert "basic: cold" in result.output.splitlines()
     deploy = _row(result, "deploy")
     assert deploy.endswith("ok")
-    assert _steps(result, "deploy") == "  ClaimRundir -> InitFPS -> LoadData -> ConfStart"
+    assert (
+        _steps(result, "deploy") == "  ClaimRundir -> InitFPS -> LoadData -> ConfStart"
+    )
     assert _row(result, "teardown").endswith("ok")  # accepts any state
     assert _row(result, "runstop").endswith("ok")
     runstart = _row(result, "runstart")
@@ -586,12 +590,17 @@ def test_plans_now_column_is_aligned_and_steps_follow(make_tmp_pipeline, pp_env)
     result = _invoke("plans", "-p", str(pp.root_folder))
     assert result.exit_code == 0, _text(result)
     lines = result.output.splitlines()
-    lines = lines[next(i for i, line in enumerate(lines) if line.startswith("rootdir:")) :]
+    lines = lines[
+        next(i for i, line in enumerate(lines) if line.startswith("rootdir:")) :
+    ]
     assert lines[:2] == [f"rootdir: {pp.root_folder}", "basic: cold"]
     header = lines[2]
     assert header.startswith("USAGE  ") and header.endswith("  NOW")
     rows = [line for line in lines[3:] if line[:2] != "  "]
-    assert len(rows) == len(lines[3:]) // 2 and len({len(r.split("  ")[0]) for r in rows}) > 1
+    assert (
+        len(rows) == len(lines[3:]) // 2
+        and len({len(r.split("  ")[0]) for r in rows}) > 1
+    )
     found = set()
     for row in rows:
         match = re.search(r"  (ok|no \(.*|n/a \(.*)$", row)
@@ -605,7 +614,10 @@ def test_plans_now_column_is_aligned_and_steps_follow(make_tmp_pipeline, pp_env)
 
 
 def test_plans_usage_is_the_signature_of_moka_help(recorded, pp):
-    help_lines = [line.strip() for line in _invoke("-h", "-p", str(pp.root_folder)).output.splitlines()]
+    help_lines = [
+        line.strip()
+        for line in _invoke("-h", "-p", str(pp.root_folder)).output.splitlines()
+    ]
     result = _invoke("plans", "-p", str(pp.root_folder))
     for name in ("deploy", "runstart", "probe"):
         usage = _row(result, name).rsplit("  ", 1)[0]
@@ -645,10 +657,14 @@ def test_listings_have_no_trailing_space_and_are_ascii_and_uncolored(
         assert all(line == line.rstrip() for line in result.output.splitlines())
 
 
-def test_listings_are_not_cut_when_not_a_terminal(make_tmp_pipeline, pp_env, monkeypatch):
+def test_listings_are_not_cut_when_not_a_terminal(
+    make_tmp_pipeline, pp_env, monkeypatch
+):
     import shutil
 
-    monkeypatch.setattr(shutil, "get_terminal_size", lambda *a: shutil.os.terminal_size((20, 24)))
+    monkeypatch.setattr(
+        shutil, "get_terminal_size", lambda *a: shutil.os.terminal_size((20, 24))
+    )
     pp = make_tmp_pipeline(LOCAL)
     for args in (("plans",), ("tasks", "ghost")):
         result = _invoke(*args, "-p", str(pp.root_folder))
@@ -670,7 +686,11 @@ def test_listings_are_cut_to_a_terminal(monkeypatch):
     monkeypatch.setattr(
         shutil, "get_terminal_size", lambda *a: shutil.os.terminal_size((40, 24))
     )
-    rows = [["USAGE", "NOW"], ["deploy [-p PIPE]", "n/a (" + "x" * 60 + ")"], ["  A -> B"]]
+    rows = [
+        ["USAGE", "NOW"],
+        ["deploy [-p PIPE]", "n/a (" + "x" * 60 + ")"],
+        ["  A -> B"],
+    ]
     for stream, cut in ((Terminal(), True), (io.StringIO(), False)):
         monkeypatch.setattr(sys, "stdout", stream)
         _echo_table(rows)

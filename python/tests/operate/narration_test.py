@@ -194,9 +194,15 @@ def test_a_failed_step_and_a_failed_best_effort_plan(pp, plan):
     result = _invoke("probe", "-p", str(pp.root_folder))
     assert result.exit_code == 1
     lines = result.stderr.splitlines()[3:]
-    assert re.fullmatch(r"  \[1/3\] Fail \.{3} \[FAIL\] failed \(\d+\.\d s\): still off\.", lines[0])
-    assert re.fullmatch(r"  \[2/3\] Boom \.{3} \[FAIL\] failed \(\d+\.\d s\): boom", lines[1])
-    assert lines[2] == "[FAIL] probe: stopped at step 2/3 (Boom)"  # not a MilkError: stops
+    assert re.fullmatch(
+        r"  \[1/3\] Fail \.{3} \[FAIL\] failed \(\d+\.\d s\): still off\.", lines[0]
+    )
+    assert re.fullmatch(
+        r"  \[2/3\] Boom \.{3} \[FAIL\] failed \(\d+\.\d s\): boom", lines[1]
+    )
+    assert (
+        lines[2] == "[FAIL] probe: stopped at step 2/3 (Boom)"
+    )  # not a MilkError: stops
     assert "Error: ValueError: boom" in result.stderr  # and is printed as before
     assert "[3/3]" not in result.stderr
 
@@ -206,7 +212,11 @@ def test_a_best_effort_failure_is_one_verdict(pp, plan):
     result = _invoke("probe", "-p", str(pp.root_folder))
     assert result.exit_code == 1
     lines = result.stderr.splitlines()[3:]
-    assert [line.split("] ", 1)[1][:6] for line in lines[:3]] == ["Fail .", "Ran ..", "Refuse"]
+    assert [line.split("] ", 1)[1][:6] for line in lines[:3]] == [
+        "Fail .",
+        "Ran ..",
+        "Refuse",
+    ]
     assert lines[3:] == ["[FAIL] probe: 2 of 3 steps failed (Fail, Refuse)"]
 
 
@@ -244,7 +254,9 @@ def test_acting_commands_print_nothing_on_stdout(pp, paper, shm_dir_cleanafter):
         result = _invoke(*args, "-p", str(pp.root_folder))
         assert result.exit_code == 0, (args, result.output)
         assert result.stdout == "", (args, result.output)
-        assert result.stderr.startswith(f"> moka {args[0]}\nrootdir: {pp.root_folder}\n")
+        assert result.stderr.startswith(
+            f"> moka {args[0]}\nrootdir: {pp.root_folder}\n"
+        )
 
 
 def _digits(text: str) -> str:
@@ -295,7 +307,9 @@ def test_a_running_step_counts_its_seconds_then_shows_its_outcome(replay):
     handler.handle(first)
     handler.handle(start)
     assert stream.getvalue() == "basic: cold\n  [1/1] Ran ..."  # open, no newline
-    poll_until_or_fail(lambda: re.search(r"\r  \[1/1\] Ran \.\.\. \d+ s$", stream.getvalue()), 5)
+    poll_until_or_fail(
+        lambda: re.search(r"\r  \[1/1\] Ran \.\.\. \d+ s$", stream.getvalue()), 5
+    )
     handler.handle(end)
     _threads_back_to(threads)
     text = stream.getvalue()
@@ -309,7 +323,16 @@ def test_another_record_closes_the_open_step_line(replay):
     threads = threading.active_count()
     handler.handle(first)
     handler.handle(start)
-    handler.handle(logging.makeLogRecord({"name": "moka", "levelno": logging.WARNING, "levelname": "WARNING", "msg": "hey"}))
+    handler.handle(
+        logging.makeLogRecord(
+            {
+                "name": "moka",
+                "levelno": logging.WARNING,
+                "levelname": "WARNING",
+                "msg": "hey",
+            }
+        )
+    )
     _threads_back_to(threads)
     handler.handle(end)
     lines = stream.getvalue().split("\n")

@@ -100,10 +100,15 @@ class ErrstackGroup(click.Group):
                     f"{type(error).__name__}: {error}\n(--errstack for the stack trace)"
                 ) from error
             # a plan's failure was already told step by step, then by its verdict line
-            if not (handler.failed_plan and isinstance(error, (TaskError, BestEffortError))):
+            if not (
+                handler.failed_plan and isinstance(error, (TaskError, BestEffortError))
+            ):
                 color = ui.use_color(handler.stream)
                 first, *context = str(error).split("\n")
-                click.echo(f"{ui.tag(ui.FAILED, color)} {ui.highlight_ticks(first, color)}", err=True)
+                click.echo(
+                    f"{ui.tag(ui.FAILED, color)} {ui.highlight_ticks(first, color)}",
+                    err=True,
+                )
                 for line in context:
                     click.echo(ui.style("dim", line, color), err=True)
             raise click.exceptions.Exit(1) from error

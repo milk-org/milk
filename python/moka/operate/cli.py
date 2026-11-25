@@ -46,7 +46,9 @@ class _PlansGroup(ErrstackGroup):
             from .plans import PLANS
 
             log, quiet = logging.getLogger("moka"), logging.NullHandler()
-            if ctx.resilient_parsing:  # shell completion: no log record on the terminal at each TAB
+            if (
+                ctx.resilient_parsing
+            ):  # shell completion: no log record on the terminal at each TAB
                 log.addHandler(quiet)
             try:
                 ctx.meta["moka.plans"] = (_load(ctx).plans, None)
@@ -247,15 +249,23 @@ def _epilog(plan: Plan, tasks: Registry[type[Task]]) -> str:
     blocks = []
     for p in (p for p in plan.params if p.positional):
         name = p.name.upper()
-        line = f"{name} is one of {', '.join(p.choices)}" if p.choices else f"{name}: {p.help}"
-        blocks.append(line + (f" (default: {p.default})." if p.default is not None else "."))
+        line = (
+            f"{name} is one of {', '.join(p.choices)}"
+            if p.choices
+            else f"{name}: {p.help}"
+        )
+        blocks.append(
+            line + (f" (default: {p.default})." if p.default is not None else ".")
+        )
     steps = ["Steps:"]
     for i, step in enumerate(plan.steps, 1):
         cls = tasks[step.task] if step.task in tasks else None
         doc = (cls.__dict__.get("__doc__") or "").strip().split("\n")[0] if cls else ""
         steps.append(f"  {i}. {step.label}  {doc}".rstrip())
     sentence = f"{_ACCEPTS[plan.accepts]} {_ON_FAILURE[plan.on_failure]}"
-    return "\n\n".join(f"\b\n{b}" for b in ["\n".join(blocks), "\n".join(steps), sentence] if b)
+    return "\n\n".join(
+        f"\b\n{b}" for b in ["\n".join(blocks), "\n".join(steps), sentence] if b
+    )
 
 
 def _plan_command(plan: Plan, tasks: Registry[type[Task]]) -> click.Command:
@@ -399,7 +409,9 @@ def moka_tasks(pipe: str | None, plan: str | None):
         done, can = task.success(), task.can()
         row = [label]
         for flag in (done, can):
-            row.append(ui.style("ok" if flag else "warn", "yes" if flag else "no", color))
+            row.append(
+                ui.style("ok" if flag else "warn", "yes" if flag else "no", color)
+            )
         rows.append(row if can else [*row, task.failure_reason])
     _echo_table(rows)
 
@@ -424,7 +436,8 @@ def moka_link(pipe: str | None, linkage: str | None):
 @moka.command("unlink")
 @_pipe_option
 @click.argument(
-    "linkage", shell_complete=_completer(lambda ctx: [*_load(ctx).config.systemlinkage, "all"])
+    "linkage",
+    shell_complete=_completer(lambda ctx: [*_load(ctx).config.systemlinkage, "all"]),
 )
 def moka_unlink(pipe: str | None, linkage: str):
     """

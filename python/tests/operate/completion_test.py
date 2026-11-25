@@ -84,7 +84,9 @@ def test_env_protocol_prints_type_value_lines(tmp_path, monkeypatch):
 # ---- the plans of the pipeline of -p, else cwd ----
 
 
-def test_local_plans_complete_with_pipe_or_in_the_rootdir(make_tmp_pipeline, monkeypatch):
+def test_local_plans_complete_with_pipe_or_in_the_rootdir(
+    make_tmp_pipeline, monkeypatch
+):
     pp = make_tmp_pipeline(LOCAL)
     assert "probe" in _values(["-p", str(pp.root_folder)])
     assert _values(["-p", str(pp.root_folder)], "pr") == ["probe"]
@@ -99,7 +101,9 @@ def test_a_broken_pipeline_completes_the_builtin_commands_silently(make_tmp_pipe
     assert result.exit_code == 0 and result.stderr == ""
     expected = sorted([*FIXED, *PLANS.names()])
     assert result.output.splitlines() == [f"plain,{name}" for name in expected]
-    result = _bash("-p", str(pp.root_folder), "nope", "")  # an unknown command: no traceback
+    result = _bash(
+        "-p", str(pp.root_folder), "nope", ""
+    )  # an unknown command: no traceback
     assert result.exit_code == 0 and result.exception is None and result.stderr == ""
 
 
@@ -212,7 +216,9 @@ def test_completion_is_a_fixed_command(make_tmp_pipeline):
     result = CliRunner().invoke(moka, ["-h"])
     lines = [line.strip() for line in result.output.splitlines()]
     assert "completion SHELL" in lines
-    pp = make_tmp_pipeline('\n[plans.completion]\nsteps = ["RunStop"]\naccepts = "any"\n')
+    pp = make_tmp_pipeline(
+        '\n[plans.completion]\nsteps = ["RunStop"]\naccepts = "any"\n'
+    )
     result = CliRunner().invoke(moka, ["-h", "-p", str(pp.root_folder)])
     assert result.exit_code != 0
     text = result.output + str(result.exception)
