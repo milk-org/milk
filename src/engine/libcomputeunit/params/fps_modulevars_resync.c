@@ -195,14 +195,13 @@ errno_t fpsresync_fps_to_modvar(FPS             *fps,
     {
         FPS_CLI_BINDING *b = &bindings[ii];
 
-        if (b->_fps_pindex == UINT64_MAX - 2 || force_cache_build)
+        if (b->_fps_pindex == -2 || force_cache_build)
         {
-            b->_fps_pindex   = functionparameter_GetParamIndex(fps, b->fpskeyword);
-            b->_fps_last_cnt = fps->parray[b->_fps_pindex].value_cnt;
+            b->_fps_pindex = functionparameter_GetParamIndex(fps, b->fpskeyword);
         }
-        else if (b->_fps_pindex == UINT64_MAX - 1)
+        if (b->_fps_pindex < 0)
         {
-            continue; // Not resolved once, won't try to resolve again.
+            continue; // -1: not found, won't try to resolve again.
         }
 
         sync_fps_to_local(fps, b->_fps_pindex, b);
@@ -235,16 +234,33 @@ errno_t fps_to_modulevars_resync_bindings(FPS *fps, FPS_CLI_BINDING *bindings, i
 /**
  * @brief Push module-local C variable values into FPS
  *        parameter slots, for every binding.
+ *
+ * A binding whose value_cnt moved since fpsresync_fps_to_modvar()
+ * was written from outside during the iteration: it is not
+ * overwritten, and the next fpsresync_fps_to_modvar() picks it up.
+ * The check and the write are not atomic; a few-instruction
+ * window remains.
  */
 errno_t fpsresync_modvar_to_fps(FPS *fps, FPS_CLI_BINDING *bindings, int nb_b)
 {
     for (int ii = 0; ii < nb_b; ii++)
     {
         FPS_CLI_BINDING *b = &bindings[ii];
-        sync_local_to_fps(fps, b->_fps_pindex, b);
-        // Must update the counter; if there was a concurrent upgrade it would otherwise supersede
-        // at the next iteration
-        b->_fps_last_cnt = (int64_t) fps->parray[b->_fps_pindex].value_cnt;
+
+        if (b->_fps_pindex < 0)
+        {
+            continue; // unresolved or not found
+        }
+
+        // External write since the loop-start copy: it wins, the local value is dropped.
+        // _fps_last_cnt is left unchanged: the module has not seen that write yet.
+        if ((int64_t) fps->parray[b->_fps_pindex].value_cnt != b->_fps_last_cnt)
+        {
+            continue;
+        }
+
+        // Count our own write only, so that one landing in between is not marked as seen.
+        b->_fps_last_cnt += sync_local_to_fps(fps, b->_fps_pindex, b);
     }
 
     return RETURN_SUCCESS;
