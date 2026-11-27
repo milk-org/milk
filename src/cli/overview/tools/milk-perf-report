@@ -635,7 +635,10 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
     if both:
         both = both[:10]
         both_rev = list(reversed(both))
-        knames = [x[0][:26] for x in both_rev]
+        knames = [
+            (x[0][:35] + "…") if len(x[0]) > 36 else x[0]
+            for x in both_rev
+        ]
         cpuv = [x[1] for x in both_rev]
         gpuv = [x[2] for x in both_rev]
         y = np.arange(len(knames))
@@ -647,9 +650,9 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
             sp = cv / max(gv, 0.01)
             ax.text(max(cv, gv) * 1.15, i, f"{sp:.0f}x", va="center", fontsize=7.4)
         ax.set_yticks(y)
-        ax.set_yticklabels(knames, fontsize=7.3)
-        ax.set_xlim(1.0, max([c for _, c, _ in both_rev] + [100.0]) * 3.5)
-        ax.legend(loc="lower right")
+        ax.set_yticklabels(knames, fontsize=7.0)
+        ax.set_xlim(1.0, max([c for _, c, _ in both_rev] + [100.0]) * 4.5)
+        ax.legend(loc="upper right", framealpha=0.92)
     ax.set_xlabel("Mean Kernel Latency [us] (log scale)")
     ax.set_title("C. cacaosim-benchmark: CPU vs RTX PRO 6000 GPU Speedups", loc="left")
     ax.grid(True, axis="x", which="both", alpha=0.25)
@@ -709,7 +712,7 @@ def render_plots(out_dir, telem, ts_rows, procs, cl_procs, streams, c_stgs, micr
             ax.set_xscale("log")
             ax.set_yticks(y)
             ax.set_yticklabels(anames, fontsize=7.5)
-            ax.legend(loc="lower right")
+            ax.legend(loc="upper right", framealpha=0.92)
         ax.set_xlabel("Unthrottled Compute Ceiling (1 / p50_exec) [kHz]")
         ax.set_title("D. Per-Daemon Unthrottled Compute Rate Ceiling", loc="left")
         ax.grid(True, axis="x", which="both", alpha=0.25)
